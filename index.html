@@ -410,10 +410,10 @@ function runeRing(cx,cy,r,c){
 // To swap sprites: add your PNG files to the GitHub repo and update the URLs below.
 // Layout: 3 frames wide × 4 rows tall (N=0, S=1, W=2, E=3) at 48×64px per frame
 const SPRITE_CFG = {
-  p1: { url: 'sprites/mage-light.png', row: 1 }, // relative path — add file to /sprites/ in repo
-  p2: { url: 'sprites/mage-dark.png',  row: 1 },
-  frameW: 48, frameH: 64, frames: 3,
-  animRows: { idle: 1, cast: 3, hit: 1 },
+  p1: { url: 'sprites/mage-light.png' },
+  p2: { url: 'sprites/mage-dark.png'  },
+  frameW: 48, frameH: 64, frames: 4,
+  animRows: { idle: 0, cast: 1, hit: 2, shield: 3, death: 4 },
 };
 
 const sprites = { p1: null, p2: null };
@@ -422,7 +422,6 @@ const spriteStatus = { p1: 'loading', p2: 'loading' }; // 'loading'|'ready'|'fai
 function loadSprites() {
   ['p1','p2'].forEach(who => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
     img.onload  = () => { sprites[who] = img; spriteStatus[who] = 'ready'; };
     img.onerror = () => { spriteStatus[who] = 'failed'; }; // will fall back to drawn wizard
     img.src = SPRITE_CFG[who].url;
@@ -437,12 +436,15 @@ const animState = {
 };
 const FRAME_MS = 180; // ms per animation frame
 
+const ANIM_FRAMES = { idle: 3, cast: 4, hit: 2, shield: 2, death: 4 };
+
 function tickAnimFrame(who, dt) {
   const a = animState[who];
   a.timer += dt;
   if(a.timer >= FRAME_MS) {
     a.timer -= FRAME_MS;
-    a.frame = (a.frame + 1) % SPRITE_CFG.frames;
+    const frameCount = ANIM_FRAMES[gs[who+'anim']] ?? SPRITE_CFG.frames;
+    a.frame = (a.frame + 1) % frameCount;
   }
 }
 
@@ -561,8 +563,8 @@ function battleLoop(ts){
   resizeBC();
   drawBG();
   const gy=bH*.74, wsz=bH*.3;
-  drawWiz(bW*.22,gy,wsz,'#4af0ff',false,gs.p1anim,gs.p1.shield,'p1');
-  drawWiz(bW*.78,gy,wsz,'#ff4a6e',true, gs.p2anim,gs.p2.shield,'p2');
+  drawWiz(bW*.22,gy,wsz,'#4af0ff',true, gs.p1anim,gs.p1.shield,'p1');
+  drawWiz(bW*.78,gy,wsz,'#ff4a6e',false,gs.p2anim,gs.p2.shield,'p2');
   tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy){
     bx.fillStyle='rgba(255,74,110,0.7)'; bx.font='bold 10px Cinzel,serif';
@@ -605,7 +607,7 @@ function act(type){
     if(gs.p1.mana<SHIELD_COST) return;
     gs.p1.mana-=SHIELD_COST; gs.p1.shield=SHIELD_TURNS;
     addFloat(bW*.22,bH*.33,'🛡 Shielded!','#4af0ff',12);
-    anim('p1','cast',700); endMyTurn(); return;
+    anim('p1','shield',700); endMyTurn(); return;
   }
   if(type==='spell'){
     if(gs.p1.mana<SPELL_COST) return;
@@ -637,7 +639,8 @@ function castSpell(spell,target,tx,ty,caster){
 }
 
 function anim(who,state,ms){
-  gs[who+'anim']=state; setTimeout(()=>gs[who+'anim']='idle',ms);
+  gs[who+'anim']=state;
+  setTimeout(()=>{ if(gs[who+'anim']!=='death') gs[who+'anim']='idle'; },ms);
 }
 
 function endMyTurn(){
@@ -665,7 +668,7 @@ function doAI(){
   } else if(action==='shield'){
     ai.mana-=SHIELD_COST; ai.shield=SHIELD_TURNS;
     addFloat(bW*.78,bH*.33,'🛡 Shield!','#ff4a6e',12);
-    anim('p2','cast',700);
+    anim('p2','shield',700);
   } else {
     const spell=SPELLS[Math.floor(Math.random()*SPELLS.length)];
     addFloat(bW*.78,bH*.26,spell.icon+' '+spell.name+'!',spell.col,12);
@@ -690,17 +693,20 @@ function checkWin(){
 
 function endGame(won){
   gs.myTurn=false; gs.busy=true;
-  document.getElementById('ovico').textContent=won?'🏆':'💀';
-  document.getElementById('ovtitle').textContent=won?'Victory!':'Defeated!';
-  document.getElementById('ovtitle').style.color=won?'#f0cc6a':'#ff4a6e';
-  document.getElementById('ovdesc').textContent=won?'Malachar falls before your arcane might!':'Your magic was not enough. Study and return!';
-  document.getElementById('overlay').classList.add('active');
+  gs[won?'p2anim':'p1anim']='death';
+  setTimeout(()=>{
+    document.getElementById('ovico').textContent=won?'🏆':'💀';
+    document.getElementById('ovtitle').textContent=won?'Victory!':'Defeated!';
+    document.getElementById('ovtitle').style.color=won?'#f0cc6a':'#ff4a6e';
+    document.getElementById('ovdesc').textContent=won?'Malachar falls before your arcane might!':'Your magic was not enough. Study and return!';
+    document.getElementById('overlay').classList.add('active');
+  }, 900);
 }
 
 // ── MAZE PUZZLE ────────────────────────────────────────────
 const mc=document.getElementById('mcanvas');
 const mx=mc.getContext('2d');
-const CELL=28, COLS=11, ROWS=11;
+const CELL=24, COLS=15, ROWS=15;
 const DR=[-1,0,1,0], DC=[0,1,0,-1]; // N E S W
 
 function genMaze(){
@@ -726,10 +732,43 @@ function canGo(w,col,row,d){
   if(d===1)return!w.V[row][col+1]; if(d===3)return!w.V[row][col]; return false;
 }
 
+function braidMaze(walls, factor=0.5){
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const open=[0,1,2,3].filter(d=>canGo(walls,c,r,d));
+    if(open.length===1 && Math.random()<factor){
+      const closed=[0,1,2,3].filter(d=>!canGo(walls,c,r,d));
+      const d=closed[Math.floor(Math.random()*closed.length)];
+      if(d===0)walls.H[r][c]=false;
+      else if(d===2)walls.H[r+1][c]=false;
+      else if(d===1)walls.V[r][c+1]=false;
+      else if(d===3)walls.V[r][c]=false;
+    }
+  }
+}
+
+function shortestPathLength(walls){
+  const dist=Array.from({length:ROWS},()=>Array(COLS).fill(-1));
+  const q=[[0,0]]; dist[0][0]=0;
+  while(q.length){
+    const [col,row]=q.shift();
+    if(col===COLS-1&&row===ROWS-1) return dist[row][col];
+    for(let d=0;d<4;d++){
+      if(canGo(walls,col,row,d)){
+        const nc=col+DC[d], nr=row+DR[d];
+        if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&dist[nr][nc]===-1){
+          dist[nr][nc]=dist[row][col]+1; q.push([nc,nr]);
+        }
+      }
+    }
+  }
+  return ROWS+COLS;
+}
+
 function launchMaze(spell,cb){
   puzzleCB=cb;
   document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
   const walls=genMaze();
+  braidMaze(walls);
   const cw=COLS*CELL+2, ch=ROWS*CELL+2;
   mc.width=cw; mc.height=ch;
   const mw=Math.min(cw,(window.innerWidth||360)-32);
@@ -737,7 +776,10 @@ function launchMaze(spell,cb){
 
   const mk={x:.5,y:.5,dir:1,spd:.05}; // start heading East
   const goal={col:COLS-1,row:ROWS-1};
-  let done=false, timeLeft=20;
+  // orb moves at 0.05 cells/frame ≈ 3 cells/sec at 60fps
+  // give 3× the optimal traversal time, floored at 15s
+  const pathLen=shortestPathLength(walls);
+  let done=false, timeLeft=Math.max(15,Math.round(pathLen/3*3));
 
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent=timeLeft; timerEl.classList.remove('urgent');
