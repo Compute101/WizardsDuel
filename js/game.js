@@ -433,6 +433,12 @@ function launchMaze(spell,cb){
 
   const mk={x:.5,y:.5,dir:1,spd:.05};
   const goal={col:COLS-1,row:ROWS-1};
+  const sparkles=Array.from({length:28},()=>({
+    x:Math.random()*cw, y:Math.random()*ch,
+    speed:0.15+Math.random()*.45,
+    size:0.7+Math.random()*1.5,
+    phase:Math.random()*Math.PI*2,
+  }));
   const pathLen=shortestPathLength(walls);
   let done=false, timeLeft=Math.max(15,Math.round(pathLen/3*3));
 
@@ -512,22 +518,76 @@ function launchMaze(spell,cb){
 
   function drawMaze(){
     const ox=1,oy=1;
-    mx.fillStyle='#080412'; mx.fillRect(0,0,mc.width,mc.height);
-    mx.fillStyle='rgba(201,168,76,0.12)'; mx.fillRect(ox+goal.col*CELL,oy+goal.row*CELL,CELL,CELL);
+    const t=Date.now();
+    const W=mc.width, H=mc.height;
+
+    // Atmospheric background gradient
+    const bg=mx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.65);
+    bg.addColorStop(0,'#32106a'); bg.addColorStop(0.5,'#1a0638'); bg.addColorStop(1,'#06011a');
+    mx.fillStyle=bg; mx.fillRect(0,0,W,H);
+
+    // Arcane ritual circles (slowly rotating spokes)
+    mx.save();
+    mx.lineWidth=1.5;
+    [[W*.22,0.35],[W*.4,0.22],[W*.56,0.13]].forEach(([r,a])=>{
+      mx.strokeStyle=`rgba(160,70,220,${a})`;
+      mx.beginPath(); mx.arc(W/2,H/2,r,0,Math.PI*2); mx.stroke();
+    });
+    mx.lineWidth=1;
+    for(let i=0;i<6;i++){
+      const a=i/6*Math.PI*2+t/9000;
+      mx.strokeStyle='rgba(200,120,255,0.32)';
+      mx.beginPath();
+      mx.moveTo(W/2+Math.cos(a)*W*.18,H/2+Math.sin(a)*H*.18);
+      mx.lineTo(W/2+Math.cos(a)*W*.58,H/2+Math.sin(a)*H*.58);
+      mx.stroke();
+    }
+    mx.restore();
+
+    // Drifting sparkles
+    mx.save();
+    sparkles.forEach(s=>{
+      s.y-=s.speed;
+      if(s.y<-4){s.y=H+4; s.x=Math.random()*W;}
+      mx.globalAlpha=0.12+0.32*Math.abs(Math.sin(t/850+s.phase));
+      mx.fillStyle='#b090ff';
+      mx.shadowColor='#8844ff'; mx.shadowBlur=5;
+      mx.beginPath(); mx.arc(s.x,s.y,s.size,0,Math.PI*2); mx.fill();
+    });
+    mx.globalAlpha=1; mx.shadowBlur=0;
+    mx.restore();
+
+    // Goal pulsing aura rings + floor glow + star
+    const gx=ox+goal.col*CELL+CELL/2, gy=oy+goal.row*CELL+CELL/2;
+    const pulse=0.5+0.5*Math.sin(t/350);
+    mx.save();
+    [CELL*1.9,CELL*1.35].forEach((r,i)=>{
+      mx.strokeStyle=`rgba(201,168,76,${(0.13+0.1*pulse)*(1-i*.45)})`;
+      mx.lineWidth=1;
+      mx.beginPath(); mx.arc(gx,gy,r,0,Math.PI*2); mx.stroke();
+    });
+    mx.restore();
+    mx.fillStyle='rgba(201,168,76,0.14)'; mx.fillRect(ox+goal.col*CELL,oy+goal.row*CELL,CELL,CELL);
     mx.fillStyle='#f0cc6a'; mx.font=`${CELL*.55}px serif`;
     mx.textAlign='center'; mx.textBaseline='middle';
-    mx.shadowColor='#c9a84c'; mx.shadowBlur=10;
-    mx.fillText('★',ox+goal.col*CELL+CELL/2,oy+goal.row*CELL+CELL/2); mx.shadowBlur=0;
-    mx.strokeStyle='rgba(138,58,170,0.85)'; mx.lineWidth=1.5;
+    mx.shadowColor='#c9a84c'; mx.shadowBlur=8+7*pulse;
+    mx.fillText('★',gx,gy); mx.shadowBlur=0;
+
+    // Maze walls (batched single draw call)
+    mx.beginPath();
+    mx.strokeStyle='rgba(160,70,210,0.88)'; mx.lineWidth=1.5;
     for(let r=0;r<=ROWS;r++) for(let c=0;c<COLS;c++) if(walls.H[r][c]){
-      mx.beginPath(); mx.moveTo(ox+c*CELL,oy+r*CELL); mx.lineTo(ox+(c+1)*CELL,oy+r*CELL); mx.stroke();
+      mx.moveTo(ox+c*CELL,oy+r*CELL); mx.lineTo(ox+(c+1)*CELL,oy+r*CELL);
     }
     for(let r=0;r<ROWS;r++) for(let c=0;c<=COLS;c++) if(walls.V[r][c]){
-      mx.beginPath(); mx.moveTo(ox+c*CELL,oy+r*CELL); mx.lineTo(ox+c*CELL,oy+(r+1)*CELL); mx.stroke();
+      mx.moveTo(ox+c*CELL,oy+r*CELL); mx.lineTo(ox+c*CELL,oy+(r+1)*CELL);
     }
+    mx.stroke();
+
+    // Player orb + direction arrow
     const px=ox+mk.x*CELL, py=oy+mk.y*CELL;
-    const pulse=.65+.35*Math.sin(Date.now()/200);
-    mx.fillStyle=`rgba(74,240,255,${pulse})`;
+    const pulseO=.65+.35*Math.sin(t/200);
+    mx.fillStyle=`rgba(74,240,255,${pulseO})`;
     mx.shadowColor='#4af0ff'; mx.shadowBlur=14;
     mx.beginPath(); mx.arc(px,py,CELL*.26,0,Math.PI*2); mx.fill(); mx.shadowBlur=0;
     const al=CELL*.22, adx=DC[mk.dir]*al, ady=DR[mk.dir]*al;
