@@ -293,7 +293,8 @@ body {
 }
 #mazewrap {
   flex:1; display:flex; align-items:center; justify-content:center;
-  padding:12px; width:100%;
+  padding:8px; width:100%;
+  min-height:0; overflow:hidden;
 }
 #mcanvas {
   border:2px solid rgba(201,168,76,0.45); border-radius:4px;
@@ -306,7 +307,7 @@ body {
   color:rgba(255,255,255,0.3); text-transform:uppercase; text-align:center; flex-shrink:0;
 }
 #dpad {
-  width:100%; padding:10px 0 16px;
+  width:100%; padding:10px 0 max(24px, env(safe-area-inset-bottom, 24px));
   display:flex; align-items:center; justify-content:center;
   flex-shrink:0;
 }
