@@ -1,16 +1,31 @@
 // ── CONSTANTS ──────────────────────────────────────────────
-const MAX_HP=100, MAX_MANA=5, SHIELD_COST=1, SHIELD_TURNS=2, BURN_DMG=5, BURN_ROUNDS=2;
+const MAX_MANA=20, SHIELD_COST=3, BURN_DMG=5, BURN_ROUNDS=2;
 
 const SPELLS=[
-  {name:'Inferno',        element:'fire',      icon:'🔥', dmg:38, cost:4, col:'#ff6622',
+  {name:'Inferno',        element:'fire',      icon:'🔥', dmg:38, cost:12, col:'#ff6622',
    effectLabel:'Burns 5 dmg × 2 rounds'},
-  {name:'Lightning Bolt', element:'lightning', icon:'⚡', dmg:30, cost:3, col:'#ffee44',
+  {name:'Lightning Bolt', element:'lightning', icon:'⚡', dmg:30, cost:9,  col:'#ffee44',
    effectLabel:'Pierces shields fully'},
-  {name:'Frost Nova',     element:'ice',       icon:'❄️',  dmg:18, cost:2, col:'#88ddff',
+  {name:'Frost Nova',     element:'ice',       icon:'❄️',  dmg:18, cost:6,  col:'#88ddff',
    effectLabel:'Freezes — skip next turn'},
-  {name:'Arcane Surge',   element:'arcane',    icon:'🌀', dmg:0,  cost:3, col:'#cc88ff',
+  {name:'Arcane Surge',   element:'arcane',    icon:'🌀', dmg:0,  cost:9,  col:'#cc88ff',
    effectLabel:'Wild: 15–55 damage'},
 ];
+
+// ── CHARACTER DEFINITIONS ──────────────────────────────────
+const CHAR_DEFS={
+  eldrad:{
+    name:'ELDRAD', title:'The Stalwart',
+    sprite:'sprites/mage-light.png', col:'#4af0ff',
+    hp:110, startMana:5, channelAmt:4, shieldTurns:3, dmgMult:1.0,
+  },
+  mal:{
+    name:'MALACHADOR', title:'The Relentless',
+    sprite:'sprites/mage-dark.png', col:'#ff4a6e',
+    hp:85, startMana:7, channelAmt:5, shieldTurns:1, dmgMult:1.3,
+  },
+};
+let p1Cfg=CHAR_DEFS.eldrad, p2Cfg=CHAR_DEFS.mal;
 
 // ── DIFFICULTY ─────────────────────────────────────────────
 let diffMult=1.0, diffName='normal';
@@ -22,8 +37,8 @@ let mazeRAF=null, mazeTid=null;
 
 function newState(){
   gs={
-    p1:{hp:MAX_HP, mana:2, shield:0, burn:0, frozen:false},
-    p2:{hp:MAX_HP, mana:2, shield:0, burn:0, frozen:false},
+    p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana, shield:0, burn:0, frozen:false},
+    p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana, shield:0, burn:0, frozen:false},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[],
@@ -80,8 +95,6 @@ function runeRing(cx,cy,r,c){
 
 // ── SPRITESHEET CONFIG ─────────────────────────────────────
 const SPRITE_CFG={
-  p1:{url:'sprites/mage-light.png'},
-  p2:{url:'sprites/mage-dark.png'},
   frameW:48, frameH:64, frames:4,
   animRows:{idle:0,cast:1,hit:2,shield:3,death:4},
 };
@@ -89,13 +102,17 @@ const sprites={p1:null,p2:null};
 const spriteStatus={p1:'loading',p2:'loading'};
 
 function loadSprites(){
+  sprites.p1=null; sprites.p2=null;
+  spriteStatus.p1='loading'; spriteStatus.p2='loading';
+  const urls={p1:p1Cfg.sprite, p2:p2Cfg.sprite};
   ['p1','p2'].forEach(who=>{
     const img=new Image();
     img.onload =()=>{sprites[who]=img; spriteStatus[who]='ready';};
     img.onerror=()=>{spriteStatus[who]='failed';};
-    img.src=SPRITE_CFG[who].url;
+    img.src=urls[who];
   });
 }
+// Preload defaults so sprites are ready when battle starts
 loadSprites();
 
 const animState={p1:{frame:0,timer:0},p2:{frame:0,timer:0}};
@@ -202,10 +219,10 @@ function addFloat(x,y,t,col,sz=17){gs.floats.push({x,y,t,col,sz,life:1});}
 function refreshStatusBar(){
   const el=document.getElementById('statusbar');
   const tags=[];
-  if(gs.p1.burn>0)   tags.push(`<span class="status-tag burn">🔥 ELDRIN BURNING (${gs.p1.burn})</span>`);
-  if(gs.p1.frozen)   tags.push(`<span class="status-tag freeze">❄️ ELDRIN FROZEN</span>`);
-  if(gs.p2.burn>0)   tags.push(`<span class="status-tag burn">🔥 MALACHAR BURNING (${gs.p2.burn})</span>`);
-  if(gs.p2.frozen)   tags.push(`<span class="status-tag freeze">❄️ MALACHAR FROZEN</span>`);
+  if(gs.p1.burn>0)   tags.push(`<span class="status-tag burn">🔥 ${p1Cfg.name} BURNING (${gs.p1.burn})</span>`);
+  if(gs.p1.frozen)   tags.push(`<span class="status-tag freeze">❄️ ${p1Cfg.name} FROZEN</span>`);
+  if(gs.p2.burn>0)   tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
+  if(gs.p2.frozen)   tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN</span>`);
   el.innerHTML=tags.join('');
   el.style.padding=tags.length?'3px 12px':'0';
 }
@@ -227,7 +244,7 @@ function battleLoop(ts){
   tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy){
     bx.fillStyle='rgba(255,74,110,0.7)'; bx.font='bold 10px Cinzel,serif';
-    bx.textAlign='center'; bx.fillText('MALACHAR IS CASTING…',bW*.5,bH*.56);
+    bx.textAlign='center'; bx.fillText(p2Cfg.name+' IS CASTING…',bW*.5,bH*.56);
   }
   refreshHUD();
   refreshStatusBar();
@@ -235,12 +252,13 @@ function battleLoop(ts){
 
 // ── HUD ────────────────────────────────────────────────────
 function refreshHUD(){
-  document.getElementById('p1hpf').style.width=Math.max(0,gs.p1.hp/MAX_HP*100)+'%';
-  document.getElementById('p2hpf').style.width=Math.max(0,gs.p2.hp/MAX_HP*100)+'%';
+  document.getElementById('p1hpf').style.width=Math.max(0,gs.p1.hp/gs.p1.maxHp*100)+'%';
+  document.getElementById('p2hpf').style.width=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
   document.getElementById('sh1').style.opacity=gs.p1.shield>0?'1':'0.18';
   document.getElementById('sh2').style.opacity=gs.p2.shield>0?'1':'0.18';
   document.getElementById('roundlbl').textContent='Round '+gs.round;
-  pips('mp1',gs.p1.mana); pips('mp2',gs.p2.mana);
+  refreshMana('mfill1','mval1',gs.p1.mana);
+  refreshMana('mfill2','mval2',gs.p2.mana);
   const busy=!gs.myTurn||gs.busy;
   const canCastAny=SPELLS.some(s=>gs.p1.mana>=s.cost);
   document.getElementById('bshield').classList.toggle('off',  busy||gs.p1.mana<SHIELD_COST);
@@ -248,12 +266,9 @@ function refreshHUD(){
   document.getElementById('bspell').classList.toggle('off',   busy||!canCastAny);
 }
 
-function pips(id,val){
-  const el=document.getElementById(id); el.innerHTML='';
-  for(let i=0;i<MAX_MANA;i++){
-    const d=document.createElement('div');
-    d.className='pip'+(i<val?' on':''); el.appendChild(d);
-  }
+function refreshMana(fillId,valId,val){
+  document.getElementById(fillId).style.width=(val/MAX_MANA*100)+'%';
+  document.getElementById(valId).textContent=val+'/'+MAX_MANA;
 }
 
 // ── SPELL PICKER ───────────────────────────────────────────
@@ -279,13 +294,13 @@ function showSpellPicker(cb){
 function act(type){
   if(!gs.myTurn||gs.busy) return;
   if(type==='channel'){
-    gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+2);
-    addFloat(bW*.22,bH*.38,'+2 Mana','#88aaff',13);
+    gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+p1Cfg.channelAmt);
+    addFloat(bW*.22,bH*.38,'+'+p1Cfg.channelAmt+' Mana','#88aaff',13);
     anim('p1','cast',700); endMyTurn(); return;
   }
   if(type==='shield'){
     if(gs.p1.mana<SHIELD_COST) return;
-    gs.p1.mana-=SHIELD_COST; gs.p1.shield=SHIELD_TURNS;
+    gs.p1.mana-=SHIELD_COST; gs.p1.shield=p1Cfg.shieldTurns;
     addFloat(bW*.22,bH*.33,'🛡 Shielded!','#4af0ff',12);
     anim('p1','shield',700); endMyTurn(); return;
   }
@@ -316,8 +331,9 @@ function act(type){
 
 // ── CAST SPELL ─────────────────────────────────────────────
 function castSpell(spell,target,tx,ty,caster){
-  let dmg=spell.dmg;
-  if(spell.element==='arcane') dmg=15+Math.floor(Math.random()*41);
+  const casterCfg=caster==='p1'?p1Cfg:p2Cfg;
+  let dmg=Math.round(spell.dmg*casterCfg.dmgMult);
+  if(spell.element==='arcane') dmg=Math.round((15+Math.floor(Math.random()*41))*casterCfg.dmgMult);
 
   if(target.shield>0){
     if(spell.element==='lightning'){
@@ -406,16 +422,16 @@ function doAI(){
       spell=affordable[Math.floor(Math.random()*affordable.length)];
     }
     action='spell';
-  } else if(ai.mana>=SHIELD_COST && ai.shield===0 && Math.random()<0.3){
+  } else if(ai.mana>=SHIELD_COST && ai.shield===0 && Math.random()<(p2Cfg.shieldTurns>=3?0.4:p2Cfg.shieldTurns===2?0.3:0.15)){
     action='shield';
   }
 
   if(action==='channel'){
-    ai.mana=Math.min(MAX_MANA,ai.mana+2);
-    addFloat(bW*.78,bH*.38,'+2 Mana','#ff8888',13);
+    ai.mana=Math.min(MAX_MANA,ai.mana+p2Cfg.channelAmt);
+    addFloat(bW*.78,bH*.38,'+'+p2Cfg.channelAmt+' Mana','#ff8888',13);
     anim('p2','cast',700);
   } else if(action==='shield'){
-    ai.mana-=SHIELD_COST; ai.shield=SHIELD_TURNS;
+    ai.mana-=SHIELD_COST; ai.shield=p2Cfg.shieldTurns;
     addFloat(bW*.78,bH*.33,'🛡 Shield!','#ff4a6e',12);
     anim('p2','shield',700);
   } else {
@@ -474,7 +490,7 @@ function endGame(won){
     document.getElementById('ovtitle').textContent=won?'Victory!':'Defeated!';
     document.getElementById('ovtitle').style.color=won?'#f0cc6a':'#ff4a6e';
     document.getElementById('ovdesc').textContent=won
-      ?'Malachar falls before your arcane might!'
+      ?p2Cfg.name+' falls before your arcane might!'
       :'Your magic was not enough. Study and return!';
     document.getElementById('overlay').classList.add('active');
   },900);
@@ -1380,6 +1396,19 @@ window.addEventListener('DOMContentLoaded',()=>{
   });
 
   document.getElementById('btn-start').addEventListener('click',()=>{
+    showScreen('char-screen');
+  });
+
+  document.getElementById('btn-back').addEventListener('click',()=>{
+    showScreen('title-screen');
+  });
+
+  function pickCharacter(key){
+    p1Cfg=CHAR_DEFS[key];
+    p2Cfg=CHAR_DEFS[key==='eldrad'?'mal':'eldrad'];
+    loadSprites();
+    document.getElementById('p1name').textContent=p1Cfg.name;
+    document.getElementById('p2name').textContent=p2Cfg.name;
     newState();
     gameEnded=false;
     battleRunning=true;
@@ -1387,7 +1416,10 @@ window.addEventListener('DOMContentLoaded',()=>{
     resizeBC();
     showScreen('battle-screen');
     requestAnimationFrame(battleLoop);
-  });
+  }
+
+  document.getElementById('pick-eldrad').addEventListener('click',()=>pickCharacter('eldrad'));
+  document.getElementById('pick-mal').addEventListener('click',()=>pickCharacter('mal'));
 
   document.getElementById('btn-help').addEventListener('click',()=>{
     document.getElementById('helpmodal').style.display='flex';

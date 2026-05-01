@@ -27,30 +27,69 @@
     <div style="position:absolute;bottom:12px;right:16px;font-size:10px;color:rgba(201,168,76,0.4);letter-spacing:1px;">v0.6</div>
   </div>
 
+  <!-- CHARACTER SELECT -->
+  <div id="char-screen" class="screen">
+    <div class="char-heading">Choose Your Wizard</div>
+    <div class="char-sub">★ Each wizard has unique strengths ★</div>
+    <div class="char-cards">
+      <div class="char-card" id="pick-eldrad">
+        <div class="char-sprite char-sprite-eldrad"></div>
+        <div class="char-name p1">ELDRAD</div>
+        <div class="char-epithet">The Stalwart</div>
+        <div class="char-stats">
+          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">110</span></div>
+          <div class="cstat"><span class="cstat-l">🛡 Shield</span><span class="cstat-r">3 turns</span></div>
+          <div class="cstat"><span class="cstat-l">✨ Channel</span><span class="cstat-r">+4 Mana</span></div>
+          <div class="cstat"><span class="cstat-l">⚔ Power</span><span class="cstat-r">Normal</span></div>
+        </div>
+        <div class="char-flavour">Outlast your foe with arcane endurance.</div>
+      </div>
+      <div class="char-card" id="pick-mal">
+        <div class="char-sprite char-sprite-mal"></div>
+        <div class="char-name p2">MALACHADOR</div>
+        <div class="char-epithet">The Relentless</div>
+        <div class="char-stats">
+          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">85</span></div>
+          <div class="cstat"><span class="cstat-l">🛡 Shield</span><span class="cstat-r">1 turn</span></div>
+          <div class="cstat"><span class="cstat-l">✨ Channel</span><span class="cstat-r">+5 Mana</span></div>
+          <div class="cstat"><span class="cstat-l">⚔ Power</span><span class="cstat-r">+30%</span></div>
+        </div>
+        <div class="char-flavour">Strike hard. Strike first. No mercy.</div>
+      </div>
+    </div>
+    <button class="btn" id="btn-back">← Back</button>
+  </div>
+
   <!-- BATTLE -->
   <div id="battle-screen" class="screen">
     <div id="hud">
       <div class="hrow">
-        <span class="wname p1">ELDRIN</span>
+        <span class="wname p1" id="p1name">ELDRAD</span>
         <div class="hpbar"><div class="hpfill" id="p1hpf" style="width:100%"></div></div>
         <span class="shico" id="sh1">🛡</span>
       </div>
       <div class="hrow">
-        <span class="wname p2">MALACHAR</span>
+        <span class="wname p2" id="p2name">MALACHADOR</span>
         <div class="hpbar"><div class="hpfill" id="p2hpf" style="width:100%"></div></div>
         <span class="shico" id="sh2">🛡</span>
       </div>
       <div class="manarow">
-        <div class="manapips" id="mp1"></div>
+        <div class="manabar-wrap">
+          <div class="manabar"><div class="manabar-fill mf-p1" id="mfill1"></div></div>
+          <span class="mana-val" id="mval1">5/20</span>
+        </div>
         <div id="roundlbl">Round 1</div>
-        <div class="manapips" id="mp2"></div>
+        <div class="manabar-wrap manabar-wrap-r">
+          <span class="mana-val" id="mval2">7/20</span>
+          <div class="manabar"><div class="manabar-fill mf-p2" id="mfill2"></div></div>
+        </div>
       </div>
     </div>
     <div id="statusbar"></div>
     <canvas id="bcanvas"></canvas>
     <div id="actionbar">
       <button class="abtn" id="bshield">
-        <span class="ico">🛡</span>Shield<span class="cost">1 Mana</span>
+        <span class="ico">🛡</span>Shield<span class="cost">3 Mana</span>
       </button>
       <button class="abtn" id="bchannel">
         <span class="ico">✨</span>Channel<span class="cost">+2 Mana</span>
@@ -95,7 +134,7 @@
     <div style="max-width:380px;width:100%;background:#1a0a30;border:2px solid #c9a84c;border-radius:8px;padding:24px;text-align:left;">
       <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#f0cc6a;text-align:center;margin-bottom:18px;">How to Play</div>
       <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.9;">
-        <div style="margin-bottom:10px;">🛡 <b style="color:#4af0ff;">SHIELD</b> (1 Mana)<br>Reduces next hit by 70%. Lightning pierces it.</div>
+        <div style="margin-bottom:10px;">🛡 <b style="color:#4af0ff;">SHIELD</b> (3 Mana)<br>Reduces next hit by 70%. Lightning pierces it.</div>
         <div style="margin-bottom:10px;">✨ <b style="color:#aa66ff;">CHANNEL</b><br>Restore 2 mana. Skip your attack this turn.</div>
         <div style="margin-bottom:14px;">✨ <b style="color:#c9a84c;">CAST SPELL</b><br>Choose an elemental spell — each has its own puzzle and effect.</div>
         <div style="color:rgba(255,255,255,0.7);font-size:11px;line-height:2;border-top:1px solid rgba(201,168,76,0.2);padding-top:12px;">
