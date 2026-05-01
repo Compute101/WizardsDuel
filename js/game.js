@@ -15,12 +15,12 @@ const SPELLS=[
 // ── CHARACTER DEFINITIONS ──────────────────────────────────
 const CHAR_DEFS={
   eldrad:{
-    name:'ELDRAD', title:'The Stalwart',
+    name:'ELDRIN', title:'The Stalwart',
     sprite:'sprites/mage-light.png', col:'#4af0ff',
     hp:110, startMana:5, channelAmt:4, shieldTurns:3, dmgMult:1.0,
   },
   mal:{
-    name:'MALACHADOR', title:'The Relentless',
+    name:'MALACHAR', title:'The Relentless',
     sprite:'sprites/mage-dark.png', col:'#ff4a6e',
     hp:85, startMana:7, channelAmt:5, shieldTurns:1, dmgMult:1.3,
   },
