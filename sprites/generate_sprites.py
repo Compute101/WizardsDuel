@@ -1,14 +1,39 @@
 """
 Sprite generator for WizardsDuel.
-Generates character variants by applying palette swaps to a base sprite.
+Composites PNG layers and applies palette swaps to produce final character sprites.
 
-Usage:
-    python3 generate_sprites.py
+Spritesheet format: 48x64px frames, 4 columns x 5 rows (192x320 total).
+
+Layer files live in sprites/layers/<slot>/<name>.png
+Each layer must be 192x320 with transparency where not used.
+
+Slots (composited bottom to top):
+  body/   - base character shape (required, e.g. mage-f, mage-m)
+  hair/   - hairstyle overlay (optional, use "none" to skip)
+  hat/    - hat overlay (optional, use "none" to skip)
+  staff/  - staff overlay (optional, use "none" to skip)
 
 To add a new character:
-    1. Add an entry to CHARACTERS dict below
-    2. Map only the colors you want to change (unmapped colors are kept as-is)
-    3. Run the script
+  1. Add an entry to CHARACTERS below
+  2. Run: python3 generate_sprites.py
+
+To add a new layer variant (e.g. a new hat):
+  1. Create sprites/layers/hat/my-hat.png (192x320, RGBA)
+  2. Reference it in a character entry as "hat": "my-hat"
+
+Palette swaps map RGBA tuples from the composited image to new RGBA tuples.
+Only list colors you want to change — everything else is kept as-is.
+
+Base palette reference (from mage-light body):
+  Outline:        (20,  12,  28)
+  Robe dark:      (44,  20,  80), (48,  32,  80), (72,  40, 120)
+  Robe mid:       (140, 88,  200), (200, 160, 48)
+  Robe highlight: (60,  160, 220), (120, 220, 255)
+  Skin dark:      (140, 100, 48)
+  Skin mid:       (196, 140, 88)
+  Skin light:     (240, 188, 140)
+  Staff/whites:   (240, 240, 240)
+  Glow:           (255, 255, 180)
 """
 
 from PIL import Image
@@ -16,66 +41,141 @@ import numpy as np
 import os
 
 SPRITES_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_SPRITE = os.path.join(SPRITES_DIR, "mage-light.png")
+LAYERS_DIR  = os.path.join(SPRITES_DIR, "layers")
 
-# Base palette colors (from mage-light.png) for reference:
-# Outline/shadow:   (20,  12,  28)
-# Robe dark:        (44,  20,  80), (48,  32,  80), (72,  40, 120)
-# Robe mid:         (140, 88,  200), (200, 160, 48)
-# Robe highlight:   (60, 160, 220), (120, 220, 255)
-# Skin dark:        (140, 100, 48)
-# Skin mid:         (196, 140, 88)
-# Skin light:       (240, 188, 140)
-# Staff/whites:     (240, 240, 240)
-# Glow:             (255, 255, 180)
+# ---------------------------------------------------------------------------
+# Palette definitions
+# ---------------------------------------------------------------------------
 
-# Each character maps RGBA tuples from the base sprite to new RGBA tuples.
-# Only include colors you want to change — everything else stays the same.
+PALETTE_DEFAULT = {}  # no changes — keep base colors
+
+PALETTE_DARK = {
+    (44,  20,  80,  255): ( 55,  10,  10, 255),
+    (48,  32,  80,  255): ( 35,  10,  10, 255),
+    (72,  40, 120,  255): (110,  18,  18, 255),
+    (140,  88, 200, 255): (170,  45,  45, 255),
+    (200, 160,  48,  255): (140,  18,  18, 255),
+    (60,  160, 220, 255): (180,  70,  10, 255),
+    (120, 220, 255, 255): (255, 140,  20, 255),
+    (255, 255, 180, 255): (255, 220, 100, 255),
+}
+
+# Add more palettes here, e.g.:
+# PALETTE_GREEN = { (44, 20, 80, 255): (10, 60, 10, 255), ... }
+
+# ---------------------------------------------------------------------------
+# Character definitions
+# ---------------------------------------------------------------------------
+# Each character needs:
+#   body:    layer name from layers/body/   (required)
+#   hair:    layer name from layers/hair/   ("none" to skip)
+#   hat:     layer name from layers/hat/    ("none" to skip)
+#   staff:   layer name from layers/staff/  ("none" to skip)
+#   palette: palette dict to apply after compositing
+#
+# Male/female counts must stay equal.
+# ---------------------------------------------------------------------------
+
 CHARACTERS = {
+    # --- Female ---
+    "mage-light": {
+        "body":    "mage-f",
+        "hair":    "none",
+        "hat":     "none",
+        "staff":   "none",
+        "palette": PALETTE_DEFAULT,
+    },
     "mage-dark": {
-        # Blues/purples swapped to reds/oranges
-        (44,  20,  80,  255): ( 55,  10,  10, 255),
-        (48,  32,  80,  255): ( 35,  10,  10, 255),
-        (72,  40, 120,  255): (110,  18,  18, 255),
-        (140,  88, 200, 255): (170,  45,  45, 255),
-        (200, 160,  48,  255): (140,  18,  18, 255),
-        (60,  160, 220, 255): (180,  70,  10, 255),
-        (120, 220, 255, 255): (255, 140,  20, 255),
-        (255, 255, 180, 255): (255, 220, 100, 255),
+        "body":    "mage-f",
+        "hair":    "none",
+        "hat":     "none",
+        "staff":   "none",
+        "palette": PALETTE_DARK,
     },
 
-    # --- Add new characters below ---
-    # Example: green mage
-    # "mage-green": {
-    #     (44,  20,  80,  255): ( 10,  40,  10, 255),
-    #     (48,  32,  80,  255): ( 10,  30,  10, 255),
-    #     (72,  40, 120,  255): ( 20,  80,  20, 255),
-    #     (140,  88, 200, 255): ( 40, 140,  40, 255),
-    #     (200, 160,  48,  255): ( 30, 120,  30, 255),
-    #     (60,  160, 220, 255): ( 80, 200,  80, 255),
-    #     (120, 220, 255, 255): (160, 255, 160, 255),
-    #     (255, 255, 180, 255): (200, 255, 200, 255),
+    # --- Male (add matching entries once body/mage-m.png exists) ---
+    # "mage-m-light": {
+    #     "body":    "mage-m",
+    #     "hair":    "none",
+    #     "hat":     "none",
+    #     "staff":   "none",
+    #     "palette": PALETTE_DEFAULT,
+    # },
+    # "mage-m-dark": {
+    #     "body":    "mage-m",
+    #     "hair":    "none",
+    #     "hat":     "none",
+    #     "staff":   "none",
+    #     "palette": PALETTE_DARK,
     # },
 }
 
+# ---------------------------------------------------------------------------
+# Engine
+# ---------------------------------------------------------------------------
 
-def apply_palette(base_arr: np.ndarray, palette: dict) -> np.ndarray:
-    result = base_arr.copy()
+LAYER_SLOTS = ["body", "hair", "hat", "staff"]
+
+
+def load_layer(slot: str, name: str) -> np.ndarray | None:
+    if name == "none":
+        return None
+    path = os.path.join(LAYERS_DIR, slot, f"{name}.png")
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Layer not found: {path}")
+    return np.array(Image.open(path).convert("RGBA"))
+
+
+def composite_layers(layers: list[np.ndarray]) -> np.ndarray:
+    """Alpha-composite a list of RGBA arrays bottom to top."""
+    base = layers[0].astype(np.float32)
+    for overlay in layers[1:]:
+        oa = overlay[:, :, 3:4] / 255.0
+        base = overlay * oa + base * (1.0 - oa)
+    return np.clip(base, 0, 255).astype(np.uint8)
+
+
+def apply_palette(arr: np.ndarray, palette: dict) -> np.ndarray:
+    result = arr.copy()
     for src, dst in palette.items():
-        mask = np.all(base_arr == src, axis=2)
+        mask = np.all(arr == src, axis=2)
         result[mask] = dst
     return result
 
 
-def generate_sprites():
-    base_img = Image.open(BASE_SPRITE).convert("RGBA")
-    base_arr = np.array(base_img)
+def check_gender_balance():
+    # Count characters per body type to enforce equal gender representation
+    counts = {}
+    for cfg in CHARACTERS.values():
+        body = cfg["body"]
+        counts[body] = counts.get(body, 0) + 1
 
-    for name, palette in CHARACTERS.items():
-        out_arr = apply_palette(base_arr, palette)
-        out_img = Image.fromarray(out_arr, "RGBA")
+    bodies = list(counts.keys())
+    if len(bodies) > 1:
+        values = list(counts.values())
+        if len(set(values)) > 1:
+            summary = ", ".join(f"{b}: {c}" for b, c in counts.items())
+            raise ValueError(f"Unequal character counts per body type ({summary}). Add matching entries to balance.")
+
+
+def generate_sprites():
+    check_gender_balance()
+
+    for name, cfg in CHARACTERS.items():
+        layer_arrays = []
+        for slot in LAYER_SLOTS:
+            arr = load_layer(slot, cfg[slot])
+            if arr is not None:
+                layer_arrays.append(arr)
+
+        if not layer_arrays:
+            raise ValueError(f"Character '{name}' has no layers.")
+
+        composited = composite_layers(layer_arrays) if len(layer_arrays) > 1 else layer_arrays[0].copy()
+        final = apply_palette(composited, cfg["palette"])
+
         out_path = os.path.join(SPRITES_DIR, f"{name}.png")
-        out_img.save(out_path)
+        Image.fromarray(final, "RGBA").save(out_path)
         print(f"Generated: {out_path}")
 
 
