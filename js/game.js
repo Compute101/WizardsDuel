@@ -879,11 +879,11 @@ function launchMaze(spell,cb){
 
     // Player — lightning bolt with glow
     const px=ox+mk.x*CELL, py=oy+mk.y*CELL;
-    const pulse=0.6+0.4*Math.sin(t/150);
+    const boltPulse=0.6+0.4*Math.sin(t/150);
     mx.font=`bold ${Math.round(CELL*0.85)}px serif`;
     mx.textAlign='center'; mx.textBaseline='middle';
     mx.fillStyle='#ffffff';
-    mx.shadowColor='#ffee44'; mx.shadowBlur=18+10*pulse;
+    mx.shadowColor='#ffee44'; mx.shadowBlur=18+10*boltPulse;
     mx.fillText('⚡',px,py);
     mx.shadowBlur=0;
   }
