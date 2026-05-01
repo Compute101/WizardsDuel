@@ -148,7 +148,7 @@ body {
   margin-bottom: 22px;
 }
 .char-cards {
-  display: flex; gap: 12px; width: 100%; max-width: 420px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 420px;
   margin-bottom: 20px;
 }
 .char-card {
@@ -253,7 +253,7 @@ body {
 #bcanvas { width:100%; display:block; flex-shrink:0; }
 
 #actionbar {
-  width:100%; padding:8px; display:flex; gap:8px;
+  width:100%; padding:6px 8px 8px; display:flex; flex-direction:column; gap:6px;
   background:rgba(0,0,0,0.65); border-top:1px solid rgba(201,168,76,0.18);
   flex-shrink:0;
 }
@@ -401,3 +401,31 @@ body {
 
 #flash { position:fixed; inset:0; pointer-events:none; z-index:100; opacity:0; transition:opacity 0.1s; }
 #flash.on { opacity:1; }
+
+/* ── ACTION BAR ROWS ── */
+.abar-row { display:flex; gap:6px; width:100%; }
+.abar-row-spells .abtn { padding:7px 2px; font-size:8px; }
+#bchannel { border-color:#aa66ff; color:#aa66ff; }
+
+/* Spell element button colors */
+.abtn-spell[data-el="fire"]      { border-color:#ff6622; color:#ff9944; }
+.abtn-spell[data-el="lightning"] { border-color:#ffee44; color:#ffff88; }
+.abtn-spell[data-el="ice"]       { border-color:#88ddff; color:#aaeeff; }
+.abtn-spell[data-el="arcane"]    { border-color:#cc88ff; color:#dd99ff; }
+
+/* Status tag types for new specials */
+.status-tag.empower  { color:#ff9944; border:1px solid rgba(255,153,68,0.4); }
+.status-tag.counter  { color:#4af0ff; border:1px solid rgba(74,240,255,0.4); }
+.status-tag.ward     { color:#ffcc44; border:1px solid rgba(255,204,68,0.4); }
+.status-tag.weakened { color:#cc88ff; border:1px solid rgba(204,136,255,0.4); }
+
+/* New char card hover states */
+#pick-sylvara:hover, #pick-sylvara:active { border-color:#44cc88; box-shadow:0 0 20px rgba(68,204,136,0.25); }
+#pick-aurelia:hover, #pick-aurelia:active { border-color:#ffcc44; box-shadow:0 0 20px rgba(255,204,68,0.25); }
+
+/* New character sprites */
+.char-sprite-sylvara { background-image:url('../sprites/mage-green.png'); }
+.char-sprite-aurelia { background-image:url('../sprites/mage-yellow.png'); }
+
+/* Compact sprite size inside the 2×2 grid */
+.char-cards .char-sprite { width:60px; height:80px; background-size:240px 400px; }
