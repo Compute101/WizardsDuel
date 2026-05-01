@@ -729,8 +729,10 @@ function launchMaze(spell,cb){
   const mw=Math.min(cw,(window.innerWidth||360)-32);
   mc.style.width=mw+'px'; mc.style.height='auto';
 
-  const mk={x:.5,y:.5,dir:1,spd:.20};
+  const mk={col:0,row:0,x:0.5,y:0.5,fromX:0.5,fromY:0.5,dir:-1,moving:false,moveT:0};
   const goal={col:COLS-1,row:ROWS-1};
+  const trail=[];
+  const MOVE_DUR=160;
 
   // Lightning sparks
   const sparks=Array.from({length:28},()=>({
@@ -775,27 +777,31 @@ function launchMaze(spell,cb){
   }
   function finish(ok){ if(done) return; done=true; cleanup(); puzzleFinish(ok,cb); }
 
-  function update(){
-    const col=Math.floor(mk.x), row=Math.floor(mk.y);
-    const cx=col+0.5, cy=row+0.5;
-    if(mk.dir===1||mk.dir===3){
-      mk.y+=(cy-mk.y)*0.2;
-      const step=mk.dir===1?mk.spd:-mk.spd;
-      const leading=mk.x+step+(mk.dir===1?0.5:-0.5);
-      const nextCol=Math.floor(leading);
-      if(nextCol!==col&&!canGo(walls,col,row,mk.dir)) mk.x=cx;
-      else mk.x+=step;
-    } else {
-      mk.x+=(cx-mk.x)*0.2;
-      const step=mk.dir===2?mk.spd:-mk.spd;
-      const leading=mk.y+step+(mk.dir===2?0.5:-0.5);
-      const nextRow=Math.floor(leading);
-      if(nextRow!==row&&!canGo(walls,col,row,mk.dir)) mk.y=cy;
-      else mk.y+=step;
+  function update(dt){
+    // Animate step between cell centres
+    if(mk.moving){
+      mk.moveT+=dt;
+      const p=Math.min(1,mk.moveT/MOVE_DUR);
+      mk.x=mk.fromX+(mk.col+0.5-mk.fromX)*p;
+      mk.y=mk.fromY+(mk.row+0.5-mk.fromY)*p;
+      if(p>=1){
+        mk.x=mk.col+0.5; mk.y=mk.row+0.5;
+        mk.moving=false;
+        if(mk.col===goal.col&&mk.row===goal.row) finish(true);
+      }
     }
-    mk.x=Math.max(0.05,Math.min(COLS-0.05,mk.x));
-    mk.y=Math.max(0.05,Math.min(ROWS-0.05,mk.y));
-    if(Math.floor(mk.x)===goal.col&&Math.floor(mk.y)===goal.row) finish(true);
+    // At a junction: step if the current direction is open
+    if(!mk.moving&&mk.dir>=0&&canGo(walls,mk.col,mk.row,mk.dir)){
+      trail.push({x:mk.x,y:mk.y,life:1});
+      mk.fromX=mk.x; mk.fromY=mk.y;
+      mk.col+=DC[mk.dir]; mk.row+=DR[mk.dir];
+      mk.moving=true; mk.moveT=0;
+    }
+    // Fade trail
+    for(let i=trail.length-1;i>=0;i--){
+      trail[i].life-=dt/700;
+      if(trail[i].life<=0) trail.splice(i,1);
+    }
   }
 
   function drawMazeFrame(){
@@ -861,25 +867,29 @@ function launchMaze(spell,cb){
     }
     mx.stroke();
 
-    // Player orb — yellow lightning
+    // Fading trail
+    trail.forEach(tr=>{
+      const tx=ox+tr.x*CELL, ty=oy+tr.y*CELL;
+      mx.globalAlpha=tr.life*0.55;
+      mx.fillStyle='#ffee44';
+      mx.shadowColor='#ffff88'; mx.shadowBlur=8;
+      mx.beginPath(); mx.arc(tx,ty,CELL*0.18*tr.life,0,Math.PI*2); mx.fill();
+    });
+    mx.globalAlpha=1; mx.shadowBlur=0;
+
+    // Player — lightning bolt with glow
     const px=ox+mk.x*CELL, py=oy+mk.y*CELL;
-    const pulseO=.65+.35*Math.sin(t/200);
-    mx.fillStyle=`rgba(255,238,68,${pulseO})`;
-    mx.shadowColor='#ffee44'; mx.shadowBlur=16;
-    mx.beginPath(); mx.arc(px,py,CELL*.26,0,Math.PI*2); mx.fill(); mx.shadowBlur=0;
-    const al=CELL*.22, adx=DC[mk.dir]*al, ady=DR[mk.dir]*al;
-    const ang=Math.atan2(ady,adx);
-    mx.strokeStyle='rgba(255,255,255,0.8)'; mx.lineWidth=1.5;
-    mx.beginPath(); mx.moveTo(px,py); mx.lineTo(px+adx,py+ady); mx.stroke();
-    mx.fillStyle='rgba(255,255,255,0.8)';
-    mx.beginPath();
-    mx.moveTo(px+adx,py+ady);
-    mx.lineTo(px+adx-Math.cos(ang-.4)*al*.45,py+ady-Math.sin(ang-.4)*al*.45);
-    mx.lineTo(px+adx-Math.cos(ang+.4)*al*.45,py+ady-Math.sin(ang+.4)*al*.45);
-    mx.closePath(); mx.fill();
+    const pulse=0.6+0.4*Math.sin(t/150);
+    mx.font=`bold ${Math.round(CELL*0.85)}px serif`;
+    mx.textAlign='center'; mx.textBaseline='middle';
+    mx.fillStyle='#ffffff';
+    mx.shadowColor='#ffee44'; mx.shadowBlur=18+10*pulse;
+    mx.fillText('⚡',px,py);
+    mx.shadowBlur=0;
   }
 
-  function frame(){ if(done) return; update(); drawMazeFrame(); mazeRAF=requestAnimationFrame(frame); }
+  let lastMazeTs=0;
+  function frame(ts){ if(done) return; const dt=lastMazeTs?Math.min(ts-lastMazeTs,100):16; lastMazeTs=ts; update(dt); drawMazeFrame(); mazeRAF=requestAnimationFrame(frame); }
   showScreen('puzzle-screen');
   mazeRAF=requestAnimationFrame(frame);
 }
