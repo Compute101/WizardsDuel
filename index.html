@@ -15,6 +15,12 @@
     <div class="rune-icon">🧙</div>
     <div class="title-text">Wizard's<br>Duel</div>
     <div class="title-sub">★ &nbsp;Master of Arcane Arts&nbsp; ★</div>
+    <div class="diff-label">Difficulty</div>
+    <div class="diff-selector">
+      <button class="diff-btn" data-diff="easy">Easy</button>
+      <button class="diff-btn active" data-diff="normal">Normal</button>
+      <button class="diff-btn" data-diff="hard">Hard</button>
+    </div>
     <button class="btn" id="btn-start">⚔ Begin Duel</button>
     <button class="btn" id="btn-help">📜 How to Play</button>
     <div class="hint">CAST SPELLS · RAISE SHIELDS · SOLVE MAZES<br>DEFEAT YOUR RIVAL WIZARD</div>
@@ -40,6 +46,7 @@
         <div class="manapips" id="mp2"></div>
       </div>
     </div>
+    <div id="statusbar"></div>
     <canvas id="bcanvas"></canvas>
     <div id="actionbar">
       <button class="abtn" id="bshield">
@@ -49,9 +56,17 @@
         <span class="ico">✨</span>Channel<span class="cost">+2 Mana</span>
       </button>
       <button class="abtn" id="bspell">
-        <span class="ico">⚡</span>Cast Spell<span class="cost">3 Mana</span>
+        <span class="ico">✨</span>Cast Spell<span class="cost" id="spell-cost-label">2+ Mana</span>
       </button>
     </div>
+  </div>
+
+  <!-- SPELL PICKER -->
+  <div id="spell-screen" class="screen">
+    <div class="sp-header">Choose Your Spell</div>
+    <div class="sp-subhead">Each element unlocks a different challenge</div>
+    <div class="sp-grid" id="sp-grid"></div>
+    <button class="btn sp-cancel-btn" id="sp-cancel">✕ Cancel</button>
   </div>
 
   <!-- PUZZLE -->
@@ -80,11 +95,14 @@
     <div style="max-width:380px;width:100%;background:#1a0a30;border:2px solid #c9a84c;border-radius:8px;padding:24px;text-align:left;">
       <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#f0cc6a;text-align:center;margin-bottom:18px;">How to Play</div>
       <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.9;">
-        <div style="margin-bottom:10px;">🛡 <b style="color:#4af0ff;">SHIELD</b> (1 Mana)<br>Raises a barrier. Reduces next spell hit by 70%.</div>
+        <div style="margin-bottom:10px;">🛡 <b style="color:#4af0ff;">SHIELD</b> (1 Mana)<br>Reduces next hit by 70%. Lightning pierces it.</div>
         <div style="margin-bottom:10px;">✨ <b style="color:#aa66ff;">CHANNEL</b><br>Restore 2 mana. Skip your attack this turn.</div>
-        <div style="margin-bottom:14px;">⚡ <b style="color:#c9a84c;">CAST SPELL</b> (3 Mana)<br>Opens the Maze! Navigate your orb to the ★.</div>
-        <div style="color:rgba(255,255,255,0.55);font-size:11px;letter-spacing:1px;border-top:1px solid rgba(201,168,76,0.2);padding-top:12px;">
-          MAZE: Use arrow keys or d-pad to change direction.<br>Your orb moves automatically — walls block you.<br>Run out of time? Spell fizzles.
+        <div style="margin-bottom:14px;">✨ <b style="color:#c9a84c;">CAST SPELL</b><br>Choose an elemental spell — each has its own puzzle and effect.</div>
+        <div style="color:rgba(255,255,255,0.7);font-size:11px;line-height:2;border-top:1px solid rgba(201,168,76,0.2);padding-top:12px;">
+          🔥 <b>Inferno</b> (4) — Burns 5 dmg/round × 2 · Ember Pattern<br>
+          ⚡ <b>Lightning</b> (3) — Pierces shields · Arc Conduit maze<br>
+          ❄️ <b>Frost Nova</b> (2) — Freezes enemy turn · Ice Slide<br>
+          🌀 <b>Arcane Surge</b> (3) — Wild 15–55 dmg · Memory Runes
         </div>
       </div>
       <button class="btn" id="btn-closehelp" style="margin-top:20px;width:100%;">Got It ✓</button>
