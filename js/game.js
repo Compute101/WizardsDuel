@@ -30,7 +30,7 @@ const CHAR_DEFS={
     sprite:'sprites/mage-dark.png', col:'#ff4a6e',
     hp:80, startMana:7, channelAmt:4, dmgMult:1.10,
     specials:[
-      {id:'empower',   label:'Empower',    ico:'💪', cost:4, costLabel:'4 Mana'},
+      {id:'empower',   label:'Empower',    ico:'💪', cost:0, costLabel:'Free'},
       {id:'bloodpact', label:'Blood Pact', ico:'🩸', cost:0, costLabel:'0 Mana'},
     ],
   },
@@ -425,8 +425,8 @@ function actSpecial(charKey,idx){
 
   if(charKey==='mal'){
     if(idx===0){ // Empower
-      if(gs.p1.mana<4||gs.p1.empowered) return;
-      gs.p1.mana-=4; gs.p1.empowered=true;
+      if(gs.p1.empowered) return;
+      gs.p1.empowered=true;
       addFloat(bW*.22,bH*.33,'💪 Empowered!','#ff4a6e',12);
       spawnParts(bW*.22,bH*.38,'#ff4a6e',10);
       anim('p1','cast',700); endMyTurn();
@@ -492,11 +492,11 @@ function castSpell(spell,target,tx,ty,caster){
   let dmg=Math.round(spell.dmg*casterCfg.dmgMult);
   if(spell.element==='arcane') dmg=Math.round((15+Math.floor(Math.random()*41))*casterCfg.dmgMult);
 
-  // Caster: Empower (+22% on top of dmgMult)
+  // Caster: Empower (+50% on top of dmgMult)
   if(casterState.empowered){
-    dmg=Math.round(dmg*1.22);
+    dmg=Math.round(dmg*1.50);
     casterState.empowered=false;
-    addFloat(tx,ty-36,'💪 +22% Empowered!',casterCfg.col,10);
+    addFloat(tx,ty-36,'💪 +50% Empowered!',casterCfg.col,10);
   }
 
   // Caster: Weakened (−35%)
@@ -620,14 +620,14 @@ function doAI(){
     }
   } else if(p2Key==='mal'){
     const bpAvail=ai.hp>22 && ai.mana===0;
-    const empAvail=!ai.empowered && ai.mana>=4 && affordable.find(s=>s.element==='fire');
+    const empAvail=!ai.empowered && affordable.find(s=>s.element==='fire');
     if(bpAvail){
       ai.hp=Math.max(1,ai.hp-22); ai.mana=Math.min(MAX_MANA,ai.mana+7);
       addFloat(bW*.78,bH*.33,'🩸 Blood Pact!','#ff4a6e',11);
       spawnParts(bW*.78,bH*.38,'#ff4a6e',8);
       anim('p2','cast',700); usedSpecial=true;
     } else if(empAvail && Math.random()<0.55){
-      ai.mana-=4; ai.empowered=true;
+      ai.empowered=true;
       addFloat(bW*.78,bH*.33,'💪 Empowered!','#ff4a6e',12);
       anim('p2','cast',700); usedSpecial=true;
     }

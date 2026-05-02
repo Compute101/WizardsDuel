@@ -34,9 +34,9 @@ CHARS = {
     # Tank: reliable shield + counter, strong damage to compensate for being reactive
     'eldrad':  dict(name='ELDRIN',   hp=115, startMana=5,  channelAmt=4, dmgMult=1.20,
                     shieldHits=2, shieldAbsorb=0.70, counterDmg=20),
-    # Balanced burst: fire+empower = 38*1.10*1.22 ≈ 51 dmg max
+    # Burst: free empower +50% = 38*1.10*1.50 ≈ 63 dmg ≈ Inferno+free FrostNova
     'mal':     dict(name='MALACHAR', hp=80,  startMana=7,  channelAmt=4, dmgMult=1.10,
-                    empowerMult=1.22, bpCost=22, bpGain=7),
+                    empowerMult=1.50, bpCost=22, bpGain=7),
     # Sustain: heal is decent; Entangle enables tempo plays
     'sylvara': dict(name='SYLVARA',  hp=92,  startMana=6,  channelAmt=4, dmgMult=1.0,
                     healAmt=20, entangleCost=5),
@@ -142,7 +142,7 @@ def ai_act(me: PS, opp: PS) -> str:
         if me.mana == 0 and me.hp > bp_cost:
             return 'special:bloodpact'
         affordable_fire = any(s['element'] == 'fire' and me.mana >= s['cost'] for s in SPELLS)
-        if not me.empowered and me.mana >= 4 and affordable_fire and random.random() < 0.55:
+        if not me.empowered and affordable_fire and random.random() < 0.55:
             return 'special:empower'
 
     # ── SYLVARA ──
@@ -208,7 +208,7 @@ def simulate_battle(key1, key2):
                 p.mana -= 3; p.counter = True
 
             elif action == 'special:empower':
-                p.mana -= 4; p.empowered = True
+                p.empowered = True
 
             elif action == 'special:bloodpact':
                 c1 = CHARS[key1]
@@ -268,7 +268,7 @@ def simulate_battle(key1, key2):
                 ai.mana -= 3; ai.counter = True
 
             elif action == 'special:empower':
-                ai.mana -= 4; ai.empowered = True
+                ai.empowered = True
 
             elif action == 'special:bloodpact':
                 c2 = CHARS[key2]
