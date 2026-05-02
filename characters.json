@@ -1,0 +1,70 @@
+{
+  "eldrad": {
+    "name": "ELDRIN",
+    "title": "The Stalwart",
+    "sprite": "sprites/mage-light.png",
+    "col": "#4af0ff",
+    "hp": 115,
+    "startMana": 5,
+    "channelAmt": 4,
+    "dmgMult": 1.20,
+    "shieldHits": 2,
+    "shieldAbsorb": 0.70,
+    "counterDmg": 20,
+    "specials": [
+      {"id": "shield",  "label": "Shield",  "ico": "🛡", "cost": 3, "costLabel": "3 Mana"},
+      {"id": "counter", "label": "Counter", "ico": "⚡", "cost": 3, "costLabel": "3 Mana"}
+    ]
+  },
+  "mal": {
+    "name": "MALACHAR",
+    "title": "The Relentless",
+    "sprite": "sprites/mage-dark.png",
+    "col": "#ff4a6e",
+    "hp": 80,
+    "startMana": 7,
+    "channelAmt": 4,
+    "dmgMult": 1.10,
+    "empowerMult": 1.50,
+    "bpCost": 22,
+    "bpGain": 7,
+    "specials": [
+      {"id": "empower",   "label": "Empower",    "ico": "💪", "cost": 0, "costLabel": "Free"},
+      {"id": "bloodpact", "label": "Blood Pact", "ico": "🩸", "cost": 0, "costLabel": "Free"}
+    ]
+  },
+  "sylvara": {
+    "name": "SYLVARA",
+    "title": "The Verdant",
+    "sprite": "sprites/mage-green.png",
+    "col": "#44cc88",
+    "hp": 92,
+    "startMana": 6,
+    "channelAmt": 4,
+    "dmgMult": 1.0,
+    "healAmt": 20,
+    "entangleDmg": 12,
+    "specials": [
+      {"id": "heal",     "label": "Heal",     "ico": "💚", "cost": 5, "costLabel": "5 Mana"},
+      {"id": "entangle", "label": "Entangle", "ico": "🌿", "cost": 5, "costLabel": "5 Mana"}
+    ]
+  },
+  "aurelia": {
+    "name": "AURELIA",
+    "title": "The Radiant",
+    "sprite": "sprites/mage-yellow.png",
+    "col": "#ffcc44",
+    "hp": 90,
+    "startMana": 6,
+    "channelAmt": 4,
+    "dmgMult": 1.10,
+    "wardTurns": 2,
+    "wardAbsorb": 0.25,
+    "wardFizzle": 0.15,
+    "weakenMult": 0.65,
+    "specials": [
+      {"id": "ward",   "label": "Ward",   "ico": "✨", "cost": 3, "costLabel": "3 Mana"},
+      {"id": "weaken", "label": "Weaken", "ico": "🌀", "cost": 3, "costLabel": "3 Mana"}
+    ]
+  }
+}

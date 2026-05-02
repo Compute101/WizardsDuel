@@ -12,50 +12,10 @@ const SPELLS=[
    effectLabel:'Wild: 15–55 damage'},
 ];
 
-// ── CHARACTER DEFINITIONS ──────────────────────────────────
-// Shield note: set to 2 on activation so the endMyTurn() decrement (→1) still
-// leaves the shield active during the AI's attack this round.
-const CHAR_DEFS={
-  eldrad:{
-    name:'ELDRIN', title:'The Stalwart',
-    sprite:'sprites/mage-light.png', col:'#4af0ff',
-    hp:115, startMana:5, channelAmt:4, dmgMult:1.20,
-    specials:[
-      {id:'shield',  label:'Shield',  ico:'🛡', cost:3, costLabel:'3 Mana'},
-      {id:'counter', label:'Counter', ico:'⚡', cost:3, costLabel:'3 Mana'},
-    ],
-  },
-  mal:{
-    name:'MALACHAR', title:'The Relentless',
-    sprite:'sprites/mage-dark.png', col:'#ff4a6e',
-    hp:80, startMana:7, channelAmt:4, dmgMult:1.10,
-    specials:[
-      {id:'empower',   label:'Empower',    ico:'💪', cost:0, costLabel:'Free'},
-      {id:'bloodpact', label:'Blood Pact', ico:'🩸', cost:0, costLabel:'0 Mana'},
-    ],
-  },
-  sylvara:{
-    name:'SYLVARA', title:'The Verdant',
-    sprite:'sprites/mage-green.png', col:'#44cc88',
-    hp:92, startMana:6, channelAmt:4, dmgMult:1.0,
-    specials:[
-      {id:'heal',     label:'Heal',    ico:'💚', cost:5, costLabel:'5 Mana'},
-      {id:'entangle', label:'Entangle',ico:'🌿', cost:5, costLabel:'5 Mana'},
-    ],
-  },
-  aurelia:{
-    name:'AURELIA', title:'The Radiant',
-    sprite:'sprites/mage-yellow.png', col:'#ffcc44',
-    hp:90, startMana:6, channelAmt:4, dmgMult:1.10,
-    specials:[
-      {id:'ward',   label:'Ward',  ico:'✨', cost:3, costLabel:'3 Mana'},
-      {id:'weaken', label:'Weaken',ico:'🌀', cost:3, costLabel:'3 Mana'},
-    ],
-  },
-};
-
+// ── CHARACTER DEFINITIONS (loaded from characters.json) ───────
+let CHAR_DEFS={};
 let p1Key='eldrad', p2Key='mal';
-let p1Cfg=CHAR_DEFS.eldrad, p2Cfg=CHAR_DEFS.mal;
+let p1Cfg, p2Cfg;
 
 // ── DIFFICULTY ─────────────────────────────────────────────
 let diffMult=1.0, diffName='normal';
@@ -408,15 +368,17 @@ function act(type){
 function actSpecial(charKey,idx){
   if(!gs.myTurn||gs.busy) return;
 
+  const sp=p1Cfg.specials;
+
   if(charKey==='eldrad'){
     if(idx===0){ // Shield
-      if(gs.p1.mana<3||gs.p1.shield>0) return;
-      gs.p1.mana-=3; gs.p1.shield=2; // 2 so endMyTurn tick → 1, still active for AI
+      if(gs.p1.mana<sp[0].cost||gs.p1.shield>0) return;
+      gs.p1.mana-=sp[0].cost; gs.p1.shield=p1Cfg.shieldHits;
       addFloat(bW*.22,bH*.33,'🛡 Shielded!','#4af0ff',12);
       anim('p1','shield',700); endMyTurn();
     } else { // Counter
-      if(gs.p1.mana<3||!gs.p1.shield) return;
-      gs.p1.mana-=3; gs.p1.counter=true;
+      if(gs.p1.mana<sp[1].cost||!gs.p1.shield) return;
+      gs.p1.mana-=sp[1].cost; gs.p1.counter=true;
       addFloat(bW*.22,bH*.33,'⚡ Counter Ready!','#4af0ff',12);
       anim('p1','shield',700); endMyTurn();
     }
@@ -431,34 +393,31 @@ function actSpecial(charKey,idx){
       spawnParts(bW*.22,bH*.38,'#ff4a6e',10);
       anim('p1','cast',700); endMyTurn();
     } else { // Blood Pact
-      if(gs.p1.hp<=16) return;
-      gs.p1.hp=Math.max(1,gs.p1.hp-22);
-      gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+7);
-      addFloat(bW*.22,bH*.33,'🩸 -22HP +7 Mana','#ff4a6e',11);
+      if(gs.p1.hp<=p1Cfg.bpCost) return;
+      gs.p1.hp=Math.max(1,gs.p1.hp-p1Cfg.bpCost);
+      gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+p1Cfg.bpGain);
+      addFloat(bW*.22,bH*.33,'🩸 -'+p1Cfg.bpCost+'HP +'+p1Cfg.bpGain+' Mana','#ff4a6e',11);
       spawnParts(bW*.22,bH*.38,'#ff4a6e',10);
-      anim('p1','cast',700);
-      refreshHUD();
-      endMyTurn();
+      anim('p1','cast',700); refreshHUD(); endMyTurn();
     }
     return;
   }
 
   if(charKey==='sylvara'){
     if(idx===0){ // Heal
-      if(gs.p1.mana<5||gs.p1.hp>=gs.p1.maxHp) return;
-      gs.p1.mana-=5;
-      const healed=Math.min(20,gs.p1.maxHp-gs.p1.hp);
-      gs.p1.hp=Math.min(gs.p1.maxHp,gs.p1.hp+20);
+      if(gs.p1.mana<sp[0].cost||gs.p1.hp>=gs.p1.maxHp) return;
+      gs.p1.mana-=sp[0].cost;
+      const healed=Math.min(p1Cfg.healAmt,gs.p1.maxHp-gs.p1.hp);
+      gs.p1.hp=Math.min(gs.p1.maxHp,gs.p1.hp+p1Cfg.healAmt);
       addFloat(bW*.22,bH*.33,'+'+healed+' HP 💚','#44cc88',14);
       spawnParts(bW*.22,bH*.38,'#44cc88',14);
       anim('p1','cast',700); endMyTurn();
     } else { // Entangle
-      if(gs.p1.mana<5||gs.p2.frozen) return;
-      gs.p1.mana-=5;
-      gs.p2.hp=Math.max(0,gs.p2.hp-12);
-      gs.p2.frozen=true;
+      if(gs.p1.mana<sp[1].cost||gs.p2.frozen) return;
+      gs.p1.mana-=sp[1].cost;
+      gs.p2.hp=Math.max(0,gs.p2.hp-p1Cfg.entangleDmg); gs.p2.frozen=true;
       spawnParts(bW*.78,bH*.38,'#44cc88',14);
-      addFloat(bW*.78,bH*.33,'-12 🌿 Entangled!','#44cc88',11);
+      addFloat(bW*.78,bH*.33,'-'+p1Cfg.entangleDmg+' 🌿 Entangled!','#44cc88',11);
       anim('p1','cast',800); anim('p2','hit',800);
       checkWin(); endMyTurn();
     }
@@ -467,14 +426,14 @@ function actSpecial(charKey,idx){
 
   if(charKey==='aurelia'){
     if(idx===0){ // Ward
-      if(gs.p1.mana<3||gs.p1.ward>0) return;
-      gs.p1.mana-=3; gs.p1.ward=2;
+      if(gs.p1.mana<sp[0].cost||gs.p1.ward>0) return;
+      gs.p1.mana-=sp[0].cost; gs.p1.ward=p1Cfg.wardTurns;
       addFloat(bW*.22,bH*.33,'✨ Ward Active!','#ffcc44',12);
       spawnParts(bW*.22,bH*.38,'#ffcc44',10);
       anim('p1','shield',700); endMyTurn();
     } else { // Weaken
-      if(gs.p1.mana<3||gs.p2.weakened) return;
-      gs.p1.mana-=3; gs.p2.weakened=true;
+      if(gs.p1.mana<sp[1].cost||gs.p2.weakened) return;
+      gs.p1.mana-=sp[1].cost; gs.p2.weakened=true;
       addFloat(bW*.78,bH*.33,'🌀 Weakened!','#ffcc44',12);
       spawnParts(bW*.78,bH*.38,'#ffcc44',10);
       anim('p1','cast',700); endMyTurn();
@@ -489,33 +448,39 @@ function castSpell(spell,target,tx,ty,caster){
   const casterState=caster==='p1'?gs.p1:gs.p2;
   const targetState=target; // gs.p1 or gs.p2 passed directly
 
+  const targetCfg=target===gs.p1?p1Cfg:p2Cfg;
+  const oppCfg   =caster==='p1'?p2Cfg:p1Cfg;
+
   let dmg=Math.round(spell.dmg*casterCfg.dmgMult);
   if(spell.element==='arcane') dmg=Math.round((15+Math.floor(Math.random()*41))*casterCfg.dmgMult);
 
-  // Caster: Empower (+50% on top of dmgMult)
+  // Caster: Empower
   if(casterState.empowered){
-    dmg=Math.round(dmg*1.50);
+    const pct=Math.round((casterCfg.empowerMult-1)*100);
+    dmg=Math.round(dmg*casterCfg.empowerMult);
     casterState.empowered=false;
-    addFloat(tx,ty-36,'💪 +50% Empowered!',casterCfg.col,10);
+    addFloat(tx,ty-36,'💪 +'+pct+'% Empowered!',casterCfg.col,10);
   }
 
-  // Caster: Weakened (−35%)
+  // Caster: Weakened
   if(casterState.weakened){
-    dmg=Math.round(dmg*0.65);
+    const pct=Math.round((1-oppCfg.weakenMult)*100);
+    dmg=Math.round(dmg*oppCfg.weakenMult);
     casterState.weakened=false;
-    addFloat(tx,ty-36,'🌀 Weakened −35%','#ffcc44',10);
+    addFloat(tx,ty-36,'🌀 Weakened −'+pct+'%','#ffcc44',10);
   }
 
-  // Target: Ward (check before shield)
+  // Target: Ward
   if(targetState.ward>0){
-    if(Math.random()<0.15){
+    if(Math.random()<targetCfg.wardFizzle){
       addFloat(tx,ty-20,'✨ Fizzled!','#ffcc44',11);
       targetState.ward--;
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
       return;
     }
-    dmg=Math.round(dmg*0.75); // 25% absorb
-    addFloat(tx,ty-20,'✨ Warded!','#ffcc44',11);
+    const pct=Math.round(targetCfg.wardAbsorb*100);
+    dmg=Math.round(dmg*(1-targetCfg.wardAbsorb));
+    addFloat(tx,ty-20,'✨ Warded −'+pct+'%!','#ffcc44',11);
     targetState.ward--;
   }
 
@@ -528,18 +493,19 @@ function castSpell(spell,target,tx,ty,caster){
       targetState.shield=0;
       addFloat(tx,ty-20,'⚡ Pierced!','#ffee44',11);
     } else {
-      dmg=Math.round(dmg*.3);
+      const pct=Math.round(targetCfg.shieldAbsorb*100);
+      dmg=Math.round(dmg*(1-targetCfg.shieldAbsorb));
       targetState.shield=0;
-      addFloat(tx,ty-20,'🛡 Absorbed!','#4af0ff',11);
+      addFloat(tx,ty-20,'🛡 −'+pct+'% Absorbed!','#4af0ff',11);
     }
   }
 
-  // Counter reflect (15% damage absorb already handled above)
+  // Counter reflect
   if(counterTriggered){
     const casterX=caster==='p1'?bW*.22:bW*.78;
-    casterState.hp=Math.max(0,casterState.hp-20);
+    casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
     targetState.counter=false;
-    addFloat(casterX,bH*.33,'⚡ Counter! −20','#4af0ff',11);
+    addFloat(casterX,bH*.33,'⚡ Counter! −'+targetCfg.counterDmg,'#4af0ff',11);
     spawnParts(casterX,bH*.38,'#4af0ff',8);
     checkWin(); if(!battleRunning) return;
   }
@@ -608,21 +574,22 @@ function doAI(){
   let usedSpecial=false;
 
   // ── AI specials by character ──
+  const asp=p2Cfg.specials;
   if(p2Key==='eldrad'){
-    if(ai.shield===0 && ai.mana>=3 && ai.hp<75 && Math.random()<0.60){
-      ai.mana-=3; ai.shield=2;
+    if(ai.shield===0 && ai.mana>=asp[0].cost && ai.hp<75 && Math.random()<0.60){
+      ai.mana-=asp[0].cost; ai.shield=p2Cfg.shieldHits;
       addFloat(bW*.78,bH*.33,'🛡 Shield!','#4af0ff',12);
       anim('p2','shield',700); usedSpecial=true;
-    } else if(ai.shield>0 && !ai.counter && ai.mana>=3 && Math.random()<0.50){
-      ai.mana-=3; ai.counter=true;
+    } else if(ai.shield>0 && !ai.counter && ai.mana>=asp[1].cost && Math.random()<0.50){
+      ai.mana-=asp[1].cost; ai.counter=true;
       addFloat(bW*.78,bH*.33,'⚡ Counter!','#4af0ff',12);
       anim('p2','shield',700); usedSpecial=true;
     }
   } else if(p2Key==='mal'){
-    const bpAvail=ai.hp>22 && ai.mana===0;
+    const bpAvail=ai.hp>p2Cfg.bpCost && ai.mana===0;
     const empAvail=!ai.empowered && affordable.find(s=>s.element==='fire');
     if(bpAvail){
-      ai.hp=Math.max(1,ai.hp-22); ai.mana=Math.min(MAX_MANA,ai.mana+7);
+      ai.hp=Math.max(1,ai.hp-p2Cfg.bpCost); ai.mana=Math.min(MAX_MANA,ai.mana+p2Cfg.bpGain);
       addFloat(bW*.78,bH*.33,'🩸 Blood Pact!','#ff4a6e',11);
       spawnParts(bW*.78,bH*.38,'#ff4a6e',8);
       anim('p2','cast',700); usedSpecial=true;
@@ -632,27 +599,27 @@ function doAI(){
       anim('p2','cast',700); usedSpecial=true;
     }
   } else if(p2Key==='sylvara'){
-    if(ai.hp<50 && ai.mana>=5 && Math.random()<0.70){
-      ai.mana-=5; ai.hp=Math.min(ai.maxHp,ai.hp+20);
-      addFloat(bW*.78,bH*.33,'+20 HP 💚','#44cc88',13);
+    if(ai.hp<50 && ai.mana>=asp[0].cost && Math.random()<0.70){
+      ai.mana-=asp[0].cost; ai.hp=Math.min(ai.maxHp,ai.hp+p2Cfg.healAmt);
+      addFloat(bW*.78,bH*.33,'+'+p2Cfg.healAmt+' HP 💚','#44cc88',13);
       spawnParts(bW*.78,bH*.38,'#44cc88',10);
       anim('p2','cast',700); usedSpecial=true;
-    } else if(gs.p1.mana>=9 && ai.mana>=5 && !gs.p1.frozen && Math.random()<0.55){
-      ai.mana-=5;
-      gs.p1.hp=Math.max(0,gs.p1.hp-12); gs.p1.frozen=true;
+    } else if(gs.p1.mana>=9 && ai.mana>=asp[1].cost && !gs.p1.frozen && Math.random()<0.55){
+      ai.mana-=asp[1].cost;
+      gs.p1.hp=Math.max(0,gs.p1.hp-p2Cfg.entangleDmg); gs.p1.frozen=true;
       spawnParts(bW*.22,bH*.38,'#44cc88',14);
-      addFloat(bW*.22,bH*.33,'-12 🌿 Entangled!','#44cc88',11);
+      addFloat(bW*.22,bH*.33,'-'+p2Cfg.entangleDmg+' 🌿 Entangled!','#44cc88',11);
       anim('p2','cast',800); anim('p1','hit',800);
       checkWin(); if(!battleRunning) return;
       usedSpecial=true;
     }
   } else if(p2Key==='aurelia'){
-    if(ai.ward===0 && ai.mana>=3 && Math.random()<0.45){
-      ai.mana-=3; ai.ward=2;
+    if(ai.ward===0 && ai.mana>=asp[0].cost && Math.random()<0.45){
+      ai.mana-=asp[0].cost; ai.ward=p2Cfg.wardTurns;
       addFloat(bW*.78,bH*.33,'✨ Ward!','#ffcc44',12);
       anim('p2','shield',700); usedSpecial=true;
-    } else if(!gs.p1.weakened && ai.mana>=3 && gs.p1.mana>=9 && Math.random()<0.50){
-      ai.mana-=3; gs.p1.weakened=true;
+    } else if(!gs.p1.weakened && ai.mana>=asp[1].cost && gs.p1.mana>=9 && Math.random()<0.50){
+      ai.mana-=asp[1].cost; gs.p1.weakened=true;
       addFloat(bW*.22,bH*.33,'🌀 Weakened!','#ffcc44',12);
       spawnParts(bW*.22,bH*.38,'#ffcc44',8);
       anim('p2','cast',700); usedSpecial=true;
@@ -1622,7 +1589,10 @@ function updateActionBar(cfg){
 }
 
 // ── BUTTON WIRING ──────────────────────────────────────────
-window.addEventListener('DOMContentLoaded',()=>{
+window.addEventListener('DOMContentLoaded', async ()=>{
+  const r=await fetch('characters.json');
+  CHAR_DEFS=await r.json();
+  p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key];
   document.querySelectorAll('.diff-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
