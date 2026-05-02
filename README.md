@@ -1,2 +1,2 @@
 # WizardsDuel
-Html game where two wizards duel
+Html game where wizards duel
