@@ -13,18 +13,48 @@ const SPELLS=[
 ];
 
 // ── CHARACTER DEFINITIONS ──────────────────────────────────
+// Shield note: set to 2 on activation so the endMyTurn() decrement (→1) still
+// leaves the shield active during the AI's attack this round.
 const CHAR_DEFS={
   eldrad:{
-    name:'ELDRAD', title:'The Stalwart',
+    name:'ELDRIN', title:'The Stalwart',
     sprite:'sprites/mage-light.png', col:'#4af0ff',
-    hp:110, startMana:5, channelAmt:4, shieldTurns:3, dmgMult:1.0,
+    hp:115, startMana:5, channelAmt:4, dmgMult:1.20,
+    specials:[
+      {id:'shield',  label:'Shield',  ico:'🛡', cost:3, costLabel:'3 Mana'},
+      {id:'counter', label:'Counter', ico:'⚡', cost:3, costLabel:'3 Mana'},
+    ],
   },
   mal:{
-    name:'MALACHADOR', title:'The Relentless',
+    name:'MALACHAR', title:'The Relentless',
     sprite:'sprites/mage-dark.png', col:'#ff4a6e',
-    hp:85, startMana:7, channelAmt:5, shieldTurns:1, dmgMult:1.3,
+    hp:80, startMana:7, channelAmt:4, dmgMult:1.10,
+    specials:[
+      {id:'empower',   label:'Empower',    ico:'💪', cost:4, costLabel:'4 Mana'},
+      {id:'bloodpact', label:'Blood Pact', ico:'🩸', cost:0, costLabel:'0 Mana'},
+    ],
+  },
+  sylvara:{
+    name:'SYLVARA', title:'The Verdant',
+    sprite:'sprites/mage-green.png', col:'#44cc88',
+    hp:92, startMana:6, channelAmt:4, dmgMult:1.0,
+    specials:[
+      {id:'heal',     label:'Heal',    ico:'💚', cost:5, costLabel:'5 Mana'},
+      {id:'entangle', label:'Entangle',ico:'🌿', cost:5, costLabel:'5 Mana'},
+    ],
+  },
+  aurelia:{
+    name:'AURELIA', title:'The Radiant',
+    sprite:'sprites/mage-yellow.png', col:'#ffcc44',
+    hp:90, startMana:6, channelAmt:4, dmgMult:1.10,
+    specials:[
+      {id:'ward',   label:'Ward',  ico:'✨', cost:3, costLabel:'3 Mana'},
+      {id:'weaken', label:'Weaken',ico:'🌀', cost:3, costLabel:'3 Mana'},
+    ],
   },
 };
+
+let p1Key='eldrad', p2Key='mal';
 let p1Cfg=CHAR_DEFS.eldrad, p2Cfg=CHAR_DEFS.mal;
 
 // ── DIFFICULTY ─────────────────────────────────────────────
@@ -37,8 +67,12 @@ let mazeRAF=null, mazeTid=null;
 
 function newState(){
   gs={
-    p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana, shield:0, burn:0, frozen:false},
-    p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana, shield:0, burn:0, frozen:false},
+    p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
+        shield:0, burn:0, frozen:false,
+        counter:false, empowered:false, ward:0, weakened:false},
+    p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
+        shield:0, burn:0, frozen:false,
+        counter:false, empowered:false, ward:0, weakened:false},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[],
@@ -79,8 +113,13 @@ function drawBG(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(138,58,170,0.38)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,'rgba(74,240,255,0.13)');
-  runeRing(bW*.78,bH*.83,28,'rgba(255,74,110,0.13)');
+  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
+  runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+}
+
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
 }
 
 function runeRing(cx,cy,r,c){
@@ -112,7 +151,6 @@ function loadSprites(){
     img.src=urls[who];
   });
 }
-// Preload defaults so sprites are ready when battle starts
 loadSprites();
 
 const animState={p1:{frame:0,timer:0},p2:{frame:0,timer:0}};
@@ -131,7 +169,7 @@ function tickAnimFrame(who,dt){
 
 let lastFrameTime=0;
 
-function drawWiz(x,y,sz,col,flip,anim,shielded,who){
+function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who){
   bx.save();
   if(shielded>0){
     const gv=0.08+0.05*Math.sin(Date.now()/300);
@@ -139,16 +177,34 @@ function drawWiz(x,y,sz,col,flip,anim,shielded,who){
     bx.fillStyle=`rgba(74,240,255,${gv})`; bx.fill();
     bx.strokeStyle=`rgba(74,240,255,${gv*5})`; bx.lineWidth=1.5; bx.stroke();
   }
+  if(wardActive>0){
+    const t=Date.now();
+    const gv=0.06+0.04*Math.sin(t/280);
+    bx.save();
+    bx.translate(x,y-sz*.5);
+    bx.rotate(t/1200);
+    bx.strokeStyle=`rgba(255,204,68,${gv*6})`; bx.lineWidth=1.5;
+    for(let i=0;i<6;i++){
+      const a=i/6*Math.PI*2;
+      bx.beginPath();
+      bx.moveTo(Math.cos(a)*sz*.5,Math.sin(a)*sz*.5);
+      bx.lineTo(Math.cos(a)*sz*.75,Math.sin(a)*sz*.75);
+      bx.stroke();
+    }
+    bx.beginPath(); bx.arc(0,0,sz*.75,0,Math.PI*2);
+    bx.strokeStyle=`rgba(255,204,68,${gv*4})`; bx.stroke();
+    bx.restore();
+  }
   const img=sprites[who];
   if(img&&spriteStatus[who]==='ready'){
     const cfg=SPRITE_CFG;
-    const row=cfg.animRows[anim]??cfg.animRows.idle;
+    const row=cfg.animRows[animName]??cfg.animRows.idle;
     const frame=animState[who].frame;
     const srcX=frame*cfg.frameW, srcY=row*cfg.frameH;
     const scale=sz/cfg.frameH, dw=cfg.frameW*scale, dh=cfg.frameH*scale;
-    const lift=anim==='cast'?-sz*.06:0;
-    const shake=anim==='hit'?Math.sin(Date.now()/60)*sz*.03:0;
-    const bob=anim==='idle'?Math.sin(Date.now()/500+x)*sz*.015:0;
+    const lift=animName==='cast'?-sz*.06:0;
+    const shake=animName==='hit'?Math.sin(Date.now()/60)*sz*.03:0;
+    const bob=animName==='idle'?Math.sin(Date.now()/500+x)*sz*.015:0;
     const dy=lift+shake+bob;
     if(flip){
       bx.scale(-1,1);
@@ -158,9 +214,9 @@ function drawWiz(x,y,sz,col,flip,anim,shielded,who){
     }
   } else {
     if(flip){bx.scale(-1,1); x=-x;}
-    const bob=anim==='idle'?Math.sin(Date.now()/500+x)*.015*sz:0;
-    const lift=anim==='cast'?-sz*.06:0;
-    const shake=anim==='hit'?Math.sin(Date.now()/60)*.03*sz:0;
+    const bob=animName==='idle'?Math.sin(Date.now()/500+x)*.015*sz:0;
+    const lift=animName==='cast'?-sz*.06:0;
+    const shake=animName==='hit'?Math.sin(Date.now()/60)*.03*sz:0;
     const dy=bob+lift+shake;
     bx.fillStyle=col;
     bx.beginPath(); bx.moveTo(x-sz*.33,y+dy); bx.lineTo(x-sz*.27,y-sz*.48+dy);
@@ -172,12 +228,12 @@ function drawWiz(x,y,sz,col,flip,anim,shielded,who){
     bx.fillStyle='#222';
     bx.fillRect(x-sz*.1,y-sz*.68+dy,sz*.055,sz*.055);
     bx.fillRect(x+sz*.04,y-sz*.68+dy,sz*.055,sz*.055);
-    const sfx=x+sz*.3, stopY=y-sz*.88+dy+(anim==='cast'?-sz*.07:0);
+    const sfx=x+sz*.3, stopY=y-sz*.88+dy+(animName==='cast'?-sz*.07:0);
     bx.strokeStyle='#8B6914'; bx.lineWidth=2.5;
     bx.beginPath(); bx.moveTo(sfx,y+dy); bx.lineTo(sfx,stopY); bx.stroke();
     const op=.5+.5*Math.sin(Date.now()/400);
-    bx.fillStyle=anim==='cast'?`rgba(255,220,50,${.8+op*.2})`:col;
-    bx.shadowColor=anim==='cast'?'#ffff88':col; bx.shadowBlur=anim==='cast'?18:7;
+    bx.fillStyle=animName==='cast'?`rgba(255,220,50,${.8+op*.2})`:col;
+    bx.shadowColor=animName==='cast'?'#ffff88':col; bx.shadowBlur=animName==='cast'?18:7;
     bx.beginPath(); bx.arc(sfx,stopY,sz*.09,0,Math.PI*2); bx.fill(); bx.shadowBlur=0;
     bx.fillStyle='#2a1a4a';
     bx.fillRect(x-sz*.24,y-sz*.02+dy,sz*.17,sz*.08);
@@ -219,10 +275,17 @@ function addFloat(x,y,t,col,sz=17){gs.floats.push({x,y,t,col,sz,life:1});}
 function refreshStatusBar(){
   const el=document.getElementById('statusbar');
   const tags=[];
-  if(gs.p1.burn>0)   tags.push(`<span class="status-tag burn">🔥 ${p1Cfg.name} BURNING (${gs.p1.burn})</span>`);
-  if(gs.p1.frozen)   tags.push(`<span class="status-tag freeze">❄️ ${p1Cfg.name} FROZEN</span>`);
-  if(gs.p2.burn>0)   tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
-  if(gs.p2.frozen)   tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN</span>`);
+  if(gs.p1.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p1Cfg.name} BURNING (${gs.p1.burn})</span>`);
+  if(gs.p1.frozen)      tags.push(`<span class="status-tag freeze">❄️ ${p1Cfg.name} FROZEN</span>`);
+  if(gs.p1.empowered)   tags.push(`<span class="status-tag empower">💪 ${p1Cfg.name} EMPOWERED</span>`);
+  if(gs.p1.counter)     tags.push(`<span class="status-tag counter">⚡ ${p1Cfg.name} COUNTER</span>`);
+  if(gs.p1.ward>0)      tags.push(`<span class="status-tag ward">✨ ${p1Cfg.name} WARDED (${gs.p1.ward})</span>`);
+  if(gs.p1.weakened)    tags.push(`<span class="status-tag weakened">🌀 ${p1Cfg.name} WEAKENED</span>`);
+  if(gs.p2.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
+  if(gs.p2.frozen)      tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN</span>`);
+  if(gs.p2.empowered)   tags.push(`<span class="status-tag empower">💪 ${p2Cfg.name} EMPOWERED</span>`);
+  if(gs.p2.ward>0)      tags.push(`<span class="status-tag ward">✨ ${p2Cfg.name} WARDED (${gs.p2.ward})</span>`);
+  if(gs.p2.weakened)    tags.push(`<span class="status-tag weakened">🌀 ${p2Cfg.name} WEAKENED</span>`);
   el.innerHTML=tags.join('');
   el.style.padding=tags.length?'3px 12px':'0';
 }
@@ -239,11 +302,11 @@ function battleLoop(ts){
   resizeBC();
   drawBG();
   const gy=bH*.74, wsz=bH*.3;
-  drawWiz(bW*.22,gy,wsz,'#4af0ff',true, gs.p1anim,gs.p1.shield,'p1');
-  drawWiz(bW*.78,gy,wsz,'#ff4a6e',false,gs.p2anim,gs.p2.shield,'p2');
+  drawWiz(bW*.22,gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1');
+  drawWiz(bW*.78,gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2');
   tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy){
-    bx.fillStyle='rgba(255,74,110,0.7)'; bx.font='bold 10px Cinzel,serif';
+    bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText(p2Cfg.name+' IS CASTING…',bW*.5,bH*.56);
   }
   refreshHUD();
@@ -254,16 +317,12 @@ function battleLoop(ts){
 function refreshHUD(){
   document.getElementById('p1hpf').style.width=Math.max(0,gs.p1.hp/gs.p1.maxHp*100)+'%';
   document.getElementById('p2hpf').style.width=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
-  document.getElementById('sh1').style.opacity=gs.p1.shield>0?'1':'0.18';
-  document.getElementById('sh2').style.opacity=gs.p2.shield>0?'1':'0.18';
+  document.getElementById('sh1').style.opacity=gs.p1.shield>0||gs.p1.ward>0?'1':'0.18';
+  document.getElementById('sh2').style.opacity=gs.p2.shield>0||gs.p2.ward>0?'1':'0.18';
   document.getElementById('roundlbl').textContent='Round '+gs.round;
   refreshMana('mfill1','mval1',gs.p1.mana);
   refreshMana('mfill2','mval2',gs.p2.mana);
-  const busy=!gs.myTurn||gs.busy;
-  const canCastAny=SPELLS.some(s=>gs.p1.mana>=s.cost);
-  document.getElementById('bshield').classList.toggle('off',  busy||gs.p1.mana<SHIELD_COST);
-  document.getElementById('bchannel').classList.toggle('off', busy);
-  document.getElementById('bspell').classList.toggle('off',   busy||!canCastAny);
+  refreshActionBar();
 }
 
 function refreshMana(fillId,valId,val){
@@ -271,91 +330,231 @@ function refreshMana(fillId,valId,val){
   document.getElementById(valId).textContent=val+'/'+MAX_MANA;
 }
 
-// ── SPELL PICKER ───────────────────────────────────────────
-function showSpellPicker(cb){
-  const grid=document.getElementById('sp-grid');
-  grid.innerHTML='';
+function refreshActionBar(){
+  const busy=!gs.myTurn||gs.busy;
+  document.getElementById('bchannel').classList.toggle('off',busy);
+  // Specials
+  const s1=p1Cfg.specials[0], s2=p1Cfg.specials[1];
+  const sp1Disabled=busy||gs.p1.mana<s1.cost||specialBlocked(p1Key,0);
+  const sp2Disabled=busy||gs.p1.mana<s2.cost||specialBlocked(p1Key,1);
+  document.getElementById('bspecial1').classList.toggle('off',sp1Disabled);
+  document.getElementById('bspecial2').classList.toggle('off',sp2Disabled);
+  // Spell buttons
   SPELLS.forEach(spell=>{
-    const card=document.createElement('div');
-    card.className='sp-card'+(gs.p1.mana<spell.cost?' disabled':'');
-    card.dataset.el=spell.element;
-    card.innerHTML=
-      `<span class="sp-card-icon">${spell.icon}</span>`+
-      `<div class="sp-card-name">${spell.name}</div>`+
-      `<div class="sp-card-cost">${spell.cost} Mana</div>`+
-      `<div class="sp-card-effect">${spell.effectLabel}</div>`;
-    card.addEventListener('click',()=>{ cb(spell); });
-    grid.appendChild(card);
+    const btn=document.getElementById('bspell-'+spell.element);
+    if(btn) btn.classList.toggle('off',busy||gs.p1.mana<spell.cost);
   });
-  showScreen('spell-screen');
+}
+
+function specialBlocked(key,idx){
+  if(key==='eldrad'){
+    if(idx===0) return gs.p1.shield>0;        // already shielded
+    if(idx===1) return !gs.p1.shield;          // need shield to counter
+  }
+  if(key==='mal'){
+    if(idx===0) return gs.p1.empowered;        // already empowered
+    if(idx===1) return gs.p1.hp<=16;           // too low HP for Blood Pact
+  }
+  if(key==='sylvara'){
+    if(idx===0) return gs.p1.hp>=gs.p1.maxHp; // already full HP
+    if(idx===1) return gs.p2.frozen;           // already frozen
+  }
+  if(key==='aurelia'){
+    if(idx===0) return gs.p1.ward>0;           // already warded
+    if(idx===1) return gs.p2.weakened;         // already weakened
+  }
+  return false;
 }
 
 // ── PLAYER ACTIONS ─────────────────────────────────────────
 function act(type){
   if(!gs.myTurn||gs.busy) return;
+
   if(type==='channel'){
     gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+p1Cfg.channelAmt);
     addFloat(bW*.22,bH*.38,'+'+p1Cfg.channelAmt+' Mana','#88aaff',13);
     anim('p1','cast',700); endMyTurn(); return;
   }
-  if(type==='shield'){
-    if(gs.p1.mana<SHIELD_COST) return;
-    gs.p1.mana-=SHIELD_COST; gs.p1.shield=p1Cfg.shieldTurns;
-    addFloat(bW*.22,bH*.33,'🛡 Shielded!','#4af0ff',12);
-    anim('p1','shield',700); endMyTurn(); return;
-  }
-  if(type==='spell'){
-    if(!SPELLS.some(s=>gs.p1.mana>=s.cost)) return;
+
+  // Spell direct-launch (no picker screen)
+  const spell=SPELLS.find(s=>s.element===type);
+  if(spell){
+    if(gs.p1.mana<spell.cost) return;
     gs.busy=true;
-    showSpellPicker(spell=>{
-      if(!spell){gs.busy=false; return;}
-      const launchers={
-        fire:      launchPatternEcho,
-        lightning: launchMaze,
-        ice:       launchIceSlide,
-        arcane:    launchMemoryRunes,
-      };
-      launchers[spell.element](spell, ok=>{
-        if(ok){
-          gs.p1.mana-=spell.cost;
-          castSpell(spell,gs.p2,bW*.78,bH*.38,'p1');
-        } else {
-          addFloat(bW*.22,bH*.33,'Fizzled!','#ff8844',13);
-          gs.p1.mana=Math.max(0,gs.p1.mana-1);
-        }
-        endMyTurn();
-      });
+    const launchers={
+      fire:      launchPatternEcho,
+      lightning: launchMaze,
+      ice:       launchIceSlide,
+      arcane:    launchMemoryRunes,
+    };
+    launchers[type](spell, ok=>{
+      if(ok){
+        gs.p1.mana-=spell.cost;
+        castSpell(spell,gs.p2,bW*.78,bH*.38,'p1');
+      } else {
+        addFloat(bW*.22,bH*.33,'Fizzled!','#ff8844',13);
+        gs.p1.mana=Math.max(0,gs.p1.mana-1);
+      }
+      endMyTurn();
     });
+    return;
+  }
+
+  if(type==='special1') actSpecial(p1Key,0);
+  if(type==='special2') actSpecial(p1Key,1);
+}
+
+// ── CHARACTER SPECIALS ─────────────────────────────────────
+function actSpecial(charKey,idx){
+  if(!gs.myTurn||gs.busy) return;
+
+  if(charKey==='eldrad'){
+    if(idx===0){ // Shield
+      if(gs.p1.mana<3||gs.p1.shield>0) return;
+      gs.p1.mana-=3; gs.p1.shield=2; // 2 so endMyTurn tick → 1, still active for AI
+      addFloat(bW*.22,bH*.33,'🛡 Shielded!','#4af0ff',12);
+      anim('p1','shield',700); endMyTurn();
+    } else { // Counter
+      if(gs.p1.mana<3||!gs.p1.shield) return;
+      gs.p1.mana-=3; gs.p1.counter=true;
+      addFloat(bW*.22,bH*.33,'⚡ Counter Ready!','#4af0ff',12);
+      anim('p1','shield',700); endMyTurn();
+    }
+    return;
+  }
+
+  if(charKey==='mal'){
+    if(idx===0){ // Empower
+      if(gs.p1.mana<4||gs.p1.empowered) return;
+      gs.p1.mana-=4; gs.p1.empowered=true;
+      addFloat(bW*.22,bH*.33,'💪 Empowered!','#ff4a6e',12);
+      spawnParts(bW*.22,bH*.38,'#ff4a6e',10);
+      anim('p1','cast',700); endMyTurn();
+    } else { // Blood Pact
+      if(gs.p1.hp<=16) return;
+      gs.p1.hp=Math.max(1,gs.p1.hp-22);
+      gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+7);
+      addFloat(bW*.22,bH*.33,'🩸 -22HP +7 Mana','#ff4a6e',11);
+      spawnParts(bW*.22,bH*.38,'#ff4a6e',10);
+      anim('p1','cast',700);
+      refreshHUD();
+      endMyTurn();
+    }
+    return;
+  }
+
+  if(charKey==='sylvara'){
+    if(idx===0){ // Heal
+      if(gs.p1.mana<5||gs.p1.hp>=gs.p1.maxHp) return;
+      gs.p1.mana-=5;
+      const healed=Math.min(20,gs.p1.maxHp-gs.p1.hp);
+      gs.p1.hp=Math.min(gs.p1.maxHp,gs.p1.hp+20);
+      addFloat(bW*.22,bH*.33,'+'+healed+' HP 💚','#44cc88',14);
+      spawnParts(bW*.22,bH*.38,'#44cc88',14);
+      anim('p1','cast',700); endMyTurn();
+    } else { // Entangle
+      if(gs.p1.mana<5||gs.p2.frozen) return;
+      gs.p1.mana-=5;
+      gs.p2.hp=Math.max(0,gs.p2.hp-12);
+      gs.p2.frozen=true;
+      spawnParts(bW*.78,bH*.38,'#44cc88',14);
+      addFloat(bW*.78,bH*.33,'-12 🌿 Entangled!','#44cc88',11);
+      anim('p1','cast',800); anim('p2','hit',800);
+      checkWin(); endMyTurn();
+    }
+    return;
+  }
+
+  if(charKey==='aurelia'){
+    if(idx===0){ // Ward
+      if(gs.p1.mana<3||gs.p1.ward>0) return;
+      gs.p1.mana-=3; gs.p1.ward=2;
+      addFloat(bW*.22,bH*.33,'✨ Ward Active!','#ffcc44',12);
+      spawnParts(bW*.22,bH*.38,'#ffcc44',10);
+      anim('p1','shield',700); endMyTurn();
+    } else { // Weaken
+      if(gs.p1.mana<3||gs.p2.weakened) return;
+      gs.p1.mana-=3; gs.p2.weakened=true;
+      addFloat(bW*.78,bH*.33,'🌀 Weakened!','#ffcc44',12);
+      spawnParts(bW*.78,bH*.38,'#ffcc44',10);
+      anim('p1','cast',700); endMyTurn();
+    }
+    return;
   }
 }
 
 // ── CAST SPELL ─────────────────────────────────────────────
 function castSpell(spell,target,tx,ty,caster){
   const casterCfg=caster==='p1'?p1Cfg:p2Cfg;
+  const casterState=caster==='p1'?gs.p1:gs.p2;
+  const targetState=target; // gs.p1 or gs.p2 passed directly
+
   let dmg=Math.round(spell.dmg*casterCfg.dmgMult);
   if(spell.element==='arcane') dmg=Math.round((15+Math.floor(Math.random()*41))*casterCfg.dmgMult);
 
-  if(target.shield>0){
+  // Caster: Empower (+22% on top of dmgMult)
+  if(casterState.empowered){
+    dmg=Math.round(dmg*1.22);
+    casterState.empowered=false;
+    addFloat(tx,ty-36,'💪 +22% Empowered!',casterCfg.col,10);
+  }
+
+  // Caster: Weakened (−35%)
+  if(casterState.weakened){
+    dmg=Math.round(dmg*0.65);
+    casterState.weakened=false;
+    addFloat(tx,ty-36,'🌀 Weakened −35%','#ffcc44',10);
+  }
+
+  // Target: Ward (check before shield)
+  if(targetState.ward>0){
+    if(Math.random()<0.15){
+      addFloat(tx,ty-20,'✨ Fizzled!','#ffcc44',11);
+      targetState.ward--;
+      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+      return;
+    }
+    dmg=Math.round(dmg*0.75); // 25% absorb
+    addFloat(tx,ty-20,'✨ Warded!','#ffcc44',11);
+    targetState.ward--;
+  }
+
+  // Target: Counter (check BEFORE shield breaks)
+  const counterTriggered=targetState.counter&&targetState.shield>0;
+
+  // Target: Shield
+  if(targetState.shield>0){
     if(spell.element==='lightning'){
-      target.shield--;
+      targetState.shield=0;
       addFloat(tx,ty-20,'⚡ Pierced!','#ffee44',11);
     } else {
-      dmg=Math.round(dmg*.3); target.shield--;
+      dmg=Math.round(dmg*.3);
+      targetState.shield=0;
       addFloat(tx,ty-20,'🛡 Absorbed!','#4af0ff',11);
     }
   }
 
-  target.hp=Math.max(0,target.hp-dmg);
+  // Counter reflect (15% damage absorb already handled above)
+  if(counterTriggered){
+    const casterX=caster==='p1'?bW*.22:bW*.78;
+    casterState.hp=Math.max(0,casterState.hp-20);
+    targetState.counter=false;
+    addFloat(casterX,bH*.33,'⚡ Counter! −20','#4af0ff',11);
+    spawnParts(casterX,bH*.38,'#4af0ff',8);
+    checkWin(); if(!battleRunning) return;
+  }
+
+  targetState.hp=Math.max(0,targetState.hp-dmg);
   spawnParts(tx,ty,spell.col,22);
   addFloat(tx,ty,'-'+dmg,spell.col,22);
   flash(spell.col);
 
   if(spell.element==='fire'){
-    target.burn=BURN_ROUNDS;
+    targetState.burn=BURN_ROUNDS;
     addFloat(tx,ty+28,'🔥 Burning!','#ff6622',10);
   }
   if(spell.element==='ice'){
-    target.frozen=true;
+    targetState.frozen=true;
     addFloat(tx,ty+28,'❄️ Frozen!','#88ddff',10);
   }
 
@@ -380,6 +579,7 @@ function anim(who,state,ms){
 function endMyTurn(){
   gs.myTurn=false; gs.busy=false;
   if(gs.p1.shield>0) gs.p1.shield--;
+  if(gs.p1.ward>0)   gs.p1.ward--;
   gs.round++;
   if(aiTid) clearTimeout(aiTid);
   aiTid=setTimeout(doAI,1400);
@@ -404,36 +604,88 @@ function doAI(){
   }
 
   const ai=gs.p2;
-  // AI spell selection: weighted by situation
   const affordable=SPELLS.filter(s=>ai.mana>=s.cost);
+  let usedSpecial=false;
+
+  // ── AI specials by character ──
+  if(p2Key==='eldrad'){
+    if(ai.shield===0 && ai.mana>=3 && ai.hp<75 && Math.random()<0.60){
+      ai.mana-=3; ai.shield=2;
+      addFloat(bW*.78,bH*.33,'🛡 Shield!','#4af0ff',12);
+      anim('p2','shield',700); usedSpecial=true;
+    } else if(ai.shield>0 && !ai.counter && ai.mana>=3 && Math.random()<0.50){
+      ai.mana-=3; ai.counter=true;
+      addFloat(bW*.78,bH*.33,'⚡ Counter!','#4af0ff',12);
+      anim('p2','shield',700); usedSpecial=true;
+    }
+  } else if(p2Key==='mal'){
+    const bpAvail=ai.hp>22 && ai.mana===0;
+    const empAvail=!ai.empowered && ai.mana>=4 && affordable.find(s=>s.element==='fire');
+    if(bpAvail){
+      ai.hp=Math.max(1,ai.hp-22); ai.mana=Math.min(MAX_MANA,ai.mana+7);
+      addFloat(bW*.78,bH*.33,'🩸 Blood Pact!','#ff4a6e',11);
+      spawnParts(bW*.78,bH*.38,'#ff4a6e',8);
+      anim('p2','cast',700); usedSpecial=true;
+    } else if(empAvail && Math.random()<0.55){
+      ai.mana-=4; ai.empowered=true;
+      addFloat(bW*.78,bH*.33,'💪 Empowered!','#ff4a6e',12);
+      anim('p2','cast',700); usedSpecial=true;
+    }
+  } else if(p2Key==='sylvara'){
+    if(ai.hp<50 && ai.mana>=5 && Math.random()<0.70){
+      ai.mana-=5; ai.hp=Math.min(ai.maxHp,ai.hp+20);
+      addFloat(bW*.78,bH*.33,'+20 HP 💚','#44cc88',13);
+      spawnParts(bW*.78,bH*.38,'#44cc88',10);
+      anim('p2','cast',700); usedSpecial=true;
+    } else if(gs.p1.mana>=9 && ai.mana>=5 && !gs.p1.frozen && Math.random()<0.55){
+      ai.mana-=5;
+      gs.p1.hp=Math.max(0,gs.p1.hp-12); gs.p1.frozen=true;
+      spawnParts(bW*.22,bH*.38,'#44cc88',14);
+      addFloat(bW*.22,bH*.33,'-12 🌿 Entangled!','#44cc88',11);
+      anim('p2','cast',800); anim('p1','hit',800);
+      checkWin(); if(!battleRunning) return;
+      usedSpecial=true;
+    }
+  } else if(p2Key==='aurelia'){
+    if(ai.ward===0 && ai.mana>=3 && Math.random()<0.45){
+      ai.mana-=3; ai.ward=2;
+      addFloat(bW*.78,bH*.33,'✨ Ward!','#ffcc44',12);
+      anim('p2','shield',700); usedSpecial=true;
+    } else if(!gs.p1.weakened && ai.mana>=3 && gs.p1.mana>=9 && Math.random()<0.50){
+      ai.mana-=3; gs.p1.weakened=true;
+      addFloat(bW*.22,bH*.33,'🌀 Weakened!','#ffcc44',12);
+      spawnParts(bW*.22,bH*.38,'#ffcc44',8);
+      anim('p2','cast',700); usedSpecial=true;
+    }
+  }
+
+  if(usedSpecial){
+    if(ai.shield>0) ai.shield--;
+    if(ai.ward>0)   ai.ward--;
+    setTimeout(finishAI,900);
+    return;
+  }
+
+  // ── Spell / channel logic ──
   let spell=null, action='channel';
 
   if(affordable.length>0){
-    // Prefer lightning if player has shield
     if(gs.p1.shield>0 && affordable.find(s=>s.element==='lightning')){
       spell=affordable.find(s=>s.element==='lightning');
-    // Prefer fire for big damage when player has no shield
     } else if(!gs.p1.shield && affordable.find(s=>s.element==='fire')){
       spell=affordable.find(s=>s.element==='fire');
-    // Prefer ice to stall when player has lots of mana
     } else if(gs.p1.mana>=3 && affordable.find(s=>s.element==='ice')){
       spell=affordable.find(s=>s.element==='ice');
     } else {
       spell=affordable[Math.floor(Math.random()*affordable.length)];
     }
     action='spell';
-  } else if(ai.mana>=SHIELD_COST && ai.shield===0 && Math.random()<(p2Cfg.shieldTurns>=3?0.4:p2Cfg.shieldTurns===2?0.3:0.15)){
-    action='shield';
   }
 
   if(action==='channel'){
     ai.mana=Math.min(MAX_MANA,ai.mana+p2Cfg.channelAmt);
     addFloat(bW*.78,bH*.38,'+'+p2Cfg.channelAmt+' Mana','#ff8888',13);
     anim('p2','cast',700);
-  } else if(action==='shield'){
-    ai.mana-=SHIELD_COST; ai.shield=p2Cfg.shieldTurns;
-    addFloat(bW*.78,bH*.33,'🛡 Shield!','#ff4a6e',12);
-    anim('p2','shield',700);
   } else {
     addFloat(bW*.78,bH*.26,spell.icon+' '+spell.name+'!',spell.col,12);
     anim('p2','cast',800);
@@ -451,6 +703,7 @@ function doAI(){
     return;
   }
   if(ai.shield>0) ai.shield--;
+  if(ai.ward>0)   ai.ward--;
   finishAI();
 }
 
@@ -545,7 +798,6 @@ function launchPatternEcho(spell,cb){
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
 
-  // Fire sparkles
   const sparks=Array.from({length:22},()=>({
     x:Math.random()*cw, y:Math.random()*ch,
     spd:0.25+Math.random()*0.5, sz:0.8+Math.random()*1.8,
@@ -604,7 +856,6 @@ function launchPatternEcho(spell,cb){
     bg.addColorStop(0,'#2a0800'); bg.addColorStop(0.6,'#140300'); bg.addColorStop(1,'#050000');
     mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
 
-    // Rising fire sparks
     mx.save();
     sparks.forEach(s=>{
       s.y-=s.spd; if(s.y<-4){s.y=ch+4; s.x=Math.random()*cw;}
@@ -615,7 +866,6 @@ function launchPatternEcho(spell,cb){
     mx.globalAlpha=1; mx.shadowBlur=0;
     mx.restore();
 
-    // Phase label
     mx.fillStyle=phase==='watch'?'#ffcc00':'#ff8844';
     mx.font='bold 10px Cinzel,serif'; mx.textAlign='center'; mx.textBaseline='top';
     mx.fillText(
@@ -623,7 +873,6 @@ function launchPatternEcho(spell,cb){
       cw/2, 4
     );
 
-    // Tiles
     for(let i=0;i<4;i++){
       const tp=tPos[i], tile=TILES[i], lit=(litTile===i);
       mx.save();
@@ -642,7 +891,6 @@ function launchPatternEcho(spell,cb){
       mx.restore();
     }
 
-    // Progress dots
     const dotY=ch-7, dsp=14, ds=cw/2-(seq.length-1)*dsp/2;
     for(let i=0;i<seq.length;i++){
       mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
@@ -734,7 +982,6 @@ function launchMaze(spell,cb){
   const trail=[];
   const MOVE_DUR=160;
 
-  // Lightning sparks
   const sparks=Array.from({length:28},()=>({
     x:Math.random()*cw, y:Math.random()*ch,
     speed:0.3+Math.random()*.9, size:0.6+Math.random()*1.4,
@@ -778,7 +1025,6 @@ function launchMaze(spell,cb){
   function finish(ok){ if(done) return; done=true; cleanup(); puzzleFinish(ok,cb); }
 
   function update(dt){
-    // Animate step between cell centres
     if(mk.moving){
       mk.moveT+=dt;
       const p=Math.min(1,mk.moveT/MOVE_DUR);
@@ -790,14 +1036,12 @@ function launchMaze(spell,cb){
         if(mk.col===goal.col&&mk.row===goal.row) finish(true);
       }
     }
-    // At a junction: step if the current direction is open
     if(!mk.moving&&mk.dir>=0&&canGo(walls,mk.col,mk.row,mk.dir)){
       trail.push({x:mk.x,y:mk.y,life:1});
       mk.fromX=mk.x; mk.fromY=mk.y;
       mk.col+=DC[mk.dir]; mk.row+=DR[mk.dir];
       mk.moving=true; mk.moveT=0;
     }
-    // Fade trail
     for(let i=trail.length-1;i>=0;i--){
       trail[i].life-=dt/700;
       if(trail[i].life<=0) trail.splice(i,1);
@@ -807,12 +1051,10 @@ function launchMaze(spell,cb){
   function drawMazeFrame(){
     const ox=1,oy=1, t=Date.now(), W=mc.width, H=mc.height;
 
-    // Storm background
     const bg=mx.createLinearGradient(0,0,0,H);
     bg.addColorStop(0,'#0c0e1a'); bg.addColorStop(0.5,'#060810'); bg.addColorStop(1,'#030408');
     mx.fillStyle=bg; mx.fillRect(0,0,W,H);
 
-    // Background lightning bolt traces
     mx.save();
     const boltPaths=[[W*.08,H*.05,W*.35,H*.95],[W*.48,0,W*.62,H],[W*.78,H*.08,W*.38,H*.88],[W*.18,H*.42,W*.86,H*.58],[W*.62,0,W*.22,H*.52]];
     const boltSeeds=[0,1.5,3.2,4.8,6.1];
@@ -830,7 +1072,6 @@ function launchMaze(spell,cb){
     });
     mx.shadowBlur=0; mx.restore();
 
-    // Electric sparks
     mx.save();
     sparks.forEach(s=>{
       s.y-=s.speed; if(s.y<-4){s.y=H+4; s.x=Math.random()*W;}
@@ -841,7 +1082,6 @@ function launchMaze(spell,cb){
     mx.globalAlpha=1; mx.shadowBlur=0;
     mx.restore();
 
-    // Goal
     const gx=ox+goal.col*CELL+CELL/2, gy=oy+goal.row*CELL+CELL/2;
     const pulse=0.5+0.5*Math.sin(t/350);
     mx.save();
@@ -856,7 +1096,6 @@ function launchMaze(spell,cb){
     mx.shadowColor='#ffcc00'; mx.shadowBlur=8+7*pulse;
     mx.fillText('⚡',gx,gy); mx.shadowBlur=0;
 
-    // Walls — electric blue
     mx.beginPath();
     mx.strokeStyle='rgba(80,160,255,0.82)'; mx.lineWidth=1.5;
     for(let r=0;r<=ROWS;r++) for(let c=0;c<COLS;c++) if(walls.H[r][c]){
@@ -867,7 +1106,6 @@ function launchMaze(spell,cb){
     }
     mx.stroke();
 
-    // Fading trail
     trail.forEach(tr=>{
       const tx=ox+tr.x*CELL, ty=oy+tr.y*CELL;
       mx.globalAlpha=tr.life*0.55;
@@ -877,7 +1115,6 @@ function launchMaze(spell,cb){
     });
     mx.globalAlpha=1; mx.shadowBlur=0;
 
-    // Player — lightning bolt with glow
     const px=ox+mk.x*CELL, py=oy+mk.y*CELL;
     const boltPulse=0.6+0.4*Math.sin(t/150);
     mx.font=`bold ${Math.round(CELL*0.85)}px serif`;
@@ -907,7 +1144,6 @@ function launchIceSlide(spell,cb){
   const mw=Math.min(cw,(window.innerWidth||360)-32);
   mc.style.width=mw+'px'; mc.style.height='auto';
 
-  // Pick a random corner orientation so start/goal aren't always TL→BR
   const CORNER_SETUPS=[
     {sc:0,       sr:0,       gc:GCOLS-1,gr:GROWS-1},
     {sc:GCOLS-1, sr:0,       gc:0,      gr:GROWS-1},
@@ -938,8 +1174,6 @@ function launchIceSlide(spell,cb){
     return 0;
   }
 
-  // Returns true if (gc,gr) is reachable without any slide that increases Manhattan distance.
-  // Returns false means every path must include at least one "away" move — detour required.
   function hasPathAvoidingDetour(w,sc,sr,gc,gr){
     const vis=Array.from({length:GROWS},()=>Array(GCOLS).fill(false));
     const q=[[sc,sr]]; vis[sr][sc]=true;
@@ -959,7 +1193,6 @@ function launchIceSlide(spell,cb){
     return false;
   }
 
-  // Finds a reachable cell from (fc,fr) that sits as far off the direct line to (gc,gr) as possible.
   function pickOffDiagonalCell(w,fc,fr,gc,gr,exclude){
     const vis=Array.from({length:GROWS},()=>Array(GCOLS).fill(false));
     const q=[[fc,fr]]; vis[fr][fc]=true;
@@ -1034,7 +1267,6 @@ function launchIceSlide(spell,cb){
   let checkpoints=[], nextCpIdx=0;
   ({walls,checkpoints}=generatePuzzle());
 
-  // Slide animation state
   let sliding=false, slideFrom={c:setup.sc,r:setup.sr}, slideTo={c:setup.sc,r:setup.sr}, slideT=0;
   const SLIDE_DUR=180;
   let visualC=setup.sc, visualR=setup.sr;
@@ -1056,7 +1288,7 @@ function launchIceSlide(spell,cb){
     let nc=pc+dc, nr=pr+dr;
     while(nc>=0&&nc<GCOLS&&nr>=0&&nr<GROWS&&!walls[nr][nc]){nc+=dc;nr+=dr;}
     nc-=dc; nr-=dr;
-    if(nc===pc&&nr===pr) return; // no movement
+    if(nc===pc&&nr===pr) return;
     slideFrom={c:pc,r:pr}; slideTo={c:nc,r:nr};
     pc=nc; pr=nr; sliding=true; slideT=0;
     if(checkpoints[nextCpIdx]?.c===pc&&checkpoints[nextCpIdx]?.r===pr) nextCpIdx++;
@@ -1103,42 +1335,34 @@ function launchIceSlide(spell,cb){
     }
 
     const t=ts;
-    // Ice background
     const bg=mx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,cw*.7);
     bg.addColorStop(0,'#081828'); bg.addColorStop(0.6,'#040c14'); bg.addColorStop(1,'#010408');
     mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
 
-    // Grid cells
     for(let r=0;r<GROWS;r++) for(let c=0;c<GCOLS;c++){
       const x=GPAD+c*GC, y=GPAD+r*GC;
       if(walls[r][c]){
-        // Rock/wall
         mx.fillStyle='#1a3040';
         mx.fillRect(x+1,y+1,GC-2,GC-2);
         mx.strokeStyle='rgba(100,180,220,0.3)'; mx.lineWidth=1;
         mx.strokeRect(x+1,y+1,GC-2,GC-2);
-        // Snow cap
         mx.fillStyle='rgba(180,220,255,0.25)';
         mx.fillRect(x+2,y+2,GC-4,6);
       } else {
-        // Ice floor
-        const pulse=0.03+0.02*Math.sin(t/800+c*0.7+r*0.5);
-        mx.fillStyle=`rgba(100,180,220,${pulse})`;
+        const icePulse=0.03+0.02*Math.sin(t/800+c*0.7+r*0.5);
+        mx.fillStyle=`rgba(100,180,220,${icePulse})`;
         mx.fillRect(x,y,GC,GC);
-        // Ice shimmer lines
         mx.strokeStyle='rgba(180,240,255,0.07)'; mx.lineWidth=0.5;
         mx.beginPath(); mx.moveTo(x,y); mx.lineTo(x+GC,y); mx.stroke();
         mx.beginPath(); mx.moveTo(x,y); mx.lineTo(x,y+GC); mx.stroke();
       }
     }
 
-    // Start marker — two faint rings
     const srtX=GPAD+setup.sc*GC+GC/2, srtY=GPAD+setup.sr*GC+GC/2;
     mx.strokeStyle='rgba(136,221,255,0.22)'; mx.lineWidth=1.2;
     mx.beginPath(); mx.arc(srtX,srtY,GC*.34,0,Math.PI*2); mx.stroke();
     mx.beginPath(); mx.arc(srtX,srtY,GC*.18,0,Math.PI*2); mx.stroke();
 
-    // Checkpoints
     const cpCols=['#ffdd44','#ff9944','#ff5599'];
     const cpIcons=['①','②','③'];
     checkpoints.forEach((cp,i)=>{
@@ -1157,7 +1381,6 @@ function launchIceSlide(spell,cb){
       }
     });
 
-    // Goal — dims until all checkpoints collected
     const gx=GPAD+goal.c*GC, gy=GPAD+goal.r*GC;
     const gPulse=0.5+0.5*Math.sin(t/400);
     const goalOpen=nextCpIdx>=checkpoints.length;
@@ -1169,14 +1392,12 @@ function launchIceSlide(spell,cb){
     mx.shadowBlur=goalOpen?(10+5*gPulse):2;
     mx.fillText('★',gx+GC/2,gy+GC/2); mx.shadowBlur=0;
 
-    // Player
     const px=GPAD+visualC*GC+GC/2, py=GPAD+visualR*GC+GC/2;
     const pPulse=0.7+0.3*Math.sin(t/200);
     mx.fillStyle=`rgba(136,221,255,${pPulse})`;
     mx.shadowColor='#88ddff'; mx.shadowBlur=14;
     mx.beginPath(); mx.arc(px,py,GC*.28,0,Math.PI*2); mx.fill();
     mx.shadowBlur=0;
-    // Inner dot
     mx.fillStyle='#ffffff';
     mx.beginPath(); mx.arc(px,py,GC*.1,0,Math.PI*2); mx.fill();
 
@@ -1198,7 +1419,7 @@ function launchMemoryRunes(spell,cb){
   const deck=[...RUNES,...RUNES].sort(()=>Math.random()-.5);
   const GCOLS=4, GROWS=4, CS=56, CGAP=7, CPAD=10;
   const cw=CPAD*2+GCOLS*(CS+CGAP)-CGAP;
-  const ch=CPAD*2+GROWS*(CS+CGAP)-CGAP+16; // extra for label
+  const ch=CPAD*2+GROWS*(CS+CGAP)-CGAP+16;
 
   mc.width=cw; mc.height=ch;
   const mw=Math.min(cw,(window.innerWidth||360)-32);
@@ -1209,9 +1430,8 @@ function launchMemoryRunes(spell,cb){
     col:Math.floor(i/GCOLS)%GCOLS===0?i%GCOLS:i%GCOLS,
     row:Math.floor(i/GCOLS),
     flipped:false, matched:false,
-    flipProg:0,    // 0=back, 1=front
+    flipProg:0,
   }));
-  // Recompute col/row properly
   cards.forEach((c,i)=>{ c.col=i%GCOLS; c.row=Math.floor(i/GCOLS); });
 
   let revealed=[];
@@ -1230,7 +1450,6 @@ function launchMemoryRunes(spell,cb){
     if(timeLeft<=0) finish(false);
   },1000);
 
-  // Arcane sparkles (same aesthetic as maze)
   const sparks=Array.from({length:32},()=>({
     x:Math.random()*cw, y:Math.random()*ch,
     speed:0.12+Math.random()*.35, size:0.7+Math.random()*1.5,
@@ -1259,7 +1478,6 @@ function launchMemoryRunes(spell,cb){
     if(revealed.length===2){
       locked=true;
       if(revealed[0].rune===revealed[1].rune){
-        // Match
         setTimeout(()=>{
           revealed.forEach(c=>c.matched=true);
           revealed=[];
@@ -1268,7 +1486,6 @@ function launchMemoryRunes(spell,cb){
           if(matchedCount===RUNES.length) finish(true);
         },400);
       } else {
-        // No match — flip back
         setTimeout(()=>{
           revealed.forEach(c=>{c.flipped=false;});
           revealed=[]; locked=false;
@@ -1291,12 +1508,10 @@ function launchMemoryRunes(spell,cb){
     const t=ts||Date.now();
     const W=cw, H=ch;
 
-    // Arcane maze background — same as original maze bg
     const bg=mx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.65);
     bg.addColorStop(0,'#32106a'); bg.addColorStop(0.5,'#1a0638'); bg.addColorStop(1,'#06011a');
     mx.fillStyle=bg; mx.fillRect(0,0,W,H);
 
-    // Arcane ritual rings (same as maze)
     mx.save();
     mx.lineWidth=1.5;
     [[W*.22,0.35],[W*.4,0.22],[W*.56,0.13]].forEach(([r,a])=>{
@@ -1314,7 +1529,6 @@ function launchMemoryRunes(spell,cb){
     }
     mx.restore();
 
-    // Drifting arcane sparkles
     mx.save();
     sparks.forEach(s=>{
       s.y-=s.speed; if(s.y<-4){s.y=H+4; s.x=Math.random()*W;}
@@ -1325,16 +1539,13 @@ function launchMemoryRunes(spell,cb){
     mx.globalAlpha=1; mx.shadowBlur=0;
     mx.restore();
 
-    // Progress label
     mx.fillStyle='#cc88ff'; mx.font='bold 10px Cinzel,serif';
     mx.textAlign='center'; mx.textBaseline='top';
     mx.fillText(`Pairs found: ${matchedCount} / ${RUNES.length}`, W/2, 3);
 
-    // Cards
     cards.forEach(c=>{
       const cx=CPAD+c.col*(CS+CGAP), cy=16+CPAD+c.row*(CS+CGAP);
       if(c.matched){
-        // Matched: faint glow
         mx.fillStyle='rgba(200,136,255,0.12)';
         mx.strokeStyle='rgba(200,136,255,0.3)'; mx.lineWidth=1;
         mx.beginPath(); mx.roundRect(cx,cy,CS,CS,6); mx.fill(); mx.stroke();
@@ -1344,7 +1555,6 @@ function launchMemoryRunes(spell,cb){
         return;
       }
       if(c.flipped){
-        // Face up
         const fg=mx.createLinearGradient(cx,cy,cx+CS,cy+CS);
         fg.addColorStop(0,'#3a1060'); fg.addColorStop(1,'#1a0440');
         mx.fillStyle=fg;
@@ -1357,15 +1567,13 @@ function launchMemoryRunes(spell,cb){
         mx.textAlign='center'; mx.textBaseline='middle';
         mx.fillText(c.rune,cx+CS/2,cy+CS/2);
       } else {
-        // Face down — arcane back pattern
-        const pulse=0.4+0.15*Math.sin(t/600+c.idx*.4);
-        mx.fillStyle=`rgba(60,20,90,${pulse+0.3})`;
+        const runeBackPulse=0.4+0.15*Math.sin(t/600+c.idx*.4);
+        mx.fillStyle=`rgba(60,20,90,${runeBackPulse+0.3})`;
         mx.shadowColor='rgba(120,60,180,0.4)'; mx.shadowBlur=5;
         mx.beginPath(); mx.roundRect(cx,cy,CS,CS,6); mx.fill();
         mx.strokeStyle=`rgba(160,80,220,0.6)`; mx.lineWidth=1.2;
         mx.beginPath(); mx.roundRect(cx,cy,CS,CS,6); mx.stroke();
         mx.shadowBlur=0;
-        // Rune back design
         mx.strokeStyle=`rgba(180,100,255,${0.25+0.1*Math.sin(t/400+c.idx)})`;
         mx.lineWidth=0.8;
         mx.beginPath(); mx.arc(cx+CS/2,cy+CS/2,CS*.28,0,Math.PI*2); mx.stroke();
@@ -1394,6 +1602,25 @@ function flash(col){
   setTimeout(()=>el.classList.remove('on'),120);
 }
 
+// ── ACTION BAR SETUP ───────────────────────────────────────
+function updateActionBar(cfg){
+  document.getElementById('channel-cost-label').textContent='+'+cfg.channelAmt+' Mana';
+  const s1=cfg.specials[0], s2=cfg.specials[1];
+  document.getElementById('spec1-ico').textContent=s1.ico;
+  document.getElementById('spec1-name').textContent=s1.label;
+  document.getElementById('spec1-cost').textContent=s1.costLabel;
+  document.getElementById('spec2-ico').textContent=s2.ico;
+  document.getElementById('spec2-name').textContent=s2.label;
+  document.getElementById('spec2-cost').textContent=s2.costLabel;
+  // Color the special buttons by character
+  const col=cfg.col;
+  ['bspecial1','bspecial2'].forEach(id=>{
+    const btn=document.getElementById(id);
+    btn.style.borderColor=col;
+    btn.style.color=col;
+  });
+}
+
 // ── BUTTON WIRING ──────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('.diff-btn').forEach(btn=>{
@@ -1414,9 +1641,13 @@ window.addEventListener('DOMContentLoaded',()=>{
   });
 
   function pickCharacter(key){
+    p1Key=key;
     p1Cfg=CHAR_DEFS[key];
-    p2Cfg=CHAR_DEFS[key==='eldrad'?'mal':'eldrad'];
+    const others=Object.keys(CHAR_DEFS).filter(k=>k!==key);
+    p2Key=others[Math.floor(Math.random()*others.length)];
+    p2Cfg=CHAR_DEFS[p2Key];
     loadSprites();
+    updateActionBar(p1Cfg);
     document.getElementById('p1name').textContent=p1Cfg.name;
     document.getElementById('p2name').textContent=p2Cfg.name;
     newState();
@@ -1430,6 +1661,8 @@ window.addEventListener('DOMContentLoaded',()=>{
 
   document.getElementById('pick-eldrad').addEventListener('click',()=>pickCharacter('eldrad'));
   document.getElementById('pick-mal').addEventListener('click',()=>pickCharacter('mal'));
+  document.getElementById('pick-sylvara').addEventListener('click',()=>pickCharacter('sylvara'));
+  document.getElementById('pick-aurelia').addEventListener('click',()=>pickCharacter('aurelia'));
 
   document.getElementById('btn-help').addEventListener('click',()=>{
     document.getElementById('helpmodal').style.display='flex';
@@ -1438,9 +1671,14 @@ window.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('helpmodal').style.display='none';
   });
 
-  document.getElementById('bshield').addEventListener('click', ()=>act('shield'));
   document.getElementById('bchannel').addEventListener('click',()=>act('channel'));
-  document.getElementById('bspell').addEventListener('click',  ()=>act('spell'));
+  document.getElementById('bspecial1').addEventListener('click',()=>act('special1'));
+  document.getElementById('bspecial2').addEventListener('click',()=>act('special2'));
+
+  SPELLS.forEach(spell=>{
+    const btn=document.getElementById('bspell-'+spell.element);
+    if(btn) btn.addEventListener('click',()=>act(spell.element));
+  });
 
   document.getElementById('sp-cancel').addEventListener('click',()=>{
     gs.busy=false;

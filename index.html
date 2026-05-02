@@ -24,7 +24,7 @@
     <button class="btn" id="btn-start">⚔ Begin Duel</button>
     <button class="btn" id="btn-help">📜 How to Play</button>
     <div class="hint">CAST SPELLS · RAISE SHIELDS · SOLVE MAZES<br>DEFEAT YOUR RIVAL WIZARD</div>
-    <div style="position:absolute;bottom:12px;right:16px;font-size:10px;color:rgba(201,168,76,0.4);letter-spacing:1px;">v0.7</div>
+    <div style="position:absolute;bottom:12px;right:16px;font-size:10px;color:rgba(201,168,76,0.4);letter-spacing:1px;">v0.8</div>
   </div>
 
   <!-- CHARACTER SELECT -->
@@ -34,27 +34,51 @@
     <div class="char-cards">
       <div class="char-card" id="pick-eldrad">
         <div class="char-sprite char-sprite-eldrad"></div>
-        <div class="char-name p1">ELDRAD</div>
+        <div class="char-name p1">ELDRIN</div>
         <div class="char-epithet">The Stalwart</div>
         <div class="char-stats">
-          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">110</span></div>
-          <div class="cstat"><span class="cstat-l">🛡 Shield</span><span class="cstat-r">3 turns</span></div>
+          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">115</span></div>
+          <div class="cstat"><span class="cstat-l">🛡 Shield</span><span class="cstat-r">70% absorb</span></div>
+          <div class="cstat"><span class="cstat-l">⚡ Counter</span><span class="cstat-r">20 reflect</span></div>
           <div class="cstat"><span class="cstat-l">✨ Channel</span><span class="cstat-r">+4 Mana</span></div>
-          <div class="cstat"><span class="cstat-l">⚔ Power</span><span class="cstat-r">Normal</span></div>
         </div>
         <div class="char-flavour">Outlast your foe with arcane endurance.</div>
       </div>
       <div class="char-card" id="pick-mal">
         <div class="char-sprite char-sprite-mal"></div>
-        <div class="char-name p2">MALACHADOR</div>
+        <div class="char-name p2">MALACHAR</div>
         <div class="char-epithet">The Relentless</div>
         <div class="char-stats">
-          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">85</span></div>
-          <div class="cstat"><span class="cstat-l">🛡 Shield</span><span class="cstat-r">1 turn</span></div>
-          <div class="cstat"><span class="cstat-l">✨ Channel</span><span class="cstat-r">+5 Mana</span></div>
-          <div class="cstat"><span class="cstat-l">⚔ Power</span><span class="cstat-r">+30%</span></div>
+          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">80</span></div>
+          <div class="cstat"><span class="cstat-l">💪 Empower</span><span class="cstat-r">+22% spell</span></div>
+          <div class="cstat"><span class="cstat-l">🩸 Blood Pact</span><span class="cstat-r">−22/+7 mana</span></div>
+          <div class="cstat"><span class="cstat-l">✨ Channel</span><span class="cstat-r">+4 Mana</span></div>
         </div>
         <div class="char-flavour">Strike hard. Strike first. No mercy.</div>
+      </div>
+      <div class="char-card" id="pick-sylvara">
+        <div class="char-sprite char-sprite-sylvara"></div>
+        <div class="char-name" style="color:#44cc88">SYLVARA</div>
+        <div class="char-epithet">The Verdant</div>
+        <div class="char-stats">
+          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">92</span></div>
+          <div class="cstat"><span class="cstat-l">💚 Heal</span><span class="cstat-r">+20 HP</span></div>
+          <div class="cstat"><span class="cstat-l">🌿 Entangle</span><span class="cstat-r">12+freeze</span></div>
+          <div class="cstat"><span class="cstat-l">✨ Channel</span><span class="cstat-r">+4 Mana</span></div>
+        </div>
+        <div class="char-flavour">Sustain and control with nature's power.</div>
+      </div>
+      <div class="char-card" id="pick-aurelia">
+        <div class="char-sprite char-sprite-aurelia"></div>
+        <div class="char-name" style="color:#ffcc44">AURELIA</div>
+        <div class="char-epithet">The Radiant</div>
+        <div class="char-stats">
+          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">90</span></div>
+          <div class="cstat"><span class="cstat-l">✨ Ward</span><span class="cstat-r">2-turn barrier</span></div>
+          <div class="cstat"><span class="cstat-l">🌀 Weaken</span><span class="cstat-r">−35% spell</span></div>
+          <div class="cstat"><span class="cstat-l">✨ Channel</span><span class="cstat-r">+4 Mana</span></div>
+        </div>
+        <div class="char-flavour">Control the field with light and debuffs.</div>
       </div>
     </div>
     <button class="btn" id="btn-back">← Back</button>
@@ -64,12 +88,12 @@
   <div id="battle-screen" class="screen">
     <div id="hud">
       <div class="hrow">
-        <span class="wname p1" id="p1name">ELDRAD</span>
+        <span class="wname p1" id="p1name">ELDRIN</span>
         <div class="hpbar"><div class="hpfill" id="p1hpf" style="width:100%"></div></div>
         <span class="shico" id="sh1">🛡</span>
       </div>
       <div class="hrow">
-        <span class="wname p2" id="p2name">MALACHADOR</span>
+        <span class="wname p2" id="p2name">MALACHAR</span>
         <div class="hpbar"><div class="hpfill" id="p2hpf" style="width:100%"></div></div>
         <span class="shico" id="sh2">🛡</span>
       </div>
@@ -88,15 +112,17 @@
     <div id="statusbar"></div>
     <canvas id="bcanvas"></canvas>
     <div id="actionbar">
-      <button class="abtn" id="bshield">
-        <span class="ico">🛡</span>Shield<span class="cost">3 Mana</span>
-      </button>
-      <button class="abtn" id="bchannel">
-        <span class="ico">✨</span>Channel<span class="cost">+2 Mana</span>
-      </button>
-      <button class="abtn" id="bspell">
-        <span class="ico">✨</span>Cast Spell<span class="cost" id="spell-cost-label">2+ Mana</span>
-      </button>
+      <div class="abar-row abar-row-top">
+        <button class="abtn" id="bchannel">✨ Channel<span class="cost" id="channel-cost-label">+4 Mana</span></button>
+        <button class="abtn abtn-special" id="bspecial1"><span id="spec1-ico">🛡</span> <span id="spec1-name">Shield</span><span class="cost" id="spec1-cost">3 Mana</span></button>
+        <button class="abtn abtn-special" id="bspecial2"><span id="spec2-ico">⚡</span> <span id="spec2-name">Counter</span><span class="cost" id="spec2-cost">3 Mana</span></button>
+      </div>
+      <div class="abar-row abar-row-spells">
+        <button class="abtn abtn-spell" id="bspell-fire" data-el="fire">🔥 Inferno<span class="cost">12</span></button>
+        <button class="abtn abtn-spell" id="bspell-lightning" data-el="lightning">⚡ Bolt<span class="cost">9</span></button>
+        <button class="abtn abtn-spell" id="bspell-ice" data-el="ice">❄️ Frost<span class="cost">6</span></button>
+        <button class="abtn abtn-spell" id="bspell-arcane" data-el="arcane">🌀 Arcane<span class="cost">9</span></button>
+      </div>
     </div>
   </div>
 
@@ -159,6 +185,6 @@
   <div id="flash"></div>
 </div>
 
-<script src="js/game.js?v=0.7"></script>
+<script src="js/game.js?v=0.8"></script>
 </body>
 </html>
