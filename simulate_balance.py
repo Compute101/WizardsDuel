@@ -22,7 +22,7 @@ CHAR_DEFS = json.load(open(os.path.join(_here, 'characters.json')))
 MAX_MANA    = 20
 BURN_DMG    = 5
 BURN_ROUNDS = 2
-SPELL_HIT   = 0.80   # probability AI casts a spell successfully
+SPELL_HIT   = 0.80
 
 SPELLS = [
     dict(name='Inferno',        element='fire',      dmg=38, cost=12),
@@ -34,17 +34,18 @@ SPELLS = [
 # ── Player state ─────────────────────────────────────────────
 @dataclass
 class PS:
-    hp:       int
-    max_hp:   int
-    mana:     int
-    char_key: str
-    shield:   int   = 0
-    burn:     int   = 0
-    frozen:   bool  = False
-    counter:  bool  = False
-    empowered:bool  = False
-    ward:     int   = 0
-    weakened: bool  = False
+    hp:        int
+    max_hp:    int
+    mana:      int
+    char_key:  str
+    shield:    int   = 0
+    burn:      int   = 0
+    frozen:    bool  = False   # from Frost Nova spell — no chain
+    entangled: bool  = False   # from Sylvara's Entangle — may chain
+    counter:   bool  = False
+    empowered: bool  = False
+    ward:      int   = 0
+    weakened:  bool  = False
 
 def make_ps(key):
     c = CHAR_DEFS[key]
@@ -52,7 +53,6 @@ def make_ps(key):
 
 # ── Spell resolution ─────────────────────────────────────────
 def resolve_spell(spell, caster: PS, target: PS):
-    """Apply a spell from caster to target. Returns actual dmg dealt."""
     cc = CHAR_DEFS[caster.char_key]
     tc = CHAR_DEFS[target.char_key]
 
@@ -65,11 +65,9 @@ def resolve_spell(spell, caster: PS, target: PS):
         dmg = round(dmg * cc.get('empowerMult', 1.5))
         caster.empowered = False
     if caster.weakened:
-        # weakenMult belongs to the opponent who applied Weaken
         dmg = round(dmg * tc.get('weakenMult', 0.65))
         caster.weakened = False
 
-    # Target: Ward
     if target.ward > 0:
         if random.random() < tc.get('wardFizzle', 0.15):
             target.ward -= 1
@@ -77,13 +75,11 @@ def resolve_spell(spell, caster: PS, target: PS):
         dmg = round(dmg * (1.0 - tc.get('wardAbsorb', 0.25)))
         target.ward -= 1
 
-    # Counter check (before shield breaks)
     counter_triggered = target.shield > 0 and target.counter
 
-    # Target: Shield
     if target.shield > 0:
         if spell['element'] == 'lightning':
-            pass  # pierces: full dmg
+            pass
         else:
             dmg = round(dmg * (1.0 - tc.get('shieldAbsorb', 0.70)))
         target.shield -= 1
@@ -97,7 +93,7 @@ def resolve_spell(spell, caster: PS, target: PS):
     if spell['element'] == 'fire':
         target.burn = BURN_ROUNDS
     if spell['element'] == 'ice':
-        target.frozen = True
+        target.frozen = True   # Frost Nova sets frozen, not entangled
 
     return dmg
 
@@ -123,7 +119,8 @@ def ai_act(me: PS, opp: PS) -> str:
     elif key == 'sylvara':
         if me.hp < 55 and me.mana >= sp[0]['cost'] and random.random() < 0.72:
             return 'special:heal'
-        if opp.mana >= 9 and me.mana >= sp[1]['cost'] and not opp.frozen and random.random() < 0.60:
+        if (opp.mana >= 9 and me.mana >= sp[1]['cost']
+                and not opp.frozen and not opp.entangled and random.random() < 0.60):
             return 'special:entangle'
 
     elif key == 'aurelia':
@@ -163,10 +160,14 @@ def simulate_battle(key1, key2):
 
         # ── P1 turn ──
         if p.frozen:
-            p.frozen = False
+            p.frozen = False                          # Frost Nova: clears, no chain
+        elif p.entangled:
+            chain = c2.get('entangleChain', 0)
+            p.entangled = False
+            if chain > 0 and random.random() < chain: # only rolls RNG when Sylvara is opponent
+                p.entangled = True
         else:
             action = ai_act(p, ai)
-
             if action == 'channel':
                 p.mana = min(MAX_MANA, p.mana + c1['channelAmt'])
             elif action == 'special:shield':
@@ -183,7 +184,7 @@ def simulate_battle(key1, key2):
                 p.hp = min(p.max_hp, p.hp + c1['healAmt'])
             elif action == 'special:entangle':
                 p.mana -= c1['specials'][1]['cost']
-                ai.hp = max(0, ai.hp - c1['entangleDmg']); ai.frozen = True
+                ai.hp = max(0, ai.hp - c1['entangleDmg']); ai.entangled = True
                 if ai.hp <= 0: return True
             elif action == 'special:ward':
                 p.mana -= c1['specials'][0]['cost']; p.ward = c1['wardTurns']
@@ -198,7 +199,6 @@ def simulate_battle(key1, key2):
                     if ai.hp <= 0: return True
                 else:
                     p.mana = max(0, p.mana - 1)
-
             if p.shield > 0: p.shield -= 1
 
         # ── AI burn tick ──
@@ -208,10 +208,14 @@ def simulate_battle(key1, key2):
 
         # ── AI turn ──
         if ai.frozen:
-            ai.frozen = False
+            ai.frozen = False                         # Frost Nova: clears, no chain
+        elif ai.entangled:
+            chain = c1.get('entangleChain', 0)
+            ai.entangled = False
+            if chain > 0 and random.random() < chain:
+                ai.entangled = True
         else:
             action = ai_act(ai, p)
-
             if action == 'channel':
                 ai.mana = min(MAX_MANA, ai.mana + c2['channelAmt'])
             elif action == 'special:shield':
@@ -228,7 +232,7 @@ def simulate_battle(key1, key2):
                 ai.hp = min(ai.max_hp, ai.hp + c2['healAmt'])
             elif action == 'special:entangle':
                 ai.mana -= c2['specials'][1]['cost']
-                p.hp = max(0, p.hp - c2['entangleDmg']); p.frozen = True
+                p.hp = max(0, p.hp - c2['entangleDmg']); p.entangled = True
                 if p.hp <= 0: return False
             elif action == 'special:ward':
                 ai.mana -= c2['specials'][0]['cost']; ai.ward = c2['wardTurns']
@@ -243,7 +247,6 @@ def simulate_battle(key1, key2):
                     if p.hp <= 0: return False
                 else:
                     ai.mana = max(0, ai.mana - 1)
-
             if ai.shield > 0: ai.shield -= 1
 
     return p.hp > ai.hp

@@ -44,6 +44,7 @@
     "dmgMult": 1.0,
     "healAmt": 20,
     "entangleDmg": 12,
+    "entangleChain": 0,
     "specials": [
       {"id": "heal",     "label": "Heal",     "ico": "💚", "cost": 5, "costLabel": "5 Mana"},
       {"id": "entangle", "label": "Entangle", "ico": "🌿", "cost": 5, "costLabel": "5 Mana"}
