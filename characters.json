@@ -42,7 +42,7 @@
     "startMana": 6,
     "channelAmt": 4,
     "dmgMult": 1.0,
-    "healAmt": 20,
+    "healAmt": 19,
     "entangleDmg": 12,
     "entangleChain": 0,
     "specials": [
@@ -58,11 +58,11 @@
     "hp": 90,
     "startMana": 6,
     "channelAmt": 4,
-    "dmgMult": 1.10,
+    "dmgMult": 1.05,
     "wardTurns": 2,
     "wardAbsorb": 0.25,
     "wardFizzle": 0.15,
-    "weakenMult": 0.75,
+    "weakenMult": 0.78,
     "specials": [
       {"id": "ward",   "label": "Ward",   "ico": "✨", "cost": 3, "costLabel": "3 Mana"},
       {"id": "weaken", "label": "Weaken", "ico": "🌀", "cost": 0, "costLabel": "Free"}
