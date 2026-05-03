@@ -1589,10 +1589,27 @@ function updateActionBar(cfg){
 }
 
 // ── BUTTON WIRING ──────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', async ()=>{
-  const r=await fetch('characters.json');
-  CHAR_DEFS=await r.json();
-  p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key];
+function pickCharacter(key){
+  p1Key=key;
+  p1Cfg=CHAR_DEFS[key];
+  const others=Object.keys(CHAR_DEFS).filter(k=>k!==key);
+  p2Key=others[Math.floor(Math.random()*others.length)];
+  p2Cfg=CHAR_DEFS[p2Key];
+  loadSprites();
+  updateActionBar(p1Cfg);
+  document.getElementById('p1name').textContent=p1Cfg.name;
+  document.getElementById('p2name').textContent=p2Cfg.name;
+  newState();
+  gameEnded=false;
+  battleRunning=true;
+  lastFrameTime=0;
+  resizeBC();
+  showScreen('battle-screen');
+  requestAnimationFrame(battleLoop);
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  // Wire up all buttons immediately — independent of the fetch below
   document.querySelectorAll('.diff-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
@@ -1602,32 +1619,8 @@ window.addEventListener('DOMContentLoaded', async ()=>{
     });
   });
 
-  document.getElementById('btn-start').addEventListener('click',()=>{
-    showScreen('char-screen');
-  });
-
-  document.getElementById('btn-back').addEventListener('click',()=>{
-    showScreen('title-screen');
-  });
-
-  function pickCharacter(key){
-    p1Key=key;
-    p1Cfg=CHAR_DEFS[key];
-    const others=Object.keys(CHAR_DEFS).filter(k=>k!==key);
-    p2Key=others[Math.floor(Math.random()*others.length)];
-    p2Cfg=CHAR_DEFS[p2Key];
-    loadSprites();
-    updateActionBar(p1Cfg);
-    document.getElementById('p1name').textContent=p1Cfg.name;
-    document.getElementById('p2name').textContent=p2Cfg.name;
-    newState();
-    gameEnded=false;
-    battleRunning=true;
-    lastFrameTime=0;
-    resizeBC();
-    showScreen('battle-screen');
-    requestAnimationFrame(battleLoop);
-  }
+  document.getElementById('btn-start').addEventListener('click',()=>showScreen('char-screen'));
+  document.getElementById('btn-back').addEventListener('click',()=>showScreen('title-screen'));
 
   document.getElementById('pick-eldrad').addEventListener('click',()=>pickCharacter('eldrad'));
   document.getElementById('pick-mal').addEventListener('click',()=>pickCharacter('mal'));
@@ -1662,4 +1655,10 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   });
 
   window.addEventListener('resize',()=>{ if(battleRunning) resizeBC(); });
+
+  // Load character data — must complete before a character can be picked
+  fetch('characters.json')
+    .then(r=>r.json())
+    .then(data=>{ CHAR_DEFS=data; p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key]; })
+    .catch(err=>console.error('Failed to load characters.json:', err));
 });
