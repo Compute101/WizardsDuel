@@ -12,8 +12,8 @@
     "shieldAbsorb": 0.70,
     "counterDmg": 20,
     "specials": [
-      {"id": "shield",  "label": "Shield",  "ico": "🛡", "cost": 3, "costLabel": "3 Mana"},
-      {"id": "counter", "label": "Counter", "ico": "⚡", "cost": 3, "costLabel": "3 Mana"}
+      {"id": "shield",  "label": "Shield",  "ico": "🛡", "cost": 0, "costLabel": "Free"},
+      {"id": "counter", "label": "Counter", "ico": "⚡", "cost": 0, "costLabel": "Free"}
     ]
   },
   "mal": {
@@ -46,8 +46,8 @@
     "entangleDmg": 12,
     "entangleChain": 0,
     "specials": [
-      {"id": "heal",     "label": "Heal",     "ico": "💚", "cost": 5, "costLabel": "5 Mana"},
-      {"id": "entangle", "label": "Entangle", "ico": "🌿", "cost": 5, "costLabel": "5 Mana"}
+      {"id": "heal",     "label": "Heal",     "ico": "💚", "cost": 0, "costLabel": "Free"},
+      {"id": "entangle", "label": "Entangle", "ico": "🌿", "cost": 0, "costLabel": "Free"}
     ]
   },
   "aurelia": {
@@ -64,8 +64,8 @@
     "wardFizzle": 0.15,
     "weakenMult": 0.65,
     "specials": [
-      {"id": "ward",   "label": "Ward",   "ico": "✨", "cost": 3, "costLabel": "3 Mana"},
-      {"id": "weaken", "label": "Weaken", "ico": "🌀", "cost": 3, "costLabel": "3 Mana"}
+      {"id": "ward",   "label": "Ward",   "ico": "✨", "cost": 0, "costLabel": "Free"},
+      {"id": "weaken", "label": "Weaken", "ico": "🌀", "cost": 0, "costLabel": "Free"}
     ]
   }
 }
