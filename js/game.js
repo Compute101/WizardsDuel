@@ -275,8 +275,8 @@ function battleLoop(ts){
 
 // ── HUD ────────────────────────────────────────────────────
 function refreshHUD(){
-  document.getElementById('p1hpf').style.width=Math.max(0,gs.p1.hp/gs.p1.maxHp*100)+'%';
-  document.getElementById('p2hpf').style.width=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
+  document.getElementById('p1hpf').style.height=Math.max(0,gs.p1.hp/gs.p1.maxHp*100)+'%';
+  document.getElementById('p2hpf').style.height=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
   document.getElementById('sh1').style.opacity=gs.p1.shield>0||gs.p1.ward>0?'1':'0.18';
   document.getElementById('sh2').style.opacity=gs.p2.shield>0||gs.p2.ward>0?'1':'0.18';
   document.getElementById('roundlbl').textContent='Round '+gs.round;
@@ -286,8 +286,8 @@ function refreshHUD(){
 }
 
 function refreshMana(fillId,valId,val){
-  document.getElementById(fillId).style.width=(val/MAX_MANA*100)+'%';
-  document.getElementById(valId).textContent=val+'/'+MAX_MANA;
+  document.getElementById(fillId).style.height=(val/MAX_MANA*100)+'%';
+  document.getElementById(valId).textContent=val;
 }
 
 function refreshActionBar(){
@@ -1599,6 +1599,8 @@ function pickCharacter(key){
   updateActionBar(p1Cfg);
   document.getElementById('p1name').textContent=p1Cfg.name;
   document.getElementById('p2name').textContent=p2Cfg.name;
+  document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
+  document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
   newState();
   gameEnded=false;
   battleRunning=true;

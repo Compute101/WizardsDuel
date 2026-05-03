@@ -33,7 +33,7 @@
     <div class="char-sub">★ Each wizard has unique strengths ★</div>
     <div class="char-cards">
       <div class="char-card" id="pick-eldrad">
-        <div class="char-sprite char-sprite-eldrad"></div>
+        <img class="char-portrait" src="portraits/eldrad.png" alt="Eldrin">
         <div class="char-name p1">ELDRIN</div>
         <div class="char-epithet">The Stalwart</div>
         <div class="char-stats">
@@ -45,7 +45,7 @@
         <div class="char-flavour">Outlast your foe with arcane endurance.</div>
       </div>
       <div class="char-card" id="pick-mal">
-        <div class="char-sprite char-sprite-mal"></div>
+        <img class="char-portrait" src="portraits/mal.png" alt="Malachar">
         <div class="char-name p2">MALACHAR</div>
         <div class="char-epithet">The Relentless</div>
         <div class="char-stats">
@@ -57,7 +57,7 @@
         <div class="char-flavour">Strike hard. Strike first. No mercy.</div>
       </div>
       <div class="char-card" id="pick-sylvara">
-        <div class="char-sprite char-sprite-sylvara"></div>
+        <img class="char-portrait" src="portraits/sylvara.png" alt="Sylvara">
         <div class="char-name" style="color:#44cc88">SYLVARA</div>
         <div class="char-epithet">The Verdant</div>
         <div class="char-stats">
@@ -69,7 +69,7 @@
         <div class="char-flavour">Sustain and control with nature's power.</div>
       </div>
       <div class="char-card" id="pick-aurelia">
-        <div class="char-sprite char-sprite-aurelia"></div>
+        <img class="char-portrait" src="portraits/aurelia.png" alt="Aurelia">
         <div class="char-name" style="color:#ffcc44">AURELIA</div>
         <div class="char-epithet">The Radiant</div>
         <div class="char-stats">
@@ -87,25 +87,41 @@
   <!-- BATTLE -->
   <div id="battle-screen" class="screen">
     <div id="hud">
-      <div class="hrow">
-        <span class="wname p1" id="p1name">ELDRIN</span>
-        <div class="hpbar"><div class="hpfill" id="p1hpf" style="width:100%"></div></div>
-        <span class="shico" id="sh1">🛡</span>
-      </div>
-      <div class="hrow">
-        <span class="wname p2" id="p2name">MALACHAR</span>
-        <div class="hpbar"><div class="hpfill" id="p2hpf" style="width:100%"></div></div>
-        <span class="shico" id="sh2">🛡</span>
-      </div>
-      <div class="manarow">
-        <div class="manabar-wrap">
-          <div class="manabar"><div class="manabar-fill mf-p1" id="mfill1"></div></div>
-          <span class="mana-val" id="mval1">5/20</span>
+      <div class="phud phud-p1">
+        <div class="phud-bars">
+          <div class="vbar-wrap">
+            <div class="vbar hp-vbar"><div class="vbar-fill" id="p1hpf" style="height:100%"></div></div>
+            <span class="vbar-lbl">HP</span>
+          </div>
+          <div class="vbar-wrap">
+            <div class="vbar mana-vbar"><div class="vbar-fill mf-p1" id="mfill1"></div></div>
+            <span class="vbar-lbl" id="mval1">5</span>
+          </div>
         </div>
+        <div class="phud-col">
+          <img class="phud-img" id="p1-portrait" src="portraits/eldrad.png" alt="">
+          <span class="wname p1" id="p1name">ELDRIN</span>
+          <span class="shico" id="sh1">🛡</span>
+        </div>
+      </div>
+      <div class="phud-center">
         <div id="roundlbl">Round 1</div>
-        <div class="manabar-wrap manabar-wrap-r">
-          <span class="mana-val" id="mval2">7/20</span>
-          <div class="manabar"><div class="manabar-fill mf-p2" id="mfill2"></div></div>
+      </div>
+      <div class="phud phud-p2">
+        <div class="phud-col">
+          <img class="phud-img" id="p2-portrait" src="portraits/mal.png" alt="">
+          <span class="wname p2" id="p2name">MALACHAR</span>
+          <span class="shico" id="sh2">🛡</span>
+        </div>
+        <div class="phud-bars">
+          <div class="vbar-wrap">
+            <div class="vbar mana-vbar"><div class="vbar-fill mf-p2" id="mfill2"></div></div>
+            <span class="vbar-lbl" id="mval2">7</span>
+          </div>
+          <div class="vbar-wrap">
+            <div class="vbar hp-vbar"><div class="vbar-fill" id="p2hpf" style="height:100%"></div></div>
+            <span class="vbar-lbl">HP</span>
+          </div>
         </div>
       </div>
     </div>
