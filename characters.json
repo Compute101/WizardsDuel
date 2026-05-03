@@ -12,7 +12,7 @@
     "shieldAbsorb": 0.70,
     "counterDmg": 20,
     "specials": [
-      {"id": "shield",  "label": "Shield",  "ico": "🛡", "cost": 0, "costLabel": "Free"},
+      {"id": "shield",  "label": "Shield",  "ico": "🛡", "cost": 3, "costLabel": "3 Mana"},
       {"id": "counter", "label": "Counter", "ico": "⚡", "cost": 0, "costLabel": "Free"}
     ]
   },
@@ -46,7 +46,7 @@
     "entangleDmg": 12,
     "entangleChain": 0,
     "specials": [
-      {"id": "heal",     "label": "Heal",     "ico": "💚", "cost": 0, "costLabel": "Free"},
+      {"id": "heal",     "label": "Heal",     "ico": "💚", "cost": 5, "costLabel": "5 Mana"},
       {"id": "entangle", "label": "Entangle", "ico": "🌿", "cost": 0, "costLabel": "Free"}
     ]
   },
