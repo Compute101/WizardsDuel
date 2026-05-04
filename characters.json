@@ -11,9 +11,9 @@
     "shieldHits": 2,
     "shieldAbsorb": 0.70,
     "counterDmg": 20,
-    "specials": [
-      {"id": "shield",  "label": "Shield",  "ico": "🛡", "cost": 3, "costLabel": "3 Mana"},
-      {"id": "counter", "label": "Counter", "ico": "⚡", "cost": 0, "costLabel": "Free"}
+    "spells": [
+      {"id": "shield",  "name": "Shield",  "icon": "🛡", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Block 70% of next hit"},
+      {"id": "counter", "name": "Counter", "icon": "⚡", "cost": 0, "costLabel": "Free",   "effectLabel": "Reflect 20 dmg when struck"}
     ]
   },
   "mal": {
@@ -28,9 +28,9 @@
     "empowerMult": 1.50,
     "bpCost": 22,
     "bpGain": 7,
-    "specials": [
-      {"id": "empower",   "label": "Empower",    "ico": "💪", "cost": 0, "costLabel": "Free"},
-      {"id": "bloodpact", "label": "Blood Pact", "ico": "🩸", "cost": 0, "costLabel": "Free"}
+    "spells": [
+      {"id": "empower",   "name": "Empower",    "icon": "💪", "cost": 0, "costLabel": "Free", "effectLabel": "Next spell deals +50% damage"},
+      {"id": "bloodpact", "name": "Blood Pact", "icon": "🩸", "cost": 0, "costLabel": "Free", "effectLabel": "Sacrifice 22 HP for 7 Mana", "aiHint": "mana_restore"}
     ]
   },
   "sylvara": {
@@ -44,10 +44,9 @@
     "dmgMult": 1.0,
     "healAmt": 19,
     "entangleDmg": 12,
-    "entangleChain": 0,
-    "specials": [
-      {"id": "heal",     "label": "Heal",     "ico": "💚", "cost": 4, "costLabel": "4 Mana"},
-      {"id": "entangle", "label": "Entangle", "ico": "🌿", "cost": 3, "costLabel": "3 Mana"}
+    "spells": [
+      {"id": "heal",     "name": "Heal",     "icon": "💚", "cost": 4, "costLabel": "4 Mana", "effectLabel": "Restore 19 HP"},
+      {"id": "entangle", "name": "Entangle", "icon": "🌿", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Deal 12 dmg and freeze enemy"}
     ]
   },
   "aurelia": {
@@ -63,9 +62,9 @@
     "wardAbsorb": 0.25,
     "wardFizzle": 0.15,
     "weakenMult": 0.78,
-    "specials": [
-      {"id": "ward",   "label": "Ward",   "ico": "✨", "cost": 3, "costLabel": "3 Mana"},
-      {"id": "weaken", "label": "Weaken", "ico": "🌀", "cost": 0, "costLabel": "Free"}
+    "spells": [
+      {"id": "ward",   "name": "Ward",   "icon": "✨", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Reduce incoming damage 25% for 2 turns"},
+      {"id": "weaken", "name": "Weaken", "icon": "🌀", "cost": 0, "costLabel": "Free",   "effectLabel": "Reduce enemy spell damage by 22%"}
     ]
   },
   "ponder": {
@@ -80,9 +79,9 @@
     "shieldHits": 2,
     "shieldAbsorb": 0.70,
     "counterDmg": 20,
-    "specials": [
-      {"id": "shield",  "label": "Shield",  "ico": "🛡", "cost": 3, "costLabel": "3 Mana"},
-      {"id": "counter", "label": "Counter", "ico": "⚡", "cost": 0, "costLabel": "Free"}
+    "spells": [
+      {"id": "shield",  "name": "Shield",  "icon": "🛡", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Block 70% of next hit"},
+      {"id": "counter", "name": "Counter", "icon": "⚡", "cost": 0, "costLabel": "Free",   "effectLabel": "Reflect 20 dmg when struck"}
     ]
   }
 }
