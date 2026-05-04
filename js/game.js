@@ -943,7 +943,7 @@ function launchMaze(spell,cb){
   const mw=Math.min(cw,(window.innerWidth||360)-32);
   mc.style.width=mw+'px'; mc.style.height='auto';
 
-  const mk={col:0,row:0,x:0.5,y:0.5,fromX:0.5,fromY:0.5,dir:-1,moving:false,moveT:0};
+  const mk={col:0,row:0,x:0.5,y:0.5,fromX:0.5,fromY:0.5,dir:-1,moving:false,moveT:0,held:false,tapPending:false};
   const goal={col:COLS-1,row:ROWS-1};
   const trail=[];
   const MOVE_DUR=160;
@@ -968,22 +968,30 @@ function launchMaze(spell,cb){
     if(timeLeft<=0) finish(false);
   },1000);
 
-  function setDir(d){ mk.dir=d; }
+  function pressDir(d){ mk.dir=d; mk.held=true; mk.tapPending=true; }
+  function releaseDir(){ mk.held=false; }
   const dpMap={'dp-n':0,'dp-e':1,'dp-s':2,'dp-w':3};
   const dpEls={};
   Object.keys(dpMap).forEach(id=>{
     const el=document.getElementById(id); dpEls[id]=el;
-    el.addEventListener('pointerdown',e=>{e.preventDefault(); setDir(dpMap[id]); el.classList.add('pressed');});
-    el.addEventListener('pointerup',()=>el.classList.remove('pressed'));
+    el.addEventListener('pointerdown',e=>{e.preventDefault(); pressDir(dpMap[id]); el.classList.add('pressed');});
+    el.addEventListener('pointerup',()=>{ releaseDir(); el.classList.remove('pressed'); });
+    el.addEventListener('pointercancel',()=>{ releaseDir(); el.classList.remove('pressed'); });
   });
   function onKD(e){
     const m={ArrowUp:0,ArrowRight:1,ArrowDown:2,ArrowLeft:3};
-    if(m[e.key]!==undefined){setDir(m[e.key]); e.preventDefault();}
+    if(m[e.key]!==undefined&&!e.repeat){ pressDir(m[e.key]); e.preventDefault(); }
+  }
+  function onKU(e){
+    const m={ArrowUp:0,ArrowRight:1,ArrowDown:2,ArrowLeft:3};
+    if(m[e.key]!==undefined) releaseDir();
   }
   window.addEventListener('keydown',onKD);
+  window.addEventListener('keyup',onKU);
 
   function cleanup(){
     window.removeEventListener('keydown',onKD);
+    window.removeEventListener('keyup',onKU);
     if(mazeRAF){cancelAnimationFrame(mazeRAF); mazeRAF=null;}
     if(mazeTid){clearInterval(mazeTid); mazeTid=null;}
     Object.values(dpEls).forEach(el=>el.classList.remove('pressed'));
@@ -1002,11 +1010,14 @@ function launchMaze(spell,cb){
         if(mk.col===goal.col&&mk.row===goal.row) finish(true);
       }
     }
-    if(!mk.moving&&mk.dir>=0&&canGo(walls,mk.col,mk.row,mk.dir)){
-      trail.push({x:mk.x,y:mk.y,life:1});
-      mk.fromX=mk.x; mk.fromY=mk.y;
-      mk.col+=DC[mk.dir]; mk.row+=DR[mk.dir];
-      mk.moving=true; mk.moveT=0;
+    if(!mk.moving&&(mk.held||mk.tapPending)&&mk.dir>=0){
+      mk.tapPending=false;
+      if(canGo(walls,mk.col,mk.row,mk.dir)){
+        trail.push({x:mk.x,y:mk.y,life:1});
+        mk.fromX=mk.x; mk.fromY=mk.y;
+        mk.col+=DC[mk.dir]; mk.row+=DR[mk.dir];
+        mk.moving=true; mk.moveT=0;
+      }
     }
     for(let i=trail.length-1;i>=0;i--){
       trail[i].life-=dt/700;
