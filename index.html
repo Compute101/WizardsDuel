@@ -30,58 +30,37 @@
   <!-- CHARACTER SELECT -->
   <div id="char-screen" class="screen">
     <div class="char-heading">Choose Your Wizard</div>
-    <div class="char-sub">★ Each wizard has unique strengths ★</div>
+    <div class="char-sub">★ Tap a portrait to learn more ★</div>
     <div class="char-cards">
       <div class="char-card" id="pick-eldrad">
         <img class="char-portrait" src="portraits/eldrad.png" alt="Eldrin">
         <div class="char-name p1">ELDRIN</div>
-        <div class="char-epithet">The Stalwart</div>
-        <div class="char-stats">
-          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">115</span></div>
-          <div class="cstat"><span class="cstat-l">🛡 Shield</span><span class="cstat-r">70% absorb</span></div>
-          <div class="cstat"><span class="cstat-l">⚡ Counter</span><span class="cstat-r">20 reflect</span></div>
-          <div class="cstat"><span class="cstat-l">✨ Channel</span><span class="cstat-r">+4 Mana</span></div>
-        </div>
-        <div class="char-flavour">Outlast your foe with arcane endurance.</div>
       </div>
       <div class="char-card" id="pick-mal">
         <img class="char-portrait" src="portraits/mal.png" alt="Malachar">
         <div class="char-name p2">MALACHAR</div>
-        <div class="char-epithet">The Relentless</div>
-        <div class="char-stats">
-          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">80</span></div>
-          <div class="cstat"><span class="cstat-l">💪 Empower</span><span class="cstat-r">+50% / Free</span></div>
-          <div class="cstat"><span class="cstat-l">🩸 Blood Pact</span><span class="cstat-r">−22/+7 mana</span></div>
-          <div class="cstat"><span class="cstat-l">✨ Channel</span><span class="cstat-r">+4 Mana</span></div>
-        </div>
-        <div class="char-flavour">Strike hard. Strike first. No mercy.</div>
       </div>
       <div class="char-card" id="pick-sylvara">
         <img class="char-portrait" src="portraits/sylvara.png" alt="Sylvara">
         <div class="char-name" style="color:#44cc88">SYLVARA</div>
-        <div class="char-epithet">The Verdant</div>
-        <div class="char-stats">
-          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">92</span></div>
-          <div class="cstat"><span class="cstat-l">💚 Heal</span><span class="cstat-r">+20 HP</span></div>
-          <div class="cstat"><span class="cstat-l">🌿 Entangle</span><span class="cstat-r">12+freeze</span></div>
-          <div class="cstat"><span class="cstat-l">✨ Channel</span><span class="cstat-r">+4 Mana</span></div>
-        </div>
-        <div class="char-flavour">Sustain and control with nature's power.</div>
       </div>
       <div class="char-card" id="pick-aurelia">
         <img class="char-portrait" src="portraits/aurelia.png" alt="Aurelia">
         <div class="char-name" style="color:#ffcc44">AURELIA</div>
-        <div class="char-epithet">The Radiant</div>
-        <div class="char-stats">
-          <div class="cstat"><span class="cstat-l">❤ HP</span><span class="cstat-r">90</span></div>
-          <div class="cstat"><span class="cstat-l">✨ Ward</span><span class="cstat-r">2-turn barrier</span></div>
-          <div class="cstat"><span class="cstat-l">🌀 Weaken</span><span class="cstat-r">−35% spell</span></div>
-          <div class="cstat"><span class="cstat-l">✨ Channel</span><span class="cstat-r">+4 Mana</span></div>
-        </div>
-        <div class="char-flavour">Control the field with light and debuffs.</div>
       </div>
     </div>
     <button class="btn" id="btn-back">← Back</button>
+  </div>
+
+  <!-- WIZARD DETAIL -->
+  <div id="wizard-detail">
+    <img class="wd-portrait" id="wd-portrait" src="" alt="">
+    <div class="wd-name" id="wd-name"></div>
+    <div class="wd-epithet" id="wd-epithet"></div>
+    <div class="wd-stats" id="wd-stats"></div>
+    <div class="wd-flavour" id="wd-flavour"></div>
+    <button class="btn" id="wd-choose">⚔ Choose This Wizard</button>
+    <button class="btn wd-back-btn" id="wd-back">← Back</button>
   </div>
 
   <!-- BATTLE -->
