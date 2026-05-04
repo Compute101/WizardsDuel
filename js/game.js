@@ -111,7 +111,6 @@ function loadSprites(){
     img.src=urls[who];
   });
 }
-loadSprites();
 
 const animState={p1:{frame:0,timer:0},p2:{frame:0,timer:0}};
 const FRAME_MS=180;
@@ -1659,6 +1658,6 @@ window.addEventListener('DOMContentLoaded', ()=>{
   // Load character data — must complete before a character can be picked
   fetch('characters.json')
     .then(r=>r.json())
-    .then(data=>{ CHAR_DEFS=data; p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key]; })
+    .then(data=>{ CHAR_DEFS=data; p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key]; loadSprites(); })
     .catch(err=>console.error('Failed to load characters.json:', err));
 });
