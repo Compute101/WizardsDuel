@@ -17,6 +17,25 @@ let CHAR_DEFS={};
 let p1Key='eldrad', p2Key='mal';
 let p1Cfg, p2Cfg;
 
+const CHAR_DISPLAY={
+  eldrad:{
+    stats:[['❤ HP','115'],['🛡 Shield','70% absorb'],['⚡ Counter','20 reflect'],['✨ Channel','+4 Mana']],
+    flavour:'Outlast your foe with arcane endurance.'
+  },
+  mal:{
+    stats:[['❤ HP','80'],['💪 Empower','+50% / Free'],['🩸 Blood Pact','−22/+7 mana'],['✨ Channel','+4 Mana']],
+    flavour:'Strike hard. Strike first. No mercy.'
+  },
+  sylvara:{
+    stats:[['❤ HP','92'],['💚 Heal','+20 HP'],['🌿 Entangle','12+freeze'],['✨ Channel','+4 Mana']],
+    flavour:"Sustain and control with nature's power."
+  },
+  aurelia:{
+    stats:[['❤ HP','90'],['✨ Ward','2-turn barrier'],['🌀 Weaken','−35% spell'],['✨ Channel','+4 Mana']],
+    flavour:'Control the field with light and debuffs.'
+  }
+};
+
 // ── DIFFICULTY ─────────────────────────────────────────────
 let diffMult=1.0, diffName='normal';
 
@@ -1599,6 +1618,26 @@ function updateActionBar(cfg){
 }
 
 // ── BUTTON WIRING ──────────────────────────────────────────
+function showWizardDetail(key){
+  const cfg=CHAR_DEFS[key]||{};
+  const disp=CHAR_DISPLAY[key];
+  const col=cfg.col||'#f0cc6a';
+  document.getElementById('wd-portrait').src='portraits/'+key+'.png';
+  const nameEl=document.getElementById('wd-name');
+  nameEl.textContent=cfg.name||key.toUpperCase();
+  nameEl.style.color=col;
+  document.getElementById('wd-epithet').textContent=cfg.title||'';
+  document.getElementById('wd-stats').innerHTML=disp.stats
+    .map(([l,r])=>`<div class="cstat"><span class="cstat-l">${l}</span><span class="cstat-r">${r}</span></div>`)
+    .join('');
+  document.getElementById('wd-flavour').textContent=disp.flavour;
+  const chooseBtn=document.getElementById('wd-choose');
+  chooseBtn.style.borderColor=col;
+  chooseBtn.style.color=col;
+  chooseBtn.dataset.key=key;
+  document.getElementById('wizard-detail').classList.add('active');
+}
+
 function pickCharacter(key){
   p1Key=key;
   p1Cfg=CHAR_DEFS[key];
@@ -1634,10 +1673,19 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btn-start').addEventListener('click',()=>showScreen('char-screen'));
   document.getElementById('btn-back').addEventListener('click',()=>showScreen('title-screen'));
 
-  document.getElementById('pick-eldrad').addEventListener('click',()=>pickCharacter('eldrad'));
-  document.getElementById('pick-mal').addEventListener('click',()=>pickCharacter('mal'));
-  document.getElementById('pick-sylvara').addEventListener('click',()=>pickCharacter('sylvara'));
-  document.getElementById('pick-aurelia').addEventListener('click',()=>pickCharacter('aurelia'));
+  document.getElementById('pick-eldrad').addEventListener('click',()=>showWizardDetail('eldrad'));
+  document.getElementById('pick-mal').addEventListener('click',()=>showWizardDetail('mal'));
+  document.getElementById('pick-sylvara').addEventListener('click',()=>showWizardDetail('sylvara'));
+  document.getElementById('pick-aurelia').addEventListener('click',()=>showWizardDetail('aurelia'));
+
+  document.getElementById('wd-back').addEventListener('click',()=>{
+    document.getElementById('wizard-detail').classList.remove('active');
+  });
+  document.getElementById('wd-choose').addEventListener('click',()=>{
+    const key=document.getElementById('wd-choose').dataset.key;
+    document.getElementById('wizard-detail').classList.remove('active');
+    pickCharacter(key);
+  });
 
   document.getElementById('btn-help').addEventListener('click',()=>{
     document.getElementById('helpmodal').style.display='flex';

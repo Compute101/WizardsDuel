@@ -168,23 +168,16 @@ body {
 #pick-mal:hover,   #pick-mal:active    { border-color: #ff4a6e; box-shadow: 0 0 20px rgba(255,74,110,0.25); }
 .char-portrait {
   width: 100%;
-  height: 110px;
+  height: 160px;
   object-fit: cover;
-  object-position: center 25%;
+  object-position: center 20%;
   border-radius: 4px;
   margin-bottom: 8px;
   display: block;
 }
 .char-name {
   font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-  margin-bottom: 2px;
 }
-.char-epithet {
-  font-size: 9px; font-style: italic; letter-spacing: 1px;
-  color: rgba(255,255,255,0.4);
-  margin-bottom: 10px;
-}
-.char-stats { text-align: left; margin-bottom: 10px; }
 .cstat {
   display: flex; justify-content: space-between;
   font-size: 9px; letter-spacing: 1px;
@@ -193,10 +186,66 @@ body {
 }
 .cstat-l { color: rgba(255,255,255,0.45); }
 .cstat-r { font-weight: 700; color: rgba(255,255,255,0.85); }
-.char-flavour {
-  font-size: 8px; font-style: italic; letter-spacing: 1px;
-  color: rgba(201,168,76,0.5);
-  line-height: 1.5;
+
+/* ── WIZARD DETAIL OVERLAY ── */
+#wizard-detail {
+  display: none;
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 35%, #2a1060 0%, #0d0820 70%);
+  z-index: 150;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 28px 20px 32px;
+}
+#wizard-detail.active { display: flex; }
+.wd-portrait {
+  width: 100%; max-width: 360px;
+  height: 230px;
+  object-fit: cover;
+  object-position: center 20%;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 2px solid rgba(201,168,76,0.35);
+  display: block;
+}
+.wd-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(16px, 5vw, 22px);
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 16px currentColor;
+  margin-bottom: 4px;
+}
+.wd-epithet {
+  font-size: 11px; font-style: italic; letter-spacing: 1px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 18px;
+}
+.wd-stats {
+  width: 100%; max-width: 360px;
+  border: 1px solid rgba(201,168,76,0.18);
+  border-radius: 6px;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.35);
+  margin-bottom: 14px;
+}
+.wd-flavour {
+  font-size: 11px; font-style: italic; letter-spacing: 1px;
+  color: rgba(201,168,76,0.6);
+  line-height: 1.6;
+  margin-bottom: 24px;
+  max-width: 360px;
+  text-align: center;
+}
+.wd-back-btn {
+  background: linear-gradient(135deg, #1a0830, #3a1850);
+  border-color: rgba(201,168,76,0.4);
+  color: rgba(201,168,76,0.7);
+  margin-top: 4px;
 }
 
 
