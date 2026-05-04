@@ -67,5 +67,22 @@
       {"id": "ward",   "label": "Ward",   "ico": "✨", "cost": 3, "costLabel": "3 Mana"},
       {"id": "weaken", "label": "Weaken", "ico": "🌀", "cost": 0, "costLabel": "Free"}
     ]
+  },
+  "ponder": {
+    "name": "PONDER",
+    "title": "Practice Mode",
+    "sprite": "sprites/mage-light.png",
+    "col": "#9988cc",
+    "hp": 999,
+    "startMana": 12,
+    "channelAmt": 4,
+    "dmgMult": 1.0,
+    "shieldHits": 2,
+    "shieldAbsorb": 0.70,
+    "counterDmg": 20,
+    "specials": [
+      {"id": "shield",  "label": "Shield",  "ico": "🛡", "cost": 3, "costLabel": "3 Mana"},
+      {"id": "counter", "label": "Counter", "ico": "⚡", "cost": 0, "costLabel": "Free"}
+    ]
   }
 }
