@@ -349,15 +349,15 @@ body {
   color:rgba(255,255,255,0.3); text-transform:uppercase; text-align:center; flex-shrink:0;
 }
 #dpad {
-  width:100%; padding:10px 0 max(24px, env(safe-area-inset-bottom, 24px));
+  width:100%; padding:6px 0 max(16px, env(safe-area-inset-bottom, 16px));
   display:flex; align-items:center; justify-content:center;
   flex-shrink:0;
 }
-#dpad-inner { display:flex; flex-direction:column; align-items:center; gap:4px; }
-#dpad-mid   { display:flex; align-items:center; gap:4px; }
-#dpad-centre { width:44px; height:44px; background:rgba(255,255,255,0.04); border-radius:4px; }
+#dpad-inner { display:flex; flex-direction:column; align-items:center; gap:3px; }
+#dpad-mid   { display:flex; align-items:center; gap:3px; }
+#dpad-centre { width:36px; height:36px; background:rgba(255,255,255,0.04); border-radius:4px; }
 .dpadbtn {
-  width:54px; height:54px;
+  width:46px; height:46px;
   background: rgba(138,58,170,0.25);
   border: 2px solid rgba(201,168,76,0.5);
   border-radius:8px;

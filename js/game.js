@@ -956,7 +956,7 @@ function launchMaze(spell,cb){
   }));
 
   const pathLen=shortestPathLength(walls);
-  let timeLeft=Math.max(Math.round(5*diffMult),Math.round(pathLen*.5*diffMult));
+  let timeLeft=Math.max(Math.round(5.75*diffMult),Math.round(pathLen*.575*diffMult));
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent=timeLeft; timerEl.classList.remove('urgent');
 
