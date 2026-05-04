@@ -33,11 +33,18 @@ const CHAR_DISPLAY={
   aurelia:{
     stats:[['❤ HP','90'],['✨ Ward','2-turn barrier'],['🌀 Weaken','−35% spell'],['✨ Channel','+4 Mana']],
     flavour:'Control the field with light and debuffs.'
+  },
+  ponder:{
+    stats:[['❤ HP','999'],['✨ Channel','+4 Mana'],['🎯 Mode','Solo practice'],['⚔ Opponent','None']],
+    flavour:'A quiet space to learn your spells without consequence.'
   }
 };
 
 // ── DIFFICULTY ─────────────────────────────────────────────
 let diffMult=1.0, diffName='normal';
+
+// ── PRACTICE MODE ──────────────────────────────────────────
+let ponderMode=false;
 
 // ── STATE ──────────────────────────────────────────────────
 let gs={}, puzzleCB=null, aiTid=null;
@@ -49,9 +56,13 @@ function newState(){
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
         shield:0, burn:0, frozen:false,
         counter:false, empowered:false, ward:0, weakened:false},
-    p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
-        shield:0, burn:0, frozen:false,
-        counter:false, empowered:false, ward:0, weakened:false},
+    p2: p2Cfg
+      ? {hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
+         shield:0, burn:0, frozen:false,
+         counter:false, empowered:false, ward:0, weakened:false}
+      : {hp:999, maxHp:999, mana:0,
+         shield:0, burn:0, frozen:false,
+         counter:false, empowered:false, ward:0, weakened:false},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[],
@@ -93,7 +104,7 @@ function drawBG(){
   bx.strokeStyle='rgba(138,58,170,0.38)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
   runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
 }
 
 function hexToRgb(hex){
@@ -122,13 +133,18 @@ const spriteStatus={p1:'loading',p2:'loading'};
 function loadSprites(){
   sprites.p1=null; sprites.p2=null;
   spriteStatus.p1='loading'; spriteStatus.p2='loading';
-  const urls={p1:p1Cfg.sprite, p2:p2Cfg.sprite};
-  ['p1','p2'].forEach(who=>{
-    const img=new Image();
-    img.onload =()=>{sprites[who]=img; spriteStatus[who]='ready';};
-    img.onerror=()=>{spriteStatus[who]='failed';};
-    img.src=urls[who];
-  });
+  const img1=new Image();
+  img1.onload =()=>{sprites.p1=img1; spriteStatus.p1='ready';};
+  img1.onerror=()=>{spriteStatus.p1='failed';};
+  img1.src=p1Cfg.sprite;
+  if(p2Cfg){
+    const img2=new Image();
+    img2.onload =()=>{sprites.p2=img2; spriteStatus.p2='ready';};
+    img2.onerror=()=>{spriteStatus.p2='failed';};
+    img2.src=p2Cfg.sprite;
+  } else {
+    spriteStatus.p2='failed';
+  }
 }
 
 const animState={p1:{frame:0,timer:0},p2:{frame:0,timer:0}};
@@ -259,11 +275,13 @@ function refreshStatusBar(){
   if(gs.p1.counter)     tags.push(`<span class="status-tag counter">⚡ ${p1Cfg.name} COUNTER</span>`);
   if(gs.p1.ward>0)      tags.push(`<span class="status-tag ward">✨ ${p1Cfg.name} WARDED (${gs.p1.ward})</span>`);
   if(gs.p1.weakened)    tags.push(`<span class="status-tag weakened">🌀 ${p1Cfg.name} WEAKENED</span>`);
-  if(gs.p2.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
-  if(gs.p2.frozen)      tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN</span>`);
-  if(gs.p2.empowered)   tags.push(`<span class="status-tag empower">💪 ${p2Cfg.name} EMPOWERED</span>`);
-  if(gs.p2.ward>0)      tags.push(`<span class="status-tag ward">✨ ${p2Cfg.name} WARDED (${gs.p2.ward})</span>`);
-  if(gs.p2.weakened)    tags.push(`<span class="status-tag weakened">🌀 ${p2Cfg.name} WEAKENED</span>`);
+  if(p2Cfg){
+    if(gs.p2.burn>0)    tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
+    if(gs.p2.frozen)    tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN</span>`);
+    if(gs.p2.empowered) tags.push(`<span class="status-tag empower">💪 ${p2Cfg.name} EMPOWERED</span>`);
+    if(gs.p2.ward>0)    tags.push(`<span class="status-tag ward">✨ ${p2Cfg.name} WARDED (${gs.p2.ward})</span>`);
+    if(gs.p2.weakened)  tags.push(`<span class="status-tag weakened">🌀 ${p2Cfg.name} WEAKENED</span>`);
+  }
   el.innerHTML=tags.join('');
   el.style.padding=tags.length?'3px 12px':'0';
 }
@@ -281,9 +299,9 @@ function battleLoop(ts){
   drawBG();
   const gy=bH*.74, wsz=bH*.3;
   drawWiz(bW*.22,gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1');
-  drawWiz(bW*.78,gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2');
+  if(!ponderMode) drawWiz(bW*.78,gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2');
   tickParts(); tickFloats();
-  if(!gs.myTurn&&!gs.busy){
+  if(!gs.myTurn&&!gs.busy&&!ponderMode){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText(p2Cfg.name+' IS CASTING…',bW*.5,bH*.56);
   }
@@ -325,7 +343,7 @@ function refreshActionBar(){
 }
 
 function specialBlocked(key,idx){
-  if(key==='eldrad'){
+  if(key==='eldrad'||key==='ponder'){
     if(idx===0) return gs.p1.shield>0;        // already shielded
     if(idx===1) return !gs.p1.shield;          // need shield to counter
   }
@@ -388,7 +406,7 @@ function actSpecial(charKey,idx){
 
   const sp=p1Cfg.specials;
 
-  if(charKey==='eldrad'){
+  if(charKey==='eldrad'||charKey==='ponder'){
     if(idx===0){ // Shield
       if(gs.p1.mana<sp[0].cost||gs.p1.shield>0) return;
       gs.p1.mana-=sp[0].cost; gs.p1.shield=p1Cfg.shieldHits;
@@ -566,12 +584,16 @@ function endMyTurn(){
   if(gs.p1.ward>0)   gs.p1.ward--;
   gs.round++;
   if(aiTid) clearTimeout(aiTid);
-  aiTid=setTimeout(doAI,1400);
+  if(ponderMode){
+    aiTid=setTimeout(()=>{ gs.myTurn=true; gs.busy=false; },600);
+  } else {
+    aiTid=setTimeout(doAI,1400);
+  }
 }
 
 // ── AI TURN ────────────────────────────────────────────────
 function doAI(){
-  if(!gs||!battleRunning||gameEnded) return;
+  if(!gs||!battleRunning||gameEnded||ponderMode) return;
 
   // Burn tick for AI
   if(gs.p2.burn>0){
@@ -714,6 +736,7 @@ function finishAI(){
 }
 
 function checkWin(){
+  if(ponderMode) return;
   if(gs.p1.hp<=0) endGame(false);
   else if(gs.p2.hp<=0) endGame(true);
 }
@@ -1622,7 +1645,13 @@ function showWizardDetail(key){
   const cfg=CHAR_DEFS[key]||{};
   const disp=CHAR_DISPLAY[key];
   const col=cfg.col||'#f0cc6a';
-  document.getElementById('wd-portrait').src='portraits/'+key+'.png';
+  const portrait=document.getElementById('wd-portrait');
+  if(key==='ponder'){
+    portrait.style.display='none';
+  } else {
+    portrait.style.display='';
+    portrait.src='portraits/'+key+'.png';
+  }
   const nameEl=document.getElementById('wd-name');
   nameEl.textContent=cfg.name||key.toUpperCase();
   nameEl.style.color=col;
@@ -1641,15 +1670,27 @@ function showWizardDetail(key){
 function pickCharacter(key){
   p1Key=key;
   p1Cfg=CHAR_DEFS[key];
-  const others=Object.keys(CHAR_DEFS).filter(k=>k!==key);
-  p2Key=others[Math.floor(Math.random()*others.length)];
-  p2Cfg=CHAR_DEFS[p2Key];
+  ponderMode=(key==='ponder');
+  if(ponderMode){
+    p2Key=null; p2Cfg=null;
+  } else {
+    const others=Object.keys(CHAR_DEFS).filter(k=>k!==key&&k!=='ponder');
+    p2Key=others[Math.floor(Math.random()*others.length)];
+    p2Cfg=CHAR_DEFS[p2Key];
+  }
   loadSprites();
   updateActionBar(p1Cfg);
   document.getElementById('p1name').textContent=p1Cfg.name;
-  document.getElementById('p2name').textContent=p2Cfg.name;
-  document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
-  document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
+  document.getElementById('p1-portrait').style.visibility=ponderMode?'hidden':'';
+  if(!ponderMode) document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
+  const p2hud=document.querySelector('.phud-p2');
+  if(ponderMode){
+    p2hud.style.visibility='hidden';
+  } else {
+    p2hud.style.visibility='';
+    document.getElementById('p2name').textContent=p2Cfg.name;
+    document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
+  }
   newState();
   gameEnded=false;
   battleRunning=true;
@@ -1677,6 +1718,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-mal').addEventListener('click',()=>showWizardDetail('mal'));
   document.getElementById('pick-sylvara').addEventListener('click',()=>showWizardDetail('sylvara'));
   document.getElementById('pick-aurelia').addEventListener('click',()=>showWizardDetail('aurelia'));
+  document.getElementById('pick-ponder').addEventListener('click',()=>showWizardDetail('ponder'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{
     document.getElementById('wizard-detail').classList.remove('active');
