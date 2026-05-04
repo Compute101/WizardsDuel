@@ -1646,12 +1646,8 @@ function showWizardDetail(key){
   const disp=CHAR_DISPLAY[key];
   const col=cfg.col||'#f0cc6a';
   const portrait=document.getElementById('wd-portrait');
-  if(key==='ponder'){
-    portrait.style.display='none';
-  } else {
-    portrait.style.display='';
-    portrait.src='portraits/'+key+'.png';
-  }
+  portrait.style.display='';
+  portrait.src='portraits/'+key+'.png';
   const nameEl=document.getElementById('wd-name');
   nameEl.textContent=cfg.name||key.toUpperCase();
   nameEl.style.color=col;
@@ -1681,8 +1677,8 @@ function pickCharacter(key){
   loadSprites();
   updateActionBar(p1Cfg);
   document.getElementById('p1name').textContent=p1Cfg.name;
-  document.getElementById('p1-portrait').style.visibility=ponderMode?'hidden':'';
-  if(!ponderMode) document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
+  document.getElementById('p1-portrait').style.visibility='';
+  document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
   const p2hud=document.querySelector('.phud-p2');
   if(ponderMode){
     p2hud.style.visibility='hidden';
