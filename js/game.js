@@ -430,9 +430,13 @@ function resolveCharSpell(spellId,caster){
     spawnParts(cx,bH*.38,'#44cc88',14);
     anim(caster,'cast',700);
   } else if(spellId==='entangle'){
-    targetState.frozen=true;
-    spawnParts(tx,bH*.38,'#44cc88',14);
-    addFloat(tx,bH*.33,'🌿 Entangled!','#44cc88',11);
+    if(Math.random()<0.75){
+      targetState.frozen=true;
+      spawnParts(tx,bH*.38,'#44cc88',14);
+      addFloat(tx,bH*.33,'🌿 Entangled!','#44cc88',11);
+    } else {
+      addFloat(tx,bH*.33,'🌿 Resisted!','#888866',11);
+    }
     anim(caster,'cast',800);
   } else if(spellId==='ward'){
     casterState.ward=casterCfg.wardTurns;
