@@ -31,8 +31,8 @@ const CHAR_DISPLAY={
     flavour:"Sustain and control with nature's power."
   },
   aurelia:{
-    stats:[['❤ HP','90'],['✨ Ward','2-turn barrier'],['🌀 Weaken','−35% spell'],['✨ Channel','+4 Mana']],
-    flavour:'Control the field with light and debuffs.'
+    stats:[['❤ HP','90'],['🔮 Foresight','Block next spell'],['⏳ Time Drain','−3 chan × 5 turns'],['✨ Channel','+4 Mana']],
+    flavour:'Bend time — foresee attacks and drain your foe.'
   },
   ponder:{
     stats:[['❤ HP','999'],['✨ Channel','+4 Mana'],['🎯 Mode','Solo practice'],['⚔ Opponent','None']],
@@ -55,14 +55,14 @@ function newState(){
   gs={
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
         shield:0, burn:0, frozen:false, regen:null,
-        counter:false, empowered:false, ward:0, weakened:false},
+        counter:false, empowered:false, foresight:false, timeDrain:0},
     p2: p2Cfg
       ? {hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
          shield:0, burn:0, frozen:false, regen:null,
-         counter:false, empowered:false, ward:0, weakened:false}
+         counter:false, empowered:false, foresight:false, timeDrain:0}
       : {hp:999, maxHp:999, mana:0,
          shield:0, burn:0, frozen:false, regen:null,
-         counter:false, empowered:false, ward:0, weakened:false},
+         counter:false, empowered:false, foresight:false, timeDrain:0},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[],
@@ -346,8 +346,8 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='bloodpact') return casterState.hp<=(casterCfg.bpCost||0);
   if(spellId==='heal')      return casterState.regen!==null||casterState.hp>=casterState.maxHp;
   if(spellId==='entangle')  return targetState.frozen;
-  if(spellId==='ward')      return casterState.ward>0;
-  if(spellId==='weaken')    return targetState.weakened;
+  if(spellId==='foresight') return casterState.foresight;
+  if(spellId==='timedrain') return targetState.timeDrain>0;
   return false;
 }
 
@@ -356,8 +356,13 @@ function act(type){
   if(!gs.myTurn||gs.busy) return;
 
   if(type==='channel'){
-    gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+p1Cfg.channelAmt);
-    addFloat(bW*.22,bH*.38,'+'+p1Cfg.channelAmt+' Mana','#88aaff',13);
+    if(gs.p1.timeDrain>0){
+      gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+1);
+      addFloat(bW*.22,bH*.38,'⏳ Drained! +1 Mana','#ffcc44',13);
+    } else {
+      gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+p1Cfg.channelAmt);
+      addFloat(bW*.22,bH*.38,'+'+p1Cfg.channelAmt+' Mana','#88aaff',13);
+    }
     anim('p1','cast',700); endMyTurn(); return;
   }
 
@@ -438,14 +443,14 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.33,'🌿 Resisted!','#888866',11);
     }
     anim(caster,'cast',800);
-  } else if(spellId==='ward'){
-    casterState.ward=casterCfg.wardTurns;
-    addFloat(cx,bH*.33,'✨ Ward Active!',casterCfg.col,12);
+  } else if(spellId==='foresight'){
+    casterState.foresight=true;
+    addFloat(cx,bH*.33,'🔮 Foresight Active!',casterCfg.col,12);
     spawnParts(cx,bH*.38,casterCfg.col,10);
     anim(caster,'shield',700);
-  } else if(spellId==='weaken'){
-    targetState.weakened=true;
-    addFloat(tx,bH*.33,'🌀 Weakened!',casterCfg.col,12);
+  } else if(spellId==='timedrain'){
+    targetState.timeDrain=casterCfg.timeDrainTurns;
+    addFloat(tx,bH*.33,'⏳ Time Drain!',casterCfg.col,12);
     spawnParts(tx,bH*.38,casterCfg.col,10);
     anim(caster,'cast',700);
   }
@@ -454,7 +459,7 @@ function resolveCharSpell(spellId,caster){
     endMyTurn();
   } else {
     if(casterState.shield>0) casterState.shield--;
-    if(casterState.ward>0)   casterState.ward--;
+    if(casterState.timeDrain>0) casterState.timeDrain--;
     setTimeout(finishAI,900);
   }
 }
@@ -479,26 +484,13 @@ function castSpell(spell,target,tx,ty,caster){
     addFloat(tx,ty-36,'💪 +'+pct+'% Empowered!',casterCfg.col,10);
   }
 
-  // Caster: Weakened
-  if(casterState.weakened){
-    const pct=Math.round((1-oppCfg.weakenMult)*100);
-    dmg=Math.round(dmg*oppCfg.weakenMult);
-    casterState.weakened=false;
-    addFloat(tx,ty-36,'🌀 Weakened −'+pct+'%','#ffcc44',10);
-  }
-
-  // Target: Ward
-  if(targetState.ward>0){
-    if(Math.random()<targetCfg.wardFizzle){
-      addFloat(tx,ty-20,'✨ Fizzled!','#ffcc44',11);
-      targetState.ward--;
-      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-      return;
-    }
-    const pct=Math.round(targetCfg.wardAbsorb*100);
-    dmg=Math.round(dmg*(1-targetCfg.wardAbsorb));
-    addFloat(tx,ty-20,'✨ Warded −'+pct+'%!','#ffcc44',11);
-    targetState.ward--;
+  // Target: Foresight
+  if(targetState.foresight){
+    addFloat(tx,ty-20,'🔮 Foreseen!','#ffcc44',11);
+    targetState.foresight=false;
+    spawnParts(tx,ty,'#ffcc44',10);
+    if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    return;
   }
 
   // Target: Counter (check BEFORE shield breaks)
@@ -573,7 +565,7 @@ function anim(who,state,ms){
 function endMyTurn(){
   gs.myTurn=false; gs.busy=false;
   if(gs.p1.shield>0) gs.p1.shield--;
-  if(gs.p1.ward>0)   gs.p1.ward--;
+  if(gs.p1.timeDrain>0) gs.p1.timeDrain--;
   gs.round++;
   if(aiTid) clearTimeout(aiTid);
   if(ponderMode){
@@ -640,11 +632,16 @@ function doAI(){
 
   if(!chosen){
     // Channel
-    ai.mana=Math.min(MAX_MANA,ai.mana+p2Cfg.channelAmt);
-    addFloat(bW*.78,bH*.38,'+'+p2Cfg.channelAmt+' Mana','#ff8888',13);
+    if(ai.timeDrain>0){
+      ai.mana=Math.min(MAX_MANA,ai.mana+1);
+      addFloat(bW*.78,bH*.38,'⏳ Drained! +1 Mana','#ffcc44',13);
+      ai.timeDrain--;
+    } else {
+      ai.mana=Math.min(MAX_MANA,ai.mana+p2Cfg.channelAmt);
+      addFloat(bW*.78,bH*.38,'+'+p2Cfg.channelAmt+' Mana','#ff8888',13);
+    }
     anim('p2','cast',700);
     if(ai.shield>0) ai.shield--;
-    if(ai.ward>0)   ai.ward--;
     finishAI();
     return;
   }
@@ -667,6 +664,7 @@ function doAI(){
       addFloat(bW*.78,bH*.33,'Fizzled!','#ff8844',12);
       ai.mana=Math.max(0,ai.mana-1);
     }
+    if(ai.timeDrain>0) ai.timeDrain--;
     finishAI();
   },700);
 }
