@@ -27,7 +27,7 @@ const CHAR_DISPLAY={
     flavour:'Strike hard. Strike first. No mercy.'
   },
   sylvara:{
-    stats:[['❤ HP','92'],['💚 Heal','+20 HP'],['🌿 Entangle','12+freeze'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','92'],['💚 Regen','+19 HP/10T'],['🌿 Entangle','freeze only'],['✨ Channel','+4 Mana']],
     flavour:"Sustain and control with nature's power."
   },
   aurelia:{
@@ -54,14 +54,14 @@ let mazeRAF=null, mazeTid=null;
 function newState(){
   gs={
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
-        shield:0, burn:0, frozen:false,
+        shield:0, burn:0, frozen:false, regen:null,
         counter:false, empowered:false, ward:0, weakened:false},
     p2: p2Cfg
       ? {hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
-         shield:0, burn:0, frozen:false,
+         shield:0, burn:0, frozen:false, regen:null,
          counter:false, empowered:false, ward:0, weakened:false}
       : {hp:999, maxHp:999, mana:0,
-         shield:0, burn:0, frozen:false,
+         shield:0, burn:0, frozen:false, regen:null,
          counter:false, empowered:false, ward:0, weakened:false},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
@@ -344,7 +344,7 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='counter')   return !casterState.shield;
   if(spellId==='empower')   return casterState.empowered;
   if(spellId==='bloodpact') return casterState.hp<=(casterCfg.bpCost||0);
-  if(spellId==='heal')      return casterState.hp>=casterState.maxHp;
+  if(spellId==='heal')      return casterState.regen!==null||casterState.hp>=casterState.maxHp;
   if(spellId==='entangle')  return targetState.frozen;
   if(spellId==='ward')      return casterState.ward>0;
   if(spellId==='weaken')    return targetState.weakened;
@@ -425,17 +425,19 @@ function resolveCharSpell(spellId,caster){
     spawnParts(cx,bH*.38,casterCfg.col,10);
     anim(caster,'cast',700); refreshHUD();
   } else if(spellId==='heal'){
-    const healed=Math.min(casterCfg.healAmt,casterState.maxHp-casterState.hp);
-    casterState.hp=Math.min(casterState.maxHp,casterState.hp+casterCfg.healAmt);
-    addFloat(cx,bH*.33,'+'+healed+' HP 💚','#44cc88',14);
+    casterState.regen={remaining:casterCfg.healAmt,turns:10};
+    addFloat(cx,bH*.33,'💚 Regenerating!','#44cc88',14);
     spawnParts(cx,bH*.38,'#44cc88',14);
     anim(caster,'cast',700);
   } else if(spellId==='entangle'){
-    targetState.hp=Math.max(0,targetState.hp-casterCfg.entangleDmg); targetState.frozen=true;
-    spawnParts(tx,bH*.38,'#44cc88',14);
-    addFloat(tx,bH*.33,'-'+casterCfg.entangleDmg+' 🌿 Entangled!','#44cc88',11);
-    anim(caster,'cast',800); anim(caster==='p1'?'p2':'p1','hit',800);
-    checkWin(); if(!battleRunning) return;
+    if(Math.random()<0.75){
+      targetState.frozen=true;
+      spawnParts(tx,bH*.38,'#44cc88',14);
+      addFloat(tx,bH*.33,'🌿 Entangled!','#44cc88',11);
+    } else {
+      addFloat(tx,bH*.33,'🌿 Resisted!','#888866',11);
+    }
+    anim(caster,'cast',800);
   } else if(spellId==='ward'){
     casterState.ward=casterCfg.wardTurns;
     addFloat(cx,bH*.33,'✨ Ward Active!',casterCfg.col,12);
@@ -552,6 +554,17 @@ function processBurn(target,tx,ty){
   addFloat(tx,ty,'🔥 -'+BURN_DMG,'#ff6622',13);
 }
 
+function processRegen(target,tx,ty){
+  if(!target.regen) return;
+  const healThis=Math.ceil(target.regen.remaining/target.regen.turns);
+  target.hp=Math.min(target.maxHp,target.hp+healThis);
+  target.regen.remaining-=healThis;
+  target.regen.turns--;
+  if(target.regen.turns<=0) target.regen=null;
+  spawnParts(tx,ty,'#44cc88',6);
+  addFloat(tx,ty,'+'+healThis+' 💚','#44cc88',12);
+}
+
 function anim(who,state,ms){
   gs[who+'anim']=state;
   setTimeout(()=>{if(gs[who+'anim']!=='death') gs[who+'anim']='idle';},ms);
@@ -579,6 +592,9 @@ function doAI(){
     processBurn(gs.p2,bW*.78,bH*.38);
     checkWin(); if(!battleRunning) return;
   }
+
+  // Regen tick for AI
+  if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
 
   // Frozen: skip turn
   if(gs.p2.frozen){
@@ -664,6 +680,9 @@ function finishAI(){
     processBurn(gs.p1,bW*.22,bH*.38);
     checkWin(); if(!battleRunning) return;
   }
+
+  // Regen tick for player
+  if(gs.p1.regen) processRegen(gs.p1,bW*.22,bH*.38);
 
   // Frozen: auto-skip player turn
   if(gs.p1.frozen){
