@@ -27,7 +27,7 @@ body {
   justify-content: center;
   min-height: 100vh;
   width: 100%;
-  padding: 24px;
+  padding: 24px 24px 50px;
   text-align: center;
 }
 .screen.active { display: flex; }
@@ -180,6 +180,8 @@ body {
 .char-name {
   font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
 }
+.char-name.p1 { color:#4af0ff; }
+.char-name.p2 { color:#ff4a6e; }
 .cstat {
   display: flex; justify-content: space-between;
   font-size: 9px; letter-spacing: 1px;
