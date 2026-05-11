@@ -328,7 +328,7 @@ body {
 .hp-vbar .vbar-fill  { background: linear-gradient(0deg, #2aaa40, #4cff6a); box-shadow: 0 0 4px #4cff6a; }
 .mana-vbar .vbar-fill { }
 .mf-p1 { background: linear-gradient(0deg, #4466cc, #88aaff); box-shadow: 0 0 4px #88aaff; }
-.mf-p2 { background: linear-gradient(0deg, #cc2240, #ff6a8e); box-shadow: 0 0 4px #ff4a6e; }
+.mf-p2 { background: linear-gradient(0deg, #4466cc, #88aaff); box-shadow: 0 0 4px #88aaff; }
 .vbar-lbl {
   font-size: 7px;
   color: rgba(255,255,255,0.45);
