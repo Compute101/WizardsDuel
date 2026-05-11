@@ -23,7 +23,7 @@ const CHAR_DISPLAY={
     flavour:'Outlast your foe with arcane endurance.'
   },
   mal:{
-    stats:[['❤ HP','80'],['💪 Empower','+50% / Free'],['🩸 Blood Pact','−22/+7 mana'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','80'],['💪 Empower','+50% / Free'],['🩸 Blood Pact','−22/+15 mana'],['✨ Channel','+4 Mana']],
     flavour:'Strike hard. Strike first. No mercy.'
   },
   sylvara:{
@@ -651,7 +651,7 @@ function doAI(){
   const available=allSpells.filter(s=>{
     if(ai.mana<s.cost) return false;
     if(s.id&&charSpellBlocked(s.id,ai,p2Cfg,gs.p1)) return false;
-    if(s.aiHint==='mana_restore'&&ai.mana>=6) return false;
+    if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
     return true;
   });
 
