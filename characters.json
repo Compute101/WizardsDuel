@@ -27,10 +27,10 @@
     "dmgMult": 1.10,
     "empowerMult": 1.50,
     "bpCost": 22,
-    "bpGain": 7,
+    "bpGain": 15,
     "spells": [
       {"id": "empower",   "name": "Empower",    "icon": "💪", "cost": 0, "costLabel": "Free", "effectLabel": "Next spell deals +50% damage"},
-      {"id": "bloodpact", "name": "Blood Pact", "icon": "🩸", "cost": 0, "costLabel": "Free", "effectLabel": "Sacrifice 22 HP for 7 Mana", "aiHint": "mana_restore"}
+      {"id": "bloodpact", "name": "Blood Pact", "icon": "🩸", "cost": 0, "costLabel": "Free", "effectLabel": "Sacrifice 22 HP for 15 Mana", "aiHint": "mana_restore"}
     ]
   },
   "sylvara": {
