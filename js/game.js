@@ -34,6 +34,10 @@ const CHAR_DISPLAY={
     stats:[['❤ HP','90'],['🔮 Foresight','Block next spell'],['⏳ Time Drain','−3 chan × 5 turns'],['✨ Channel','+4 Mana']],
     flavour:'Bend time — foresee attacks and drain your foe.'
   },
+  gnash:{
+    stats:[['❤ HP','105'],['🩸 Frenzy','+40% × 2 hits'],['⚔️ Charge','32 pierce all'],['✨ Channel','+3 Mana']],
+    flavour:'Blood and bone. No magic — just fury.'
+  },
   ponder:{
     stats:[['❤ HP','999'],['✨ Channel','+4 Mana'],['🎯 Mode','Solo practice'],['⚔ Opponent','None']],
     flavour:'A quiet space to learn your spells without consequence.'
@@ -55,14 +59,14 @@ function newState(){
   gs={
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
         shield:0, burn:0, frozen:false, regen:null,
-        counter:false, empowered:false, foresight:false, timeDrain:0},
+        counter:false, empowered:false, foresight:false, timeDrain:0, frenzied:0},
     p2: p2Cfg
       ? {hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
          shield:0, burn:0, frozen:false, regen:null,
-         counter:false, empowered:false, foresight:false, timeDrain:0}
+         counter:false, empowered:false, foresight:false, timeDrain:0, frenzied:0}
       : {hp:999, maxHp:999, mana:0,
          shield:0, burn:0, frozen:false, regen:null,
-         counter:false, empowered:false, foresight:false, timeDrain:0},
+         counter:false, empowered:false, foresight:false, timeDrain:0, frenzied:0},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[],
@@ -348,6 +352,7 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='entangle')  return targetState.frozen;
   if(spellId==='foresight') return casterState.foresight;
   if(spellId==='timedrain') return targetState.timeDrain>0;
+  if(spellId==='frenzy')    return casterState.frenzied>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
   return false;
 }
 
@@ -453,6 +458,28 @@ function resolveCharSpell(spellId,caster){
     addFloat(tx,bH*.33,'⏳ Time Drain!',casterCfg.col,12);
     spawnParts(tx,bH*.38,casterCfg.col,10);
     anim(caster,'cast',700);
+  } else if(spellId==='frenzy'){
+    casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
+    casterState.frenzied=casterCfg.frenzyStacks;
+    addFloat(cx,bH*.33,'🩸 Frenzied!',casterCfg.col,12);
+    spawnParts(cx,bH*.38,casterCfg.col,12);
+    anim(caster,'cast',700);
+    refreshHUD();
+  } else if(spellId==='charge'){
+    let dmg=Math.round(casterCfg.chargeDmg*casterCfg.dmgMult);
+    if(casterState.frenzied>0){
+      dmg=Math.round(dmg*casterCfg.frenzyMult);
+      casterState.frenzied--;
+      addFloat(cx,bH*.25,'🩸 Frenzy!',casterCfg.col,10);
+    }
+    targetState.hp=Math.max(0,targetState.hp-dmg);
+    spawnParts(tx,bH*.38,casterCfg.col,22);
+    addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,22);
+    flash(casterCfg.col);
+    if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+    else             {anim('p2','cast',800); anim('p1','hit',800);}
+    refreshHUD();
+    checkWin();
   }
 
   if(caster==='p1'){
@@ -482,6 +509,14 @@ function castSpell(spell,target,tx,ty,caster){
     dmg=Math.round(dmg*casterCfg.empowerMult);
     casterState.empowered=false;
     addFloat(tx,ty-36,'💪 +'+pct+'% Empowered!',casterCfg.col,10);
+  }
+
+  // Caster: Frenzied
+  if(casterState.frenzied>0&&casterCfg.frenzyMult){
+    const pct=Math.round((casterCfg.frenzyMult-1)*100);
+    dmg=Math.round(dmg*casterCfg.frenzyMult);
+    casterState.frenzied--;
+    addFloat(tx,ty-36,'🩸 +'+pct+'% Frenzy!',casterCfg.col,10);
   }
 
   // Target: Foresight
@@ -612,7 +647,11 @@ function doAI(){
 
   // Select a spell using heuristics
   let chosen=null;
-  if(available.length>0){
+  // Gnash: use Savage Charge to cut through active defenses
+  const chargeAvail=charSpells.find(s=>s.id==='charge');
+  if(chargeAvail&&(gs.p1.shield>0||gs.p1.foresight)) chosen=chargeAvail;
+
+  if(!chosen&&available.length>0){
     if(charSpells.length>0&&Math.random()<0.40){
       chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
     } else if(universalSpells.length>0){
