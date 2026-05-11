@@ -357,8 +357,8 @@ function act(type){
 
   if(type==='channel'){
     if(gs.p1.timeDrain>0){
-      gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+1);
-      addFloat(bW*.22,bH*.38,'⏳ Drained! +1 Mana','#ffcc44',13);
+      gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+2);
+      addFloat(bW*.22,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
     } else {
       gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+p1Cfg.channelAmt);
       addFloat(bW*.22,bH*.38,'+'+p1Cfg.channelAmt+' Mana','#88aaff',13);
@@ -633,8 +633,8 @@ function doAI(){
   if(!chosen){
     // Channel
     if(ai.timeDrain>0){
-      ai.mana=Math.min(MAX_MANA,ai.mana+1);
-      addFloat(bW*.78,bH*.38,'⏳ Drained! +1 Mana','#ffcc44',13);
+      ai.mana=Math.min(MAX_MANA,ai.mana+2);
+      addFloat(bW*.78,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
       ai.timeDrain--;
     } else {
       ai.mana=Math.min(MAX_MANA,ai.mana+p2Cfg.channelAmt);

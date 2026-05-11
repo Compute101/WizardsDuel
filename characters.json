@@ -60,7 +60,7 @@
     "timeDrainTurns": 5,
     "spells": [
       {"id": "foresight", "name": "Foresight", "icon": "🔮", "cost": 4, "costLabel": "4 Mana", "effectLabel": "Predict and block the next spell"},
-      {"id": "timedrain", "name": "Time Drain", "icon": "⏳", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Slow enemy channel to +1 Mana for 5 turns"}
+      {"id": "timedrain", "name": "Time Drain", "icon": "⏳", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Slow enemy channel to +2 Mana for 5 turns"}
     ]
   },
   "ponder": {
