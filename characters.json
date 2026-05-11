@@ -45,7 +45,7 @@
     "healAmt": 40,
     "spells": [
       {"id": "heal",     "name": "Regen",    "icon": "💚", "cost": 4, "costLabel": "4 Mana", "effectLabel": "Regenerate 40 HP over 10 turns"},
-      {"id": "entangle", "name": "Entangle", "icon": "🌿", "cost": 0, "costLabel": "0 Mana", "effectLabel": "75% chance to freeze enemy for 1 turn"}
+      {"id": "entangle", "name": "Entangle", "icon": "🌿", "cost": 1, "costLabel": "1 Mana", "effectLabel": "75% chance to freeze enemy for 1 turn"}
     ]
   },
   "aurelia": {
