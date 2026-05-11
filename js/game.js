@@ -19,7 +19,7 @@ let p1Cfg, p2Cfg;
 
 const CHAR_DISPLAY={
   eldrad:{
-    stats:[['❤ HP','115'],['🛡 Shield','70% absorb'],['⚡ Counter','20 reflect'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','115'],['🛡 Shield','60 HP / 10T'],['⚡ Counter','20 reflect'],['✨ Channel','+4 Mana']],
     flavour:'Outlast your foe with arcane endurance.'
   },
   mal:{
@@ -27,7 +27,7 @@ const CHAR_DISPLAY={
     flavour:'Strike hard. Strike first. No mercy.'
   },
   sylvara:{
-    stats:[['❤ HP','92'],['💚 Regen','+19 HP/10T'],['🌿 Entangle','freeze only'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','92'],['💚 Regen','+40 HP/10T'],['🌿 Entangle','freeze only'],['✨ Channel','+4 Mana']],
     flavour:"Sustain and control with nature's power."
   },
   aurelia:{
@@ -58,14 +58,14 @@ let mazeRAF=null, mazeTid=null;
 function newState(){
   gs={
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
-        shield:0, burn:0, frozen:false, regen:null,
+        shield:0, shieldHp:0, burn:0, frozen:false, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, frenzied:0},
     p2: p2Cfg
       ? {hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
-         shield:0, burn:0, frozen:false, regen:null,
+         shield:0, shieldHp:0, burn:0, frozen:false, regen:null,
          counter:false, empowered:false, foresight:false, timeDrain:0, frenzied:0}
       : {hp:999, maxHp:999, mana:0,
-         shield:0, burn:0, frozen:false, regen:null,
+         shield:0, shieldHp:0, burn:0, frozen:false, regen:null,
          counter:false, empowered:false, foresight:false, timeDrain:0, frenzied:0},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
@@ -416,8 +416,9 @@ function resolveCharSpell(spellId,caster){
   casterState.mana=Math.max(0,casterState.mana-spell.cost);
 
   if(spellId==='shield'){
-    casterState.shield=casterCfg.shieldHits;
-    addFloat(cx,bH*.33,'🛡 Shielded!','#4af0ff',12);
+    casterState.shield=casterCfg.shieldDuration||10;
+    casterState.shieldHp=casterCfg.shieldMaxHp||60;
+    addFloat(cx,bH*.33,'🛡 Shielded! ('+casterState.shieldHp+' HP)','#4af0ff',12);
     anim(caster,'shield',700);
   } else if(spellId==='counter'){
     casterState.counter=true;
@@ -483,9 +484,12 @@ function resolveCharSpell(spellId,caster){
   }
 
   if(caster==='p1'){
-    endMyTurn();
+    endMyTurn(spellId==='counter');
   } else {
-    if(casterState.shield>0) casterState.shield--;
+    if(spellId!=='counter' && casterState.shield>0){
+      casterState.shield--;
+      if(casterState.shield<=0) casterState.shieldHp=0;
+    }
     if(casterState.timeDrain>0) casterState.timeDrain--;
     setTimeout(finishAI,900);
   }
@@ -535,12 +539,18 @@ function castSpell(spell,target,tx,ty,caster){
   if(targetState.shield>0){
     if(spell.element==='lightning'){
       targetState.shield=0;
+      targetState.shieldHp=0;
       addFloat(tx,ty-20,'⚡ Pierced!','#ffee44',11);
     } else {
-      const pct=Math.round(targetCfg.shieldAbsorb*100);
-      dmg=Math.round(dmg*(1-targetCfg.shieldAbsorb));
-      targetState.shield=0;
-      addFloat(tx,ty-20,'🛡 −'+pct+'% Absorbed!','#4af0ff',11);
+      const absorbed=Math.min(dmg,targetState.shieldHp);
+      targetState.shieldHp-=absorbed;
+      dmg-=absorbed;
+      if(targetState.shieldHp<=0){
+        targetState.shield=0;
+        addFloat(tx,ty-20,'🛡 Shattered! −'+absorbed,'#4af0ff',11);
+      } else {
+        addFloat(tx,ty-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+      }
     }
   }
 
@@ -597,9 +607,12 @@ function anim(who,state,ms){
   setTimeout(()=>{if(gs[who+'anim']!=='death') gs[who+'anim']='idle';},ms);
 }
 
-function endMyTurn(){
+function endMyTurn(skipShieldDecrement=false){
   gs.myTurn=false; gs.busy=false;
-  if(gs.p1.shield>0) gs.p1.shield--;
+  if(!skipShieldDecrement && gs.p1.shield>0){
+    gs.p1.shield--;
+    if(gs.p1.shield<=0) gs.p1.shieldHp=0;
+  }
   if(gs.p1.timeDrain>0) gs.p1.timeDrain--;
   gs.round++;
   if(aiTid) clearTimeout(aiTid);
@@ -680,7 +693,10 @@ function doAI(){
       addFloat(bW*.78,bH*.38,'+'+p2Cfg.channelAmt+' Mana','#ff8888',13);
     }
     anim('p2','cast',700);
-    if(ai.shield>0) ai.shield--;
+    if(ai.shield>0){
+      ai.shield--;
+      if(ai.shield<=0) ai.shieldHp=0;
+    }
     finishAI();
     return;
   }
