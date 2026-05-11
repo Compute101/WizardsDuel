@@ -134,6 +134,10 @@ body {
 #char-screen {
   background: radial-gradient(ellipse at 50% 35%, #2a1060 0%, #0d0820 70%);
   gap: 0;
+  height: 100vh;
+  overflow-y: auto;
+  justify-content: flex-start;
+  -webkit-overflow-scrolling: touch;
 }
 .char-heading {
   font-family: 'Cinzel Decorative', serif;
@@ -145,10 +149,10 @@ body {
 .char-sub {
   font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
   color: rgba(201,168,76,0.4);
-  margin-bottom: 22px;
+  margin-bottom: 12px;
 }
 .char-cards {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 420px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 420px;
   margin-bottom: 20px;
 }
 .char-card {
@@ -156,7 +160,7 @@ body {
   background: rgba(0,0,0,0.5);
   border: 2px solid rgba(201,168,76,0.25);
   border-radius: 8px;
-  padding: 14px 10px 12px;
+  padding: 6px 4px 8px;
   text-align: center;
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
@@ -170,15 +174,15 @@ body {
 .char-card-ponder { border-style: dashed; }
 .char-portrait {
   width: 100%;
-  height: 160px;
+  height: 72px;
   object-fit: cover;
   object-position: center 20%;
   border-radius: 4px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   display: block;
 }
 .char-name {
-  font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
 }
 .char-name.p1 { color:#4af0ff; }
 .char-name.p2 { color:#ff4a6e; }
