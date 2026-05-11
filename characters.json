@@ -63,6 +63,24 @@
       {"id": "timedrain", "name": "Time Drain", "icon": "⏳", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Slow enemy channel to +2 Mana for 5 turns"}
     ]
   },
+  "gnash": {
+    "name": "GNASH",
+    "title": "The Feral",
+    "sprite": "sprites/mage-dark.png",
+    "col": "#dd8822",
+    "hp": 105,
+    "startMana": 5,
+    "channelAmt": 3,
+    "dmgMult": 1.15,
+    "frenzyHpCost": 15,
+    "frenzyMult": 1.40,
+    "frenzyStacks": 2,
+    "chargeDmg": 32,
+    "spells": [
+      {"id": "frenzy", "name": "Blood Frenzy", "icon": "🩸", "cost": 0, "costLabel": "15 HP", "effectLabel": "+40% dmg for next 2 attacks"},
+      {"id": "charge", "name": "Savage Charge", "icon": "⚔️", "cost": 6, "costLabel": "6 Mana", "effectLabel": "32 phys dmg — pierces all defenses"}
+    ]
+  },
   "ponder": {
     "name": "PONDER",
     "title": "Practice Mode",
