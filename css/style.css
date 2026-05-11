@@ -387,9 +387,9 @@ body {
   flex-shrink:0;
 }
 #mazewrap {
-  flex:1; display:flex; align-items:center; justify-content:center;
-  padding:8px; width:100%;
-  min-height:0; overflow:hidden;
+  flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+  padding:8px 8px 0; width:100%;
+  overflow:hidden;
 }
 #mcanvas {
   border:2px solid rgba(201,168,76,0.45); border-radius:4px;
@@ -402,7 +402,7 @@ body {
   color:rgba(255,255,255,0.3); text-transform:uppercase; text-align:center; flex-shrink:0;
 }
 #dpad {
-  width:100%; padding:6px 0 max(16px, env(safe-area-inset-bottom, 16px));
+  width:100%; padding:4px 0 max(16px, env(safe-area-inset-bottom, 16px));
   display:flex; align-items:center; justify-content:center;
   flex-shrink:0;
 }
