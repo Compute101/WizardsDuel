@@ -73,12 +73,10 @@
     "channelAmt": 3,
     "dmgMult": 1.15,
     "frenzyHpCost": 15,
-    "frenzyMult": 1.40,
-    "frenzyStacks": 2,
     "chargeDmg": 32,
     "spells": [
-      {"id": "frenzy", "name": "Blood Frenzy", "icon": "🩸", "cost": 0, "costLabel": "15 HP", "effectLabel": "+40% dmg for next 2 attacks"},
-      {"id": "charge", "name": "Savage Charge", "icon": "⚔️", "cost": 6, "costLabel": "6 Mana", "effectLabel": "32 phys dmg — pierces all defenses"}
+      {"id": "warpaint", "name": "War Paint", "icon": "🩸", "cost": 0, "costLabel": "15 HP", "effectLabel": "33% dmg resistance for 5 turns"},
+      {"id": "charge", "name": "Savage Charge", "icon": "⚔️", "cost": 6, "costLabel": "6 Mana", "effectLabel": "32 phys dmg"}
     ]
   },
   "ponder": {

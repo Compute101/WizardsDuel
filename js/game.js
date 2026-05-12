@@ -63,14 +63,14 @@ function newState(){
   gs={
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:false, regen:null,
-        counter:false, empowered:false, foresight:false, timeDrain:0, frenzied:0},
+        counter:false, empowered:false, foresight:false, timeDrain:0, resist:0},
     p2: p2Cfg
       ? {hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
          shield:0, shieldHp:0, burn:0, frozen:false, regen:null,
-         counter:false, empowered:false, foresight:false, timeDrain:0, frenzied:0}
+         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0}
       : {hp:999, maxHp:999, mana:0,
          shield:0, shieldHp:0, burn:0, frozen:false, regen:null,
-         counter:false, empowered:false, foresight:false, timeDrain:0, frenzied:0},
+         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[],
@@ -292,6 +292,7 @@ function addFloat(x,y,t,col,sz=17){gs.floats.push({x,y,t,col,sz,life:1});}
 function refreshStatusBar(){
   const el=document.getElementById('statusbar');
   const tags=[];
+  if(gs.p1.resist>0)    tags.push(`<span class="status-tag resist">🩸 ${p1Cfg.name} RESIST (${gs.p1.resist})</span>`);
   if(gs.p1.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p1Cfg.name} BURNING (${gs.p1.burn})</span>`);
   if(gs.p1.frozen)      tags.push(`<span class="status-tag freeze">❄️ ${p1Cfg.name} FROZEN</span>`);
   if(gs.p1.empowered)   tags.push(`<span class="status-tag empower">💪 ${p1Cfg.name} EMPOWERED</span>`);
@@ -299,6 +300,7 @@ function refreshStatusBar(){
   if(gs.p1.ward>0)      tags.push(`<span class="status-tag ward">✨ ${p1Cfg.name} WARDED (${gs.p1.ward})</span>`);
   if(gs.p1.weakened)    tags.push(`<span class="status-tag weakened">🌀 ${p1Cfg.name} WEAKENED</span>`);
   if(p2Cfg){
+    if(gs.p2.resist>0)  tags.push(`<span class="status-tag resist">🩸 ${p2Cfg.name} RESIST (${gs.p2.resist})</span>`);
     if(gs.p2.burn>0)    tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
     if(gs.p2.frozen)    tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN</span>`);
     if(gs.p2.empowered) tags.push(`<span class="status-tag empower">💪 ${p2Cfg.name} EMPOWERED</span>`);
@@ -373,7 +375,7 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='entangle')  return targetState.frozen;
   if(spellId==='foresight') return casterState.foresight;
   if(spellId==='timedrain') return targetState.timeDrain>0;
-  if(spellId==='frenzy')    return casterState.frenzied>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='warpaint')  return casterState.resist>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
   return false;
 }
 
@@ -480,26 +482,39 @@ function resolveCharSpell(spellId,caster){
     addFloat(tx,bH*.33,'⏳ Time Drain!',casterCfg.col,12);
     spawnParts(tx,bH*.38,casterCfg.col,10);
     anim(caster,'cast',700);
-  } else if(spellId==='frenzy'){
+  } else if(spellId==='warpaint'){
     casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
-    casterState.frenzied=casterCfg.frenzyStacks;
-    addFloat(cx,bH*.33,'🩸 Frenzied!',casterCfg.col,12);
+    casterState.resist=5;
+    addFloat(cx,bH*.33,'🩸 War Paint! -33% dmg',casterCfg.col,12);
     spawnParts(cx,bH*.38,casterCfg.col,12);
-    anim(caster,'cast',700);
+    anim(caster,'shield',700);
     refreshHUD();
   } else if(spellId==='charge'){
     let dmg=Math.round(casterCfg.chargeDmg*casterCfg.dmgMult);
-    if(casterState.frenzied>0){
-      dmg=Math.round(dmg*casterCfg.frenzyMult);
-      casterState.frenzied--;
-      addFloat(cx,bH*.25,'🩸 Frenzy!',casterCfg.col,10);
+    if(targetState.foresight){
+      addFloat(tx,bH*.38-20,'🔮 Foreseen!','#ffcc44',11);
+      targetState.foresight=false;
+      spawnParts(tx,bH*.38,'#ffcc44',10);
+      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    } else {
+      if(targetState.shield>0){
+        const absorbed=Math.min(dmg,targetState.shieldHp);
+        targetState.shieldHp-=absorbed;
+        dmg-=absorbed;
+        if(targetState.shieldHp<=0){
+          targetState.shield=0;
+          addFloat(tx,bH*.38-20,'🛡 Shattered! −'+absorbed,'#4af0ff',11);
+        } else {
+          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+        }
+      }
+      targetState.hp=Math.max(0,targetState.hp-dmg);
+      spawnParts(tx,bH*.38,casterCfg.col,22);
+      addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,22);
+      flash(casterCfg.col);
+      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+      else             {anim('p2','cast',800); anim('p1','hit',800);}
     }
-    targetState.hp=Math.max(0,targetState.hp-dmg);
-    spawnParts(tx,bH*.38,casterCfg.col,22);
-    addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,22);
-    flash(casterCfg.col);
-    if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-    else             {anim('p2','cast',800); anim('p1','hit',800);}
     refreshHUD();
     checkWin();
   }
@@ -512,6 +527,7 @@ function resolveCharSpell(spellId,caster){
       if(casterState.shield<=0) casterState.shieldHp=0;
     }
     if(casterState.timeDrain>0) casterState.timeDrain--;
+    if(casterState.resist>0)   casterState.resist--;
     setTimeout(finishAI,900);
   }
 }
@@ -536,12 +552,10 @@ function castSpell(spell,target,tx,ty,caster){
     addFloat(tx,ty-36,'💪 +'+pct+'% Empowered!',casterCfg.col,10);
   }
 
-  // Caster: Frenzied
-  if(casterState.frenzied>0&&casterCfg.frenzyMult){
-    const pct=Math.round((casterCfg.frenzyMult-1)*100);
-    dmg=Math.round(dmg*casterCfg.frenzyMult);
-    casterState.frenzied--;
-    addFloat(tx,ty-36,'🩸 +'+pct+'% Frenzy!',casterCfg.col,10);
+  // Target: Damage Resistance
+  if(targetState.resist>0){
+    dmg=Math.round(dmg*0.67);
+    addFloat(tx,ty-36,'🩸 -33% Resist!',targetCfg.col,10);
   }
 
   // Target: Foresight — fully blocks the incoming spell
@@ -635,6 +649,7 @@ function endMyTurn(skipShieldDecrement=false){
     if(gs.p1.shield<=0) gs.p1.shieldHp=0;
   }
   if(gs.p1.timeDrain>0) gs.p1.timeDrain--;
+  if(gs.p1.resist>0)   gs.p1.resist--;
   gs.round++;
   if(aiTid) clearTimeout(aiTid);
   if(ponderMode){
@@ -681,10 +696,6 @@ function doAI(){
 
   // Select a spell using heuristics
   let chosen=null;
-  // Gnash: use Savage Charge to cut through active defenses
-  const chargeAvail=charSpells.find(s=>s.id==='charge');
-  if(chargeAvail&&(gs.p1.shield>0||gs.p1.foresight)) chosen=chargeAvail;
-
   if(!chosen&&available.length>0){
     if(charSpells.length>0&&Math.random()<0.40){
       chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
@@ -718,6 +729,7 @@ function doAI(){
       ai.shield--;
       if(ai.shield<=0) ai.shieldHp=0;
     }
+    if(ai.resist>0) ai.resist--;
     finishAI();
     return;
   }
@@ -741,6 +753,7 @@ function doAI(){
       ai.mana=Math.max(0,ai.mana-1);
     }
     if(ai.timeDrain>0) ai.timeDrain--;
+    if(ai.resist>0)    ai.resist--;
     finishAI();
   },700);
 }
