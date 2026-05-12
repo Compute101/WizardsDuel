@@ -31,7 +31,7 @@ const CHAR_DISPLAY={
     flavour:"Sustain and control with nature's power."
   },
   aurelia:{
-    stats:[['❤ HP','90'],['🔮 Foresight','Block next spell'],['⏳ Time Drain','−3 chan × 5 turns'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','90'],['🔮 Foresight','−75% dmg, no effects'],['⏳ Time Drain','−3 chan × 5 turns'],['✨ Channel','+4 Mana']],
     flavour:'Bend time — foresee attacks and drain your foe.'
   },
   gnash:{
@@ -527,13 +527,14 @@ function castSpell(spell,target,tx,ty,caster){
     addFloat(tx,ty-36,'🩸 +'+pct+'% Frenzy!',casterCfg.col,10);
   }
 
-  // Target: Foresight
+  // Target: Foresight — absorbs 75% of damage, prevents elemental effects
+  let foresightAbsorbed=false;
   if(targetState.foresight){
     addFloat(tx,ty-20,'🔮 Foreseen!','#ffcc44',11);
     targetState.foresight=false;
     spawnParts(tx,ty,'#ffcc44',10);
-    if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    return;
+    dmg=Math.max(1,Math.round(dmg*0.25));
+    foresightAbsorbed=true;
   }
 
   // Target: Counter (check BEFORE shield breaks)
@@ -573,13 +574,15 @@ function castSpell(spell,target,tx,ty,caster){
   addFloat(tx,ty,'-'+dmg,spell.col,22);
   flash(spell.col);
 
-  if(spell.element==='fire'){
-    targetState.burn=BURN_ROUNDS;
-    addFloat(tx,ty+28,'🔥 Burning!','#ff6622',10);
-  }
-  if(spell.element==='ice'){
-    targetState.frozen=true;
-    addFloat(tx,ty+28,'❄️ Frozen!','#88ddff',10);
+  if(!foresightAbsorbed){
+    if(spell.element==='fire'){
+      targetState.burn=BURN_ROUNDS;
+      addFloat(tx,ty+28,'🔥 Burning!','#ff6622',10);
+    }
+    if(spell.element==='ice'){
+      targetState.frozen=true;
+      addFloat(tx,ty+28,'❄️ Frozen!','#88ddff',10);
+    }
   }
 
   if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
