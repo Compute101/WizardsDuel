@@ -494,12 +494,30 @@ function resolveCharSpell(spellId,caster){
       casterState.frenzied--;
       addFloat(cx,bH*.25,'🩸 Frenzy!',casterCfg.col,10);
     }
-    targetState.hp=Math.max(0,targetState.hp-dmg);
-    spawnParts(tx,bH*.38,casterCfg.col,22);
-    addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,22);
-    flash(casterCfg.col);
-    if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-    else             {anim('p2','cast',800); anim('p1','hit',800);}
+    if(targetState.foresight){
+      addFloat(tx,bH*.38-20,'🔮 Foreseen!','#ffcc44',11);
+      targetState.foresight=false;
+      spawnParts(tx,bH*.38,'#ffcc44',10);
+      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    } else {
+      if(targetState.shield>0){
+        const absorbed=Math.min(dmg,targetState.shieldHp);
+        targetState.shieldHp-=absorbed;
+        dmg-=absorbed;
+        if(targetState.shieldHp<=0){
+          targetState.shield=0;
+          addFloat(tx,bH*.38-20,'🛡 Shattered! −'+absorbed,'#4af0ff',11);
+        } else {
+          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+        }
+      }
+      targetState.hp=Math.max(0,targetState.hp-dmg);
+      spawnParts(tx,bH*.38,casterCfg.col,22);
+      addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,22);
+      flash(casterCfg.col);
+      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+      else             {anim('p2','cast',800); anim('p1','hit',800);}
+    }
     refreshHUD();
     checkWin();
   }
@@ -681,10 +699,6 @@ function doAI(){
 
   // Select a spell using heuristics
   let chosen=null;
-  // Gnash: use Savage Charge to cut through active defenses
-  const chargeAvail=charSpells.find(s=>s.id==='charge');
-  if(chargeAvail&&(gs.p1.shield>0||gs.p1.foresight)) chosen=chargeAvail;
-
   if(!chosen&&available.length>0){
     if(charSpells.length>0&&Math.random()<0.40){
       chosen=charSpells[Math.floor(Math.random()*charSpells.length)];

@@ -78,7 +78,7 @@
     "chargeDmg": 32,
     "spells": [
       {"id": "frenzy", "name": "Blood Frenzy", "icon": "🩸", "cost": 0, "costLabel": "15 HP", "effectLabel": "+40% dmg for next 2 attacks"},
-      {"id": "charge", "name": "Savage Charge", "icon": "⚔️", "cost": 6, "costLabel": "6 Mana", "effectLabel": "32 phys dmg — pierces all defenses"}
+      {"id": "charge", "name": "Savage Charge", "icon": "⚔️", "cost": 6, "costLabel": "6 Mana", "effectLabel": "32 phys dmg"}
     ]
   },
   "ponder": {
