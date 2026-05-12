@@ -50,6 +50,10 @@ let diffMult=1.0, diffName='normal';
 // ── PRACTICE MODE ──────────────────────────────────────────
 let ponderMode=false;
 
+// ── TOURNAMENT ─────────────────────────────────────────────
+let tournamentQueue=[];   // ordered opponent keys; gnash always last
+let tournamentIndex=0;    // index of current opponent in queue
+
 // ── STATE ──────────────────────────────────────────────────
 let gs={}, puzzleCB=null, aiTid=null;
 let bW=0, bH=0;
@@ -760,12 +764,36 @@ function endGame(won){
   gs[won?'p2anim':'p1anim']='death';
   setTimeout(()=>{
     battleRunning=false;
-    document.getElementById('ovico').textContent=won?'🏆':'💀';
-    document.getElementById('ovtitle').textContent=won?'Victory!':'Defeated!';
-    document.getElementById('ovtitle').style.color=won?'#f0cc6a':'#ff4a6e';
-    document.getElementById('ovdesc').textContent=won
-      ?p2Cfg.name+' falls before your arcane might!'
-      :'Your magic was not enough. Study and return!';
+    const inTournament=!ponderMode&&tournamentQueue.length>0;
+    const isLastFight=tournamentIndex>=tournamentQueue.length-1;
+    const continueBtn=document.getElementById('btn-continue');
+    if(!won){
+      document.getElementById('ovico').textContent='💀';
+      document.getElementById('ovtitle').textContent='Defeated!';
+      document.getElementById('ovtitle').style.color='#ff4a6e';
+      document.getElementById('ovdesc').textContent='Your magic was not enough. Study and return!';
+      continueBtn.textContent='Back to Title';
+    } else if(inTournament&&isLastFight){
+      document.getElementById('ovico').textContent='🏆';
+      document.getElementById('ovtitle').textContent='Tournament Champion!';
+      document.getElementById('ovtitle').style.color='#f0cc6a';
+      document.getElementById('ovdesc').textContent='You have defeated every wizard and claimed the tournament!';
+      continueBtn.textContent='Back to Title';
+    } else if(inTournament){
+      const nextKey=tournamentQueue[tournamentIndex+1];
+      const nextName=CHAR_DEFS[nextKey].name;
+      document.getElementById('ovico').textContent='⚔️';
+      document.getElementById('ovtitle').textContent='Victory!';
+      document.getElementById('ovtitle').style.color='#f0cc6a';
+      document.getElementById('ovdesc').textContent=p2Cfg.name+' falls! Up next: '+nextName;
+      continueBtn.textContent='Fight '+nextName+' →';
+    } else {
+      document.getElementById('ovico').textContent='🏆';
+      document.getElementById('ovtitle').textContent='Victory!';
+      document.getElementById('ovtitle').style.color='#f0cc6a';
+      document.getElementById('ovdesc').textContent=p2Cfg.name+' falls before your arcane might!';
+      continueBtn.textContent='Continue';
+    }
     document.getElementById('overlay').classList.add('active');
   },900);
 }
@@ -1684,11 +1712,26 @@ function pickCharacter(key){
   ponderMode=(key==='ponder');
   if(ponderMode){
     p2Key=null; p2Cfg=null;
+    tournamentQueue=[]; tournamentIndex=0;
   } else {
-    const others=Object.keys(CHAR_DEFS).filter(k=>k!==key&&k!=='ponder');
-    p2Key=others[Math.floor(Math.random()*others.length)];
+    // Build round-robin queue: all opponents except player and ponder, gnash always last
+    const others=Object.keys(CHAR_DEFS).filter(k=>k!==key&&k!=='ponder'&&k!=='gnash');
+    // Fisher-Yates shuffle
+    for(let i=others.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [others[i],others[j]]=[others[j],others[i]];
+    }
+    if(CHAR_DEFS['gnash']) others.push('gnash');
+    tournamentQueue=others;
+    tournamentIndex=0;
+    p2Key=tournamentQueue[0];
     p2Cfg=CHAR_DEFS[p2Key];
   }
+  startNextBattle();
+}
+
+function startNextBattle(){
+  p2Cfg=ponderMode?null:CHAR_DEFS[p2Key];
   loadSprites();
   updateActionBar(p1Cfg);
   document.getElementById('p1name').textContent=p1Cfg.name;
@@ -1701,6 +1744,15 @@ function pickCharacter(key){
     p2hud.style.visibility='';
     document.getElementById('p2name').textContent=p2Cfg.name;
     document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
+  }
+  // Show fight progress in HUD (e.g. "Fight 2 / 4")
+  const fightLbl=document.getElementById('fightlbl');
+  if(fightLbl){
+    if(!ponderMode&&tournamentQueue.length>1){
+      fightLbl.textContent='Fight '+(tournamentIndex+1)+' / '+tournamentQueue.length;
+    } else {
+      fightLbl.textContent='';
+    }
   }
   newState();
   gameEnded=false;
@@ -1755,9 +1807,17 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
 
   document.getElementById('btn-continue').addEventListener('click',()=>{
-    battleRunning=false;
+    const advancing=document.getElementById('btn-continue').textContent.startsWith('Fight');
     document.getElementById('overlay').classList.remove('active');
-    showScreen('title-screen');
+    if(advancing){
+      tournamentIndex++;
+      p2Key=tournamentQueue[tournamentIndex];
+      startNextBattle();
+    } else {
+      battleRunning=false;
+      document.getElementById('btn-continue').textContent='Continue';
+      showScreen('title-screen');
+    }
   });
 
   window.addEventListener('resize',()=>{ if(battleRunning) resizeBC(); });
