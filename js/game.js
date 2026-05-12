@@ -497,6 +497,7 @@ function resolveCharSpell(spellId,caster){
       spawnParts(tx,bH*.38,'#ffcc44',10);
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     } else {
+      const counterTriggered=targetState.counter&&targetState.shield>0;
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed;
@@ -514,6 +515,14 @@ function resolveCharSpell(spellId,caster){
       flash(casterCfg.col);
       if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
       else             {anim('p2','cast',800); anim('p1','hit',800);}
+      if(counterTriggered){
+        const targetCfg=caster==='p1'?p2Cfg:p1Cfg;
+        casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
+        targetState.counter=false;
+        addFloat(cx,bH*.33,'⚡ Counter! −'+targetCfg.counterDmg,'#4af0ff',11);
+        spawnParts(cx,bH*.38,'#4af0ff',8);
+        checkWin();
+      }
     }
     refreshHUD();
     checkWin();
