@@ -1798,6 +1798,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-mal').addEventListener('click',()=>showWizardDetail('mal'));
   document.getElementById('pick-sylvara').addEventListener('click',()=>showWizardDetail('sylvara'));
   document.getElementById('pick-aurelia').addEventListener('click',()=>showWizardDetail('aurelia'));
+  document.getElementById('pick-gnash').addEventListener('click',()=>showWizardDetail('gnash'));
   document.getElementById('pick-ponder').addEventListener('click',()=>showWizardDetail('ponder'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{

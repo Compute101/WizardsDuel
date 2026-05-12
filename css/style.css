@@ -524,4 +524,5 @@ body {
 /* New char card hover states */
 #pick-sylvara:hover, #pick-sylvara:active { border-color:#44cc88; box-shadow:0 0 20px rgba(68,204,136,0.25); }
 #pick-aurelia:hover, #pick-aurelia:active { border-color:#ffcc44; box-shadow:0 0 20px rgba(255,204,68,0.25); }
+#pick-gnash:hover,   #pick-gnash:active   { border-color:#dd8822; box-shadow:0 0 20px rgba(221,136,34,0.25); }
 
