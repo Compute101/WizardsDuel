@@ -171,8 +171,23 @@ function tickAnimFrame(who,dt){
 
 let lastFrameTime=0;
 
-function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who){
+function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActive){
   bx.save();
+  if(foresightActive){
+    const t=Date.now();
+    const cy=y-sz*.5;
+    for(let i=0;i<3;i++){
+      const a=t/900+i/3*Math.PI*2;
+      const ox=Math.cos(a)*sz*.85, oy=Math.sin(a)*sz*.45;
+      const pulse=0.55+0.35*Math.sin(t/400+i*2.1);
+      bx.beginPath(); bx.arc(x+ox,cy+oy,sz*.09,0,Math.PI*2);
+      bx.fillStyle=`rgba(255,204,68,${pulse})`; bx.fill();
+      bx.strokeStyle=`rgba(255,240,160,${pulse*0.8})`; bx.lineWidth=1; bx.stroke();
+    }
+    const halo=0.07+0.04*Math.sin(Date.now()/350);
+    bx.beginPath(); bx.arc(x,cy,sz*.8,0,Math.PI*2);
+    bx.strokeStyle=`rgba(255,204,68,${halo*5})`; bx.lineWidth=2; bx.stroke();
+  }
   if(shielded>0){
     const gv=0.08+0.05*Math.sin(Date.now()/300);
     bx.beginPath(); bx.arc(x,y-sz*.5,sz*.75,0,Math.PI*2);
@@ -287,6 +302,7 @@ function refreshStatusBar(){
     if(gs.p2.burn>0)    tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
     if(gs.p2.frozen)    tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN</span>`);
     if(gs.p2.empowered) tags.push(`<span class="status-tag empower">💪 ${p2Cfg.name} EMPOWERED</span>`);
+    if(gs.p2.foresight) tags.push(`<span class="status-tag foresight">🔮 ${p2Cfg.name} FORESIGHT</span>`);
     if(gs.p2.ward>0)    tags.push(`<span class="status-tag ward">✨ ${p2Cfg.name} WARDED (${gs.p2.ward})</span>`);
     if(gs.p2.weakened)  tags.push(`<span class="status-tag weakened">🌀 ${p2Cfg.name} WEAKENED</span>`);
   }
@@ -306,8 +322,8 @@ function battleLoop(ts){
   resizeBC();
   drawBG();
   const gy=bH*.74, wsz=bH*.3;
-  drawWiz(bW*.22,gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1');
-  if(!ponderMode) drawWiz(bW*.78,gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2');
+  drawWiz(bW*.22,gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1',gs.p1.foresight);
+  if(!ponderMode) drawWiz(bW*.78,gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2',gs.p2.foresight);
   tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!ponderMode){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
@@ -323,6 +339,7 @@ function refreshHUD(){
   document.getElementById('p2hpf').style.height=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
   document.getElementById('sh1').style.opacity=gs.p1.shield>0||gs.p1.ward>0?'1':'0.18';
   document.getElementById('sh2').style.opacity=gs.p2.shield>0||gs.p2.ward>0?'1':'0.18';
+  const fs2=document.getElementById('fs2'); if(fs2) fs2.style.opacity=gs.p2.foresight?'1':'0';
   document.getElementById('roundlbl').textContent='Round '+gs.round;
   refreshMana('mfill1','mval1',gs.p1.mana);
   refreshMana('mfill2','mval2',gs.p2.mana);
@@ -527,7 +544,7 @@ function castSpell(spell,target,tx,ty,caster){
     addFloat(tx,ty-36,'🩸 +'+pct+'% Frenzy!',casterCfg.col,10);
   }
 
-  // Target: Foresight
+  // Target: Foresight — fully blocks the incoming spell
   if(targetState.foresight){
     addFloat(tx,ty-20,'🔮 Foreseen!','#ffcc44',11);
     targetState.foresight=false;
