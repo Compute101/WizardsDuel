@@ -31,7 +31,7 @@ const CHAR_DISPLAY={
     flavour:"Sustain and control with nature's power."
   },
   aurelia:{
-    stats:[['❤ HP','90'],['🔮 Foresight','−75% dmg, no effects'],['⏳ Time Drain','−3 chan × 5 turns'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','90'],['🔮 Foresight','Block next spell'],['⏳ Time Drain','−3 chan × 5 turns'],['✨ Channel','+4 Mana']],
     flavour:'Bend time — foresee attacks and drain your foe.'
   },
   gnash:{
@@ -287,6 +287,7 @@ function refreshStatusBar(){
     if(gs.p2.burn>0)    tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
     if(gs.p2.frozen)    tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN</span>`);
     if(gs.p2.empowered) tags.push(`<span class="status-tag empower">💪 ${p2Cfg.name} EMPOWERED</span>`);
+    if(gs.p2.foresight) tags.push(`<span class="status-tag foresight">🔮 ${p2Cfg.name} FORESIGHT</span>`);
     if(gs.p2.ward>0)    tags.push(`<span class="status-tag ward">✨ ${p2Cfg.name} WARDED (${gs.p2.ward})</span>`);
     if(gs.p2.weakened)  tags.push(`<span class="status-tag weakened">🌀 ${p2Cfg.name} WEAKENED</span>`);
   }
@@ -323,6 +324,7 @@ function refreshHUD(){
   document.getElementById('p2hpf').style.height=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
   document.getElementById('sh1').style.opacity=gs.p1.shield>0||gs.p1.ward>0?'1':'0.18';
   document.getElementById('sh2').style.opacity=gs.p2.shield>0||gs.p2.ward>0?'1':'0.18';
+  const fs2=document.getElementById('fs2'); if(fs2) fs2.style.opacity=gs.p2.foresight?'1':'0';
   document.getElementById('roundlbl').textContent='Round '+gs.round;
   refreshMana('mfill1','mval1',gs.p1.mana);
   refreshMana('mfill2','mval2',gs.p2.mana);
@@ -527,14 +529,13 @@ function castSpell(spell,target,tx,ty,caster){
     addFloat(tx,ty-36,'🩸 +'+pct+'% Frenzy!',casterCfg.col,10);
   }
 
-  // Target: Foresight — absorbs 75% of damage, prevents elemental effects
-  let foresightAbsorbed=false;
+  // Target: Foresight — fully blocks the incoming spell
   if(targetState.foresight){
     addFloat(tx,ty-20,'🔮 Foreseen!','#ffcc44',11);
     targetState.foresight=false;
     spawnParts(tx,ty,'#ffcc44',10);
-    dmg=Math.max(1,Math.round(dmg*0.25));
-    foresightAbsorbed=true;
+    if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    return;
   }
 
   // Target: Counter (check BEFORE shield breaks)
@@ -574,15 +575,13 @@ function castSpell(spell,target,tx,ty,caster){
   addFloat(tx,ty,'-'+dmg,spell.col,22);
   flash(spell.col);
 
-  if(!foresightAbsorbed){
-    if(spell.element==='fire'){
-      targetState.burn=BURN_ROUNDS;
-      addFloat(tx,ty+28,'🔥 Burning!','#ff6622',10);
-    }
-    if(spell.element==='ice'){
-      targetState.frozen=true;
-      addFloat(tx,ty+28,'❄️ Frozen!','#88ddff',10);
-    }
+  if(spell.element==='fire'){
+    targetState.burn=BURN_ROUNDS;
+    addFloat(tx,ty+28,'🔥 Burning!','#ff6622',10);
+  }
+  if(spell.element==='ice'){
+    targetState.frozen=true;
+    addFloat(tx,ty+28,'❄️ Frozen!','#88ddff',10);
   }
 
   if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
