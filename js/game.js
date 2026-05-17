@@ -158,8 +158,10 @@ function tickAnimFrame(who,dt){
   a.timer+=dt;
   if(a.timer>=FRAME_MS){
     a.timer-=FRAME_MS;
-    const frameCount=ANIM_FRAMES[gs[who+'anim']]??SPRITE_CFG.frames;
-    a.frame=(a.frame+1)%frameCount;
+    const animName=gs[who+'anim'];
+    const frameCount=ANIM_FRAMES[animName]??SPRITE_CFG.frames;
+    const next=a.frame+1;
+    a.frame=animName==='death'?Math.min(next,frameCount-1):next%frameCount;
   }
 }
 
