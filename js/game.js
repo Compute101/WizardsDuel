@@ -1026,7 +1026,8 @@ function endMyTurn(skipShieldDecrement=false){
 function doAI(){
   if(!gs||!battleRunning||gameEnded) return;
 
-  // Decrement AI invisible counter
+  // Decrement invisible counters once per round (at the round boundary)
+  if(gs.p1.invisible>0) gs.p1.invisible--;
   if(gs.p2.invisible>0) gs.p2.invisible--;
 
   // Burn tick for AI
