@@ -80,6 +80,78 @@ function showScreen(id){
   document.getElementById(id).classList.add('active');
 }
 
+// ── TOURNAMENT BRACKET ─────────────────────────────────────
+function buildBracket(){
+  const track=document.getElementById('bracket-track');
+  track.innerHTML='';
+  tournamentQueue.forEach((oppKey,i)=>{
+    const oppCfg=CHAR_DEFS[oppKey];
+    const isFinal=i===tournamentQueue.length-1;
+    const col=document.createElement('div');
+    col.className='bracket-round';
+    col.dataset.round=i;
+    if(isFinal) col.classList.add('is-final');
+    col.innerHTML=
+      '<div class="bracket-rlabel">'+(isFinal?'☆ FINAL ☆':'Round '+(i+1))+'</div>'+
+      '<div class="bracket-slot bslot-player"><img src="portraits/'+p1Key+'.png" alt="'+p1Cfg.name+'"></div>'+
+      '<div class="bracket-cross">⚔</div>'+
+      '<div class="bracket-slot bslot-opp" id="bopp-'+i+'">'+
+        '<img src="portraits/'+oppKey+'.png" alt="'+oppCfg.name+'">'+
+        '<div class="bslot-name">'+oppCfg.name+'</div>'+
+        (isFinal?'<div class="bslot-boss">BOSS</div>':'')+
+      '</div>';
+    track.appendChild(col);
+    if(i<tournamentQueue.length-1){
+      const arr=document.createElement('div');
+      arr.className='bracket-arrow';
+      arr.textContent='▶';
+      track.appendChild(arr);
+    }
+  });
+}
+
+function showBracket(animate){
+  buildBracket();
+  const nextKey=tournamentQueue[tournamentIndex];
+  const nextCfg=CHAR_DEFS[nextKey];
+  const btn=document.getElementById('bracket-btn');
+  btn.textContent=animate?('⚔ Fight '+nextCfg.name+' →'):'⚔ Begin Tournament';
+  btn.style.borderColor=nextCfg.col||'#c9a84c';
+  btn.style.color=nextCfg.col||'#c9a84c';
+
+  tournamentQueue.forEach((oppKey,i)=>{
+    const col=document.querySelector('#bracket-track .bracket-round[data-round="'+i+'"]');
+    if(!col) return;
+    if(i<tournamentIndex){
+      col.classList.add('br-won');
+    } else if(i===tournamentIndex){
+      const oppSlot=col.querySelector('.bslot-opp');
+      oppSlot.style.borderColor=CHAR_DEFS[oppKey].col||'#c9a84c';
+      if(animate){
+        col.classList.add('br-upcoming');
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{
+          col.classList.remove('br-upcoming');
+          col.classList.add('br-active','br-arrive');
+          setTimeout(()=>col.classList.remove('br-arrive'),650);
+        }));
+      } else {
+        col.classList.add('br-active');
+      }
+    } else {
+      col.classList.add('br-upcoming');
+    }
+  });
+
+  if(animate){
+    setTimeout(()=>{
+      const activeCol=document.querySelector('#bracket-track .bracket-round.br-active');
+      if(activeCol) activeCol.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    },400);
+  }
+
+  showScreen('tournament-screen');
+}
+
 // ── BATTLE CANVAS ──────────────────────────────────────────
 const bc=document.getElementById('bcanvas');
 const bx=bc.getContext('2d');
@@ -2538,7 +2610,7 @@ function pickCharacter(key){
   tournamentIndex=0;
   p2Key=tournamentQueue[0];
   p2Cfg=CHAR_DEFS[p2Key];
-  startNextBattle();
+  showBracket(false);
 }
 
 function startNextBattle(){
@@ -2628,12 +2700,17 @@ window.addEventListener('DOMContentLoaded', ()=>{
     if(advancing){
       tournamentIndex++;
       p2Key=tournamentQueue[tournamentIndex];
-      startNextBattle();
+      p2Cfg=CHAR_DEFS[p2Key];
+      showBracket(true);
     } else {
       battleRunning=false;
       document.getElementById('btn-continue').textContent='Continue';
       showScreen('title-screen');
     }
+  });
+
+  document.getElementById('bracket-btn').addEventListener('click',()=>{
+    startNextBattle();
   });
 
   window.addEventListener('resize',()=>{ if(battleRunning) resizeBC(); });

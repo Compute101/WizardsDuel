@@ -577,3 +577,154 @@ body {
 #pick-aurelia:hover, #pick-aurelia:active { border-color:#ffcc44; box-shadow:0 0 20px rgba(255,204,68,0.25); }
 #pick-gnash:hover,   #pick-gnash:active   { border-color:#dd8822; box-shadow:0 0 20px rgba(221,136,34,0.25); }
 
+/* ── TOURNAMENT BRACKET ── */
+#tournament-screen {
+  background: radial-gradient(ellipse at 50% 35%, #2a1060 0%, #0d0820 70%);
+  padding: 28px 8px 28px;
+  gap: 0;
+}
+.bracket-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(15px, 5vw, 20px);
+  color: #f0cc6a;
+  text-shadow: 0 0 20px #c9a84c;
+  margin-bottom: 4px;
+}
+.bracket-sub {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: rgba(201,168,76,0.4);
+  margin-bottom: 22px;
+}
+.bracket-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  margin-bottom: 22px;
+}
+.bracket-scroll::-webkit-scrollbar { height: 2px; }
+.bracket-scroll::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.2); border-radius: 2px; }
+#bracket-track {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: max-content;
+  padding: 2px 8px;
+}
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 72px;
+  gap: 5px;
+}
+.bracket-rlabel {
+  font-size: 6px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(201,168,76,0.4);
+  white-space: nowrap;
+  height: 14px; display: flex; align-items: center; justify-content: center;
+}
+.is-final .bracket-rlabel {
+  color: rgba(255,90,90,0.55);
+  letter-spacing: 2px;
+}
+.bracket-slot {
+  width: 60px; height: 60px;
+  border: 2px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  background: rgba(0,0,0,0.45);
+  transition: border-color 0.4s, box-shadow 0.4s, opacity 0.4s;
+}
+.bracket-slot img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center 20%;
+  display: block;
+  transition: filter 0.5s, opacity 0.5s;
+}
+.bslot-name {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  font-size: 5.5px; letter-spacing: 0.5px; text-transform: uppercase;
+  text-align: center; padding: 2px;
+  background: rgba(0,0,0,0.72);
+  color: rgba(255,255,255,0.75);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.bslot-boss {
+  position: absolute; top: 2px; right: 2px;
+  font-size: 5px; letter-spacing: 1px; text-transform: uppercase;
+  background: rgba(140,10,10,0.85); color: #ff8888;
+  border-radius: 2px; padding: 1px 3px;
+  border: 1px solid rgba(255,80,80,0.4);
+}
+.bracket-cross {
+  font-size: 10px; color: rgba(201,168,76,0.28);
+  line-height: 1; padding: 1px 0;
+}
+.bracket-arrow {
+  align-self: flex-start;
+  padding-top: 46px;
+  padding-left: 4px; padding-right: 4px;
+  font-size: 12px; color: rgba(201,168,76,0.28);
+  flex-shrink: 0;
+}
+
+/* ── BRACKET ROUND STATES ── */
+
+/* Won */
+.br-won .bslot-player { border-color: rgba(74,240,255,0.5); }
+.br-won .bslot-opp    { opacity: 0.28; }
+.br-won .bslot-opp img { filter: grayscale(0.9); }
+.br-won .bslot-opp::after {
+  content: '✕';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 900;
+  color: rgba(255,74,110,0.8);
+  pointer-events: none;
+}
+
+/* Active */
+.br-active .bslot-player {
+  border-color: #f0cc6a;
+  animation: bpPlayerPulse 1.8s ease-in-out infinite;
+}
+.br-active .bslot-opp {
+  animation: bpOppPulse 2.2s ease-in-out infinite;
+}
+@keyframes bpPlayerPulse {
+  0%,100% { box-shadow: 0 0 8px rgba(240,204,106,0.35); }
+  50%      { box-shadow: 0 0 22px rgba(240,204,106,0.85); }
+}
+@keyframes bpOppPulse {
+  0%,100% { box-shadow: 0 0 5px rgba(201,168,76,0.15); }
+  50%      { box-shadow: 0 0 18px rgba(201,168,76,0.5); }
+}
+.is-final.br-active .bslot-opp {
+  animation: bpBossPulse 1.5s ease-in-out infinite;
+}
+@keyframes bpBossPulse {
+  0%,100% { box-shadow: 0 0 8px rgba(200,30,30,0.35); border-color: rgba(220,50,50,0.6); }
+  50%      { box-shadow: 0 0 26px rgba(255,50,50,0.75); border-color: rgba(255,80,80,0.9); }
+}
+
+/* Upcoming */
+.br-upcoming .bslot-player { opacity: 0.15; }
+.br-upcoming .bslot-opp    { opacity: 0.42; }
+.br-upcoming .bslot-opp img { filter: brightness(0.6); }
+.is-final.br-upcoming .bslot-opp {
+  opacity: 0.5;
+  border-color: rgba(180,30,30,0.3);
+}
+
+/* Arrive animation */
+@keyframes bpArrive {
+  0%   { transform: scale(0.55) translateY(-10px); opacity: 0; }
+  65%  { transform: scale(1.08) translateY(1px);   opacity: 1; }
+  100% { transform: scale(1)    translateY(0);      opacity: 1; }
+}
+.br-arrive .bslot-player {
+  animation: bpArrive 0.55s cubic-bezier(0.22,1,0.36,1) forwards !important;
+}
+
