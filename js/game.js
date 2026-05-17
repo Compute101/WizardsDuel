@@ -619,6 +619,7 @@ function resolveCharSpell(spellId,caster){
   const casterState=caster==='p1'?gs.p1:gs.p2;
   const casterCfg  =caster==='p1'?p1Cfg:p2Cfg;
   const targetState=caster==='p1'?gs.p2:gs.p1;
+  const targetCfg  =caster==='p1'?p2Cfg:p1Cfg;
   const cx=caster==='p1'?bW*.22:bW*.78;
   const tx=caster==='p1'?bW*.78:bW*.22;
 
@@ -732,6 +733,51 @@ function resolveCharSpell(spellId,caster){
       targetState.hp=Math.max(0,targetState.hp-dmg);
       spawnParts(tx,bH*.38,casterCfg.col,22);
       addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,22);
+      flash(casterCfg.col);
+      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+      else             {anim('p2','cast',800); anim('p1','hit',800);}
+    }
+    refreshHUD();
+    checkWin();
+  } else if(spellId==='basicattack'){
+    const basicSpell=casterCfg.spells.find(s=>s.id==='basicattack');
+    let dmg=Math.round((basicSpell.dmg||8)*casterCfg.dmgMult);
+    const isPhysical=!!basicSpell.physical;
+    if(targetState.resist>0) dmg=Math.round(dmg*0.67);
+    if(targetState.foresight){
+      addFloat(tx,bH*.38-20,'🔮 Foreseen!','#ffcc44',15);
+      targetState.foresight=false;
+      spawnParts(tx,bH*.38,'#ffcc44',18);
+      spawnParts(tx,bH*.38,casterCfg.col,10);
+      spawnParts(tx,bH*.38,'#ffffff',6);
+      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    } else {
+      const counterTriggered=!isPhysical&&targetState.counter&&targetState.shield>0;
+      if(targetState.shield>0){
+        const absorbed=Math.min(dmg,targetState.shieldHp);
+        targetState.shieldHp-=absorbed;
+        dmg-=absorbed;
+        if(targetState.shieldHp<=0){
+          targetState.shield=0;
+          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
+          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
+        } else {
+          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+          spawnParts(tx,bH*.38,'#4af0ff',8); spawnParts(tx,bH*.38,'#ffffff',4);
+        }
+      }
+      if(counterTriggered){
+        const casterX=cx;
+        casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
+        targetState.counter=false;
+        addFloat(casterX,bH*.33,'⚡ Counter! −'+targetCfg.counterDmg,'#4af0ff',14);
+        spawnParts(casterX,bH*.38,'#4af0ff',16);
+        spawnBeam(tx,bH*.38,casterX,bH*.38,'#4af0ff');
+        checkWin(); if(!battleRunning) return;
+      }
+      targetState.hp=Math.max(0,targetState.hp-dmg);
+      spawnParts(tx,bH*.38,casterCfg.col,14);
+      addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
       flash(casterCfg.col);
       if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
       else             {anim('p2','cast',800); anim('p1','hit',800);}
