@@ -27,15 +27,15 @@ const CHAR_DISPLAY={
     flavour:'Strike hard. Strike first. No mercy.'
   },
   sylvara:{
-    stats:[['❤ HP','92'],['💚 Regen','+40 HP/10T'],['🌿 Entangle','freeze only'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','92'],['💚 Regen','+40 HP/10T'],['🌿 Entangle','75% freeze 1-3T'],['✨ Channel','+4 Mana']],
     flavour:"Sustain and control with nature's power."
   },
   aurelia:{
-    stats:[['❤ HP','90'],['🔮 Foresight','Block next spell'],['⏳ Time Drain','−3 chan × 5 turns'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','90'],['🔮 Foresight','Block next spell'],['⏳ Time Drain','to +2 ch / 5T'],['✨ Channel','+4 Mana']],
     flavour:'Bend time — foresee attacks and drain your foe.'
   },
   gnash:{
-    stats:[['❤ HP','105'],['🩸 Frenzy','+40% × 2 hits'],['⚔️ Charge','32 pierce all'],['✨ Channel','+3 Mana']],
+    stats:[['❤ HP','105'],['🩸 War Paint','33% resist / 5T'],['⚔️ Charge','32 pierce all'],['✨ Channel','+3 Mana']],
     flavour:'Blood and bone. No magic — just fury.'
   },
   ponder:{
