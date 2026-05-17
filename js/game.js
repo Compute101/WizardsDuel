@@ -727,6 +727,10 @@ function resolveCharSpell(spellId,caster){
     spawnParts(cx,bH*.38,'#ffffff',6);
     anim(caster,'shield',700);
   } else if(spellId==='manasiphon'){
+    if(casterState.invisible>0){
+      casterState.invisible=0;
+      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+    }
     if(targetState.foresight){
       addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
       targetState.foresight=false;
