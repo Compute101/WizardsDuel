@@ -62,14 +62,14 @@ let mazeRAF=null, mazeTid=null;
 function newState(){
   gs={
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
-        shield:0, shieldHp:0, burn:0, frozen:false, regen:null,
+        shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0},
     p2: p2Cfg
       ? {hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
-         shield:0, shieldHp:0, burn:0, frozen:false, regen:null,
+         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
          counter:false, empowered:false, foresight:false, timeDrain:0, resist:0}
       : {hp:999, maxHp:999, mana:0,
-         shield:0, shieldHp:0, burn:0, frozen:false, regen:null,
+         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
          counter:false, empowered:false, foresight:false, timeDrain:0, resist:0},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
@@ -294,7 +294,7 @@ function refreshStatusBar(){
   const tags=[];
   if(gs.p1.resist>0)    tags.push(`<span class="status-tag resist">🩸 ${p1Cfg.name} RESIST (${gs.p1.resist})</span>`);
   if(gs.p1.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p1Cfg.name} BURNING (${gs.p1.burn})</span>`);
-  if(gs.p1.frozen)      tags.push(`<span class="status-tag freeze">❄️ ${p1Cfg.name} FROZEN</span>`);
+  if(gs.p1.frozen>0)    tags.push(`<span class="status-tag freeze">❄️ ${p1Cfg.name} FROZEN</span>`);
   if(gs.p1.empowered)   tags.push(`<span class="status-tag empower">💪 ${p1Cfg.name} EMPOWERED</span>`);
   if(gs.p1.counter)     tags.push(`<span class="status-tag counter">⚡ ${p1Cfg.name} COUNTER</span>`);
   if(gs.p1.ward>0)      tags.push(`<span class="status-tag ward">✨ ${p1Cfg.name} WARDED (${gs.p1.ward})</span>`);
@@ -302,7 +302,7 @@ function refreshStatusBar(){
   if(p2Cfg){
     if(gs.p2.resist>0)  tags.push(`<span class="status-tag resist">🩸 ${p2Cfg.name} RESIST (${gs.p2.resist})</span>`);
     if(gs.p2.burn>0)    tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
-    if(gs.p2.frozen)    tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN</span>`);
+    if(gs.p2.frozen>0)  tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN</span>`);
     if(gs.p2.empowered) tags.push(`<span class="status-tag empower">💪 ${p2Cfg.name} EMPOWERED</span>`);
     if(gs.p2.foresight) tags.push(`<span class="status-tag foresight">🔮 ${p2Cfg.name} FORESIGHT</span>`);
     if(gs.p2.ward>0)    tags.push(`<span class="status-tag ward">✨ ${p2Cfg.name} WARDED (${gs.p2.ward})</span>`);
@@ -368,11 +368,11 @@ function refreshActionBar(){
 
 function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='shield')    return casterState.shield>0;
-  if(spellId==='counter')   return !casterState.shield;
+  if(spellId==='counter')   return !casterState.shield || casterState.counter;
   if(spellId==='empower')   return casterState.empowered;
   if(spellId==='bloodpact') return casterState.hp<=(casterCfg.bpCost||0);
   if(spellId==='heal')      return casterState.regen!==null||casterState.hp>=casterState.maxHp;
-  if(spellId==='entangle')  return targetState.frozen;
+  if(spellId==='entangle')  return targetState.frozen>0;
   if(spellId==='foresight') return casterState.foresight;
   if(spellId==='timedrain') return targetState.timeDrain>0;
   if(spellId==='warpaint')  return casterState.resist>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
@@ -465,7 +465,7 @@ function resolveCharSpell(spellId,caster){
     anim(caster,'cast',700);
   } else if(spellId==='entangle'){
     if(Math.random()<0.75){
-      targetState.frozen=true;
+      targetState.frozen=Math.floor(Math.random()*3)+1;
       spawnParts(tx,bH*.38,'#44cc88',14);
       addFloat(tx,bH*.33,'🌿 Entangled!','#44cc88',11);
     } else {
@@ -497,7 +497,6 @@ function resolveCharSpell(spellId,caster){
       spawnParts(tx,bH*.38,'#ffcc44',10);
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     } else {
-      const counterTriggered=targetState.counter&&targetState.shield>0;
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed;
@@ -515,14 +514,6 @@ function resolveCharSpell(spellId,caster){
       flash(casterCfg.col);
       if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
       else             {anim('p2','cast',800); anim('p1','hit',800);}
-      if(counterTriggered){
-        const targetCfg=caster==='p1'?p2Cfg:p1Cfg;
-        casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
-        targetState.counter=false;
-        addFloat(cx,bH*.33,'⚡ Counter! −'+targetCfg.counterDmg,'#4af0ff',11);
-        spawnParts(cx,bH*.38,'#4af0ff',8);
-        checkWin();
-      }
     }
     refreshHUD();
     checkWin();
@@ -618,7 +609,7 @@ function castSpell(spell,target,tx,ty,caster){
     addFloat(tx,ty+28,'🔥 Burning!','#ff6622',10);
   }
   if(spell.element==='ice'){
-    targetState.frozen=true;
+    targetState.frozen=Math.max(targetState.frozen,1);
     addFloat(tx,ty+28,'❄️ Frozen!','#88ddff',10);
   }
 
@@ -682,8 +673,8 @@ function doAI(){
   if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
 
   // Frozen: skip turn
-  if(gs.p2.frozen){
-    gs.p2.frozen=false;
+  if(gs.p2.frozen>0){
+    gs.p2.frozen--;
     addFloat(bW*.78,bH*.38,'❄️ Frozen!','#88ddff',13);
     setTimeout(finishAI,1200);
     return;
@@ -781,8 +772,8 @@ function finishAI(){
   if(gs.p1.regen) processRegen(gs.p1,bW*.22,bH*.38);
 
   // Frozen: auto-skip player turn
-  if(gs.p1.frozen){
-    gs.p1.frozen=false;
+  if(gs.p1.frozen>0){
+    gs.p1.frozen--;
     addFloat(bW*.22,bH*.38,'❄️ Frozen!','#88ddff',13);
     setTimeout(()=>{ gs.round++; if(aiTid) clearTimeout(aiTid); aiTid=setTimeout(doAI,1200); },1200);
     return;
