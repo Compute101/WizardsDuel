@@ -489,6 +489,37 @@ body {
 @keyframes statusPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
 
 /* ── OVERLAY ── */
+/* ── RETRY SCREEN ── */
+#retry-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0); z-index:150;
+  flex-direction:column; align-items:center; justify-content:flex-end;
+  padding-bottom:14%; pointer-events:none;
+}
+#retry-overlay.active { display:flex; pointer-events:all; animation:retry-darken 10s linear forwards; }
+@keyframes retry-darken {
+  from { background:rgba(0,0,0,0); }
+  to   { background:rgba(0,0,0,0.85); }
+}
+#retry-ui { text-align:center; }
+#retry-title {
+  font-family:'Cinzel Decorative',serif; font-size:32px; font-weight:700;
+  color:#f0cc6a; letter-spacing:2px;
+  text-shadow:0 0 20px rgba(240,204,106,0.7); margin-bottom:10px;
+}
+#retry-countdown {
+  font-family:'Cinzel Decorative',serif; font-size:80px; font-weight:700;
+  color:#fff; line-height:1; margin-bottom:22px;
+  text-shadow:0 0 30px rgba(255,255,255,0.5);
+  transition:color 0.3s, text-shadow 0.3s;
+}
+#retry-countdown.urgent { color:#ff4a6e; text-shadow:0 0 30px rgba(255,74,110,0.9); }
+#retry-btn { animation:retry-pulse 1.5s ease-in-out infinite; }
+@keyframes retry-pulse {
+  0%,100% { box-shadow:0 0 8px rgba(240,204,106,0.3); }
+  50%      { box-shadow:0 0 24px rgba(240,204,106,0.9); }
+}
+
 #overlay {
   display:none; position:fixed; inset:0;
   background:rgba(0,0,0,0.88); z-index:200;
