@@ -1167,6 +1167,7 @@ function finishAI(){
 
 // ── RETRY SCREEN ───────────────────────────────────────────
 function showRetryScreen(){
+  if(retryCountdownId){clearInterval(retryCountdownId); retryCountdownId=null;}
   const overlay=document.getElementById('retry-overlay');
   const cdEl=document.getElementById('retry-countdown');
   const btn=document.getElementById('retry-btn');
@@ -1210,10 +1211,12 @@ function onRetryContinue(overlay){
 }
 
 function onRetryExpired(overlay){
+  if(aiTid){clearTimeout(aiTid); aiTid=null;}
   overlay.style.transition='background 0.8s ease-in';
   overlay.style.background='rgba(0,0,0,0.96)';
   setTimeout(()=>{
     battleRunning=false;
+    gameEnded=false;
     overlay.classList.remove('active');
     overlay.style.transition='';
     overlay.style.background='';
@@ -1227,6 +1230,7 @@ function checkWin(){
 }
 
 function endGame(won){
+  if(gameEnded) return;
   gameEnded=true;
   gs.myTurn=false; gs.busy=true;
   gs[won?'p2anim':'p1anim']='death';
