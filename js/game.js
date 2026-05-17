@@ -606,6 +606,10 @@ function act(type){
     };
     launchers[type](spell, ok=>{
       if(ok){
+        if(gs.p1.invisible>0){
+          gs.p1.invisible=0;
+          addFloat(bW*.22,bH*.33,'👻 Revealed!','#b8a0e8',11);
+        }
         gs.p1.mana-=spell.cost;
         spawnProj(bW*.22,bH*.38,bW*.78,bH*.38,spell.element,spell.col,
           ()=>castSpell(spell,gs.p2,bW*.78,bH*.38,'p1'));
@@ -676,22 +680,28 @@ function resolveCharSpell(spellId,caster){
     }
     anim(caster,'cast',700);
   } else if(spellId==='entangle'){
-    if(Math.random()<0.75){
-      targetState.frozen=Math.floor(Math.random()*3)+1;
-      for(let i=0;i<10;i++){
-        const a=i/10*Math.PI*2;
-        gs.parts.push({x:tx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#44cc88',
-          vx:Math.cos(a+Math.PI)*.9,vy:Math.sin(a+Math.PI)*.9,sz:2+Math.random()*2,life:1,dec:.02});
-      }
-      spawnParts(tx,bH*.38,'#44cc88',8);
-      addFloat(tx,bH*.33,'🌿 Entangled!','#44cc88',13);
+    if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
     } else {
-      for(let i=0;i<8;i++)
-        gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:bH*.38-bH*.04,col:'#665522',
-          vx:(Math.random()-.5)*1.5,vy:Math.random()*2,sz:2,life:1,dec:.025});
-      addFloat(tx,bH*.33,'🌿 Resisted!','#888866',11);
+      if(Math.random()<0.75){
+        targetState.frozen=Math.floor(Math.random()*3)+1;
+        for(let i=0;i<10;i++){
+          const a=i/10*Math.PI*2;
+          gs.parts.push({x:tx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#44cc88',
+            vx:Math.cos(a+Math.PI)*.9,vy:Math.sin(a+Math.PI)*.9,sz:2+Math.random()*2,life:1,dec:.02});
+        }
+        spawnParts(tx,bH*.38,'#44cc88',8);
+        addFloat(tx,bH*.33,'🌿 Entangled!','#44cc88',13);
+      } else {
+        for(let i=0;i<8;i++)
+          gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:bH*.38-bH*.04,col:'#665522',
+            vx:(Math.random()-.5)*1.5,vy:Math.random()*2,sz:2,life:1,dec:.025});
+        addFloat(tx,bH*.33,'🌿 Resisted!','#888866',11);
+      }
+      anim(caster,'cast',800);
     }
-    anim(caster,'cast',800);
   } else if(spellId==='foresight'){
     casterState.foresight=true;
     addFloat(cx,bH*.33,'🔮 Foresight Active!',casterCfg.col,12);
@@ -699,11 +709,17 @@ function resolveCharSpell(spellId,caster){
     spawnParts(cx,bH*.38,'#ffffff',6);
     anim(caster,'shield',700);
   } else if(spellId==='timedrain'){
-    targetState.timeDrain=casterCfg.timeDrainTurns;
-    addFloat(tx,bH*.33,'⏳ Time Drain!',casterCfg.col,12);
-    spawnParts(tx,bH*.38,'#cc88ff',12);
-    spawnParts(tx,bH*.38,casterCfg.col,6);
-    anim(caster,'cast',700);
+    if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else {
+      targetState.timeDrain=casterCfg.timeDrainTurns;
+      addFloat(tx,bH*.33,'⏳ Time Drain!',casterCfg.col,12);
+      spawnParts(tx,bH*.38,'#cc88ff',12);
+      spawnParts(tx,bH*.38,casterCfg.col,6);
+      anim(caster,'cast',700);
+    }
   } else if(spellId==='vanish'){
     casterState.invisible=3;
     addFloat(cx,bH*.33,'👻 Vanished! (3T)','#b8a0e8',12);
@@ -711,6 +727,10 @@ function resolveCharSpell(spellId,caster){
     spawnParts(cx,bH*.38,'#ffffff',6);
     anim(caster,'shield',700);
   } else if(spellId==='manasiphon'){
+    if(casterState.invisible>0){
+      casterState.invisible=0;
+      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+    }
     if(targetState.foresight){
       addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
       targetState.foresight=false;
@@ -1001,7 +1021,6 @@ function endMyTurn(skipShieldDecrement=false){
   }
   if(gs.p1.timeDrain>0)  gs.p1.timeDrain--;
   if(gs.p1.resist>0)     gs.p1.resist--;
-  if(gs.p1.invisible>0)  gs.p1.invisible--;
   gs.round++;
   if(aiTid) clearTimeout(aiTid);
   aiTid=setTimeout(doAI,1400);
@@ -1011,7 +1030,8 @@ function endMyTurn(skipShieldDecrement=false){
 function doAI(){
   if(!gs||!battleRunning||gameEnded) return;
 
-  // Decrement AI invisible counter
+  // Decrement invisible counters once per round (at the round boundary)
+  if(gs.p1.invisible>0) gs.p1.invisible--;
   if(gs.p2.invisible>0) gs.p2.invisible--;
 
   // Burn tick for AI
@@ -1044,7 +1064,7 @@ function doAI(){
     if(s.id&&charSpellBlocked(s.id,ai,p2Cfg,gs.p1)) return false;
     if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
     if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
-    if(gs.p1.invisible>0&&(s.element||s.id==='basicattack'||s.id==='charge')) return false;
+    if(gs.p1.invisible>0&&(s.element||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain')) return false;
     return true;
   });
 
