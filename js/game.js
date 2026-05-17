@@ -19,27 +19,27 @@ let p1Cfg, p2Cfg;
 
 const CHAR_DISPLAY={
   eldrad:{
-    stats:[['❤ HP','115'],['🛡 Shield','60 HP / 10T'],['⚡ Counter','20 reflect'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','115'],['🛡 Shield','60 HP / 10T'],['⚡ Counter','20 reflect'],['🔰 Ward','Block next status / 3T']],
     flavour:'Outlast your foe with arcane endurance.'
   },
   mal:{
-    stats:[['❤ HP','80'],['💪 Empower','+50% / Free'],['🩸 Blood Pact','−22/+15 mana'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','80'],['💪 Empower','+50% / Free'],['🩸 Blood Pact','−22/+15 mana'],['💀 Drain','~20 dmg, heal 45%']],
     flavour:'Strike hard. Strike first. No mercy.'
   },
   sylvara:{
-    stats:[['❤ HP','92'],['💚 Regen','+40 HP/10T'],['🌿 Entangle','75% freeze 1-3T'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','92'],['💚 Regen','+40 HP/10T'],['🌿 Entangle','75% freeze 1-3T'],['🌱 Vine Whip','~10 dmg/turn × 3T']],
     flavour:"Sustain and control with nature's power."
   },
   aurelia:{
-    stats:[['❤ HP','90'],['🔮 Foresight','Block next spell'],['⏳ Time Drain','to +2 ch / 5T'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','90'],['🔮 Foresight','Block next spell'],['⏳ Time Drain','to +2 ch / 5T'],['💨 Haste','25% dodge / 3T']],
     flavour:'Bend time — foresee attacks and drain your foe.'
   },
   gnash:{
-    stats:[['❤ HP','105'],['🩸 War Paint','33% resist / 5T'],['⚔️ Charge','32 pierce all'],['✨ Channel','+3 Mana']],
+    stats:[['❤ HP','105'],['🩸 War Paint','33% resist / 5T'],['⚔️ Charge','32 pierce all'],['💢 Frenzy','2× strike, locked 3T']],
     flavour:'Blood and bone. No magic — just fury.'
   },
   ponder:{
-    stats:[['❤ HP','85'],['👻 Vanish','Invisible 3T'],['🌀 Siphon','Steal 4 mana'],['✨ Channel','+4 Mana']],
+    stats:[['❤ HP','85'],['👻 Vanish','Invisible 3T'],['🌀 Siphon','Steal 4 mana'],['💫 Blink','Next hit auto-misses']],
     flavour:"Young but fierce — vanish from sight and plunder your foe's magic."
   }
 };
@@ -61,13 +61,16 @@ function newState(){
   gs={
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
-        counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0},
+        counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false},
     p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
-        counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0},
+        counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[], projs:[], beams:[],
+    pendingAction:null, skipAITurn:false,
   };
 }
 
@@ -489,9 +492,13 @@ function refreshStatusBar(){
   if(gs.p1.foresight)     tags.push(`<span class="status-tag foresight">🔮 ${p1Cfg.name} FORESIGHT</span>`);
   if(gs.p1.regen)         tags.push(`<span class="status-tag regen">💚 ${p1Cfg.name} REGEN (${gs.p1.regen.turns}t)</span>`);
   if(gs.p1.timeDrain>0)   tags.push(`<span class="status-tag timedrain">⏳ ${p1Cfg.name} DRAINED (${gs.p1.timeDrain})</span>`);
-  if(gs.p1.ward>0)        tags.push(`<span class="status-tag ward">✨ ${p1Cfg.name} WARDED (${gs.p1.ward})</span>`);
-  if(gs.p1.weakened)      tags.push(`<span class="status-tag weakened">🌀 ${p1Cfg.name} WEAKENED</span>`);
-  if(gs.p1.invisible>0)   tags.push(`<span class="status-tag invisible">👻 ${p1Cfg.name} INVISIBLE (${gs.p1.invisible})</span>`);
+  if(gs.p1.ward>0)        tags.push(`<span class="status-tag ward">🔰 ${p1Cfg.name} WARDED (${gs.p1.ward})</span>`);
+  if(gs.p1.vineWhip>0)   tags.push(`<span class="status-tag burn">🌱 ${p1Cfg.name} VINE WHIP (${gs.p1.vineWhip})</span>`);
+  if(gs.p1.haste>0)      tags.push(`<span class="status-tag foresight">💨 ${p1Cfg.name} HASTE (${gs.p1.haste})</span>`);
+  if(gs.p1.frenzied>0)   tags.push(`<span class="status-tag resist">💢 ${p1Cfg.name} FRENZIED (${gs.p1.frenzied})</span>`);
+  if(gs.p1.blink)        tags.push(`<span class="status-tag invisible">💫 ${p1Cfg.name} BLINK</span>`);
+  if(gs.p1.weakened)     tags.push(`<span class="status-tag weakened">🌀 ${p1Cfg.name} WEAKENED</span>`);
+  if(gs.p1.invisible>0)  tags.push(`<span class="status-tag invisible">👻 ${p1Cfg.name} INVISIBLE (${gs.p1.invisible})</span>`);
   if(p2Cfg){
     if(gs.p2.resist>0)    tags.push(`<span class="status-tag resist">🩸 ${p2Cfg.name} RESIST (${gs.p2.resist})</span>`);
     if(gs.p2.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
@@ -500,7 +507,11 @@ function refreshStatusBar(){
     if(gs.p2.foresight)   tags.push(`<span class="status-tag foresight">🔮 ${p2Cfg.name} FORESIGHT</span>`);
     if(gs.p2.regen)       tags.push(`<span class="status-tag regen">💚 ${p2Cfg.name} REGEN (${gs.p2.regen.turns}t)</span>`);
     if(gs.p2.timeDrain>0) tags.push(`<span class="status-tag timedrain">⏳ ${p2Cfg.name} DRAINED (${gs.p2.timeDrain})</span>`);
-    if(gs.p2.ward>0)      tags.push(`<span class="status-tag ward">✨ ${p2Cfg.name} WARDED (${gs.p2.ward})</span>`);
+    if(gs.p2.ward>0)      tags.push(`<span class="status-tag ward">🔰 ${p2Cfg.name} WARDED (${gs.p2.ward})</span>`);
+    if(gs.p2.vineWhip>0)  tags.push(`<span class="status-tag burn">🌱 ${p2Cfg.name} VINE WHIP (${gs.p2.vineWhip})</span>`);
+    if(gs.p2.haste>0)     tags.push(`<span class="status-tag foresight">💨 ${p2Cfg.name} HASTE (${gs.p2.haste})</span>`);
+    if(gs.p2.frenzied>0)  tags.push(`<span class="status-tag resist">💢 ${p2Cfg.name} FRENZIED (${gs.p2.frenzied})</span>`);
+    if(gs.p2.blink)       tags.push(`<span class="status-tag invisible">💫 ${p2Cfg.name} BLINK</span>`);
     if(gs.p2.weakened)    tags.push(`<span class="status-tag weakened">🌀 ${p2Cfg.name} WEAKENED</span>`);
     if(gs.p2.invisible>0) tags.push(`<span class="status-tag invisible">👻 ${p2Cfg.name} INVISIBLE (${gs.p2.invisible})</span>`);
   }
@@ -552,8 +563,9 @@ function refreshMana(fillId,valId,val){
 
 function refreshActionBar(){
   const busy=!gs.myTurn||gs.busy;
-  document.getElementById('bchannel').classList.toggle('off',busy);
-  document.getElementById('bcastspell').classList.toggle('off',busy);
+  const frenzied=gs.p1.frenzied>0;
+  document.getElementById('bchannel').classList.toggle('off',busy||frenzied);
+  document.getElementById('bcastspell').classList.toggle('off',busy||frenzied);
   (p1Cfg.spells||[]).forEach(spell=>{
     const btn=document.getElementById('bspell-'+spell.id);
     if(!btn) return;
@@ -563,23 +575,38 @@ function refreshActionBar(){
 }
 
 function charSpellBlocked(spellId,casterState,casterCfg,targetState){
-  if(spellId==='shield')    return casterState.shield>0;
-  if(spellId==='counter')   return !casterState.shield || casterState.counter;
-  if(spellId==='empower')   return casterState.empowered;
-  if(spellId==='bloodpact') return casterState.hp<=(casterCfg.bpCost||0);
-  if(spellId==='heal')      return casterState.regen!==null||casterState.hp>=casterState.maxHp;
-  if(spellId==='entangle')  return targetState.frozen>0;
-  if(spellId==='foresight') return casterState.foresight;
-  if(spellId==='timedrain') return targetState.timeDrain>0;
+  if(casterState.frenzied>0&&spellId!=='basicattack') return true;
+  if(spellId==='shield')     return casterState.shield>0;
+  if(spellId==='counter')    return !casterState.shield || casterState.counter;
+  if(spellId==='empower')    return casterState.empowered;
+  if(spellId==='bloodpact')  return casterState.hp<=(casterCfg.bpCost||0);
+  if(spellId==='heal')       return casterState.regen!==null||casterState.hp>=casterState.maxHp;
+  if(spellId==='entangle')   return targetState.frozen>0;
+  if(spellId==='foresight')  return casterState.foresight;
+  if(spellId==='timedrain')  return targetState.timeDrain>0;
   if(spellId==='warpaint')   return casterState.resist>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
   if(spellId==='vanish')     return casterState.invisible>0;
   if(spellId==='manasiphon') return !casterState.invisible||targetState.mana<=0;
+  if(spellId==='ward')       return casterState.ward>0;
+  if(spellId==='drain')      return false;
+  if(spellId==='vinewhip')   return targetState.vineWhip>0;
+  if(spellId==='haste')      return casterState.haste>0;
+  if(spellId==='frenzy')     return casterState.frenzied>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='blink')      return casterState.blink;
   return false;
 }
 
 // ── PLAYER ACTIONS ─────────────────────────────────────────
 function act(type){
   if(!gs.myTurn||gs.busy) return;
+
+  // Aurelia haste: AI acts first before the player's action resolves
+  if(gs.p2&&gs.p2.haste>0&&!gs.skipAITurn){
+    gs.myTurn=false; gs.busy=true;
+    gs.pendingAction=type;
+    doAI();
+    return;
+  }
 
   if(type==='channel'){
     if(gs.p1.timeDrain>0){
@@ -596,6 +623,7 @@ function act(type){
   const spell=SPELLS.find(s=>s.element===type);
   if(spell){
     if(gs.p1.mana<spell.cost) return;
+    if(gs.p1.frenzied>0) return;
     gs.busy=true;
     const launchers={
       fire:      launchPatternEcho,
@@ -683,6 +711,15 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       anim(caster,'cast',600);
+    } else if(targetState.haste>0&&Math.random()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else if(targetState.ward>0){
+      targetState.ward=0;
+      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13);
+      spawnParts(tx,bH*.38,'#ffcc44',14);
+      anim(caster,'cast',600);
     } else {
       if(Math.random()<0.75){
         targetState.frozen=Math.floor(Math.random()*3)+1;
@@ -711,6 +748,15 @@ function resolveCharSpell(spellId,caster){
     if(targetState.invisible>0){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.haste>0&&Math.random()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else if(targetState.ward>0){
+      targetState.ward=0;
+      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13);
+      spawnParts(tx,bH*.38,'#ffcc44',14);
       anim(caster,'cast',600);
     } else {
       targetState.timeDrain=casterCfg.timeDrainTurns;
@@ -778,6 +824,15 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    } else if(targetState.haste>0&&Math.random()<0.25){
+      addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    } else if(targetState.blink){
+      targetState.blink=false;
+      addFloat(tx,bH*.38-20,'💫 Blinked!','#9988cc',15);
+      spawnParts(tx,bH*.38,'#9988cc',12);
+      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     } else {
       // Dust trail along charge path
       for(let d=0;d<5;d++){
@@ -807,6 +862,129 @@ function resolveCharSpell(spellId,caster){
     }
     refreshHUD();
     checkWin();
+  } else if(spellId==='ward'){
+    casterState.ward=3;
+    addFloat(cx,bH*.33,'🔰 Warded! (3T)',casterCfg.col,13);
+    spawnParts(cx,bH*.38,'#ffcc44',14);
+    spawnParts(cx,bH*.38,'#ffffff',6);
+    anim(caster,'shield',700);
+  } else if(spellId==='drain'){
+    if(casterState.invisible>0){
+      casterState.invisible=0;
+      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+    }
+    if(targetState.foresight){
+      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
+      targetState.foresight=false;
+      spawnParts(tx,bH*.38,'#ffcc44',14);
+      anim(caster,'cast',600);
+    } else if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.haste>0&&Math.random()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else {
+      let dmg=Math.round(18*casterCfg.dmgMult);
+      if(casterState.empowered){
+        dmg=Math.round(dmg*(casterCfg.empowerMult||1.5));
+        casterState.empowered=false;
+        addFloat(tx,bH*.33-20,'💪 Empowered!',casterCfg.col,10);
+      }
+      if(targetState.resist>0) dmg=Math.round(dmg*0.67);
+      let drainBase=dmg;
+      if(targetState.shield>0){
+        const absorbed=Math.min(dmg,targetState.shieldHp);
+        targetState.shieldHp-=absorbed; dmg-=absorbed; drainBase-=absorbed;
+        if(targetState.shieldHp<=0){
+          targetState.shield=0;
+          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
+          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
+        } else {
+          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+          spawnParts(tx,bH*.38,'#4af0ff',8);
+        }
+      }
+      targetState.hp=Math.max(0,targetState.hp-dmg);
+      const healAmt=Math.max(0,Math.round(drainBase*0.45));
+      casterState.hp=Math.min(casterState.maxHp,casterState.hp+healAmt);
+      spawnBeam(cx,bH*.38,tx,bH*.38,'#cc1111');
+      spawnParts(tx,bH*.38,'#cc1111',18);
+      for(let i=0;i<10;i++){
+        const a=-Math.PI/2+(-0.6+Math.random()*1.2),sp=1.5+Math.random()*2.5;
+        gs.parts.push({x:cx+(Math.random()-.5)*bH*.04,y:bH*.38,col:'#cc1111',
+          vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+Math.random()*2,life:1,dec:.018,noGrav:true});
+      }
+      addFloat(tx,bH*.38,'-'+dmg,'#cc1111',20);
+      addFloat(cx,bH*.33,'+'+healAmt+' 🩸',casterCfg.col,14);
+      flash('#cc1111');
+      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+      else             {anim('p2','cast',800); anim('p1','hit',800);}
+      refreshHUD(); checkWin();
+    }
+  } else if(spellId==='vinewhip'){
+    if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.haste>0&&Math.random()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else {
+      targetState.vineWhip=3;
+      for(let i=0;i<12;i++){
+        const a=i/12*Math.PI*2;
+        gs.parts.push({x:tx+Math.cos(a)*bH*.07,y:bH*.38+Math.sin(a)*bH*.04,col:'#44cc88',
+          vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2,sz:2+Math.random()*2,life:1,dec:.02});
+      }
+      spawnParts(tx,bH*.38,'#44cc88',10);
+      addFloat(tx,bH*.33,'🌱 Vine Whip! (3T)','#44cc88',13);
+      anim(caster,'cast',800);
+    }
+  } else if(spellId==='haste'){
+    casterState.haste=3;
+    addFloat(cx,bH*.33,'💨 Haste! (3T)',casterCfg.col,13);
+    for(let i=0;i<14;i++){
+      const a=-Math.PI/2+(-1.0+Math.random()*2.0),sp=1.5+Math.random()*3;
+      gs.parts.push({x:cx,y:bH*.38,col:i%2?casterCfg.col:'#ffffff',
+        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*2.5,life:1,dec:.016,noGrav:true});
+    }
+    anim(caster,'cast',700);
+  } else if(spellId==='frenzy'){
+    casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
+    if(casterState.invisible>0){
+      casterState.invisible=0;
+      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+    }
+    casterState.frenzied=4;
+    gs.busy=true;
+    addFloat(cx,bH*.28,'💢 FRENZY!',casterCfg.col,16);
+    spawnParts(cx,bH*.38,casterCfg.col,18);
+    doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
+    refreshHUD(); checkWin(); if(!battleRunning) return;
+    setTimeout(()=>{
+      if(!battleRunning) return;
+      doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
+      refreshHUD(); checkWin(); if(!battleRunning) return;
+      if(caster==='p1'){
+        endMyTurn();
+      } else {
+        if(casterState.timeDrain>0) casterState.timeDrain--;
+        if(casterState.resist>0)   casterState.resist--;
+        if(casterState.frenzied>0) casterState.frenzied--;
+        setTimeout(finishAI,900);
+      }
+    },700);
+    return;
+  } else if(spellId==='blink'){
+    casterState.blink=true;
+    addFloat(cx,bH*.33,'💫 Blink!',casterCfg.col,13);
+    spawnParts(cx,bH*.38,'#9988cc',14);
+    spawnParts(cx,bH*.38,'#ffffff',6);
+    anim(caster,'shield',700);
   } else if(spellId==='basicattack'){
     if(casterState.invisible>0){
       casterState.invisible=0;
@@ -826,6 +1004,15 @@ function resolveCharSpell(spellId,caster){
     } else if(targetState.invisible>0){
       addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
+      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    } else if(targetState.haste>0&&Math.random()<0.25){
+      addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    } else if(isPhysical&&targetState.blink){
+      targetState.blink=false;
+      addFloat(tx,bH*.38-20,'💫 Blinked!','#9988cc',15);
+      spawnParts(tx,bH*.38,'#9988cc',12);
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     } else {
       const counterTriggered=!isPhysical&&targetState.counter&&targetState.shield>0;
@@ -871,6 +1058,9 @@ function resolveCharSpell(spellId,caster){
     }
     if(casterState.timeDrain>0) casterState.timeDrain--;
     if(casterState.resist>0)   casterState.resist--;
+    if(casterState.ward>0)     casterState.ward--;
+    if(casterState.haste>0)    casterState.haste--;
+    if(casterState.frenzied>0) casterState.frenzied--;
     setTimeout(finishAI,900);
   }
 }
@@ -927,6 +1117,14 @@ function castSpell(spell,target,tx,ty,caster){
     }
   }
 
+  // Target: Haste — 25% dodge
+  if(targetState.haste>0&&Math.random()<0.25){
+    addFloat(tx,ty,'💨 Dodged!','#ffcc44',15);
+    spawnParts(tx,ty,'#ffcc44',12);
+    if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    return;
+  }
+
   // Target: Counter (check BEFORE shield breaks)
   const counterTriggered=targetState.counter&&targetState.shield>0;
 
@@ -969,12 +1167,22 @@ function castSpell(spell,target,tx,ty,caster){
   flash(spell.col);
 
   if(spell.element==='fire'){
-    targetState.burn=BURN_ROUNDS;
-    addFloat(tx,ty+28,'🔥 Burning!','#ff6622',10);
+    if(targetState.ward>0){
+      targetState.ward=0;
+      addFloat(tx,ty+28,'🔰 Warded!','#ffcc44',10);
+    } else {
+      targetState.burn=BURN_ROUNDS;
+      addFloat(tx,ty+28,'🔥 Burning!','#ff6622',10);
+    }
   }
   if(spell.element==='ice'){
-    targetState.frozen=Math.max(targetState.frozen,1);
-    addFloat(tx,ty+28,'❄️ Frozen!','#88ddff',10);
+    if(targetState.ward>0){
+      targetState.ward=0;
+      addFloat(tx,ty+28,'🔰 Warded!','#ffcc44',10);
+    } else {
+      targetState.frozen=Math.max(targetState.frozen,1);
+      addFloat(tx,ty+28,'❄️ Frozen!','#88ddff',10);
+    }
   }
 
   if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
@@ -1011,6 +1219,80 @@ function processRegen(target,tx,ty){
   addFloat(tx,ty,'+'+healThis+' 💚','#44cc88',12);
 }
 
+function processVineWhip(target,tx,ty){
+  if(!target.vineWhip||target.vineWhip<=0) return;
+  let dmg=7;
+  target.vineWhip--;
+  if(target.shield>0){
+    const absorbed=Math.min(dmg,target.shieldHp);
+    target.shieldHp-=absorbed; dmg-=absorbed;
+    if(target.shieldHp<=0){
+      target.shield=0;
+      addFloat(tx,ty-20,'🛡 SHATTERED!','#88ffff',18);
+      spawnParts(tx,ty,'#4af0ff',16);
+    } else {
+      addFloat(tx,ty-20,'🛡 −'+absorbed+' ('+target.shieldHp+' left)','#4af0ff',10);
+      spawnParts(tx,ty,'#4af0ff',6);
+    }
+  }
+  if(dmg>0){
+    target.hp=Math.max(0,target.hp-dmg);
+    for(let i=0;i<10;i++){
+      const a=Math.random()*Math.PI*2;
+      gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:i%2?'#44cc88':'#22aa66',
+        vx:Math.cos(a)*1.2,vy:Math.sin(a)*1.2-0.5,sz:2+Math.random()*2.5,life:1,dec:.02});
+    }
+    addFloat(tx,ty,'🌱 -'+dmg,'#44cc88',13);
+  }
+}
+
+function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
+  const basicSpell=casterCfg.spells.find(s=>s.id==='basicattack');
+  let dmg=Math.round((basicSpell.dmg||9)*casterCfg.dmgMult);
+  if(targetState.resist>0) dmg=Math.round(dmg*0.67);
+  if(targetState.foresight){
+    addFloat(tx,bH*.38-20,'🔮 Foreseen!','#ffcc44',15);
+    targetState.foresight=false;
+    spawnParts(tx,bH*.38,'#ffcc44',14);
+    if(caster==='p1') anim('p1','cast',600); else anim('p2','cast',600);
+    return;
+  }
+  if(targetState.invisible>0){
+    addFloat(tx,bH*.38,'👻 Missed!','#b8a0e8',15);
+    spawnParts(tx,bH*.38,'#b8a0e8',10);
+    return;
+  }
+  if(targetState.haste>0&&Math.random()<0.25){
+    addFloat(tx,bH*.38,'💨 Dodged!','#ffcc44',15);
+    spawnParts(tx,bH*.38,'#ffcc44',10);
+    return;
+  }
+  if(targetState.blink){
+    targetState.blink=false;
+    addFloat(tx,bH*.38,'💫 Blinked!','#9988cc',15);
+    spawnParts(tx,bH*.38,'#9988cc',10);
+    return;
+  }
+  if(targetState.shield>0){
+    const absorbed=Math.min(dmg,targetState.shieldHp);
+    targetState.shieldHp-=absorbed; dmg-=absorbed;
+    if(targetState.shieldHp<=0){
+      targetState.shield=0;
+      addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
+      spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
+    } else {
+      addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+      spawnParts(tx,bH*.38,'#4af0ff',8);
+    }
+  }
+  targetState.hp=Math.max(0,targetState.hp-dmg);
+  spawnParts(tx,bH*.38,casterCfg.col,14);
+  addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
+  flash(casterCfg.col);
+  if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+  else             {anim('p2','cast',800); anim('p1','hit',800);}
+}
+
 function anim(who,state,ms){
   gs[who+'anim']=state;
   setTimeout(()=>{if(gs[who+'anim']!=='death') gs[who+'anim']='idle';},ms);
@@ -1024,18 +1306,34 @@ function endMyTurn(skipShieldDecrement=false){
   }
   if(gs.p1.timeDrain>0)  gs.p1.timeDrain--;
   if(gs.p1.resist>0)     gs.p1.resist--;
+  if(gs.p1.ward>0)       gs.p1.ward--;
+  if(gs.p1.haste>0)      gs.p1.haste--;
+  if(gs.p1.frenzied>0)   gs.p1.frenzied--;
   gs.round++;
   if(aiTid) clearTimeout(aiTid);
-  aiTid=setTimeout(doAI,1400);
+  aiTid=setTimeout(doAI, gs.p2&&gs.p2.haste>0 ? 400 : 1400);
 }
 
 // ── AI TURN ────────────────────────────────────────────────
 function doAI(){
   if(!gs||!battleRunning||gameEnded) return;
 
+  // AI already acted this round (haste interrupt) — skip to end-of-round cleanup
+  if(gs.skipAITurn){
+    gs.skipAITurn=false;
+    finishAI();
+    return;
+  }
+
   // Decrement invisible counters once per round (at the round boundary)
   if(gs.p1.invisible>0) gs.p1.invisible--;
   if(gs.p2.invisible>0) gs.p2.invisible--;
+
+  // Vine whip tick for AI
+  if(gs.p2.vineWhip>0){
+    processVineWhip(gs.p2,bW*.78,bH*.38);
+    checkWin(); if(!battleRunning) return;
+  }
 
   // Burn tick for AI
   if(gs.p2.burn>0){
@@ -1067,7 +1365,9 @@ function doAI(){
     if(s.id&&charSpellBlocked(s.id,ai,p2Cfg,gs.p1)) return false;
     if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
     if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
-    if(gs.p1.invisible>0&&(s.element&&!s.area||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain')) return false;
+    if(s.aiHint==='drain'&&ai.hp>ai.maxHp*0.75) return false;
+    if(ai.frenzied>0&&s.element) return false;
+    if(gs.p1.invisible>0&&(s.element&&!s.area||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip')) return false;
     return true;
   });
 
@@ -1109,7 +1409,10 @@ function doAI(){
       ai.shield--;
       if(ai.shield<=0) ai.shieldHp=0;
     }
-    if(ai.resist>0) ai.resist--;
+    if(ai.resist>0)   ai.resist--;
+    if(ai.ward>0)     ai.ward--;
+    if(ai.haste>0)    ai.haste--;
+    if(ai.frenzied>0) ai.frenzied--;
     finishAI();
     return;
   }
@@ -1127,6 +1430,9 @@ function doAI(){
     if(!battleRunning) return;
     if(ai.timeDrain>0) ai.timeDrain--;
     if(ai.resist>0)    ai.resist--;
+    if(ai.ward>0)      ai.ward--;
+    if(ai.haste>0)     ai.haste--;
+    if(ai.frenzied>0)  ai.frenzied--;
     if(Math.random()<0.8){
       ai.mana-=chosen.cost;
       spawnProj(bW*.78,bH*.38,bW*.22,bH*.38,chosen.element,chosen.col,()=>{
@@ -1145,6 +1451,22 @@ function doAI(){
 function finishAI(){
   if(!battleRunning||gameEnded) return;
   checkWin(); if(!battleRunning) return;
+
+  // Haste interrupt: player has a queued action — run it now, defer end-of-round effects
+  if(gs.pendingAction){
+    const pa=gs.pendingAction;
+    gs.pendingAction=null;
+    gs.skipAITurn=true;
+    gs.myTurn=true; gs.busy=false;
+    act(pa);
+    return;
+  }
+
+  // Vine whip tick for player
+  if(gs.p1.vineWhip>0){
+    processVineWhip(gs.p1,bW*.22,bH*.38);
+    checkWin(); if(!battleRunning) return;
+  }
 
   // Burn tick for player
   if(gs.p1.burn>0){

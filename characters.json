@@ -14,7 +14,8 @@
     "spells": [
       {"id": "basicattack", "name": "Magic Missile", "icon": "✨", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 magic damage"},
       {"id": "shield",  "name": "Shield",  "icon": "🛡", "cost": 3, "costLabel": "3 Mana", "effectLabel": "60 HP barrier for 10 turns"},
-      {"id": "counter", "name": "Counter", "icon": "⚡", "cost": 0, "costLabel": "Free",   "effectLabel": "Reflect 20 dmg when struck"}
+      {"id": "counter", "name": "Counter", "icon": "⚡", "cost": 0, "costLabel": "Free",   "effectLabel": "Reflect 20 dmg when struck"},
+      {"id": "ward",    "name": "Ward",    "icon": "🔰", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Block the next status effect for 3 turns"}
     ]
   },
   "mal": {
@@ -32,7 +33,8 @@
     "spells": [
       {"id": "basicattack", "name": "Magic Missile", "icon": "✨", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 magic damage"},
       {"id": "empower",   "name": "Empower",    "icon": "💪", "cost": 0, "costLabel": "Free", "effectLabel": "Next spell deals +50% damage"},
-      {"id": "bloodpact", "name": "Blood Pact", "icon": "🩸", "cost": 0, "costLabel": "Free", "effectLabel": "Sacrifice 22 HP for 15 Mana", "aiHint": "mana_restore"}
+      {"id": "bloodpact", "name": "Blood Pact", "icon": "🩸", "cost": 0, "costLabel": "Free", "effectLabel": "Sacrifice 22 HP for 15 Mana", "aiHint": "mana_restore"},
+      {"id": "drain",     "name": "Drain",      "icon": "💀", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Deal ~20 dmg; heal 45% of damage dealt", "aiHint": "drain"}
     ]
   },
   "sylvara": {
@@ -47,8 +49,9 @@
     "healAmt": 40,
     "spells": [
       {"id": "basicattack", "name": "Magic Missile", "icon": "✨", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 magic damage"},
-      {"id": "heal",     "name": "Regen",    "icon": "💚", "cost": 4, "costLabel": "4 Mana", "effectLabel": "Regenerate 40 HP over 10 turns"},
-      {"id": "entangle", "name": "Entangle", "icon": "🌿", "cost": 1, "costLabel": "1 Mana", "effectLabel": "75% chance to freeze enemy for 1–3 turns"}
+      {"id": "heal",      "name": "Regen",     "icon": "💚", "cost": 4, "costLabel": "4 Mana", "effectLabel": "Regenerate 40 HP over 10 turns"},
+      {"id": "entangle",  "name": "Entangle",  "icon": "🌿", "cost": 1, "costLabel": "1 Mana", "effectLabel": "75% chance to freeze enemy for 1–3 turns"},
+      {"id": "vinewhip",  "name": "Vine Whip", "icon": "🌱", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Vine strikes for 7 dmg/turn × 3 turns; blocked by shields"}
     ]
   },
   "aurelia": {
@@ -64,7 +67,8 @@
     "spells": [
       {"id": "basicattack", "name": "Magic Missile", "icon": "✨", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 magic damage"},
       {"id": "foresight", "name": "Foresight", "icon": "🔮", "cost": 4, "costLabel": "4 Mana", "effectLabel": "Predict and block the next spell"},
-      {"id": "timedrain", "name": "Time Drain", "icon": "⏳", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Slow enemy channel to +2 Mana for 5 turns"}
+      {"id": "timedrain", "name": "Time Drain", "icon": "⏳", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Slow enemy channel to +2 Mana for 5 turns"},
+      {"id": "haste",     "name": "Haste",      "icon": "💨", "cost": 3, "costLabel": "3 Mana", "effectLabel": "25% dodge for 3 turns; acts faster"}
     ]
   },
   "gnash": {
@@ -80,8 +84,9 @@
     "chargeDmg": 32,
     "spells": [
       {"id": "basicattack", "name": "Feral Strike", "icon": "👊", "cost": 0, "costLabel": "Free", "dmg": 9, "physical": true, "effectLabel": "Deal ~9 phys dmg, pierces Counter"},
-      {"id": "warpaint", "name": "War Paint", "icon": "🩸", "cost": 0, "costLabel": "15 HP", "effectLabel": "33% dmg resistance for 5 turns"},
-      {"id": "charge", "name": "Savage Charge", "icon": "⚔️", "cost": 5, "costLabel": "5 Mana", "effectLabel": "32 phys dmg, pierces Counter"}
+      {"id": "warpaint", "name": "War Paint",     "icon": "🩸", "cost": 0, "costLabel": "15 HP",   "effectLabel": "33% dmg resistance for 5 turns"},
+      {"id": "charge",   "name": "Savage Charge", "icon": "⚔️", "cost": 5, "costLabel": "5 Mana",  "effectLabel": "32 phys dmg, pierces Counter"},
+      {"id": "frenzy",   "name": "Frenzy",        "icon": "💢", "cost": 0, "costLabel": "15 HP",   "effectLabel": "Attack twice; locked to Feral Strike for 3 turns", "aiHint": "frenzy"}
     ]
   },
   "ponder": {
@@ -96,7 +101,8 @@
     "spells": [
       {"id": "basicattack", "name": "Magic Missile", "icon": "✨", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 magic damage"},
       {"id": "vanish",      "name": "Vanish",        "icon": "👻", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Invisible 3 turns; attacks break it"},
-      {"id": "manasiphon",  "name": "Mana Siphon",   "icon": "🌀", "cost": 0, "costLabel": "Free",   "effectLabel": "Steal 4 mana (only while invisible; blocked by shield/foresight)", "aiHint": "mana_steal"}
+      {"id": "manasiphon",  "name": "Mana Siphon",   "icon": "🌀", "cost": 0, "costLabel": "Free",   "effectLabel": "Steal 4 mana (only while invisible; blocked by shield/foresight)", "aiHint": "mana_steal"},
+      {"id": "blink",       "name": "Blink",         "icon": "💫", "cost": 1, "costLabel": "1 Mana", "effectLabel": "Next physical attack against you auto-misses"}
     ]
   }
 }
