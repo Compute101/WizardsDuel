@@ -225,12 +225,12 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
   }
   if(state&&state.counter){
-    const t=Date.now(), rot=t/500;
-    for(let i=0;i<3;i++){
-      const a=rot+i/3*Math.PI*2, alpha=0.45+0.25*Math.sin(t/280+i);
-      bx.beginPath(); bx.arc(x,wy,sz*.88,a,a+Math.PI*.55);
-      bx.strokeStyle=`rgba(74,240,255,${alpha})`; bx.lineWidth=2;
-      bx.shadowColor='#4af0ff'; bx.shadowBlur=6; bx.stroke();
+    const t=Date.now(), rot=-t/420;
+    for(let i=0;i<4;i++){
+      const a=rot+i/4*Math.PI*2, alpha=0.65+0.30*Math.sin(t/220+i);
+      bx.beginPath(); bx.arc(x,wy,sz*.82,a,a+Math.PI*.38);
+      bx.strokeStyle=`rgba(255,215,0,${alpha})`; bx.lineWidth=3;
+      bx.shadowColor='#ffd700'; bx.shadowBlur=10; bx.stroke();
     }
     bx.shadowBlur=0;
   }
@@ -476,7 +476,6 @@ function refreshStatusBar(){
   if(gs.p1.burn>0)        tags.push(`<span class="status-tag burn">🔥 ${p1Cfg.name} BURNING (${gs.p1.burn})</span>`);
   if(gs.p1.frozen>0)      tags.push(`<span class="status-tag freeze">❄️ ${p1Cfg.name} FROZEN (${gs.p1.frozen})</span>`);
   if(gs.p1.empowered)     tags.push(`<span class="status-tag empower">💪 ${p1Cfg.name} EMPOWERED</span>`);
-  if(gs.p1.counter)       tags.push(`<span class="status-tag counter">⚡ ${p1Cfg.name} COUNTER</span>`);
   if(gs.p1.foresight)     tags.push(`<span class="status-tag foresight">🔮 ${p1Cfg.name} FORESIGHT</span>`);
   if(gs.p1.regen)         tags.push(`<span class="status-tag regen">💚 ${p1Cfg.name} REGEN (${gs.p1.regen.turns}t)</span>`);
   if(gs.p1.timeDrain>0)   tags.push(`<span class="status-tag timedrain">⏳ ${p1Cfg.name} DRAINED (${gs.p1.timeDrain})</span>`);
@@ -487,7 +486,6 @@ function refreshStatusBar(){
     if(gs.p2.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
     if(gs.p2.frozen>0)    tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN (${gs.p2.frozen})</span>`);
     if(gs.p2.empowered)   tags.push(`<span class="status-tag empower">💪 ${p2Cfg.name} EMPOWERED</span>`);
-    if(gs.p2.counter)     tags.push(`<span class="status-tag counter">⚡ ${p2Cfg.name} COUNTER</span>`);
     if(gs.p2.foresight)   tags.push(`<span class="status-tag foresight">🔮 ${p2Cfg.name} FORESIGHT</span>`);
     if(gs.p2.regen)       tags.push(`<span class="status-tag regen">💚 ${p2Cfg.name} REGEN (${gs.p2.regen.turns}t)</span>`);
     if(gs.p2.timeDrain>0) tags.push(`<span class="status-tag timedrain">⏳ ${p2Cfg.name} DRAINED (${gs.p2.timeDrain})</span>`);
@@ -496,7 +494,6 @@ function refreshStatusBar(){
 
   }
   el.innerHTML=tags.join('');
-  el.style.padding=tags.length?'3px 12px':'0';
 }
 
 // ── BATTLE LOOP ────────────────────────────────────────────
@@ -529,6 +526,8 @@ function refreshHUD(){
   document.getElementById('sh1').style.opacity=gs.p1.shield>0||gs.p1.ward>0?'1':'0.18';
   document.getElementById('sh2').style.opacity=gs.p2.shield>0||gs.p2.ward>0?'1':'0.18';
   const fs2=document.getElementById('fs2'); if(fs2) fs2.style.opacity=gs.p2.foresight?'1':'0';
+  const ct1=document.getElementById('ct1'); if(ct1) ct1.classList.toggle('active',!!gs.p1.counter);
+  const ct2=document.getElementById('ct2'); if(ct2) ct2.classList.toggle('active',!!gs.p2.counter);
   document.getElementById('roundlbl').textContent='Round '+gs.round;
   refreshMana('mfill1','mval1',gs.p1.mana);
   refreshMana('mfill2','mval2',gs.p2.mana);
