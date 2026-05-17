@@ -3,7 +3,7 @@ const MAX_MANA=20, SHIELD_COST=3, BURN_DMG=5, BURN_ROUNDS=2;
 
 const SPELLS=[
   {name:'Inferno',        element:'fire',      icon:'🔥', dmg:38, cost:12, col:'#ff6622',
-   effectLabel:'Burns 5 dmg × 2 rounds'},
+   effectLabel:'Burns 5 dmg × 2 rounds', area:true},
   {name:'Lightning Bolt', element:'lightning', icon:'⚡', dmg:30, cost:9,  col:'#ffee44',
    effectLabel:'Pierces shields fully'},
   {name:'Frost Nova',     element:'ice',       icon:'❄️',  dmg:18, cost:6,  col:'#88ddff',
@@ -915,12 +915,16 @@ function castSpell(spell,target,tx,ty,caster){
     return;
   }
 
-  // Target: Invisible — attack misses entirely
+  // Target: Invisible — area spells hit anyway, others miss
   if(targetState.invisible>0){
-    addFloat(tx,ty,'👻 Missed!','#b8a0e8',15);
-    spawnParts(tx,ty,'#b8a0e8',12);
-    if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    return;
+    if(spell.area){
+      addFloat(tx,ty-20,'🔥 Area!','#ff6622',13);
+    } else {
+      addFloat(tx,ty,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,ty,'#b8a0e8',12);
+      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+      return;
+    }
   }
 
   // Target: Counter (check BEFORE shield breaks)
@@ -1063,7 +1067,7 @@ function doAI(){
     if(s.id&&charSpellBlocked(s.id,ai,p2Cfg,gs.p1)) return false;
     if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
     if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
-    if(gs.p1.invisible>0&&(s.element||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain')) return false;
+    if(gs.p1.invisible>0&&(s.element&&!s.area||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain')) return false;
     return true;
   });
 
