@@ -86,20 +86,17 @@
   },
   "ponder": {
     "name": "PONDER",
-    "title": "Practice Mode",
+    "title": "The Apprentice",
     "sprite": "sprites/mage-light.png",
     "col": "#9988cc",
-    "hp": 999,
-    "startMana": 12,
+    "hp": 85,
+    "startMana": 5,
     "channelAmt": 4,
     "dmgMult": 1.0,
-    "shieldMaxHp": 60,
-    "shieldDuration": 10,
-    "counterDmg": 20,
     "spells": [
       {"id": "basicattack", "name": "Magic Missile", "icon": "✨", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 magic damage"},
-      {"id": "shield",  "name": "Shield",  "icon": "🛡", "cost": 3, "costLabel": "3 Mana", "effectLabel": "60 HP barrier for 10 turns"},
-      {"id": "counter", "name": "Counter", "icon": "⚡", "cost": 0, "costLabel": "Free",   "effectLabel": "Reflect 20 dmg when struck"}
+      {"id": "vanish",      "name": "Vanish",        "icon": "👻", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Invisible 3 turns; attacks break it"},
+      {"id": "manasiphon",  "name": "Mana Siphon",   "icon": "🌀", "cost": 0, "costLabel": "Free",   "effectLabel": "Steal 4 mana (only while invisible; blocked by shield/foresight)", "aiHint": "mana_steal"}
     ]
   }
 }

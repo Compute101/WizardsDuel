@@ -39,16 +39,13 @@ const CHAR_DISPLAY={
     flavour:'Blood and bone. No magic — just fury.'
   },
   ponder:{
-    stats:[['❤ HP','999'],['✨ Channel','+4 Mana'],['🎯 Mode','Solo practice'],['⚔ Opponent','None']],
-    flavour:'A quiet space to learn your spells without consequence.'
+    stats:[['❤ HP','85'],['👻 Vanish','Invisible 3T'],['🌀 Siphon','Steal 4 mana'],['✨ Channel','+4 Mana']],
+    flavour:"Young but fierce — vanish from sight and plunder your foe's magic."
   }
 };
 
 // ── DIFFICULTY ─────────────────────────────────────────────
 let diffMult=1.0, diffName='normal';
-
-// ── PRACTICE MODE ──────────────────────────────────────────
-let ponderMode=false;
 
 // ── TOURNAMENT ─────────────────────────────────────────────
 let tournamentQueue=[];   // ordered opponent keys; gnash always last
@@ -64,14 +61,10 @@ function newState(){
   gs={
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
-        counter:false, empowered:false, foresight:false, timeDrain:0, resist:0},
-    p2: p2Cfg
-      ? {hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
-         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
-         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0}
-      : {hp:999, maxHp:999, mana:0,
-         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
-         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0},
+        counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0},
+    p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
+        shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
+        counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[], projs:[], beams:[],
@@ -303,6 +296,21 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.strokeStyle=`rgba(180,100,40,${0.4+0.15*Math.sin(t/300)})`; bx.lineWidth=1.5;
     bx.beginPath(); bx.ellipse(x,y,sz*.38,sz*.09,0,0,Math.PI*2); bx.stroke();
   }
+  if(state&&state.invisible>0){
+    const t=Date.now();
+    const gv=0.18+0.12*Math.sin(t/280);
+    bx.beginPath(); bx.arc(x,wy,sz*.78,0,Math.PI*2);
+    bx.strokeStyle=`rgba(180,160,232,${gv*3})`; bx.lineWidth=1.5;
+    bx.shadowColor='#b8a0e8'; bx.shadowBlur=8; bx.stroke(); bx.shadowBlur=0;
+    for(let i=0;i<3;i++){
+      const a=t/700+i/3*Math.PI*2;
+      const ox=Math.cos(a)*sz*.5, oy=Math.sin(a)*sz*.28;
+      bx.globalAlpha=0.3+0.2*Math.sin(t/350+i*2.1);
+      bx.fillStyle='#b8a0e8'; bx.beginPath(); bx.arc(x+ox,wy+oy,sz*.045,0,Math.PI*2); bx.fill();
+    }
+    bx.globalAlpha=1;
+  }
+  if(state&&state.invisible>0) bx.globalAlpha=0.35;
   const img=sprites[who];
   if(img&&spriteStatus[who]==='ready'){
     const cfg=SPRITE_CFG;
@@ -482,6 +490,7 @@ function refreshStatusBar(){
   if(gs.p1.timeDrain>0)   tags.push(`<span class="status-tag timedrain">⏳ ${p1Cfg.name} DRAINED (${gs.p1.timeDrain})</span>`);
   if(gs.p1.ward>0)        tags.push(`<span class="status-tag ward">✨ ${p1Cfg.name} WARDED (${gs.p1.ward})</span>`);
   if(gs.p1.weakened)      tags.push(`<span class="status-tag weakened">🌀 ${p1Cfg.name} WEAKENED</span>`);
+  if(gs.p1.invisible>0)   tags.push(`<span class="status-tag invisible">👻 ${p1Cfg.name} INVISIBLE (${gs.p1.invisible})</span>`);
   if(p2Cfg){
     if(gs.p2.resist>0)    tags.push(`<span class="status-tag resist">🩸 ${p2Cfg.name} RESIST (${gs.p2.resist})</span>`);
     if(gs.p2.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
@@ -493,7 +502,7 @@ function refreshStatusBar(){
     if(gs.p2.timeDrain>0) tags.push(`<span class="status-tag timedrain">⏳ ${p2Cfg.name} DRAINED (${gs.p2.timeDrain})</span>`);
     if(gs.p2.ward>0)      tags.push(`<span class="status-tag ward">✨ ${p2Cfg.name} WARDED (${gs.p2.ward})</span>`);
     if(gs.p2.weakened)    tags.push(`<span class="status-tag weakened">🌀 ${p2Cfg.name} WEAKENED</span>`);
-
+    if(gs.p2.invisible>0) tags.push(`<span class="status-tag invisible">👻 ${p2Cfg.name} INVISIBLE (${gs.p2.invisible})</span>`);
   }
   el.innerHTML=tags.join('');
   el.style.padding=tags.length?'3px 12px':'0';
@@ -512,9 +521,9 @@ function battleLoop(ts){
   drawBG();
   const gy=bH*.74, wsz=bH*.3;
   drawWiz(bW*.22,gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1',gs.p1.foresight,gs.p1);
-  if(!ponderMode) drawWiz(bW*.78,gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2',gs.p2.foresight,gs.p2);
+  drawWiz(bW*.78,gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2',gs.p2.foresight,gs.p2);
   tickProjs(); tickBeams(); tickParts(); tickFloats();
-  if(!gs.myTurn&&!gs.busy&&!ponderMode){
+  if(!gs.myTurn&&!gs.busy){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText(p2Cfg.name+' IS CASTING…',bW*.5,bH*.56);
   }
@@ -562,7 +571,9 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='entangle')  return targetState.frozen>0;
   if(spellId==='foresight') return casterState.foresight;
   if(spellId==='timedrain') return targetState.timeDrain>0;
-  if(spellId==='warpaint')  return casterState.resist>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='warpaint')   return casterState.resist>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='vanish')     return casterState.invisible>0;
+  if(spellId==='manasiphon') return !casterState.invisible||targetState.mana<=0;
   return false;
 }
 
@@ -692,6 +703,34 @@ function resolveCharSpell(spellId,caster){
     spawnParts(tx,bH*.38,'#cc88ff',12);
     spawnParts(tx,bH*.38,casterCfg.col,6);
     anim(caster,'cast',700);
+  } else if(spellId==='vanish'){
+    casterState.invisible=3;
+    addFloat(cx,bH*.33,'👻 Vanished! (3T)','#b8a0e8',12);
+    spawnParts(cx,bH*.38,'#b8a0e8',14);
+    spawnParts(cx,bH*.38,'#ffffff',6);
+    anim(caster,'shield',700);
+  } else if(spellId==='manasiphon'){
+    if(targetState.foresight){
+      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
+      targetState.foresight=false;
+      spawnParts(tx,bH*.38,'#ffcc44',14);
+      spawnParts(cx,bH*.38,'#b8a0e8',6);
+      anim(caster,'cast',600);
+    } else if(targetState.shield>0){
+      addFloat(tx,bH*.33,'🛡 Shielded!','#4af0ff',12);
+      spawnParts(tx,bH*.38,'#4af0ff',10);
+      anim(caster,'cast',600);
+    } else {
+      const steal=Math.min(4,targetState.mana);
+      targetState.mana=Math.max(0,targetState.mana-steal);
+      casterState.mana=Math.min(MAX_MANA,casterState.mana+steal);
+      addFloat(cx,bH*.33,'🌀 +'+steal+' Mana Stolen!','#b8a0e8',13);
+      addFloat(tx,bH*.33,'−'+steal+' Mana','#b8a0e8',11);
+      spawnParts(tx,bH*.38,'#b8a0e8',14);
+      spawnParts(cx,bH*.38,'#b8a0e8',8);
+      anim(caster,'cast',700);
+      refreshHUD();
+    }
   } else if(spellId==='warpaint'){
     casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
     casterState.resist=5;
@@ -703,6 +742,10 @@ function resolveCharSpell(spellId,caster){
     anim(caster,'shield',700);
     refreshHUD();
   } else if(spellId==='charge'){
+    if(casterState.invisible>0){
+      casterState.invisible=0;
+      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+    }
     let dmg=Math.round(casterCfg.chargeDmg*casterCfg.dmgMult);
     if(targetState.foresight){
       addFloat(tx,bH*.38-20,'🔮 Foreseen!','#ffcc44',15);
@@ -710,6 +753,10 @@ function resolveCharSpell(spellId,caster){
       spawnParts(tx,bH*.38,'#ffcc44',18);
       spawnParts(tx,bH*.38,casterCfg.col,10);
       spawnParts(tx,bH*.38,'#ffffff',6);
+      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    } else if(targetState.invisible>0){
+      addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     } else {
       // Dust trail along charge path
@@ -741,6 +788,10 @@ function resolveCharSpell(spellId,caster){
     refreshHUD();
     checkWin();
   } else if(spellId==='basicattack'){
+    if(casterState.invisible>0){
+      casterState.invisible=0;
+      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+    }
     const basicSpell=casterCfg.spells.find(s=>s.id==='basicattack');
     let dmg=Math.round((basicSpell.dmg||8)*casterCfg.dmgMult);
     const isPhysical=!!basicSpell.physical;
@@ -751,6 +802,10 @@ function resolveCharSpell(spellId,caster){
       spawnParts(tx,bH*.38,'#ffcc44',18);
       spawnParts(tx,bH*.38,casterCfg.col,10);
       spawnParts(tx,bH*.38,'#ffffff',6);
+      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    } else if(targetState.invisible>0){
+      addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     } else {
       const counterTriggered=!isPhysical&&targetState.counter&&targetState.shield>0;
@@ -836,6 +891,14 @@ function castSpell(spell,target,tx,ty,caster){
     spawnParts(tx,ty,'#ffcc44',18);
     spawnParts(tx,ty,spell.col,12);
     spawnParts(tx,ty,'#ffffff',6);
+    if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    return;
+  }
+
+  // Target: Invisible — attack misses entirely
+  if(targetState.invisible>0){
+    addFloat(tx,ty,'👻 Missed!','#b8a0e8',15);
+    spawnParts(tx,ty,'#b8a0e8',12);
     if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     return;
   }
@@ -935,20 +998,20 @@ function endMyTurn(skipShieldDecrement=false){
     gs.p1.shield--;
     if(gs.p1.shield<=0) gs.p1.shieldHp=0;
   }
-  if(gs.p1.timeDrain>0) gs.p1.timeDrain--;
-  if(gs.p1.resist>0)   gs.p1.resist--;
+  if(gs.p1.timeDrain>0)  gs.p1.timeDrain--;
+  if(gs.p1.resist>0)     gs.p1.resist--;
+  if(gs.p1.invisible>0)  gs.p1.invisible--;
   gs.round++;
   if(aiTid) clearTimeout(aiTid);
-  if(ponderMode){
-    aiTid=setTimeout(()=>{ gs.myTurn=true; gs.busy=false; },600);
-  } else {
-    aiTid=setTimeout(doAI,1400);
-  }
+  aiTid=setTimeout(doAI,1400);
 }
 
 // ── AI TURN ────────────────────────────────────────────────
 function doAI(){
-  if(!gs||!battleRunning||gameEnded||ponderMode) return;
+  if(!gs||!battleRunning||gameEnded) return;
+
+  // Decrement AI invisible counter
+  if(gs.p2.invisible>0) gs.p2.invisible--;
 
   // Burn tick for AI
   if(gs.p2.burn>0){
@@ -971,10 +1034,13 @@ function doAI(){
   const allSpells=[...SPELLS,...(p2Cfg.spells||[])];
 
   // Build available list: affordable, not blocked, respecting aiHint
+  // Don't use attack spells if player is invisible
   const available=allSpells.filter(s=>{
     if(ai.mana<s.cost) return false;
     if(s.id&&charSpellBlocked(s.id,ai,p2Cfg,gs.p1)) return false;
     if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
+    if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
+    if(gs.p1.invisible>0&&(s.element||s.id==='basicattack'||s.id==='charge')) return false;
     return true;
   });
 
@@ -1130,7 +1196,6 @@ function onRetryExpired(overlay){
 }
 
 function checkWin(){
-  if(ponderMode) return;
   if(gs.p1.hp<=0) endGame(false);
   else if(gs.p2.hp<=0) endGame(true);
 }
@@ -1140,7 +1205,7 @@ function endGame(won){
   gs.myTurn=false; gs.busy=true;
   gs[won?'p2anim':'p1anim']='death';
   setTimeout(()=>{
-    const inTournament=!ponderMode&&tournamentQueue.length>0;
+    const inTournament=tournamentQueue.length>0;
     const isLastFight=tournamentIndex>=tournamentQueue.length-1;
     const continueBtn=document.getElementById('btn-continue');
     if(!won&&inTournament){
@@ -2090,46 +2155,35 @@ function showWizardDetail(key){
 function pickCharacter(key){
   p1Key=key;
   p1Cfg=CHAR_DEFS[key];
-  ponderMode=(key==='ponder');
-  if(ponderMode){
-    p2Key=null; p2Cfg=null;
-    tournamentQueue=[]; tournamentIndex=0;
-  } else {
-    // Build round-robin queue: all opponents except player and ponder, gnash always last
-    const others=Object.keys(CHAR_DEFS).filter(k=>k!==key&&k!=='ponder'&&k!=='gnash');
-    // Fisher-Yates shuffle
-    for(let i=others.length-1;i>0;i--){
-      const j=Math.floor(Math.random()*(i+1));
-      [others[i],others[j]]=[others[j],others[i]];
-    }
-    if(CHAR_DEFS['gnash']) others.push('gnash');
-    tournamentQueue=others;
-    tournamentIndex=0;
-    p2Key=tournamentQueue[0];
-    p2Cfg=CHAR_DEFS[p2Key];
+  // Build round-robin queue: all opponents except player, gnash always last
+  const others=Object.keys(CHAR_DEFS).filter(k=>k!==key&&k!=='gnash');
+  for(let i=others.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [others[i],others[j]]=[others[j],others[i]];
   }
+  if(CHAR_DEFS['gnash']) others.push('gnash');
+  tournamentQueue=others;
+  tournamentIndex=0;
+  p2Key=tournamentQueue[0];
+  p2Cfg=CHAR_DEFS[p2Key];
   startNextBattle();
 }
 
 function startNextBattle(){
-  p2Cfg=ponderMode?null:CHAR_DEFS[p2Key];
+  p2Cfg=CHAR_DEFS[p2Key];
   loadSprites();
   updateActionBar(p1Cfg);
   document.getElementById('p1name').textContent=p1Cfg.name;
   document.getElementById('p1-portrait').style.visibility='';
   document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
   const p2hud=document.querySelector('.phud-p2');
-  if(ponderMode){
-    p2hud.style.visibility='hidden';
-  } else {
-    p2hud.style.visibility='';
-    document.getElementById('p2name').textContent=p2Cfg.name;
-    document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
-  }
+  p2hud.style.visibility='';
+  document.getElementById('p2name').textContent=p2Cfg.name;
+  document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
   // Show fight progress in HUD (e.g. "Fight 2 / 4")
   const fightLbl=document.getElementById('fightlbl');
   if(fightLbl){
-    if(!ponderMode&&tournamentQueue.length>1){
+    if(tournamentQueue.length>1){
       fightLbl.textContent='Fight '+(tournamentIndex+1)+' / '+tournamentQueue.length;
     } else {
       fightLbl.textContent='';
