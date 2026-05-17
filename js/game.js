@@ -1021,6 +1021,9 @@ function doAI(){
   // Regen tick for AI
   if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
 
+  // Passive mana regen
+  gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
+
   // Frozen: skip turn
   if(gs.p2.frozen>0){
     gs.p2.frozen--;
@@ -1126,6 +1129,9 @@ function finishAI(){
 
   // Regen tick for player
   if(gs.p1.regen) processRegen(gs.p1,bW*.22,bH*.38);
+
+  // Passive mana regen
+  gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+1);
 
   // Frozen: auto-skip player turn
   if(gs.p1.frozen>0){
