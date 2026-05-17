@@ -79,7 +79,7 @@
     "frenzyHpCost": 15,
     "chargeDmg": 32,
     "spells": [
-      {"id": "basicattack", "name": "Feral Strike", "icon": "👊", "cost": 0, "costLabel": "Free", "dmg": 12, "physical": true, "effectLabel": "Deal ~12 phys dmg, pierces Counter"},
+      {"id": "basicattack", "name": "Feral Strike", "icon": "👊", "cost": 0, "costLabel": "Free", "dmg": 9, "physical": true, "effectLabel": "Deal ~9 phys dmg, pierces Counter"},
       {"id": "warpaint", "name": "War Paint", "icon": "🩸", "cost": 0, "costLabel": "15 HP", "effectLabel": "33% dmg resistance for 5 turns"},
       {"id": "charge", "name": "Savage Charge", "icon": "⚔️", "cost": 5, "costLabel": "5 Mana", "effectLabel": "32 phys dmg, pierces Counter"}
     ]
