@@ -70,6 +70,7 @@ function newState(){
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[], projs:[], beams:[],
+    pendingAction:null, skipAITurn:false,
   };
 }
 
@@ -599,6 +600,14 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
 function act(type){
   if(!gs.myTurn||gs.busy) return;
 
+  // Aurelia haste: AI acts first before the player's action resolves
+  if(gs.p2&&gs.p2.haste>0&&!gs.skipAITurn){
+    gs.myTurn=false; gs.busy=true;
+    gs.pendingAction=type;
+    doAI();
+    return;
+  }
+
   if(type==='channel'){
     if(gs.p1.timeDrain>0){
       gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+2);
@@ -705,11 +714,6 @@ function resolveCharSpell(spellId,caster){
     } else if(targetState.haste>0&&Math.random()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink){
-      targetState.blink=false;
-      addFloat(tx,bH*.33,'💫 Blinked!','#9988cc',15);
-      spawnParts(tx,bH*.38,'#9988cc',12);
       anim(caster,'cast',600);
     } else if(targetState.ward>0){
       targetState.ward=0;
@@ -882,11 +886,6 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
-    } else if(targetState.blink){
-      targetState.blink=false;
-      addFloat(tx,bH*.33,'💫 Blinked!','#9988cc',15);
-      spawnParts(tx,bH*.38,'#9988cc',12);
-      anim(caster,'cast',600);
     } else {
       let dmg=Math.round(18*casterCfg.dmgMult);
       if(casterState.empowered){
@@ -975,6 +974,7 @@ function resolveCharSpell(spellId,caster){
       } else {
         if(casterState.timeDrain>0) casterState.timeDrain--;
         if(casterState.resist>0)   casterState.resist--;
+        if(casterState.frenzied>0) casterState.frenzied--;
         setTimeout(finishAI,900);
       }
     },700);
@@ -1009,7 +1009,7 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else if(targetState.blink){
+    } else if(isPhysical&&targetState.blink){
       targetState.blink=false;
       addFloat(tx,bH*.38-20,'💫 Blinked!','#9988cc',15);
       spawnParts(tx,bH*.38,'#9988cc',12);
@@ -1121,15 +1121,6 @@ function castSpell(spell,target,tx,ty,caster){
     return;
   }
 
-  // Target: Blink — auto-miss
-  if(targetState.blink){
-    targetState.blink=false;
-    addFloat(tx,ty,'💫 Blinked!','#9988cc',15);
-    spawnParts(tx,ty,'#9988cc',12);
-    if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    return;
-  }
-
   // Target: Counter (check BEFORE shield breaks)
   const counterTriggered=targetState.counter&&targetState.shield>0;
 
@@ -1226,15 +1217,29 @@ function processRegen(target,tx,ty){
 
 function processVineWhip(target,tx,ty){
   if(!target.vineWhip||target.vineWhip<=0) return;
-  const dmg=10;
-  target.hp=Math.max(0,target.hp-dmg);
+  let dmg=7;
   target.vineWhip--;
-  for(let i=0;i<10;i++){
-    const a=Math.random()*Math.PI*2;
-    gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:i%2?'#44cc88':'#22aa66',
-      vx:Math.cos(a)*1.2,vy:Math.sin(a)*1.2-0.5,sz:2+Math.random()*2.5,life:1,dec:.02});
+  if(target.shield>0){
+    const absorbed=Math.min(dmg,target.shieldHp);
+    target.shieldHp-=absorbed; dmg-=absorbed;
+    if(target.shieldHp<=0){
+      target.shield=0;
+      addFloat(tx,ty-20,'🛡 SHATTERED!','#88ffff',18);
+      spawnParts(tx,ty,'#4af0ff',16);
+    } else {
+      addFloat(tx,ty-20,'🛡 −'+absorbed+' ('+target.shieldHp+' left)','#4af0ff',10);
+      spawnParts(tx,ty,'#4af0ff',6);
+    }
   }
-  addFloat(tx,ty,'🌱 -'+dmg,'#44cc88',13);
+  if(dmg>0){
+    target.hp=Math.max(0,target.hp-dmg);
+    for(let i=0;i<10;i++){
+      const a=Math.random()*Math.PI*2;
+      gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:i%2?'#44cc88':'#22aa66',
+        vx:Math.cos(a)*1.2,vy:Math.sin(a)*1.2-0.5,sz:2+Math.random()*2.5,life:1,dec:.02});
+    }
+    addFloat(tx,ty,'🌱 -'+dmg,'#44cc88',13);
+  }
 }
 
 function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
@@ -1309,6 +1314,13 @@ function endMyTurn(skipShieldDecrement=false){
 function doAI(){
   if(!gs||!battleRunning||gameEnded) return;
 
+  // AI already acted this round (haste interrupt) — skip to end-of-round cleanup
+  if(gs.skipAITurn){
+    gs.skipAITurn=false;
+    finishAI();
+    return;
+  }
+
   // Decrement invisible counters once per round (at the round boundary)
   if(gs.p1.invisible>0) gs.p1.invisible--;
   if(gs.p2.invisible>0) gs.p2.invisible--;
@@ -1349,7 +1361,7 @@ function doAI(){
     if(s.id&&charSpellBlocked(s.id,ai,p2Cfg,gs.p1)) return false;
     if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
     if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
-    if(s.aiHint==='drain'&&ai.hp>ai.maxHp*0.65) return false;
+    if(s.aiHint==='drain'&&ai.hp>ai.maxHp*0.75) return false;
     if(ai.frenzied>0&&s.element) return false;
     if(gs.p1.invisible>0&&(s.element||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip')) return false;
     return true;
@@ -1435,6 +1447,16 @@ function doAI(){
 function finishAI(){
   if(!battleRunning||gameEnded) return;
   checkWin(); if(!battleRunning) return;
+
+  // Haste interrupt: player has a queued action — run it now, defer end-of-round effects
+  if(gs.pendingAction){
+    const pa=gs.pendingAction;
+    gs.pendingAction=null;
+    gs.skipAITurn=true;
+    gs.myTurn=true; gs.busy=false;
+    act(pa);
+    return;
+  }
 
   // Vine whip tick for player
   if(gs.p1.vineWhip>0){
