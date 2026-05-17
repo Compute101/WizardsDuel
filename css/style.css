@@ -299,6 +299,8 @@ body {
 .wname.p1 { color:#4af0ff; }
 .wname.p2 { color:#ff4a6e; }
 .shico { font-size: 11px; }
+.ctrico { color: #ffd700; opacity: 0.18; transition: opacity 0.2s; }
+.ctrico.active { opacity: 1; text-shadow: 0 0 6px #ffd700; }
 .phud-bars {
   display: flex;
   align-items: flex-end;
@@ -474,8 +476,8 @@ body {
 
 /* ── STATUS BAR ── */
 #statusbar {
-  width: 100%; min-height: 0; padding: 0 12px;
-  display: flex; gap: 8px; justify-content: space-between;
+  width: 100%; height: 24px; padding: 0 12px;
+  display: flex; gap: 8px; align-items: center; justify-content: space-between;
   font-size: 10px; letter-spacing: 1px;
   background: rgba(0,0,0,0.3);
   flex-shrink: 0;
