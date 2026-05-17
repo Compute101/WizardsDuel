@@ -553,12 +553,11 @@ function refreshMana(fillId,valId,val){
 function refreshActionBar(){
   const busy=!gs.myTurn||gs.busy;
   document.getElementById('bchannel').classList.toggle('off',busy);
-  const allSpells=[...SPELLS,...(p1Cfg.spells||[])];
-  allSpells.forEach(spell=>{
-    const key=spell.element||spell.id;
-    const btn=document.getElementById('bspell-'+key);
+  document.getElementById('bcastspell').classList.toggle('off',busy);
+  (p1Cfg.spells||[]).forEach(spell=>{
+    const btn=document.getElementById('bspell-'+spell.id);
     if(!btn) return;
-    const blocked=spell.id?charSpellBlocked(spell.id,gs.p1,p1Cfg,gs.p2):false;
+    const blocked=charSpellBlocked(spell.id,gs.p1,p1Cfg,gs.p2);
     btn.classList.toggle('off',busy||gs.p1.mana<spell.cost||blocked);
   });
 }
@@ -2138,21 +2137,37 @@ function flash(col){
 // ── ACTION BAR SETUP ───────────────────────────────────────
 function updateActionBar(cfg){
   document.getElementById('channel-cost-label').textContent='+'+cfg.channelAmt+' Mana';
+
+  // Character-specific abilities row
   const container=document.getElementById('spell-buttons');
   container.innerHTML='';
-  const allSpells=[...SPELLS,...(cfg.spells||[])];
-  allSpells.forEach(spell=>{
-    const key=spell.element||spell.id;
+  (cfg.spells||[]).forEach(spell=>{
     const btn=document.createElement('button');
-    btn.className='abtn abtn-spell';
-    btn.id='bspell-'+key;
-    btn.innerHTML=spell.icon+' '+spell.name+'<span class="cost">'+(spell.costLabel||spell.cost)+'</span>';
-    if(spell.id){
-      btn.style.borderColor=cfg.col;
-      btn.style.color=cfg.col;
-    }
-    btn.addEventListener('click',()=>act(key));
+    btn.className='abtn abtn-ability';
+    btn.id='bspell-'+spell.id;
+    btn.innerHTML=`<span class="abtn-ico">${spell.icon}</span><span class="abtn-name">${spell.name}</span><span class="cost">${spell.costLabel||spell.cost}</span>`;
+    btn.style.borderColor=cfg.col;
+    btn.style.color=cfg.col;
+    btn.title=spell.effectLabel||'';
+    btn.addEventListener('click',()=>act(spell.id));
     container.appendChild(btn);
+  });
+
+  // Populate spell picker overlay cards
+  const grid=document.getElementById('sp-grid');
+  grid.innerHTML='';
+  SPELLS.forEach(spell=>{
+    const card=document.createElement('div');
+    card.className='sp-card';
+    card.dataset.el=spell.element;
+    card.id='spcard-'+spell.element;
+    card.innerHTML=`<span class="sp-card-icon">${spell.icon}</span><span class="sp-card-name">${spell.name}</span><span class="sp-card-cost">${spell.cost} Mana</span><span class="sp-card-effect">${spell.effectLabel}</span>`;
+    card.addEventListener('click',()=>{
+      if(card.classList.contains('disabled')) return;
+      showScreen('battle-screen');
+      act(spell.element);
+    });
+    grid.appendChild(card);
   });
 }
 
@@ -2264,8 +2279,16 @@ window.addEventListener('DOMContentLoaded', ()=>{
 
   document.getElementById('bchannel').addEventListener('click',()=>act('channel'));
 
+  document.getElementById('bcastspell').addEventListener('click',()=>{
+    if(!gs.myTurn||gs.busy) return;
+    SPELLS.forEach(spell=>{
+      const card=document.getElementById('spcard-'+spell.element);
+      if(card) card.classList.toggle('disabled', gs.p1.mana<spell.cost);
+    });
+    showScreen('spell-screen');
+  });
+
   document.getElementById('sp-cancel').addEventListener('click',()=>{
-    gs.busy=false;
     showScreen('battle-screen');
   });
 
