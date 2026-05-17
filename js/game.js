@@ -58,6 +58,7 @@ let tournamentIndex=0;    // index of current opponent in queue
 let gs={}, puzzleCB=null, aiTid=null;
 let bW=0, bH=0;
 let mazeRAF=null, mazeTid=null;
+let retryCountdownId=null;
 
 function newState(){
   gs={
@@ -1026,6 +1027,62 @@ function finishAI(){
   gs.myTurn=true; gs.busy=false;
 }
 
+// ── RETRY SCREEN ───────────────────────────────────────────
+function showRetryScreen(){
+  const overlay=document.getElementById('retry-overlay');
+  const cdEl=document.getElementById('retry-countdown');
+  const btn=document.getElementById('retry-btn');
+  let timeLeft=10;
+
+  overlay.style.animation='none';
+  overlay.offsetHeight; // force reflow to restart CSS animation
+  overlay.classList.add('active');
+  cdEl.textContent=timeLeft;
+  cdEl.classList.remove('urgent');
+
+  retryCountdownId=setInterval(()=>{
+    timeLeft--;
+    cdEl.textContent=timeLeft;
+    if(timeLeft<=3) cdEl.classList.add('urgent');
+    if(timeLeft<=0){
+      clearInterval(retryCountdownId);
+      retryCountdownId=null;
+      onRetryExpired(overlay);
+    }
+  },1000);
+
+  btn.onclick=()=>{
+    clearInterval(retryCountdownId);
+    retryCountdownId=null;
+    onRetryContinue(overlay);
+  };
+}
+
+function onRetryContinue(overlay){
+  overlay.classList.remove('active');
+  anim('p1','cast',1200);
+  const px=bW*0.22, py=bH*0.65;
+  spawnParts(px,py,p1Cfg.col,28);
+  spawnParts(px,py-bH*0.06,'#ffffff',14);
+  addFloat(px,py,'✨ CONTINUE!','#f0cc6a',14);
+  setTimeout(()=>{
+    battleRunning=false;
+    startNextBattle();
+  },1400);
+}
+
+function onRetryExpired(overlay){
+  overlay.style.transition='background 0.8s ease-in';
+  overlay.style.background='rgba(0,0,0,0.96)';
+  setTimeout(()=>{
+    battleRunning=false;
+    overlay.classList.remove('active');
+    overlay.style.transition='';
+    overlay.style.background='';
+    showScreen('title-screen');
+  },900);
+}
+
 function checkWin(){
   if(ponderMode) return;
   if(gs.p1.hp<=0) endGame(false);
@@ -1037,10 +1094,14 @@ function endGame(won){
   gs.myTurn=false; gs.busy=true;
   gs[won?'p2anim':'p1anim']='death';
   setTimeout(()=>{
-    battleRunning=false;
     const inTournament=!ponderMode&&tournamentQueue.length>0;
     const isLastFight=tournamentIndex>=tournamentQueue.length-1;
     const continueBtn=document.getElementById('btn-continue');
+    if(!won&&inTournament){
+      showRetryScreen();
+      return;
+    }
+    battleRunning=false;
     if(!won){
       document.getElementById('ovico').textContent='💀';
       document.getElementById('ovtitle').textContent='Defeated!';
