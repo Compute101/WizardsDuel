@@ -46,6 +46,10 @@ const CHAR_DISPLAY={
     stats:[['❤ HP','88'],['🧊 Ice Lance','28 dmg / 35% freeze'],['🛡️ Frost Armor','30% resist + 8 retaliate / 4T'],['🌨️ Blizzard','5 dmg + 3 mana drain / turn × 5T']],
     flavour:'Glacial patience. Frozen fury. Every strike against her has a price.'
   },
+  zacharius:{
+    stats:[['❤ HP','86'],['🔋 Galvanize','4 mana → 8 charge; discharge on phys hit'],['🌩️ Chain Lightning','24 dmg + 35% arc 10 more (costs 8 charge)'],['💡 Conductivity','+35% dmg taken / 3T']],
+    flavour:'Store the storm. Spend it wisely. Let them come to you.'
+  },
   ponder:{
     stats:[['❤ HP','85'],['👻 Vanish','Invisible 3T'],['🌀 Siphon','Steal 4 mana'],['💫 Blink','Next hit auto-misses']],
     flavour:"Young but fierce — vanish from sight and plunder your foe's magic."
@@ -70,11 +74,11 @@ function newState(){
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false, frostArmor:0, blizzard:0, flameShield:0, candle:0},
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0},
     p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false, frostArmor:0, blizzard:0, flameShield:0, candle:0},
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[], projs:[], beams:[],
@@ -173,7 +177,7 @@ function resizeBC(){
 function drawBG(){
   ({eldrad:drawBG_moonlight,mal:drawBG_hellfire,sylvara:drawBG_forest,
     aurelia:drawBG_dawn,gnash:drawBG_storm,ponder:drawBG_astral,
-    skadi:drawBG_winter,emberic:drawBG_embers}[p2Key]||drawBG_moonlight)();
+    skadi:drawBG_winter,emberic:drawBG_embers,zacharius:drawBG_arc}[p2Key]||drawBG_moonlight)();
 }
 
 function hexToRgb(hex){
@@ -426,6 +430,56 @@ function drawBG_winter(){
   if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
 }
 
+function drawBG_arc(){
+  const g=bx.createLinearGradient(0,0,0,bH);
+  g.addColorStop(0,'#030810'); g.addColorStop(1,'#060d14');
+  bx.fillStyle=g; bx.fillRect(0,0,bW,bH);
+  const t=Date.now();
+  // Distant storm clouds
+  [[0.15,0.18],[0.42,0.12],[0.68,0.20],[0.88,0.14]].forEach(([cx2,cy2],i)=>{
+    bx.globalAlpha=0.12+0.05*Math.sin(t/900+i);
+    bx.fillStyle='#1a2244';
+    bx.beginPath(); bx.ellipse(bW*cx2,bH*cy2,bW*0.18,bH*0.07,0,0,Math.PI*2); bx.fill();
+  });
+  bx.globalAlpha=1;
+  // Electric arc flashes
+  const arcPhase=(t%2200)/2200;
+  if(arcPhase<0.12){
+    const bright=Math.sin(arcPhase/0.12*Math.PI);
+    bx.globalAlpha=bright*0.55;
+    bx.strokeStyle='#aaff44'; bx.lineWidth=1.5; bx.shadowColor='#aaff44'; bx.shadowBlur=12;
+    const ax=bW*(0.3+Math.sin(t/370)*0.25), ay=0, steps=7;
+    bx.beginPath(); bx.moveTo(ax,ay);
+    for(let i=1;i<=steps;i++){
+      bx.lineTo(ax+(Math.random()-.5)*bW*0.07, ay+bH*0.65*(i/steps));
+    }
+    bx.stroke();
+    bx.shadowBlur=0;
+  }
+  const arc2Phase=((t+1100)%2200)/2200;
+  if(arc2Phase<0.10){
+    const bright=Math.sin(arc2Phase/0.10*Math.PI);
+    bx.globalAlpha=bright*0.45;
+    bx.strokeStyle='#88ffdd'; bx.lineWidth=1; bx.shadowColor='#88ffdd'; bx.shadowBlur=8;
+    const ax2=bW*(0.6+Math.cos(t/510)*0.2), ay2=bH*0.05, steps=5;
+    bx.beginPath(); bx.moveTo(ax2,ay2);
+    for(let i=1;i<=steps;i++){
+      bx.lineTo(ax2+(Math.random()-.5)*bW*0.05, ay2+bH*0.55*(i/steps));
+    }
+    bx.stroke();
+    bx.shadowBlur=0;
+  }
+  bx.globalAlpha=1;
+  // Ground glow
+  const gg=bx.createLinearGradient(0,bH*.72,0,bH);
+  gg.addColorStop(0,'#0a1a0a'); gg.addColorStop(1,'#040a04');
+  bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
+  bx.strokeStyle=`rgba(170,255,68,${0.25+0.1*Math.sin(t/400)})`; bx.lineWidth=1;
+  bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
+  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
+  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+}
+
 // ── SPRITESHEET CONFIG ─────────────────────────────────────
 const SPRITE_CFG={
   frameW:48, frameH:64, frames:4,
@@ -650,6 +704,21 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.strokeStyle=`rgba(136,221,255,${0.35+0.1*Math.sin(t/240)})`; bx.stroke();
     bx.shadowBlur=0; bx.globalAlpha=1; bx.restore();
   }
+  if(state&&state.charge>0){
+    for(let i=0;i<6;i++){
+      const a=t/500+i/6*Math.PI*2, r=sz*(0.72+0.08*Math.sin(t/300+i));
+      bx.globalAlpha=0.6+0.3*Math.sin(t/220+i*1.5);
+      bx.fillStyle=i%2?'#aaff44':'#88ffcc'; bx.shadowColor='#aaff44'; bx.shadowBlur=6;
+      bx.beginPath(); bx.arc(x+Math.cos(a)*r,wy+Math.sin(a)*r*0.5,sz*.032,0,Math.PI*2); bx.fill();
+    }
+    bx.globalAlpha=1; bx.shadowBlur=0;
+  }
+  if(state&&state.conductivity>0){
+    bx.globalAlpha=0.08+0.05*Math.sin(t/200); bx.fillStyle='#aaff44';
+    bx.beginPath(); bx.arc(x,wy,sz*.7,0,Math.PI*2); bx.fill(); bx.globalAlpha=1;
+    bx.strokeStyle=`rgba(170,255,68,${0.35+0.15*Math.sin(t/180)})`; bx.lineWidth=1.5;
+    bx.beginPath(); bx.ellipse(x,y,sz*.38,sz*.09,0,0,Math.PI*2); bx.stroke();
+  }
   if(state&&state.invisible>0){
     const gv=0.18+0.12*Math.sin(t/280);
     bx.beginPath(); bx.arc(x,wy,sz*.78,0,Math.PI*2);
@@ -850,7 +919,9 @@ function refreshStatusBar(){
   if(gs.p1.frostArmor>0)  tags.push(`<span class="status-tag freeze">🛡️ ${p1Cfg.name} FROST ARMOR (${gs.p1.frostArmor})</span>`);
   if(gs.p1.blizzard>0)    tags.push(`<span class="status-tag freeze">🌨️ ${p1Cfg.name} BLIZZARD (${gs.p1.blizzard})</span>`);
   if(gs.p1.flameShield>0) tags.push(`<span class="status-tag burn">🛡️ ${p1Cfg.name} FLAME SHIELD (${gs.p1.flameShield})</span>`);
-  if(gs.p1.candle>0)      tags.push(`<span class="status-tag burn">🕯️ ${p1Cfg.name} CANDLE (${gs.p1.candle})</span>`);
+  if(gs.p1.candle>0)        tags.push(`<span class="status-tag burn">🕯️ ${p1Cfg.name} CANDLE (${gs.p1.candle})</span>`);
+  if(gs.p1.charge>0)        tags.push(`<span class="status-tag foresight">⚡ ${p1Cfg.name} CHARGED (${gs.p1.charge})</span>`);
+  if(gs.p1.conductivity>0)  tags.push(`<span class="status-tag burn">💡 ${p1Cfg.name} CONDUCTIVE (${gs.p1.conductivity})</span>`);
   if(p2Cfg){
     if(gs.p2.resist>0)    tags.push(`<span class="status-tag resist">🩸 ${p2Cfg.name} RESIST (${gs.p2.resist})</span>`);
     if(gs.p2.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
@@ -869,7 +940,9 @@ function refreshStatusBar(){
     if(gs.p2.frostArmor>0)  tags.push(`<span class="status-tag freeze">🛡️ ${p2Cfg.name} FROST ARMOR (${gs.p2.frostArmor})</span>`);
     if(gs.p2.blizzard>0)    tags.push(`<span class="status-tag freeze">🌨️ ${p2Cfg.name} BLIZZARD (${gs.p2.blizzard})</span>`);
     if(gs.p2.flameShield>0) tags.push(`<span class="status-tag burn">🛡️ ${p2Cfg.name} FLAME SHIELD (${gs.p2.flameShield})</span>`);
-    if(gs.p2.candle>0)      tags.push(`<span class="status-tag burn">🕯️ ${p2Cfg.name} CANDLE (${gs.p2.candle})</span>`);
+    if(gs.p2.candle>0)        tags.push(`<span class="status-tag burn">🕯️ ${p2Cfg.name} CANDLE (${gs.p2.candle})</span>`);
+    if(gs.p2.charge>0)        tags.push(`<span class="status-tag foresight">⚡ ${p2Cfg.name} CHARGED (${gs.p2.charge})</span>`);
+    if(gs.p2.conductivity>0)  tags.push(`<span class="status-tag burn">💡 ${p2Cfg.name} CONDUCTIVE (${gs.p2.conductivity})</span>`);
   }
   el.innerHTML=tags.join('');
 }
@@ -953,8 +1026,11 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='frostarmor')  return casterState.frostArmor>0;
   if(spellId==='blizzard')    return targetState.blizzard>0;
   if(spellId==='fireball')    return false;
-  if(spellId==='flameshield') return casterState.flameShield>0;
-  if(spellId==='candle')      return targetState.candle>0;
+  if(spellId==='flameshield')    return casterState.flameShield>0;
+  if(spellId==='candle')         return targetState.candle>0;
+  if(spellId==='galvanize')      return false;
+  if(spellId==='chainlightning') return casterState.charge<(casterCfg.chainLightningChargeCost||8);
+  if(spellId==='conductivity')   return targetState.conductivity>0;
   return false;
 }
 
@@ -1201,6 +1277,7 @@ function resolveCharSpell(spellId,caster){
           vx:(Math.random()-.5)*2,vy:-1-Math.random()*2,sz:3+Math.random()*3,life:1,dec:.018});
       }
       if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
+      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed;
@@ -1217,6 +1294,10 @@ function resolveCharSpell(spellId,caster){
       targetState.hp=Math.max(0,targetState.hp-dmg);
       if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
       if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+      if(targetState.charge>0){
+        applyDischarge(targetState,casterState,cx,tx);
+        checkWin(); if(!battleRunning) return;
+      }
       spawnParts(tx,bH*.38,casterCfg.col,22);
       addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,22);
       flash(casterCfg.col);
@@ -1258,6 +1339,7 @@ function resolveCharSpell(spellId,caster){
       }
       if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
       if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
+      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
       let drainBase=dmg;
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
@@ -1375,6 +1457,7 @@ function resolveCharSpell(spellId,caster){
     } else {
       if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
       if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
+      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed;
@@ -1465,6 +1548,7 @@ function resolveCharSpell(spellId,caster){
     } else {
       if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
       if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
+      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed;
@@ -1532,6 +1616,107 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.33,'🌨️ Blizzard! ('+targetState.blizzard+'T)','#88ddff',13);
       anim(caster,'cast',800);
     }
+  } else if(spellId==='galvanize'){
+    const gain=casterCfg.galvanizeChargeGain||8;
+    casterState.charge=(casterState.charge||0)+gain;
+    addFloat(cx,bH*.33,'🔋 +'+gain+' Charge!',casterCfg.col,13);
+    for(let i=0;i<12;i++){
+      const a=i/12*Math.PI*2;
+      gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#aaff44':'#88ffcc',
+        vx:Math.cos(a)*0.9,vy:Math.sin(a)*0.9-0.5,sz:2+Math.random()*2.5,life:1,dec:.018,noGrav:true});
+    }
+    spawnParts(cx,bH*.38,'#aaff44',8); spawnParts(cx,bH*.38,'#ffffff',4);
+    anim(caster,'shield',700);
+  } else if(spellId==='chainlightning'){
+    if(casterState.invisible>0){ casterState.invisible=0; addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11); }
+    const chargeCost=casterCfg.chainLightningChargeCost||8;
+    casterState.charge=Math.max(0,casterState.charge-chargeCost);
+    let dmg=Math.round((casterCfg.chainLightningDmg||24)*casterCfg.dmgMult);
+    if(targetState.foresight){
+      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
+      targetState.foresight=false;
+      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,casterCfg.col,6);
+      anim(caster,'cast',600);
+    } else if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.haste>0&&Math.random()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else if(targetState.blink){
+      targetState.blink=false;
+      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
+      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
+      flash('#9988cc'); anim(caster,'cast',600);
+    } else {
+      if(targetState.resist>0)       dmg=Math.round(dmg*0.67);
+      if(targetState.frostArmor>0)   dmg=Math.round(dmg*0.70);
+      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
+      if(targetState.shield>0){
+        const absorbed=Math.min(dmg,targetState.shieldHp);
+        targetState.shieldHp-=absorbed; dmg-=absorbed;
+        if(targetState.shieldHp<=0){
+          targetState.shield=0;
+          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
+          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
+        } else {
+          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+          spawnParts(tx,bH*.38,'#4af0ff',8);
+        }
+      }
+      targetState.hp=Math.max(0,targetState.hp-dmg);
+      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+      // Lightning arc visual
+      for(let i=0;i<14;i++){
+        const a=i/14*Math.PI*2;
+        gs.parts.push({x:tx+Math.cos(a)*bH*.05,y:bH*.38+Math.sin(a)*bH*.03,col:i%2?'#aaff44':'#ffffff',
+          vx:Math.cos(a+Math.PI)*1.5,vy:Math.sin(a+Math.PI)*1.5,sz:2+Math.random()*2,life:1,dec:.022});
+      }
+      spawnBeam(cx,bH*.38,tx,bH*.38,casterCfg.col);
+      spawnParts(tx,bH*.38,casterCfg.col,18);
+      addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,20);
+      flash(casterCfg.col);
+      // Arc chance
+      if(Math.random()<(casterCfg.chainArcChance||0.35)){
+        const arcDmg=casterCfg.chainArcDmg||10;
+        if(targetState.hp>0){
+          targetState.hp=Math.max(0,targetState.hp-arcDmg);
+          addFloat(tx,bH*.33+20,'⚡ Arc! −'+arcDmg,casterCfg.col,13);
+          spawnParts(tx,bH*.38,casterCfg.col,8);
+        }
+      }
+      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+      else             {anim('p2','cast',800); anim('p1','hit',800);}
+      refreshHUD(); checkWin();
+    }
+  } else if(spellId==='conductivity'){
+    if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.haste>0&&Math.random()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else if(targetState.ward>0){
+      targetState.ward=0;
+      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13);
+      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,casterCfg.col,6);
+      anim(caster,'cast',600);
+    } else {
+      targetState.conductivity=casterCfg.conductivityDur||3;
+      for(let i=0;i<14;i++){
+        const a=Math.random()*Math.PI*2;
+        gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:bH*.38,col:i%2?'#aaff44':'#88ffcc',
+          vx:Math.cos(a)*0.8,vy:Math.sin(a)*0.8-1.2,sz:1.5+Math.random()*2,life:1,dec:.016,noGrav:true});
+      }
+      spawnParts(tx,bH*.38,casterCfg.col,10);
+      addFloat(tx,bH*.33,'💡 Conductive! ('+targetState.conductivity+'T)',casterCfg.col,13);
+      anim(caster,'cast',800);
+    }
   } else if(spellId==='basicattack'){
     if(casterState.invisible>0){
       casterState.invisible=0;
@@ -1542,6 +1727,7 @@ function resolveCharSpell(spellId,caster){
     const isPhysical=!!basicSpell.physical;
     if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
     if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
+    if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
     if(targetState.foresight){
       addFloat(tx,bH*.38-20,'🔮 Absorbed!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',18);
@@ -1589,6 +1775,10 @@ function resolveCharSpell(spellId,caster){
       targetState.hp=Math.max(0,targetState.hp-dmg);
       if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
       if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+      if(isPhysical&&!basicSpell.piercesDischarge&&targetState.charge>0){
+        applyDischarge(targetState,casterState,cx,tx);
+        checkWin(); if(!battleRunning) return;
+      }
       spawnParts(tx,bH*.38,casterCfg.col,14);
       addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
       flash(casterCfg.col);
@@ -1640,6 +1830,7 @@ function castSpell(spell,target,tx,ty,caster){
     addFloat(tx,ty-36,'🩸 -33% Resist!',targetCfg.col,10);
   }
   if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
+  if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
 
   // Target: Foresight — fully blocks the incoming spell
   if(targetState.foresight){
@@ -1812,7 +2003,7 @@ function processBlizzard(target,tx,ty){
   if(Math.random()<0.25&&target.frozen<=0) target.frozen=1;
 }
 
-const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle'];
+const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity'];
 function tickStatuses(state){
   STATUS_TIMERS.forEach(k=>{ if(state[k]>0) state[k]--; });
 }
@@ -1835,6 +2026,16 @@ function applyFrostArmorRetaliation(casterState,targetCfg,cx){
   spawnParts(cx,bH*.38,'#88ddff',8);
 }
 
+function applyDischarge(targetState,casterState,casterX,targetX){
+  const dischargeDmg=targetState.charge;
+  targetState.charge=0;
+  casterState.hp=Math.max(0,casterState.hp-dischargeDmg);
+  addFloat(casterX,bH*.33,'⚡ Discharge! −'+dischargeDmg,'#aaff44',14);
+  spawnParts(casterX,bH*.38,'#aaff44',14);
+  spawnBeam(targetX,bH*.38,casterX,bH*.38,'#aaff44');
+  flash('#aaff44');
+}
+
 function applyFlameShieldRetaliation(casterState,cx){
   const fireDmg=8+Math.floor(Math.random()*13);
   casterState.hp=Math.max(0,casterState.hp-fireDmg);
@@ -1847,6 +2048,7 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
   let dmg=Math.round((basicSpell.dmg||9)*casterCfg.dmgMult);
   if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
   if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
+  if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
   if(targetState.foresight){
     addFloat(tx,bH*.38-20,'🔮 Absorbed!','#ffcc44',15);
     spawnParts(tx,bH*.38,'#ffcc44',14);
@@ -1885,6 +2087,9 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
   targetState.hp=Math.max(0,targetState.hp-dmg);
   if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
   if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+  if(basicSpell.physical&&!basicSpell.piercesDischarge&&targetState.charge>0){
+    applyDischarge(targetState,casterState,cx,tx);
+  }
   spawnParts(tx,bH*.38,casterCfg.col,14);
   addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
   flash(casterCfg.col);
@@ -1977,6 +2182,16 @@ function doAI(){
 
   // Select a spell using heuristics
   let chosen=null;
+  // Zacharius: prioritise galvanize to build charge, spend it with chain lightning
+  if(p2Key==='zacharius'){
+    const chainReady=charSpells.find(s=>s.id==='chainlightning');
+    const canGalvanize=charSpells.find(s=>s.id==='galvanize');
+    if(chainReady&&ai.charge>=(p2Cfg.chainLightningChargeCost||8)){
+      chosen=chainReady;
+    } else if(canGalvanize&&ai.charge<(p2Cfg.chainLightningChargeCost||8)){
+      chosen=canGalvanize;
+    }
+  }
   if(!chosen&&available.length>0){
     if(charSpells.length>0&&Math.random()<0.40){
       chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
@@ -3202,6 +3417,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-gnash').addEventListener('click',()=>showWizardDetail('gnash'));
   document.getElementById('pick-skadi').addEventListener('click',()=>showWizardDetail('skadi'));
   document.getElementById('pick-emberic').addEventListener('click',()=>showWizardDetail('emberic'));
+  document.getElementById('pick-zacharius').addEventListener('click',()=>showWizardDetail('zacharius'));
   document.getElementById('pick-ponder').addEventListener('click',()=>showWizardDetail('ponder'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{
