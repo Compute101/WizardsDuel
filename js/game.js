@@ -418,10 +418,22 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.strokeStyle=`rgba(255,204,68,${halo*5})`; bx.lineWidth=2; bx.stroke();
   }
   if(shielded>0){
+    const boosted=state&&state.counter;
     const gv=0.08+0.05*Math.sin(Date.now()/300);
     bx.beginPath(); bx.arc(x,y-sz*.5,sz*.75,0,Math.PI*2);
-    bx.fillStyle=`rgba(74,240,255,${gv})`; bx.fill();
-    bx.strokeStyle=`rgba(74,240,255,${gv*5})`; bx.lineWidth=1.5; bx.stroke();
+    if(boosted){
+      // Gold-cyan blend fill with higher opacity when counter is active
+      bx.fillStyle=`rgba(180,240,120,${gv*2.5})`; bx.fill();
+      bx.shadowColor='#ffd700'; bx.shadowBlur=18;
+      bx.strokeStyle=`rgba(255,215,0,${0.55+0.35*Math.sin(Date.now()/200)})`; bx.lineWidth=3; bx.stroke();
+      bx.shadowBlur=0;
+      // Second inner ring for depth
+      bx.beginPath(); bx.arc(x,y-sz*.5,sz*.6,0,Math.PI*2);
+      bx.strokeStyle=`rgba(74,240,255,${gv*4})`; bx.lineWidth=1.5; bx.stroke();
+    } else {
+      bx.fillStyle=`rgba(74,240,255,${gv})`; bx.fill();
+      bx.strokeStyle=`rgba(74,240,255,${gv*5})`; bx.lineWidth=1.5; bx.stroke();
+    }
   }
   if(wardActive>0){
     const t=Date.now();
