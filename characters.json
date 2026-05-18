@@ -180,6 +180,29 @@
       {"id": "conductivity",   "name": "Conductivity",   "icon": "💡", "cost": 2, "costLabel": "2 Mana",   "effectLabel": "Target takes +35% damage for 3 turns"}
     ]
   },
+  "mary": {
+    "name": "MARY",
+    "title": "The Devoted",
+    "sprite": "sprites/mage-light.png",
+    "col": "#f0d8a0",
+    "taunts": [
+      "The light does not yield. Neither do I.",
+      "Your defeat was written before this duel began. I merely carried it out.",
+      "Kneel before the radiance, or be consumed by it. There is no third option."
+    ],
+    "hp": 88,
+    "startMana": 5,
+    "channelAmt": 5,
+    "dmgMult": 1.0,
+    "healAmt": 40,
+    "radiantDmg": 12,
+    "spells": [
+      {"id": "basicattack", "name": "Smite",   "icon": "🌟", "cost": 0, "costLabel": "Free",   "dmg": 7, "physical": true, "effectLabel": "Deal ~7 holy physical damage"},
+      {"id": "divineheal",  "name": "Heal",    "icon": "💛", "cost": 4, "costLabel": "4 Mana", "effectLabel": "Instantly restore 40 HP"},
+      {"id": "purge",       "name": "Purge",   "icon": "✨", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Remove all active debuffs from yourself"},
+      {"id": "radiant",     "name": "Radiant", "icon": "☀️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Deal 12 holy damage"}
+    ]
+  },
   "ponder": {
     "name": "PONDER",
     "title": "The Apprentice",
