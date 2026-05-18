@@ -169,7 +169,7 @@ function resizeBC(){
 function drawBG(){
   ({eldrad:drawBG_moonlight,mal:drawBG_hellfire,sylvara:drawBG_forest,
     aurelia:drawBG_dawn,gnash:drawBG_storm,ponder:drawBG_astral,
-    skadi:drawBG_winter}[p1Key]||drawBG_moonlight)();
+    skadi:drawBG_winter}[p2Key]||drawBG_moonlight)();
 }
 
 function hexToRgb(hex){
