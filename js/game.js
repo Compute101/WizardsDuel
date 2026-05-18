@@ -69,6 +69,12 @@ let bW=0, bH=0;
 let mazeRAF=null, mazeTid=null;
 let retryCountdownId=null;
 
+// ── 2 PLAYER MODE ─────────────────────────────────────────
+let twoPlayerMode=false;
+let twoPlayerPhase=1; // 1=p1 picking, 2=p2 picking
+let matchRound=0;
+let p1MatchWins=0, p2MatchWins=0;
+
 function newState(){
   gs={
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
@@ -83,6 +89,7 @@ function newState(){
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[], projs:[], beams:[],
     pendingAction:null, skipAITurn:false,
+    turnPlayer:'p1',
   };
 }
 
@@ -962,9 +969,16 @@ function battleLoop(ts){
   drawWiz(bW*.22,gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1',gs.p1.foresight,gs.p1);
   drawWiz(bW*.78,gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2',gs.p2.foresight,gs.p2);
   tickProjs(); tickBeams(); tickParts(); tickFloats();
-  if(!gs.myTurn&&!gs.busy){
+  if(!gs.myTurn&&!gs.busy&&!twoPlayerMode){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText(p2Cfg.name+' IS CASTING…',bW*.5,bH*.56);
+  }
+  if(twoPlayerMode&&gs.myTurn){
+    const twoCfg=gs.turnPlayer==='p1'?p1Cfg:p2Cfg;
+    const twoNum=gs.turnPlayer==='p1'?1:2;
+    bx.fillStyle=`rgba(${hexToRgb(twoCfg.col)},0.75)`;
+    bx.font='bold 9px Cinzel,serif'; bx.textAlign='center';
+    bx.fillText('PLAYER '+twoNum+' — YOUR TURN',bW*.5,bH*.57);
   }
   refreshHUD();
   refreshStatusBar();
@@ -980,6 +994,14 @@ function refreshHUD(){
   const ct1=document.getElementById('ct1'); if(ct1) ct1.classList.toggle('active',!!gs.p1.counter);
   const ct2=document.getElementById('ct2'); if(ct2) ct2.classList.toggle('active',!!gs.p2.counter);
   document.getElementById('roundlbl').textContent='Round '+gs.round;
+  if(twoPlayerMode){
+    const fightLbl=document.getElementById('fightlbl');
+    if(fightLbl){
+      const p1s='★'.repeat(Math.min(2,p1MatchWins))+'☆'.repeat(Math.max(0,2-p1MatchWins));
+      const p2s='★'.repeat(Math.min(2,p2MatchWins))+'☆'.repeat(Math.max(0,2-p2MatchWins));
+      fightLbl.textContent='P1 '+p1s+' vs P2 '+p2s;
+    }
+  }
   refreshMana('mfill1','mval1',gs.p1.mana);
   refreshMana('mfill2','mval2',gs.p2.mana);
   refreshActionBar();
@@ -991,15 +1013,19 @@ function refreshMana(fillId,valId,val){
 }
 
 function refreshActionBar(){
+  const who=twoPlayerMode?gs.turnPlayer:'p1';
+  const whoCfg=who==='p1'?p1Cfg:p2Cfg;
+  const whoState=gs[who];
+  const oppState=who==='p1'?gs.p2:gs.p1;
   const busy=!gs.myTurn||gs.busy;
-  const frenzied=gs.p1.frenzied>0;
+  const frenzied=whoState.frenzied>0;
   document.getElementById('bchannel').classList.toggle('off',busy||frenzied);
   document.getElementById('bcastspell').classList.toggle('off',busy||frenzied);
-  (p1Cfg.spells||[]).forEach(spell=>{
+  (whoCfg.spells||[]).forEach(spell=>{
     const btn=document.getElementById('bspell-'+spell.id);
     if(!btn) return;
-    const blocked=charSpellBlocked(spell.id,gs.p1,p1Cfg,gs.p2);
-    btn.classList.toggle('off',busy||gs.p1.mana<spell.cost||blocked);
+    const blocked=charSpellBlocked(spell.id,whoState,whoCfg,oppState);
+    btn.classList.toggle('off',busy||whoState.mana<spell.cost||blocked);
   });
 }
 
@@ -1038,8 +1064,15 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
 function act(type){
   if(!gs.myTurn||gs.busy) return;
 
-  // Aurelia haste: AI acts first before the player's action resolves
-  if(gs.p2&&gs.p2.haste>0&&!gs.skipAITurn){
+  const who=twoPlayerMode?gs.turnPlayer:'p1';
+  const whoCfg=who==='p1'?p1Cfg:p2Cfg;
+  const whoState=gs[who];
+  const oppState=who==='p1'?gs.p2:gs.p1;
+  const cx=who==='p1'?bW*.22:bW*.78;
+  const tx=who==='p1'?bW*.78:bW*.22;
+
+  // Aurelia haste: AI acts first before the player's action resolves (AI mode only)
+  if(!twoPlayerMode&&gs.p2&&gs.p2.haste>0&&!gs.skipAITurn){
     gs.myTurn=false; gs.busy=true;
     gs.pendingAction=type;
     doAI();
@@ -1047,22 +1080,22 @@ function act(type){
   }
 
   if(type==='channel'){
-    if(gs.p1.timeDrain>0){
-      gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+2);
-      addFloat(bW*.22,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
+    if(whoState.timeDrain>0){
+      whoState.mana=Math.min(MAX_MANA,whoState.mana+2);
+      addFloat(cx,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
     } else {
-      gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+p1Cfg.channelAmt);
-      addFloat(bW*.22,bH*.38,'+'+p1Cfg.channelAmt+' Mana','#88aaff',13);
+      whoState.mana=Math.min(MAX_MANA,whoState.mana+whoCfg.channelAmt);
+      addFloat(cx,bH*.38,'+'+whoCfg.channelAmt+' Mana','#88aaff',13);
     }
-    if(gs.p1.candle>0) triggerCandleBurn(gs.p1,bW*.22);
-    anim('p1','cast',700); endMyTurn(); return;
+    if(whoState.candle>0) triggerCandleBurn(whoState,cx);
+    anim(who,'cast',700); endMyTurn(); return;
   }
 
   // Universal spell (with puzzle)
   const spell=SPELLS.find(s=>s.element===type);
   if(spell){
-    if(gs.p1.mana<spell.cost) return;
-    if(gs.p1.frenzied>0) return;
+    if(whoState.mana<spell.cost) return;
+    if(whoState.frenzied>0) return;
     gs.busy=true;
     const launchers={
       fire:      launchPatternEcho,
@@ -1072,16 +1105,16 @@ function act(type){
     };
     launchers[type](spell, ok=>{
       if(ok){
-        if(gs.p1.invisible>0){
-          gs.p1.invisible=0;
-          addFloat(bW*.22,bH*.33,'👻 Revealed!','#b8a0e8',11);
+        if(whoState.invisible>0){
+          whoState.invisible=0;
+          addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
         }
-        gs.p1.mana-=spell.cost;
-        spawnProj(bW*.22,bH*.38,bW*.78,bH*.38,spell.element,spell.col,
-          ()=>castSpell(spell,gs.p2,bW*.78,bH*.38,'p1'));
+        whoState.mana-=spell.cost;
+        spawnProj(cx,bH*.38,tx,bH*.38,spell.element,spell.col,
+          ()=>castSpell(spell,oppState,tx,bH*.38,who));
       } else {
-        addFloat(bW*.22,bH*.33,'Fizzled!','#ff8844',13);
-        gs.p1.mana=Math.max(0,gs.p1.mana-1);
+        addFloat(cx,bH*.33,'Fizzled!','#ff8844',13);
+        whoState.mana=Math.max(0,whoState.mana-1);
       }
       endMyTurn();
     });
@@ -1089,11 +1122,11 @@ function act(type){
   }
 
   // Character spell (instant)
-  const charSpell=p1Cfg.spells&&p1Cfg.spells.find(s=>s.id===type);
+  const charSpell=whoCfg.spells&&whoCfg.spells.find(s=>s.id===type);
   if(charSpell){
-    if(gs.p1.mana<charSpell.cost) return;
-    if(charSpellBlocked(type,gs.p1,p1Cfg,gs.p2)) return;
-    resolveCharSpell(type,'p1');
+    if(whoState.mana<charSpell.cost) return;
+    if(charSpellBlocked(type,whoState,whoCfg,oppState)) return;
+    resolveCharSpell(type,who);
   }
 }
 
@@ -1416,7 +1449,7 @@ function resolveCharSpell(spellId,caster){
       if(!battleRunning) return;
       doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
       refreshHUD(); checkWin(); if(!battleRunning) return;
-      if(caster==='p1'){
+      if(caster==='p1'||twoPlayerMode){
         endMyTurn();
       } else {
         tickStatuses(casterState);
@@ -1789,7 +1822,7 @@ function resolveCharSpell(spellId,caster){
     checkWin();
   }
 
-  if(caster==='p1'){
+  if(caster==='p1'||twoPlayerMode){
     endMyTurn(spellId==='counter');
   } else {
     if(spellId!=='counter' && casterState.shield>0){
@@ -2104,14 +2137,27 @@ function anim(who,state,ms){
 
 function endMyTurn(skipShieldDecrement=false){
   gs.myTurn=false; gs.busy=false;
-  if(!skipShieldDecrement && gs.p1.shield>0){
-    gs.p1.shield--;
-    if(gs.p1.shield<=0) gs.p1.shieldHp=0;
+  if(twoPlayerMode){
+    const who=gs.turnPlayer;
+    const whoState=gs[who];
+    if(!skipShieldDecrement&&whoState.shield>0){
+      whoState.shield--;
+      if(whoState.shield<=0) whoState.shieldHp=0;
+    }
+    tickStatuses(whoState);
+    gs.round++;
+    const nextPlayer=who==='p1'?'p2':'p1';
+    if(!gameEnded) showHandoffOverlay(nextPlayer,()=>startPlayerTurn(nextPlayer));
+  } else {
+    if(!skipShieldDecrement&&gs.p1.shield>0){
+      gs.p1.shield--;
+      if(gs.p1.shield<=0) gs.p1.shieldHp=0;
+    }
+    tickStatuses(gs.p1);
+    gs.round++;
+    if(aiTid) clearTimeout(aiTid);
+    aiTid=setTimeout(doAI, gs.p2&&gs.p2.haste>0 ? 400 : 1400);
   }
-  tickStatuses(gs.p1);
-  gs.round++;
-  if(aiTid) clearTimeout(aiTid);
-  aiTid=setTimeout(doAI, gs.p2&&gs.p2.haste>0 ? 400 : 1400);
 }
 
 // ── AI TURN ────────────────────────────────────────────────
@@ -2387,6 +2433,25 @@ function endGame(won){
   gs.myTurn=false; gs.busy=true;
   gs[won?'p2anim':'p1anim']='death';
   setTimeout(()=>{
+    if(twoPlayerMode){
+      battleRunning=false;
+      if(won) p1MatchWins++; else p2MatchWins++;
+      const winnerCfg=won?p1Cfg:p2Cfg;
+      const winnerNum=won?1:2;
+      const isMatchOver=p1MatchWins>=2||p2MatchWins>=2||matchRound>=3;
+      const continueBtn=document.getElementById('btn-continue');
+      document.getElementById('ovico').textContent=isMatchOver?'🏆':'⚔️';
+      document.getElementById('ovtitle').textContent=
+        isMatchOver?'Player '+winnerNum+' Wins the Match!':'Player '+winnerNum+' Wins Round '+matchRound+'!';
+      document.getElementById('ovtitle').style.color=winnerCfg.col;
+      const p1s='★'.repeat(Math.min(2,p1MatchWins))+'☆'.repeat(Math.max(0,2-p1MatchWins));
+      const p2s='★'.repeat(Math.min(2,p2MatchWins))+'☆'.repeat(Math.max(0,2-p2MatchWins));
+      document.getElementById('ovdesc').textContent=
+        p1Cfg.name+' (P1): '+p1s+'  vs  '+p2Cfg.name+' (P2): '+p2s;
+      continueBtn.textContent=isMatchOver?'Back to Title':'Fight Round '+(matchRound+1)+' →';
+      document.getElementById('overlay').classList.add('active');
+      return;
+    }
     const inTournament=tournamentQueue.length>0;
     const isLastFight=tournamentIndex>=tournamentQueue.length-1;
     const continueBtn=document.getElementById('btn-continue');
@@ -3351,6 +3416,22 @@ function showWizardDetail(key){
 }
 
 function pickCharacter(key){
+  if(twoPlayerMode){
+    if(twoPlayerPhase===1){
+      p1Key=key; p1Cfg=CHAR_DEFS[key];
+      twoPlayerPhase=2;
+      const lbl=document.getElementById('char-player-label');
+      lbl.textContent='Player 2: Choose Your Wizard';
+      lbl.style.display='';
+      return;
+    } else {
+      p2Key=key; p2Cfg=CHAR_DEFS[key];
+      twoPlayerPhase=1;
+      document.getElementById('char-player-label').style.display='none';
+      startTwoPlayerMatch();
+      return;
+    }
+  }
   p1Key=key;
   p1Cfg=CHAR_DEFS[key];
   // Build round-robin queue: all opponents except player, gnash always last
@@ -3365,6 +3446,108 @@ function pickCharacter(key){
   p2Key=tournamentQueue[0];
   p2Cfg=CHAR_DEFS[p2Key];
   showBracket(false);
+}
+
+// ── 2 PLAYER MATCH FLOW ────────────────────────────────────
+function startTwoPlayerMatch(){
+  matchRound=0; p1MatchWins=0; p2MatchWins=0;
+  tournamentQueue=[];
+  startNextTwoPlayerRound();
+}
+
+function startNextTwoPlayerRound(){
+  matchRound++;
+  // P1 goes first in rounds 1 & 3, P2 goes first in round 2
+  const firstPlayer=(matchRound===2)?'p2':'p1';
+  startTwoPlayerBattle(firstPlayer);
+}
+
+function startTwoPlayerBattle(firstPlayer){
+  loadSprites();
+  updateActionBar(firstPlayer==='p1'?p1Cfg:p2Cfg);
+  document.getElementById('p1name').textContent=p1Cfg.name+' (P1)';
+  document.getElementById('p1-portrait').style.visibility='';
+  document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
+  const p2hud=document.querySelector('.phud-p2');
+  p2hud.style.visibility='';
+  document.getElementById('p2name').textContent=p2Cfg.name+' (P2)';
+  document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
+  newState();
+  gs.turnPlayer=firstPlayer;
+  gs.myTurn=false; gs.busy=true;
+  gameEnded=false;
+  battleRunning=true;
+  lastFrameTime=0;
+  resizeBC();
+  showScreen('battle-screen');
+  requestAnimationFrame(battleLoop);
+  setTimeout(()=>showHandoffOverlay(firstPlayer,()=>{ gs.myTurn=true; gs.busy=false; }),200);
+}
+
+function showHandoffOverlay(toPlayer, callback){
+  const cfg=toPlayer==='p1'?p1Cfg:p2Cfg;
+  const num=toPlayer==='p1'?1:2;
+  document.getElementById('handoff-player-num').textContent='Player '+num;
+  document.getElementById('handoff-char-name').textContent=cfg.name.toUpperCase();
+  const portrait=document.getElementById('handoff-portrait');
+  portrait.src='portraits/'+(toPlayer==='p1'?p1Key:p2Key)+'.png';
+  portrait.style.borderColor=cfg.col;
+  const p1s='★'.repeat(Math.min(2,p1MatchWins))+'☆'.repeat(Math.max(0,2-p1MatchWins));
+  const p2s='★'.repeat(Math.min(2,p2MatchWins))+'☆'.repeat(Math.max(0,2-p2MatchWins));
+  document.getElementById('handoff-match-info').textContent=
+    'Match Round '+matchRound+' of 3  ·  P1 '+p1s+'  vs  P2 '+p2s;
+  const overlay=document.getElementById('handoff-overlay');
+  const btn=document.getElementById('handoff-btn');
+  btn.onclick=null;
+  overlay.classList.add('active');
+  btn.onclick=()=>{ overlay.classList.remove('active'); if(callback) callback(); };
+}
+
+function startPlayerTurn(who){
+  if(!battleRunning||gameEnded) return;
+  const whoState=gs[who];
+  const tx=who==='p1'?bW*.22:bW*.78;
+
+  // Decrement invisible once per full round (at P1→P2 transition)
+  if(who==='p2'){
+    if(gs.p1.invisible>0) gs.p1.invisible--;
+    if(gs.p2.invisible>0) gs.p2.invisible--;
+  }
+
+  // DOT ticks for this player before they act
+  if(whoState.vineWhip>0){
+    processVineWhip(whoState,tx,bH*.38);
+    checkWin(); if(!battleRunning) return;
+  }
+  if(whoState.blizzard>0){
+    processBlizzard(whoState,tx,bH*.38);
+    checkWin(); if(!battleRunning) return;
+  }
+  if(whoState.burn>0){
+    processBurn(whoState,tx,bH*.38);
+    checkWin(); if(!battleRunning) return;
+  }
+  if(whoState.regen) processRegen(whoState,tx,bH*.38);
+
+  // Passive mana
+  whoState.mana=Math.min(MAX_MANA,whoState.mana+1);
+
+  // Frozen: skip this player's turn
+  if(whoState.frozen>0){
+    whoState.frozen--;
+    addFloat(tx,bH*.38,'❄️ Frozen — turn skipped!','#88ddff',13);
+    const nextPlayer=who==='p1'?'p2':'p1';
+    setTimeout(()=>{
+      if(!battleRunning||gameEnded) return;
+      gs.round++;
+      showHandoffOverlay(nextPlayer,()=>startPlayerTurn(nextPlayer));
+    },1400);
+    return;
+  }
+
+  gs.turnPlayer=who;
+  updateActionBar(who==='p1'?p1Cfg:p2Cfg);
+  gs.myTurn=true; gs.busy=false;
 }
 
 function startNextBattle(){
@@ -3407,8 +3590,29 @@ window.addEventListener('DOMContentLoaded', ()=>{
     });
   });
 
-  document.getElementById('btn-start').addEventListener('click',()=>showScreen('char-screen'));
-  document.getElementById('btn-back').addEventListener('click',()=>showScreen('title-screen'));
+  document.getElementById('btn-start').addEventListener('click',()=>{
+    twoPlayerMode=false; twoPlayerPhase=1;
+    document.getElementById('char-player-label').style.display='none';
+    showScreen('char-screen');
+  });
+  document.getElementById('btn-2player').addEventListener('click',()=>{
+    twoPlayerMode=true; twoPlayerPhase=1;
+    const lbl=document.getElementById('char-player-label');
+    lbl.textContent='Player 1: Choose Your Wizard';
+    lbl.style.display='';
+    showScreen('char-screen');
+  });
+  document.getElementById('btn-back').addEventListener('click',()=>{
+    if(twoPlayerMode&&twoPlayerPhase===2){
+      twoPlayerPhase=1;
+      const lbl=document.getElementById('char-player-label');
+      lbl.textContent='Player 1: Choose Your Wizard';
+    } else {
+      twoPlayerMode=false; twoPlayerPhase=1;
+      document.getElementById('char-player-label').style.display='none';
+      showScreen('title-screen');
+    }
+  });
 
   document.getElementById('pick-eldrad').addEventListener('click',()=>showWizardDetail('eldrad'));
   document.getElementById('pick-mal').addEventListener('click',()=>showWizardDetail('mal'));
@@ -3440,9 +3644,10 @@ window.addEventListener('DOMContentLoaded', ()=>{
 
   document.getElementById('bcastspell').addEventListener('click',()=>{
     if(!gs.myTurn||gs.busy) return;
+    const activeState=twoPlayerMode?gs[gs.turnPlayer]:gs.p1;
     SPELLS.forEach(spell=>{
       const card=document.getElementById('spcard-'+spell.element);
-      if(card) card.classList.toggle('disabled', gs.p1.mana<spell.cost);
+      if(card) card.classList.toggle('disabled', activeState.mana<spell.cost);
     });
     showScreen('spell-screen');
   });
@@ -3452,8 +3657,20 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
 
   document.getElementById('btn-continue').addEventListener('click',()=>{
-    const advancing=document.getElementById('btn-continue').textContent.startsWith('Fight');
     document.getElementById('overlay').classList.remove('active');
+    if(twoPlayerMode){
+      const isMatchOver=p1MatchWins>=2||p2MatchWins>=2||matchRound>=3;
+      if(isMatchOver){
+        battleRunning=false; gameEnded=false;
+        twoPlayerMode=false; twoPlayerPhase=1;
+        document.getElementById('btn-continue').textContent='Continue';
+        showScreen('title-screen');
+      } else {
+        startNextTwoPlayerRound();
+      }
+      return;
+    }
+    const advancing=document.getElementById('btn-continue').textContent.startsWith('Fight');
     if(advancing){
       tournamentIndex++;
       p2Key=tournamentQueue[tournamentIndex];
