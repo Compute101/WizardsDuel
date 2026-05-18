@@ -89,7 +89,7 @@ function newState(){
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[], projs:[], beams:[],
     pendingAction:null, skipAITurn:false,
-    turnPlayer:'p1',
+    turnPlayer:'p1', lastAnimEnd:0,
   };
 }
 
@@ -1110,13 +1110,15 @@ function act(type){
           addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
         }
         whoState.mana-=spell.cost;
-        spawnProj(cx,bH*.38,tx,bH*.38,spell.element,spell.col,
-          ()=>castSpell(spell,oppState,tx,bH*.38,who));
+        spawnProj(cx,bH*.38,tx,bH*.38,spell.element,spell.col,()=>{
+          castSpell(spell,oppState,tx,bH*.38,who);
+          endMyTurn();
+        });
       } else {
         addFloat(cx,bH*.33,'Fizzled!','#ff8844',13);
         whoState.mana=Math.max(0,whoState.mana-1);
+        endMyTurn();
       }
-      endMyTurn();
     });
     return;
   }
@@ -2132,6 +2134,7 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
 
 function anim(who,state,ms){
   gs[who+'anim']=state;
+  gs.lastAnimEnd=Math.max(gs.lastAnimEnd||0, Date.now()+ms);
   setTimeout(()=>{if(gs[who+'anim']!=='death') gs[who+'anim']='idle';},ms);
 }
 
@@ -2147,7 +2150,12 @@ function endMyTurn(skipShieldDecrement=false){
     tickStatuses(whoState);
     gs.round++;
     const nextPlayer=who==='p1'?'p2':'p1';
-    if(!gameEnded) showHandoffOverlay(nextPlayer,()=>startPlayerTurn(nextPlayer));
+    if(!gameEnded){
+      const delay=Math.max(0,(gs.lastAnimEnd||0)-Date.now())+600;
+      setTimeout(()=>{
+        if(!gameEnded) showHandoffOverlay(nextPlayer,()=>startPlayerTurn(nextPlayer));
+      }, delay);
+    }
   } else {
     if(!skipShieldDecrement&&gs.p1.shield>0){
       gs.p1.shield--;
