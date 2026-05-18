@@ -108,7 +108,7 @@
     "frenzyHpCost": 15,
     "chargeDmg": 32,
     "spells": [
-      {"id": "basicattack", "name": "Feral Strike", "icon": "👊", "cost": 0, "costLabel": "Free", "dmg": 9, "physical": true, "effectLabel": "Deal ~9 phys dmg, pierces Counter"},
+      {"id": "basicattack", "name": "Feral Strike", "icon": "👊", "cost": 0, "costLabel": "Free", "dmg": 9, "physical": true, "piercesDischarge": true, "effectLabel": "Deal ~9 phys dmg, pierces Counter & Discharge"},
       {"id": "warpaint", "name": "War Paint",     "icon": "🩸", "cost": 0, "costLabel": "15 HP",   "effectLabel": "33% dmg resistance for 5 turns"},
       {"id": "charge",   "name": "Savage Charge", "icon": "⚔️", "cost": 5, "costLabel": "5 Mana",  "effectLabel": "32 phys dmg, pierces Counter"},
       {"id": "frenzy",   "name": "Frenzy",        "icon": "💢", "cost": 0, "costLabel": "15 HP",   "effectLabel": "Attack twice; locked to Feral Strike for 3 turns", "aiHint": "frenzy"}
@@ -154,6 +154,30 @@
       {"id": "icelance",   "name": "Ice Lance",   "icon": "🧊", "cost": 4, "costLabel": "4 Mana", "effectLabel": "28 damage; 35% chance to freeze 1 turn"},
       {"id": "frostarmor", "name": "Frost Armor", "icon": "🛡️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "30% dmg reduction for 4 turns; attacker takes 8 damage"},
       {"id": "blizzard",   "name": "Blizzard",    "icon": "🌨️", "cost": 4, "costLabel": "4 Mana", "effectLabel": "5 dmg/turn × 5T + drains 3 mana/turn + 25% freeze chance"}
+    ]
+  },
+  "zacharius": {
+    "name": "ZACHARIUS",
+    "title": "The Conductor",
+    "sprite": "sprites/mage-light.png",
+    "col": "#aaff44",
+    "hp": 86,
+    "startMana": 7,
+    "channelAmt": 5,
+    "dmgMult": 1.10,
+    "galvanizeManaCoast": 4,
+    "galvanizeChargeGain": 8,
+    "chainLightningChargeCost": 8,
+    "chainLightningDmg": 24,
+    "chainArcChance": 0.35,
+    "chainArcDmg": 10,
+    "conductivityDur": 3,
+    "conductivityMult": 1.35,
+    "spells": [
+      {"id": "basicattack",    "name": "Spark",          "icon": "⚡", "cost": 0, "costLabel": "Free",     "dmg": 9, "effectLabel": "Deal ~9 lightning damage"},
+      {"id": "galvanize",      "name": "Galvanize",      "icon": "🔋", "cost": 4, "costLabel": "4 Mana",   "effectLabel": "Gain 8 charge; physical hits discharge it as damage", "aiHint": "charge_build"},
+      {"id": "chainlightning", "name": "Chain Lightning","icon": "🌩️", "cost": 0, "costLabel": "8 Charge", "effectLabel": "24 damage; 35% chance to arc for 10 more", "aiHint": "chain_attack"},
+      {"id": "conductivity",   "name": "Conductivity",   "icon": "💡", "cost": 2, "costLabel": "2 Mana",   "effectLabel": "Target takes +35% damage for 3 turns"}
     ]
   },
   "ponder": {
