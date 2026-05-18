@@ -1056,8 +1056,9 @@ function resolveCharSpell(spellId,caster){
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     } else if(targetState.blink){
       targetState.blink=false;
-      addFloat(tx,bH*.38-20,'💫 Blinked!','#9988cc',15);
-      spawnParts(tx,bH*.38,'#9988cc',12);
+      addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
+      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
+      flash('#9988cc');
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     } else {
       // Dust trail along charge path
@@ -1207,9 +1208,8 @@ function resolveCharSpell(spellId,caster){
     return;
   } else if(spellId==='blink'){
     casterState.blink=true;
-    addFloat(cx,bH*.33,'💫 Blink!',casterCfg.col,13);
-    spawnParts(cx,bH*.38,'#9988cc',14);
-    spawnParts(cx,bH*.38,'#ffffff',6);
+    addFloat(cx,bH*.33,'💫 Blink!',casterCfg.col,17);
+    spawnParts(cx,bH*.38,'#9988cc',22); spawnParts(cx,bH*.38,'#ffffff',8);
     anim(caster,'shield',700);
   } else if(spellId==='basicattack'){
     if(casterState.invisible>0){
@@ -1236,8 +1236,9 @@ function resolveCharSpell(spellId,caster){
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     } else if(targetState.blink){
       targetState.blink=false;
-      addFloat(tx,bH*.38-20,'💫 Blinked!','#9988cc',15);
-      spawnParts(tx,bH*.38,'#9988cc',12);
+      addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
+      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
+      flash('#9988cc');
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     } else {
       const counterTriggered=!isPhysical&&targetState.counter&&targetState.shield>0;
@@ -1493,8 +1494,9 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
   }
   if(targetState.blink){
     targetState.blink=false;
-    addFloat(tx,bH*.38,'💫 Blinked!','#9988cc',15);
-    spawnParts(tx,bH*.38,'#9988cc',10);
+    addFloat(tx,bH*.38,'💫 Blinked!','#cc99ff',18);
+    spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
+    flash('#9988cc');
     return;
   }
   if(targetState.shield>0){
