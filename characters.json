@@ -89,6 +89,27 @@
       {"id": "frenzy",   "name": "Frenzy",        "icon": "💢", "cost": 0, "costLabel": "15 HP",   "effectLabel": "Attack twice; locked to Feral Strike for 3 turns", "aiHint": "frenzy"}
     ]
   },
+  "skadi": {
+    "name": "SKADI",
+    "title": "The Permafrost",
+    "sprite": "sprites/mage-light.png",
+    "col": "#88ddff",
+    "hp": 88,
+    "startMana": 6,
+    "channelAmt": 5,
+    "dmgMult": 1.0,
+    "iceLanceDmg": 28,
+    "iceLanceFreeze": 0.35,
+    "frostArmorDur": 4,
+    "frostArmorRetaliationDmg": 8,
+    "blizzardDur": 5,
+    "spells": [
+      {"id": "basicattack", "name": "Frost Bolt", "icon": "❄️", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 ice damage"},
+      {"id": "icelance",   "name": "Ice Lance",   "icon": "🧊", "cost": 4, "costLabel": "4 Mana", "effectLabel": "28 damage; 35% chance to freeze 1 turn"},
+      {"id": "frostarmor", "name": "Frost Armor", "icon": "🛡️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "30% dmg reduction for 4 turns; attacker takes 8 damage"},
+      {"id": "blizzard",   "name": "Blizzard",    "icon": "🌨️", "cost": 4, "costLabel": "4 Mana", "effectLabel": "5 dmg/turn × 5T + drains 3 mana/turn + 25% freeze chance"}
+    ]
+  },
   "ponder": {
     "name": "PONDER",
     "title": "The Apprentice",
