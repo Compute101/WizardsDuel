@@ -4,7 +4,7 @@
     "title": "The Stalwart",
     "sprite": "sprites/mage-light.png",
     "col": "#4af0ff",
-    "hp": 115,
+    "hp": 90,
     "startMana": 5,
     "channelAmt": 5,
     "dmgMult": 1.20,
@@ -66,7 +66,7 @@
     "timeDrainTurns": 5,
     "spells": [
       {"id": "basicattack", "name": "Magic Missile", "icon": "✨", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 magic damage"},
-      {"id": "foresight", "name": "Foresight", "icon": "🔮", "cost": 4, "costLabel": "4 Mana", "effectLabel": "Predict and block the next spell"},
+      {"id": "foresight", "name": "Foresight", "icon": "🔮", "cost": 4, "costLabel": "4 Mana", "effectLabel": "Immune to free attacks; absorbs the next paid spell"},
       {"id": "timedrain", "name": "Time Drain", "icon": "⏳", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Slow enemy channel to +2 Mana for 5 turns"},
       {"id": "haste",     "name": "Haste",      "icon": "💨", "cost": 3, "costLabel": "3 Mana", "effectLabel": "25% dodge for 3 turns; acts faster"}
     ]
@@ -102,7 +102,7 @@
       {"id": "basicattack", "name": "Magic Missile", "icon": "✨", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 magic damage"},
       {"id": "vanish",      "name": "Vanish",        "icon": "👻", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Invisible 3 turns; attacks break it"},
       {"id": "manasiphon",  "name": "Mana Siphon",   "icon": "🌀", "cost": 0, "costLabel": "Free",   "effectLabel": "Steal 4 mana (only while invisible; blocked by shield/foresight)", "aiHint": "mana_steal"},
-      {"id": "blink",       "name": "Blink",         "icon": "💫", "cost": 1, "costLabel": "1 Mana", "effectLabel": "Next physical attack against you auto-misses"}
+      {"id": "blink",       "name": "Blink",         "icon": "💫", "cost": 1, "costLabel": "1 Mana", "effectLabel": "Next attack against you auto-misses"}
     ]
   }
 }

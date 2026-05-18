@@ -844,13 +844,8 @@ function resolveCharSpell(spellId,caster){
     spawnParts(cx,bH*.38,'#ffffff',6);
     anim(caster,'shield',700);
   } else if(spellId==='manasiphon'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
     if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
+      addFloat(tx,bH*.33,'🔮 Absorbed!','#ffcc44',13);
       spawnParts(tx,bH*.38,'#ffcc44',14);
       spawnParts(cx,bH*.38,'#b8a0e8',6);
       anim(caster,'cast',600);
@@ -1067,8 +1062,7 @@ function resolveCharSpell(spellId,caster){
     const isPhysical=!!basicSpell.physical;
     if(targetState.resist>0) dmg=Math.round(dmg*0.67);
     if(targetState.foresight){
-      addFloat(tx,bH*.38-20,'🔮 Foreseen!','#ffcc44',15);
-      targetState.foresight=false;
+      addFloat(tx,bH*.38-20,'🔮 Absorbed!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',18);
       spawnParts(tx,bH*.38,casterCfg.col,10);
       spawnParts(tx,bH*.38,'#ffffff',6);
@@ -1081,7 +1075,7 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else if(isPhysical&&targetState.blink){
+    } else if(targetState.blink){
       targetState.blink=false;
       addFloat(tx,bH*.38-20,'💫 Blinked!','#9988cc',15);
       spawnParts(tx,bH*.38,'#9988cc',12);
@@ -1323,8 +1317,7 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
   let dmg=Math.round((basicSpell.dmg||9)*casterCfg.dmgMult);
   if(targetState.resist>0) dmg=Math.round(dmg*0.67);
   if(targetState.foresight){
-    addFloat(tx,bH*.38-20,'🔮 Foreseen!','#ffcc44',15);
-    targetState.foresight=false;
+    addFloat(tx,bH*.38-20,'🔮 Absorbed!','#ffcc44',15);
     spawnParts(tx,bH*.38,'#ffcc44',14);
     if(caster==='p1') anim('p1','cast',600); else anim('p2','cast',600);
     return;
