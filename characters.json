@@ -126,7 +126,7 @@
     "spells": [
       {"id": "basicattack", "name": "Ember",       "icon": "🔥", "cost": 0, "costLabel": "Free",   "dmg": 9, "effectLabel": "Deal ~9 fire damage"},
       {"id": "fireball",    "name": "Fireball",    "icon": "🎱", "cost": 4, "costLabel": "4 Mana", "effectLabel": "10–30 random fire damage"},
-      {"id": "flameshield", "name": "Flame Shield","icon": "🛡️", "cost": 2, "costLabel": "2 Mana", "effectLabel": "5 turns: attacker takes 8–20 random fire damage"},
+      {"id": "flameshield", "name": "Flame Shield","icon": "🛡️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "4 turns: attacker takes 6–12 random fire damage"},
       {"id": "candle",      "name": "Candle",      "icon": "🕯️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "4 turns: opponent catches fire each time they channel"}
     ]
   },
