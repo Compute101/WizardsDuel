@@ -1974,6 +1974,17 @@ function showRetryScreen(){
   const btn=document.getElementById('retry-btn');
   let timeLeft=10;
 
+  // Populate opponent taunt
+  if(p2Cfg && p2Cfg.taunts && p2Cfg.taunts.length){
+    const taunt=p2Cfg.taunts[Math.floor(Math.random()*p2Cfg.taunts.length)];
+    document.getElementById('retry-portrait').src='portraits/'+p2Key+'.png';
+    document.getElementById('retry-portrait').alt=p2Cfg.name;
+    document.getElementById('retry-taunt-text').textContent='“'+taunt+'”';
+    document.getElementById('retry-taunt-attr').textContent='— '+p2Cfg.name+', '+p2Cfg.title;
+    document.getElementById('retry-taunt-attr').style.color=p2Cfg.col||'#f0cc6a';
+    document.getElementById('retry-taunt-bubble').style.borderColor=p2Cfg.col||'#f0cc6a';
+  }
+
   overlay.style.animation='none';
   overlay.offsetHeight; // force reflow to restart CSS animation
   overlay.classList.add('active');

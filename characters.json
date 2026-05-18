@@ -4,6 +4,11 @@
     "title": "The Stalwart",
     "sprite": "sprites/mage-light.png",
     "col": "#4af0ff",
+    "taunts": [
+      "Your spells shattered against my shield like waves on stone. Try again.",
+      "I have endured far worse than you. Come back when you have.",
+      "The stalwart does not fall. Will you prove the same?"
+    ],
     "hp": 90,
     "startMana": 5,
     "channelAmt": 5,
@@ -23,6 +28,11 @@
     "title": "The Relentless",
     "sprite": "sprites/mage-dark.png",
     "col": "#ff4a6e",
+    "taunts": [
+      "Pain is just power you haven't claimed yet. I claimed yours.",
+      "I bled for that victory. Can you match my hunger?",
+      "Relentless. That's the only lesson worth learning. Come back."
+    ],
     "hp": 80,
     "startMana": 7,
     "channelAmt": 5,
@@ -42,6 +52,11 @@
     "title": "The Verdant",
     "sprite": "sprites/mage-green.png",
     "col": "#44cc88",
+    "taunts": [
+      "The forest reclaims the fallen. But even fallen seeds can bloom again.",
+      "You tangled with nature itself. The vines always win.",
+      "My roots run deeper than your courage. Try growing some."
+    ],
     "hp": 92,
     "startMana": 6,
     "channelAmt": 5,
@@ -59,6 +74,11 @@
     "title": "The Radiant",
     "sprite": "sprites/mage-yellow.png",
     "col": "#ffcc44",
+    "taunts": [
+      "I saw your defeat three moves before it happened. I always do.",
+      "Time bends to my will. Your next attempt? Already foreseen.",
+      "You're as predictable as sunrise. Surprise me next time."
+    ],
     "hp": 90,
     "startMana": 6,
     "channelAmt": 5,
@@ -76,6 +96,11 @@
     "title": "The Feral",
     "sprite": "sprites/mage-dark.png",
     "col": "#dd8822",
+    "taunts": [
+      "Hah! You tickled Gnash. Come back and try harder!",
+      "Gnash not done smashing. Where you going? COME BACK.",
+      "Little mage runs away? Gnash will wait. Gnash ALWAYS waits."
+    ],
     "hp": 105,
     "startMana": 5,
     "channelAmt": 4,
@@ -94,6 +119,11 @@
     "title": "The Permafrost",
     "sprite": "sprites/mage-light.png",
     "col": "#88ddff",
+    "taunts": [
+      "The cold is patient. You are not. That is why you lost.",
+      "You froze long before my blizzard reached you.",
+      "The permafrost claims all things eventually. Even stubborn wizards."
+    ],
     "hp": 88,
     "startMana": 6,
     "channelAmt": 5,
@@ -115,6 +145,11 @@
     "title": "The Apprentice",
     "sprite": "sprites/mage-light.png",
     "col": "#9988cc",
+    "taunts": [
+      "I— I won? Oh! Well... don't think I'll go easy on you next time!",
+      "You couldn't find me when I vanished. Try looking harder.",
+      "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
+    ],
     "hp": 85,
     "startMana": 5,
     "channelAmt": 5,
