@@ -726,7 +726,7 @@ function refreshStatusBar(){
   if(gs.p1.vineWhip>0)   tags.push(`<span class="status-tag burn">🌱 ${p1Cfg.name} VINE WHIP (${gs.p1.vineWhip})</span>`);
   if(gs.p1.haste>0)      tags.push(`<span class="status-tag foresight">💨 ${p1Cfg.name} HASTE (${gs.p1.haste})</span>`);
   if(gs.p1.frenzied>0)   tags.push(`<span class="status-tag resist">💢 ${p1Cfg.name} FRENZIED (${gs.p1.frenzied})</span>`);
-  if(gs.p1.blink)        tags.push(`<span class="status-tag invisible">💫 ${p1Cfg.name} BLINK</span>`);
+  if(gs.p1.blink)        tags.push(`<span class="status-tag blink">💫 ${p1Cfg.name} BLINK</span>`);
   if(gs.p1.weakened)     tags.push(`<span class="status-tag weakened">🌀 ${p1Cfg.name} WEAKENED</span>`);
   if(gs.p1.invisible>0)  tags.push(`<span class="status-tag invisible">👻 ${p1Cfg.name} INVISIBLE (${gs.p1.invisible})</span>`);
   if(p2Cfg){
@@ -741,7 +741,7 @@ function refreshStatusBar(){
     if(gs.p2.vineWhip>0)  tags.push(`<span class="status-tag burn">🌱 ${p2Cfg.name} VINE WHIP (${gs.p2.vineWhip})</span>`);
     if(gs.p2.haste>0)     tags.push(`<span class="status-tag foresight">💨 ${p2Cfg.name} HASTE (${gs.p2.haste})</span>`);
     if(gs.p2.frenzied>0)  tags.push(`<span class="status-tag resist">💢 ${p2Cfg.name} FRENZIED (${gs.p2.frenzied})</span>`);
-    if(gs.p2.blink)       tags.push(`<span class="status-tag invisible">💫 ${p2Cfg.name} BLINK</span>`);
+    if(gs.p2.blink)       tags.push(`<span class="status-tag blink">💫 ${p2Cfg.name} BLINK</span>`);
     if(gs.p2.weakened)    tags.push(`<span class="status-tag weakened">🌀 ${p2Cfg.name} WEAKENED</span>`);
     if(gs.p2.invisible>0) tags.push(`<span class="status-tag invisible">👻 ${p2Cfg.name} INVISIBLE (${gs.p2.invisible})</span>`);
   }
@@ -907,7 +907,8 @@ function resolveCharSpell(spellId,caster){
     anim(caster,'shield',700);
   } else if(spellId==='counter'){
     casterState.counter=true;
-    addFloat(cx,bH*.33,'⚡ Counter Ready!','#4af0ff',12);
+    addFloat(cx,bH*.33,'⚡ Counter Ready!','#4af0ff',16);
+    spawnParts(cx,bH*.38,'#4af0ff',16); spawnParts(cx,bH*.38,'#ffffff',6);
     anim(caster,'shield',700);
   } else if(spellId==='empower'){
     casterState.empowered=true;

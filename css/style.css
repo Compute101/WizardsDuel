@@ -562,7 +562,7 @@ body {
 
 /* Status tag types for new specials */
 .status-tag.empower  { color:#ff9944; border:1px solid rgba(255,153,68,0.4); }
-.status-tag.counter  { color:#4af0ff; border:1px solid rgba(74,240,255,0.4); }
+.status-tag.counter  { color:#4af0ff; border:1px solid rgba(74,240,255,0.85); background:rgba(74,240,255,0.12); text-shadow:0 0 8px rgba(74,240,255,0.7); box-shadow:0 0 6px rgba(74,240,255,0.25); }
 .status-tag.ward     { color:#ffcc44; border:1px solid rgba(255,204,68,0.4); }
 .status-tag.weakened  { color:#cc88ff; border:1px solid rgba(204,136,255,0.4); }
 .status-tag.foresight { color:#ffcc44; border:1px solid rgba(255,204,68,0.5); animation:foresight-pulse 1.2s ease-in-out infinite; }
@@ -570,6 +570,7 @@ body {
 .status-tag.regen     { color:#44cc88; border:1px solid rgba(68,204,136,0.4); animation:statusPulse 1.4s ease-in-out infinite; }
 .status-tag.timedrain  { color:#cc88ff; border:1px solid rgba(200,120,255,0.4); animation:foresight-pulse 1s ease-in-out infinite; }
 .status-tag.invisible  { color:#b8a0e8; border:1px solid rgba(184,160,232,0.5); animation:statusPulse 1.6s ease-in-out infinite; }
+.status-tag.blink      { color:#cc99ff; border:1px solid rgba(184,160,232,0.9); background:rgba(140,100,220,0.18); text-shadow:0 0 8px rgba(200,160,255,0.8); box-shadow:0 0 6px rgba(160,100,255,0.3); animation:statusPulse 1.6s ease-in-out infinite; }
 @keyframes foresight-pulse { 0%,100%{opacity:1;} 50%{opacity:0.55;} }
 
 /* New char card hover states */
