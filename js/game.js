@@ -366,12 +366,15 @@ function drawBG_astral(){
   if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
 }
 
+const BG_EMBER_X=[40,100,170,240,320,390,450,70,200,420,130,310];
+const BG_WINTER_STARS=[[30,5],[90,12],[150,7],[220,18],[300,4],[370,15],[440,10],[60,28],[240,22],[410,8],[20,35],[110,3],[180,25],[280,11],[340,20],[400,6],[460,16]];
+
 function drawBG_embers(){
   const g=bx.createLinearGradient(0,0,0,bH);
   g.addColorStop(0,'#0d0500'); g.addColorStop(1,'#1a0a02');
   bx.fillStyle=g; bx.fillRect(0,0,bW,bH);
   const t=Date.now();
-  [[40,80],[100,60],[170,90],[240,70],[320,85],[390,65],[450,75],[70,95],[200,55],[420,88],[130,72],[310,58]].forEach(([ex],i)=>{
+  BG_EMBER_X.forEach((ex,i)=>{
     const rise=((t/1800+i*0.37)%1);
     const y=bH*(0.9-rise*0.8);
     bx.globalAlpha=(rise<0.7?0.9*(1-rise/0.7):0)*Math.abs(Math.sin(t/200+i));
@@ -397,8 +400,7 @@ function drawBG_winter(){
   g.addColorStop(0,'#010820'); g.addColorStop(1,'#030f2a');
   bx.fillStyle=g; bx.fillRect(0,0,bW,bH);
   const t=Date.now();
-  [[30,5],[90,12],[150,7],[220,18],[300,4],[370,15],[440,10],[60,28],[240,22],[410,8],
-   [20,35],[110,3],[180,25],[280,11],[340,20],[400,6],[460,16]].forEach(([sx,sy],i)=>{
+  BG_WINTER_STARS.forEach(([sx,sy],i)=>{
     bx.globalAlpha=0.25+0.5*Math.abs(Math.sin(t/700+i*0.9));
     bx.fillStyle='#ccddff'; bx.fillRect(sx*(bW/480),sy*(bH/250),1.5,1.5);
   });
@@ -469,8 +471,8 @@ let lastFrameTime=0;
 
 function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActive,state){
   bx.save();
+  const t=Date.now();
   if(foresightActive){
-    const t=Date.now();
     const cy=y-sz*.5;
     for(let i=0;i<3;i++){
       const a=t/900+i/3*Math.PI*2;
@@ -480,19 +482,19 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
       bx.fillStyle=`rgba(255,204,68,${pulse})`; bx.fill();
       bx.strokeStyle=`rgba(255,240,160,${pulse*0.8})`; bx.lineWidth=1; bx.stroke();
     }
-    const halo=0.07+0.04*Math.sin(Date.now()/350);
+    const halo=0.07+0.04*Math.sin(t/350);
     bx.beginPath(); bx.arc(x,cy,sz*.8,0,Math.PI*2);
     bx.strokeStyle=`rgba(255,204,68,${halo*5})`; bx.lineWidth=2; bx.stroke();
   }
   if(shielded>0){
     const boosted=state&&state.counter;
-    const gv=0.08+0.05*Math.sin(Date.now()/300);
+    const gv=0.08+0.05*Math.sin(t/300);
     bx.beginPath(); bx.arc(x,y-sz*.5,sz*.75,0,Math.PI*2);
     if(boosted){
       // Gold-cyan blend fill with higher opacity when counter is active
       bx.fillStyle=`rgba(180,240,120,${gv*2.5})`; bx.fill();
       bx.shadowColor='#ffd700'; bx.shadowBlur=18;
-      bx.strokeStyle=`rgba(255,215,0,${0.55+0.35*Math.sin(Date.now()/200)})`; bx.lineWidth=3; bx.stroke();
+      bx.strokeStyle=`rgba(255,215,0,${0.55+0.35*Math.sin(t/200)})`; bx.lineWidth=3; bx.stroke();
       bx.shadowBlur=0;
       // Second inner ring for depth
       bx.beginPath(); bx.arc(x,y-sz*.5,sz*.6,0,Math.PI*2);
@@ -503,7 +505,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
   }
   if(wardActive>0){
-    const t=Date.now();
     const gv=0.06+0.04*Math.sin(t/280);
     bx.save();
     bx.translate(x,y-sz*.5);
@@ -522,7 +523,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   }
   const wy=y-sz*.5; // wizard vertical centre
   if(state&&state.timeDrain>0){
-    const t=Date.now(), period=1400;
+    const period=1400;
     for(let off=0;off<2;off++){
       const phase=((t+off*period/2)%period)/period;
       const r=sz*(0.35+phase*0.75);
@@ -532,7 +533,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
   }
   if(state&&state.counter){
-    const t=Date.now(), rot=-t/420;
+    const rot=-t/420;
     for(let i=0;i<4;i++){
       const a=rot+i/4*Math.PI*2, alpha=0.65+0.30*Math.sin(t/220+i);
       bx.beginPath(); bx.arc(x,wy,sz*.82,a,a+Math.PI*.38);
@@ -542,7 +543,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.shadowBlur=0;
   }
   if(state&&state.empowered){
-    const t=Date.now(), pulse=0.12+0.08*Math.sin(t/150);
+    const pulse=0.12+0.08*Math.sin(t/150);
     bx.beginPath(); bx.arc(x,wy,sz*.82,0,Math.PI*2);
     bx.strokeStyle=`rgba(${hexToRgb(col)},${pulse*3.5})`; bx.lineWidth=2.5;
     bx.shadowColor=col; bx.shadowBlur=10; bx.stroke(); bx.shadowBlur=0;
@@ -555,7 +556,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.globalAlpha=1; bx.shadowBlur=0;
   }
   if(state&&state.regen){
-    const t=Date.now();
     bx.globalAlpha=0.07+0.04*Math.sin(t/700);
     bx.fillStyle='#44cc88'; bx.beginPath(); bx.arc(x,wy,sz*.7,0,Math.PI*2); bx.fill(); bx.globalAlpha=1;
     for(let i=0;i<3;i++){
@@ -569,7 +569,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.globalAlpha=1; bx.shadowBlur=0;
   }
   if(state&&state.frozen>0){
-    const t=Date.now();
     bx.globalAlpha=0.18+0.07*Math.sin(t/350); bx.fillStyle='#88ddff';
     bx.beginPath(); bx.arc(x,wy,sz*.65,0,Math.PI*2); bx.fill(); bx.globalAlpha=1;
     bx.save(); bx.translate(x,y);
@@ -580,11 +579,10 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
       bx.lineTo(Math.cos(a)*sz*.38,Math.sin(a)*sz*.25); bx.stroke();
     }
     bx.restore();
-    bx.strokeStyle=`rgba(136,221,255,${0.55+0.2*Math.sin(Date.now()/400)})`; bx.lineWidth=1.5;
+    bx.strokeStyle=`rgba(136,221,255,${0.55+0.2*Math.sin(t/400)})`; bx.lineWidth=1.5;
     bx.beginPath(); bx.ellipse(x,y,sz*.35,sz*.08,0,0,Math.PI*2); bx.stroke();
   }
   if(state&&state.candle>0){
-    const t=Date.now();
     bx.globalAlpha=0.07+0.04*Math.sin(t/250); bx.fillStyle='#ff6600';
     bx.beginPath(); bx.arc(x,wy,sz*.65,0,Math.PI*2); bx.fill(); bx.globalAlpha=1;
     const fx=x+sz*.18, fy=wy-sz*.58, flicker=Math.sin(t/110+1.5)*sz*.04;
@@ -596,7 +594,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.fill(); bx.globalAlpha=1; bx.shadowBlur=0;
   }
   if(state&&state.blizzard>0){
-    const t=Date.now();
     for(let i=0;i<6;i++){
       const a=t/700+i/6*Math.PI*2, r=sz*(0.62+0.1*Math.sin(t/400+i));
       bx.globalAlpha=0.5+0.25*Math.sin(t/350+i*1.3);
@@ -606,7 +603,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.globalAlpha=1; bx.shadowBlur=0;
   }
   if(state&&state.burn>0){
-    const t=Date.now();
     bx.globalAlpha=0.1+0.06*Math.sin(t/180); bx.fillStyle='#ff4400';
     bx.beginPath(); bx.arc(x,wy,sz*.6,0,Math.PI*2); bx.fill(); bx.globalAlpha=1;
     for(let i=0;i<4;i++){
@@ -620,7 +616,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.globalAlpha=1; bx.shadowBlur=0;
   }
   if(state&&state.resist>0){
-    const t=Date.now();
     bx.save(); bx.translate(x,wy);
     bx.globalAlpha=0.45+0.1*Math.sin(t/350); bx.strokeStyle='#cc3300'; bx.lineWidth=2.5;
     bx.shadowColor='#ff4400'; bx.shadowBlur=5;
@@ -633,7 +628,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.beginPath(); bx.ellipse(x,y,sz*.38,sz*.09,0,0,Math.PI*2); bx.stroke();
   }
   if(state&&state.flameShield>0){
-    const t=Date.now();
     for(let i=0;i<5;i++){
       const a=t/550+i/5*Math.PI*2, r=sz*(0.68+0.06*Math.sin(t/280+i));
       bx.globalAlpha=0.55+0.25*Math.sin(t/260+i*1.4);
@@ -643,7 +637,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.globalAlpha=1; bx.shadowBlur=0;
   }
   if(state&&state.frostArmor>0){
-    const t=Date.now();
     bx.save(); bx.translate(x,wy);
     bx.rotate(-t/2400);
     bx.globalAlpha=0.55+0.15*Math.sin(t/280); bx.strokeStyle='#88ddff'; bx.lineWidth=1.8;
@@ -658,7 +651,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.shadowBlur=0; bx.globalAlpha=1; bx.restore();
   }
   if(state&&state.invisible>0){
-    const t=Date.now();
     const gv=0.18+0.12*Math.sin(t/280);
     bx.beginPath(); bx.arc(x,wy,sz*.78,0,Math.PI*2);
     bx.strokeStyle=`rgba(180,160,232,${gv*3})`; bx.lineWidth=1.5;
@@ -680,8 +672,8 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     const srcX=frame*cfg.frameW, srcY=row*cfg.frameH;
     const scale=sz/cfg.frameH, dw=cfg.frameW*scale, dh=cfg.frameH*scale;
     const lift=animName==='cast'?-sz*.06:0;
-    const shake=animName==='hit'?Math.sin(Date.now()/60)*sz*.03:0;
-    const bob=animName==='idle'?Math.sin(Date.now()/500+x)*sz*.015:0;
+    const shake=animName==='hit'?Math.sin(t/60)*sz*.03:0;
+    const bob=animName==='idle'?Math.sin(t/500+x)*sz*.015:0;
     const dy=lift+shake+bob;
     if(flip){
       bx.scale(-1,1);
@@ -691,9 +683,9 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
   } else {
     if(flip){bx.scale(-1,1); x=-x;}
-    const bob=animName==='idle'?Math.sin(Date.now()/500+x)*.015*sz:0;
+    const bob=animName==='idle'?Math.sin(t/500+x)*.015*sz:0;
     const lift=animName==='cast'?-sz*.06:0;
-    const shake=animName==='hit'?Math.sin(Date.now()/60)*.03*sz:0;
+    const shake=animName==='hit'?Math.sin(t/60)*.03*sz:0;
     const dy=bob+lift+shake;
     bx.fillStyle=col;
     bx.beginPath(); bx.moveTo(x-sz*.33,y+dy); bx.lineTo(x-sz*.27,y-sz*.48+dy);
@@ -708,7 +700,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     const sfx=x+sz*.3, stopY=y-sz*.88+dy+(animName==='cast'?-sz*.07:0);
     bx.strokeStyle='#8B6914'; bx.lineWidth=2.5;
     bx.beginPath(); bx.moveTo(sfx,y+dy); bx.lineTo(sfx,stopY); bx.stroke();
-    const op=.5+.5*Math.sin(Date.now()/400);
+    const op=.5+.5*Math.sin(t/400);
     bx.fillStyle=animName==='cast'?`rgba(255,220,50,${.8+op*.2})`:col;
     bx.shadowColor=animName==='cast'?'#ffff88':col; bx.shadowBlur=animName==='cast'?18:7;
     bx.beginPath(); bx.arc(sfx,stopY,sz*.09,0,Math.PI*2); bx.fill(); bx.shadowBlur=0;
@@ -986,16 +978,7 @@ function act(type){
       gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+p1Cfg.channelAmt);
       addFloat(bW*.22,bH*.38,'+'+p1Cfg.channelAmt+' Mana','#88aaff',13);
     }
-    if(gs.p1.candle>0){
-      gs.p1.burn=BURN_ROUNDS;
-      addFloat(bW*.22,bH*.38,'🕯️ Candle!','#ff6622',12);
-      for(let i=0;i<8;i++){
-        const a=-Math.PI/2+(-0.7+Math.random()*1.4),sp=1.5+Math.random()*2.5;
-        gs.parts.push({x:bW*.22+(Math.random()-.5)*bH*.04,y:bH*.38,
-          col:i%2?'#ff6622':'#ff9900',vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
-          sz:1.5+Math.random()*2.5,life:1,dec:.02,noGrav:true});
-      }
-    }
+    if(gs.p1.candle>0) triggerCandleBurn(gs.p1,bW*.22);
     anim('p1','cast',700); endMyTurn(); return;
   }
 
@@ -1232,18 +1215,8 @@ function resolveCharSpell(spellId,caster){
         }
       }
       targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0){
-        const retDmg=targetCfg.frostArmorRetaliationDmg||8;
-        casterState.hp=Math.max(0,casterState.hp-retDmg);
-        addFloat(cx,bH*.33,'❄️ Frost! −'+retDmg,'#88ddff',12);
-        spawnParts(cx,bH*.38,'#88ddff',8);
-      }
-      if(targetState.flameShield>0&&dmg>0){
-        const fireDmg=8+Math.floor(Math.random()*13);
-        casterState.hp=Math.max(0,casterState.hp-fireDmg);
-        addFloat(cx,bH*.33,'🔥 Flame! −'+fireDmg,'#ff6622',12);
-        spawnParts(cx,bH*.38,'#ff6600',8);
-      }
+      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
       spawnParts(tx,bH*.38,casterCfg.col,22);
       addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,22);
       flash(casterCfg.col);
@@ -1299,12 +1272,7 @@ function resolveCharSpell(spellId,caster){
         }
       }
       targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0){
-        const retDmg=targetCfg.frostArmorRetaliationDmg||8;
-        casterState.hp=Math.max(0,casterState.hp-retDmg);
-        addFloat(cx,bH*.33,'❄️ Frost! −'+retDmg,'#88ddff',12);
-        spawnParts(cx,bH*.38,'#88ddff',8);
-      }
+      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
       const healAmt=Math.max(0,Math.round(drainBase*0.45));
       casterState.hp=Math.min(casterState.maxHp,casterState.hp+healAmt);
       spawnBeam(cx,bH*.38,tx,bH*.38,'#cc1111');
@@ -1369,9 +1337,7 @@ function resolveCharSpell(spellId,caster){
       if(caster==='p1'){
         endMyTurn();
       } else {
-        if(casterState.timeDrain>0) casterState.timeDrain--;
-        if(casterState.resist>0)   casterState.resist--;
-        if(casterState.frenzied>0) casterState.frenzied--;
+        tickStatuses(casterState);
         setTimeout(finishAI,900);
       }
     },700);
@@ -1422,18 +1388,8 @@ function resolveCharSpell(spellId,caster){
         }
       }
       targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0){
-        const retDmg=targetCfg.frostArmorRetaliationDmg||8;
-        casterState.hp=Math.max(0,casterState.hp-retDmg);
-        addFloat(cx,bH*.33,'❄️ Frost! −'+retDmg,'#88ddff',12);
-        spawnParts(cx,bH*.38,'#88ddff',8);
-      }
-      if(targetState.flameShield>0&&dmg>0){
-        const fireDmg=8+Math.floor(Math.random()*13);
-        casterState.hp=Math.max(0,casterState.hp-fireDmg);
-        addFloat(cx,bH*.33,'🔥 Flame! −'+fireDmg,'#ff6622',12);
-        spawnParts(cx,bH*.38,'#ff6600',8);
-      }
+      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
       for(let i=0;i<18;i++){
         const a=i/18*Math.PI*2;
         gs.parts.push({x:tx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#ff6600':'#ffaa00',
@@ -1522,12 +1478,7 @@ function resolveCharSpell(spellId,caster){
         }
       }
       targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0){
-        const retDmg=targetCfg.frostArmorRetaliationDmg||8;
-        casterState.hp=Math.max(0,casterState.hp-retDmg);
-        addFloat(cx,bH*.33,'❄️ Frost! −'+retDmg,'#88ddff',12);
-        spawnParts(cx,bH*.38,'#88ddff',8);
-      }
+      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
       for(let i=0;i<16;i++){
         const a=i/16*Math.PI*2;
         gs.parts.push({x:tx+Math.cos(a)*bH*.05,y:bH*.38+Math.sin(a)*bH*.03,col:'#88ddff',
@@ -1636,18 +1587,8 @@ function resolveCharSpell(spellId,caster){
         checkWin(); if(!battleRunning) return;
       }
       targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0){
-        const retDmg=targetCfg.frostArmorRetaliationDmg||8;
-        casterState.hp=Math.max(0,casterState.hp-retDmg);
-        addFloat(cx,bH*.33,'❄️ Frost! −'+retDmg,'#88ddff',12);
-        spawnParts(cx,bH*.38,'#88ddff',8);
-      }
-      if(targetState.flameShield>0&&dmg>0){
-        const fireDmg=8+Math.floor(Math.random()*13);
-        casterState.hp=Math.max(0,casterState.hp-fireDmg);
-        addFloat(cx,bH*.33,'🔥 Flame! −'+fireDmg,'#ff6622',12);
-        spawnParts(cx,bH*.38,'#ff6600',8);
-      }
+      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
       spawnParts(tx,bH*.38,casterCfg.col,14);
       addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
       flash(casterCfg.col);
@@ -1665,14 +1606,7 @@ function resolveCharSpell(spellId,caster){
       casterState.shield--;
       if(casterState.shield<=0) casterState.shieldHp=0;
     }
-    if(casterState.timeDrain>0)   casterState.timeDrain--;
-    if(casterState.resist>0)      casterState.resist--;
-    if(casterState.ward>0)        casterState.ward--;
-    if(casterState.haste>0)       casterState.haste--;
-    if(casterState.frenzied>0)    casterState.frenzied--;
-    if(casterState.frostArmor>0)  casterState.frostArmor--;
-    if(casterState.flameShield>0) casterState.flameShield--;
-    if(casterState.candle>0)      casterState.candle--;
+    tickStatuses(casterState);
     setTimeout(finishAI,900);
   }
 }
@@ -1775,20 +1709,9 @@ function castSpell(spell,target,tx,ty,caster){
   }
 
   targetState.hp=Math.max(0,targetState.hp-dmg);
-  if(targetState.frostArmor>0&&dmg>0){
-    const retDmg=targetCfg.frostArmorRetaliationDmg||8;
-    const rx=caster==='p1'?bW*.22:bW*.78;
-    casterState.hp=Math.max(0,casterState.hp-retDmg);
-    addFloat(rx,bH*.33,'❄️ Frost! −'+retDmg,'#88ddff',12);
-    spawnParts(rx,bH*.38,'#88ddff',8);
-  }
-  if(targetState.flameShield>0&&dmg>0){
-    const fireDmg=8+Math.floor(Math.random()*13);
-    const rx=caster==='p1'?bW*.22:bW*.78;
-    casterState.hp=Math.max(0,casterState.hp-fireDmg);
-    addFloat(rx,bH*.33,'🔥 Flame! −'+fireDmg,'#ff6622',12);
-    spawnParts(rx,bH*.38,'#ff6600',8);
-  }
+  const rx=caster==='p1'?bW*.22:bW*.78;
+  if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,rx);
+  if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,rx);
   spawnParts(tx,ty,spell.col,impactCount);
   addFloat(tx,ty,'-'+dmg,spell.col,22);
   flash(spell.col);
@@ -1889,6 +1812,36 @@ function processBlizzard(target,tx,ty){
   if(Math.random()<0.25&&target.frozen<=0) target.frozen=1;
 }
 
+const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle'];
+function tickStatuses(state){
+  STATUS_TIMERS.forEach(k=>{ if(state[k]>0) state[k]--; });
+}
+
+function triggerCandleBurn(state,cx){
+  state.burn=BURN_ROUNDS;
+  addFloat(cx,bH*.38,'🕯️ Candle!','#ff6622',12);
+  for(let i=0;i<8;i++){
+    const a=-Math.PI/2+(-0.7+Math.random()*1.4),sp=1.5+Math.random()*2.5;
+    gs.parts.push({x:cx+(Math.random()-.5)*bH*.04,y:bH*.38,
+      col:i%2?'#ff6622':'#ff9900',vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+      sz:1.5+Math.random()*2.5,life:1,dec:.02,noGrav:true});
+  }
+}
+
+function applyFrostArmorRetaliation(casterState,targetCfg,cx){
+  const retDmg=targetCfg.frostArmorRetaliationDmg||8;
+  casterState.hp=Math.max(0,casterState.hp-retDmg);
+  addFloat(cx,bH*.33,'❄️ Frost! −'+retDmg,'#88ddff',12);
+  spawnParts(cx,bH*.38,'#88ddff',8);
+}
+
+function applyFlameShieldRetaliation(casterState,cx){
+  const fireDmg=8+Math.floor(Math.random()*13);
+  casterState.hp=Math.max(0,casterState.hp-fireDmg);
+  addFloat(cx,bH*.33,'🔥 Flame! −'+fireDmg,'#ff6622',12);
+  spawnParts(cx,bH*.38,'#ff6600',8);
+}
+
 function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
   const basicSpell=casterCfg.spells.find(s=>s.id==='basicattack');
   let dmg=Math.round((basicSpell.dmg||9)*casterCfg.dmgMult);
@@ -1930,18 +1883,8 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
     }
   }
   targetState.hp=Math.max(0,targetState.hp-dmg);
-  if(targetState.frostArmor>0&&dmg>0){
-    const retDmg=targetCfg.frostArmorRetaliationDmg||8;
-    casterState.hp=Math.max(0,casterState.hp-retDmg);
-    addFloat(cx,bH*.33,'❄️ Frost! −'+retDmg,'#88ddff',12);
-    spawnParts(cx,bH*.38,'#88ddff',8);
-  }
-  if(targetState.flameShield>0&&dmg>0){
-    const fireDmg=8+Math.floor(Math.random()*13);
-    casterState.hp=Math.max(0,casterState.hp-fireDmg);
-    addFloat(cx,bH*.33,'🔥 Flame! −'+fireDmg,'#ff6622',12);
-    spawnParts(cx,bH*.38,'#ff6600',8);
-  }
+  if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+  if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
   spawnParts(tx,bH*.38,casterCfg.col,14);
   addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
   flash(casterCfg.col);
@@ -1960,14 +1903,7 @@ function endMyTurn(skipShieldDecrement=false){
     gs.p1.shield--;
     if(gs.p1.shield<=0) gs.p1.shieldHp=0;
   }
-  if(gs.p1.timeDrain>0)  gs.p1.timeDrain--;
-  if(gs.p1.resist>0)     gs.p1.resist--;
-  if(gs.p1.ward>0)       gs.p1.ward--;
-  if(gs.p1.haste>0)      gs.p1.haste--;
-  if(gs.p1.frenzied>0)   gs.p1.frenzied--;
-  if(gs.p1.frostArmor>0)  gs.p1.frostArmor--;
-  if(gs.p1.flameShield>0) gs.p1.flameShield--;
-  if(gs.p1.candle>0)      gs.p1.candle--;
+  tickStatuses(gs.p1);
   gs.round++;
   if(aiTid) clearTimeout(aiTid);
   aiTid=setTimeout(doAI, gs.p2&&gs.p2.haste>0 ? 400 : 1400);
@@ -2064,33 +2000,17 @@ function doAI(){
     if(ai.timeDrain>0){
       ai.mana=Math.min(MAX_MANA,ai.mana+2);
       addFloat(bW*.78,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
-      ai.timeDrain--;
     } else {
       ai.mana=Math.min(MAX_MANA,ai.mana+p2Cfg.channelAmt);
       addFloat(bW*.78,bH*.38,'+'+p2Cfg.channelAmt+' Mana','#ff8888',13);
     }
-    if(ai.candle>0){
-      ai.burn=BURN_ROUNDS;
-      addFloat(bW*.78,bH*.38,'🕯️ Candle!','#ff6622',12);
-      for(let i=0;i<8;i++){
-        const a=-Math.PI/2+(-0.7+Math.random()*1.4),sp=1.5+Math.random()*2.5;
-        gs.parts.push({x:bW*.78+(Math.random()-.5)*bH*.04,y:bH*.38,
-          col:i%2?'#ff6622':'#ff9900',vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
-          sz:1.5+Math.random()*2.5,life:1,dec:.02,noGrav:true});
-      }
-    }
+    if(ai.candle>0) triggerCandleBurn(ai,bW*.78);
     anim('p2','cast',700);
     if(ai.shield>0){
       ai.shield--;
       if(ai.shield<=0) ai.shieldHp=0;
     }
-    if(ai.resist>0)      ai.resist--;
-    if(ai.ward>0)        ai.ward--;
-    if(ai.haste>0)       ai.haste--;
-    if(ai.frenzied>0)    ai.frenzied--;
-    if(ai.frostArmor>0)  ai.frostArmor--;
-    if(ai.flameShield>0) ai.flameShield--;
-    if(ai.candle>0)      ai.candle--;
+    tickStatuses(ai);
     finishAI();
     return;
   }
@@ -2106,14 +2026,7 @@ function doAI(){
   anim('p2','cast',800);
   setTimeout(()=>{
     if(!battleRunning) return;
-    if(ai.timeDrain>0)   ai.timeDrain--;
-    if(ai.resist>0)      ai.resist--;
-    if(ai.ward>0)        ai.ward--;
-    if(ai.haste>0)       ai.haste--;
-    if(ai.frenzied>0)    ai.frenzied--;
-    if(ai.frostArmor>0)  ai.frostArmor--;
-    if(ai.flameShield>0) ai.flameShield--;
-    if(ai.candle>0)      ai.candle--;
+    tickStatuses(ai);
     if(Math.random()<0.8){
       ai.mana-=chosen.cost;
       spawnProj(bW*.78,bH*.38,bW*.22,bH*.38,chosen.element,chosen.col,()=>{
