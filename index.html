@@ -22,6 +22,7 @@
       <button class="diff-btn" data-diff="hard">Hard</button>
     </div>
     <button class="btn" id="btn-start">⚔ Begin Duel</button>
+    <button class="btn btn-2p" id="btn-2player">⚔ 2 Player Duel</button>
     <button class="btn" id="btn-help">📜 How to Play</button>
     <div class="hint">CAST SPELLS · RAISE SHIELDS · SOLVE MAZES<br>DEFEAT YOUR RIVAL WIZARD</div>
     <div style="position:absolute;bottom:12px;right:16px;font-size:10px;color:rgba(201,168,76,0.4);letter-spacing:1px;">v0.8</div>
@@ -31,6 +32,7 @@
   <div id="char-screen" class="screen">
     <div class="char-heading">Choose Your Wizard</div>
     <div class="char-sub">★ Tap a portrait to learn more ★</div>
+    <div id="char-player-label" class="char-player-label" style="display:none;"></div>
     <div class="char-cards">
       <div class="char-card" id="pick-eldrad">
         <img class="char-portrait" src="portraits/eldrad.png" alt="Eldrin">
@@ -190,6 +192,18 @@
         </div>
       </div>
       <button class="btn" id="btn-closehelp" style="margin-top:20px;width:100%;">Got It ✓</button>
+    </div>
+  </div>
+
+  <!-- HANDOFF OVERLAY (2P mode) -->
+  <div id="handoff-overlay">
+    <div id="handoff-box">
+      <div id="handoff-player-num">Player 2</div>
+      <img id="handoff-portrait" src="" alt="" class="handoff-portrait">
+      <div id="handoff-char-name"></div>
+      <div id="handoff-sub">Pass the phone · tap when ready</div>
+      <div id="handoff-match-info"></div>
+      <button class="btn" id="handoff-btn">✓ I'm Ready!</button>
     </div>
   </div>
 
