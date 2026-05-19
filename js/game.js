@@ -88,11 +88,11 @@ function newState(){
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0},
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0},
     p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0},
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[], projs:[], beams:[],
@@ -858,7 +858,22 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
     bx.globalAlpha=1;
   }
+  if(state&&state.blink>0){
+    const wy2=y-sz*.5;
+    for(let off=0;off<2;off++){
+      const phase=((t+off*700)%1400)/1400;
+      const r=sz*(0.55+phase*0.35);
+      const alpha=(1-phase)*0.5;
+      bx.beginPath(); bx.arc(x,wy2,r,0,Math.PI*2);
+      bx.strokeStyle=`rgba(180,140,255,${alpha})`; bx.lineWidth=1.5; bx.stroke();
+    }
+    const gv=0.06+0.04*Math.sin(t/250);
+    bx.beginPath(); bx.arc(x,y-sz*.5,sz*.72,0,Math.PI*2);
+    bx.strokeStyle=`rgba(200,160,255,${gv*4})`; bx.lineWidth=2;
+    bx.shadowColor='#cc99ff'; bx.shadowBlur=8; bx.stroke(); bx.shadowBlur=0;
+  }
   if(state&&state.invisible>0) bx.globalAlpha=0.35;
+  else if(state&&state.blink>0) bx.globalAlpha=0.3+0.7*(0.5+0.5*Math.sin(t/350));
   const img=sprites[who];
   if(img&&spriteStatus[who]==='ready'){
     const cfg=SPRITE_CFG;
@@ -1039,7 +1054,7 @@ function refreshStatusBar(){
   if(gs.p1.vineWhip>0)   tags.push(`<span class="status-tag burn">🌱 ${p1Cfg.name} VINE WHIP (${gs.p1.vineWhip})</span>`);
   if(gs.p1.haste>0)      tags.push(`<span class="status-tag foresight">💨 ${p1Cfg.name} HASTE (${gs.p1.haste})</span>`);
   if(gs.p1.frenzied>0)   tags.push(`<span class="status-tag resist">💢 ${p1Cfg.name} FRENZIED (${gs.p1.frenzied})</span>`);
-  if(gs.p1.blink)        tags.push(`<span class="status-tag blink">💫 ${p1Cfg.name} BLINK</span>`);
+  if(gs.p1.blink>0)      tags.push(`<span class="status-tag blink">💫 ${p1Cfg.name} BLINK (${gs.p1.blink})</span>`);
   if(gs.p1.weakened)     tags.push(`<span class="status-tag weakened">🌀 ${p1Cfg.name} WEAKENED</span>`);
   if(gs.p1.invisible>0)  tags.push(`<span class="status-tag invisible">👻 ${p1Cfg.name} INVISIBLE (${gs.p1.invisible})</span>`);
   if(gs.p1.frostArmor>0)  tags.push(`<span class="status-tag freeze">🛡️ ${p1Cfg.name} FROST ARMOR (${gs.p1.frostArmor})</span>`);
@@ -1063,7 +1078,7 @@ function refreshStatusBar(){
     if(gs.p2.vineWhip>0)  tags.push(`<span class="status-tag burn">🌱 ${p2Cfg.name} VINE WHIP (${gs.p2.vineWhip})</span>`);
     if(gs.p2.haste>0)     tags.push(`<span class="status-tag foresight">💨 ${p2Cfg.name} HASTE (${gs.p2.haste})</span>`);
     if(gs.p2.frenzied>0)  tags.push(`<span class="status-tag resist">💢 ${p2Cfg.name} FRENZIED (${gs.p2.frenzied})</span>`);
-    if(gs.p2.blink)       tags.push(`<span class="status-tag blink">💫 ${p2Cfg.name} BLINK</span>`);
+    if(gs.p2.blink>0)     tags.push(`<span class="status-tag blink">💫 ${p2Cfg.name} BLINK (${gs.p2.blink})</span>`);
     if(gs.p2.weakened)    tags.push(`<span class="status-tag weakened">🌀 ${p2Cfg.name} WEAKENED</span>`);
     if(gs.p2.invisible>0) tags.push(`<span class="status-tag invisible">👻 ${p2Cfg.name} INVISIBLE (${gs.p2.invisible})</span>`);
     if(gs.p2.frostArmor>0)  tags.push(`<span class="status-tag freeze">🛡️ ${p2Cfg.name} FROST ARMOR (${gs.p2.frostArmor})</span>`);
@@ -1172,7 +1187,7 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='vinewhip')   return targetState.vineWhip>0;
   if(spellId==='haste')      return casterState.haste>0;
   if(spellId==='frenzy')     return casterState.frenzied>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
-  if(spellId==='blink')      return casterState.blink;
+  if(spellId==='blink')      return casterState.blink>0;
   if(spellId==='icelance')    return false;
   if(spellId==='frostarmor')  return casterState.frostArmor>0;
   if(spellId==='blizzard')    return targetState.blizzard>0;
@@ -1447,8 +1462,7 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else if(targetState.blink){
-      targetState.blink=false;
+    } else if(targetState.blink>0&&Math.random()<0.5){
       addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
       spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
       flash('#9988cc');
@@ -1609,8 +1623,8 @@ function resolveCharSpell(spellId,caster){
     },700);
     return;
   } else if(spellId==='blink'){
-    casterState.blink=true;
-    addFloat(cx,bH*.33,'💫 Blink!',casterCfg.col,17);
+    casterState.blink=3;
+    addFloat(cx,bH*.33,'💫 Blink! (3T)',casterCfg.col,17);
     spawnParts(cx,bH*.38,'#9988cc',22); spawnParts(cx,bH*.38,'#ffffff',8);
     anim(caster,'shield',700);
   } else if(spellId==='fireball'){
@@ -1633,8 +1647,7 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
-    } else if(targetState.blink){
-      targetState.blink=false;
+    } else if(targetState.blink>0&&Math.random()<0.5){
       addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
       spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
       flash('#9988cc'); anim(caster,'cast',600);
@@ -1723,8 +1736,7 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
-    } else if(targetState.blink){
-      targetState.blink=false;
+    } else if(targetState.blink>0&&Math.random()<0.5){
       addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
       spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
       flash('#9988cc');
@@ -1829,8 +1841,7 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
-    } else if(targetState.blink){
-      targetState.blink=false;
+    } else if(targetState.blink>0&&Math.random()<0.5){
       addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
       spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
       flash('#9988cc'); anim(caster,'cast',600);
@@ -1979,8 +1990,7 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
-    } else if(targetState.blink){
-      targetState.blink=false;
+    } else if(targetState.blink>0&&Math.random()<0.5){
       addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
       spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
       flash('#9988cc'); anim(caster,'cast',600);
@@ -2034,8 +2044,7 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else if(targetState.blink){
-      targetState.blink=false;
+    } else if(targetState.blink>0&&Math.random()<0.5){
       addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
       spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
       flash('#9988cc');
@@ -2304,7 +2313,7 @@ function processBlizzard(target,tx,ty){
   if(Math.random()<0.15&&target.frozen<=0) target.frozen=1;
 }
 
-const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption'];
+const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink'];
 function tickStatuses(state){
   STATUS_TIMERS.forEach(k=>{ if(state[k]>0) state[k]--; });
 }
@@ -2366,8 +2375,7 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
     spawnParts(tx,bH*.38,'#ffcc44',10);
     return;
   }
-  if(targetState.blink){
-    targetState.blink=false;
+  if(targetState.blink>0&&Math.random()<0.5){
     addFloat(tx,bH*.38,'💫 Blinked!','#cc99ff',18);
     spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
     flash('#9988cc');
