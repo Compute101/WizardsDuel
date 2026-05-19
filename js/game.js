@@ -2302,7 +2302,7 @@ function processVineWhip(target,tx,ty){
 function processBlizzard(target,tx,ty){
   if(!target.blizzard||target.blizzard<=0) return;
   target.hp=Math.max(0,target.hp-5);
-  const drained=Math.min(3,target.mana);
+  const drained=Math.min(2,target.mana);
   target.mana=Math.max(0,target.mana-drained);
   target.blizzard--;
   for(let i=0;i<10;i++){
@@ -2312,7 +2312,7 @@ function processBlizzard(target,tx,ty){
   }
   addFloat(tx,ty,'❄️ -5','#88ddff',13);
   if(drained>0) addFloat(tx,ty+22,'−'+drained+' Mana','#88ddff',11);
-  if(Math.random()<0.25&&target.frozen<=0) target.frozen=1;
+  if(Math.random()<0.15&&target.frozen<=0) target.frozen=1;
 }
 
 const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption'];
