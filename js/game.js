@@ -54,6 +54,10 @@ const CHAR_DISPLAY={
     stats:[['❤ HP','88'],['💛 Heal','4 mana → instantly restore 40 HP'],['✨ Purge','2 mana → remove all active debuffs'],['☀️ Radiant','3 mana → 12 holy damage']],
     flavour:'Faith is the only shield that never breaks.'
   },
+  mordant:{
+    stats:[['❤ HP','82'],['💀 Agony','3 mana → 12 dmg on any non-channel action / 4T'],['🔇 Silence','2 mana → 45% spell failure / 4T'],['☠️ Corruption','3 mana → healing converts to damage / 3T']],
+    flavour:'The hex is already written. You just haven\'t felt it yet.'
+  },
   ponder:{
     stats:[['❤ HP','85'],['👻 Vanish','Invisible 3T'],['🌀 Siphon','Steal 4 mana'],['💫 Blink','Next hit auto-misses']],
     flavour:"Young but fierce — vanish from sight and plunder your foe's magic."
@@ -84,11 +88,11 @@ function newState(){
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0},
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0},
     p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0},
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:false, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[], projs:[], beams:[],
@@ -188,7 +192,7 @@ function resizeBC(){
 function drawBG(){
   ({eldrad:drawBG_moonlight,mal:drawBG_hellfire,sylvara:drawBG_forest,
     aurelia:drawBG_dawn,gnash:drawBG_storm,ponder:drawBG_astral,
-    skadi:drawBG_winter,emberic:drawBG_embers,zacharius:drawBG_arc,mary:drawBG_holy}[p2Key]||drawBG_moonlight)();
+    skadi:drawBG_winter,emberic:drawBG_embers,zacharius:drawBG_arc,mary:drawBG_holy,mordant:drawBG_abyss}[p2Key]||drawBG_moonlight)();
 }
 
 function hexToRgb(hex){
@@ -491,6 +495,41 @@ function drawBG_arc(){
   if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
 }
 
+function drawBG_abyss(){
+  const t=Date.now();
+  // Dark void with purple depth
+  const sg=bx.createLinearGradient(0,0,0,bH);
+  sg.addColorStop(0,'#080010'); sg.addColorStop(1,'#100018');
+  bx.fillStyle=sg; bx.fillRect(0,0,bW,bH);
+  // Drifting skull-like dark clouds
+  [[0.2,0.15],[0.55,0.10],[0.8,0.20],[0.4,0.25]].forEach(([cx2,cy2],i)=>{
+    bx.globalAlpha=0.08+0.04*Math.sin(t/1100+i);
+    bx.fillStyle='#330044';
+    bx.beginPath(); bx.ellipse(bW*cx2+Math.sin(t/4000+i)*bW*0.02,bH*cy2,bW*0.13,bH*0.055,0,0,Math.PI*2); bx.fill();
+  });
+  bx.globalAlpha=1;
+  // Floating dark motes drifting upward
+  const seed=Math.floor(t/5000);
+  for(let i=0;i<14;i++){
+    const px=((seed*19+i*41)%100)/100*bW;
+    const drift=((t/1800+i*0.7)%1)*bH*0.6;
+    const py=bH*0.6-drift;
+    bx.globalAlpha=(0.3+0.2*Math.sin(t/500+i))*0.55;
+    bx.fillStyle=i%3===0?'#9944cc':i%3===1?'#440066':'#661199';
+    bx.shadowColor=bx.fillStyle; bx.shadowBlur=5;
+    bx.beginPath(); bx.arc(px,py,1.2,0,Math.PI*2); bx.fill();
+  }
+  bx.globalAlpha=1; bx.shadowBlur=0;
+  // Purple ground with hex-crack glow
+  const gg=bx.createLinearGradient(0,bH*.68,0,bH);
+  gg.addColorStop(0,'#12001a'); gg.addColorStop(1,'#080010');
+  bx.fillStyle=gg; bx.fillRect(0,bH*.68,bW,bH*.32);
+  bx.strokeStyle=`rgba(153,68,204,${0.22+0.1*Math.sin(t/700)})`; bx.lineWidth=1;
+  bx.beginPath(); bx.moveTo(0,bH*.68); bx.lineTo(bW,bH*.68); bx.stroke();
+  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
+  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+}
+
 function drawBG_holy(){
   const t=Date.now();
   // Dark cathedral sky
@@ -775,6 +814,37 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.strokeStyle=`rgba(170,255,68,${0.35+0.15*Math.sin(t/180)})`; bx.lineWidth=1.5;
     bx.beginPath(); bx.ellipse(x,y,sz*.38,sz*.09,0,0,Math.PI*2); bx.stroke();
   }
+  if(state&&state.agony>0){
+    // Dark red pulsing rings radiating outward
+    const aPulse=(t%900)/900;
+    bx.strokeStyle=`rgba(160,20,80,${0.6*(1-aPulse)})`; bx.lineWidth=2;
+    bx.beginPath(); bx.arc(x,wy,sz*(0.55+aPulse*0.45),0,Math.PI*2); bx.stroke();
+    bx.strokeStyle=`rgba(100,0,40,${0.35+0.2*Math.sin(t/280)})`; bx.lineWidth=1.5;
+    bx.beginPath(); bx.arc(x,wy,sz*.62,0,Math.PI*2); bx.stroke();
+  }
+  if(state&&state.silence>0){
+    // Grey bars across the wizard (silenced)
+    bx.globalAlpha=0.18+0.08*Math.sin(t/400);
+    bx.fillStyle='#444444';
+    for(let i=0;i<3;i++){
+      bx.fillRect(x-sz*.4,wy-sz*.3+i*sz*.28,sz*.8,sz*.07);
+    }
+    bx.globalAlpha=1;
+    bx.strokeStyle=`rgba(80,80,80,${0.4+0.15*Math.sin(t/320)})`; bx.lineWidth=1;
+    bx.beginPath(); bx.arc(x,wy,sz*.72,0,Math.PI*2); bx.stroke();
+  }
+  if(state&&state.corruption>0){
+    // Dark purple swirl beneath the wizard
+    bx.globalAlpha=0.12+0.06*Math.sin(t/350); bx.fillStyle='#550077';
+    bx.beginPath(); bx.arc(x,wy,sz*.68,0,Math.PI*2); bx.fill(); bx.globalAlpha=1;
+    for(let i=0;i<4;i++){
+      const a=t/600+i/4*Math.PI*2;
+      bx.globalAlpha=0.4+0.2*Math.sin(t/300+i*1.6);
+      bx.fillStyle=i%2?'#9944cc':'#330044'; bx.shadowColor='#9944cc'; bx.shadowBlur=4;
+      bx.beginPath(); bx.arc(x+Math.cos(a)*sz*.55,wy+Math.sin(a)*sz*.3,sz*.025,0,Math.PI*2); bx.fill();
+    }
+    bx.globalAlpha=1; bx.shadowBlur=0;
+  }
   if(state&&state.invisible>0){
     const gv=0.18+0.12*Math.sin(t/280);
     bx.beginPath(); bx.arc(x,wy,sz*.78,0,Math.PI*2);
@@ -978,6 +1048,9 @@ function refreshStatusBar(){
   if(gs.p1.candle>0)        tags.push(`<span class="status-tag burn">🕯️ ${p1Cfg.name} CANDLE (${gs.p1.candle})</span>`);
   if(gs.p1.charge>0)        tags.push(`<span class="status-tag foresight">⚡ ${p1Cfg.name} CHARGED (${gs.p1.charge})</span>`);
   if(gs.p1.conductivity>0)  tags.push(`<span class="status-tag burn">💡 ${p1Cfg.name} CONDUCTIVE (${gs.p1.conductivity})</span>`);
+  if(gs.p1.agony>0)         tags.push(`<span class="status-tag burn">💀 ${p1Cfg.name} AGONY (${gs.p1.agony})</span>`);
+  if(gs.p1.silence>0)       tags.push(`<span class="status-tag timedrain">🔇 ${p1Cfg.name} SILENCED (${gs.p1.silence})</span>`);
+  if(gs.p1.corruption>0)    tags.push(`<span class="status-tag burn">☠️ ${p1Cfg.name} CORRUPTED (${gs.p1.corruption})</span>`);
   if(p2Cfg){
     if(gs.p2.resist>0)    tags.push(`<span class="status-tag resist">🩸 ${p2Cfg.name} RESIST (${gs.p2.resist})</span>`);
     if(gs.p2.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
@@ -999,6 +1072,9 @@ function refreshStatusBar(){
     if(gs.p2.candle>0)        tags.push(`<span class="status-tag burn">🕯️ ${p2Cfg.name} CANDLE (${gs.p2.candle})</span>`);
     if(gs.p2.charge>0)        tags.push(`<span class="status-tag foresight">⚡ ${p2Cfg.name} CHARGED (${gs.p2.charge})</span>`);
     if(gs.p2.conductivity>0)  tags.push(`<span class="status-tag burn">💡 ${p2Cfg.name} CONDUCTIVE (${gs.p2.conductivity})</span>`);
+    if(gs.p2.agony>0)         tags.push(`<span class="status-tag burn">💀 ${p2Cfg.name} AGONY (${gs.p2.agony})</span>`);
+    if(gs.p2.silence>0)       tags.push(`<span class="status-tag timedrain">🔇 ${p2Cfg.name} SILENCED (${gs.p2.silence})</span>`);
+    if(gs.p2.corruption>0)    tags.push(`<span class="status-tag burn">☠️ ${p2Cfg.name} CORRUPTED (${gs.p2.corruption})</span>`);
   }
   el.innerHTML=tags.join('');
 }
@@ -1108,6 +1184,9 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='conductivity')   return targetState.conductivity>0;
   if(spellId==='divineheal')     return casterState.hp>=casterState.maxHp;
   if(spellId==='purge')          return !(casterState.burn>0||casterState.frozen>0||casterState.blizzard>0||casterState.vineWhip>0||casterState.timeDrain>0||casterState.conductivity>0||casterState.candle>0);
+  if(spellId==='agony')          return targetState.agony>0;
+  if(spellId==='silence')        return targetState.silence>0;
+  if(spellId==='corruption')     return targetState.corruption>0;
   return false;
 }
 
@@ -1130,6 +1209,15 @@ function act(type){
     return;
   }
 
+  // Agony: player takes damage for any non-channel action
+  if(type!=='channel'&&whoState.agony>0){
+    const agonDmg=whoState.agonyDmg||12;
+    whoState.hp=Math.max(0,whoState.hp-agonDmg);
+    addFloat(cx,bH*.38,'💀 Agony! −'+agonDmg,'#9944cc',14);
+    spawnParts(cx,bH*.38,'#9944cc',12); flash('#330033');
+    checkWin(); if(!battleRunning) return;
+  }
+
   if(type==='channel'){
     if(whoState.timeDrain>0){
       whoState.mana=Math.min(MAX_MANA,whoState.mana+2);
@@ -1147,6 +1235,11 @@ function act(type){
   if(spell){
     if(whoState.mana<spell.cost) return;
     if(whoState.frenzied>0) return;
+    if(whoState.silence>0&&Math.random()<0.45){
+      addFloat(cx,bH*.33,'🔇 Silenced!','#9944cc',15);
+      spawnParts(cx,bH*.38,'#9944cc',10); anim(who,'cast',600);
+      endMyTurn(); return;
+    }
     gs.busy=true;
     const launchers={
       fire:      launchPatternEcho,
@@ -1179,6 +1272,11 @@ function act(type){
   if(charSpell){
     if(whoState.mana<charSpell.cost) return;
     if(charSpellBlocked(type,whoState,whoCfg,oppState)) return;
+    if(charSpell.cost>0&&whoState.silence>0&&Math.random()<0.45){
+      addFloat(cx,bH*.33,'🔇 Silenced!','#9944cc',15);
+      spawnParts(cx,bH*.38,'#9944cc',10); anim(who,'cast',600);
+      endMyTurn(); return;
+    }
     resolveCharSpell(type,who);
   }
 }
@@ -1803,19 +1901,54 @@ function resolveCharSpell(spellId,caster){
       addFloat(tx,bH*.33,'💡 Conductive! ('+targetState.conductivity+'T)',casterCfg.col,13);
       anim(caster,'cast',800);
     }
+  } else if(spellId==='agony'||spellId==='silence'||spellId==='corruption'){
+    if(casterState.invisible>0){ casterState.invisible=0; addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11); }
+    if(targetState.foresight){
+      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
+      targetState.foresight=false; spawnParts(tx,bH*.38,'#ffcc44',14); anim(caster,'cast',600);
+    } else if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12); anim(caster,'cast',600);
+    } else if(targetState.haste>0&&Math.random()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15); spawnParts(tx,bH*.38,'#ffcc44',12); anim(caster,'cast',600);
+    } else if(targetState.ward>0){
+      targetState.ward--;
+      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14); anim(caster,'cast',600);
+    } else {
+      if(spellId==='agony'){
+        targetState.agony=casterCfg.agonyDur||4; targetState.agonyDmg=casterCfg.agonyDmg||12;
+        addFloat(tx,bH*.33,'💀 Agony! ('+targetState.agony+'T)',casterCfg.col,14);
+      } else if(spellId==='silence'){
+        targetState.silence=casterCfg.silenceDur||4;
+        addFloat(tx,bH*.33,'🔇 Silenced! ('+targetState.silence+'T)',casterCfg.col,14);
+      } else {
+        targetState.corruption=casterCfg.corruptionDur||3;
+        addFloat(tx,bH*.33,'☠️ Corrupted! ('+targetState.corruption+'T)',casterCfg.col,14);
+      }
+      spawnParts(tx,bH*.38,casterCfg.col,18); spawnParts(tx,bH*.38,'#110011',8);
+      spawnBeam(cx,bH*.38,tx,bH*.38,casterCfg.col); flash(casterCfg.col);
+      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+      else             {anim('p2','cast',800); anim('p1','hit',800);}
+    }
+    refreshHUD();
   } else if(spellId==='divineheal'){
     const healAmt=casterCfg.healAmt||40;
-    const actual=Math.min(healAmt, casterState.maxHp-casterState.hp);
-    casterState.hp=Math.min(casterState.maxHp, casterState.hp+healAmt);
-    addFloat(cx,bH*.33,'💛 +'+actual+' Healed!',casterCfg.col,14);
-    for(let i=0;i<16;i++){
-      const a=-Math.PI/2+(-0.9+Math.random()*1.8), sp=1+Math.random()*2.5;
-      gs.parts.push({x:cx+(Math.random()-.5)*bH*.05,y:bH*.38,col:i%2?'#ffe090':'#fff8c0',
-        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*3,life:1,dec:.014,noGrav:true});
+    if(casterState.corruption>0){
+      casterState.hp=Math.max(0,casterState.hp-healAmt);
+      addFloat(cx,bH*.33,'☠️ Corrupted! −'+healAmt,'#9944cc',14);
+      spawnParts(cx,bH*.38,'#9944cc',16); flash('#330033');
+      anim(caster,'hit',700); refreshHUD(); checkWin();
+    } else {
+      const actual=Math.min(healAmt, casterState.maxHp-casterState.hp);
+      casterState.hp=Math.min(casterState.maxHp, casterState.hp+healAmt);
+      addFloat(cx,bH*.33,'💛 +'+actual+' Healed!',casterCfg.col,14);
+      for(let i=0;i<16;i++){
+        const a=-Math.PI/2+(-0.9+Math.random()*1.8), sp=1+Math.random()*2.5;
+        gs.parts.push({x:cx+(Math.random()-.5)*bH*.05,y:bH*.38,col:i%2?'#ffe090':'#fff8c0',
+          vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*3,life:1,dec:.014,noGrav:true});
+      }
+      flash(casterCfg.col);
+      anim(caster,'cast',700); refreshHUD();
     }
-    flash(casterCfg.col);
-    anim(caster,'cast',700);
-    refreshHUD();
   } else if(spellId==='purge'){
     const cleared=[];
     if(casterState.burn>0)        {casterState.burn=0;         cleared.push('🔥');}
@@ -2117,17 +2250,26 @@ function processBurn(target,tx,ty){
 function processRegen(target,tx,ty){
   if(!target.regen) return;
   const healThis=Math.ceil(target.regen.remaining/target.regen.turns);
-  target.hp=Math.min(target.maxHp,target.hp+healThis);
   target.regen.remaining-=healThis;
   target.regen.turns--;
   if(target.regen.turns<=0) target.regen=null;
-  for(let i=0;i<10;i++){
-    const a=-Math.PI/2+(-0.55+Math.random()*1.1);
-    const sp=0.8+Math.random()*1.8;
-    gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:i%2?'#44ee88':'#88ffcc',
-      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-0.5,sz:1.5+Math.random()*2.5,life:1,dec:.011+Math.random()*.01,noGrav:true});
+  if(target.corruption>0){
+    target.hp=Math.max(0,target.hp-healThis);
+    for(let i=0;i<8;i++){
+      const a=Math.random()*Math.PI*2, sp=0.8+Math.random()*1.5;
+      gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:'#9944cc',
+        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*2,life:1,dec:.015,noGrav:true});
+    }
+    addFloat(tx,ty,'☠️ −'+healThis+' Corrupted!','#9944cc',12);
+  } else {
+    target.hp=Math.min(target.maxHp,target.hp+healThis);
+    for(let i=0;i<10;i++){
+      const a=-Math.PI/2+(-0.55+Math.random()*1.1), sp=0.8+Math.random()*1.8;
+      gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:i%2?'#44ee88':'#88ffcc',
+        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-0.5,sz:1.5+Math.random()*2.5,life:1,dec:.011+Math.random()*.01,noGrav:true});
+    }
+    addFloat(tx,ty,'+'+healThis+' 💚','#44cc88',12);
   }
-  addFloat(tx,ty,'+'+healThis+' 💚','#44cc88',12);
 }
 
 function processVineWhip(target,tx,ty){
@@ -2173,7 +2315,7 @@ function processBlizzard(target,tx,ty){
   if(Math.random()<0.25&&target.frozen<=0) target.frozen=1;
 }
 
-const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity'];
+const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption'];
 function tickStatuses(state){
   STATUS_TIMERS.forEach(k=>{ if(state[k]>0) state[k]--; });
 }
@@ -2362,7 +2504,7 @@ function doAI(){
     if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
     if(s.aiHint==='drain'&&ai.hp>ai.maxHp*0.75) return false;
     if(ai.frenzied>0&&s.element) return false;
-    if(gs.p1.invisible>0&&(s.element&&!s.area||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip')) return false;
+    if(gs.p1.invisible>0&&(s.element&&!s.area||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption')) return false;
     return true;
   });
 
@@ -2371,6 +2513,12 @@ function doAI(){
 
   // Select a spell using heuristics
   let chosen=null;
+  // Mordant: channel when under agony; otherwise favour hexes
+  if(p2Key==='mordant'&&ai.agony>0) chosen=null;
+  else if(p2Key==='mordant'&&!chosen){
+    const hexSpells=charSpells.filter(s=>['agony','silence','corruption'].includes(s.id));
+    if(hexSpells.length>0&&Math.random()<0.65) chosen=hexSpells[Math.floor(Math.random()*hexSpells.length)];
+  }
   // Mary: purge debuffs first, heal when hurt
   if(p2Key==='mary'){
     const hasDebuff=ai.burn>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0;
@@ -2425,6 +2573,27 @@ function doAI(){
     tickStatuses(ai);
     finishAI();
     return;
+  }
+
+  // Agony: AI takes damage for any non-channel action
+  if(ai.agony>0){
+    const agonDmg=ai.agonyDmg||12;
+    ai.hp=Math.max(0,ai.hp-agonDmg);
+    addFloat(bW*.78,bH*.38,'💀 Agony! −'+agonDmg,'#9944cc',14);
+    spawnParts(bW*.78,bH*.38,'#9944cc',12); flash('#330033');
+    checkWin(); if(!battleRunning) return;
+  }
+
+  // Silence: 45% chance mana-cost spells fizzle
+  if(chosen.id&&chosen.cost>0&&ai.silence>0&&Math.random()<0.45){
+    addFloat(bW*.78,bH*.33,'🔇 Silenced!','#9944cc',15);
+    spawnParts(bW*.78,bH*.38,'#9944cc',10); anim('p2','cast',600);
+    tickStatuses(ai); finishAI(); return;
+  }
+  if(!chosen.id&&ai.silence>0&&Math.random()<0.45){
+    addFloat(bW*.78,bH*.33,'🔇 Silenced!','#9944cc',15);
+    spawnParts(bW*.78,bH*.38,'#9944cc',10); anim('p2','cast',600);
+    ai.mana=Math.max(0,ai.mana-1); tickStatuses(ai); finishAI(); return;
   }
 
   if(chosen.id){
@@ -3493,6 +3662,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-emberic').addEventListener('click',()=>showWizardDetail('emberic'));
   document.getElementById('pick-zacharius').addEventListener('click',()=>showWizardDetail('zacharius'));
   document.getElementById('pick-mary').addEventListener('click',()=>showWizardDetail('mary'));
+  document.getElementById('pick-mordant').addEventListener('click',()=>showWizardDetail('mordant'));
   document.getElementById('pick-ponder').addEventListener('click',()=>showWizardDetail('ponder'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{
