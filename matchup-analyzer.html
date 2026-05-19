@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WizardsDuel — Matchup Analyzer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0e0e1a;color:#ddd;font-family:'Segoe UI',sans-serif;font-size:13px}
+h1{text-align:center;padding:14px 0 4px;font-size:20px;letter-spacing:2px;color:#c9a84c}
+.subtitle{text-align:center;color:#888;font-size:11px;margin-bottom:10px}
+#top-bar{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px;background:#13131f;border-bottom:1px solid #2a2a3a}
+button{background:#2a2060;color:#c9a84c;border:1px solid #c9a84c;border-radius:4px;padding:6px 16px;cursor:pointer;font-size:13px}
+button:hover{background:#3a30a0}
+button:disabled{opacity:0.5;cursor:not-allowed}
+#sims-label{color:#aaa;font-size:12px}
+#sims-input{width:60px;background:#1a1a2e;color:#ddd;border:1px solid #444;border-radius:3px;padding:3px 6px}
+#layout{display:flex;gap:0;height:calc(100vh - 100px)}
+#left-col{flex:0 0 auto;overflow:auto;padding:12px;background:#0e0e1a;border-right:1px solid #1e1e2e}
+#right-col{flex:1;overflow:auto;padding:12px;background:#0e0e18}
+
+/* Matrix */
+.matrix{border-collapse:collapse;font-size:11px}
+.matrix th{background:#13131f;color:#888;padding:4px 6px;text-align:center;border:1px solid #222;font-size:14px;min-width:36px}
+.matrix td{border:1px solid #1a1a2a;text-align:center;cursor:pointer;transition:filter .1s}
+.matrix td.cell{width:36px;height:28px;font-size:11px;font-weight:700}
+.matrix td.cell:hover{filter:brightness(1.4);outline:2px solid #fff}
+.matrix td.mirror-cell{background:#111;color:#333;width:36px;height:28px}
+.matrix td.row-label{background:#13131f;padding:4px 8px;text-align:left;white-space:nowrap;cursor:default;font-size:12px;font-weight:600}
+.matrix td.row-label:hover{filter:none}
+
+/* Legend */
+.legend{display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:11px;color:#888}
+.legend-bar{width:120px;height:12px;border-radius:2px;background:linear-gradient(to right,#c82828,#b08030,#30b060)}
+
+/* Detail panel */
+#detail-panel{background:#13131f;border:1px solid #2a2a3a;border-radius:6px;padding:14px;margin-bottom:14px;display:none}
+.detail-header{font-size:18px;font-weight:700;text-align:center;margin-bottom:12px}
+.vs{color:#666;margin:0 8px}
+.detail-stats{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+.stat-box{text-align:center;padding:8px 14px;border-radius:4px;min-width:80px}
+.stat-box.win{background:#0d2b0d;border:1px solid #2a5a2a}
+.stat-box.lose{background:#2b0d0d;border:1px solid #5a2a2a}
+.stat-box.draw{background:#1a1a2b;border:1px solid #3a3a5a}
+.stat-num{font-size:22px;font-weight:700}
+.stat-label{font-size:10px;color:#aaa;margin-top:2px}
+.detail-bar{height:14px;background:#1a1a2e;border-radius:7px;overflow:hidden;margin-bottom:10px}
+.bar-fill{height:100%;border-radius:7px;transition:width .3s}
+.detail-verdict{text-align:center;font-size:13px;margin-bottom:8px;padding:6px;background:#0e0e18;border-radius:4px}
+.detail-analysis{color:#bbb;font-size:12px;line-height:1.6;padding:8px;background:#0a0a15;border-radius:4px;margin-bottom:8px;border-left:3px solid #9944cc}
+.detail-avgturns{color:#777;font-size:11px;text-align:center}
+
+/* Onesided summary */
+#onesided{background:#13131f;border:1px solid #2a2a3a;border-radius:6px;padding:12px;margin-bottom:14px}
+#onesided h3{color:#c9a84c;margin-bottom:8px;font-size:13px}
+.flag-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #1a1a2a;cursor:pointer}
+.flag-row:hover{background:#1a1a2e}
+.flag-row .wr-badge{font-size:11px;font-weight:700;padding:2px 6px;border-radius:3px;min-width:34px;text-align:center}
+
+/* Params panel */
+#param-section{background:#0e0e18}
+#param-section h3{color:#c9a84c;font-size:12px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #2a2a3a}
+.global-params{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.global-params label{display:flex;align-items:center;gap:6px;color:#aaa;font-size:12px}
+.param-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.char-params{background:#13131f;border:1px solid #1e1e2e;border-radius:4px;padding:8px}
+.char-param-header{font-weight:700;font-size:12px;margin-bottom:6px}
+.char-params label{display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:11px;color:#aaa}
+.char-params input[type=range]{width:80px;height:4px;accent-color:#c9a84c}
+.char-params span{min-width:28px;color:#ddd;font-size:11px}
+
+.tab-bar{display:flex;gap:2px;margin-bottom:10px}
+.tab{padding:5px 12px;background:#13131f;border:1px solid #2a2a3a;border-radius:4px 4px 0 0;cursor:pointer;color:#888;font-size:12px}
+.tab.active{background:#1e1e2e;color:#c9a84c;border-bottom-color:#1e1e2e}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.matrix-note{font-size:11px;color:#666;text-align:center;margin-bottom:6px}
+</style>
+</head>
+<body>
+<h1>⚔ WizardsDuel Matchup Analyzer</h1>
+<p class="subtitle">Monte Carlo simulation — rows attack columns. Cell = row character's win rate.</p>
+
+<div id="top-bar">
+  <label id="sims-label">Simulations per matchup: <input type="number" id="sims-input" value="500" min="50" max="2000" step="50"></label>
+  <button id="run-btn" onclick="runSim()">▶ Run Simulation</button>
+  <span id="status-msg" style="color:#888;font-size:12px"></span>
+</div>
+
+<div id="layout">
+  <div id="left-col">
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchTab('matrix-tab',this)">📊 Matrix</div>
+      <div class="tab" onclick="switchTab('flags-tab',this)">🚩 One-Sided</div>
+    </div>
+    <div id="matrix-tab" class="tab-content active">
+      <div class="legend">
+        <span>Lose</span>
+        <div class="legend-bar"></div>
+        <span>Win</span>
+        <span style="margin-left:8px;color:#555">| click a cell for detail</span>
+      </div>
+      <p class="matrix-note">Loading...</p>
+      <div id="matrix-container"></div>
+    </div>
+    <div id="flags-tab" class="tab-content">
+      <div id="onesided"><h3>🚩 Flagged Matchups (win rate ≥ 70% or ≤ 30%)</h3><div id="flags-list">Run sim first.</div></div>
+    </div>
+  </div>
+
+  <div id="right-col">
+    <div id="detail-panel"></div>
+
+    <div id="param-section">
+      <h3>🔧 Tweak Parameters — changes apply on next simulation run</h3>
+      <div class="global-params">
+        <label>Burn dmg/tick <input type="range" min="1" max="15" value="5" id="g-burnDmg" oninput="updateGlobal('burnDmg',this)"><span id="gv-burnDmg">5</span></label>
+        <label>Burn rounds <input type="range" min="1" max="6" value="2" id="g-burnRounds" oninput="updateGlobal('burnRounds',this)"><span id="gv-burnRounds">2</span></label>
+        <label>VineWhip dmg/tick <input type="range" min="1" max="20" value="7" id="g-vineWhipDmg" oninput="updateGlobal('vineWhipDmg',this)"><span id="gv-vineWhipDmg">7</span></label>
+        <label>Blizzard dmg/tick <input type="range" min="1" max="15" value="5" id="g-blizzardDmg" oninput="updateGlobal('blizzardDmg',this)"><span id="gv-blizzardDmg">5</span></label>
+        <label>Blizzard mana drain <input type="range" min="0" max="5" value="2" id="g-blizzardManaDrain" oninput="updateGlobal('blizzardManaDrain',this)"><span id="gv-blizzardManaDrain">2</span></label>
+      </div>
+      <div id="param-panel"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CHARS={
+  eldrad:{name:'ELDRIN',title:'The Stalwart',col:'#4af0ff',icon:'🛡',
+    hp:90,startMana:5,channelAmt:5,dmgMult:1.20,
+    shieldMaxHp:60,shieldDuration:10,counterDmg:20,
+    spells:[{id:'basicattack',dmg:8,cost:0,physical:false},{id:'shield',cost:3},{id:'counter',cost:0},{id:'ward',cost:2}]},
+  mal:{name:'MALACHAR',title:'The Relentless',col:'#ff4a6e',icon:'💀',
+    hp:80,startMana:7,channelAmt:5,dmgMult:1.10,
+    empowerMult:1.50,bpCost:22,bpGain:15,drainBaseDmg:18,drainHealPct:0.45,
+    spells:[{id:'basicattack',dmg:8,cost:0,physical:false},{id:'empower',cost:0},{id:'bloodpact',cost:0},{id:'drain',cost:3}]},
+  sylvara:{name:'SYLVARA',title:'The Verdant',col:'#44cc88',icon:'🌿',
+    hp:92,startMana:6,channelAmt:5,dmgMult:1.0,
+    healAmt:40,entangleChance:0.75,entangleMaxTurns:3,vineWhipDur:3,
+    spells:[{id:'basicattack',dmg:8,cost:0,physical:false},{id:'heal',cost:4},{id:'entangle',cost:1},{id:'vinewhip',cost:2}]},
+  aurelia:{name:'AURELIA',title:'The Radiant',col:'#ffcc44',icon:'🔮',
+    hp:90,startMana:6,channelAmt:5,dmgMult:1.05,timeDrainTurns:5,
+    spells:[{id:'basicattack',dmg:8,cost:0,physical:false},{id:'foresight',cost:4},{id:'timedrain',cost:3},{id:'haste',cost:3}]},
+  gnash:{name:'GNASH',title:'The Feral',col:'#dd8822',icon:'👊',
+    hp:105,startMana:5,channelAmt:4,dmgMult:1.15,frenzyHpCost:15,chargeDmg:32,
+    spells:[{id:'basicattack',dmg:9,cost:0,physical:true},{id:'warpaint',cost:0},{id:'charge',cost:5},{id:'frenzy',cost:0}]},
+  emberic:{name:'EMBERIC',title:'The Volatile',col:'#ff6600',icon:'🔥',
+    hp:83,startMana:7,channelAmt:5,dmgMult:1.15,
+    fireballMin:10,fireballMax:26,flameShieldDmgMin:6,flameShieldDmgMax:12,flameShieldDur:5,candleDur:4,
+    spells:[{id:'basicattack',dmg:9,cost:0,physical:false},{id:'fireball',cost:4},{id:'flameshield',cost:3},{id:'candle',cost:3}]},
+  skadi:{name:'SKADI',title:'The Permafrost',col:'#88ddff',icon:'❄️',
+    hp:88,startMana:6,channelAmt:5,dmgMult:1.0,
+    iceLanceDmg:28,iceLanceFreeze:0.25,frostArmorDur:4,frostArmorRetaliationDmg:4,
+    blizzardDur:5,
+    spells:[{id:'basicattack',dmg:8,cost:0,physical:false},{id:'icelance',cost:4},{id:'frostarmor',cost:4},{id:'blizzard',cost:4}]},
+  zacharius:{name:'ZACHARIUS',title:'The Conductor',col:'#aaff44',icon:'⚡',
+    hp:86,startMana:7,channelAmt:5,dmgMult:1.10,
+    galvanizeChargeGain:8,galvanizeCost:4,
+    chainLightningDmg:24,chainLightningChargeCost:8,chainArcChance:0.35,chainArcDmg:10,
+    conductivityDur:3,conductivityMult:1.35,
+    spells:[{id:'basicattack',dmg:9,cost:0,physical:false},{id:'galvanize',cost:4},{id:'chainlightning',cost:0},{id:'conductivity',cost:2}]},
+  mary:{name:'MARY',title:'The Devoted',col:'#f0d8a0',icon:'🌟',
+    hp:88,startMana:6,channelAmt:5,dmgMult:1.0,healAmt:40,radiantDmg:15,
+    spells:[{id:'basicattack',dmg:8,cost:0,physical:true},{id:'divineheal',cost:4},{id:'purge',cost:2},{id:'radiant',cost:3}]},
+  mordant:{name:'MORDANT',title:'The Defiler',col:'#9944cc',icon:'🌑',
+    hp:82,startMana:6,channelAmt:5,dmgMult:1.0,
+    agonyDur:4,agonyDmg:12,silenceDur:4,corruptionDur:3,
+    spells:[{id:'basicattack',dmg:8,cost:0,physical:false},{id:'agony',cost:3},{id:'silence',cost:2},{id:'corruption',cost:3}]},
+  ponder:{name:'PONDER',title:'The Apprentice',col:'#9988cc',icon:'👻',
+    hp:85,startMana:5,channelAmt:5,dmgMult:1.0,vanishDur:3,manaSiphonAmt:4,blinkDur:3,
+    spells:[{id:'basicattack',dmg:8,cost:0,physical:false},{id:'vanish',cost:2},{id:'manasiphon',cost:0},{id:'blink',cost:1}]},
+};
+const CHAR_KEYS=Object.keys(CHARS);
+const MAX_MANA=20;
+let simParams={burnDmg:5,burnRounds:2,vineWhipDmg:7,blizzardDmg:5,blizzardManaDrain:2};
+let matchupResults=null;
+let selectedCell=null;
+
+function newSt(cfg){
+  return{hp:cfg.hp,maxHp:cfg.hp,mana:cfg.startMana,
+    shield:0,shieldHp:0,burn:0,frozen:0,regen:null,
+    counter:false,empowered:false,foresight:false,
+    timeDrain:0,resist:0,invisible:0,ward:0,
+    vineWhip:0,haste:0,frenzied:0,blink:0,
+    frostArmor:0,blizzard:0,flameShield:0,candle:0,
+    charge:0,conductivity:0,agony:0,agonyDmg:0,silence:0,corruption:0};
+}
+
+const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink'];
+function tickSt(s){STATUS_TIMERS.forEach(k=>{if(s[k]>0)s[k]--;});}
+
+function procBurn(s){
+  if(s.burn<=0)return;
+  s.hp=Math.max(0,s.hp-simParams.burnDmg);
+  s.burn--;
+}
+function procRegen(s){
+  if(!s.regen)return;
+  const h=Math.ceil(s.regen.remaining/s.regen.turns);
+  s.regen.remaining-=h; s.regen.turns--;
+  if(s.regen.turns<=0)s.regen=null;
+  if(s.corruption>0) s.hp=Math.max(0,s.hp-h);
+  else s.hp=Math.min(s.maxHp,s.hp+h);
+}
+function procVine(s){
+  if(!s.vineWhip||s.vineWhip<=0)return;
+  let d=simParams.vineWhipDmg; s.vineWhip--;
+  if(s.shield>0){const ab=Math.min(d,s.shieldHp);s.shieldHp-=ab;d-=ab;if(s.shieldHp<=0)s.shield=0;}
+  if(d>0)s.hp=Math.max(0,s.hp-d);
+}
+function procBliz(s){
+  if(!s.blizzard||s.blizzard<=0)return;
+  s.hp=Math.max(0,s.hp-simParams.blizzardDmg);
+  const dr=Math.min(simParams.blizzardManaDrain,s.mana);
+  s.mana=Math.max(0,s.mana-dr);
+  s.blizzard--;
+  if(Math.random()<0.15&&s.frozen<=0)s.frozen=1;
+}
+
+function resolveAct(act,self,sc,opp,oc){
+  const isNC=(act!=='channel');
+  if(isNC&&self.agony>0){
+    self.hp=Math.max(0,self.hp-(self.agonyDmg||12));
+    if(self.hp<=0)return isNC;
+  }
+  if(act==='channel'){
+    const g=self.timeDrain>0?2:(sc.channelAmt||5);
+    self.mana=Math.min(MAX_MANA,self.mana+g);
+    if(self.candle>0){self.burn=simParams.burnRounds;}
+    return false;
+  }
+  const sp=sc.spells&&sc.spells.find(s=>s.id===act);
+  if(sp&&sp.cost>0&&self.silence>0&&Math.random()<0.45){
+    self.mana=Math.max(0,self.mana-1);
+    return true;
+  }
+  if(sp)self.mana=Math.max(0,self.mana-(sp.cost||0));
+  const R=()=>Math.random();
+  const flameRet=()=>{
+    const d=(sc.flameShieldDmgMin||6)+Math.floor(R()*((sc.flameShieldDmgMax||12)-(sc.flameShieldDmgMin||6)+1));
+    self.hp=Math.max(0,self.hp-d);
+  };
+  const frostRet=()=>{self.hp=Math.max(0,self.hp-(oc.frostArmorRetaliationDmg||4));};
+  const discharge=()=>{if(opp.charge>0){self.hp=Math.max(0,self.hp-opp.charge);opp.charge=0;}};
+  const counter=()=>{if(opp.counter&&opp.shield>0){self.hp=Math.max(0,self.hp-(oc.counterDmg||20));opp.counter=false;}};
+  function applyDmgToOpp(raw,opts={}){
+    let d=raw;
+    if(!opts.skipResist&&opp.resist>0)d=Math.round(d*0.67);
+    if(!opts.skipFrost&&opp.frostArmor>0)d=Math.round(d*0.70);
+    if(opp.conductivity>0)d=Math.round(d*(sc.conductivityMult||oc.conductivityMult||1.35));
+    if(!opts.pierceShield&&opp.shield>0){
+      const ab=Math.min(d,opp.shieldHp);opp.shieldHp-=ab;d-=ab;
+      if(opp.shieldHp<=0)opp.shield=0;
+    }
+    counter();
+    opp.hp=Math.max(0,opp.hp-d);
+    if(d>0&&opp.frostArmor>0)frostRet();
+    if(d>0&&opp.flameShield>0)flameRet();
+    if(opts.isPhys)discharge();
+    return d;
+  }
+  switch(act){
+    case 'basicattack':{
+      const ba=sc.spells.find(s=>s.id==='basicattack');
+      const isP=!!ba.physical;
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(isP&&opp.blink>0&&R()<0.5)break;
+      if(opp.foresight){opp.foresight=false;break;}
+      applyDmgToOpp(Math.round((ba.dmg||8)*sc.dmgMult),{isPhys:isP});
+      break;
+    }
+    case 'shield': self.shield=sc.shieldDuration||10; self.shieldHp=sc.shieldMaxHp||60; break;
+    case 'counter': self.counter=true; break;
+    case 'ward': self.ward=3; break;
+    case 'empower': self.empowered=true; break;
+    case 'bloodpact':
+      self.hp=Math.max(1,self.hp-(sc.bpCost||22));
+      self.mana=Math.min(MAX_MANA,self.mana+(sc.bpGain||15));
+      break;
+    case 'drain':{
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(opp.foresight){opp.foresight=false;break;}
+      let d=Math.round((sc.drainBaseDmg||18)*sc.dmgMult);
+      if(self.empowered){d=Math.round(d*(sc.empowerMult||1.5));self.empowered=false;}
+      if(opp.resist>0)d=Math.round(d*0.67);
+      if(opp.frostArmor>0)d=Math.round(d*0.70);
+      if(opp.conductivity>0)d=Math.round(d*1.35);
+      let db=d;
+      if(opp.shield>0){const ab=Math.min(d,opp.shieldHp);opp.shieldHp-=ab;d-=ab;db-=ab;if(opp.shieldHp<=0)opp.shield=0;}
+      counter();
+      opp.hp=Math.max(0,opp.hp-d);
+      if(d>0&&opp.frostArmor>0)frostRet();
+      const h=Math.max(0,Math.round(db*(sc.drainHealPct||0.45)));
+      if(self.corruption>0)self.hp=Math.max(0,self.hp-h);
+      else self.hp=Math.min(self.maxHp,self.hp+h);
+      break;
+    }
+    case 'heal': self.regen={remaining:sc.healAmt||40,turns:10}; break;
+    case 'entangle':{
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(opp.ward>0){opp.ward=0;break;}
+      if(R()<(sc.entangleChance||0.75))opp.frozen=Math.floor(R()*(sc.entangleMaxTurns||3))+1;
+      break;
+    }
+    case 'vinewhip':{
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      opp.vineWhip=sc.vineWhipDur||3;
+      break;
+    }
+    case 'foresight': self.foresight=true; break;
+    case 'timedrain':{
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(opp.ward>0){opp.ward=0;break;}
+      opp.timeDrain=sc.timeDrainTurns||5;
+      break;
+    }
+    case 'haste': self.haste=3; break;
+    case 'warpaint': self.hp=Math.max(1,self.hp-(sc.frenzyHpCost||15)); self.resist=5; break;
+    case 'charge':{
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(opp.blink>0&&R()<0.5)break;
+      if(opp.foresight){opp.foresight=false;break;}
+      applyDmgToOpp(Math.round((sc.chargeDmg||32)*sc.dmgMult),{isPhys:true});
+      break;
+    }
+    case 'frenzy':{
+      self.hp=Math.max(1,self.hp-(sc.frenzyHpCost||15));
+      self.frenzied=4;
+      const ba=sc.spells.find(s=>s.id==='basicattack');
+      for(let i=0;i<2;i++){
+        if(self.hp<=0||opp.hp<=0)break;
+        if(opp.haste>0&&R()<0.25)continue;
+        if(opp.blink>0&&R()<0.5)continue;
+        if(opp.foresight){opp.foresight=false;continue;}
+        applyDmgToOpp(Math.round((ba.dmg||9)*sc.dmgMult),{isPhys:true});
+      }
+      break;
+    }
+    case 'fireball':{
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(opp.blink>0&&R()<0.5)break;
+      if(opp.foresight){opp.foresight=false;break;}
+      const roll=(sc.fireballMin||10)+Math.floor(R()*((sc.fireballMax||26)-(sc.fireballMin||10)+1));
+      applyDmgToOpp(Math.round(roll*sc.dmgMult));
+      if(opp.ward>0)opp.ward=0;
+      else opp.burn=simParams.burnRounds;
+      break;
+    }
+    case 'flameshield': self.flameShield=sc.flameShieldDur||5; break;
+    case 'candle':{
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(opp.ward>0){opp.ward=0;break;}
+      opp.candle=sc.candleDur||4;
+      break;
+    }
+    case 'icelance':{
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(opp.blink>0&&R()<0.5)break;
+      if(opp.foresight){opp.foresight=false;break;}
+      applyDmgToOpp(Math.round((sc.iceLanceDmg||28)*sc.dmgMult));
+      if(R()<(sc.iceLanceFreeze||0.25)&&opp.frozen<=0){
+        if(opp.ward>0)opp.ward=0; else opp.frozen=1;
+      }
+      break;
+    }
+    case 'frostarmor': self.frostArmor=sc.frostArmorDur||4; break;
+    case 'blizzard':{
+      if(opp.invisible>0)break;
+      if(opp.ward>0){opp.ward=0;break;}
+      opp.blizzard=sc.blizzardDur||5;
+      break;
+    }
+    case 'galvanize': self.charge=(self.charge||0)+(sc.galvanizeChargeGain||8); break;
+    case 'chainlightning':{
+      const cc=sc.chainLightningChargeCost||8;
+      self.charge=Math.max(0,self.charge-cc);
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(opp.foresight){opp.foresight=false;break;}
+      applyDmgToOpp(Math.round((sc.chainLightningDmg||24)*sc.dmgMult));
+      if(R()<(sc.chainArcChance||0.35)&&opp.hp>0)opp.hp=Math.max(0,opp.hp-(sc.chainArcDmg||10));
+      break;
+    }
+    case 'conductivity':{
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(opp.ward>0){opp.ward=0;break;}
+      opp.conductivity=sc.conductivityDur||3;
+      break;
+    }
+    case 'divineheal':{
+      const h=sc.healAmt||40;
+      if(self.corruption>0)self.hp=Math.max(0,self.hp-h);
+      else self.hp=Math.min(self.maxHp,self.hp+h);
+      break;
+    }
+    case 'purge':
+      self.burn=0;self.frozen=0;self.blizzard=0;self.vineWhip=0;
+      self.timeDrain=0;self.conductivity=0;self.candle=0;
+      break;
+    case 'radiant':{
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(opp.blink>0&&R()<0.5)break;
+      if(opp.foresight){opp.foresight=false;break;}
+      let d=Math.round((sc.radiantDmg||15)*sc.dmgMult);
+      if(opp.conductivity>0)d=Math.round(d*1.35);
+      counter();
+      opp.hp=Math.max(0,opp.hp-d);
+      if(opp.flameShield>0&&d>0)flameRet();
+      break;
+    }
+    case 'agony':case 'silence':case 'corruption':{
+      if(opp.invisible>0)break;
+      if(opp.haste>0&&R()<0.25)break;
+      if(opp.foresight){opp.foresight=false;break;}
+      if(opp.ward>0){opp.ward--;break;}
+      if(act==='agony'){opp.agony=sc.agonyDur||4;opp.agonyDmg=sc.agonyDmg||12;}
+      else if(act==='silence')opp.silence=sc.silenceDur||4;
+      else opp.corruption=sc.corruptionDur||3;
+      break;
+    }
+    case 'vanish': self.invisible=sc.vanishDur||3; break;
+    case 'manasiphon':{
+      if(!self.invisible)break;
+      if(opp.foresight){opp.foresight=false;break;}
+      if(opp.shield>0)break;
+      const st=Math.min(sc.manaSiphonAmt||4,opp.mana);
+      opp.mana=Math.max(0,opp.mana-st);
+      self.mana=Math.min(MAX_MANA,self.mana+st);
+      break;
+    }
+    case 'blink': self.blink=sc.blinkDur||3; break;
+  }
+  return isNC;
+}
+
+function choose(key,self,opp,sc){
+  const can=c=>self.mana>=c;
+  const oi=opp.invisible>0;
+  if(self.frenzied>0)return 'basicattack';
+  if(self.agony>0&&self.hp<(self.agonyDmg||12)*2)return 'channel';
+  switch(key){
+    case 'eldrad':
+      if(!self.shield&&can(3))return 'shield';
+      if(self.shield>0&&!self.counter)return 'counter';
+      if(self.shield>0&&!self.ward&&can(2))return 'ward';
+      return 'basicattack';
+    case 'mal':
+      if(!self.empowered)return 'empower';
+      if(self.empowered&&can(3)&&!oi)return 'drain';
+      if(self.mana<6&&self.hp>(sc.bpCost||22)+1)return 'bloodpact';
+      return 'basicattack';
+    case 'sylvara':
+      if(!opp.vineWhip&&can(2)&&!oi)return 'vinewhip';
+      if(!opp.frozen&&can(1)&&!oi)return 'entangle';
+      if(self.hp<self.maxHp*0.55&&can(4)&&!self.regen)return 'heal';
+      return 'basicattack';
+    case 'aurelia':
+      if(!opp.timeDrain&&can(3)&&!oi)return 'timedrain';
+      if(!self.foresight&&can(4))return 'foresight';
+      if(!self.haste&&can(3))return 'haste';
+      return 'basicattack';
+    case 'gnash':
+      if(can(5)&&!oi)return 'charge';
+      if(!self.resist&&self.hp>20)return 'warpaint';
+      if(self.hp>20)return 'frenzy';
+      return 'basicattack';
+    case 'emberic':
+      if(!self.flameShield&&can(3))return 'flameshield';
+      if(!opp.candle&&can(3)&&!oi)return 'candle';
+      if(can(4))return 'fireball';
+      return 'basicattack';
+    case 'skadi':
+      if(!opp.blizzard&&can(4)&&!oi)return 'blizzard';
+      if(!self.frostArmor&&can(4))return 'frostarmor';
+      if(can(4)&&!oi)return 'icelance';
+      return 'basicattack';
+    case 'zacharius':
+      if(self.charge>=(sc.chainLightningChargeCost||8)&&!oi)return 'chainlightning';
+      if(!opp.conductivity&&can(2)&&!oi)return 'conductivity';
+      if(can(sc.galvanizeCost||4))return 'galvanize';
+      return 'basicattack';
+    case 'mary':{
+      const hasD=self.burn>0||self.blizzard>0||self.vineWhip>0||self.timeDrain>0||self.conductivity>0||self.candle>0;
+      if(hasD&&can(2))return 'purge';
+      if(self.hp<self.maxHp*0.55&&can(4))return 'divineheal';
+      if(can(3)&&!oi)return 'radiant';
+      return 'basicattack';
+    }
+    case 'mordant':
+      if(!opp.agony&&can(3)&&!oi)return 'agony';
+      if(!opp.corruption&&can(3)&&!oi)return 'corruption';
+      if(!opp.silence&&can(2)&&!oi)return 'silence';
+      return 'basicattack';
+    case 'ponder':
+      if(self.invisible>0&&!opp.shield&&!opp.foresight&&opp.mana>0)return 'manasiphon';
+      if(self.invisible>0)return 'channel';
+      if(!self.invisible&&can(2))return 'vanish';
+      if(!self.blink&&can(1))return 'blink';
+      return 'basicattack';
+    default: return 'basicattack';
+  }
+}
+
+function getCfg(key){
+  const base={...CHARS[key]};
+  const ov=simParams[key];
+  if(ov)Object.assign(base,ov);
+  return base;
+}
+
+function simOne(aKey,bKey){
+  const ac=getCfg(aKey), bc=getCfg(bKey);
+  const a=newSt(ac), b=newSt(bc);
+  for(let r=0;r<80;r++){
+    if(a.frozen>0)a.frozen--;
+    else resolveAct(choose(aKey,a,b,ac),a,ac,b,bc);
+    if(a.hp<=0||b.hp<=0)break;
+    if(a.shield>0){a.shield--;if(a.shield<=0)a.shieldHp=0;}
+    tickSt(a);
+    procVine(b);procBliz(b);procBurn(b);procRegen(b);
+    b.mana=Math.min(MAX_MANA,b.mana+1);
+    if(a.hp<=0||b.hp<=0)break;
+    if(b.frozen>0)b.frozen--;
+    else resolveAct(choose(bKey,b,a,bc),b,bc,a,ac);
+    if(a.hp<=0||b.hp<=0)break;
+    if(b.shield>0){b.shield--;if(b.shield<=0)b.shieldHp=0;}
+    tickSt(b);
+    procVine(a);procBliz(a);procBurn(a);procRegen(a);
+    a.mana=Math.min(MAX_MANA,a.mana+1);
+    if(a.hp<=0||b.hp<=0)break;
+    if(a.invisible>0)a.invisible--;
+    if(b.invisible>0)b.invisible--;
+  }
+  if(a.hp>0&&b.hp<=0)return{w:'a',ah:a.hp,bh:b.hp};
+  if(b.hp>0&&a.hp<=0)return{w:'b',ah:a.hp,bh:b.hp};
+  return{w:a.hp>b.hp?'a':b.hp>a.hp?'b':'d',ah:a.hp,bh:b.hp};
+}
+
+function runMatchup(aKey,bKey,n){
+  let aw=0,bw=0,dr=0,ra=0,rb=0;
+  for(let i=0;i<n;i++){
+    const r=simOne(aKey,bKey);
+    ra+=r.ah; rb+=r.bh;
+    if(r.w==='a')aw++;else if(r.w==='b')bw++;else dr++;
+  }
+  return{aWins:aw,bWins:bw,draws:dr,total:n,winRate:aw/n,avgAHp:ra/n,avgBHp:rb/n};
+}
+
+function runAll(n){
+  const res={};
+  CHAR_KEYS.forEach(a=>{
+    res[a]={};
+    CHAR_KEYS.forEach(b=>{
+      if(a===b){res[a][b]={aWins:0,bWins:0,draws:n,total:n,winRate:0.5,avgAHp:0,avgBHp:0};return;}
+      res[a][b]=runMatchup(a,b,n);
+    });
+  });
+  return res;
+}
+
+function wrColor(wr){
+  if(wr<0.5){const t=wr/0.5;return`rgb(${Math.round(200+30*t)},${Math.round(40+140*t)},${Math.round(40+40*t)}`;}
+  const t=(wr-0.5)/0.5;
+  return`rgb(${Math.round(180-140*t)},${Math.round(180+40*t)},${Math.round(80-30*t)})`;
+}
+
+function buildMatrix(){
+  if(!matchupResults)return'<p style="color:#666;padding:20px">Click ▶ Run Simulation</p>';
+  let h='<table class="matrix"><thead><tr><th></th>';
+  CHAR_KEYS.forEach(k=>h+=`<th style="color:${CHARS[k].col}" title="${CHARS[k].name}">${CHARS[k].icon}</th>`);
+  h+='</tr></thead><tbody>';
+  CHAR_KEYS.forEach(a=>{
+    h+=`<tr><td class="row-label" style="color:${CHARS[a].col}">${CHARS[a].icon} ${CHARS[a].name}</td>`;
+    CHAR_KEYS.forEach(b=>{
+      if(a===b){h+=`<td class="mirror-cell">—</td>`;return;}
+      const r=matchupResults[a][b];
+      const wr=r.winRate, pct=Math.round(wr*100);
+      const bg=wrColor(wr), tc=wr<0.3||wr>0.7?'#fff':'#111';
+      h+=`<td class="cell" style="background:${bg};color:${tc}" onclick="showDetail('${a}','${b}')" title="${CHARS[a].name} vs ${CHARS[b].name}: ${pct}%">${pct}%</td>`;
+    });
+    h+='</tr>';
+  });
+  return h+'</tbody></table>';
+}
+
+function buildFlags(){
+  if(!matchupResults)return'Run sim first.';
+  const flags=[];
+  CHAR_KEYS.forEach(a=>CHAR_KEYS.forEach(b=>{
+    if(a===b)return;
+    const wr=matchupResults[a][b].winRate;
+    if(wr>=0.70)flags.push({a,b,wr});
+  }));
+  flags.sort((x,y)=>y.wr-x.wr);
+  if(!flags.length)return'<p style="color:#888">No extreme matchups found.</p>';
+  return flags.map(f=>{
+    const pct=Math.round(f.wr*100);
+    const bg=wrColor(f.wr);
+    const sv=f.wr>=0.80?'🔴':f.wr>=0.70?'🟠':'🟡';
+    return`<div class="flag-row" onclick="showDetail('${f.a}','${f.b}');switchTabById('matrix-tab')">
+      <span class="wr-badge" style="background:${bg};color:#fff">${pct}%</span>
+      <span>${sv} <b style="color:${CHARS[f.a].col}">${CHARS[f.a].name}</b> vs <b style="color:${CHARS[f.b].col}">${CHARS[f.b].name}</b></span>
+    </div>`;
+  }).join('');
+}
+
+const MATCHUP_NOTES={
+  'mordant|mary':'⚠️ <b>Hard counter.</b> Corruption turns Mary\'s Heal (40 HP) into 40 self-damage. Agony punishes every Purge or Heal cast with 12 HP. Mary\'s core identity is completely reversed.',
+  'mordant|sylvara':'⚠️ <b>Hard counter.</b> Corruption converts Sylvara\'s Regen ticks into chip damage each turn. Agony punishes both Vine Whip and Entangle casts. Sylvara has no way to remove Corruption.',
+  'ponder|eldrad':'⚠️ Ponder\'s Vanish makes Eldrin\'s Counter useless — Counter only reflects when the shield absorbs a hit. While invisible, Ponder drains Eldrin\'s mana, starving him of the 3 mana needed to recast Shield.',
+  'eldrad|ponder':'⚠️ Eldrin\'s reactive kit (Shield + Counter) relies on being attacked. Ponder avoids this by staying invisible and Mana Siphoning to deny the Shield cost.',
+  'gnash|zacharius':'⚠️ Gnash\'s physical attacks (Feral Strike, Savage Charge, Frenzy 2-hit) discharge Zacharius\'s stored charge as damage back at Gnash. Frenzy into a fully charged Zacharius can backfire heavily.',
+  'zacharius|gnash':'Gnash\'s physicals repeatedly reset Zacharius\'s charge buildup. Each discharge deals that charge amount back to Gnash — but Gnash\'s 105 HP absorbs it.',
+  'skadi|mal':'⚠️ Blizzard drains 2 mana/turn for 5 turns, crippling Malachar\'s resource-hungry kit. Frost Armor also cuts Drain healing by 30%.',
+  'mal|skadi':'⚠️ Skadi\'s Blizzard directly attacks Malachar\'s mana economy. Frost Armor reduces both Drain damage output and its healing component.',
+  'gnash|ponder':'⚠️ Gnash\'s 105 HP + War Paint (33% resist) makes Ponder\'s chip damage extremely slow. Frenzy\'s 2 physical hits can shred through Blink.',
+  'ponder|gnash':'⚠️ Ponder needs many turns siphoning and chipping to bring down 105 HP with resistance up.',
+  'mordant|aurelia':'Mordant\'s Silence hampers Aurelia\'s costly kit (Foresight 4m, Time Drain 3m, Haste 3m). Agony punishes casting. Aurelia\'s Foresight can block one hex.',
+  'emberic|skadi':'Skadi\'s Frost Armor retaliates on every Fireball and reduces damage by 30%. Blizzard starves Emberic\'s 83 HP down quickly while his random damage is unreliable.',
+};
+
+function getNote(a,b){
+  return MATCHUP_NOTES[`${a}|${b}`]||MATCHUP_NOTES[`${b}|${a}`]||'No specific interaction notes recorded for this matchup.';
+}
+function getVerdict(wr,an,bn){
+  if(wr>=0.80)return`🔴 <b>Very one-sided</b> — ${an} dominates`;
+  if(wr>=0.70)return`🟠 <b>Significant advantage</b> for ${an}`;
+  if(wr>=0.60)return`🟡 <b>Moderate advantage</b> for ${an}`;
+  if(wr>=0.45)return`🟢 <b>Even matchup</b>`;
+  if(wr>=0.30)return`🟡 <b>Moderate advantage</b> for ${bn}`;
+  if(wr>=0.20)return`🟠 <b>Significant advantage</b> for ${bn}`;
+  return`🔴 <b>Very one-sided</b> — ${bn} dominates`;
+}
+
+function showDetail(aKey,bKey){
+  selectedCell={aKey,bKey};
+  const r=matchupResults[aKey][bKey];
+  const ac=CHARS[aKey],bc=CHARS[bKey];
+  const wr=r.winRate,pct=Math.round(wr*100);
+  const el=document.getElementById('detail-panel');
+  el.style.display='block';
+  el.innerHTML=`
+    <div class="detail-header">
+      <span style="color:${ac.col}">${ac.icon} ${ac.name}</span>
+      <span class="vs">vs</span>
+      <span style="color:${bc.col}">${bc.icon} ${bc.name}</span>
+    </div>
+    <div class="detail-stats">
+      <div class="stat-box win"><div class="stat-num" style="color:${ac.col}">${r.aWins}</div><div class="stat-label">${ac.name} wins</div></div>
+      <div class="stat-box draw"><div class="stat-num">${r.draws}</div><div class="stat-label">draws/timeout</div></div>
+      <div class="stat-box lose"><div class="stat-num" style="color:${bc.col}">${r.bWins}</div><div class="stat-label">${bc.name} wins</div></div>
+    </div>
+    <div class="detail-bar"><div class="bar-fill" style="width:${pct}%;background:${ac.col}"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;margin-bottom:8px"><span>${ac.name} ${pct}%</span><span>${bc.name} ${100-pct}%</span></div>
+    <div class="detail-verdict">${getVerdict(wr,ac.name,bc.name)}</div>
+    <div class="detail-analysis">${getNote(aKey,bKey)}</div>
+    <div class="detail-avgturns">Avg remaining HP — ${ac.name}: <b>${r.avgAHp.toFixed(0)}</b> | ${bc.name}: <b>${r.avgBHp.toFixed(0)}</b> | of ${r.total} sims</div>
+    <div style="margin-top:8px;text-align:center">
+      <button onclick="showDetail('${bKey}','${aKey}')" style="font-size:11px;padding:4px 10px">↔ Flip: ${bc.name} vs ${ac.name}</button>
+    </div>`;
+}
+
+function updateGlobal(k,inp){
+  const v=parseFloat(inp.value);
+  simParams[k]=v;
+  const el=document.getElementById('gv-'+k);
+  if(el)el.textContent=Number.isInteger(v)?v:v.toFixed(2);
+}
+function updateParam(inp){
+  const k=inp.dataset.char,s=inp.dataset.stat;
+  const v=parseFloat(inp.value);
+  if(!simParams[k])simParams[k]={};
+  simParams[k][s]=v;
+  const el=document.getElementById(`pv-${k}-${s}`);
+  if(el)el.textContent=Number.isInteger(v)?v:v.toFixed(2);
+}
+
+function buildParamPanel(){
+  const specs={
+    eldrad:[['shieldMaxHp','Shield HP',20,120,1],['shieldDuration','Shield dur',3,20,1],['counterDmg','Counter dmg',5,50,1]],
+    mal:[['drainBaseDmg','Drain base dmg',5,40,1],['drainHealPct','Drain heal %',0.1,0.8,0.05],['bpCost','BP HP cost',5,40,1],['bpGain','BP mana gain',5,20,1],['empowerMult','Empower mult',1.1,2.0,0.05]],
+    sylvara:[['healAmt','Regen HP total',10,80,5],['entangleChance','Entangle chance',0.3,1.0,0.05],['vineWhipDur','Vine Whip turns',1,6,1]],
+    aurelia:[['timeDrainTurns','Time Drain dur',1,10,1]],
+    gnash:[['chargeDmg','Savage Charge dmg',10,60,1],['frenzyHpCost','Frenzy HP cost',5,30,1]],
+    emberic:[['fireballMin','Fireball min',5,25,1],['fireballMax','Fireball max',15,50,1],['flameShieldDur','Flame Shield dur',2,8,1]],
+    skadi:[['iceLanceDmg','Ice Lance dmg',10,50,1],['iceLanceFreeze','Lance freeze%',0.05,0.8,0.05],['frostArmorDur','Frost Armor dur',1,8,1],['frostArmorRetaliationDmg','FA ret dmg',1,15,1],['blizzardDur','Blizzard dur',1,10,1]],
+    zacharius:[['chainLightningDmg','Chain Lightning dmg',10,50,1],['chainArcChance','Arc chance',0.1,0.7,0.05],['chainArcDmg','Arc dmg',3,25,1],['conductivityDur','Conductivity dur',1,6,1],['conductivityMult','Conductivity mult',1.0,2.0,0.05],['galvanizeChargeGain','Galvanize charge',4,16,1]],
+    mary:[['healAmt','Heal HP',10,80,5],['radiantDmg','Radiant dmg',5,40,1]],
+    mordant:[['agonyDmg','Agony dmg/action',3,30,1],['agonyDur','Agony dur',1,8,1],['silenceDur','Silence dur',1,8,1],['corruptionDur','Corruption dur',1,6,1]],
+    ponder:[['vanishDur','Vanish dur',1,6,1],['manaSiphonAmt','Mana Siphon amt',1,10,1],['blinkDur','Blink dur',1,6,1]],
+  };
+  let html='<div class="param-grid">';
+  CHAR_KEYS.forEach(key=>{
+    const cfg=CHARS[key];
+    html+=`<div class="char-params"><div class="char-param-header" style="color:${cfg.col}">${cfg.icon} ${cfg.name}</div>`;
+    [['hp','HP',50,150,1],['dmgMult','dmgMult',0.7,1.6,0.05],['startMana','startMana',0,12,1],['channelAmt','channelAmt',1,8,1]]
+      .forEach(([s,label,mn,mx,step])=>{
+        const v=cfg[s];
+        html+=`<label>${label} <input type="range" min="${mn}" max="${mx}" step="${step}" value="${v}" data-char="${key}" data-stat="${s}" oninput="updateParam(this)"><span id="pv-${key}-${s}">${Number.isInteger(v)?v:v.toFixed(2)}</span></label>`;
+      });
+    (specs[key]||[]).forEach(([s,label,mn,mx,step])=>{
+      const v=cfg[s];
+      if(v==null)return;
+      html+=`<label>${label} <input type="range" min="${mn}" max="${mx}" step="${step}" value="${v}" data-char="${key}" data-stat="${s}" oninput="updateParam(this)"><span id="pv-${key}-${s}">${Number.isInteger(v)?v:v.toFixed(2)}</span></label>`;
+    });
+    html+='</div>';
+  });
+  return html+'</div>';
+}
+
+function switchTab(id,el){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(el)el.classList.add('active');
+}
+function switchTabById(id){
+  const el=document.querySelector(`.tab[onclick*="${id}"]`);
+  switchTab(id,el);
+}
+
+function runSim(){
+  const btn=document.getElementById('run-btn');
+  const msg=document.getElementById('status-msg');
+  const n=parseInt(document.getElementById('sims-input').value)||500;
+  btn.disabled=true; btn.textContent='Simulating…'; msg.textContent='';
+  setTimeout(()=>{
+    const t0=Date.now();
+    matchupResults=runAll(n);
+    const ms=Date.now()-t0;
+    document.getElementById('matrix-container').innerHTML=buildMatrix();
+    document.getElementById('flags-list').innerHTML=buildFlags();
+    btn.disabled=false; btn.textContent='⟳ Re-run Simulation';
+    msg.textContent=`Done in ${ms}ms (${n}×${CHAR_KEYS.length*CHAR_KEYS.length} matchups)`;
+    if(selectedCell)showDetail(selectedCell.aKey,selectedCell.bKey);
+  },20);
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('param-panel').innerHTML=buildParamPanel();
+  runSim();
+});
+</script>
+</body>
+</html>
