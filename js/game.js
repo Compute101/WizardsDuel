@@ -1986,20 +1986,10 @@ function resolveCharSpell(spellId,caster){
       flash('#9988cc'); anim(caster,'cast',600);
     } else {
       const counterTriggered=targetState.counter&&targetState.shield>0;
-      if(targetState.resist>0)       dmg=Math.round(dmg*0.67);
-      if(targetState.frostArmor>0)   dmg=Math.round(dmg*0.70);
       if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
       if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed; dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8); spawnParts(tx,bH*.38,'#ffffff',4);
-        }
+        addFloat(tx,bH*.38-20,'☀️ Bypassed!',casterCfg.col,15);
+        spawnParts(tx,bH*.38,casterCfg.col,12); spawnParts(tx,bH*.38,'#ffffff',6);
       }
       if(counterTriggered){
         casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
@@ -2010,7 +2000,6 @@ function resolveCharSpell(spellId,caster){
         checkWin(); if(!battleRunning) return;
       }
       targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
       if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
       spawnParts(tx,bH*.38,casterCfg.col,16);
       spawnBeam(cx,bH*.38,tx,bH*.38,casterCfg.col);
