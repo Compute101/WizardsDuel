@@ -1990,16 +1990,10 @@ function resolveCharSpell(spellId,caster){
       if(targetState.frostArmor>0)   dmg=Math.round(dmg*0.70);
       if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
       if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed; dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8); spawnParts(tx,bH*.38,'#ffffff',4);
-        }
+        targetState.shield=0;
+        targetState.shieldHp=0;
+        addFloat(tx,bH*.38-20,'☀️ Pierced!',casterCfg.col,15);
+        spawnParts(tx,bH*.38,casterCfg.col,18); spawnParts(tx,bH*.38,'#ffffff',8);
       }
       if(counterTriggered){
         casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
