@@ -127,7 +127,7 @@
       {"id": "basicattack", "name": "Ember",       "icon": "🔥", "cost": 0, "costLabel": "Free",   "dmg": 9, "effectLabel": "Deal ~9 fire damage"},
       {"id": "fireball",    "name": "Fireball",    "icon": "🎱", "cost": 4, "costLabel": "4 Mana", "effectLabel": "10–30 random fire damage"},
       {"id": "flameshield", "name": "Flame Shield","icon": "🛡️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "5 turns: attacker takes 6–12 random fire damage"},
-      {"id": "candle",      "name": "Candle",      "icon": "🕯️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "4 turns: opponent catches fire each time they channel"}
+      {"id": "candle",      "name": "Candle",      "icon": "🕯️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "3 turns: opponent catches fire each time they channel"}
     ]
   },
   "skadi": {
@@ -217,14 +217,14 @@
     "startMana": 6,
     "channelAmt": 5,
     "dmgMult": 1.0,
-    "agonyDur": 4,
+    "agonyDur": 3,
     "agonyDmg": 12,
-    "silenceDur": 4,
+    "silenceDur": 3,
     "corruptionDur": 3,
     "spells": [
       {"id": "basicattack", "name": "Dark Bolt",   "icon": "🌑", "cost": 0, "costLabel": "Free",   "dmg": 8,  "effectLabel": "Deal ~8 dark damage"},
-      {"id": "agony",       "name": "Agony",        "icon": "💀", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Any non-channel action deals 12 dmg to target for 4 turns"},
-      {"id": "silence",     "name": "Silence",      "icon": "🔇", "cost": 2, "costLabel": "2 Mana", "effectLabel": "45% spell failure for 4 turns"},
+      {"id": "agony",       "name": "Agony",        "icon": "💀", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Any non-channel action deals 12 dmg to target for 3 turns"},
+      {"id": "silence",     "name": "Silence",      "icon": "🔇", "cost": 2, "costLabel": "2 Mana", "effectLabel": "45% spell failure for 3 turns"},
       {"id": "corruption",  "name": "Corruption",   "icon": "☠️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Healing received converts to damage for 3 turns"}
     ]
   },

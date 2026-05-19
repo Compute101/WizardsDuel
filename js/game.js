@@ -1707,7 +1707,7 @@ function resolveCharSpell(spellId,caster){
       spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#ff6600',6);
       anim(caster,'cast',600);
     } else {
-      targetState.candle=4;
+      targetState.candle=3;
       for(let i=0;i<12;i++){
         const a=Math.random()*Math.PI*2;
         gs.parts.push({x:tx+(Math.random()-.5)*bH*.05,y:bH*.38,col:i%2?'#ff6600':'#ffaa00',
