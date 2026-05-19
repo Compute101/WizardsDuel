@@ -269,9 +269,9 @@
     "stonesoulDuration": 5,
     "rockfallDmg": 9,
     "spells": [
-      {"id": "basicattack", "name": "Boulder",   "icon": "🪨", "cost": 0, "costLabel": "Free",   "dmg": 14, "physical": true, "effectLabel": "Deal ~14 phys damage"},
+      {"id": "basicattack", "name": "Boulder",   "icon": "🪨", "cost": 0, "costLabel": "Free",   "dmg": 9, "physical": true, "effectLabel": "Deal ~9 phys damage"},
       {"id": "stoneskin",   "name": "Stoneskin", "icon": "🧱", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Absorb 10 per hit; 30 HP total, 10 turns"},
-      {"id": "stonesoul",   "name": "Stonesoul", "icon": "💎", "cost": 3, "costLabel": "3 Mana", "effectLabel": "50% magical damage reduction for 5 turns"},
+      {"id": "stonesoul",   "name": "Stonesoul", "icon": "💎", "cost": 3, "costLabel": "3 Mana", "effectLabel": "40% magical damage reduction for 5 turns"},
       {"id": "rockfall",    "name": "Rockfall",  "icon": "⛰️", "cost": 4, "costLabel": "4 Mana", "effectLabel": "3 rocks × ~9 phys dmg each", "aiHint": "burst"}
     ]
   }

@@ -63,7 +63,7 @@ const CHAR_DISPLAY={
     flavour:"Young but fierce — vanish from sight and plunder your foe's magic."
   },
   durin:{
-    stats:[['❤ HP','110'],['🧱 Stoneskin','10 absorb/hit, 30 HP total, 10T'],['💎 Stonesoul','50% magic reduction / 5T'],['⛰️ Rockfall','3×9 phys dmg']],
+    stats:[['❤ HP','110'],['🧱 Stoneskin','10 absorb/hit, 30 HP total, 10T'],['💎 Stonesoul','40% magic reduction / 5T'],['⛰️ Rockfall','3×9 phys dmg']],
     flavour:'The mountain endures. Outlast every spell — stone by stone.'
   }
 };
@@ -2092,9 +2092,6 @@ function resolveCharSpell(spellId,caster){
     } else {
       const counterTriggered=targetState.counter&&targetState.shield>0;
       if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      const [radDmg,radSkin]=applyTargetSkins(targetState,dmg,false);
-      dmg=radDmg;
-      if(radSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+radSkin+' Skin','#b08040',10);
       if(targetState.shield>0){
         addFloat(tx,bH*.38-20,'☀️ Bypassed!',casterCfg.col,15);
         spawnParts(tx,bH*.38,casterCfg.col,12); spawnParts(tx,bH*.38,'#ffffff',6);
@@ -2527,7 +2524,7 @@ function applyFlameShieldRetaliation(casterState,cx){
 }
 
 function applyTargetSkins(targetState,dmg,isPhysical){
-  if(!isPhysical&&targetState.stonesoul>0) dmg=Math.round(dmg*0.5);
+  if(!isPhysical&&targetState.stonesoul>0) dmg=Math.round(dmg*0.6);
   let skinAbsorbed=0;
   if(targetState.stoneskin>0&&targetState.stoneskinHp>0){
     skinAbsorbed=Math.min(10,Math.min(targetState.stoneskinHp,dmg));
