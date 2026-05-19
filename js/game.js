@@ -55,7 +55,7 @@ const CHAR_DISPLAY={
     flavour:'Faith is the only shield that never breaks.'
   },
   mordant:{
-    stats:[['❤ HP','82'],['💀 Agony','3 mana → 12 dmg on any non-channel action / 4T'],['🔇 Silence','2 mana → 45% spell failure / 4T'],['☠️ Corruption','3 mana → healing converts to damage / 3T']],
+    stats:[['❤ HP','82'],['💀 Agony','3 mana → 12 dmg on any non-channel action / 3T'],['🔇 Silence','2 mana → 45% spell failure / 3T'],['☠️ Corruption','3 mana → −2 mana per channel / 3T']],
     flavour:'The hex is already written. You just haven\'t felt it yet.'
   },
   ponder:{
@@ -1234,13 +1234,20 @@ function act(type){
   }
 
   if(type==='channel'){
+    let channelGain;
     if(whoState.timeDrain>0){
-      whoState.mana=Math.min(MAX_MANA,whoState.mana+2);
+      channelGain=2;
       addFloat(cx,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
     } else {
-      whoState.mana=Math.min(MAX_MANA,whoState.mana+whoCfg.channelAmt);
+      channelGain=whoCfg.channelAmt;
       addFloat(cx,bH*.38,'+'+whoCfg.channelAmt+' Mana','#88aaff',13);
     }
+    if(whoState.corruption>0){
+      const drain=Math.min(channelGain,2);
+      channelGain=Math.max(0,channelGain-2);
+      addFloat(cx,bH*.5,'☠️ −'+drain+' Corrupted!','#9944cc',12);
+    }
+    whoState.mana=Math.min(MAX_MANA,whoState.mana+channelGain);
     if(whoState.candle>0) triggerCandleBurn(whoState,cx);
     anim(who,'cast',700); endMyTurn(); return;
   }
@@ -1943,23 +1950,16 @@ function resolveCharSpell(spellId,caster){
     refreshHUD();
   } else if(spellId==='divineheal'){
     const healAmt=casterCfg.healAmt||40;
-    if(casterState.corruption>0){
-      casterState.hp=Math.max(0,casterState.hp-healAmt);
-      addFloat(cx,bH*.33,'☠️ Corrupted! −'+healAmt,'#9944cc',14);
-      spawnParts(cx,bH*.38,'#9944cc',16); flash('#330033');
-      anim(caster,'hit',700); refreshHUD(); checkWin();
-    } else {
-      const actual=Math.min(healAmt, casterState.maxHp-casterState.hp);
-      casterState.hp=Math.min(casterState.maxHp, casterState.hp+healAmt);
-      addFloat(cx,bH*.33,'💛 +'+actual+' Healed!',casterCfg.col,14);
-      for(let i=0;i<16;i++){
-        const a=-Math.PI/2+(-0.9+Math.random()*1.8), sp=1+Math.random()*2.5;
-        gs.parts.push({x:cx+(Math.random()-.5)*bH*.05,y:bH*.38,col:i%2?'#ffe090':'#fff8c0',
-          vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*3,life:1,dec:.014,noGrav:true});
-      }
-      flash(casterCfg.col);
-      anim(caster,'cast',700); refreshHUD();
+    const actual=Math.min(healAmt, casterState.maxHp-casterState.hp);
+    casterState.hp=Math.min(casterState.maxHp, casterState.hp+healAmt);
+    addFloat(cx,bH*.33,'💛 +'+actual+' Healed!',casterCfg.col,14);
+    for(let i=0;i<16;i++){
+      const a=-Math.PI/2+(-0.9+Math.random()*1.8), sp=1+Math.random()*2.5;
+      gs.parts.push({x:cx+(Math.random()-.5)*bH*.05,y:bH*.38,col:i%2?'#ffe090':'#fff8c0',
+        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*3,life:1,dec:.014,noGrav:true});
     }
+    flash(casterCfg.col);
+    anim(caster,'cast',700); refreshHUD();
   } else if(spellId==='purge'){
     const cleared=[];
     if(casterState.burn>0)        {casterState.burn=0;         cleared.push('🔥');}
@@ -2251,23 +2251,13 @@ function processRegen(target,tx,ty){
   target.regen.remaining-=healThis;
   target.regen.turns--;
   if(target.regen.turns<=0) target.regen=null;
-  if(target.corruption>0){
-    target.hp=Math.max(0,target.hp-healThis);
-    for(let i=0;i<8;i++){
-      const a=Math.random()*Math.PI*2, sp=0.8+Math.random()*1.5;
-      gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:'#9944cc',
-        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*2,life:1,dec:.015,noGrav:true});
-    }
-    addFloat(tx,ty,'☠️ −'+healThis+' Corrupted!','#9944cc',12);
-  } else {
-    target.hp=Math.min(target.maxHp,target.hp+healThis);
-    for(let i=0;i<10;i++){
-      const a=-Math.PI/2+(-0.55+Math.random()*1.1), sp=0.8+Math.random()*1.8;
-      gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:i%2?'#44ee88':'#88ffcc',
-        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-0.5,sz:1.5+Math.random()*2.5,life:1,dec:.011+Math.random()*.01,noGrav:true});
-    }
-    addFloat(tx,ty,'+'+healThis+' 💚','#44cc88',12);
+  target.hp=Math.min(target.maxHp,target.hp+healThis);
+  for(let i=0;i<10;i++){
+    const a=-Math.PI/2+(-0.55+Math.random()*1.1), sp=0.8+Math.random()*1.8;
+    gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:i%2?'#44ee88':'#88ffcc',
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-0.5,sz:1.5+Math.random()*2.5,life:1,dec:.011+Math.random()*.01,noGrav:true});
   }
+  addFloat(tx,ty,'+'+healThis+' 💚','#44cc88',12);
 }
 
 function processVineWhip(target,tx,ty){

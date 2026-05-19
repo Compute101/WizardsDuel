@@ -225,7 +225,7 @@
       {"id": "basicattack", "name": "Dark Bolt",   "icon": "🌑", "cost": 0, "costLabel": "Free",   "dmg": 8,  "effectLabel": "Deal ~8 dark damage"},
       {"id": "agony",       "name": "Agony",        "icon": "💀", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Any non-channel action deals 12 dmg to target for 3 turns"},
       {"id": "silence",     "name": "Silence",      "icon": "🔇", "cost": 2, "costLabel": "2 Mana", "effectLabel": "45% spell failure for 3 turns"},
-      {"id": "corruption",  "name": "Corruption",   "icon": "☠️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Healing received converts to damage for 3 turns"}
+      {"id": "corruption",  "name": "Corruption",   "icon": "☠️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Target gains 2 less mana per channel for 3 turns"}
     ]
   },
   "ponder": {
