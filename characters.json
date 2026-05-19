@@ -195,12 +195,12 @@
     "channelAmt": 5,
     "dmgMult": 1.0,
     "healAmt": 40,
-    "radiantDmg": 14,
+    "radiantDmg": 15,
     "spells": [
       {"id": "basicattack", "name": "Smite",   "icon": "🌟", "cost": 0, "costLabel": "Free",   "dmg": 8, "physical": true, "effectLabel": "Deal ~8 holy physical damage"},
       {"id": "divineheal",  "name": "Heal",    "icon": "💛", "cost": 4, "costLabel": "4 Mana", "effectLabel": "Instantly restore 40 HP"},
       {"id": "purge",       "name": "Purge",   "icon": "✨", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Remove all active debuffs from yourself"},
-      {"id": "radiant",     "name": "Radiant", "icon": "☀️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Deal 14 holy damage; pierces shields"}
+      {"id": "radiant",     "name": "Radiant", "icon": "☀️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Deal 15 holy damage; bypasses shields & resistance"}
     ]
   },
   "mordant": {
