@@ -858,7 +858,22 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
     bx.globalAlpha=1;
   }
+  if(state&&state.blink){
+    const wy2=y-sz*.5;
+    for(let off=0;off<2;off++){
+      const phase=((t+off*700)%1400)/1400;
+      const r=sz*(0.55+phase*0.35);
+      const alpha=(1-phase)*0.5;
+      bx.beginPath(); bx.arc(x,wy2,r,0,Math.PI*2);
+      bx.strokeStyle=`rgba(180,140,255,${alpha})`; bx.lineWidth=1.5; bx.stroke();
+    }
+    const gv=0.06+0.04*Math.sin(t/250);
+    bx.beginPath(); bx.arc(x,y-sz*.5,sz*.72,0,Math.PI*2);
+    bx.strokeStyle=`rgba(200,160,255,${gv*4})`; bx.lineWidth=2;
+    bx.shadowColor='#cc99ff'; bx.shadowBlur=8; bx.stroke(); bx.shadowBlur=0;
+  }
   if(state&&state.invisible>0) bx.globalAlpha=0.35;
+  else if(state&&state.blink) bx.globalAlpha=0.3+0.7*(0.5+0.5*Math.sin(t/350));
   const img=sprites[who];
   if(img&&spriteStatus[who]==='ready'){
     const cfg=SPRITE_CFG;
