@@ -126,7 +126,7 @@
     "spells": [
       {"id": "basicattack", "name": "Ember",       "icon": "🔥", "cost": 0, "costLabel": "Free",   "dmg": 9, "effectLabel": "Deal ~9 fire damage"},
       {"id": "fireball",    "name": "Fireball",    "icon": "🎱", "cost": 4, "costLabel": "4 Mana", "effectLabel": "10–30 random fire damage"},
-      {"id": "flameshield", "name": "Flame Shield","icon": "🛡️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "4 turns: attacker takes 6–12 random fire damage"},
+      {"id": "flameshield", "name": "Flame Shield","icon": "🛡️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "5 turns: attacker takes 6–12 random fire damage"},
       {"id": "candle",      "name": "Candle",      "icon": "🕯️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "4 turns: opponent catches fire each time they channel"}
     ]
   },
@@ -145,15 +145,15 @@
     "channelAmt": 5,
     "dmgMult": 1.0,
     "iceLanceDmg": 28,
-    "iceLanceFreeze": 0.35,
+    "iceLanceFreeze": 0.25,
     "frostArmorDur": 4,
-    "frostArmorRetaliationDmg": 8,
+    "frostArmorRetaliationDmg": 4,
     "blizzardDur": 5,
     "spells": [
       {"id": "basicattack", "name": "Frost Bolt", "icon": "❄️", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 ice damage"},
-      {"id": "icelance",   "name": "Ice Lance",   "icon": "🧊", "cost": 4, "costLabel": "4 Mana", "effectLabel": "28 damage; 35% chance to freeze 1 turn"},
-      {"id": "frostarmor", "name": "Frost Armor", "icon": "🛡️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "30% dmg reduction for 4 turns; attacker takes 8 damage"},
-      {"id": "blizzard",   "name": "Blizzard",    "icon": "🌨️", "cost": 4, "costLabel": "4 Mana", "effectLabel": "5 dmg/turn × 5T + drains 3 mana/turn + 25% freeze chance"}
+      {"id": "icelance",   "name": "Ice Lance",   "icon": "🧊", "cost": 4, "costLabel": "4 Mana", "effectLabel": "28 damage; 25% chance to freeze 1 turn"},
+      {"id": "frostarmor", "name": "Frost Armor", "icon": "🛡️", "cost": 4, "costLabel": "4 Mana", "effectLabel": "30% dmg reduction for 4 turns; attacker takes 4 damage"},
+      {"id": "blizzard",   "name": "Blizzard",    "icon": "🌨️", "cost": 4, "costLabel": "4 Mana", "effectLabel": "5 dmg/turn × 5T + drains 2 mana/turn + 15% freeze chance"}
     ]
   },
   "zacharius": {

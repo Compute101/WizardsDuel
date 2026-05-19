@@ -39,7 +39,7 @@ const CHAR_DISPLAY={
     flavour:'Blood and bone. No magic — just fury.'
   },
   emberic:{
-    stats:[['❤ HP','83'],['🎱 Fireball','10–26 random fire dmg'],['🛡️ Flame Shield','6–12 fire retaliate / 4T'],['🕯️ Candle','Channel → catch fire / 4T']],
+    stats:[['❤ HP','83'],['🎱 Fireball','10–26 random fire dmg'],['🛡️ Flame Shield','6–12 fire retaliate / 5T'],['🕯️ Candle','Channel → catch fire / 4T']],
     flavour:'Roll the dice. Fan the flames. Win big or burn together.'
   },
   skadi:{
@@ -1670,8 +1670,8 @@ function resolveCharSpell(spellId,caster){
       refreshHUD(); checkWin();
     }
   } else if(spellId==='flameshield'){
-    casterState.flameShield=4;
-    addFloat(cx,bH*.33,'🔥 Flame Shield! (4T)',casterCfg.col,13);
+    casterState.flameShield=5;
+    addFloat(cx,bH*.33,'🔥 Flame Shield! (5T)',casterCfg.col,13);
     for(let i=0;i<14;i++){
       const a=i/14*Math.PI*2;
       gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#ff6600':'#ffaa00',
@@ -2302,7 +2302,7 @@ function processVineWhip(target,tx,ty){
 function processBlizzard(target,tx,ty){
   if(!target.blizzard||target.blizzard<=0) return;
   target.hp=Math.max(0,target.hp-5);
-  const drained=Math.min(3,target.mana);
+  const drained=Math.min(2,target.mana);
   target.mana=Math.max(0,target.mana-drained);
   target.blizzard--;
   for(let i=0;i<10;i++){
@@ -2312,7 +2312,7 @@ function processBlizzard(target,tx,ty){
   }
   addFloat(tx,ty,'❄️ -5','#88ddff',13);
   if(drained>0) addFloat(tx,ty+22,'−'+drained+' Mana','#88ddff',11);
-  if(Math.random()<0.25&&target.frozen<=0) target.frozen=1;
+  if(Math.random()<0.15&&target.frozen<=0) target.frozen=1;
 }
 
 const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption'];
