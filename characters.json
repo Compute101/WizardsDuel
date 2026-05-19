@@ -246,7 +246,7 @@
       {"id": "basicattack", "name": "Magic Missile", "icon": "✨", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 magic damage"},
       {"id": "vanish",      "name": "Vanish",        "icon": "👻", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Invisible 3 turns; attacks break it"},
       {"id": "manasiphon",  "name": "Mana Siphon",   "icon": "🌀", "cost": 0, "costLabel": "Free",   "effectLabel": "Steal 4 mana (only while invisible; blocked by shield/foresight)", "aiHint": "mana_steal"},
-      {"id": "blink",       "name": "Blink",         "icon": "💫", "cost": 1, "costLabel": "1 Mana", "effectLabel": "Next attack against you auto-misses"}
+      {"id": "blink",       "name": "Blink",         "icon": "💫", "cost": 1, "costLabel": "1 Mana", "effectLabel": "50% dodge chance for 3 turns"}
     ]
   }
 }
