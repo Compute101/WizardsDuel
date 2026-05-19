@@ -217,14 +217,14 @@
     "startMana": 6,
     "channelAmt": 5,
     "dmgMult": 1.0,
-    "agonyDur": 3,
+    "agonyDur": 5,
     "agonyDmg": 12,
-    "silenceDur": 3,
+    "silenceDur": 5,
     "corruptionDur": 3,
     "spells": [
       {"id": "basicattack", "name": "Dark Bolt",   "icon": "🌑", "cost": 0, "costLabel": "Free",   "dmg": 8,  "effectLabel": "Deal ~8 dark damage"},
-      {"id": "agony",       "name": "Agony",        "icon": "💀", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Any non-channel action deals 12 dmg to target for 3 turns"},
-      {"id": "silence",     "name": "Silence",      "icon": "🔇", "cost": 2, "costLabel": "2 Mana", "effectLabel": "45% spell failure for 3 turns"},
+      {"id": "agony",       "name": "Agony",        "icon": "💀", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Any non-channel action deals 12 dmg to target for 5 turns"},
+      {"id": "silence",     "name": "Silence",      "icon": "🔇", "cost": 2, "costLabel": "2 Mana", "effectLabel": "45% spell failure for 5 turns"},
       {"id": "corruption",  "name": "Corruption",   "icon": "☠️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Target gains 2 less mana per channel for 3 turns"}
     ]
   },

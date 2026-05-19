@@ -55,7 +55,7 @@ const CHAR_DISPLAY={
     flavour:'Faith is the only shield that never breaks.'
   },
   mordant:{
-    stats:[['❤ HP','82'],['💀 Agony','3 mana → 12 dmg on any non-channel action / 3T'],['🔇 Silence','2 mana → 45% spell failure / 3T'],['☠️ Corruption','3 mana → −2 mana per channel / 3T']],
+    stats:[['❤ HP','82'],['💀 Agony','3 mana → 12 dmg on any non-channel action / 5T'],['🔇 Silence','2 mana → 45% spell failure / 5T'],['☠️ Corruption','3 mana → −2 mana per channel / 3T']],
     flavour:'The hex is already written. You just haven\'t felt it yet.'
   },
   ponder:{
