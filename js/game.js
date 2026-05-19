@@ -63,7 +63,7 @@ const CHAR_DISPLAY={
     flavour:"Young but fierce — vanish from sight and plunder your foe's magic."
   },
   durin:{
-    stats:[['❤ HP','110'],['🧱 Stoneskin','10 absorb/hit, 30 HP total, 6T'],['💎 Stonesoul','50% magic reduction / 4T'],['⛰️ Rockfall','3×9 phys dmg']],
+    stats:[['❤ HP','110'],['🧱 Stoneskin','10 absorb/hit, 30 HP total, 10T'],['💎 Stonesoul','50% magic reduction / 5T'],['⛰️ Rockfall','3×9 phys dmg']],
     flavour:'The mountain endures. Outlast every spell — stone by stone.'
   }
 };
@@ -901,18 +901,32 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.globalAlpha=1;
   }
   if(state&&state.stoneskin>0&&state.stoneskinHp>0){
-    // Rotating stone shards
-    bx.save(); bx.translate(x,wy);
-    for(let i=0;i<6;i++){
-      const a=t/1800+i/6*Math.PI*2;
-      const r=sz*(0.68+0.05*Math.sin(t/600+i));
-      bx.globalAlpha=0.5+0.2*Math.sin(t/400+i*1.2);
-      bx.fillStyle=i%2?'#b08040':'#8b6914'; bx.shadowColor='#b08040'; bx.shadowBlur=4;
-      bx.beginPath(); bx.arc(Math.cos(a)*r,Math.sin(a)*r*0.55,sz*.028,0,Math.PI*2); bx.fill();
+    // Three chunky rock chunks orbiting in an ellipse
+    const rockCols=[['#8b7355','#6b5335'],['#a08060','#7a6040'],['#7a6244','#5a4a2c']];
+    const rockVerts=[[1.0,0.62,0.88,0.70,0.82],[0.78,1.0,0.65,0.85,0.72],[0.90,0.68,1.0,0.74,0.80]];
+    for(let i=0;i<3;i++){
+      const angle=t/1400+i/3*Math.PI*2;
+      const orbitR=sz*0.82;
+      const rx=x+Math.cos(angle)*orbitR;
+      const ry=wy+Math.sin(angle)*orbitR*0.48;
+      const rockSz=sz*(0.058+0.008*i);
+      bx.save();
+      bx.translate(rx,ry);
+      bx.rotate(t/900+i*1.4);
+      bx.globalAlpha=0.82+0.15*Math.sin(t/500+i*1.3);
+      bx.fillStyle=rockCols[i][0]; bx.shadowColor=rockCols[i][1]; bx.shadowBlur=5;
+      bx.beginPath();
+      const verts=rockVerts[i];
+      for(let j=0;j<5;j++){
+        const a=j/5*Math.PI*2;
+        const r=rockSz*verts[j];
+        if(j===0) bx.moveTo(Math.cos(a)*r,Math.sin(a)*r);
+        else bx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+      }
+      bx.closePath(); bx.fill();
+      bx.shadowBlur=0; bx.restore();
     }
-    bx.globalAlpha=1; bx.shadowBlur=0; bx.restore();
-    bx.strokeStyle=`rgba(176,128,64,${0.35+0.12*Math.sin(t/500)})`; bx.lineWidth=1.5;
-    bx.beginPath(); bx.ellipse(x,y,sz*.38,sz*.09,0,0,Math.PI*2); bx.stroke();
+    bx.globalAlpha=1;
   }
   if(state&&state.stonesoul>0){
     bx.globalAlpha=0.07+0.04*Math.sin(t/600); bx.fillStyle='#b08040';
@@ -936,6 +950,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   }
   if(state&&state.invisible>0) bx.globalAlpha=0.35;
   else if(state&&state.blink>0) bx.globalAlpha=0.3+0.7*(0.5+0.5*Math.sin(t/350));
+  if(state&&state.stoneskin>0&&state.stoneskinHp>0) bx.filter='grayscale(0.75) sepia(0.15)';
   const img=sprites[who];
   if(img&&spriteStatus[who]==='ready'){
     const cfg=SPRITE_CFG;
@@ -2103,17 +2118,27 @@ function resolveCharSpell(spellId,caster){
     }
     refreshHUD(); checkWin();
   } else if(spellId==='stoneskin'){
-    casterState.stoneskin=casterCfg.stoneskinDuration||6;
+    casterState.stoneskin=casterCfg.stoneskinDuration||10;
     casterState.stoneskinHp=casterCfg.stoneskinHpMax||30;
     addFloat(cx,bH*.33,'🧱 Stoneskin! ('+casterState.stoneskin+'T / '+casterState.stoneskinHp+' HP)',casterCfg.col,12);
-    for(let i=0;i<12;i++){
-      const a=i/12*Math.PI*2;
-      gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,
-        col:i%2?'#b08040':'#8b6914',vx:Math.cos(a)*0.9,vy:Math.sin(a)*0.9-0.4,
-        sz:2+Math.random()*3,life:1,dec:.018,noGrav:true});
-    }
-    spawnParts(cx,bH*.38,casterCfg.col,8);
-    anim(caster,'shield',700);
+    // Three waves of rocks fly inward and "coat" the caster
+    [0,220,440].forEach((delay,wave)=>{
+      setTimeout(()=>{
+        if(!battleRunning) return;
+        const angle=wave/3*Math.PI*2+Math.PI/6;
+        const srcDist=bH*0.22;
+        for(let j=0;j<4;j++){
+          const a=angle+j/4*Math.PI*2;
+          const srcX=cx+Math.cos(a)*srcDist, srcY=bH*.38+Math.sin(a)*srcDist*0.55;
+          const speed=0.06+Math.random()*0.04;
+          gs.parts.push({x:srcX,y:srcY,col:j%2?'#8b7355':'#a08060',
+            vx:(cx-srcX)*speed,vy:(bH*.38-srcY)*speed,
+            sz:3+Math.random()*3,life:1,dec:.028,noGrav:true});
+        }
+        spawnParts(cx,bH*.38,casterCfg.col,4);
+      },delay);
+    });
+    anim(caster,'shield',900);
   } else if(spellId==='stonesoul'){
     casterState.stonesoul=casterCfg.stonesoulDuration||4;
     addFloat(cx,bH*.33,'💎 Stonesoul! ('+casterState.stonesoul+'T)',casterCfg.col,12);
