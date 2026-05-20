@@ -11,7 +11,7 @@ const SPELLS=[
   {name:'Arcane Surge',   element:'arcane',    icon:'🌀', dmg:0,  cost:9,  col:'#cc88ff',
    effectLabel:'Wild: 15–55 damage'},
   {name:'Dispel',         element:'dispel',    icon:'🌸', dmg:0,  cost:7,  col:'#ffaaff',
-   effectLabel:'Cleanse own debuffs/hexes; 40% strip one opp buff'},
+   effectLabel:'Cleanse 1 own debuff/hex; 40% strip one opp buff'},
   {name:'Mana Burn',      element:'manaburn',  icon:'🔮', dmg:0,  cost:8,  col:'#cc44ff',
    effectLabel:'Deal 2× opp mana as dmg; drain 4 mana (pierces shields)'},
 ];
@@ -2135,12 +2135,24 @@ function castSpell(spell,target,tx,ty,caster){
   const targetCfg=target===gs.p1?p1Cfg:p2Cfg;
   const oppCfg   =caster==='p1'?p2Cfg:p1Cfg;
 
-  // Dispel: cleanse own debuffs (guaranteed) + 40% chance to strip one random buff from opponent
+  // Dispel: cleanse ONE random debuff/hex from caster + 40% chance to strip one opp buff
   if(spell.element==='dispel'){
     const cx2=caster==='p1'?bW*.22:bW*.78;
-    ['burn','frozen','blizzard','vineWhip','timeDrain','conductivity','candle','agony','corruption','silence'].forEach(s=>{casterState[s]=0;});
+    const activeDebuffs=[];
+    ['agony','corruption','silence','burn','frozen','blizzard','vineWhip','timeDrain','conductivity','candle'].forEach(s=>{
+      if(casterState[s]) activeDebuffs.push(s);
+    });
+    const DEBUFF_NAMES={agony:'Agony',corruption:'Corruption',silence:'Silence',burn:'Burn',
+      frozen:'Freeze',blizzard:'Blizzard',vineWhip:'Vine Whip',timeDrain:'Time Drain',
+      conductivity:'Conductivity',candle:'Candle'};
     spawnParts(cx2,ty,'#ffaaff',30); spawnParts(cx2,ty,'#ffffff',15);
-    addFloat(cx2,ty,'🌸 Cleansed!','#ffaaff',20);
+    if(activeDebuffs.length>0){
+      const cleansed=activeDebuffs[Math.floor(Math.random()*activeDebuffs.length)];
+      casterState[cleansed]=0;
+      addFloat(cx2,ty,'🌸 '+DEBUFF_NAMES[cleansed]+' Cleansed!','#ffaaff',18);
+    } else {
+      addFloat(cx2,ty,'🌸 Cleansed!','#ffaaff',20);
+    }
     flash('#ffaaff');
     // Offensive strip: 40% chance to remove one random active buff from opponent
     const oppBuffs=[];
