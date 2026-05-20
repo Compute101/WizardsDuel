@@ -59,14 +59,22 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 - White glyphs (the sequence) rise one at a time, staggered 3 s apart, with a coloured glow unique to each glyph and a small order-number badge.
 - 4 seconds of viewing time after the last glyph appears before input phase begins.
 
-**Glyph glow colours** (used on white sequence glyphs during watch phase):
+**Glyph glow colours** (used on white sequence glyphs during watch phase — defined for all 12):
 
-| Glyph | Glow colour |
-|-------|-------------|
-| ϟ | `#ccffff` cyan |
-| Δ | *(not yet defined — add when needed)* |
-| ⊕ | `#ffee77` gold |
-| Ω | *(not yet defined)* |
+| # | Glyph | Glow colour |
+|---|-------|-------------|
+| 0 | ϟ | `#ccffff` cyan |
+| 1 | Δ | `#ff9944` orange |
+| 2 | ∇ | `#44aaff` blue |
+| 3 | Ψ | `#aaff88` lime |
+| 4 | Ω | `#ff4444` red |
+| 5 | ∞ | `#44ffcc` teal |
+| 6 | ☽ | `#aaddff` ice-blue |
+| 7 | ✸ | `#ffff55` yellow |
+| 8 | ⊕ | `#ffee77` gold |
+| 9 | ⊗ | `#ff44aa` pink |
+| 10 | θ | `#88ff88` green |
+| 11 | Φ | `#dd88ff` violet |
 
 **Input phase — difficulty rules:**
 

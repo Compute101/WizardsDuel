@@ -3074,31 +3074,54 @@ function launchPatternEcho(spell,cb){
   document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
   setDpadVisible(false);
 
-  const TILES=[
-    {col:'#cc3300',lit:'#ff6622',sym:'ϟ',glowCol:'#ccffff'},  // koppa/lightning – cyan glow
-    {col:'#991100',lit:'#ff3311',sym:'☽',glowCol:'#aaddff'},  // crescent  – ice-blue glow
-    {col:'#aa7700',lit:'#ffcc00',sym:'⊕',glowCol:'#ffee77'},  // sun-cross – gold glow
-    {col:'#880000',lit:'#cc2200',sym:'✦',glowCol:'#dd88ff'},  // star      – violet glow
+  // ── Full 12-glyph Arcana Alphabet (grid order: 3 cols × 4 rows) ──────
+  // Indices: 0=ϟ 1=Δ 2=∇ 3=Ψ 4=Ω 5=∞ 6=☽ 7=✸ 8=⊕ 9=⊗ 10=θ 11=Φ
+  const ALPHABET=[
+    {sym:'ϟ',glowCol:'#ccffff',col:'#cc3300',lit:'#ff6622'}, // 0
+    {sym:'Δ',glowCol:'#ff9944',col:'#991100',lit:'#ff5533'}, // 1
+    {sym:'∇',glowCol:'#44aaff',col:'#1a2a44',lit:'#4477aa'}, // 2
+    {sym:'Ψ',glowCol:'#aaff88',col:'#1a3a1a',lit:'#44aa44'}, // 3
+    {sym:'Ω',glowCol:'#ff4444',col:'#880000',lit:'#cc2200'}, // 4
+    {sym:'∞',glowCol:'#44ffcc',col:'#003a3a',lit:'#009977'}, // 5
+    {sym:'☽',glowCol:'#aaddff',col:'#1a2a3a',lit:'#4488cc'}, // 6
+    {sym:'✸',glowCol:'#ffff55',col:'#333300',lit:'#998800'}, // 7
+    {sym:'⊕',glowCol:'#ffee77',col:'#aa7700',lit:'#ffcc00'}, // 8
+    {sym:'⊗',glowCol:'#ff44aa',col:'#330022',lit:'#882244'}, // 9
+    {sym:'θ',glowCol:'#88ff88',col:'#003322',lit:'#006644'}, // 10
+    {sym:'Φ',glowCol:'#dd88ff',col:'#220033',lit:'#660088'}, // 11
   ];
-  const SYMS=TILES.map(t=>t.sym);
-  const NOISE_COLS=['#bb1100','#991100','#cc2200','#aa1500','#881000'];
 
-  const TS=108,GAP=8,PAD=12;
-  const cw=PAD*2+TS*2+GAP;
-  const ch=340;
+  // Inferno owns ϟ(0) Δ(1) Ω(4) ⊕(8) — see CLAUDE.md
+  const SPELL_IDX=[0,1,4,8];
+  // Fire colours assigned per SPELL_IDX position (0-3)
+  const FIRE_COLS=[
+    {col:'#cc3300',lit:'#ff6622'},
+    {col:'#991100',lit:'#ff5533'},
+    {col:'#880000',lit:'#cc2200'},
+    {col:'#aa7700',lit:'#ffcc00'},
+  ];
+
+  // Canvas: 3-col × 4-row keyboard grid
+  const TS=72,GAP=6,PAD=10;
+  const cw=PAD*2+TS*3+GAP*2;  // 248 px
+  const ch=380;
   mc.width=cw; mc.height=ch;
   const mw=Math.min(cw,(window.innerWidth||360)-32);
   mc.style.width=mw+'px'; mc.style.height='auto';
 
-  // Tile grid sits in the lower portion of the canvas (input phase)
-  const tileTop=ch-PAD-TS*2-GAP-4;
-  const tPos=[
-    {x:PAD,y:tileTop},{x:PAD+TS+GAP,y:tileTop},
-    {x:PAD,y:tileTop+TS+GAP},{x:PAD+TS+GAP,y:tileTop+TS+GAP},
-  ];
+  // Keyboard tile positions — bottom-aligned
+  const tileAreaH=TS*4+GAP*3;        // 306 px
+  const tileTop=ch-PAD-tileAreaH;    // 64 px
+  const tPos=Array.from({length:12},(_,i)=>({
+    x:PAD+(i%3)*(TS+GAP),
+    y:tileTop+Math.floor(i/3)*(TS+GAP),
+  }));
 
+  // Sequence (stored as alphabet indices)
   const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
-  const seq=Array.from({length:SEQ_LEN},()=>Math.floor(Math.random()*4));
+  const seq=diffName==='easy'
+    ?[0,1,4,8]  // canonical Inferno word: ϟ Δ Ω ⊕
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
   const playerSeq=[];
   let phase='watch';
   let timeLeft=Math.round(20*diffMult);
@@ -3106,37 +3129,30 @@ function launchPatternEcho(spell,cb){
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
 
-  // Noise flames – red symbols rising as visual distraction
-  const noise=Array.from({length:40},()=>({
-    x:Math.random()*cw,
-    y:Math.random()*ch,
+  // Noise flames — all 12 arcana glyphs rise in deep red
+  const NOISE_COLS=['#bb1100','#991100','#cc2200','#aa1500','#881000'];
+  const noise=Array.from({length:44},()=>({
+    x:Math.random()*cw, y:Math.random()*ch,
     spd:0.6+Math.random()*1.4,
     sz:9+Math.random()*13,
-    sym:SYMS[Math.floor(Math.random()*4)],
-    col:NOISE_COLS[Math.floor(Math.random()*NOISE_COLS.length)],
+    ai:Math.floor(Math.random()*12),
+    col:NOISE_COLS[Math.floor(Math.random()*5)],
     ph:Math.random()*Math.PI*2,
     alpha:0.1+Math.random()*0.28,
   }));
 
-  // Distribute white symbols horizontally so they don't overlap
+  // White sequence symbols
   const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
     const frac=(i+0.5)/SEQ_LEN;
     return Math.max(28,Math.min(cw-28,cw*frac+(Math.random()-0.5)*22));
   });
-
-  // Each white symbol spawns SPAWN_DELAY + idx*SPAWN_INTERVAL ms after start
-  const SPAWN_DELAY=500;
-  const SPAWN_INTERVAL=3000;
-  const RISE_SPD=0.9; // px/frame – slower than noise so they're trackable
+  const SPAWN_DELAY=500,SPAWN_INTERVAL=3000,RISE_SPD=0.9;
   const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+4000;
-
   const startTime=Date.now();
   let watchDone=false;
-
-  // State for each white (sequence) symbol
-  const symStates=seq.map((tileIdx,i)=>({
-    tileIdx,sym:TILES[tileIdx].sym,x:xSlots[i],
-    y:ch+30,spawned:false,idx:i,
+  const symStates=seq.map((ai,i)=>({
+    ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
+    x:xSlots[i],y:ch+30,spawned:false,idx:i,
   }));
 
   function startTimer(){
@@ -3155,13 +3171,17 @@ function launchPatternEcho(spell,cb){
     const rect=mc.getBoundingClientRect();
     const sx=mc.width/rect.width,sy=mc.height/rect.height;
     const px=(e.clientX-rect.left)*sx,py=(e.clientY-rect.top)*sy;
-    for(let i=0;i<4;i++){
-      const tp=tPos[i];
+    for(let ai=0;ai<12;ai++){
+      const tp=tPos[ai];
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
-        playerSeq.push(i);
-        const idx=playerSeq.length-1;
-        if(playerSeq[idx]!==seq[idx]){finish(false);return;}
-        if(playerSeq.length===seq.length){finish(true);}
+        const isSpell=SPELL_IDX.includes(ai);
+        if(!isSpell){
+          if(diffName==='hard') finish(false); // wrong glyph in hard = fail
+          return;                              // easy/normal: silently ignore
+        }
+        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        playerSeq.push(ai);
+        if(playerSeq.length===seq.length) finish(true);
         return;
       }
     }
@@ -3187,58 +3207,48 @@ function launchPatternEcho(spell,cb){
     bg.addColorStop(1,'#050000');
     mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
 
-    // Transition to input phase once watch animation completes
     if(phase==='watch'&&!watchDone&&elapsed>=watchDuration){
       watchDone=true; phase='input';
       timerEl.textContent=timeLeft; startTimer();
     }
 
     if(phase==='watch'){
-      // ── Noise flames (red symbols rising) ──
+      // Rising noise — all 12 arcana glyphs in red
       mx.save();
       noise.forEach(f=>{
         f.y-=f.spd;
-        if(f.y<-24){f.y=ch+10;f.x=Math.random()*cw;f.sym=SYMS[Math.floor(Math.random()*4)];}
+        if(f.y<-24){f.y=ch+10;f.x=Math.random()*cw;f.ai=Math.floor(Math.random()*12);}
         const pulse=0.55+0.45*Math.abs(Math.sin(t/650+f.ph));
         mx.globalAlpha=f.alpha*pulse;
-        mx.fillStyle=f.col;
-        mx.shadowColor=f.col; mx.shadowBlur=7;
+        mx.fillStyle=f.col; mx.shadowColor=f.col; mx.shadowBlur=7;
         mx.font=`bold ${f.sz}px serif`;
         mx.textAlign='center'; mx.textBaseline='middle';
-        mx.fillText(f.sym,f.x,f.y);
+        mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
       });
       mx.globalAlpha=1; mx.shadowBlur=0;
       mx.restore();
 
-      // ── White sequence symbols rising in order ──
+      // White sequence symbols — coloured glow, oscillating, numbered
       symStates.forEach(s=>{
         if(!s.spawned&&elapsed>=SPAWN_DELAY+s.idx*SPAWN_INTERVAL){
           s.spawned=true; s.y=ch+30;
         }
         if(!s.spawned) return;
         s.y-=RISE_SPD;
-        // Fade in from bottom, fade out near top
         let alpha=1;
         if(ch-s.y<50) alpha=(ch-s.y)/50;
         if(s.y<55) alpha=Math.max(0,s.y/55);
         if(alpha<=0.01) return;
-
-        const gc=TILES[s.tileIdx].glowCol;
-        const osc=Math.sin(t/900+s.idx*1.3)*0.12; // gentle arcane rotation
-
-        // Glyph: white symbol with coloured outer glow
+        const osc=Math.sin(t/900+s.idx*1.3)*0.12;
         mx.save();
         mx.globalAlpha=alpha;
-        mx.translate(s.x,s.y);
-        mx.rotate(osc);
-        mx.shadowColor=gc; mx.shadowBlur=32;
+        mx.translate(s.x,s.y); mx.rotate(osc);
+        mx.shadowColor=s.glowCol; mx.shadowBlur=32;
         mx.fillStyle='#ffffff';
         mx.font='bold 40px serif';
         mx.textAlign='center'; mx.textBaseline='middle';
         mx.fillText(s.sym,0,0);
         mx.restore();
-
-        // Order-number badge (not rotated)
         mx.save();
         mx.globalAlpha=alpha;
         mx.shadowColor='#ffcc00'; mx.shadowBlur=10;
@@ -3250,7 +3260,6 @@ function launchPatternEcho(spell,cb){
       });
       mx.globalAlpha=1; mx.shadowBlur=0;
 
-      // Instruction label
       mx.fillStyle='#ffcc00';
       mx.font='bold 10px Cinzel,serif';
       mx.textAlign='center'; mx.textBaseline='top';
@@ -3258,7 +3267,7 @@ function launchPatternEcho(spell,cb){
     }
 
     if(phase==='input'){
-      // Faint ambient flames keep the atmosphere alive
+      // Faint ambient flames
       mx.save();
       noise.slice(0,14).forEach(f=>{
         f.y-=f.spd*0.35;
@@ -3267,28 +3276,51 @@ function launchPatternEcho(spell,cb){
         mx.fillStyle=f.col;
         mx.font=`${f.sz}px serif`;
         mx.textAlign='center'; mx.textBaseline='middle';
-        mx.fillText(f.sym,f.x,f.y);
+        mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
       });
       mx.globalAlpha=1;
       mx.restore();
 
-      // 4 clickable symbol tiles
-      for(let i=0;i<4;i++){
-        const tp=tPos[i],tile=TILES[i];
+      // 12-glyph keyboard
+      const isHard=diffName==='hard';
+      for(let ai=0;ai<12;ai++){
+        const tp=tPos[ai];
+        const g=ALPHABET[ai];
+        const si=SPELL_IDX.indexOf(ai); // -1 if not spell glyph
+        const isSpell=si!==-1;
+
+        let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
+        if(isHard){
+          // All glyphs show as neutral arcane — player must rely on memory
+          bgCol='#2d1a3d'; bgDark='#100820';
+          strokeCol='#44285888'; textCol='#7755aa';
+          blur=4; textAlpha=1;
+        } else if(isSpell){
+          // Spell glyphs: fire colours by SPELL_IDX position
+          bgCol=FIRE_COLS[si].col; bgDark='#1a0400';
+          strokeCol=FIRE_COLS[si].col+'88'; textCol=FIRE_COLS[si].lit;
+          blur=8; textAlpha=1;
+        } else {
+          // Non-spell glyphs: ghosted out
+          bgCol='#0f0f0f'; bgDark='#050505';
+          strokeCol='#1e1e1e'; textCol='#2a2a2a';
+          blur=0; textAlpha=0.35;
+        }
+
         mx.save();
-        mx.shadowColor=tile.col; mx.shadowBlur=5;
-        const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,4,tp.x+TS/2,tp.y+TS/2,TS*.6);
-        tg.addColorStop(0,tile.col);
-        tg.addColorStop(1,'#1a0400');
+        mx.shadowColor=bgCol; mx.shadowBlur=blur;
+        const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,3,tp.x+TS/2,tp.y+TS/2,TS*.6);
+        tg.addColorStop(0,bgCol); tg.addColorStop(1,bgDark);
         mx.fillStyle=tg;
-        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.fill();
-        mx.strokeStyle=tile.col+'88'; mx.lineWidth=1.5;
-        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.stroke();
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.fill();
         mx.shadowBlur=0;
-        mx.fillStyle=tile.lit+'cc';
-        mx.font=`bold ${TS*.42}px serif`;
+        mx.strokeStyle=strokeCol; mx.lineWidth=1.2;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.stroke();
+        mx.globalAlpha=textAlpha;
+        mx.fillStyle=textCol;
+        mx.font=`bold ${Math.round(TS*.42)}px serif`;
         mx.textAlign='center'; mx.textBaseline='middle';
-        mx.fillText(tile.sym,tp.x+TS/2,tp.y+TS/2);
+        mx.fillText(g.sym,tp.x+TS/2,tp.y+TS/2);
         mx.restore();
       }
 
@@ -3298,8 +3330,8 @@ function launchPatternEcho(spell,cb){
       mx.textAlign='center'; mx.textBaseline='top';
       mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
 
-      // Progress dots
-      const dotY=ch-8,dsp=14;
+      // Progress dots — sit between status text and keyboard
+      const dotY=tileTop-10,dsp=14;
       const ds=cw/2-(seq.length-1)*dsp/2;
       for(let i=0;i<seq.length;i++){
         mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
