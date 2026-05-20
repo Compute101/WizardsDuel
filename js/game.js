@@ -3543,41 +3543,119 @@ function launchPatternEcho(spell,cb){
 // ── PUZZLE: LIGHTNING PATTERN ─────────────────────────────
 function launchLightningPattern(spell,cb){
   let done=false;
-  document.getElementById('pztitle').textContent='Stormrune Sequence';
+  document.getElementById('pztitle').textContent='Thunderstrike Glyph';
   document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
   setDpadVisible(false);
 
-  const TILES=[
-    {col:'#1a2240', lit:'#44aaff', sym:'◆'},
-    {col:'#332800', lit:'#ffee44', sym:'△'},
-    {col:'#102030', lit:'#88ddff', sym:'◯'},
-    {col:'#221800', lit:'#ffcc00', sym:'✦'},
+  // ── Full 12-glyph Arcana Alphabet (grid order: 3 cols × 4 rows) ──────
+  // Indices: 0=ϟ 1=Δ 2=∇ 3=Ψ 4=Ω 5=∞ 6=☽ 7=✸ 8=⊕ 9=⊗ 10=θ 11=Φ
+  const ALPHABET=[
+    {sym:'ϟ',glowCol:'#ccffff',col:'#05091a',lit:'#33aadd'}, // 0
+    {sym:'Δ',glowCol:'#ff9944',col:'#0a0a1a',lit:'#334488'}, // 1
+    {sym:'∇',glowCol:'#44aaff',col:'#040818',lit:'#4488dd'}, // 2 — lightning
+    {sym:'Ψ',glowCol:'#aaff88',col:'#05092a',lit:'#55aaff'}, // 3 — lightning
+    {sym:'Ω',glowCol:'#ff4444',col:'#0a0512',lit:'#332255'}, // 4
+    {sym:'∞',glowCol:'#44ffcc',col:'#04121a',lit:'#1a5566'}, // 5
+    {sym:'☽',glowCol:'#aaddff',col:'#06090f',lit:'#224455'}, // 6
+    {sym:'✸',glowCol:'#ffff55',col:'#141200',lit:'#ffdd44'}, // 7 — lightning
+    {sym:'⊕',glowCol:'#ffee77',col:'#0f0a00',lit:'#443300'}, // 8
+    {sym:'⊗',glowCol:'#ff44aa',col:'#160010',lit:'#ff55bb'}, // 9 — lightning
+    {sym:'θ',glowCol:'#88ff88',col:'#051210',lit:'#1a5544'}, // 10
+    {sym:'Φ',glowCol:'#dd88ff',col:'#100515',lit:'#442255'}, // 11
   ];
-  const TS=108, GAP=8, PAD=12;
-  const cw=PAD*2+TS*2+GAP, ch=PAD*2+TS*2+GAP+20;
+
+  // Lightning owns Ψ(3) ∇(2) ⊗(9) ✸(7) — see CLAUDE.md
+  const SPELL_IDX=[3,2,9,7];
+  // Lightning colours assigned per SPELL_IDX position (0-3)
+  const LIGHTNING_COLS=[
+    {col:'#05092a',lit:'#55aaff'}, // Ψ — electric blue
+    {col:'#040818',lit:'#4488dd'}, // ∇ — storm blue
+    {col:'#160010',lit:'#ff55bb'}, // ⊗ — impact pink
+    {col:'#141200',lit:'#ffdd44'}, // ✸ — burst yellow
+  ];
+
+  // Canvas: 3-col × 4-row keyboard grid
+  const TS=72,GAP=6,PAD=10;
+  const cw=PAD*2+TS*3+GAP*2;  // 248 px
+  const ch=380;
   mc.width=cw; mc.height=ch;
   const mw=Math.min(cw,(window.innerWidth||360)-32);
   mc.style.width=mw+'px'; mc.style.height='auto';
 
-  const tPos=[
-    {x:PAD,y:PAD+20},{x:PAD+TS+GAP,y:PAD+20},
-    {x:PAD,y:PAD+20+TS+GAP},{x:PAD+TS+GAP,y:PAD+20+TS+GAP},
-  ];
+  // Keyboard tile positions — bottom-aligned
+  const tileAreaH=TS*4+GAP*3;
+  const tileTop=ch-PAD-tileAreaH;
+  const tPos=Array.from({length:12},(_,i)=>({
+    x:PAD+(i%3)*(TS+GAP),
+    y:tileTop+Math.floor(i/3)*(TS+GAP),
+  }));
 
   const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
-  const seq=Array.from({length:SEQ_LEN},()=>Math.floor(Math.random()*4));
+  const seq=diffName==='easy'
+    ?[3,2,9,7]  // canonical Lightning word: Ψ ∇ ⊗ ✸
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
   const playerSeq=[];
-  let phase='watch', watchStep=0, litTile=-1;
+  let phase='watch';
   let timeLeft=Math.round(20*diffMult);
 
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
 
-  const sparks=Array.from({length:22},()=>({
+  // Pre-generate jagged bolt path from top to glyph position
+  function genBolt(x1,y1,x2,y2){
+    const pts=[{x:x1,y:y1}];
+    const segs=7+Math.floor(Math.random()*4);
+    for(let i=1;i<segs;i++){
+      const t=i/segs;
+      pts.push({
+        x:x1+(x2-x1)*t+(Math.random()-0.5)*28,
+        y:y1+(y2-y1)*t,
+      });
+    }
+    pts.push({x:x2,y:y2});
+    return pts;
+  }
+
+  const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
+    const frac=(i+0.5)/SEQ_LEN;
+    return Math.max(28,Math.min(cw-28,cw*frac+(Math.random()-0.5)*22));
+  });
+  const Y_BANDS=[0.38,0.55,0.42,0.60,0.48,0.52,0.45];
+  const ySlots=Array.from({length:SEQ_LEN},(_,i)=>
+    Math.max(50,Math.min(ch-60,ch*Y_BANDS[i%Y_BANDS.length]+(Math.random()-0.5)*28))
+  );
+
+  const SPAWN_DELAY=600,SPAWN_INTERVAL=3500;
+  const BOLT_DUR=300;     // bolt flash visible
+  const GLYPH_HOLD=200;   // glyph at full brightness after strike
+  const GLYPH_FADE=2400;  // afterglow fade duration
+  const GLYPH_DUR=GLYPH_HOLD+GLYPH_FADE;
+  const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+4500;
+  const startTime=Date.now();
+  let watchDone=false;
+
+  const symStates=seq.map((ai,i)=>{
+    const gx=xSlots[i],gy=ySlots[i];
+    const topX=gx+(Math.random()-0.5)*30;
+    return {
+      ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
+      x:gx,y:gy,
+      boltPath:genBolt(topX,0,gx,gy),
+      spawnAt:startTime+SPAWN_DELAY+i*SPAWN_INTERVAL,
+      idx:i,
+    };
+  });
+
+  // Noise: distant storm flashes — random glyphs briefly illuminated then gone
+  const STORM_COLS=['#aaccff','#88bbff','#ccddff','#7799dd','#99bbff'];
+  const noise=Array.from({length:32},()=>({
     x:Math.random()*cw, y:Math.random()*ch,
-    spd:0.25+Math.random()*0.5, sz:0.8+Math.random()*1.8,
-    ph:Math.random()*Math.PI*2,
-    col:Math.random()<0.5?'#44aaff':'#ffee44',
+    sz:8+Math.random()*12,
+    ai:Math.floor(Math.random()*12),
+    col:STORM_COLS[Math.floor(Math.random()*5)],
+    flashAt:Date.now()+Math.random()*4000+300,
+    flashDur:80+Math.random()*160,
+    interval:1500+Math.random()*4000,
   }));
 
   function startTimer(){
@@ -3590,27 +3668,23 @@ function launchLightningPattern(spell,cb){
     },1000);
   }
 
-  function showNext(){
-    if(done) return;
-    if(watchStep>=seq.length){ phase='input'; timerEl.textContent=timeLeft; startTimer(); return; }
-    litTile=seq[watchStep++];
-    setTimeout(()=>{ litTile=-1; setTimeout(showNext,220); },580);
-  }
-  setTimeout(showNext,500);
-
   function onPointer(e){
     if(done||phase!=='input') return;
     e.preventDefault();
     const rect=mc.getBoundingClientRect();
-    const sx=mc.width/rect.width, sy=mc.height/rect.height;
-    const px=(e.clientX-rect.left)*sx, py=(e.clientY-rect.top)*sy;
-    for(let i=0;i<4;i++){
-      const tp=tPos[i];
+    const sx=mc.width/rect.width,sy=mc.height/rect.height;
+    const px=(e.clientX-rect.left)*sx,py=(e.clientY-rect.top)*sy;
+    for(let ai=0;ai<12;ai++){
+      const tp=tPos[ai];
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
-        playerSeq.push(i);
-        const idx=playerSeq.length-1;
-        if(playerSeq[idx]!==seq[idx]){finish(false); return;}
-        if(playerSeq.length===seq.length){finish(true);}
+        const isSpell=SPELL_IDX.includes(ai);
+        if(!isSpell){
+          if(diffName==='hard') finish(false);
+          return;
+        }
+        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        playerSeq.push(ai);
+        if(playerSeq.length===seq.length) finish(true);
         return;
       }
     }
@@ -3620,62 +3694,195 @@ function launchLightningPattern(spell,cb){
   function cleanup(){
     mc.removeEventListener('pointerdown',onPointer);
     setDpadVisible(true);
-    if(mazeTid){clearInterval(mazeTid); mazeTid=null;}
-    if(mazeRAF){cancelAnimationFrame(mazeRAF); mazeRAF=null;}
+    if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
+    if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){ if(done) return; done=true; cleanup(); puzzleFinish(ok,cb); }
+  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
 
   function draw(){
     const t=Date.now();
-    const bg=mx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,cw*.7);
-    bg.addColorStop(0,'#060c1a'); bg.addColorStop(0.6,'#020608'); bg.addColorStop(1,'#000204');
+    const elapsed=t-startTime;
+
+    // Background — stormy dark navy
+    const bg=mx.createRadialGradient(cw/2,ch*.5,0,cw/2,ch*.5,cw*.9);
+    bg.addColorStop(0,'#060810');
+    bg.addColorStop(0.6,'#030509');
+    bg.addColorStop(1,'#010204');
     mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
 
-    mx.save();
-    sparks.forEach(s=>{
-      s.y-=s.spd; if(s.y<-4){s.y=ch+4; s.x=Math.random()*cw;}
-      mx.globalAlpha=0.1+0.3*Math.abs(Math.sin(t/700+s.ph));
-      mx.fillStyle=s.col; mx.shadowColor=s.col; mx.shadowBlur=5;
-      mx.beginPath(); mx.arc(s.x,s.y,s.sz,0,Math.PI*2); mx.fill();
-    });
-    mx.globalAlpha=1; mx.shadowBlur=0;
-    mx.restore();
-
-    mx.fillStyle=phase==='watch'?'#88ddff':'#ffee44';
-    mx.font='bold 10px Cinzel,serif'; mx.textAlign='center'; mx.textBaseline='top';
-    mx.fillText(
-      phase==='watch'?`Memorise: ${watchStep}/${seq.length}`:`Repeat: ${playerSeq.length}/${seq.length}`,
-      cw/2, 4
-    );
-
-    for(let i=0;i<4;i++){
-      const tp=tPos[i], tile=TILES[i], lit=(litTile===i);
-      mx.save();
-      mx.shadowColor=tile.col; mx.shadowBlur=lit?28:5;
-      const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,4,tp.x+TS/2,tp.y+TS/2,TS*.6);
-      tg.addColorStop(0,lit?tile.lit:tile.col);
-      tg.addColorStop(1,lit?tile.col:'#010408');
-      mx.fillStyle=tg;
-      mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.fill();
-      mx.strokeStyle=lit?tile.lit:tile.col+'88'; mx.lineWidth=lit?2.5:1.5;
-      mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.stroke();
-      mx.shadowBlur=0;
-      mx.fillStyle=lit?'#fff':tile.lit+'cc';
-      mx.font=`bold ${TS*.42}px serif`; mx.textAlign='center'; mx.textBaseline='middle';
-      mx.fillText(tile.sym,tp.x+TS/2,tp.y+TS/2);
-      mx.restore();
+    if(phase==='watch'&&!watchDone&&elapsed>=watchDuration){
+      watchDone=true; phase='input';
+      timerEl.textContent=timeLeft; startTimer();
     }
 
-    const dotY=ch-7, dsp=14, ds=cw/2-(seq.length-1)*dsp/2;
-    for(let i=0;i<seq.length;i++){
-      mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-      if(i<playerSeq.length){ mx.fillStyle='#88ddff'; mx.shadowColor='#88ddff'; mx.shadowBlur=6; }
-      else { mx.fillStyle='rgba(136,221,255,0.2)'; mx.shadowBlur=0; }
-      mx.fill(); mx.shadowBlur=0;
+    if(phase==='watch'){
+      // Distant storm noise — each glyph flashes briefly at irregular intervals
+      mx.save();
+      noise.forEach(f=>{
+        const age=t-f.flashAt;
+        if(age>=0&&age<f.flashDur){
+          const a=(1-age/f.flashDur)*0.65;
+          mx.globalAlpha=a;
+          mx.fillStyle=f.col; mx.shadowColor=f.col; mx.shadowBlur=9;
+          mx.font=`bold ${f.sz}px serif`;
+          mx.textAlign='center'; mx.textBaseline='middle';
+          mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
+        } else if(age>=f.flashDur){
+          // Reschedule next flash at a new random position
+          f.flashAt=t+f.interval+Math.random()*1000;
+          f.ai=Math.floor(Math.random()*12);
+          f.x=Math.random()*cw; f.y=Math.random()*ch;
+        }
+      });
+      mx.globalAlpha=1; mx.shadowBlur=0;
+      mx.restore();
+
+      // Sequence glyphs — bolt strikes then glyph afterglow
+      symStates.forEach(s=>{
+        const age=t-s.spawnAt;
+        if(age<0) return;
+
+        // Lightning bolt — visible for BOLT_DUR with a flicker pattern
+        if(age<BOLT_DUR){
+          let boltAlpha;
+          if(age<70)       boltAlpha=1;           // instant on
+          else if(age<120) boltAlpha=0.25;         // brief dim
+          else if(age<170) boltAlpha=0.9;          // second flash
+          else             boltAlpha=1-(age-170)/(BOLT_DUR-170); // fade out
+          mx.save();
+          mx.globalAlpha=boltAlpha;
+          // Outer glow
+          mx.strokeStyle='#cceeff'; mx.lineWidth=2.5;
+          mx.shadowColor=s.glowCol; mx.shadowBlur=20;
+          mx.beginPath();
+          s.boltPath.forEach((p,i)=>i===0?mx.moveTo(p.x,p.y):mx.lineTo(p.x,p.y));
+          mx.stroke();
+          // Bright core
+          mx.shadowBlur=0;
+          mx.strokeStyle='#ffffff'; mx.lineWidth=1;
+          mx.stroke();
+          mx.restore();
+        }
+
+        // Glyph — snaps to full brightness on strike, then fades as afterglow
+        let glyphAlpha;
+        if(age<GLYPH_HOLD){
+          glyphAlpha=1;
+        } else if(age<GLYPH_DUR){
+          glyphAlpha=1-(age-GLYPH_HOLD)/GLYPH_FADE;
+        } else {
+          // Persistent faint echo
+          glyphAlpha=0.08+0.05*Math.abs(Math.sin((age-GLYPH_DUR)/3000+s.idx));
+        }
+        if(glyphAlpha<=0.01) return;
+
+        mx.save();
+        mx.globalAlpha=glyphAlpha;
+        mx.shadowColor=s.glowCol; mx.shadowBlur=glyphAlpha>0.5?42:18;
+        mx.fillStyle='#ffffff';
+        mx.font='bold 40px serif';
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(s.sym,s.x,s.y);
+        mx.restore();
+
+        // Order badge — visible while glyph is bright
+        if(glyphAlpha>0.35&&age<GLYPH_HOLD+600){
+          mx.save();
+          mx.globalAlpha=Math.min(glyphAlpha,0.9);
+          mx.shadowColor='#88ccff'; mx.shadowBlur=8;
+          mx.fillStyle='#88ccff';
+          mx.font='bold 11px Cinzel,serif';
+          mx.textAlign='center'; mx.textBaseline='middle';
+          mx.fillText(s.idx+1,s.x+22,s.y-22);
+          mx.restore();
+        }
+      });
+      mx.globalAlpha=1; mx.shadowBlur=0;
+
+      mx.fillStyle='#88ccff';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText('Watch the lightning runes strike!',cw/2,4);
+    }
+
+    if(phase==='input'){
+      // Faint distant flickers during input phase
+      mx.save();
+      noise.slice(0,10).forEach(f=>{
+        const age=t-f.flashAt;
+        if(age>=0&&age<f.flashDur){
+          mx.globalAlpha=(1-age/f.flashDur)*0.07;
+          mx.fillStyle=f.col;
+          mx.font=`${f.sz}px serif`;
+          mx.textAlign='center'; mx.textBaseline='middle';
+          mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
+        } else if(age>=f.flashDur){
+          f.flashAt=t+f.interval+Math.random()*1000;
+          f.ai=Math.floor(Math.random()*12);
+        }
+      });
+      mx.globalAlpha=1;
+      mx.restore();
+
+      // 12-glyph keyboard
+      const isHard=diffName==='hard';
+      for(let ai=0;ai<12;ai++){
+        const tp=tPos[ai];
+        const g=ALPHABET[ai];
+        const si=SPELL_IDX.indexOf(ai);
+        const isSpell=si!==-1;
+
+        let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
+        if(isHard){
+          bgCol='#0d1020'; bgDark='#05080f';
+          strokeCol='#1a2a4088'; textCol='#3355aa';
+          blur=4; textAlpha=1;
+        } else if(isSpell){
+          bgCol=LIGHTNING_COLS[si].col; bgDark='#010208';
+          strokeCol=LIGHTNING_COLS[si].col+'88'; textCol=LIGHTNING_COLS[si].lit;
+          blur=8; textAlpha=1;
+        } else {
+          bgCol='#080a0e'; bgDark='#030408';
+          strokeCol='#111522'; textCol='#1a2030';
+          blur=0; textAlpha=0.35;
+        }
+
+        mx.save();
+        mx.shadowColor=bgCol; mx.shadowBlur=blur;
+        const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,3,tp.x+TS/2,tp.y+TS/2,TS*.6);
+        tg.addColorStop(0,bgCol); tg.addColorStop(1,bgDark);
+        mx.fillStyle=tg;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.fill();
+        mx.shadowBlur=0;
+        mx.strokeStyle=strokeCol; mx.lineWidth=1.2;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.stroke();
+        mx.globalAlpha=textAlpha;
+        mx.fillStyle=textCol;
+        mx.font=`bold ${Math.round(TS*.42)}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(g.sym,tp.x+TS/2,tp.y+TS/2);
+        mx.restore();
+      }
+
+      // Status label
+      mx.fillStyle='#88ccff';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
+
+      // Progress dots
+      const dotY=tileTop-10,dsp=14;
+      const ds=cw/2-(seq.length-1)*dsp/2;
+      for(let i=0;i<seq.length;i++){
+        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
+        if(i<playerSeq.length){mx.fillStyle='#88ccff';mx.shadowColor='#88ccff';mx.shadowBlur=6;}
+        else{mx.fillStyle='rgba(136,204,255,0.2)';mx.shadowBlur=0;}
+        mx.fill(); mx.shadowBlur=0;
+      }
     }
   }
 
-  function frame(){ if(done) return; draw(); mazeRAF=requestAnimationFrame(frame); }
+  function frame(){if(done)return;draw();mazeRAF=requestAnimationFrame(frame);}
   showScreen('puzzle-screen');
   mazeRAF=requestAnimationFrame(frame);
 }
