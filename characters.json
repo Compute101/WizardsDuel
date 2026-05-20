@@ -163,7 +163,7 @@
     "col": "#aaff44",
     "hp": 86,
     "startMana": 7,
-    "channelAmt": 5,
+    "channelAmt": 6,
     "dmgMult": 1.10,
     "galvanizeManaCoast": 4,
     "galvanizeChargeGain": 8,
