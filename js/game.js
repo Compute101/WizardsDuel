@@ -39,7 +39,7 @@ const CHAR_DISPLAY={
     flavour:'Bend time — foresee attacks and drain your foe.'
   },
   gnash:{
-    stats:[['❤ HP','105'],['🩸 War Paint','3 mana → 33% resist / 5T'],['⚔️ Charge','15 HP → 32 pierce all'],['💢 Frenzy','15 HP → 2× strike, locked 3T']],
+    stats:[['❤ HP','105'],['🩸 War Paint','3 mana → 33% resist / 5T'],['⚔️ Charge','15 HP → 32 pierce all'],['💢 Frenzy','15 HP → 3× rapid strikes']],
     flavour:'Blood and bone. No magic — just fury.'
   },
   emberic:{
@@ -1291,7 +1291,7 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='drain')      return false;
   if(spellId==='vinewhip')   return targetState.vineWhip>0;
   if(spellId==='haste')      return casterState.haste>0;
-  if(spellId==='frenzy')     return casterState.frenzied>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='frenzy')     return casterState.hp<=(casterCfg.frenzyHpCost||15);
   if(spellId==='blink')      return casterState.blink>0;
   if(spellId==='icelance')    return false;
   if(spellId==='frostarmor')  return casterState.frostArmor>0;
@@ -1727,23 +1727,32 @@ function resolveCharSpell(spellId,caster){
       casterState.invisible=0;
       addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
     }
-    casterState.frenzied=4;
     gs.busy=true;
     addFloat(cx,bH*.28,'💢 FRENZY!',casterCfg.col,16);
     spawnParts(cx,bH*.38,casterCfg.col,18);
-    doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
-    refreshHUD(); checkWin(); if(!battleRunning) return;
-    setTimeout(()=>{
+    anim(caster,'cast',900);
+    let frenzyHitsDone=0;
+    function doFrenzyStrike(){
       if(!battleRunning) return;
-      doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
-      refreshHUD(); checkWin(); if(!battleRunning) return;
-      if(caster==='p1'||twoPlayerMode){
-        endMyTurn();
-      } else {
-        tickStatuses(casterState);
-        setTimeout(finishAI,900);
-      }
-    },700);
+      const yOff=bH*(frenzyHitsDone===0?-0.04:frenzyHitsDone===1?0:0.04);
+      spawnProj(cx,bH*.38+yOff,tx,bH*.38+yOff,'physical',casterCfg.col,()=>{
+        if(!battleRunning) return;
+        doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
+        refreshHUD(); checkWin(); if(!battleRunning) return;
+        frenzyHitsDone++;
+        if(frenzyHitsDone<3){
+          setTimeout(doFrenzyStrike,350);
+        } else {
+          if(caster==='p1'||twoPlayerMode){
+            endMyTurn();
+          } else {
+            tickStatuses(casterState);
+            setTimeout(finishAI,900);
+          }
+        }
+      });
+    }
+    doFrenzyStrike();
     return;
   } else if(spellId==='blink'){
     casterState.blink=3;
