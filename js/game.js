@@ -3126,9 +3126,9 @@ function launchPatternEcho(spell,cb){
 
   // Each white symbol spawns SPAWN_DELAY + idx*SPAWN_INTERVAL ms after start
   const SPAWN_DELAY=500;
-  const SPAWN_INTERVAL=700;
+  const SPAWN_INTERVAL=3000;
   const RISE_SPD=0.9; // px/frame – slower than noise so they're trackable
-  const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+1900;
+  const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+4000;
 
   const startTime=Date.now();
   let watchDone=false;
