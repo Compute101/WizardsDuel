@@ -2610,7 +2610,7 @@ function applyFrostArmorRetaliation(casterState,targetCfg,cx){
 
 function applyDischarge(targetState,casterState,casterX,targetX){
   const dischargeDmg=targetState.charge;
-  targetState.charge=0;
+  targetState.charge=Math.floor(targetState.charge/2);
   casterState.hp=Math.max(0,casterState.hp-dischargeDmg);
   addFloat(casterX,bH*.33,'⚡ Discharge! −'+dischargeDmg,'#aaff44',14);
   spawnParts(casterX,bH*.38,'#aaff44',14);
