@@ -39,7 +39,7 @@ const CHAR_DISPLAY={
     flavour:'Bend time — foresee attacks and drain your foe.'
   },
   gnash:{
-    stats:[['❤ HP','105'],['🩸 War Paint','33% resist / 5T'],['⚔️ Charge','32 pierce all'],['💢 Frenzy','2× strike, locked 3T']],
+    stats:[['❤ HP','105'],['🩸 War Paint','3 mana → 33% resist / 5T'],['⚔️ Charge','15 HP → 32 pierce all'],['💢 Frenzy','15 HP → 3× rapid strikes']],
     flavour:'Blood and bone. No magic — just fury.'
   },
   emberic:{
@@ -109,7 +109,7 @@ function newState(){
         ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0,
         stoneskin:0, stoneskinHp:0, stonesoul:0},
     round:1, myTurn:true, busy:false,
-    p1anim:'idle', p2anim:'idle',
+    p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
     parts:[], floats:[], projs:[], beams:[],
     pendingAction:null, skipAITurn:false,
     turnPlayer:'p1', lastAnimEnd:0,
@@ -1210,8 +1210,8 @@ function battleLoop(ts){
   resizeBC();
   drawBG();
   const gy=bH*.74, wsz=bH*.3;
-  drawWiz(bW*.22,gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1',gs.p1.foresight,gs.p1);
-  drawWiz(bW*.78,gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2',gs.p2.foresight,gs.p2);
+  drawWiz(bW*.22+(gs.p1xOff||0),gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1',gs.p1.foresight,gs.p1);
+  drawWiz(bW*.78+(gs.p2xOff||0),gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2',gs.p2.foresight,gs.p2);
   tickProjs(); tickBeams(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!twoPlayerMode){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
@@ -1283,14 +1283,15 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='entangle')   return targetState.frozen>0;
   if(spellId==='foresight')  return casterState.foresight;
   if(spellId==='timedrain')  return targetState.timeDrain>0;
-  if(spellId==='warpaint')   return casterState.resist>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='warpaint')   return casterState.resist>0;
+  if(spellId==='charge')    return casterState.hp<=(casterCfg.frenzyHpCost||15);
   if(spellId==='vanish')     return casterState.invisible>0;
   if(spellId==='manasiphon') return !casterState.invisible||targetState.mana<=0;
   if(spellId==='ward')       return casterState.ward>0;
   if(spellId==='drain')      return false;
   if(spellId==='vinewhip')   return targetState.vineWhip>0;
   if(spellId==='haste')      return casterState.haste>0;
-  if(spellId==='frenzy')     return casterState.frenzied>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='frenzy')     return casterState.hp<=(casterCfg.frenzyHpCost||15);
   if(spellId==='blink')      return casterState.blink>0;
   if(spellId==='icelance')    return false;
   if(spellId==='frostarmor')  return casterState.frostArmor>0;
@@ -1548,7 +1549,6 @@ function resolveCharSpell(spellId,caster){
       refreshHUD();
     }
   } else if(spellId==='warpaint'){
-    casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
     casterState.resist=5;
     addFloat(cx,bH*.33,'🩸 War Paint! -33% dmg',casterCfg.col,12);
     for(let i=0;i<8;i++)
@@ -1558,71 +1558,68 @@ function resolveCharSpell(spellId,caster){
     anim(caster,'shield',700);
     refreshHUD();
   } else if(spellId==='charge'){
+    casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
     if(casterState.invisible>0){
       casterState.invisible=0;
       addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
     }
     let dmg=Math.round(casterCfg.chargeDmg*casterCfg.dmgMult);
-    if(targetState.foresight){
-      addFloat(tx,bH*.38-20,'🔮 Foreseen!','#ffcc44',15);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',18);
-      spawnParts(tx,bH*.38,casterCfg.col,10);
-      spawnParts(tx,bH*.38,'#ffffff',6);
-      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else if(targetState.haste>0&&Math.random()<0.25){
-      addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else if(targetState.blink>0&&Math.random()<0.5){
-      addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc');
-      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else {
-      // Dust trail along charge path
-      for(let d=0;d<5;d++){
-        const pct=(d+1)/6;
-        gs.parts.push({x:cx+(tx-cx)*pct,y:bH*.38+bH*.01,col:'#aa7722',
-          vx:(Math.random()-.5)*2,vy:-1-Math.random()*2,sz:3+Math.random()*3,life:1,dec:.018});
-      }
-      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      const [chDmg,chSkin]=applyTargetSkins(targetState,dmg,true); // charge is physical
-      dmg=chDmg;
-      if(chSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+chSkin+' Skin','#b08040',10);
-      if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed;
-        dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8); spawnParts(tx,bH*.38,'#ffffff',4);
+    gs.busy=true;
+    lunge(caster,()=>{
+      if(!battleRunning) return;
+      if(targetState.foresight){
+        addFloat(tx,bH*.38-20,'🔮 Foreseen!','#ffcc44',15);
+        targetState.foresight=false;
+        spawnParts(tx,bH*.38,'#ffcc44',18);
+        spawnParts(tx,bH*.38,casterCfg.col,10);
+        spawnParts(tx,bH*.38,'#ffffff',6);
+      } else if(targetState.invisible>0){
+        addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
+        spawnParts(tx,bH*.38,'#b8a0e8',12);
+      } else if(targetState.haste>0&&Math.random()<0.25){
+        addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
+        spawnParts(tx,bH*.38,'#ffcc44',12);
+      } else if(targetState.blink>0&&Math.random()<0.5){
+        addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
+        spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
+        flash('#9988cc');
+      } else {
+        if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
+        if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
+        const [chDmg,chSkin]=applyTargetSkins(targetState,dmg,true);
+        dmg=chDmg;
+        if(chSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+chSkin+' Skin','#b08040',10);
+        if(targetState.shield>0){
+          const absorbed=Math.min(dmg,targetState.shieldHp);
+          targetState.shieldHp-=absorbed;
+          dmg-=absorbed;
+          if(targetState.shieldHp<=0){
+            targetState.shield=0;
+            addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
+            spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
+          } else {
+            addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+            spawnParts(tx,bH*.38,'#4af0ff',8); spawnParts(tx,bH*.38,'#ffffff',4);
+          }
         }
+        targetState.hp=Math.max(0,targetState.hp-dmg);
+        if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+        if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+        if(targetState.charge>0){
+          applyDischarge(targetState,casterState,cx,tx);
+          checkWin(); if(!battleRunning) return;
+        }
+        spawnParts(tx,bH*.38,casterCfg.col,22);
+        addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,22);
+        flash(casterCfg.col);
+        if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+        else             {anim('p2','cast',800); anim('p1','hit',800);}
       }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-      if(targetState.charge>0){
-        applyDischarge(targetState,casterState,cx,tx);
-        checkWin(); if(!battleRunning) return;
-      }
-      spawnParts(tx,bH*.38,casterCfg.col,22);
-      addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,22);
-      flash(casterCfg.col);
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-    }
-    refreshHUD();
-    checkWin();
+      refreshHUD(); checkWin(); if(!battleRunning) return;
+      if(caster==='p1'||twoPlayerMode){ endMyTurn(); }
+      else { tickStatuses(casterState); setTimeout(finishAI,900); }
+    });
+    return;
   } else if(spellId==='ward'){
     casterState.ward=3;
     addFloat(cx,bH*.33,'🔰 Warded! (3T)',casterCfg.col,13);
@@ -1726,23 +1723,30 @@ function resolveCharSpell(spellId,caster){
       casterState.invisible=0;
       addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
     }
-    casterState.frenzied=4;
     gs.busy=true;
     addFloat(cx,bH*.28,'💢 FRENZY!',casterCfg.col,16);
     spawnParts(cx,bH*.38,casterCfg.col,18);
-    doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
-    refreshHUD(); checkWin(); if(!battleRunning) return;
-    setTimeout(()=>{
+    let frenzyHitsDone=0;
+    function doFrenzyStrike(){
       if(!battleRunning) return;
-      doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
-      refreshHUD(); checkWin(); if(!battleRunning) return;
-      if(caster==='p1'||twoPlayerMode){
-        endMyTurn();
-      } else {
-        tickStatuses(casterState);
-        setTimeout(finishAI,900);
-      }
-    },700);
+      lunge(caster,0.12,()=>{
+        if(!battleRunning) return;
+        doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
+        refreshHUD(); checkWin(); if(!battleRunning) return;
+        frenzyHitsDone++;
+        if(frenzyHitsDone<3){
+          setTimeout(doFrenzyStrike,300);
+        } else {
+          if(caster==='p1'||twoPlayerMode){
+            endMyTurn();
+          } else {
+            tickStatuses(casterState);
+            setTimeout(finishAI,900);
+          }
+        }
+      });
+    }
+    doFrenzyStrike();
     return;
   } else if(spellId==='blink'){
     casterState.blink=3;
@@ -2223,67 +2227,81 @@ function resolveCharSpell(spellId,caster){
     if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
     if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
     if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-    if(targetState.foresight){
-      addFloat(tx,bH*.38-20,'🔮 Absorbed!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',18);
-      spawnParts(tx,bH*.38,casterCfg.col,10);
-      spawnParts(tx,bH*.38,'#ffffff',6);
-      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else if(targetState.haste>0&&Math.random()<0.25){
-      addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else if(targetState.blink>0&&Math.random()<0.5){
-      addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc');
-      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    } else {
-      const [baDmg,baSkin]=applyTargetSkins(targetState,dmg,isPhysical);
-      dmg=baDmg;
-      if(baSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+baSkin+' Skin','#b08040',10);
-      const counterTriggered=!isPhysical&&targetState.counter&&targetState.shield>0;
-      if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed;
-        dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8); spawnParts(tx,bH*.38,'#ffffff',4);
+    function resolveBasicAttack(){
+      if(targetState.foresight){
+        addFloat(tx,bH*.38-20,'🔮 Absorbed!','#ffcc44',15);
+        spawnParts(tx,bH*.38,'#ffcc44',18);
+        spawnParts(tx,bH*.38,casterCfg.col,10);
+        spawnParts(tx,bH*.38,'#ffffff',6);
+        if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+      } else if(targetState.invisible>0){
+        addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
+        spawnParts(tx,bH*.38,'#b8a0e8',12);
+        if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+      } else if(targetState.haste>0&&Math.random()<0.25){
+        addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
+        spawnParts(tx,bH*.38,'#ffcc44',12);
+        if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+      } else if(targetState.blink>0&&Math.random()<0.5){
+        addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
+        spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
+        flash('#9988cc');
+        if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+      } else {
+        const [baDmg,baSkin]=applyTargetSkins(targetState,dmg,isPhysical);
+        dmg=baDmg;
+        if(baSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+baSkin+' Skin','#b08040',10);
+        const counterTriggered=!isPhysical&&targetState.counter&&targetState.shield>0;
+        if(targetState.shield>0){
+          const absorbed=Math.min(dmg,targetState.shieldHp);
+          targetState.shieldHp-=absorbed;
+          dmg-=absorbed;
+          if(targetState.shieldHp<=0){
+            targetState.shield=0;
+            addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
+            spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
+          } else {
+            addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+            spawnParts(tx,bH*.38,'#4af0ff',8); spawnParts(tx,bH*.38,'#ffffff',4);
+          }
         }
+        if(counterTriggered){
+          const casterX=cx;
+          casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
+          targetState.counter=false;
+          addFloat(casterX,bH*.33,'⚡ Counter! −'+targetCfg.counterDmg,'#4af0ff',14);
+          spawnParts(casterX,bH*.38,'#4af0ff',16);
+          spawnBeam(tx,bH*.38,casterX,bH*.38,'#4af0ff');
+          checkWin(); if(!battleRunning) return;
+        }
+        targetState.hp=Math.max(0,targetState.hp-dmg);
+        if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+        if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+        if(isPhysical&&!basicSpell.piercesDischarge&&targetState.charge>0){
+          applyDischarge(targetState,casterState,cx,tx);
+          checkWin(); if(!battleRunning) return;
+        }
+        spawnParts(tx,bH*.38,casterCfg.col,14);
+        addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
+        flash(casterCfg.col);
+        if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+        else             {anim('p2','cast',800); anim('p1','hit',800);}
       }
-      if(counterTriggered){
-        const casterX=cx;
-        casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
-        targetState.counter=false;
-        addFloat(casterX,bH*.33,'⚡ Counter! −'+targetCfg.counterDmg,'#4af0ff',14);
-        spawnParts(casterX,bH*.38,'#4af0ff',16);
-        spawnBeam(tx,bH*.38,casterX,bH*.38,'#4af0ff');
-        checkWin(); if(!battleRunning) return;
+      refreshHUD();
+      checkWin();
+      if(!battleRunning) return;
+      if(basicSpell.lungeAmt){
+        if(caster==='p1'||twoPlayerMode){ endMyTurn(); }
+        else { tickStatuses(casterState); setTimeout(finishAI,900); }
       }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-      if(isPhysical&&!basicSpell.piercesDischarge&&targetState.charge>0){
-        applyDischarge(targetState,casterState,cx,tx);
-        checkWin(); if(!battleRunning) return;
-      }
-      spawnParts(tx,bH*.38,casterCfg.col,14);
-      addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
-      flash(casterCfg.col);
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
     }
-    refreshHUD();
-    checkWin();
+    if(basicSpell.lungeAmt){
+      gs.busy=true;
+      lunge(caster,basicSpell.lungeAmt,resolveBasicAttack);
+      return;
+    } else {
+      resolveBasicAttack();
+    }
   }
 
   if(caster==='p1'||twoPlayerMode){
@@ -2610,7 +2628,7 @@ function applyFrostArmorRetaliation(casterState,targetCfg,cx){
 
 function applyDischarge(targetState,casterState,casterX,targetX){
   const dischargeDmg=targetState.charge;
-  targetState.charge=0;
+  targetState.charge=Math.floor(targetState.charge/2);
   casterState.hp=Math.max(0,casterState.hp-dischargeDmg);
   addFloat(casterX,bH*.33,'⚡ Discharge! −'+dischargeDmg,'#aaff44',14);
   spawnParts(casterX,bH*.38,'#aaff44',14);
@@ -2758,6 +2776,13 @@ function anim(who,state,ms){
   setTimeout(()=>{if(gs[who+'anim']!=='death') gs[who+'anim']='idle';},ms);
 }
 
+function lunge(who,amt,cb){
+  const dir=who==='p1'?1:-1;
+  gs[who+'xOff']=dir*bW*amt;
+  anim(who,'cast',300);
+  setTimeout(()=>{ gs[who+'xOff']=0; if(cb) cb(); },180);
+}
+
 function endMyTurn(skipShieldDecrement=false){
   gs.myTurn=false; gs.busy=false;
   if(twoPlayerMode){
@@ -2901,13 +2926,16 @@ function doAI(){
     if(hasDebuff&&canPurge)                        chosen=canPurge;
     else if(ai.hp<ai.maxHp*0.60&&canHeal)          chosen=canHeal;
   }
-  // Zacharius: prioritise galvanize to build charge, spend it with chain lightning
+  // Zacharius: apply conductivity first, then build charge and spend with chain lightning
   if(p2Key==='zacharius'){
     const chainReady=charSpells.find(s=>s.id==='chainlightning');
     const canGalvanize=charSpells.find(s=>s.id==='galvanize');
+    const canConductivity=charSpells.find(s=>s.id==='conductivity');
     if(chainReady&&ai.charge>=(p2Cfg.chainLightningChargeCost||8)){
       chosen=chainReady;
-    } else if(canGalvanize&&ai.charge<(p2Cfg.chainLightningChargeCost||8)){
+    } else if(canConductivity&&!gs.p1.conductivity&&ai.mana>=canConductivity.cost){
+      chosen=canConductivity;
+    } else if(canGalvanize){
       chosen=canGalvanize;
     }
   }
