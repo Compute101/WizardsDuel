@@ -3075,10 +3075,10 @@ function launchPatternEcho(spell,cb){
   setDpadVisible(false);
 
   const TILES=[
-    {col:'#cc3300',lit:'#ff6622',sym:'△'},
-    {col:'#991100',lit:'#ff3311',sym:'◆'},
-    {col:'#aa7700',lit:'#ffcc00',sym:'◯'},
-    {col:'#880000',lit:'#cc2200',sym:'✦'},
+    {col:'#cc3300',lit:'#ff6622',sym:'⚡',glowCol:'#ccffff'},  // lightning – cyan glow
+    {col:'#991100',lit:'#ff3311',sym:'☽',glowCol:'#aaddff'},  // crescent  – ice-blue glow
+    {col:'#aa7700',lit:'#ffcc00',sym:'⊕',glowCol:'#ffee77'},  // sun-cross – gold glow
+    {col:'#880000',lit:'#cc2200',sym:'✦',glowCol:'#dd88ff'},  // star      – violet glow
   ];
   const SYMS=TILES.map(t=>t.sym);
   const NOISE_COLS=['#bb1100','#991100','#cc2200','#aa1500','#881000'];
@@ -3211,34 +3211,44 @@ function launchPatternEcho(spell,cb){
       mx.restore();
 
       // ── White sequence symbols rising in order ──
-      mx.save();
       symStates.forEach(s=>{
         if(!s.spawned&&elapsed>=SPAWN_DELAY+s.idx*SPAWN_INTERVAL){
           s.spawned=true; s.y=ch+30;
         }
         if(!s.spawned) return;
         s.y-=RISE_SPD;
-        // Fade in when entering from bottom, fade out when reaching top
+        // Fade in from bottom, fade out near top
         let alpha=1;
         if(ch-s.y<50) alpha=(ch-s.y)/50;
         if(s.y<55) alpha=Math.max(0,s.y/55);
         if(alpha<=0.01) return;
 
-        mx.globalAlpha=alpha;
-        mx.shadowColor='#ffffff'; mx.shadowBlur=24;
-        mx.fillStyle='#ffffff';
-        mx.font='bold 30px serif';
-        mx.textAlign='center'; mx.textBaseline='middle';
-        mx.fillText(s.sym,s.x,s.y);
+        const gc=TILES[s.tileIdx].glowCol;
+        const osc=Math.sin(t/900+s.idx*1.3)*0.12; // gentle arcane rotation
 
-        // Small order-number badge so player knows which is first/second/…
+        // Glyph: white symbol with coloured outer glow
+        mx.save();
+        mx.globalAlpha=alpha;
+        mx.translate(s.x,s.y);
+        mx.rotate(osc);
+        mx.shadowColor=gc; mx.shadowBlur=32;
+        mx.fillStyle='#ffffff';
+        mx.font='bold 40px serif';
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(s.sym,0,0);
+        mx.restore();
+
+        // Order-number badge (not rotated)
+        mx.save();
+        mx.globalAlpha=alpha;
         mx.shadowColor='#ffcc00'; mx.shadowBlur=10;
         mx.fillStyle='#ffcc00';
         mx.font='bold 11px Cinzel,serif';
-        mx.fillText(s.idx+1,s.x+16,s.y-17);
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(s.idx+1,s.x+22,s.y-22);
+        mx.restore();
       });
       mx.globalAlpha=1; mx.shadowBlur=0;
-      mx.restore();
 
       // Instruction label
       mx.fillStyle='#ffcc00';
