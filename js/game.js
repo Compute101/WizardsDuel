@@ -11,7 +11,7 @@ const SPELLS=[
   {name:'Arcane Surge',   element:'arcane',    icon:'🌀', dmg:0,  cost:9,  col:'#cc88ff',
    effectLabel:'Wild: 15–55 damage'},
   {name:'Dispel',         element:'dispel',    icon:'🌸', dmg:0,  cost:7,  col:'#ffaaff',
-   effectLabel:'Cleanse 1 own debuff/hex; 40% strip one opp buff'},
+   effectLabel:'Cleanse 1 own debuff/hex; 70% strip one opp buff'},
   {name:'Mana Burn',      element:'manaburn',  icon:'🔮', dmg:0,  cost:8,  col:'#cc44ff',
    effectLabel:'Deal 2× opp mana as dmg; drain 4 mana (pierces shields)'},
 ];
@@ -2169,7 +2169,7 @@ function castSpell(spell,target,tx,ty,caster){
     if(targetState.invisible>0)   oppBuffs.push('invisible');
     if(targetState.counter)       oppBuffs.push('counter');
     if(oppBuffs.length>0){
-      if(Math.random()<0.40){
+      if(Math.random()<0.70){
         const stripped=oppBuffs[Math.floor(Math.random()*oppBuffs.length)];
         if(stripped==='shield'){targetState.shield=0; targetState.shieldHp=0;}
         else if(stripped==='foresight') targetState.foresight=false;
