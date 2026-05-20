@@ -1220,7 +1220,7 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='chainlightning') return casterState.charge<(casterCfg.chainLightningChargeCost||8);
   if(spellId==='conductivity')   return targetState.conductivity>0;
   if(spellId==='divineheal')     return casterState.hp>=casterState.maxHp;
-  if(spellId==='purge')          return !(casterState.burn>0||casterState.frozen>0||casterState.blizzard>0||casterState.vineWhip>0||casterState.timeDrain>0||casterState.conductivity>0||casterState.candle>0);
+  if(spellId==='purge')          return !(casterState.burn>0||casterState.frozen>0||casterState.blizzard>0||casterState.vineWhip>0||casterState.timeDrain>0||casterState.conductivity>0||casterState.candle>0||casterState.agony>0||casterState.corruption>0||casterState.silence>0);
   if(spellId==='agony')          return targetState.agony>0;
   if(spellId==='silence')        return targetState.silence>0;
   if(spellId==='corruption')     return targetState.corruption>0;
@@ -1993,6 +1993,9 @@ function resolveCharSpell(spellId,caster){
     if(casterState.timeDrain>0)   {casterState.timeDrain=0;    cleared.push('⏳');}
     if(casterState.conductivity>0){casterState.conductivity=0; cleared.push('💡');}
     if(casterState.candle>0)      {casterState.candle=0;       cleared.push('🕯️');}
+    if(casterState.agony>0)       {casterState.agony=0;        cleared.push('💀');}
+    if(casterState.corruption>0)  {casterState.corruption=0;   cleared.push('☠️');}
+    if(casterState.silence>0)     {casterState.silence=0;      cleared.push('🔇');}
     addFloat(cx,bH*.33,'✨ Purged! '+cleared.join(''),casterCfg.col,13);
     spawnParts(cx,bH*.38,'#fffde0',18); spawnParts(cx,bH*.38,'#ffffff',8);
     flash('#fffff0');
@@ -2619,7 +2622,7 @@ function doAI(){
   }
   // Mary: purge debuffs first, heal when hurt
   if(p2Key==='mary'){
-    const hasDebuff=ai.burn>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0;
+    const hasDebuff=ai.burn>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
     const canPurge=charSpells.find(s=>s.id==='purge');
     const canHeal=charSpells.find(s=>s.id==='divineheal');
     if(hasDebuff&&canPurge)                        chosen=canPurge;
