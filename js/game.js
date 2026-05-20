@@ -10,6 +10,10 @@ const SPELLS=[
    effectLabel:'Freezes — skip next turn'},
   {name:'Arcane Surge',   element:'arcane',    icon:'🌀', dmg:0,  cost:9,  col:'#cc88ff',
    effectLabel:'Wild: 15–55 damage'},
+  {name:'Dispel',         element:'dispel',    icon:'🌸', dmg:0,  cost:7,  col:'#ffaaff',
+   effectLabel:'Cleanse all debuffs & hexes from yourself'},
+  {name:'Mana Burn',      element:'manaburn',  icon:'🔮', dmg:0,  cost:8,  col:'#cc44ff',
+   effectLabel:'Deal 2× opp mana as dmg; drain 4 mana (pierces shields)'},
 ];
 
 // ── CHARACTER DEFINITIONS (loaded from characters.json) ───────
@@ -952,7 +956,7 @@ function addFloat(x,y,t,col,sz=17){gs.floats.push({x,y,t,col,sz,life:1});}
 
 // ── SPELL PROJECTILES ──────────────────────────────────────
 function spawnProj(x1,y1,x2,y2,element,col,cb){
-  const speeds={fire:0.055,lightning:0.3,ice:0.065,arcane:0.06,physical:0.09};
+  const speeds={fire:0.055,lightning:0.3,ice:0.065,arcane:0.06,physical:0.09,dispel:0.07,manaburn:0.08};
   gs.projs.push({x1,y1,x2,y2,progress:0,speed:speeds[element]||0.065,element,col,cb,done:false});
 }
 
@@ -1017,6 +1021,24 @@ function tickProjs(){
         bx.beginPath(); bx.moveTo(-bH*.035,off); bx.lineTo(bH*.035,off); bx.stroke();
       }
       bx.shadowBlur=0; bx.globalAlpha=1; bx.restore();
+    } else if(p.element==='dispel'){
+      const t=Date.now();
+      bx.save(); bx.translate(px,py);
+      const pulse=0.8+0.2*Math.sin(t/120);
+      bx.beginPath(); bx.arc(0,0,bH*.024*pulse,0,Math.PI*2);
+      bx.fillStyle='#ffaaff'; bx.shadowColor='#ff88ff'; bx.shadowBlur=20*pulse; bx.globalAlpha=0.85; bx.fill();
+      bx.beginPath(); bx.arc(0,0,bH*.010*pulse,0,Math.PI*2);
+      bx.fillStyle='#ffffff'; bx.shadowBlur=8; bx.globalAlpha=0.9; bx.fill();
+      bx.shadowBlur=0; bx.globalAlpha=1; bx.restore();
+    } else if(p.element==='manaburn'){
+      const t=Date.now();
+      bx.save(); bx.translate(px,py);
+      const pulse=0.7+0.3*Math.sin(t/100);
+      bx.beginPath(); bx.arc(0,0,bH*.026*pulse,0,Math.PI*2);
+      bx.fillStyle='#cc44ff'; bx.shadowColor='#aa00ff'; bx.shadowBlur=24*pulse; bx.globalAlpha=0.9; bx.fill();
+      bx.beginPath(); bx.arc(0,0,bH*.010,0,Math.PI*2);
+      bx.fillStyle='#220033'; bx.shadowBlur=0; bx.globalAlpha=1; bx.fill();
+      bx.restore();
     }
     if(p.progress>=1){ p.done=true; if(p.cb) p.cb(); }
   });
@@ -1261,6 +1283,8 @@ function act(type){
       lightning: launchLightningPattern,
       ice:       launchIcePattern,
       arcane:    launchArcanePattern,
+      dispel:    launchArcanePattern,
+      manaburn:  launchLightningPattern,
     };
     launchers[type](spell, ok=>{
       if(ok){
@@ -2111,6 +2135,17 @@ function castSpell(spell,target,tx,ty,caster){
   const targetCfg=target===gs.p1?p1Cfg:p2Cfg;
   const oppCfg   =caster==='p1'?p2Cfg:p1Cfg;
 
+  // Dispel: self-targeting — cleanse all debuffs/hexes from caster regardless of target state
+  if(spell.element==='dispel'){
+    const cx2=caster==='p1'?bW*.22:bW*.78;
+    ['burn','frozen','blizzard','vineWhip','timeDrain','conductivity','candle','agony','corruption','silence'].forEach(s=>{casterState[s]=0;});
+    spawnParts(cx2,ty,'#ffaaff',30); spawnParts(cx2,ty,'#ffffff',15);
+    addFloat(cx2,ty,'🌸 Cleansed!','#ffaaff',20);
+    flash('#ffaaff');
+    if(caster==='p1'){anim('p1','cast',800);}else{anim('p2','cast',800);}
+    return;
+  }
+
   let dmg=Math.round(spell.dmg*casterCfg.dmgMult);
   if(spell.element==='arcane') dmg=Math.round((15+Math.floor(Math.random()*41))*casterCfg.dmgMult);
 
@@ -2141,6 +2176,28 @@ function castSpell(spell,target,tx,ty,caster){
     spawnParts(tx,ty,spell.col,12);
     spawnParts(tx,ty,'#ffffff',6);
     if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
+    return;
+  }
+
+  // Mana Burn: psychic drain — bypasses invisibility, haste, shields; blocked by foresight
+  if(spell.element==='manaburn'){
+    let burnDmg=Math.round(targetState.mana*2*casterCfg.dmgMult);
+    if(casterState.empowered){
+      burnDmg=Math.round(burnDmg*(casterCfg.empowerMult||1.5));
+      casterState.empowered=false;
+      addFloat(tx,ty-36,'💪 Empowered!',casterCfg.col,10);
+    }
+    if(targetState.conductivity>0) burnDmg=Math.round(burnDmg*1.35);
+    const drained=Math.min(4,targetState.mana);
+    targetState.mana=Math.max(0,targetState.mana-drained);
+    targetState.hp=Math.max(0,targetState.hp-burnDmg);
+    spawnParts(tx,ty,'#cc44ff',22); spawnParts(tx,ty,'#ff88ff',10);
+    addFloat(tx,ty,'-'+burnDmg,'#cc44ff',22);
+    if(drained>0) addFloat(tx,ty+28,'🔮 −'+drained+' Mana','#cc44ff',14);
+    flash('#cc44ff');
+    if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+    else             {anim('p2','cast',800); anim('p1','hit',800);}
+    checkWin();
     return;
   }
 
@@ -2501,7 +2558,7 @@ function doAI(){
     if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
     if(s.aiHint==='drain'&&ai.hp>ai.maxHp*0.75) return false;
     if(ai.frenzied>0&&s.element) return false;
-    if(gs.p1.invisible>0&&(s.element&&!s.area||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption')) return false;
+    if(gs.p1.invisible>0&&(s.element&&!s.area&&s.element!=='dispel'&&s.element!=='manaburn'||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption')) return false;
     return true;
   });
 
@@ -2534,6 +2591,19 @@ function doAI(){
       chosen=canGalvanize;
     }
   }
+  // Use Dispel if AI is suffering active hexes or harmful DoT effects
+  if(!chosen){
+    const dispelSpell=universalSpells.find(s=>s.element==='dispel');
+    if(dispelSpell&&(ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1)){
+      chosen=dispelSpell;
+    }
+  }
+  // Use Mana Burn when player is mana-rich (strong as catchup, weak when opponent already starved)
+  if(!chosen){
+    const manaBurnSpell=universalSpells.find(s=>s.element==='manaburn');
+    if(manaBurnSpell&&gs.p1.mana>=8) chosen=manaBurnSpell;
+  }
+
   if(!chosen&&available.length>0){
     if(charSpells.length>0&&Math.random()<0.40){
       chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
