@@ -39,7 +39,7 @@ const CHAR_DISPLAY={
     flavour:'Bend time — foresee attacks and drain your foe.'
   },
   gnash:{
-    stats:[['❤ HP','105'],['🩸 War Paint','33% resist / 5T'],['⚔️ Charge','32 pierce all'],['💢 Frenzy','2× strike, locked 3T']],
+    stats:[['❤ HP','105'],['🩸 War Paint','3 mana → 33% resist / 5T'],['⚔️ Charge','15 HP → 32 pierce all'],['💢 Frenzy','15 HP → 2× strike, locked 3T']],
     flavour:'Blood and bone. No magic — just fury.'
   },
   emberic:{
@@ -1283,7 +1283,8 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='entangle')   return targetState.frozen>0;
   if(spellId==='foresight')  return casterState.foresight;
   if(spellId==='timedrain')  return targetState.timeDrain>0;
-  if(spellId==='warpaint')   return casterState.resist>0||casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='warpaint')   return casterState.resist>0;
+  if(spellId==='charge')    return casterState.hp<=(casterCfg.frenzyHpCost||15);
   if(spellId==='vanish')     return casterState.invisible>0;
   if(spellId==='manasiphon') return !casterState.invisible||targetState.mana<=0;
   if(spellId==='ward')       return casterState.ward>0;
@@ -1548,7 +1549,6 @@ function resolveCharSpell(spellId,caster){
       refreshHUD();
     }
   } else if(spellId==='warpaint'){
-    casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
     casterState.resist=5;
     addFloat(cx,bH*.33,'🩸 War Paint! -33% dmg',casterCfg.col,12);
     for(let i=0;i<8;i++)
@@ -1558,6 +1558,7 @@ function resolveCharSpell(spellId,caster){
     anim(caster,'shield',700);
     refreshHUD();
   } else if(spellId==='charge'){
+    casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
     if(casterState.invisible>0){
       casterState.invisible=0;
       addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
