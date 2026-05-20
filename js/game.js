@@ -3680,44 +3680,100 @@ function launchLightningPattern(spell,cb){
   mazeRAF=requestAnimationFrame(frame);
 }
 
-// ── PUZZLE: ICE PATTERN ───────────────────────────────────
+// ── PUZZLE: ICE PATTERN (Frost Crystal Glyph) ────────────────────────────
 function launchIcePattern(spell,cb){
   let done=false;
-  document.getElementById('pztitle').textContent='Frostbind Sequence';
+  document.getElementById('pztitle').textContent='Frost Crystal Glyph';
   document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
   setDpadVisible(false);
 
-  const TILES=[
-    {col:'#0a2030', lit:'#88ddff', sym:'△'},
-    {col:'#062028', lit:'#44ccee', sym:'◆'},
-    {col:'#152535', lit:'#aaeeff', sym:'◯'},
-    {col:'#0e1e2c', lit:'#66bbdd', sym:'✦'},
+  // ── Full 12-glyph Arcana Alphabet (grid order: 3 cols × 4 rows) ──────
+  // Indices: 0=ϟ 1=Δ 2=∇ 3=Ψ 4=Ω 5=∞ 6=☽ 7=✸ 8=⊕ 9=⊗ 10=θ 11=Φ
+  const ALPHABET=[
+    {sym:'ϟ',glowCol:'#ccffff',col:'#0a1825',lit:'#336688'}, // 0
+    {sym:'Δ',glowCol:'#ff9944',col:'#0a1422',lit:'#2a5577'}, // 1
+    {sym:'∇',glowCol:'#44aaff',col:'#081522',lit:'#225577'}, // 2
+    {sym:'Ψ',glowCol:'#aaff88',col:'#081420',lit:'#224455'}, // 3
+    {sym:'Ω',glowCol:'#ff4444',col:'#09121e',lit:'#223355'}, // 4
+    {sym:'∞',glowCol:'#44ffcc',col:'#082820',lit:'#1a6655'}, // 5
+    {sym:'☽',glowCol:'#aaddff',col:'#091828',lit:'#1a4466'}, // 6
+    {sym:'✸',glowCol:'#ffff55',col:'#0a1420',lit:'#225566'}, // 7
+    {sym:'⊕',glowCol:'#ffee77',col:'#09182a',lit:'#225577'}, // 8
+    {sym:'⊗',glowCol:'#ff44aa',col:'#091020',lit:'#1a2a44'}, // 9
+    {sym:'θ',glowCol:'#88ff88',col:'#062e20',lit:'#1a6644'}, // 10
+    {sym:'Φ',glowCol:'#dd88ff',col:'#14082a',lit:'#3a1266'}, // 11
   ];
-  const TS=108, GAP=8, PAD=12;
-  const cw=PAD*2+TS*2+GAP, ch=PAD*2+TS*2+GAP+20;
+
+  // Ice owns θ(10) Φ(11) ☽(6) ∞(5) — see CLAUDE.md
+  const SPELL_IDX=[10,11,6,5];
+  // Ice colours assigned per SPELL_IDX position (0-3)
+  const ICE_COLS=[
+    {col:'#062e20',lit:'#55ffcc'}, // θ — teal ice crystal
+    {col:'#14082a',lit:'#cc88ff'}, // Φ — violet frost
+    {col:'#091828',lit:'#aaddff'}, // ☽ — ice-blue moon
+    {col:'#082820',lit:'#44ffcc'}, // ∞ — eternal teal
+  ];
+
+  // Canvas: 3-col × 4-row keyboard grid
+  const TS=72,GAP=6,PAD=10;
+  const cw=PAD*2+TS*3+GAP*2;  // 248 px
+  const ch=380;
   mc.width=cw; mc.height=ch;
   const mw=Math.min(cw,(window.innerWidth||360)-32);
   mc.style.width=mw+'px'; mc.style.height='auto';
 
-  const tPos=[
-    {x:PAD,y:PAD+20},{x:PAD+TS+GAP,y:PAD+20},
-    {x:PAD,y:PAD+20+TS+GAP},{x:PAD+TS+GAP,y:PAD+20+TS+GAP},
-  ];
+  // Keyboard tile positions — bottom-aligned
+  const tileAreaH=TS*4+GAP*3;        // 306 px
+  const tileTop=ch-PAD-tileAreaH;    // 64 px
+  const tPos=Array.from({length:12},(_,i)=>({
+    x:PAD+(i%3)*(TS+GAP),
+    y:tileTop+Math.floor(i/3)*(TS+GAP),
+  }));
 
   const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
-  const seq=Array.from({length:SEQ_LEN},()=>Math.floor(Math.random()*4));
+  const seq=diffName==='easy'
+    ?[10,11,6,5]  // canonical Ice word: θ Φ ☽ ∞
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
   const playerSeq=[];
-  let phase='watch', watchStep=0, litTile=-1;
+  let phase='watch';
   let timeLeft=Math.round(20*diffMult);
 
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
 
-  const sparks=Array.from({length:22},()=>({
+  // Frost noise — all 12 arcana glyphs slowly crystallize and dissolve
+  const FROST_COLS=['#336688','#2a5577','#224466','#1a3355','#2a4466'];
+  const noise=Array.from({length:40},()=>({
     x:Math.random()*cw, y:Math.random()*ch,
-    spd:0.15+Math.random()*0.3, sz:0.8+Math.random()*1.8,
+    sz:8+Math.random()*14,
+    ai:Math.floor(Math.random()*12),
+    col:FROST_COLS[Math.floor(Math.random()*5)],
     ph:Math.random()*Math.PI*2,
-    col:Math.random()<0.5?'#88ddff':'#ccf4ff',
+    period:5000+Math.random()*7000,
+  }));
+
+  // Sequence glyph positions scattered across the full canvas
+  const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
+    const frac=(i+0.5)/SEQ_LEN;
+    return Math.max(30,Math.min(cw-30,cw*frac+(Math.random()-0.5)*22));
+  });
+  const Y_BANDS=[0.18,0.38,0.58,0.28,0.48,0.68,0.22];
+  const ySlots=Array.from({length:SEQ_LEN},(_,i)=>
+    Math.max(35,Math.min(ch-50,ch*Y_BANDS[i%Y_BANDS.length]+(Math.random()-0.5)*35))
+  );
+
+  const SPAWN_DELAY=500,SPAWN_INTERVAL=3000;
+  const FADE_IN=1800,HOLD=1400,FADE_OUT=1800;
+  const GLYPH_DUR=FADE_IN+HOLD+FADE_OUT;
+  const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+4000;
+  const startTime=Date.now();
+  let watchDone=false;
+
+  const symStates=seq.map((ai,i)=>({
+    ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
+    x:xSlots[i],y:ySlots[i],
+    spawnAt:startTime+SPAWN_DELAY+i*SPAWN_INTERVAL,
+    idx:i,
   }));
 
   function startTimer(){
@@ -3730,27 +3786,23 @@ function launchIcePattern(spell,cb){
     },1000);
   }
 
-  function showNext(){
-    if(done) return;
-    if(watchStep>=seq.length){ phase='input'; timerEl.textContent=timeLeft; startTimer(); return; }
-    litTile=seq[watchStep++];
-    setTimeout(()=>{ litTile=-1; setTimeout(showNext,220); },580);
-  }
-  setTimeout(showNext,500);
-
   function onPointer(e){
     if(done||phase!=='input') return;
     e.preventDefault();
     const rect=mc.getBoundingClientRect();
-    const sx=mc.width/rect.width, sy=mc.height/rect.height;
-    const px=(e.clientX-rect.left)*sx, py=(e.clientY-rect.top)*sy;
-    for(let i=0;i<4;i++){
-      const tp=tPos[i];
+    const sx=mc.width/rect.width,sy=mc.height/rect.height;
+    const px=(e.clientX-rect.left)*sx,py=(e.clientY-rect.top)*sy;
+    for(let ai=0;ai<12;ai++){
+      const tp=tPos[ai];
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
-        playerSeq.push(i);
-        const idx=playerSeq.length-1;
-        if(playerSeq[idx]!==seq[idx]){finish(false); return;}
-        if(playerSeq.length===seq.length){finish(true);}
+        const isSpell=SPELL_IDX.includes(ai);
+        if(!isSpell){
+          if(diffName==='hard') finish(false);
+          return;
+        }
+        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        playerSeq.push(ai);
+        if(playerSeq.length===seq.length) finish(true);
         return;
       }
     }
@@ -3760,62 +3812,174 @@ function launchIcePattern(spell,cb){
   function cleanup(){
     mc.removeEventListener('pointerdown',onPointer);
     setDpadVisible(true);
-    if(mazeTid){clearInterval(mazeTid); mazeTid=null;}
-    if(mazeRAF){cancelAnimationFrame(mazeRAF); mazeRAF=null;}
+    if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
+    if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){ if(done) return; done=true; cleanup(); puzzleFinish(ok,cb); }
+  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
 
   function draw(){
     const t=Date.now();
-    const bg=mx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,cw*.7);
-    bg.addColorStop(0,'#051018'); bg.addColorStop(0.6,'#02080e'); bg.addColorStop(1,'#010406');
+    const elapsed=t-startTime;
+
+    // Background — icy deep blue
+    const bg=mx.createRadialGradient(cw/2,ch*.45,0,cw/2,ch*.45,cw*.9);
+    bg.addColorStop(0,'#020b14');
+    bg.addColorStop(0.6,'#010508');
+    bg.addColorStop(1,'#000304');
     mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
 
-    mx.save();
-    sparks.forEach(s=>{
-      s.y+=s.spd; if(s.y>ch+4){s.y=-4; s.x=Math.random()*cw;}
-      mx.globalAlpha=0.1+0.3*Math.abs(Math.sin(t/900+s.ph));
-      mx.fillStyle=s.col; mx.shadowColor=s.col; mx.shadowBlur=5;
-      mx.beginPath(); mx.arc(s.x,s.y,s.sz,0,Math.PI*2); mx.fill();
-    });
-    mx.globalAlpha=1; mx.shadowBlur=0;
-    mx.restore();
-
-    mx.fillStyle=phase==='watch'?'#aaeeff':'#88ddff';
-    mx.font='bold 10px Cinzel,serif'; mx.textAlign='center'; mx.textBaseline='top';
-    mx.fillText(
-      phase==='watch'?`Memorise: ${watchStep}/${seq.length}`:`Repeat: ${playerSeq.length}/${seq.length}`,
-      cw/2, 4
-    );
-
-    for(let i=0;i<4;i++){
-      const tp=tPos[i], tile=TILES[i], lit=(litTile===i);
-      mx.save();
-      mx.shadowColor=tile.col; mx.shadowBlur=lit?28:5;
-      const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,4,tp.x+TS/2,tp.y+TS/2,TS*.6);
-      tg.addColorStop(0,lit?tile.lit:tile.col);
-      tg.addColorStop(1,lit?tile.col:'#010810');
-      mx.fillStyle=tg;
-      mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.fill();
-      mx.strokeStyle=lit?tile.lit:tile.col+'88'; mx.lineWidth=lit?2.5:1.5;
-      mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.stroke();
-      mx.shadowBlur=0;
-      mx.fillStyle=lit?'#fff':tile.lit+'cc';
-      mx.font=`bold ${TS*.42}px serif`; mx.textAlign='center'; mx.textBaseline='middle';
-      mx.fillText(tile.sym,tp.x+TS/2,tp.y+TS/2);
-      mx.restore();
+    if(phase==='watch'&&!watchDone&&elapsed>=watchDuration){
+      watchDone=true; phase='input';
+      timerEl.textContent=timeLeft; startTimer();
     }
 
-    const dotY=ch-7, dsp=14, ds=cw/2-(seq.length-1)*dsp/2;
-    for(let i=0;i<seq.length;i++){
-      mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-      if(i<playerSeq.length){ mx.fillStyle='#88ddff'; mx.shadowColor='#88ddff'; mx.shadowBlur=6; }
-      else { mx.fillStyle='rgba(136,221,255,0.2)'; mx.shadowBlur=0; }
-      mx.fill(); mx.shadowBlur=0;
+    if(phase==='watch'){
+      // Frost noise — glyphs crystallize and dissolve on a slow triangle-wave cycle
+      mx.save();
+      noise.forEach(f=>{
+        const cycle=(t/f.period+f.ph/(Math.PI*2))%1;
+        const tri=cycle<0.5?cycle*2:(1-cycle)*2;
+        mx.globalAlpha=tri*0.14;
+        mx.fillStyle=f.col; mx.shadowColor=f.col; mx.shadowBlur=5;
+        mx.font=`bold ${f.sz}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
+      });
+      mx.globalAlpha=1; mx.shadowBlur=0;
+      mx.restore();
+
+      // Sequence glyphs — crystallize (fade+scale in), hold, then melt (fade+scale out)
+      symStates.forEach(s=>{
+        const age=t-s.spawnAt;
+        if(age<0) return;
+        let alpha,scale;
+        if(age<FADE_IN){
+          const p=age/FADE_IN;
+          alpha=p; scale=0.75+0.25*p;
+        } else if(age<FADE_IN+HOLD){
+          alpha=1; scale=1;
+        } else if(age<GLYPH_DUR){
+          const p=(age-FADE_IN-HOLD)/FADE_OUT;
+          alpha=1-p; scale=1-0.15*p;
+        } else {
+          // After full cycle: persistent faint echo
+          alpha=0.15+0.08*Math.abs(Math.sin((age-GLYPH_DUR)/2500+s.idx));
+          scale=0.9;
+        }
+        if(alpha<=0.01) return;
+
+        // Subtle ice shimmer — gentle lateral drift like frost under breath
+        const shimX=Math.sin(t/2000+s.idx*2.3)*1.8;
+        const shimY=Math.cos(t/2600+s.idx*1.8)*1.2;
+
+        mx.save();
+        mx.globalAlpha=alpha;
+        mx.translate(s.x+shimX,s.y+shimY);
+        mx.scale(scale,scale);
+        mx.shadowColor=s.glowCol; mx.shadowBlur=30;
+        mx.fillStyle='#dff4ff';
+        mx.font='bold 40px serif';
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(s.sym,0,0);
+        mx.restore();
+
+        // Order badge — visible during crystallize and hold phases
+        if(alpha>0.3&&age<FADE_IN+HOLD+300){
+          mx.save();
+          mx.globalAlpha=Math.min(alpha,0.95);
+          mx.shadowColor='#88ddff'; mx.shadowBlur=8;
+          mx.fillStyle='#88ddff';
+          mx.font='bold 11px Cinzel,serif';
+          mx.textAlign='center'; mx.textBaseline='middle';
+          mx.fillText(s.idx+1,s.x+22,s.y-22);
+          mx.restore();
+        }
+      });
+      mx.globalAlpha=1; mx.shadowBlur=0;
+
+      mx.fillStyle='#88ddff';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText('Watch the frost runes crystallize!',cw/2,4);
+    }
+
+    if(phase==='input'){
+      // Faint ambient frost — very subdued during input
+      mx.save();
+      noise.slice(0,10).forEach(f=>{
+        const cycle=(t/f.period+f.ph/(Math.PI*2))%1;
+        const tri=cycle<0.5?cycle*2:(1-cycle)*2;
+        mx.globalAlpha=tri*0.06;
+        mx.fillStyle=f.col;
+        mx.font=`${f.sz}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
+      });
+      mx.globalAlpha=1;
+      mx.restore();
+
+      // 12-glyph keyboard
+      const isHard=diffName==='hard';
+      for(let ai=0;ai<12;ai++){
+        const tp=tPos[ai];
+        const g=ALPHABET[ai];
+        const si=SPELL_IDX.indexOf(ai);
+        const isSpell=si!==-1;
+
+        let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
+        if(isHard){
+          // All glyphs neutral icy — player must rely on memory
+          bgCol='#0a1825'; bgDark='#030810';
+          strokeCol='#1a3a5888'; textCol='#2a6888';
+          blur=4; textAlpha=1;
+        } else if(isSpell){
+          // Spell glyphs: ice colours by SPELL_IDX position
+          bgCol=ICE_COLS[si].col; bgDark='#000810';
+          strokeCol=ICE_COLS[si].col+'88'; textCol=ICE_COLS[si].lit;
+          blur=8; textAlpha=1;
+        } else {
+          // Non-spell glyphs: ghosted out
+          bgCol='#070e16'; bgDark='#02050a';
+          strokeCol='#0f1e2a'; textCol='#162230';
+          blur=0; textAlpha=0.35;
+        }
+
+        mx.save();
+        mx.shadowColor=bgCol; mx.shadowBlur=blur;
+        const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,3,tp.x+TS/2,tp.y+TS/2,TS*.6);
+        tg.addColorStop(0,bgCol); tg.addColorStop(1,bgDark);
+        mx.fillStyle=tg;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.fill();
+        mx.shadowBlur=0;
+        mx.strokeStyle=strokeCol; mx.lineWidth=1.2;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.stroke();
+        mx.globalAlpha=textAlpha;
+        mx.fillStyle=textCol;
+        mx.font=`bold ${Math.round(TS*.42)}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(g.sym,tp.x+TS/2,tp.y+TS/2);
+        mx.restore();
+      }
+
+      // Status label
+      mx.fillStyle='#88ddff';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
+
+      // Progress dots — sit between status text and keyboard
+      const dotY=tileTop-10,dsp=14;
+      const ds=cw/2-(seq.length-1)*dsp/2;
+      for(let i=0;i<seq.length;i++){
+        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
+        if(i<playerSeq.length){mx.fillStyle='#88ddff';mx.shadowColor='#88ddff';mx.shadowBlur=6;}
+        else{mx.fillStyle='rgba(136,221,255,0.2)';mx.shadowBlur=0;}
+        mx.fill(); mx.shadowBlur=0;
+      }
     }
   }
 
-  function frame(){ if(done) return; draw(); mazeRAF=requestAnimationFrame(frame); }
+  function frame(){if(done)return;draw();mazeRAF=requestAnimationFrame(frame);}
   showScreen('puzzle-screen');
   mazeRAF=requestAnimationFrame(frame);
 }
