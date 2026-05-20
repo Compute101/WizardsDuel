@@ -109,7 +109,7 @@ function newState(){
         ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0,
         stoneskin:0, stoneskinHp:0, stonesoul:0},
     round:1, myTurn:true, busy:false,
-    p1anim:'idle', p2anim:'idle',
+    p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
     parts:[], floats:[], projs:[], beams:[],
     pendingAction:null, skipAITurn:false,
     turnPlayer:'p1', lastAnimEnd:0,
@@ -1210,8 +1210,8 @@ function battleLoop(ts){
   resizeBC();
   drawBG();
   const gy=bH*.74, wsz=bH*.3;
-  drawWiz(bW*.22,gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1',gs.p1.foresight,gs.p1);
-  drawWiz(bW*.78,gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2',gs.p2.foresight,gs.p2);
+  drawWiz(bW*.22+(gs.p1xOff||0),gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1',gs.p1.foresight,gs.p1);
+  drawWiz(bW*.78+(gs.p2xOff||0),gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2',gs.p2.foresight,gs.p2);
   tickProjs(); tickBeams(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!twoPlayerMode){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
@@ -1730,18 +1730,16 @@ function resolveCharSpell(spellId,caster){
     gs.busy=true;
     addFloat(cx,bH*.28,'💢 FRENZY!',casterCfg.col,16);
     spawnParts(cx,bH*.38,casterCfg.col,18);
-    anim(caster,'cast',900);
     let frenzyHitsDone=0;
     function doFrenzyStrike(){
       if(!battleRunning) return;
-      const yOff=bH*(frenzyHitsDone===0?-0.04:frenzyHitsDone===1?0:0.04);
-      spawnProj(cx,bH*.38+yOff,tx,bH*.38+yOff,'physical',casterCfg.col,()=>{
+      lunge(caster,()=>{
         if(!battleRunning) return;
         doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
         refreshHUD(); checkWin(); if(!battleRunning) return;
         frenzyHitsDone++;
         if(frenzyHitsDone<3){
-          setTimeout(doFrenzyStrike,350);
+          setTimeout(doFrenzyStrike,300);
         } else {
           if(caster==='p1'||twoPlayerMode){
             endMyTurn();
@@ -2766,6 +2764,13 @@ function anim(who,state,ms){
   gs[who+'anim']=state;
   gs.lastAnimEnd=Math.max(gs.lastAnimEnd||0, Date.now()+ms);
   setTimeout(()=>{if(gs[who+'anim']!=='death') gs[who+'anim']='idle';},ms);
+}
+
+function lunge(who,cb){
+  const dir=who==='p1'?1:-1;
+  gs[who+'xOff']=dir*bW*0.12;
+  anim(who,'cast',300);
+  setTimeout(()=>{ gs[who+'xOff']=0; if(cb) cb(); },180);
 }
 
 function endMyTurn(skipShieldDecrement=false){
