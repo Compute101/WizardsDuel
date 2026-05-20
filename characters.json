@@ -248,5 +248,31 @@
       {"id": "manasiphon",  "name": "Mana Siphon",   "icon": "🌀", "cost": 0, "costLabel": "Free",   "effectLabel": "Steal 4 mana (only while invisible; blocked by shield/foresight)", "aiHint": "mana_steal"},
       {"id": "blink",       "name": "Blink",         "icon": "💫", "cost": 1, "costLabel": "1 Mana", "effectLabel": "50% dodge chance for 3 turns"}
     ]
+  },
+  "durin": {
+    "name": "DURIN",
+    "title": "The Stoneheart",
+    "sprite": "sprites/mage-dark.png",
+    "col": "#b08040",
+    "taunts": [
+      "Stone does not bend. Stone does not break. Neither does Durin.",
+      "You threw everything you had at me. I barely felt it.",
+      "The mountain endures all things. So too shall I."
+    ],
+    "hp": 110,
+    "startMana": 5,
+    "channelAmt": 5,
+    "dmgMult": 1.0,
+    "stoneskinAbsorb": 10,
+    "stoneskinHpMax": 30,
+    "stoneskinDuration": 10,
+    "stonesoulDuration": 5,
+    "rockfallDmg": 9,
+    "spells": [
+      {"id": "basicattack", "name": "Boulder",   "icon": "🪨", "cost": 0, "costLabel": "Free",   "dmg": 9, "physical": true, "effectLabel": "Deal ~9 phys damage"},
+      {"id": "stoneskin",   "name": "Stoneskin", "icon": "🧱", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Absorb 10 per hit; 30 HP total, 10 turns"},
+      {"id": "stonesoul",   "name": "Stonesoul", "icon": "💎", "cost": 3, "costLabel": "3 Mana", "effectLabel": "40% magical damage reduction for 5 turns"},
+      {"id": "rockfall",    "name": "Rockfall",  "icon": "⛰️", "cost": 4, "costLabel": "4 Mana", "effectLabel": "3 rocks × ~9 phys dmg each", "aiHint": "burst"}
+    ]
   }
 }

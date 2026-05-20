@@ -61,6 +61,10 @@ const CHAR_DISPLAY={
   ponder:{
     stats:[['❤ HP','85'],['👻 Vanish','Invisible 3T'],['🌀 Siphon','Steal 4 mana'],['💫 Blink','Next hit auto-misses']],
     flavour:"Young but fierce — vanish from sight and plunder your foe's magic."
+  },
+  durin:{
+    stats:[['❤ HP','110'],['🧱 Stoneskin','10 absorb/hit, 30 HP total, 10T'],['💎 Stonesoul','40% magic reduction / 5T'],['⛰️ Rockfall','3×9 phys dmg']],
+    flavour:'The mountain endures. Outlast every spell — stone by stone.'
   }
 };
 
@@ -88,11 +92,13 @@ function newState(){
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0},
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0,
+        stoneskin:0, stoneskinHp:0, stonesoul:0},
     p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0},
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0,
+        stoneskin:0, stoneskinHp:0, stonesoul:0},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle',
     parts:[], floats:[], projs:[], beams:[],
@@ -192,7 +198,8 @@ function resizeBC(){
 function drawBG(){
   ({eldrad:drawBG_moonlight,mal:drawBG_hellfire,sylvara:drawBG_forest,
     aurelia:drawBG_dawn,gnash:drawBG_storm,ponder:drawBG_astral,
-    skadi:drawBG_winter,emberic:drawBG_embers,zacharius:drawBG_arc,mary:drawBG_holy,mordant:drawBG_abyss}[p2Key]||drawBG_moonlight)();
+    skadi:drawBG_winter,emberic:drawBG_embers,zacharius:drawBG_arc,mary:drawBG_holy,mordant:drawBG_abyss,
+    durin:drawBG_stone}[p2Key]||drawBG_moonlight)();
 }
 
 function hexToRgb(hex){
@@ -575,6 +582,41 @@ function drawBG_holy(){
   if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
 }
 
+function drawBG_stone(){
+  const t=Date.now();
+  const g=bx.createLinearGradient(0,0,0,bH);
+  g.addColorStop(0,'#100d08'); g.addColorStop(0.6,'#1c1508'); g.addColorStop(1,'#0a0804');
+  bx.fillStyle=g; bx.fillRect(0,0,bW,bH);
+  // Stone floor
+  const fg=bx.createLinearGradient(0,bH*.68,0,bH);
+  fg.addColorStop(0,'#2a1e0e'); fg.addColorStop(1,'#160e06');
+  bx.fillStyle=fg; bx.fillRect(0,bH*.68,bW,bH*.32);
+  // Crack lines in the floor
+  bx.strokeStyle='rgba(180,130,60,0.1)'; bx.lineWidth=1;
+  [[0.1,0.75,0.22,0.82],[0.35,0.70,0.45,0.78],[0.55,0.73,0.62,0.85],[0.78,0.71,0.88,0.79]].forEach(([x1,y1,x2,y2])=>{
+    bx.beginPath(); bx.moveTo(bW*x1,bH*y1); bx.lineTo(bW*x2,bH*y2); bx.stroke();
+  });
+  // Floating stone dust motes
+  const seed=Math.floor(t/5000);
+  for(let i=0;i<12;i++){
+    const px=((seed*13+i*37)%100)/100*bW;
+    const py=bH*(0.15+((seed*7+i*29)%50)/100);
+    bx.globalAlpha=(0.15+0.1*Math.sin(t/900+i*1.7))*0.7;
+    bx.fillStyle='#c09050';
+    bx.beginPath(); bx.arc(px,py,1.2,0,Math.PI*2); bx.fill();
+  }
+  bx.globalAlpha=1;
+  // Amber cave glow from below
+  const rg=bx.createRadialGradient(bW*.5,bH*.9,bH*.02,bW*.5,bH*.9,bH*.55);
+  rg.addColorStop(0,'rgba(176,128,64,0.07)'); rg.addColorStop(1,'rgba(0,0,0,0)');
+  bx.fillStyle=rg; bx.fillRect(0,0,bW,bH);
+  // Horizon line
+  bx.strokeStyle=`rgba(176,128,64,${0.18+0.06*Math.sin(t/2200)})`; bx.lineWidth=1;
+  bx.beginPath(); bx.moveTo(0,bH*.68); bx.lineTo(bW,bH*.68); bx.stroke();
+  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
+  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+}
+
 // ── SPRITESHEET CONFIG ─────────────────────────────────────
 const SPRITE_CFG={
   frameW:48, frameH:64, frames:4,
@@ -858,6 +900,40 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
     bx.globalAlpha=1;
   }
+  if(state&&state.stoneskin>0&&state.stoneskinHp>0){
+    // Three chunky rock chunks orbiting in an ellipse
+    const rockCols=[['#8b7355','#6b5335'],['#a08060','#7a6040'],['#7a6244','#5a4a2c']];
+    const rockVerts=[[1.0,0.62,0.88,0.70,0.82],[0.78,1.0,0.65,0.85,0.72],[0.90,0.68,1.0,0.74,0.80]];
+    for(let i=0;i<3;i++){
+      const angle=t/1400+i/3*Math.PI*2;
+      const orbitR=sz*0.82;
+      const rx=x+Math.cos(angle)*orbitR;
+      const ry=wy+Math.sin(angle)*orbitR*0.48;
+      const rockSz=sz*(0.058+0.008*i);
+      bx.save();
+      bx.translate(rx,ry);
+      bx.rotate(t/900+i*1.4);
+      bx.globalAlpha=0.82+0.15*Math.sin(t/500+i*1.3);
+      bx.fillStyle=rockCols[i][0]; bx.shadowColor=rockCols[i][1]; bx.shadowBlur=5;
+      bx.beginPath();
+      const verts=rockVerts[i];
+      for(let j=0;j<5;j++){
+        const a=j/5*Math.PI*2;
+        const r=rockSz*verts[j];
+        if(j===0) bx.moveTo(Math.cos(a)*r,Math.sin(a)*r);
+        else bx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+      }
+      bx.closePath(); bx.fill();
+      bx.shadowBlur=0; bx.restore();
+    }
+    bx.globalAlpha=1;
+  }
+  if(state&&state.stonesoul>0){
+    bx.globalAlpha=0.07+0.04*Math.sin(t/600); bx.fillStyle='#b08040';
+    bx.beginPath(); bx.arc(x,wy,sz*.72,0,Math.PI*2); bx.fill(); bx.globalAlpha=1;
+    bx.strokeStyle=`rgba(176,128,64,${0.28+0.1*Math.sin(t/700)})`; bx.lineWidth=2;
+    bx.beginPath(); bx.arc(x,wy,sz*.72,0,Math.PI*2); bx.stroke();
+  }
   if(state&&state.blink>0){
     const wy2=y-sz*.5;
     for(let off=0;off<2;off++){
@@ -874,6 +950,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   }
   if(state&&state.invisible>0) bx.globalAlpha=0.35;
   else if(state&&state.blink>0) bx.globalAlpha=0.3+0.7*(0.5+0.5*Math.sin(t/350));
+  if(state&&state.stoneskin>0&&state.stoneskinHp>0) bx.filter='grayscale(0.75) sepia(0.15)';
   const img=sprites[who];
   if(img&&spriteStatus[who]==='ready'){
     const cfg=SPRITE_CFG;
@@ -1202,6 +1279,9 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='agony')          return targetState.agony>0;
   if(spellId==='silence')        return targetState.silence>0;
   if(spellId==='corruption')     return targetState.corruption>0;
+  if(spellId==='stoneskin')      return casterState.stoneskin>0;
+  if(spellId==='stonesoul')      return casterState.stonesoul>0;
+  if(spellId==='rockfall')       return false;
   return false;
 }
 
@@ -1476,6 +1556,9 @@ function resolveCharSpell(spellId,caster){
       }
       if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
       if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
+      const [chDmg,chSkin]=applyTargetSkins(targetState,dmg,true); // charge is physical
+      dmg=chDmg;
+      if(chSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+chSkin+' Skin','#b08040',10);
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed;
@@ -1538,6 +1621,9 @@ function resolveCharSpell(spellId,caster){
       if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
       if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
       if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
+      const [drainDmg2,drainSkin]=applyTargetSkins(targetState,dmg,false);
+      dmg=drainDmg2;
+      if(drainSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+drainSkin+' Skin','#b08040',10);
       let drainBase=dmg;
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
@@ -1655,6 +1741,9 @@ function resolveCharSpell(spellId,caster){
       if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
       if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
       if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
+      const [fbDmg,fbSkin]=applyTargetSkins(targetState,dmg,false);
+      dmg=fbDmg;
+      if(fbSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+fbSkin+' Skin','#b08040',10);
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed;
@@ -1745,6 +1834,9 @@ function resolveCharSpell(spellId,caster){
       if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
       if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
       if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
+      const [ilDmg,ilSkin]=applyTargetSkins(targetState,dmg,false);
+      dmg=ilDmg;
+      if(ilSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+ilSkin+' Skin','#b08040',10);
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed;
@@ -1849,6 +1941,9 @@ function resolveCharSpell(spellId,caster){
       if(targetState.resist>0)       dmg=Math.round(dmg*0.67);
       if(targetState.frostArmor>0)   dmg=Math.round(dmg*0.70);
       if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
+      const [clDmg,clSkin]=applyTargetSkins(targetState,dmg,false);
+      dmg=clDmg;
+      if(clSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+clSkin+' Skin','#b08040',10);
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed;
@@ -2019,6 +2114,72 @@ function resolveCharSpell(spellId,caster){
       else             {anim('p2','cast',800); anim('p1','hit',800);}
     }
     refreshHUD(); checkWin();
+  } else if(spellId==='stoneskin'){
+    casterState.stoneskin=casterCfg.stoneskinDuration||10;
+    casterState.stoneskinHp=casterCfg.stoneskinHpMax||30;
+    addFloat(cx,bH*.33,'🧱 Stoneskin! ('+casterState.stoneskin+'T / '+casterState.stoneskinHp+' HP)',casterCfg.col,12);
+    // Three waves of rocks fly inward and "coat" the caster
+    [0,220,440].forEach((delay,wave)=>{
+      setTimeout(()=>{
+        if(!battleRunning) return;
+        const angle=wave/3*Math.PI*2+Math.PI/6;
+        const srcDist=bH*0.22;
+        for(let j=0;j<4;j++){
+          const a=angle+j/4*Math.PI*2;
+          const srcX=cx+Math.cos(a)*srcDist, srcY=bH*.38+Math.sin(a)*srcDist*0.55;
+          const speed=0.06+Math.random()*0.04;
+          gs.parts.push({x:srcX,y:srcY,col:j%2?'#8b7355':'#a08060',
+            vx:(cx-srcX)*speed,vy:(bH*.38-srcY)*speed,
+            sz:3+Math.random()*3,life:1,dec:.028,noGrav:true});
+        }
+        spawnParts(cx,bH*.38,casterCfg.col,4);
+      },delay);
+    });
+    anim(caster,'shield',900);
+  } else if(spellId==='stonesoul'){
+    casterState.stonesoul=casterCfg.stonesoulDuration||4;
+    addFloat(cx,bH*.33,'💎 Stonesoul! ('+casterState.stonesoul+'T)',casterCfg.col,12);
+    for(let i=0;i<14;i++){
+      const a=i/14*Math.PI*2;
+      gs.parts.push({x:cx+Math.cos(a)*bH*.07,y:bH*.38+Math.sin(a)*bH*.05,
+        col:i%3===0?'#b08040':i%3===1?'#8b6914':'#c8a060',
+        vx:Math.cos(a)*0.7,vy:Math.sin(a)*0.7-0.3,
+        sz:1.5+Math.random()*2.5,life:1,dec:.015,noGrav:true});
+    }
+    spawnParts(cx,bH*.38,'#c8a060',8); spawnParts(cx,bH*.38,'#ffffff',4);
+    anim(caster,'shield',700);
+  } else if(spellId==='rockfall'){
+    if(casterState.invisible>0){
+      casterState.invisible=0;
+      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+    }
+    gs.busy=true;
+    addFloat(cx,bH*.28,'⛰️ ROCKFALL!',casterCfg.col,16);
+    spawnParts(cx,bH*.38,casterCfg.col,12);
+    anim(caster,'cast',900);
+    let rocksDone=0;
+    function fireRock(){
+      if(!battleRunning) return;
+      const yOff=bH*(rocksDone===0?-0.04:rocksDone===1?0:0.04);
+      spawnProj(cx,bH*.38+yOff,tx,bH*.38+yOff,'physical',casterCfg.col,()=>{
+        if(!battleRunning) return;
+        doRockfallHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
+        refreshHUD(); checkWin(); if(!battleRunning) return;
+        rocksDone++;
+        if(rocksDone<3){
+          setTimeout(fireRock,350);
+        } else {
+          if(caster==='p1'||twoPlayerMode){
+            endMyTurn();
+          } else {
+            tickStatuses(casterState);
+            setTimeout(finishAI,900);
+          }
+        }
+      });
+    }
+    fireRock();
+    return;
   } else if(spellId==='basicattack'){
     if(casterState.invisible>0){
       casterState.invisible=0;
@@ -2050,6 +2211,9 @@ function resolveCharSpell(spellId,caster){
       flash('#9988cc');
       if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     } else {
+      const [baDmg,baSkin]=applyTargetSkins(targetState,dmg,isPhysical);
+      dmg=baDmg;
+      if(baSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+baSkin+' Skin','#b08040',10);
       const counterTriggered=!isPhysical&&targetState.counter&&targetState.shield>0;
       if(targetState.shield>0){
         const absorbed=Math.min(dmg,targetState.shieldHp);
@@ -2163,6 +2327,11 @@ function castSpell(spell,target,tx,ty,caster){
     if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
     return;
   }
+
+  // Stonesoul (50% magic reduction) + Stoneskin (10 per-hit absorption)
+  const [csDmg,csSkin]=applyTargetSkins(targetState,dmg,false); // universal spells are magical
+  dmg=csDmg;
+  if(csSkin>0) addFloat(tx,ty-20,'🧱 -'+csSkin+' Skin','#b08040',10);
 
   // Target: Counter (check BEFORE shield breaks)
   const counterTriggered=targetState.counter&&targetState.shield>0;
@@ -2313,9 +2482,10 @@ function processBlizzard(target,tx,ty){
   if(Math.random()<0.15&&target.frozen<=0) target.frozen=1;
 }
 
-const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink'];
+const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink','stonesoul','stoneskin'];
 function tickStatuses(state){
   STATUS_TIMERS.forEach(k=>{ if(state[k]>0) state[k]--; });
+  if(state.stoneskin<=0) state.stoneskinHp=0;
 }
 
 function triggerCandleBurn(state,cx){
@@ -2353,6 +2523,18 @@ function applyFlameShieldRetaliation(casterState,cx){
   spawnParts(cx,bH*.38,'#ff6600',8);
 }
 
+function applyTargetSkins(targetState,dmg,isPhysical){
+  if(!isPhysical&&targetState.stonesoul>0) dmg=Math.round(dmg*0.6);
+  let skinAbsorbed=0;
+  if(targetState.stoneskin>0&&targetState.stoneskinHp>0){
+    skinAbsorbed=Math.min(10,Math.min(targetState.stoneskinHp,dmg));
+    targetState.stoneskinHp=Math.max(0,targetState.stoneskinHp-skinAbsorbed);
+    dmg=Math.max(0,dmg-skinAbsorbed);
+    if(targetState.stoneskinHp<=0) targetState.stoneskin=0;
+  }
+  return [dmg,skinAbsorbed];
+}
+
 function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
   const basicSpell=casterCfg.spells.find(s=>s.id==='basicattack');
   let dmg=Math.round((basicSpell.dmg||9)*casterCfg.dmgMult);
@@ -2381,6 +2563,9 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
     flash('#9988cc');
     return;
   }
+  const [fDmg,fSkin]=applyTargetSkins(targetState,dmg,!!basicSpell.physical);
+  dmg=fDmg;
+  if(fSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+fSkin+' Skin','#b08040',10);
   if(targetState.shield>0){
     const absorbed=Math.min(dmg,targetState.shieldHp);
     targetState.shieldHp-=absorbed; dmg-=absorbed;
@@ -2404,6 +2589,65 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
   flash(casterCfg.col);
   if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
   else             {anim('p2','cast',800); anim('p1','hit',800);}
+}
+
+function doRockfallHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
+  let dmg=Math.round((casterCfg.rockfallDmg||9)*casterCfg.dmgMult);
+  if(targetState.resist>0)       dmg=Math.round(dmg*0.67);
+  if(targetState.frostArmor>0)   dmg=Math.round(dmg*0.70);
+  if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
+  if(targetState.foresight){
+    targetState.foresight=false;
+    addFloat(tx,bH*.38,'🔮 Absorbed!','#ffcc44',13);
+    spawnParts(tx,bH*.38,'#ffcc44',10);
+    return;
+  }
+  if(targetState.invisible>0){
+    addFloat(tx,bH*.38,'👻 Missed!','#b8a0e8',13);
+    spawnParts(tx,bH*.38,'#b8a0e8',8);
+    return;
+  }
+  if(targetState.haste>0&&Math.random()<0.25){
+    addFloat(tx,bH*.38,'💨 Dodged!','#ffcc44',13);
+    spawnParts(tx,bH*.38,'#ffcc44',8);
+    return;
+  }
+  if(targetState.blink>0&&Math.random()<0.5){
+    addFloat(tx,bH*.38,'💫 Blinked!','#cc99ff',15);
+    spawnParts(tx,bH*.38,'#9988cc',14); spawnParts(tx,bH*.38,'#ffffff',5);
+    flash('#9988cc');
+    return;
+  }
+  const [rDmg,rSkin]=applyTargetSkins(targetState,dmg,true); // physical
+  dmg=rDmg;
+  if(rSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+rSkin+' Skin','#b08040',10);
+  if(targetState.shield>0){
+    const absorbed=Math.min(dmg,targetState.shieldHp);
+    targetState.shieldHp-=absorbed; dmg-=absorbed;
+    if(targetState.shieldHp<=0){
+      targetState.shield=0;
+      addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',18);
+      spawnParts(tx,bH*.38,'#4af0ff',18); spawnParts(tx,bH*.38,'#ffffff',6);
+    } else {
+      addFloat(tx,bH*.38-20,'🛡 -'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',9);
+      spawnParts(tx,bH*.38,'#4af0ff',5);
+    }
+  }
+  targetState.hp=Math.max(0,targetState.hp-dmg);
+  if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+  if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+  if(targetState.charge>0) applyDischarge(targetState,casterState,cx,tx);
+  for(let i=0;i<10;i++){
+    const a=i/10*Math.PI*2;
+    gs.parts.push({x:tx+Math.cos(a)*bH*.04,y:bH*.38+Math.sin(a)*bH*.03,
+      col:i%2?'#b08040':'#8b6914',vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2-0.3,
+      sz:2+Math.random()*3,life:1,dec:.022});
+  }
+  spawnParts(tx,bH*.38,casterCfg.col,10);
+  addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,16);
+  flash(casterCfg.col);
+  if(caster==='p1'){anim('p1','cast',600); anim('p2','hit',600);}
+  else             {anim('p2','cast',600); anim('p1','hit',600);}
 }
 
 function anim(who,state,ms){
@@ -2501,7 +2745,7 @@ function doAI(){
     if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
     if(s.aiHint==='drain'&&ai.hp>ai.maxHp*0.75) return false;
     if(ai.frenzied>0&&s.element) return false;
-    if(gs.p1.invisible>0&&(s.element&&!s.area||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption')) return false;
+    if(gs.p1.invisible>0&&(s.element&&!s.area||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption'||s.id==='rockfall')) return false;
     return true;
   });
 
@@ -2533,6 +2777,15 @@ function doAI(){
     } else if(canGalvanize&&ai.charge<(p2Cfg.chainLightningChargeCost||8)){
       chosen=canGalvanize;
     }
+  }
+  // Durin: layer defenses then use rockfall for burst
+  if(p2Key==='durin'){
+    const canStoneskin=charSpells.find(s=>s.id==='stoneskin');
+    const canStonesoul=charSpells.find(s=>s.id==='stonesoul');
+    const canRockfall=charSpells.find(s=>s.id==='rockfall');
+    if(ai.stoneskin<=0&&canStoneskin&&ai.hp<ai.maxHp*0.85) chosen=canStoneskin;
+    else if(ai.stonesoul<=0&&canStonesoul&&ai.hp<ai.maxHp*0.70) chosen=canStonesoul;
+    else if(canRockfall&&Math.random()<0.55) chosen=canRockfall;
   }
   if(!chosen&&available.length>0){
     if(charSpells.length>0&&Math.random()<0.40){
