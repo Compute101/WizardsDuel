@@ -11,7 +11,7 @@ const SPELLS=[
   {name:'Arcane Surge',   element:'arcane',    icon:'🌀', dmg:0,  cost:9,  col:'#cc88ff',
    effectLabel:'Wild: 15–55 damage'},
   {name:'Dispel',         element:'dispel',    icon:'🌸', dmg:0,  cost:7,  col:'#ffaaff',
-   effectLabel:'Cleanse all debuffs & hexes from yourself'},
+   effectLabel:'Cleanse own debuffs/hexes; 40% strip one opp buff'},
   {name:'Mana Burn',      element:'manaburn',  icon:'🔮', dmg:0,  cost:8,  col:'#cc44ff',
    effectLabel:'Deal 2× opp mana as dmg; drain 4 mana (pierces shields)'},
 ];
@@ -2135,13 +2135,45 @@ function castSpell(spell,target,tx,ty,caster){
   const targetCfg=target===gs.p1?p1Cfg:p2Cfg;
   const oppCfg   =caster==='p1'?p2Cfg:p1Cfg;
 
-  // Dispel: self-targeting — cleanse all debuffs/hexes from caster regardless of target state
+  // Dispel: cleanse own debuffs (guaranteed) + 40% chance to strip one random buff from opponent
   if(spell.element==='dispel'){
     const cx2=caster==='p1'?bW*.22:bW*.78;
     ['burn','frozen','blizzard','vineWhip','timeDrain','conductivity','candle','agony','corruption','silence'].forEach(s=>{casterState[s]=0;});
     spawnParts(cx2,ty,'#ffaaff',30); spawnParts(cx2,ty,'#ffffff',15);
     addFloat(cx2,ty,'🌸 Cleansed!','#ffaaff',20);
     flash('#ffaaff');
+    // Offensive strip: 40% chance to remove one random active buff from opponent
+    const oppBuffs=[];
+    if(targetState.shield>0)      oppBuffs.push('shield');
+    if(targetState.foresight)     oppBuffs.push('foresight');
+    if(targetState.regen)         oppBuffs.push('regen');
+    if(targetState.resist>0)      oppBuffs.push('resist');
+    if(targetState.frostArmor>0)  oppBuffs.push('frostArmor');
+    if(targetState.flameShield>0) oppBuffs.push('flameShield');
+    if(targetState.empowered)     oppBuffs.push('empowered');
+    if(targetState.ward>0)        oppBuffs.push('ward');
+    if(targetState.haste>0)       oppBuffs.push('haste');
+    if(targetState.blink>0)       oppBuffs.push('blink');
+    if(targetState.invisible>0)   oppBuffs.push('invisible');
+    if(targetState.counter)       oppBuffs.push('counter');
+    if(oppBuffs.length>0){
+      if(Math.random()<0.40){
+        const stripped=oppBuffs[Math.floor(Math.random()*oppBuffs.length)];
+        if(stripped==='shield'){targetState.shield=0; targetState.shieldHp=0;}
+        else if(stripped==='foresight') targetState.foresight=false;
+        else if(stripped==='regen')     targetState.regen=null;
+        else if(stripped==='empowered') targetState.empowered=false;
+        else if(stripped==='counter')   targetState.counter=false;
+        else targetState[stripped]=0;
+        const BUFF_NAMES={shield:'Shield',foresight:'Foresight',regen:'Regen',resist:'Resist',
+          frostArmor:'Frost Armor',flameShield:'Flame Shield',empowered:'Empower',
+          ward:'Ward',haste:'Haste',blink:'Blink',invisible:'Vanish',counter:'Counter'};
+        spawnParts(tx,ty,'#ffaaff',18);
+        addFloat(tx,ty,'🌸 '+BUFF_NAMES[stripped]+' Stripped!','#ffaaff',14);
+      } else {
+        addFloat(tx,ty,'🌸 Resisted!','#cc88aa',13);
+      }
+    }
     if(caster==='p1'){anim('p1','cast',800);}else{anim('p2','cast',800);}
     return;
   }
@@ -2591,11 +2623,13 @@ function doAI(){
       chosen=canGalvanize;
     }
   }
-  // Use Dispel if AI is suffering active hexes or harmful DoT effects
+  // Use Dispel if AI is suffering active hexes/DoT, or opponent has a high-value buff worth gambling on
   if(!chosen){
     const dispelSpell=universalSpells.find(s=>s.element==='dispel');
-    if(dispelSpell&&(ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1)){
-      chosen=dispelSpell;
+    if(dispelSpell){
+      const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
+      const oppHasKeyBuff=gs.p1.shield>0||gs.p1.foresight||gs.p1.resist>1||gs.p1.invisible>1;
+      if(needsCleanse||(oppHasKeyBuff&&Math.random()<0.35)) chosen=dispelSpell;
     }
   }
   // Use Mana Burn when player is mana-rich (strong as catchup, weak when opponent already starved)
