@@ -2901,13 +2901,16 @@ function doAI(){
     if(hasDebuff&&canPurge)                        chosen=canPurge;
     else if(ai.hp<ai.maxHp*0.60&&canHeal)          chosen=canHeal;
   }
-  // Zacharius: prioritise galvanize to build charge, spend it with chain lightning
+  // Zacharius: apply conductivity first, then build charge and spend with chain lightning
   if(p2Key==='zacharius'){
     const chainReady=charSpells.find(s=>s.id==='chainlightning');
     const canGalvanize=charSpells.find(s=>s.id==='galvanize');
+    const canConductivity=charSpells.find(s=>s.id==='conductivity');
     if(chainReady&&ai.charge>=(p2Cfg.chainLightningChargeCost||8)){
       chosen=chainReady;
-    } else if(canGalvanize&&ai.charge<(p2Cfg.chainLightningChargeCost||8)){
+    } else if(canConductivity&&!gs.p1.conductivity&&ai.mana>=canConductivity.cost){
+      chosen=canConductivity;
+    } else if(canGalvanize){
       chosen=canGalvanize;
     }
   }
