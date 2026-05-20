@@ -4219,44 +4219,98 @@ function launchIcePattern(spell,cb){
   mazeRAF=requestAnimationFrame(frame);
 }
 
-// ── PUZZLE: ARCANE PATTERN ────────────────────────────────
+// ── PUZZLE: ARCANE PATTERN (Ether Drift) ─────────────────────────────
 function launchArcanePattern(spell,cb){
   let done=false;
-  document.getElementById('pztitle').textContent='Arcane Sigil Sequence';
+  document.getElementById('pztitle').textContent='Ether Drift Sigil';
   document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
   setDpadVisible(false);
 
-  const TILES=[
-    {col:'#2a0044', lit:'#cc44ff', sym:'◆'},
-    {col:'#1a0030', lit:'#aa22ff', sym:'△'},
-    {col:'#330028', lit:'#ff44cc', sym:'◯'},
-    {col:'#1c0038', lit:'#8833ff', sym:'✦'},
+  // ── Full 12-glyph Arcana Alphabet (grid order: 3 cols × 4 rows) ──────
+  // Indices: 0=ϟ 1=Δ 2=∇ 3=Ψ 4=Ω 5=∞ 6=☽ 7=✸ 8=⊕ 9=⊗ 10=θ 11=Φ
+  const ALPHABET=[
+    {sym:'ϟ',glowCol:'#ccffff',col:'#1a0830',lit:'#9966cc'}, // 0
+    {sym:'Δ',glowCol:'#ff9944',col:'#150626',lit:'#8855bb'}, // 1
+    {sym:'∇',glowCol:'#44aaff',col:'#0e0820',lit:'#7744aa'}, // 2
+    {sym:'Ψ',glowCol:'#aaff88',col:'#14002a',lit:'#dd55ff'}, // 3 — arcane
+    {sym:'Ω',glowCol:'#ff4444',col:'#1a0035',lit:'#cc44ff'}, // 4 — arcane
+    {sym:'∞',glowCol:'#44ffcc',col:'#0d0025',lit:'#aa66ff'}, // 5 — arcane
+    {sym:'☽',glowCol:'#aaddff',col:'#100620',lit:'#7755bb'}, // 6
+    {sym:'✸',glowCol:'#ffff55',col:'#120620',lit:'#6644aa'}, // 7
+    {sym:'⊕',glowCol:'#ffee77',col:'#130728',lit:'#7744bb'}, // 8
+    {sym:'⊗',glowCol:'#ff44aa',col:'#180328',lit:'#9933bb'}, // 9
+    {sym:'θ',glowCol:'#88ff88',col:'#100020',lit:'#9955ee'}, // 10 — arcane
+    {sym:'Φ',glowCol:'#dd88ff',col:'#160028',lit:'#bb55ff'}, // 11
   ];
-  const TS=108, GAP=8, PAD=12;
-  const cw=PAD*2+TS*2+GAP, ch=PAD*2+TS*2+GAP+20;
+
+  // Arcane owns Ω(4) ∞(5) Ψ(3) θ(10) — see CLAUDE.md
+  const SPELL_IDX=[4,5,3,10];
+  const ARCANE_COLS=[
+    {col:'#1a0035',lit:'#cc44ff'}, // Ω — radiant purple
+    {col:'#0d0025',lit:'#aa66ff'}, // ∞ — soft violet
+    {col:'#14002a',lit:'#dd55ff'}, // Ψ — magenta-purple
+    {col:'#100020',lit:'#9955ee'}, // θ — deep violet
+  ];
+
+  // Canvas: 3-col × 4-row keyboard grid
+  const TS=72,GAP=6,PAD=10;
+  const cw=PAD*2+TS*3+GAP*2;  // 248 px
+  const ch=380;
   mc.width=cw; mc.height=ch;
   const mw=Math.min(cw,(window.innerWidth||360)-32);
   mc.style.width=mw+'px'; mc.style.height='auto';
 
-  const tPos=[
-    {x:PAD,y:PAD+20},{x:PAD+TS+GAP,y:PAD+20},
-    {x:PAD,y:PAD+20+TS+GAP},{x:PAD+TS+GAP,y:PAD+20+TS+GAP},
-  ];
+  // Keyboard tile positions — bottom-aligned
+  const tileAreaH=TS*4+GAP*3;        // 306 px
+  const tileTop=ch-PAD-tileAreaH;    // 64 px
+  const tPos=Array.from({length:12},(_,i)=>({
+    x:PAD+(i%3)*(TS+GAP),
+    y:tileTop+Math.floor(i/3)*(TS+GAP),
+  }));
 
   const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
-  const seq=Array.from({length:SEQ_LEN},()=>Math.floor(Math.random()*4));
+  const seq=diffName==='easy'
+    ?[4,5,3,10]  // canonical Arcane word: Ω ∞ Ψ θ
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
   const playerSeq=[];
-  let phase='watch', watchStep=0, litTile=-1;
+  let phase='watch';
   let timeLeft=Math.round(20*diffMult);
 
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
 
-  const sparks=Array.from({length:22},()=>({
-    x:Math.random()*cw, y:Math.random()*ch,
-    spd:0.2+Math.random()*0.45, sz:0.8+Math.random()*1.8,
-    ph:Math.random()*Math.PI*2,
-    col:Math.random()<0.5?'#cc44ff':'#ff44cc',
+  // Noise glyphs — float in random directions, lilac purple
+  const LILAC_COLS=['#bb88dd','#cc99ee','#aa77cc','#cc88ee','#b080d8'];
+  const noise=Array.from({length:44},()=>{
+    const angle=Math.random()*Math.PI*2;
+    const spd=0.35+Math.random()*0.7;
+    return {
+      x:Math.random()*cw, y:Math.random()*ch,
+      dx:Math.cos(angle)*spd, dy:Math.sin(angle)*spd,
+      sz:8+Math.random()*13,
+      ai:Math.floor(Math.random()*12),
+      col:LILAC_COLS[Math.floor(Math.random()*5)],
+      ph:Math.random()*Math.PI*2,
+      alpha:0.1+Math.random()*0.25,
+    };
+  });
+
+  // White sequence glyphs — all drift rightward at the same speed, various heights
+  const DRIFT_SPEED=0.5;  // px/frame — consistent across all sequence glyphs
+  const SPAWN_DELAY=500,SPAWN_INTERVAL=3000;
+  const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+4000;
+  const startTime=Date.now();
+  let watchDone=false;
+
+  const Y_BANDS=[0.12,0.30,0.48,0.22,0.40,0.55,0.18];
+  const ySlots=Array.from({length:SEQ_LEN},(_,i)=>
+    Math.max(30,Math.min(ch*0.72, ch*Y_BANDS[i%Y_BANDS.length]+(Math.random()-0.5)*25))
+  );
+
+  const symStates=seq.map((ai,i)=>({
+    ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
+    x:-30, y:ySlots[i],
+    spawned:false, idx:i,
   }));
 
   function startTimer(){
@@ -4269,27 +4323,23 @@ function launchArcanePattern(spell,cb){
     },1000);
   }
 
-  function showNext(){
-    if(done) return;
-    if(watchStep>=seq.length){ phase='input'; timerEl.textContent=timeLeft; startTimer(); return; }
-    litTile=seq[watchStep++];
-    setTimeout(()=>{ litTile=-1; setTimeout(showNext,220); },580);
-  }
-  setTimeout(showNext,500);
-
   function onPointer(e){
     if(done||phase!=='input') return;
     e.preventDefault();
     const rect=mc.getBoundingClientRect();
-    const sx=mc.width/rect.width, sy=mc.height/rect.height;
-    const px=(e.clientX-rect.left)*sx, py=(e.clientY-rect.top)*sy;
-    for(let i=0;i<4;i++){
-      const tp=tPos[i];
+    const sx=mc.width/rect.width,sy=mc.height/rect.height;
+    const px=(e.clientX-rect.left)*sx,py=(e.clientY-rect.top)*sy;
+    for(let ai=0;ai<12;ai++){
+      const tp=tPos[ai];
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
-        playerSeq.push(i);
-        const idx=playerSeq.length-1;
-        if(playerSeq[idx]!==seq[idx]){finish(false); return;}
-        if(playerSeq.length===seq.length){finish(true);}
+        const isSpell=SPELL_IDX.includes(ai);
+        if(!isSpell){
+          if(diffName==='hard') finish(false);
+          return;
+        }
+        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        playerSeq.push(ai);
+        if(playerSeq.length===seq.length) finish(true);
         return;
       }
     }
@@ -4299,62 +4349,165 @@ function launchArcanePattern(spell,cb){
   function cleanup(){
     mc.removeEventListener('pointerdown',onPointer);
     setDpadVisible(true);
-    if(mazeTid){clearInterval(mazeTid); mazeTid=null;}
-    if(mazeRAF){cancelAnimationFrame(mazeRAF); mazeRAF=null;}
+    if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
+    if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){ if(done) return; done=true; cleanup(); puzzleFinish(ok,cb); }
+  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
 
   function draw(){
     const t=Date.now();
-    const bg=mx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,cw*.7);
-    bg.addColorStop(0,'#0e0018'); bg.addColorStop(0.6,'#06000e'); bg.addColorStop(1,'#020005');
+    const elapsed=t-startTime;
+
+    // Background — deep purple ether
+    const bg=mx.createRadialGradient(cw/2,ch*.45,0,cw/2,ch*.45,cw*.9);
+    bg.addColorStop(0,'#1a0030');
+    bg.addColorStop(0.6,'#0d0020');
+    bg.addColorStop(1,'#050010');
     mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
 
-    mx.save();
-    sparks.forEach(s=>{
-      s.y-=s.spd; if(s.y<-4){s.y=ch+4; s.x=Math.random()*cw;}
-      mx.globalAlpha=0.1+0.3*Math.abs(Math.sin(t/700+s.ph));
-      mx.fillStyle=s.col; mx.shadowColor=s.col; mx.shadowBlur=5;
-      mx.beginPath(); mx.arc(s.x,s.y,s.sz,0,Math.PI*2); mx.fill();
-    });
-    mx.globalAlpha=1; mx.shadowBlur=0;
-    mx.restore();
-
-    mx.fillStyle=phase==='watch'?'#cc44ff':'#ff44cc';
-    mx.font='bold 10px Cinzel,serif'; mx.textAlign='center'; mx.textBaseline='top';
-    mx.fillText(
-      phase==='watch'?`Memorise: ${watchStep}/${seq.length}`:`Repeat: ${playerSeq.length}/${seq.length}`,
-      cw/2, 4
-    );
-
-    for(let i=0;i<4;i++){
-      const tp=tPos[i], tile=TILES[i], lit=(litTile===i);
-      mx.save();
-      mx.shadowColor=tile.col; mx.shadowBlur=lit?28:5;
-      const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,4,tp.x+TS/2,tp.y+TS/2,TS*.6);
-      tg.addColorStop(0,lit?tile.lit:tile.col);
-      tg.addColorStop(1,lit?tile.col:'#060008');
-      mx.fillStyle=tg;
-      mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.fill();
-      mx.strokeStyle=lit?tile.lit:tile.col+'88'; mx.lineWidth=lit?2.5:1.5;
-      mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.stroke();
-      mx.shadowBlur=0;
-      mx.fillStyle=lit?'#fff':tile.lit+'cc';
-      mx.font=`bold ${TS*.42}px serif`; mx.textAlign='center'; mx.textBaseline='middle';
-      mx.fillText(tile.sym,tp.x+TS/2,tp.y+TS/2);
-      mx.restore();
+    if(phase==='watch'&&!watchDone&&elapsed>=watchDuration){
+      watchDone=true; phase='input';
+      timerEl.textContent=timeLeft; startTimer();
     }
 
-    const dotY=ch-7, dsp=14, ds=cw/2-(seq.length-1)*dsp/2;
-    for(let i=0;i<seq.length;i++){
-      mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-      if(i<playerSeq.length){ mx.fillStyle='#cc44ff'; mx.shadowColor='#cc44ff'; mx.shadowBlur=6; }
-      else { mx.fillStyle='rgba(204,68,255,0.2)'; mx.shadowBlur=0; }
-      mx.fill(); mx.shadowBlur=0;
+    if(phase==='watch'){
+      // Noise glyphs — lilac, drifting in all directions, wrapping at edges
+      mx.save();
+      noise.forEach(f=>{
+        f.x+=f.dx; f.y+=f.dy;
+        if(f.x<-20) f.x=cw+20;
+        else if(f.x>cw+20) f.x=-20;
+        if(f.y<-20) f.y=ch+20;
+        else if(f.y>ch+20) f.y=-20;
+        const pulse=0.5+0.5*Math.abs(Math.sin(t/800+f.ph));
+        mx.globalAlpha=f.alpha*pulse;
+        mx.fillStyle=f.col; mx.shadowColor=f.col; mx.shadowBlur=6;
+        mx.font=`bold ${f.sz}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
+      });
+      mx.globalAlpha=1; mx.shadowBlur=0;
+      mx.restore();
+
+      // White sequence glyphs — all drift rightward at same speed, various heights
+      symStates.forEach(s=>{
+        if(!s.spawned&&elapsed>=SPAWN_DELAY+s.idx*SPAWN_INTERVAL){
+          s.spawned=true; s.x=-30;
+        }
+        if(!s.spawned) return;
+        s.x+=DRIFT_SPEED;
+        if(s.x>cw+30) s.x=-30;  // loop: reappear from the left
+
+        let alpha=1;
+        if(s.x<50) alpha=Math.max(0,(s.x+30)/80);
+        else if(s.x>cw-50) alpha=Math.max(0,(cw+30-s.x)/80);
+        if(alpha<=0.01) return;
+
+        const osc=Math.sin(t/1100+s.idx*1.7)*0.07;
+        mx.save();
+        mx.globalAlpha=alpha;
+        mx.translate(s.x,s.y); mx.rotate(osc);
+        mx.shadowColor=s.glowCol; mx.shadowBlur=35;
+        mx.fillStyle='#ffffff';
+        mx.font='bold 40px serif';
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(s.sym,0,0);
+        mx.restore();
+        // Order badge
+        mx.save();
+        mx.globalAlpha=alpha;
+        mx.shadowColor='#dd99ff'; mx.shadowBlur=10;
+        mx.fillStyle='#dd99ff';
+        mx.font='bold 11px Cinzel,serif';
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(s.idx+1,s.x+22,s.y-22);
+        mx.restore();
+      });
+      mx.globalAlpha=1; mx.shadowBlur=0;
+
+      mx.fillStyle='#cc99ff';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText('Watch the arcane runes drift!',cw/2,4);
+    }
+
+    if(phase==='input'){
+      // Faint ambient drift during input phase
+      mx.save();
+      noise.slice(0,14).forEach(f=>{
+        f.x+=f.dx*0.4; f.y+=f.dy*0.4;
+        if(f.x<-20) f.x=cw+20;
+        else if(f.x>cw+20) f.x=-20;
+        if(f.y<-20) f.y=ch+20;
+        else if(f.y>ch+20) f.y=-20;
+        mx.globalAlpha=f.alpha*0.18;
+        mx.fillStyle=f.col;
+        mx.font=`${f.sz}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
+      });
+      mx.globalAlpha=1;
+      mx.restore();
+
+      // 12-glyph keyboard
+      const isHard=diffName==='hard';
+      for(let ai=0;ai<12;ai++){
+        const tp=tPos[ai];
+        const g=ALPHABET[ai];
+        const si=SPELL_IDX.indexOf(ai);
+        const isSpell=si!==-1;
+
+        let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
+        if(isHard){
+          bgCol='#1a0035'; bgDark='#090015';
+          strokeCol='#3a106588'; textCol='#8844cc';
+          blur=4; textAlpha=1;
+        } else if(isSpell){
+          bgCol=ARCANE_COLS[si].col; bgDark='#050010';
+          strokeCol=ARCANE_COLS[si].col+'88'; textCol=ARCANE_COLS[si].lit;
+          blur=8; textAlpha=1;
+        } else {
+          bgCol='#0d0020'; bgDark='#040008';
+          strokeCol='#1e1030'; textCol='#2d1545';
+          blur=0; textAlpha=0.35;
+        }
+
+        mx.save();
+        mx.shadowColor=bgCol; mx.shadowBlur=blur;
+        const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,3,tp.x+TS/2,tp.y+TS/2,TS*.6);
+        tg.addColorStop(0,bgCol); tg.addColorStop(1,bgDark);
+        mx.fillStyle=tg;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.fill();
+        mx.shadowBlur=0;
+        mx.strokeStyle=strokeCol; mx.lineWidth=1.2;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.stroke();
+        mx.globalAlpha=textAlpha;
+        mx.fillStyle=textCol;
+        mx.font=`bold ${Math.round(TS*.42)}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(g.sym,tp.x+TS/2,tp.y+TS/2);
+        mx.restore();
+      }
+
+      // Status label
+      mx.fillStyle='#cc99ff';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
+
+      // Progress dots
+      const dotY=tileTop-10,dsp=14;
+      const ds=cw/2-(seq.length-1)*dsp/2;
+      for(let i=0;i<seq.length;i++){
+        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
+        if(i<playerSeq.length){mx.fillStyle='#cc99ff';mx.shadowColor='#cc99ff';mx.shadowBlur=6;}
+        else{mx.fillStyle='rgba(204,153,255,0.2)';mx.shadowBlur=0;}
+        mx.fill(); mx.shadowBlur=0;
+      }
     }
   }
 
-  function frame(){ if(done) return; draw(); mazeRAF=requestAnimationFrame(frame); }
+  function frame(){if(done)return;draw();mazeRAF=requestAnimationFrame(frame);}
   showScreen('puzzle-screen');
   mazeRAF=requestAnimationFrame(frame);
 }

@@ -91,7 +91,7 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 | Inferno | ϟ Δ ⊕ Ω (in that order) |
 | Lightning | Ψ ∇ ⊗ ✸ (in that order) |
 | Ice | θ Φ ☽ ∞ (in that order) |
-| Arcane | *(define when implementing)* |
+| Arcane | Ω ∞ Ψ θ (in that order) |
 
 ---
 
