@@ -10,7 +10,7 @@ const SPELLS=[
    effectLabel:'Freezes — skip next turn'},
   {name:'Arcane Surge',   element:'arcane',    icon:'🌀', dmg:0,  cost:9,  col:'#cc88ff',
    effectLabel:'Wild: 15–55 damage'},
-  {name:'Dispel',         element:'dispel',    icon:'🌸', dmg:0,  cost:7,  col:'#ffaaff',
+  {name:'Dispel',         element:'dispel',    icon:'🌸', dmg:0,  cost:5,  col:'#ffaaff',
    effectLabel:'Cleanse 1 own debuff/hex; 70% strip one opp buff'},
   {name:'Mana Burn',      element:'manaburn',  icon:'🔮', dmg:0,  cost:8,  col:'#cc44ff',
    effectLabel:'Deal 2× opp mana as dmg; drain 4 mana (pierces shields)'},
