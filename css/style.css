@@ -130,6 +130,122 @@ body {
   position: relative; z-index: 1;
 }
 
+/* ── TRAINING MODE ── */
+#training-screen {
+  background: radial-gradient(ellipse at 50% 35%, #2a1060 0%, #0d0820 70%);
+}
+.training-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(20px, 7vw, 30px);
+  font-weight: 700;
+  color: #f0cc6a;
+  text-shadow: 0 0 20px #c9a84c;
+  margin-bottom: 4px;
+}
+.training-sub {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: rgba(201,168,76,0.4);
+  margin-bottom: 24px;
+}
+.training-picks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 380px;
+  margin-bottom: 20px;
+}
+.training-pick {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 8px;
+  padding: 14px 8px;
+}
+.tp-label {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  color: rgba(201,168,76,0.5);
+}
+.tp-portrait {
+  width: 76px; height: 76px;
+  object-fit: cover; object-position: center 20%;
+  border-radius: 6px;
+  border: 2px solid rgba(201,168,76,0.3);
+  display: block;
+}
+.tp-name {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  color: #f0cc6a; min-height: 14px;
+}
+.tp-change-btn {
+  padding: 8px 0 !important;
+  font-size: 10px !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+.training-vs {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 14px;
+  color: rgba(201,168,76,0.45);
+  flex-shrink: 0;
+}
+.training-ai-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.training-ai-label {
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+}
+.training-ai-toggle {
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(201,168,76,0.3);
+}
+.tai-btn {
+  padding: 7px 16px;
+  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; cursor: pointer; border: none;
+  background: rgba(0,0,0,0.4); color: rgba(255,255,255,0.3);
+  transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+}
+.tai-btn.active {
+  background: rgba(138,58,170,0.5); color: #f0cc6a;
+}
+.training-ai-hint {
+  font-size: 9px; letter-spacing: 1px;
+  color: rgba(201,168,76,0.4);
+  margin-bottom: 18px;
+}
+.btn-training-back-btn {
+  background: linear-gradient(135deg, #1a0830, #3a1850);
+  border-color: rgba(201,168,76,0.4);
+  color: rgba(201,168,76,0.7);
+}
+
+/* Training return button in battle HUD */
+#btn-training-menu {
+  display: none;
+  font-family: 'Cinzel', serif;
+  font-size: 7px; letter-spacing: 1px; text-transform: uppercase;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 4px;
+  color: rgba(201,168,76,0.65);
+  cursor: pointer; padding: 4px 9px;
+  -webkit-tap-highlight-color: transparent;
+  margin-top: 3px;
+}
+#btn-training-menu:active { opacity: 0.65; }
+
 /* ── CHARACTER SELECT ── */
 #char-screen {
   background: radial-gradient(ellipse at 50% 35%, #2a1060 0%, #0d0820 70%);

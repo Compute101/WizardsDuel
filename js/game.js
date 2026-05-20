@@ -87,6 +87,11 @@ let twoPlayerPhase=1; // 1=p1 picking, 2=p2 picking
 let matchRound=0;
 let p1MatchWins=0, p2MatchWins=0;
 
+// ── TRAINING MODE ──────────────────────────────────────────
+let trainingMode=false;
+let trainingAI=true;
+let trainingPickPhase=null; // 'p1' or 'p2' — which side is being chosen
+
 function newState(){
   gs={
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
@@ -2687,6 +2692,37 @@ function doAI(){
     return;
   }
 
+  // Training mode with AI off: opponent just channels every turn
+  if(trainingMode&&!trainingAI){
+    if(gs.p1.invisible>0) gs.p1.invisible--;
+    if(gs.p2.invisible>0) gs.p2.invisible--;
+    if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
+    gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
+    if(gs.p2.frozen>0){
+      gs.p2.frozen--;
+      addFloat(bW*.78,bH*.38,'❄️ Frozen!','#88ddff',13);
+      setTimeout(finishAI,1200);
+      return;
+    }
+    const aiNoAI=gs.p2;
+    if(aiNoAI.timeDrain>0){
+      aiNoAI.mana=Math.min(MAX_MANA,aiNoAI.mana+2);
+      addFloat(bW*.78,bH*.38,'⏳ Drained! +2','#ffcc44',13);
+    } else {
+      aiNoAI.mana=Math.min(MAX_MANA,aiNoAI.mana+p2Cfg.channelAmt);
+      addFloat(bW*.78,bH*.38,'✨ Channeling...','#aaaaff',13);
+    }
+    if(aiNoAI.candle>0) triggerCandleBurn(aiNoAI,bW*.78);
+    anim('p2','cast',700);
+    if(aiNoAI.shield>0){ aiNoAI.shield--; if(aiNoAI.shield<=0) aiNoAI.shieldHp=0; }
+    tickStatuses(aiNoAI);
+    finishAI();
+    return;
+  }
+
   // Decrement invisible counters once per round (at the round boundary)
   if(gs.p1.invisible>0) gs.p1.invisible--;
   if(gs.p2.invisible>0) gs.p2.invisible--;
@@ -2983,8 +3019,43 @@ function onRetryExpired(overlay){
 }
 
 function checkWin(){
-  if(gs.p1.hp<=0) endGame(false);
-  else if(gs.p2.hp<=0) endGame(true);
+  if(gs.p1.hp<=0){
+    if(trainingMode){ resetTrainingRound('p1'); return; }
+    endGame(false);
+  } else if(gs.p2.hp<=0){
+    if(trainingMode){ resetTrainingRound('p2'); return; }
+    endGame(true);
+  }
+}
+
+function resetTrainingRound(knockedOut){
+  if(gameEnded) return;
+  gameEnded=true;
+  gs.myTurn=false; gs.busy=true;
+  if(aiTid){ clearTimeout(aiTid); aiTid=null; }
+  gs[knockedOut+'anim']='death';
+
+  setTimeout(()=>{
+    if(!battleRunning) return;
+    function resetPlayer(st,cfg){
+      st.hp=cfg.hp; st.maxHp=cfg.hp; st.mana=cfg.startMana;
+      st.shield=0; st.shieldHp=0; st.burn=0; st.frozen=0; st.regen=null;
+      st.counter=false; st.empowered=false; st.foresight=false; st.timeDrain=0;
+      st.resist=0; st.invisible=0; st.ward=0; st.vineWhip=0; st.haste=0;
+      st.frenzied=0; st.blink=0; st.frostArmor=0; st.blizzard=0; st.flameShield=0;
+      st.candle=0; st.charge=0; st.conductivity=0; st.agony=0; st.agonyDmg=0;
+      st.silence=0; st.corruption=0; st.stoneskin=0; st.stoneskinHp=0; st.stonesoul=0;
+    }
+    resetPlayer(gs.p1,p1Cfg);
+    resetPlayer(gs.p2,p2Cfg);
+    gs.p1anim='idle'; gs.p2anim='idle';
+    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[];
+    gs.pendingAction=null; gs.skipAITurn=false;
+    const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
+    addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
+    gameEnded=false;
+    gs.myTurn=true; gs.busy=false;
+  },950);
 }
 
 function endGame(won){
@@ -3695,6 +3766,21 @@ function showWizardDetail(key){
 }
 
 function pickCharacter(key){
+  if(trainingMode){
+    if(trainingPickPhase==='p1'){
+      p1Key=key; p1Cfg=CHAR_DEFS[key];
+      document.getElementById('tp-p1-portrait').src='portraits/'+key+'.png';
+      document.getElementById('tp-p1-name').textContent=p1Cfg.name;
+    } else if(trainingPickPhase==='p2'){
+      p2Key=key; p2Cfg=CHAR_DEFS[key];
+      document.getElementById('tp-p2-portrait').src='portraits/'+key+'.png';
+      document.getElementById('tp-p2-name').textContent=p2Cfg.name;
+    }
+    trainingPickPhase=null;
+    document.getElementById('char-player-label').style.display='none';
+    showScreen('training-screen');
+    return;
+  }
   if(twoPlayerMode){
     if(twoPlayerPhase===1){
       p1Key=key; p1Cfg=CHAR_DEFS[key];
@@ -3742,6 +3828,7 @@ function startNextTwoPlayerRound(){
 }
 
 function startTwoPlayerBattle(firstPlayer){
+  document.getElementById('btn-training-menu').style.display='none';
   loadSprites();
   updateActionBar(firstPlayer==='p1'?p1Cfg:p2Cfg);
   document.getElementById('p1name').textContent=p1Cfg.name+' (P1)';
@@ -3830,6 +3917,7 @@ function startPlayerTurn(who){
 }
 
 function startNextBattle(){
+  document.getElementById('btn-training-menu').style.display='none';
   p2Cfg=CHAR_DEFS[p2Key];
   loadSprites();
   updateActionBar(p1Cfg);
@@ -3858,6 +3946,29 @@ function startNextBattle(){
   requestAnimationFrame(battleLoop);
 }
 
+function startTrainingBattle(){
+  tournamentQueue=[]; tournamentIndex=0; twoPlayerMode=false;
+  loadSprites();
+  updateActionBar(p1Cfg);
+  document.getElementById('p1name').textContent=p1Cfg.name;
+  document.getElementById('p1-portrait').style.visibility='';
+  document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
+  const p2hud=document.querySelector('.phud-p2');
+  p2hud.style.visibility='';
+  document.getElementById('p2name').textContent=p2Cfg.name;
+  document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
+  const fightLbl=document.getElementById('fightlbl');
+  if(fightLbl) fightLbl.textContent='Training';
+  document.getElementById('btn-training-menu').style.display='';
+  newState();
+  gameEnded=false;
+  battleRunning=true;
+  lastFrameTime=0;
+  resizeBC();
+  showScreen('battle-screen');
+  requestAnimationFrame(battleLoop);
+}
+
 window.addEventListener('DOMContentLoaded', ()=>{
   // Wire up all buttons immediately — independent of the fetch below
   document.querySelectorAll('.diff-btn').forEach(btn=>{
@@ -3870,19 +3981,83 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
 
   document.getElementById('btn-start').addEventListener('click',()=>{
-    twoPlayerMode=false; twoPlayerPhase=1;
+    trainingMode=false; twoPlayerMode=false; twoPlayerPhase=1;
     document.getElementById('char-player-label').style.display='none';
     showScreen('char-screen');
   });
   document.getElementById('btn-2player').addEventListener('click',()=>{
-    twoPlayerMode=true; twoPlayerPhase=1;
+    trainingMode=false; twoPlayerMode=true; twoPlayerPhase=1;
     const lbl=document.getElementById('char-player-label');
     lbl.textContent='Player 1: Choose Your Wizard';
     lbl.style.display='';
     showScreen('char-screen');
   });
+  document.getElementById('btn-practice').addEventListener('click',()=>{
+    trainingMode=true; trainingAI=true; trainingPickPhase=null;
+    twoPlayerMode=false;
+    // Initialise with defaults (updated once CHAR_DEFS loads)
+    if(CHAR_DEFS[p1Key]){
+      document.getElementById('tp-p1-portrait').src='portraits/'+p1Key+'.png';
+      document.getElementById('tp-p1-name').textContent=CHAR_DEFS[p1Key].name;
+    }
+    if(CHAR_DEFS[p2Key]){
+      document.getElementById('tp-p2-portrait').src='portraits/'+p2Key+'.png';
+      document.getElementById('tp-p2-name').textContent=CHAR_DEFS[p2Key].name;
+    }
+    document.getElementById('tai-on').classList.add('active');
+    document.getElementById('tai-off').classList.remove('active');
+    document.getElementById('training-ai-hint').textContent='Opponent plays normally';
+    showScreen('training-screen');
+  });
+  document.getElementById('btn-training-back').addEventListener('click',()=>{
+    trainingMode=false; trainingPickPhase=null;
+    showScreen('title-screen');
+  });
+  document.getElementById('tp-change-p1').addEventListener('click',()=>{
+    trainingPickPhase='p1';
+    const lbl=document.getElementById('char-player-label');
+    lbl.textContent='Choose Your Wizard';
+    lbl.style.display='';
+    showScreen('char-screen');
+  });
+  document.getElementById('tp-change-p2').addEventListener('click',()=>{
+    trainingPickPhase='p2';
+    const lbl=document.getElementById('char-player-label');
+    lbl.textContent='Choose Your Opponent';
+    lbl.style.display='';
+    showScreen('char-screen');
+  });
+  document.getElementById('tai-on').addEventListener('click',()=>{
+    trainingAI=true;
+    document.getElementById('tai-on').classList.add('active');
+    document.getElementById('tai-off').classList.remove('active');
+    document.getElementById('training-ai-hint').textContent='Opponent plays normally';
+  });
+  document.getElementById('tai-off').addEventListener('click',()=>{
+    trainingAI=false;
+    document.getElementById('tai-on').classList.remove('active');
+    document.getElementById('tai-off').classList.add('active');
+    document.getElementById('training-ai-hint').textContent='Opponent only channels';
+  });
+  document.getElementById('btn-begin-training').addEventListener('click',()=>{
+    if(!CHAR_DEFS[p1Key]||!CHAR_DEFS[p2Key]) return;
+    p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key];
+    startTrainingBattle();
+  });
+  document.getElementById('btn-training-menu').addEventListener('click',()=>{
+    if(aiTid){ clearTimeout(aiTid); aiTid=null; }
+    if(mazeRAF){ cancelAnimationFrame(mazeRAF); mazeRAF=null; }
+    if(mazeTid){ clearInterval(mazeTid); mazeTid=null; }
+    battleRunning=false; gameEnded=false; trainingMode=false;
+    document.getElementById('btn-training-menu').style.display='none';
+    showScreen('title-screen');
+  });
   document.getElementById('btn-back').addEventListener('click',()=>{
-    if(twoPlayerMode&&twoPlayerPhase===2){
+    if(trainingMode){
+      trainingPickPhase=null;
+      document.getElementById('char-player-label').style.display='none';
+      showScreen('training-screen');
+    } else if(twoPlayerMode&&twoPlayerPhase===2){
       twoPlayerPhase=1;
       const lbl=document.getElementById('char-player-label');
       lbl.textContent='Player 1: Choose Your Wizard';
@@ -3904,6 +4079,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-mary').addEventListener('click',()=>showWizardDetail('mary'));
   document.getElementById('pick-mordant').addEventListener('click',()=>showWizardDetail('mordant'));
   document.getElementById('pick-ponder').addEventListener('click',()=>showWizardDetail('ponder'));
+  document.getElementById('pick-durin').addEventListener('click',()=>showWizardDetail('durin'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{
     document.getElementById('wizard-detail').classList.remove('active');

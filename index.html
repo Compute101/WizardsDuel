@@ -23,9 +23,44 @@
     </div>
     <button class="btn" id="btn-start">⚔ Begin Duel</button>
     <button class="btn btn-2p" id="btn-2player">⚔ 2 Player Duel</button>
+    <button class="btn" id="btn-practice">🎯 Practice Mode</button>
     <button class="btn" id="btn-help">📜 How to Play</button>
     <div class="hint">CAST SPELLS · RAISE SHIELDS · SOLVE MAZES<br>DEFEAT YOUR RIVAL WIZARD</div>
     <div style="position:absolute;bottom:12px;right:16px;font-size:10px;color:rgba(201,168,76,0.4);letter-spacing:1px;">v0.8</div>
+  </div>
+
+  <!-- TRAINING MODE SETUP -->
+  <div id="training-screen" class="screen">
+    <div class="training-title">Practice Mode</div>
+    <div class="training-sub">★ Train without consequences ★</div>
+
+    <div class="training-picks">
+      <div class="training-pick">
+        <div class="tp-label">Your Wizard</div>
+        <img class="tp-portrait" id="tp-p1-portrait" src="portraits/eldrad.png" alt="">
+        <div class="tp-name" id="tp-p1-name">ELDRIN</div>
+        <button class="btn tp-change-btn" id="tp-change-p1">Choose</button>
+      </div>
+      <div class="training-vs">VS</div>
+      <div class="training-pick">
+        <div class="tp-label">Opponent</div>
+        <img class="tp-portrait" id="tp-p2-portrait" src="portraits/mal.png" alt="">
+        <div class="tp-name" id="tp-p2-name">MALACHAR</div>
+        <button class="btn tp-change-btn" id="tp-change-p2">Choose</button>
+      </div>
+    </div>
+
+    <div class="training-ai-row">
+      <span class="training-ai-label">Opponent AI</span>
+      <div class="training-ai-toggle">
+        <button class="tai-btn tai-on active" id="tai-on">On</button>
+        <button class="tai-btn tai-off" id="tai-off">Off</button>
+      </div>
+    </div>
+    <div class="training-ai-hint" id="training-ai-hint">Opponent plays normally</div>
+
+    <button class="btn" id="btn-begin-training">⚔ Begin Training</button>
+    <button class="btn btn-training-back-btn" id="btn-training-back">← Back</button>
   </div>
 
   <!-- CHARACTER SELECT -->
@@ -131,6 +166,7 @@
       <div class="phud-center">
         <div id="roundlbl">Round 1</div>
         <div id="fightlbl"></div>
+        <button id="btn-training-menu">🏠 Menu</button>
       </div>
       <div class="phud phud-p2">
         <div class="phud-col">
