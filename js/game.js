@@ -3070,41 +3070,73 @@ function setDpadVisible(v){
 // ── PUZZLE: PATTERN ECHO (Fire) ────────────────────────────
 function launchPatternEcho(spell,cb){
   let done=false;
-  document.getElementById('pztitle').textContent='Ember Rune Pattern';
+  document.getElementById('pztitle').textContent='Ember Rune Rising';
   document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
   setDpadVisible(false);
 
   const TILES=[
-    {col:'#cc3300', lit:'#ff6622', sym:'△'},
-    {col:'#991100', lit:'#ff3311', sym:'◆'},
-    {col:'#aa7700', lit:'#ffcc00', sym:'◯'},
-    {col:'#880000', lit:'#cc2200', sym:'✦'},
+    {col:'#cc3300',lit:'#ff6622',sym:'△'},
+    {col:'#991100',lit:'#ff3311',sym:'◆'},
+    {col:'#aa7700',lit:'#ffcc00',sym:'◯'},
+    {col:'#880000',lit:'#cc2200',sym:'✦'},
   ];
-  const TS=108, GAP=8, PAD=12;
-  const cw=PAD*2+TS*2+GAP, ch=PAD*2+TS*2+GAP+20;
+  const SYMS=TILES.map(t=>t.sym);
+  const NOISE_COLS=['#bb1100','#991100','#cc2200','#aa1500','#881000'];
+
+  const TS=108,GAP=8,PAD=12;
+  const cw=PAD*2+TS*2+GAP;
+  const ch=340;
   mc.width=cw; mc.height=ch;
   const mw=Math.min(cw,(window.innerWidth||360)-32);
   mc.style.width=mw+'px'; mc.style.height='auto';
 
+  // Tile grid sits in the lower portion of the canvas (input phase)
+  const tileTop=ch-PAD-TS*2-GAP-4;
   const tPos=[
-    {x:PAD,y:PAD+20},{x:PAD+TS+GAP,y:PAD+20},
-    {x:PAD,y:PAD+20+TS+GAP},{x:PAD+TS+GAP,y:PAD+20+TS+GAP},
+    {x:PAD,y:tileTop},{x:PAD+TS+GAP,y:tileTop},
+    {x:PAD,y:tileTop+TS+GAP},{x:PAD+TS+GAP,y:tileTop+TS+GAP},
   ];
 
   const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
   const seq=Array.from({length:SEQ_LEN},()=>Math.floor(Math.random()*4));
   const playerSeq=[];
-  let phase='watch', watchStep=0, litTile=-1;
+  let phase='watch';
   let timeLeft=Math.round(20*diffMult);
 
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
 
-  const sparks=Array.from({length:22},()=>({
-    x:Math.random()*cw, y:Math.random()*ch,
-    spd:0.25+Math.random()*0.5, sz:0.8+Math.random()*1.8,
+  // Noise flames – red symbols rising as visual distraction
+  const noise=Array.from({length:40},()=>({
+    x:Math.random()*cw,
+    y:Math.random()*ch,
+    spd:0.6+Math.random()*1.4,
+    sz:9+Math.random()*13,
+    sym:SYMS[Math.floor(Math.random()*4)],
+    col:NOISE_COLS[Math.floor(Math.random()*NOISE_COLS.length)],
     ph:Math.random()*Math.PI*2,
-    col:Math.random()<0.5?'#ff6622':'#ffcc00',
+    alpha:0.1+Math.random()*0.28,
+  }));
+
+  // Distribute white symbols horizontally so they don't overlap
+  const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
+    const frac=(i+0.5)/SEQ_LEN;
+    return Math.max(28,Math.min(cw-28,cw*frac+(Math.random()-0.5)*22));
+  });
+
+  // Each white symbol spawns SPAWN_DELAY + idx*SPAWN_INTERVAL ms after start
+  const SPAWN_DELAY=500;
+  const SPAWN_INTERVAL=700;
+  const RISE_SPD=0.9; // px/frame – slower than noise so they're trackable
+  const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+1900;
+
+  const startTime=Date.now();
+  let watchDone=false;
+
+  // State for each white (sequence) symbol
+  const symStates=seq.map((tileIdx,i)=>({
+    tileIdx,sym:TILES[tileIdx].sym,x:xSlots[i],
+    y:ch+30,spawned:false,idx:i,
   }));
 
   function startTimer(){
@@ -3117,26 +3149,18 @@ function launchPatternEcho(spell,cb){
     },1000);
   }
 
-  function showNext(){
-    if(done) return;
-    if(watchStep>=seq.length){ phase='input'; timerEl.textContent=timeLeft; startTimer(); return; }
-    litTile=seq[watchStep++];
-    setTimeout(()=>{ litTile=-1; setTimeout(showNext,220); },580);
-  }
-  setTimeout(showNext,500);
-
   function onPointer(e){
     if(done||phase!=='input') return;
     e.preventDefault();
     const rect=mc.getBoundingClientRect();
-    const sx=mc.width/rect.width, sy=mc.height/rect.height;
-    const px=(e.clientX-rect.left)*sx, py=(e.clientY-rect.top)*sy;
+    const sx=mc.width/rect.width,sy=mc.height/rect.height;
+    const px=(e.clientX-rect.left)*sx,py=(e.clientY-rect.top)*sy;
     for(let i=0;i<4;i++){
       const tp=tPos[i];
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         playerSeq.push(i);
         const idx=playerSeq.length-1;
-        if(playerSeq[idx]!==seq[idx]){finish(false); return;}
+        if(playerSeq[idx]!==seq[idx]){finish(false);return;}
         if(playerSeq.length===seq.length){finish(true);}
         return;
       }
@@ -3147,62 +3171,136 @@ function launchPatternEcho(spell,cb){
   function cleanup(){
     mc.removeEventListener('pointerdown',onPointer);
     setDpadVisible(true);
-    if(mazeTid){clearInterval(mazeTid); mazeTid=null;}
-    if(mazeRAF){cancelAnimationFrame(mazeRAF); mazeRAF=null;}
+    if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
+    if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){ if(done) return; done=true; cleanup(); puzzleFinish(ok,cb); }
+  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
 
   function draw(){
     const t=Date.now();
-    const bg=mx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,cw*.7);
-    bg.addColorStop(0,'#2a0800'); bg.addColorStop(0.6,'#140300'); bg.addColorStop(1,'#050000');
+    const elapsed=t-startTime;
+
+    // Background
+    const bg=mx.createRadialGradient(cw/2,ch*.55,0,cw/2,ch*.55,cw*.9);
+    bg.addColorStop(0,'#2a0800');
+    bg.addColorStop(0.6,'#140300');
+    bg.addColorStop(1,'#050000');
     mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
 
-    mx.save();
-    sparks.forEach(s=>{
-      s.y-=s.spd; if(s.y<-4){s.y=ch+4; s.x=Math.random()*cw;}
-      mx.globalAlpha=0.1+0.3*Math.abs(Math.sin(t/700+s.ph));
-      mx.fillStyle=s.col; mx.shadowColor=s.col; mx.shadowBlur=5;
-      mx.beginPath(); mx.arc(s.x,s.y,s.sz,0,Math.PI*2); mx.fill();
-    });
-    mx.globalAlpha=1; mx.shadowBlur=0;
-    mx.restore();
-
-    mx.fillStyle=phase==='watch'?'#ffcc00':'#ff8844';
-    mx.font='bold 10px Cinzel,serif'; mx.textAlign='center'; mx.textBaseline='top';
-    mx.fillText(
-      phase==='watch'?`Memorise: ${watchStep}/${seq.length}`:`Repeat: ${playerSeq.length}/${seq.length}`,
-      cw/2, 4
-    );
-
-    for(let i=0;i<4;i++){
-      const tp=tPos[i], tile=TILES[i], lit=(litTile===i);
-      mx.save();
-      mx.shadowColor=tile.col; mx.shadowBlur=lit?28:5;
-      const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,4,tp.x+TS/2,tp.y+TS/2,TS*.6);
-      tg.addColorStop(0,lit?tile.lit:tile.col);
-      tg.addColorStop(1,lit?tile.col:'#1a0400');
-      mx.fillStyle=tg;
-      mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.fill();
-      mx.strokeStyle=lit?tile.lit:tile.col+'88'; mx.lineWidth=lit?2.5:1.5;
-      mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.stroke();
-      mx.shadowBlur=0;
-      mx.fillStyle=lit?'#fff':tile.lit+'cc';
-      mx.font=`bold ${TS*.42}px serif`; mx.textAlign='center'; mx.textBaseline='middle';
-      mx.fillText(tile.sym,tp.x+TS/2,tp.y+TS/2);
-      mx.restore();
+    // Transition to input phase once watch animation completes
+    if(phase==='watch'&&!watchDone&&elapsed>=watchDuration){
+      watchDone=true; phase='input';
+      timerEl.textContent=timeLeft; startTimer();
     }
 
-    const dotY=ch-7, dsp=14, ds=cw/2-(seq.length-1)*dsp/2;
-    for(let i=0;i<seq.length;i++){
-      mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-      if(i<playerSeq.length){ mx.fillStyle='#ffcc00'; mx.shadowColor='#ffcc00'; mx.shadowBlur=6; }
-      else { mx.fillStyle='rgba(255,204,0,0.2)'; mx.shadowBlur=0; }
-      mx.fill(); mx.shadowBlur=0;
+    if(phase==='watch'){
+      // ── Noise flames (red symbols rising) ──
+      mx.save();
+      noise.forEach(f=>{
+        f.y-=f.spd;
+        if(f.y<-24){f.y=ch+10;f.x=Math.random()*cw;f.sym=SYMS[Math.floor(Math.random()*4)];}
+        const pulse=0.55+0.45*Math.abs(Math.sin(t/650+f.ph));
+        mx.globalAlpha=f.alpha*pulse;
+        mx.fillStyle=f.col;
+        mx.shadowColor=f.col; mx.shadowBlur=7;
+        mx.font=`bold ${f.sz}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(f.sym,f.x,f.y);
+      });
+      mx.globalAlpha=1; mx.shadowBlur=0;
+      mx.restore();
+
+      // ── White sequence symbols rising in order ──
+      mx.save();
+      symStates.forEach(s=>{
+        if(!s.spawned&&elapsed>=SPAWN_DELAY+s.idx*SPAWN_INTERVAL){
+          s.spawned=true; s.y=ch+30;
+        }
+        if(!s.spawned) return;
+        s.y-=RISE_SPD;
+        // Fade in when entering from bottom, fade out when reaching top
+        let alpha=1;
+        if(ch-s.y<50) alpha=(ch-s.y)/50;
+        if(s.y<55) alpha=Math.max(0,s.y/55);
+        if(alpha<=0.01) return;
+
+        mx.globalAlpha=alpha;
+        mx.shadowColor='#ffffff'; mx.shadowBlur=24;
+        mx.fillStyle='#ffffff';
+        mx.font='bold 30px serif';
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(s.sym,s.x,s.y);
+
+        // Small order-number badge so player knows which is first/second/…
+        mx.shadowColor='#ffcc00'; mx.shadowBlur=10;
+        mx.fillStyle='#ffcc00';
+        mx.font='bold 11px Cinzel,serif';
+        mx.fillText(s.idx+1,s.x+16,s.y-17);
+      });
+      mx.globalAlpha=1; mx.shadowBlur=0;
+      mx.restore();
+
+      // Instruction label
+      mx.fillStyle='#ffcc00';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText('Watch the white runes rise!',cw/2,4);
+    }
+
+    if(phase==='input'){
+      // Faint ambient flames keep the atmosphere alive
+      mx.save();
+      noise.slice(0,14).forEach(f=>{
+        f.y-=f.spd*0.35;
+        if(f.y<-24){f.y=ch+10;f.x=Math.random()*cw;}
+        mx.globalAlpha=f.alpha*0.22;
+        mx.fillStyle=f.col;
+        mx.font=`${f.sz}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(f.sym,f.x,f.y);
+      });
+      mx.globalAlpha=1;
+      mx.restore();
+
+      // 4 clickable symbol tiles
+      for(let i=0;i<4;i++){
+        const tp=tPos[i],tile=TILES[i];
+        mx.save();
+        mx.shadowColor=tile.col; mx.shadowBlur=5;
+        const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,4,tp.x+TS/2,tp.y+TS/2,TS*.6);
+        tg.addColorStop(0,tile.col);
+        tg.addColorStop(1,'#1a0400');
+        mx.fillStyle=tg;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.fill();
+        mx.strokeStyle=tile.col+'88'; mx.lineWidth=1.5;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,7); mx.stroke();
+        mx.shadowBlur=0;
+        mx.fillStyle=tile.lit+'cc';
+        mx.font=`bold ${TS*.42}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(tile.sym,tp.x+TS/2,tp.y+TS/2);
+        mx.restore();
+      }
+
+      // Status label
+      mx.fillStyle='#ff8844';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
+
+      // Progress dots
+      const dotY=ch-8,dsp=14;
+      const ds=cw/2-(seq.length-1)*dsp/2;
+      for(let i=0;i<seq.length;i++){
+        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
+        if(i<playerSeq.length){mx.fillStyle='#ffcc00';mx.shadowColor='#ffcc00';mx.shadowBlur=6;}
+        else{mx.fillStyle='rgba(255,204,0,0.2)';mx.shadowBlur=0;}
+        mx.fill(); mx.shadowBlur=0;
+      }
     }
   }
 
-  function frame(){ if(done) return; draw(); mazeRAF=requestAnimationFrame(frame); }
+  function frame(){if(done)return;draw();mazeRAF=requestAnimationFrame(frame);}
   showScreen('puzzle-screen');
   mazeRAF=requestAnimationFrame(frame);
 }
