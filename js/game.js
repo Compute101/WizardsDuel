@@ -3075,7 +3075,7 @@ function launchPatternEcho(spell,cb){
   setDpadVisible(false);
 
   const TILES=[
-    {col:'#cc3300',lit:'#ff6622',sym:'⚡',glowCol:'#ccffff'},  // lightning – cyan glow
+    {col:'#cc3300',lit:'#ff6622',sym:'ϟ',glowCol:'#ccffff'},  // koppa/lightning – cyan glow
     {col:'#991100',lit:'#ff3311',sym:'☽',glowCol:'#aaddff'},  // crescent  – ice-blue glow
     {col:'#aa7700',lit:'#ffcc00',sym:'⊕',glowCol:'#ffee77'},  // sun-cross – gold glow
     {col:'#880000',lit:'#cc2200',sym:'✦',glowCol:'#dd88ff'},  // star      – violet glow
