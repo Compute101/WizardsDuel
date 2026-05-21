@@ -111,7 +111,7 @@ function newState(){
         stoneskin:0, stoneskinHp:0, stonesoul:0},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[],
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[],
     pendingAction:null, skipAITurn:false,
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1017,6 +1017,29 @@ function tickParts(){
   });
 }
 
+const MANA_BURN_FIRE_COLS=['#44aaff','#66ccff','#0088ff','#aaddff','#2299ee'];
+function tickManaBurnFire(){
+  const now=Date.now();
+  gs.manaBurnFires=gs.manaBurnFires.filter(f=>now<f.end);
+  gs.manaBurnFires.forEach(f=>{
+    const n=2+(Math.random()<0.4?1:0);
+    for(let i=0;i<n;i++){
+      const col=MANA_BURN_FIRE_COLS[Math.floor(Math.random()*MANA_BURN_FIRE_COLS.length)];
+      const spread=bW*.018;
+      gs.parts.push({
+        x:f.x+(Math.random()-.5)*spread*2,
+        y:f.y+(Math.random()-.5)*spread,
+        col,
+        vx:(Math.random()-.5)*1.2,
+        vy:-(2.5+Math.random()*3.5),
+        sz:1.5+Math.random()*3,
+        life:1,
+        dec:.018+Math.random()*.022,
+      });
+    }
+  });
+}
+
 function spawnParts(x,y,col,n=16){
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2, sp=1.5+Math.random()*3.5;
@@ -1213,7 +1236,7 @@ function battleLoop(ts){
   const gy=bH*.74, wsz=bH*.3;
   drawWiz(bW*.22+(gs.p1xOff||0),gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1',gs.p1.foresight,gs.p1);
   drawWiz(bW*.78+(gs.p2xOff||0),gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2',gs.p2.foresight,gs.p2);
-  tickProjs(); tickBeams(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!twoPlayerMode){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText(p2Cfg.name+' IS CASTING…',bW*.5,bH*.56);
@@ -2458,6 +2481,7 @@ function castSpell(spell,target,tx,ty,caster){
     targetState.mana=Math.max(0,targetState.mana-drained);
     targetState.hp=Math.max(0,targetState.hp-burnDmg);
     spawnParts(tx,ty,'#cc44ff',22); spawnParts(tx,ty,'#ff88ff',10);
+    gs.manaBurnFires.push({x:tx, y:ty, end:Date.now()+2800});
     addFloat(tx,ty,'-'+burnDmg,'#cc44ff',22);
     if(drained>0) addFloat(tx,ty+28,'🔮 −'+drained+' Mana','#cc44ff',14);
     flash('#cc44ff');
