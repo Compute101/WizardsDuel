@@ -3020,7 +3020,7 @@ function doAI(){
     const dispelSpell=universalSpells.find(s=>s.element==='dispel');
     if(dispelSpell){
       const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
-      const oppHasKeyBuff=gs.p1.shield>0||gs.p1.foresight||gs.p1.resist>1||gs.p1.invisible>1||gs.p1.stoneskin>0||gs.p1.stonesoul>0;
+      const oppHasKeyBuff=gs.p1.shield>0||gs.p1.foresight||gs.p1.resist>1||gs.p1.invisible>1||gs.p1.stoneskin>0||gs.p1.stonesoul>0||gs.p1.ward>0||gs.p1.counter;
       if(needsCleanse||(oppHasKeyBuff&&Math.random()<0.35)){
         chosen=dispelSpell;
         dispelSelf=needsCleanse;
@@ -3044,7 +3044,8 @@ function doAI(){
       } else if(gs.p1.mana>=3&&universalSpells.find(s=>s.element==='ice')){
         chosen=universalSpells.find(s=>s.element==='ice');
       } else {
-        chosen=universalSpells[Math.floor(Math.random()*universalSpells.length)];
+        const randPool=universalSpells.filter(s=>s.element!=='dispel');
+        if(randPool.length>0) chosen=randPool[Math.floor(Math.random()*randPool.length)];
       }
     } else {
       chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
