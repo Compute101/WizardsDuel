@@ -76,7 +76,7 @@ const CHAR_DISPLAY={
 let diffMult=1.0, diffName='normal';
 
 // ── TOURNAMENT ─────────────────────────────────────────────
-const ARCADE_BOSSES=['durin','zacharius','mal','mordant']; // fixed final-4 in arcade mode
+const ARCADE_BOSSES=['gnash','zacharius','mal','mordant']; // fixed final-4 in arcade mode
 let arcadeMode=false;
 let tournamentQueue=[];   // ordered opponent keys
 let tournamentIndex=0;    // index of current opponent in queue
@@ -5355,13 +5355,12 @@ function pickCharacter(key){
     const bossList=ARCADE_BOSSES.filter(k=>k!==key);
     tournamentQueue=[...earlyFoes,...bossList];
   } else {
-    // Iron Man: every opponent, gnash always last
-    const others=Object.keys(CHAR_DEFS).filter(k=>k!==key&&k!=='gnash');
+    // Iron Man: every opponent, fully randomised
+    const others=Object.keys(CHAR_DEFS).filter(k=>k!==key);
     for(let i=others.length-1;i>0;i--){
       const j=Math.floor(Math.random()*(i+1));
       [others[i],others[j]]=[others[j],others[i]];
     }
-    if(CHAR_DEFS['gnash']) others.push('gnash');
     tournamentQueue=others;
   }
   tournamentIndex=0;
