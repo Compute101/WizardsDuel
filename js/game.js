@@ -5491,7 +5491,7 @@ function startTrainingBattle(){
   document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
   const fightLbl=document.getElementById('fightlbl');
   if(fightLbl) fightLbl.textContent='Training';
-  document.getElementById('btn-training-menu').style.display='';
+  document.getElementById('btn-training-menu').style.display='block';
   newState();
   gameEnded=false;
   battleRunning=true;
