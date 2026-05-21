@@ -1377,7 +1377,7 @@ function act(type){
       ice:       launchIcePattern,
       arcane:    launchArcanePattern,
       dispel:    launchDispelPattern,
-      manaburn:  launchLightningPattern,
+      manaburn:  launchManaBurnPattern,
     };
     const doLaunch=()=>{
       gs.busy=true;
@@ -3931,6 +3931,315 @@ function launchLightningPattern(spell,cb){
         mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
         if(i<playerSeq.length){mx.fillStyle='#88ccff';mx.shadowColor='#88ccff';mx.shadowBlur=6;}
         else{mx.fillStyle='rgba(136,204,255,0.2)';mx.shadowBlur=0;}
+        mx.fill(); mx.shadowBlur=0;
+      }
+    }
+  }
+
+  function frame(){if(done)return;draw();mazeRAF=requestAnimationFrame(frame);}
+  showScreen('puzzle-screen');
+  mazeRAF=requestAnimationFrame(frame);
+}
+
+// ── PUZZLE: MANA BURN PATTERN (Arcane Surge Glyph) ───────────────────────
+function launchManaBurnPattern(spell,cb){
+  let done=false;
+  document.getElementById('pztitle').textContent='Arcane Surge Glyph';
+  document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
+  setDpadVisible(false);
+
+  // ── Full 12-glyph Arcana Alphabet (grid order: 3 cols × 4 rows) ──────
+  const ALPHABET=[
+    {sym:'ϟ',glowCol:'#ccffff',col:'#0d0830',lit:'#5566cc'}, // 0
+    {sym:'Δ',glowCol:'#ff9944',col:'#0a0828',lit:'#4455bb'}, // 1
+    {sym:'∇',glowCol:'#44aaff',col:'#060830',lit:'#5577dd'}, // 2 — mana burn
+    {sym:'Ψ',glowCol:'#aaff88',col:'#0a0535',lit:'#8855dd'}, // 3 — mana burn
+    {sym:'Ω',glowCol:'#ff4444',col:'#0a0425',lit:'#442288'}, // 4
+    {sym:'∞',glowCol:'#44ffcc',col:'#040e28',lit:'#334499'}, // 5
+    {sym:'☽',glowCol:'#aaddff',col:'#06082a',lit:'#334477'}, // 6
+    {sym:'✸',glowCol:'#ffff55',col:'#0e0a28',lit:'#9966ff'}, // 7 — mana burn
+    {sym:'⊕',glowCol:'#ffee77',col:'#0c0828',lit:'#553399'}, // 8
+    {sym:'⊗',glowCol:'#ff44aa',col:'#130530',lit:'#cc44cc'}, // 9 — mana burn
+    {sym:'θ',glowCol:'#88ff88',col:'#060e28',lit:'#445599'}, // 10
+    {sym:'Φ',glowCol:'#dd88ff',col:'#0e0530',lit:'#8844cc'}, // 11
+  ];
+
+  // Mana Burn uses Ψ(3) ∇(2) ⊗(9) ✸(7)
+  const SPELL_IDX=[3,2,9,7];
+  const MANABURN_COLS=[
+    {col:'#180028',lit:'#cc44ff'}, // Ψ
+    {col:'#0a0020',lit:'#8844ff'}, // ∇
+    {col:'#1a0028',lit:'#ff44cc'}, // ⊗
+    {col:'#100022',lit:'#aa55ff'}, // ✸
+  ];
+
+  const TS=72,GAP=6,PAD=10;
+  const cw=PAD*2+TS*3+GAP*2;
+  const ch=380;
+  mc.width=cw; mc.height=ch;
+  const mw=Math.min(cw,(window.innerWidth||360)-32);
+  mc.style.width=mw+'px'; mc.style.height='auto';
+
+  const tileAreaH=TS*4+GAP*3;
+  const tileTop=ch-PAD-tileAreaH;
+  const tPos=Array.from({length:12},(_,i)=>({
+    x:PAD+(i%3)*(TS+GAP),
+    y:tileTop+Math.floor(i/3)*(TS+GAP),
+  }));
+
+  const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
+  const seq=diffName==='easy'
+    ?[3,2,9,7]  // canonical Mana Burn word: Ψ ∇ ⊗ ✸
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
+  const playerSeq=[];
+  let phase='watch';
+  let timeLeft=Math.round(20*diffMult);
+
+  const timerEl=document.getElementById('pztimer');
+  timerEl.textContent='—'; timerEl.classList.remove('urgent');
+
+  // Watch phase timing
+  const STATIC_HOLD=2800;        // glyphs static before burning starts
+  const NOISE_RISE_DELAY=0;      // noise starts rising immediately when burn begins
+  const SPELL_RISE_DELAY=600;    // spell glyphs ignite shortly after noise
+  const NOISE_RISE_SPD=1.9;      // noise rises quickly
+  const SPELL_RISE_SPD=2.5;      // spell glyphs burn off faster
+  const watchDuration=STATIC_HOLD+5200;
+  const startTime=Date.now();
+  let watchDone=false;
+
+  // Noise glyphs — all 12 arcana scattered across bottom half, faint blue
+  const NOISE_BLUE=['#1133bb','#2244cc','#0d2eaa','#1a44dd','#2233bb'];
+  const noise=Array.from({length:44},()=>{
+    const y=ch*0.5+Math.random()*ch*0.5;
+    return {
+      x:Math.random()*cw,
+      y,
+      startY:y,
+      sz:9+Math.random()*14,
+      ai:Math.floor(Math.random()*12),
+      col:NOISE_BLUE[Math.floor(Math.random()*5)],
+      ph:Math.random()*Math.PI*2,
+      alpha:0.12+Math.random()*0.22,
+      spd:NOISE_RISE_SPD*(0.7+Math.random()*0.65),
+    };
+  });
+
+  // Spell glyphs — spread horizontally at the very bottom, all visible from start
+  const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
+    const frac=(i+0.5)/SEQ_LEN;
+    return Math.max(30,Math.min(cw-30,cw*frac+(Math.random()-0.5)*12));
+  });
+  const symStates=seq.map((ai,i)=>({
+    ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
+    x:xSlots[i],
+    y:ch-22,
+    idx:i,
+    spd:SPELL_RISE_SPD*(0.85+Math.random()*0.3),
+  }));
+
+  function startTimer(){
+    if(mazeTid) clearInterval(mazeTid);
+    mazeTid=setInterval(()=>{
+      if(done) return;
+      timeLeft--; timerEl.textContent=timeLeft;
+      if(timeLeft<=5) timerEl.classList.add('urgent');
+      if(timeLeft<=0) finish(false);
+    },1000);
+  }
+
+  function onPointer(e){
+    if(done||phase!=='input') return;
+    e.preventDefault();
+    const rect=mc.getBoundingClientRect();
+    const sx=mc.width/rect.width,sy=mc.height/rect.height;
+    const px=(e.clientX-rect.left)*sx,py=(e.clientY-rect.top)*sy;
+    for(let ai=0;ai<12;ai++){
+      const tp=tPos[ai];
+      if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
+        const isSpell=SPELL_IDX.includes(ai);
+        if(!isSpell){
+          if(diffName==='hard') finish(false);
+          return;
+        }
+        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        playerSeq.push(ai);
+        if(playerSeq.length===seq.length) finish(true);
+        return;
+      }
+    }
+  }
+  mc.addEventListener('pointerdown',onPointer);
+
+  function cleanup(){
+    mc.removeEventListener('pointerdown',onPointer);
+    setDpadVisible(true);
+    if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
+    if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
+  }
+  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
+
+  function draw(){
+    const t=Date.now();
+    const elapsed=t-startTime;
+
+    // Background — deep arcane indigo
+    const bg=mx.createRadialGradient(cw/2,ch*.6,0,cw/2,ch*.6,cw*.9);
+    bg.addColorStop(0,'#0d0020');
+    bg.addColorStop(0.6,'#070012');
+    bg.addColorStop(1,'#030008');
+    mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
+
+    if(phase==='watch'&&!watchDone&&elapsed>=watchDuration){
+      watchDone=true; phase='input';
+      timerEl.textContent=timeLeft; startTimer();
+    }
+
+    if(phase==='watch'){
+      const noiseBurning=elapsed>=(STATIC_HOLD+NOISE_RISE_DELAY);
+      const spellBurning=elapsed>=(STATIC_HOLD+SPELL_RISE_DELAY);
+      // How far into the burn phase (0→1 over 1200ms) for glow ramp
+      const burnT=noiseBurning?Math.min(1,(elapsed-STATIC_HOLD)/1200):0;
+
+      // Noise glyphs — bottom half, faint blue; burn phase: rise bright
+      mx.save();
+      noise.forEach(f=>{
+        if(noiseBurning){
+          f.y-=f.spd;
+          if(f.y<-24){f.y=ch+10;f.x=Math.random()*cw;f.ai=Math.floor(Math.random()*12);}
+        }
+        const pulse=0.55+0.45*Math.abs(Math.sin(t/680+f.ph));
+        const brightAlpha=f.alpha+burnT*f.alpha*2.2;
+        mx.globalAlpha=Math.min(0.88,brightAlpha*pulse);
+        mx.fillStyle=f.col; mx.shadowColor=f.col;
+        mx.shadowBlur=noiseBurning?10+burnT*14:3;
+        mx.font=`bold ${f.sz}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
+      });
+      mx.globalAlpha=1; mx.shadowBlur=0;
+      mx.restore();
+
+      // Spell glyphs — white at bottom; burn phase: rise bright white
+      symStates.forEach(s=>{
+        if(spellBurning) s.y-=s.spd;
+        if(s.y<-30) return;
+
+        const riseProgress=spellBurning
+          ?Math.min(1,(ch-22-s.y)/(ch*0.75)):0;
+        const pulse=Math.sin(t/820+s.idx*1.4)*0.1;
+
+        let alpha=0.8+pulse;
+        if(s.y<55) alpha=Math.max(0,s.y/55);
+        if(alpha<=0.01) return;
+
+        const glowSize=spellBurning?20+riseProgress*36:14;
+        const glowCol=spellBurning?'#ffffff':s.glowCol;
+
+        mx.save();
+        mx.globalAlpha=alpha;
+        mx.shadowColor=glowCol; mx.shadowBlur=glowSize;
+        mx.fillStyle='#ffffff';
+        mx.font='bold 40px serif';
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(s.sym,s.x,s.y);
+        // Second pass for extra core brightness when burning
+        if(spellBurning&&riseProgress>0.1){
+          mx.shadowBlur=glowSize*0.6;
+          mx.fillText(s.sym,s.x,s.y);
+        }
+        mx.restore();
+
+        // Order badge
+        if(alpha>0.25){
+          mx.save();
+          mx.globalAlpha=alpha*0.9;
+          mx.shadowColor='#cc88ff'; mx.shadowBlur=8;
+          mx.fillStyle='#cc88ff';
+          mx.font='bold 11px Cinzel,serif';
+          mx.textAlign='center'; mx.textBaseline='middle';
+          mx.fillText(s.idx+1,s.x+20,s.y-20);
+          mx.restore();
+        }
+      });
+      mx.globalAlpha=1; mx.shadowBlur=0;
+
+      // Status hint
+      const hint=spellBurning?'The mana burns!':
+                 noiseBurning?'Memorise the white runes...':
+                              'Read the mana runes...';
+      mx.fillStyle=spellBurning?'#ff88ff':'#aa88ff';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText(hint,cw/2,4);
+    }
+
+    if(phase==='input'){
+      // Faint lingering drift
+      mx.save();
+      noise.slice(0,14).forEach(f=>{
+        f.y-=f.spd*0.18;
+        if(f.y<-24){f.y=ch+10;f.x=Math.random()*cw;}
+        mx.globalAlpha=f.alpha*0.14;
+        mx.fillStyle=f.col;
+        mx.font=`${f.sz}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
+      });
+      mx.globalAlpha=1;
+      mx.restore();
+
+      // 12-glyph keyboard
+      const isHard=diffName==='hard';
+      for(let ai=0;ai<12;ai++){
+        const tp=tPos[ai];
+        const g=ALPHABET[ai];
+        const si=SPELL_IDX.indexOf(ai);
+        const isSpell=si!==-1;
+
+        let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
+        if(isHard){
+          bgCol='#180a22'; bgDark='#0a0412';
+          strokeCol='#33194488'; textCol='#8855cc';
+          blur=4; textAlpha=1;
+        } else if(isSpell){
+          bgCol=MANABURN_COLS[si].col; bgDark='#050010';
+          strokeCol=MANABURN_COLS[si].col+'88'; textCol=MANABURN_COLS[si].lit;
+          blur=8; textAlpha=1;
+        } else {
+          bgCol='#080810'; bgDark='#030305';
+          strokeCol='#111120'; textCol='#1a1a28';
+          blur=0; textAlpha=0.35;
+        }
+
+        mx.save();
+        mx.shadowColor=bgCol; mx.shadowBlur=blur;
+        const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,3,tp.x+TS/2,tp.y+TS/2,TS*.6);
+        tg.addColorStop(0,bgCol); tg.addColorStop(1,bgDark);
+        mx.fillStyle=tg;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.fill();
+        mx.shadowBlur=0;
+        mx.strokeStyle=strokeCol; mx.lineWidth=1.2;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.stroke();
+        mx.globalAlpha=textAlpha;
+        mx.fillStyle=textCol;
+        mx.font=`bold ${Math.round(TS*.42)}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(g.sym,tp.x+TS/2,tp.y+TS/2);
+        mx.restore();
+      }
+
+      mx.fillStyle='#cc88ff';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
+
+      const dotY=tileTop-10,dsp=14;
+      const ds=cw/2-(seq.length-1)*dsp/2;
+      for(let i=0;i<seq.length;i++){
+        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
+        if(i<playerSeq.length){mx.fillStyle='#cc88ff';mx.shadowColor='#cc88ff';mx.shadowBlur=6;}
+        else{mx.fillStyle='rgba(204,136,255,0.2)';mx.shadowBlur=0;}
         mx.fill(); mx.shadowBlur=0;
       }
     }
