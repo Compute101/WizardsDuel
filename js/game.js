@@ -1367,8 +1367,7 @@ function act(type){
     if(whoState.mana<spell.cost) return;
     if(whoState.frenzied>0) return;
     if(whoState.silence>0&&Math.random()<0.45){
-      addFloat(cx,bH*.33,'🔇 Silenced!','#9944cc',15);
-      spawnParts(cx,bH*.38,'#9944cc',10); anim(who,'cast',600);
+      showSilenceBlock(cx,bH*.33); anim(who,'cast',600);
       endMyTurn(); return;
     }
     const launchers={
@@ -1418,8 +1417,7 @@ function act(type){
     if(whoState.mana<charSpell.cost) return;
     if(charSpellBlocked(type,whoState,whoCfg,oppState)) return;
     if(charSpell.cost>0&&whoState.silence>0&&Math.random()<0.45){
-      addFloat(cx,bH*.33,'🔇 Silenced!','#9944cc',15);
-      spawnParts(cx,bH*.38,'#9944cc',10); anim(who,'cast',600);
+      showSilenceBlock(cx,bH*.33); anim(who,'cast',600);
       endMyTurn(); return;
     }
     resolveCharSpell(type,who);
@@ -3044,13 +3042,11 @@ function doAI(){
 
   // Silence: 45% chance mana-cost spells fizzle
   if(chosen.id&&chosen.cost>0&&ai.silence>0&&Math.random()<0.45){
-    addFloat(bW*.78,bH*.33,'🔇 Silenced!','#9944cc',15);
-    spawnParts(bW*.78,bH*.38,'#9944cc',10); anim('p2','cast',600);
+    showSilenceBlock(bW*.78,bH*.33); anim('p2','cast',600);
     tickStatuses(ai); finishAI(); return;
   }
   if(!chosen.id&&ai.silence>0&&Math.random()<0.45){
-    addFloat(bW*.78,bH*.33,'🔇 Silenced!','#9944cc',15);
-    spawnParts(bW*.78,bH*.38,'#9944cc',10); anim('p2','cast',600);
+    showSilenceBlock(bW*.78,bH*.33); anim('p2','cast',600);
     ai.mana=Math.max(0,ai.mana-1); tickStatuses(ai); finishAI(); return;
   }
 
@@ -5192,6 +5188,15 @@ function flash(col){
   const el=document.getElementById('flash');
   el.style.background=col; el.classList.add('on');
   setTimeout(()=>el.classList.remove('on'),120);
+}
+
+// ── SILENCE BLOCK VISUAL ───────────────────────────────────
+function showSilenceBlock(cx,y){
+  addFloat(cx,y,'🔇 SILENCED!','#cc44ff',22);
+  addFloat(cx,y+bH*.07,'Spell Blocked','#9944cc',13);
+  spawnParts(cx,y,'#cc44ff',18);
+  spawnParts(cx,y,'#440066',12);
+  flash('#1a0033');
 }
 
 // ── DISPEL TARGET SELECTION ────────────────────────────────
