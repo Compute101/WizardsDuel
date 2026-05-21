@@ -76,7 +76,9 @@ const CHAR_DISPLAY={
 let diffMult=1.0, diffName='normal';
 
 // ── TOURNAMENT ─────────────────────────────────────────────
-let tournamentQueue=[];   // ordered opponent keys; gnash always last
+const ARCADE_BOSSES=['gnash','zacharius','mal','mordant']; // fixed final-4 in arcade mode
+let arcadeMode=false;
+let tournamentQueue=[];   // ordered opponent keys
 let tournamentIndex=0;    // index of current opponent in queue
 
 // ── STATE ──────────────────────────────────────────────────
@@ -132,18 +134,25 @@ function buildBracket(){
   tournamentQueue.forEach((oppKey,i)=>{
     const oppCfg=CHAR_DEFS[oppKey];
     const isFinal=i===tournamentQueue.length-1;
+    const isBossRound=arcadeMode&&ARCADE_BOSSES.includes(oppKey);
     const col=document.createElement('div');
     col.className='bracket-round';
     col.dataset.round=i;
     if(isFinal) col.classList.add('is-final');
+    let rlabel;
+    if(isFinal) rlabel='☆ FINAL ☆';
+    else if(isBossRound){
+      const bossIdx=i-(tournamentQueue.length-ARCADE_BOSSES.length)+1;
+      rlabel='Boss '+bossIdx;
+    } else rlabel='Round '+(i+1);
     col.innerHTML=
-      '<div class="bracket-rlabel">'+(isFinal?'☆ FINAL ☆':'Round '+(i+1))+'</div>'+
+      '<div class="bracket-rlabel">'+rlabel+'</div>'+
       '<div class="bracket-slot bslot-player"><img src="portraits/'+p1Key+'.png" alt="'+p1Cfg.name+'"></div>'+
       '<div class="bracket-cross">⚔</div>'+
       '<div class="bracket-slot bslot-opp" id="bopp-'+i+'">'+
         '<img src="portraits/'+oppKey+'.png" alt="'+oppCfg.name+'">'+
         '<div class="bslot-name">'+oppCfg.name+'</div>'+
-        (isFinal?'<div class="bslot-boss">BOSS</div>':'')+
+        (isBossRound||isFinal?'<div class="bslot-boss">'+(isFinal?'FINAL BOSS':'BOSS')+'</div>':'')+
       '</div>';
     track.appendChild(col);
     if(i<tournamentQueue.length-1){
@@ -160,7 +169,7 @@ function showBracket(animate){
   const nextKey=tournamentQueue[tournamentIndex];
   const nextCfg=CHAR_DEFS[nextKey];
   const btn=document.getElementById('bracket-btn');
-  btn.textContent=animate?('⚔ Fight '+nextCfg.name+' →'):'⚔ Begin Tournament';
+  btn.textContent=animate?('⚔ Fight '+nextCfg.name+' →'):(arcadeMode?'⚔ Begin Arcade':'⚔ Begin Iron Man');
   btn.style.borderColor=nextCfg.col||'#c9a84c';
   btn.style.color=nextCfg.col||'#c9a84c';
 
@@ -3312,9 +3321,9 @@ function endGame(won){
       continueBtn.textContent='Back to Title';
     } else if(inTournament&&isLastFight){
       document.getElementById('ovico').textContent='🏆';
-      document.getElementById('ovtitle').textContent='Tournament Champion!';
+      document.getElementById('ovtitle').textContent=arcadeMode?'Arcade Champion!':'Iron Man Champion!';
       document.getElementById('ovtitle').style.color='#f0cc6a';
-      document.getElementById('ovdesc').textContent='You have defeated every wizard and claimed the tournament!';
+      document.getElementById('ovdesc').textContent=arcadeMode?'You defeated all challengers and claimed the Arcade trophy!':'You defeated every wizard — the Iron Man title is yours!';
       continueBtn.textContent='Back to Title';
     } else if(inTournament){
       const nextKey=tournamentQueue[tournamentIndex+1];
@@ -5335,14 +5344,25 @@ function pickCharacter(key){
   }
   p1Key=key;
   p1Cfg=CHAR_DEFS[key];
-  // Build round-robin queue: all opponents except player, gnash always last
-  const others=Object.keys(CHAR_DEFS).filter(k=>k!==key&&k!=='gnash');
-  for(let i=others.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [others[i],others[j]]=[others[j],others[i]];
+  if(arcadeMode){
+    // 4 random non-boss opponents, then 4 fixed bosses in order
+    const pool=Object.keys(CHAR_DEFS).filter(k=>k!==key&&!ARCADE_BOSSES.includes(k));
+    for(let i=pool.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [pool[i],pool[j]]=[pool[j],pool[i]];
+    }
+    const earlyFoes=pool.slice(0,4);
+    const bossList=ARCADE_BOSSES.filter(k=>k!==key);
+    tournamentQueue=[...earlyFoes,...bossList];
+  } else {
+    // Iron Man: every opponent, fully randomised
+    const others=Object.keys(CHAR_DEFS).filter(k=>k!==key);
+    for(let i=others.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [others[i],others[j]]=[others[j],others[i]];
+    }
+    tournamentQueue=others;
   }
-  if(CHAR_DEFS['gnash']) others.push('gnash');
-  tournamentQueue=others;
   tournamentIndex=0;
   p2Key=tournamentQueue[0];
   p2Cfg=CHAR_DEFS[p2Key];
@@ -5517,7 +5537,12 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
 
   document.getElementById('btn-start').addEventListener('click',()=>{
-    trainingMode=false; twoPlayerMode=false; twoPlayerPhase=1;
+    trainingMode=false; twoPlayerMode=false; twoPlayerPhase=1; arcadeMode=true;
+    document.getElementById('char-player-label').style.display='none';
+    showScreen('char-screen');
+  });
+  document.getElementById('btn-ironman').addEventListener('click',()=>{
+    trainingMode=false; twoPlayerMode=false; twoPlayerPhase=1; arcadeMode=false;
     document.getElementById('char-player-label').style.display='none';
     showScreen('char-screen');
   });
