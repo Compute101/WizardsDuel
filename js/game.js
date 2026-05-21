@@ -1392,8 +1392,9 @@ function act(type){
     if(whoState.mana<spell.cost) return;
     if(whoState.frenzied>0) return;
     if(whoState.silence>0&&Math.random()<0.45){
+      gs.busy=true;
       showSilenceBlock(cx,bH*.33); anim(who,'cast',600);
-      endMyTurn(); return;
+      setTimeout(()=>endMyTurn(), 1200); return;
     }
     const launchers={
       fire:      launchPatternEcho,
@@ -1442,8 +1443,9 @@ function act(type){
     if(whoState.mana<charSpell.cost) return;
     if(charSpellBlocked(type,whoState,whoCfg,oppState)) return;
     if(charSpell.cost>0&&whoState.silence>0&&Math.random()<0.45){
+      gs.busy=true;
       showSilenceBlock(cx,bH*.33); anim(who,'cast',600);
-      endMyTurn(); return;
+      setTimeout(()=>endMyTurn(), 1200); return;
     }
     resolveCharSpell(type,who);
   }
