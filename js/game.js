@@ -2481,7 +2481,8 @@ function castSpell(spell,target,tx,ty,caster){
     targetState.mana=Math.max(0,targetState.mana-drained);
     targetState.hp=Math.max(0,targetState.hp-burnDmg);
     spawnParts(tx,ty,'#cc44ff',22); spawnParts(tx,ty,'#ff88ff',10);
-    gs.manaBurnFires.push({x:tx, y:ty, end:Date.now()+2800});
+    const mbFireX=caster==='p1'?bW*.78:bW*.22;
+    gs.manaBurnFires.push({x:mbFireX, y:ty, end:Date.now()+2800});
     addFloat(tx,ty,'-'+burnDmg,'#cc44ff',22);
     if(drained>0) addFloat(tx,ty+28,'🔮 −'+drained+' Mana','#cc44ff',14);
     flash('#cc44ff');
