@@ -1376,7 +1376,7 @@ function act(type){
       lightning: launchLightningPattern,
       ice:       launchIcePattern,
       arcane:    launchArcanePattern,
-      dispel:    launchArcanePattern,
+      dispel:    launchDispelPattern,
       manaburn:  launchLightningPattern,
     };
     const doLaunch=()=>{
@@ -4495,6 +4495,335 @@ function launchArcanePattern(spell,cb){
         } else {
           bgCol='#0d0020'; bgDark='#040008';
           strokeCol='#1e1030'; textCol='#2d1545';
+          blur=0; textAlpha=0.35;
+        }
+
+        mx.save();
+        mx.shadowColor=bgCol; mx.shadowBlur=blur;
+        const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,3,tp.x+TS/2,tp.y+TS/2,TS*.6);
+        tg.addColorStop(0,bgCol); tg.addColorStop(1,bgDark);
+        mx.fillStyle=tg;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.fill();
+        mx.shadowBlur=0;
+        mx.strokeStyle=strokeCol; mx.lineWidth=1.2;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.stroke();
+        mx.globalAlpha=textAlpha;
+        mx.fillStyle=textCol;
+        mx.font=`bold ${Math.round(TS*.42)}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(g.sym,tp.x+TS/2,tp.y+TS/2);
+        mx.restore();
+      }
+
+      // Status label
+      mx.fillStyle='#cc99ff';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
+
+      // Progress dots
+      const dotY=tileTop-10,dsp=14;
+      const ds=cw/2-(seq.length-1)*dsp/2;
+      for(let i=0;i<seq.length;i++){
+        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
+        if(i<playerSeq.length){mx.fillStyle='#cc99ff';mx.shadowColor='#cc99ff';mx.shadowBlur=6;}
+        else{mx.fillStyle='rgba(204,153,255,0.2)';mx.shadowBlur=0;}
+        mx.fill(); mx.shadowBlur=0;
+      }
+    }
+  }
+
+  function frame(){if(done)return;draw();mazeRAF=requestAnimationFrame(frame);}
+  showScreen('puzzle-screen');
+  mazeRAF=requestAnimationFrame(frame);
+}
+
+// ── PUZZLE: DISPEL PATTERN (Veil Unravelling) ─────────────────────────────
+function launchDispelPattern(spell,cb){
+  let done=false;
+  document.getElementById('pztitle').textContent='Veil Unravelling';
+  document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
+  setDpadVisible(false);
+
+  // ── Full 12-glyph Arcana Alphabet (grid order: 3 cols × 4 rows) ──────
+  // Indices: 0=ϟ 1=Δ 2=∇ 3=Ψ 4=Ω 5=∞ 6=☽ 7=✸ 8=⊕ 9=⊗ 10=θ 11=Φ
+  const ALPHABET=[
+    {sym:'ϟ',glowCol:'#ccffff'}, // 0
+    {sym:'Δ',glowCol:'#ff9944'}, // 1
+    {sym:'∇',glowCol:'#44aaff'}, // 2
+    {sym:'Ψ',glowCol:'#aaff88'}, // 3
+    {sym:'Ω',glowCol:'#ff4444'}, // 4
+    {sym:'∞',glowCol:'#44ffcc'}, // 5
+    {sym:'☽',glowCol:'#aaddff'}, // 6
+    {sym:'✸',glowCol:'#ffff55'}, // 7
+    {sym:'⊕',glowCol:'#ffee77'}, // 8
+    {sym:'⊗',glowCol:'#ff44aa'}, // 9
+    {sym:'θ',glowCol:'#88ff88'}, // 10
+    {sym:'Φ',glowCol:'#dd88ff'}, // 11
+  ];
+
+  // Dispel owns ∞(5) ⊕(8) ∇(2) θ(10) — see CLAUDE.md
+  const SPELL_IDX=[5,8,2,10];
+  const DISPEL_COLS=[
+    {col:'#1a0030',lit:'#cc88ff'}, // ∞ — violet
+    {col:'#2a1800',lit:'#ffcc66'}, // ⊕ — gold
+    {col:'#001520',lit:'#66aadd'}, // ∇ — slate blue
+    {col:'#001a15',lit:'#66cc99'}, // θ — mint
+  ];
+
+  // Canvas: 3-col × 4-row keyboard grid
+  const TS=72,GAP=6,PAD=10;
+  const cw=PAD*2+TS*3+GAP*2;  // 248 px
+  const ch=380;
+  mc.width=cw; mc.height=ch;
+  const mw=Math.min(cw,(window.innerWidth||360)-32);
+  mc.style.width=mw+'px'; mc.style.height='auto';
+
+  // Keyboard tile positions — bottom-aligned
+  const tileAreaH=TS*4+GAP*3;
+  const tileTop=ch-PAD-tileAreaH;
+  const tPos=Array.from({length:12},(_,i)=>({
+    x:PAD+(i%3)*(TS+GAP),
+    y:tileTop+Math.floor(i/3)*(TS+GAP),
+  }));
+
+  const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
+  const seq=diffName==='easy'
+    ?[5,8,2,10]  // canonical Dispel word: ∞ ⊕ ∇ θ
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
+  const playerSeq=[];
+  let phase='watch';
+  let timeLeft=Math.round(20*diffMult);
+
+  const timerEl=document.getElementById('pztimer');
+  timerEl.textContent='—'; timerEl.classList.remove('urgent');
+
+  // Watch phase center — upper portion of canvas
+  const cx=cw/2, cy=ch*0.40;
+
+  // Ring radii — inner scales slightly with sequence length to avoid crowding
+  const R_OUTER=110, R_MID=72;
+  const R_INNER=SEQ_LEN<=4?38:SEQ_LEN<=5?48:64;
+  const INNER_FONT=SEQ_LEN<=4?52:SEQ_LEN<=5?44:36;
+
+  // Layer fade timings (ms)
+  const OUTER_FADE_START=2000, OUTER_FADE_DUR=2000;  // outer fades 2–4 s
+  const MID_FADE_START=4500,   MID_FADE_DUR=2500;    // middle fades 4.5–7 s
+  const INNER_FADE_START=7500, INNER_FADE_DUR=2500;  // inner fades 7.5–10 s
+  const watchDuration=10500;
+  const startTime=Date.now();
+  let watchDone=false;
+
+  // Pre-generated static noise rings — random glyph symbols, evenly spread with tiny jitter
+  const outerNoise=Array.from({length:12},(_,i)=>({
+    ai:Math.floor(Math.random()*12),
+    angle:(i/12)*Math.PI*2+(Math.random()-0.5)*0.1,
+  }));
+  const midNoise=Array.from({length:8},(_,i)=>({
+    ai:Math.floor(Math.random()*12),
+    angle:(i/8)*Math.PI*2+(Math.random()-0.5)*0.15,
+  }));
+
+  // Inner ring: sequence glyphs, starting at top (−π/2), clockwise
+  const innerGlyphs=seq.map((ai,i)=>({
+    ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
+    angle:(i/SEQ_LEN)*Math.PI*2-Math.PI/2,
+    idx:i,
+  }));
+
+  function ringFade(elapsed,fadeStart,fadeDur){
+    if(elapsed<fadeStart) return 1;
+    if(elapsed>fadeStart+fadeDur) return 0;
+    return 1-(elapsed-fadeStart)/fadeDur;
+  }
+
+  function startTimer(){
+    if(mazeTid) clearInterval(mazeTid);
+    mazeTid=setInterval(()=>{
+      if(done) return;
+      timeLeft--; timerEl.textContent=timeLeft;
+      if(timeLeft<=5) timerEl.classList.add('urgent');
+      if(timeLeft<=0) finish(false);
+    },1000);
+  }
+
+  function onPointer(e){
+    if(done||phase!=='input') return;
+    e.preventDefault();
+    const rect=mc.getBoundingClientRect();
+    const sx=mc.width/rect.width,sy=mc.height/rect.height;
+    const px=(e.clientX-rect.left)*sx,py=(e.clientY-rect.top)*sy;
+    for(let ai=0;ai<12;ai++){
+      const tp=tPos[ai];
+      if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
+        const isSpell=SPELL_IDX.includes(ai);
+        if(!isSpell){
+          if(diffName==='hard') finish(false);
+          return;
+        }
+        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        playerSeq.push(ai);
+        if(playerSeq.length===seq.length) finish(true);
+        return;
+      }
+    }
+  }
+  mc.addEventListener('pointerdown',onPointer);
+
+  function cleanup(){
+    mc.removeEventListener('pointerdown',onPointer);
+    setDpadVisible(true);
+    if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
+    if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
+  }
+  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
+
+  function drawRingCircle(r,alpha){
+    if(alpha<=0.01) return;
+    mx.save();
+    mx.globalAlpha=alpha*0.10;
+    mx.strokeStyle='#c0b8d4';
+    mx.lineWidth=0.8;
+    mx.shadowBlur=0;
+    mx.beginPath(); mx.arc(cx,cy,r,0,Math.PI*2); mx.stroke();
+    mx.restore();
+  }
+
+  function draw(){
+    const t=Date.now();
+    const elapsed=t-startTime;
+    const rotT=elapsed/1000;
+
+    // Background — very dark, near-black with a faint cool tint
+    const bg=mx.createRadialGradient(cw/2,ch*.45,0,cw/2,ch*.45,cw*.85);
+    bg.addColorStop(0,'#0f0d16');
+    bg.addColorStop(0.65,'#090810');
+    bg.addColorStop(1,'#050408');
+    mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
+
+    if(phase==='watch'&&!watchDone&&elapsed>=watchDuration){
+      watchDone=true; phase='input';
+      timerEl.textContent=timeLeft; startTimer();
+    }
+
+    if(phase==='watch'){
+      const outerA=ringFade(elapsed,OUTER_FADE_START,OUTER_FADE_DUR);
+      const midA=ringFade(elapsed,MID_FADE_START,MID_FADE_DUR);
+      const innerA=ringFade(elapsed,INNER_FADE_START,INNER_FADE_DUR);
+
+      // Faint concentric circle guides — the onion skin boundaries
+      drawRingCircle(R_OUTER+14,outerA);
+      drawRingCircle(R_MID+12,midA);
+      drawRingCircle(R_INNER+18,innerA);
+
+      // Outer ring — slow clockwise rotation, fades first
+      if(outerA>0.01){
+        const rot=rotT*0.05;
+        mx.save();
+        mx.font='bold 18px serif';
+        mx.textAlign='center'; mx.textBaseline='middle';
+        outerNoise.forEach(g=>{
+          const a=g.angle+rot;
+          mx.globalAlpha=outerA*0.20;
+          mx.fillStyle='#bdb8cc';
+          mx.shadowBlur=0;
+          mx.fillText(ALPHABET[g.ai].sym,cx+R_OUTER*Math.cos(a),cy+R_OUTER*Math.sin(a));
+        });
+        mx.restore();
+      }
+
+      // Middle ring — counter-clockwise, slightly faster, fades second
+      if(midA>0.01){
+        const rot=-rotT*0.09;
+        mx.save();
+        mx.font='bold 24px serif';
+        mx.textAlign='center'; mx.textBaseline='middle';
+        midNoise.forEach(g=>{
+          const a=g.angle+rot;
+          mx.globalAlpha=midA*0.30;
+          mx.fillStyle='#ccc8dc';
+          mx.shadowBlur=0;
+          mx.fillText(ALPHABET[g.ai].sym,cx+R_MID*Math.cos(a),cy+R_MID*Math.sin(a));
+        });
+        mx.restore();
+      }
+
+      // Soft centre glow — drawn before inner glyphs so glyphs sit on top
+      if(innerA>0.01){
+        const grd=mx.createRadialGradient(cx,cy,0,cx,cy,R_INNER*0.8);
+        grd.addColorStop(0,`rgba(180,140,220,${0.06*innerA})`);
+        grd.addColorStop(1,'rgba(0,0,0,0)');
+        mx.fillStyle=grd; mx.fillRect(0,0,cw,ch);
+
+        // Inner ring — spell sequence glyphs, very slow rotation, fades last
+        const rot=rotT*0.03;
+        innerGlyphs.forEach(s=>{
+          const a=s.angle+rot;
+          const gx=cx+R_INNER*Math.cos(a);
+          const gy=cy+R_INNER*Math.sin(a);
+          const osc=Math.sin(t/1000+s.idx)*0.04;
+          mx.save();
+          mx.globalAlpha=innerA;
+          mx.translate(gx,gy); mx.rotate(osc);
+          mx.shadowColor=s.glowCol; mx.shadowBlur=30;
+          mx.fillStyle='#ffffff';
+          mx.font=`bold ${INNER_FONT}px serif`;
+          mx.textAlign='center'; mx.textBaseline='middle';
+          mx.fillText(s.sym,0,0);
+          mx.restore();
+          // Order badge
+          mx.save();
+          mx.globalAlpha=innerA;
+          mx.shadowColor='#eeddff'; mx.shadowBlur=8;
+          mx.fillStyle='#eeddff';
+          mx.font='bold 11px Cinzel,serif';
+          mx.textAlign='center'; mx.textBaseline='middle';
+          mx.fillText(s.idx+1,gx+20,gy-18);
+          mx.restore();
+        });
+        mx.globalAlpha=1; mx.shadowBlur=0;
+      }
+
+      mx.fillStyle='#cc99ee';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText('Watch the veil unravel!',cw/2,4);
+    }
+
+    if(phase==='input'){
+      // Ghost of the outer ring lingers very faintly
+      const rot=(elapsed/1000)*0.05;
+      mx.save();
+      mx.font='bold 18px serif';
+      mx.textAlign='center'; mx.textBaseline='middle';
+      outerNoise.forEach(g=>{
+        const a=g.angle+rot;
+        mx.globalAlpha=0.04;
+        mx.fillStyle='#bdb8cc';
+        mx.fillText(ALPHABET[g.ai].sym,cx+R_OUTER*Math.cos(a),cy+R_OUTER*Math.sin(a));
+      });
+      mx.restore();
+
+      // 12-glyph keyboard
+      const isHard=diffName==='hard';
+      for(let ai=0;ai<12;ai++){
+        const tp=tPos[ai];
+        const g=ALPHABET[ai];
+        const si=SPELL_IDX.indexOf(ai);
+        const isSpell=si!==-1;
+
+        let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
+        if(isHard){
+          bgCol='#1a0a2a'; bgDark='#0a0415';
+          strokeCol='#40186888'; textCol='#9966cc';
+          blur=4; textAlpha=1;
+        } else if(isSpell){
+          bgCol=DISPEL_COLS[si].col; bgDark='#030208';
+          strokeCol=DISPEL_COLS[si].col+'88'; textCol=DISPEL_COLS[si].lit;
+          blur=8; textAlpha=1;
+        } else {
+          bgCol='#0a0810'; bgDark='#050408';
+          strokeCol='#161220'; textCol='#261838';
           blur=0; textAlpha=0.35;
         }
 

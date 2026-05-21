@@ -36,8 +36,9 @@ Every spell's casting minigame uses glyphs from a shared 12-symbol alphabet. Thi
 | Lightning | lightning | `Ψ ∇ ⊗ ✸` | forked strike / descent / impact / burst |
 | Ice | ice | `θ Φ ☽ ∞` | crystal / polar axis / frost moon / eternal |
 | Arcane | arcane | `Ω ∞ Ψ θ` | cosmos / eternity / spirit / hidden |
+| Dispel | dispel | `∞ ⊕ ∇ θ` | eternal cycle / unbinding / descent / dissolution |
 
-Arcane deliberately shares one glyph with each other element — it's the underlying force of all magic, and the hardest set to memorise in hard mode.
+Arcane deliberately shares one glyph with each other element — it's the underlying force of all magic, and the hardest set to memorise in hard mode. Dispel similarly draws one glyph from each elemental set (∞ from Ice, ⊕ from Inferno, ∇ from Lightning, θ from Ice/Arcane), fitting its role as a universal spell that dissolves any type of magic.
 
 ### Planned future spells (not yet assigned)
 Suggested glyph sets for when these are implemented:
@@ -92,6 +93,7 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 | Lightning | Ψ ∇ ⊗ ✸ (in that order) |
 | Ice | θ Φ ☽ ∞ (in that order) |
 | Arcane | Ω ∞ Ψ θ (in that order) |
+| Dispel | ∞ ⊕ ∇ θ (in that order) |
 
 ---
 
@@ -100,10 +102,11 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 | Thing | File | Approx. lines |
 |-------|------|---------------|
 | All game logic | `js/game.js` | ~4000 |
-| Inferno minigame | `js/game.js` | 3071–3306 |
-| Lightning minigame | `js/game.js` | ~3308+ |
-| Ice minigame | `js/game.js` | further below |
-| Arcane minigame | `js/game.js` | further below |
+| Inferno minigame | `js/game.js` | ~3317 |
+| Lightning minigame | `js/game.js` | ~3597 |
+| Ice minigame | `js/game.js` | ~3944 |
+| Arcane minigame | `js/game.js` | ~4249 |
+| Dispel minigame | `js/game.js` | ~4541 |
 | Spell definitions | `characters.json` | whole file |
 | Puzzle screen HTML | `index.html` | ~174–193 |
 | Canvas styling | `css/style.css` | ~374–423 |
