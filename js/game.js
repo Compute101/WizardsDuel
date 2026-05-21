@@ -3010,7 +3010,7 @@ function doAI(){
     const dispelSpell=universalSpells.find(s=>s.element==='dispel');
     if(dispelSpell){
       const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
-      const oppHasKeyBuff=gs.p1.shield>0||gs.p1.foresight||gs.p1.resist>1||gs.p1.invisible>1||gs.p1.stoneskin>0||gs.p1.stonesoul>0;
+      const oppHasKeyBuff=gs.p1.shield>0||gs.p1.foresight||gs.p1.regen||gs.p1.resist>0||gs.p1.frostArmor>0||gs.p1.flameShield>0||gs.p1.empowered||gs.p1.ward>0||gs.p1.haste>0||gs.p1.blink>0||gs.p1.invisible>0||gs.p1.counter||gs.p1.stoneskin>0||gs.p1.stonesoul>0;
       if(needsCleanse||(oppHasKeyBuff&&Math.random()<0.35)){
         chosen=dispelSpell;
         dispelSelf=needsCleanse;
