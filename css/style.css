@@ -585,7 +585,58 @@ body {
 .sp-card[data-el="lightning"] { border-color: #ffee44; color: #ffff88; box-shadow: 0 0 14px rgba(255,238,68,0.25); }
 .sp-card[data-el="ice"]       { border-color: #88ddff; color: #aaeeff; box-shadow: 0 0 14px rgba(136,221,255,0.25); }
 .sp-card[data-el="arcane"]    { border-color: #cc88ff; color: #dd99ff; box-shadow: 0 0 14px rgba(204,136,255,0.3); }
+.sp-card[data-el="dispel"]   { border-color: #ffaaff; color: #ffccff; box-shadow: 0 0 14px rgba(255,170,255,0.3); }
+.sp-card[data-el="manaburn"] { border-color: #cc44ff; color: #dd88ff; box-shadow: 0 0 14px rgba(204,68,255,0.3); }
 .sp-cancel-btn { margin-top: 4px; width: 160px; padding: 10px 0; font-size: 13px; }
+
+/* ── DISPEL TARGET OVERLAY ── */
+#dispel-target-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78);
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+#dispel-target-overlay.active { display: flex; }
+#dispel-target-box {
+  background: #170028;
+  border: 2px solid #ffaaff;
+  border-radius: 12px;
+  padding: 24px 20px;
+  text-align: center;
+  width: calc(100% - 64px);
+  max-width: 280px;
+  box-shadow: 0 0 30px rgba(255,170,255,0.25);
+}
+.dt-title {
+  font-family: 'Cinzel', serif;
+  font-size: 13px; color: #ffccff;
+  margin-bottom: 4px;
+}
+.dt-sub {
+  font-size: 9px; color: rgba(255,204,255,0.5);
+  letter-spacing: 1px; text-transform: uppercase;
+  margin-bottom: 18px;
+}
+.dt-btn {
+  display: block; width: 100%;
+  margin-bottom: 10px;
+  border: 2px solid #ffaaff;
+  border-radius: 8px;
+  padding: 12px 8px 10px;
+  background: rgba(255,170,255,0.07);
+  color: #ffccff;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 11px; letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: background 0.12s;
+}
+.dt-btn:last-child { margin-bottom: 0; }
+.dt-btn:hover { background: rgba(255,170,255,0.18); }
+.dt-btn small { display: block; margin-top: 3px; font-size: 8px; opacity: 0.65; font-style: italic; text-transform: none; letter-spacing: 0; font-family: sans-serif; }
 
 /* ── STATUS BAR ── */
 #statusbar {

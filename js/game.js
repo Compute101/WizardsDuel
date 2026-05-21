@@ -11,7 +11,7 @@ const SPELLS=[
   {name:'Arcane Surge',   element:'arcane',    icon:'🌀', dmg:0,  cost:9,  col:'#cc88ff',
    effectLabel:'Wild: 15–55 damage'},
   {name:'Dispel',         element:'dispel',    icon:'🌸', dmg:0,  cost:5,  col:'#ffaaff',
-   effectLabel:'Cleanse 1 own debuff/hex; 70% strip one opp buff'},
+   effectLabel:'Choose: cleanse 1 own debuff, or 70% strip one opp buff'},
   {name:'Mana Burn',      element:'manaburn',  icon:'🔮', dmg:0,  cost:8,  col:'#cc44ff',
    effectLabel:'Deal 2× opp mana as dmg; drain 4 mana (pierces shields)'},
 ];
@@ -82,6 +82,7 @@ let tournamentIndex=0;    // index of current opponent in queue
 // ── STATE ──────────────────────────────────────────────────
 let gs={}, puzzleCB=null, aiTid=null;
 let bW=0, bH=0;
+let dispelSelf=false;
 let mazeRAF=null, mazeTid=null;
 let retryCountdownId=null;
 
@@ -1370,7 +1371,6 @@ function act(type){
       spawnParts(cx,bH*.38,'#9944cc',10); anim(who,'cast',600);
       endMyTurn(); return;
     }
-    gs.busy=true;
     const launchers={
       fire:      launchPatternEcho,
       lightning: launchLightningPattern,
@@ -1379,23 +1379,36 @@ function act(type){
       dispel:    launchArcanePattern,
       manaburn:  launchLightningPattern,
     };
-    launchers[type](spell, ok=>{
-      if(ok){
-        if(whoState.invisible>0){
-          whoState.invisible=0;
-          addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-        }
-        whoState.mana-=spell.cost;
-        spawnProj(cx,bH*.38,tx,bH*.38,spell.element,spell.col,()=>{
-          castSpell(spell,oppState,tx,bH*.38,who);
+    const doLaunch=()=>{
+      gs.busy=true;
+      launchers[type](spell, ok=>{
+        if(ok){
+          if(whoState.invisible>0){
+            whoState.invisible=0;
+            addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+          }
+          whoState.mana-=spell.cost;
+          if(type==='dispel'&&dispelSelf){
+            castSpell(spell,whoState,cx,bH*.38,who);
+            endMyTurn();
+          } else {
+            spawnProj(cx,bH*.38,tx,bH*.38,spell.element,spell.col,()=>{
+              castSpell(spell,oppState,tx,bH*.38,who);
+              endMyTurn();
+            });
+          }
+        } else {
+          addFloat(cx,bH*.33,'Fizzled!','#ff8844',13);
+          whoState.mana=Math.max(0,whoState.mana-1);
           endMyTurn();
-        });
-      } else {
-        addFloat(cx,bH*.33,'Fizzled!','#ff8844',13);
-        whoState.mana=Math.max(0,whoState.mana-1);
-        endMyTurn();
-      }
-    });
+        }
+      });
+    };
+    if(type==='dispel'){
+      showDispelTarget(selfTarget=>{ dispelSelf=selfTarget; doLaunch(); });
+    } else {
+      doLaunch();
+    }
     return;
   }
 
@@ -2325,58 +2338,63 @@ function castSpell(spell,target,tx,ty,caster){
   const targetCfg=target===gs.p1?p1Cfg:p2Cfg;
   const oppCfg   =caster==='p1'?p2Cfg:p1Cfg;
 
-  // Dispel: cleanse ONE random debuff/hex from caster + 40% chance to strip one opp buff
+  // Dispel: player chose to cleanse self OR strip one opp buff (dispelSelf flag set at targeting)
   if(spell.element==='dispel'){
-    const cx2=caster==='p1'?bW*.22:bW*.78;
-    const activeDebuffs=[];
-    ['agony','corruption','silence','burn','frozen','blizzard','vineWhip','timeDrain','conductivity','candle'].forEach(s=>{
-      if(casterState[s]) activeDebuffs.push(s);
-    });
-    const DEBUFF_NAMES={agony:'Agony',corruption:'Corruption',silence:'Silence',burn:'Burn',
-      frozen:'Freeze',blizzard:'Blizzard',vineWhip:'Vine Whip',timeDrain:'Time Drain',
-      conductivity:'Conductivity',candle:'Candle'};
-    spawnParts(cx2,ty,'#ffaaff',30); spawnParts(cx2,ty,'#ffffff',15);
-    if(activeDebuffs.length>0){
-      const cleansed=activeDebuffs[Math.floor(Math.random()*activeDebuffs.length)];
-      casterState[cleansed]=0;
-      addFloat(cx2,ty,'🌸 '+DEBUFF_NAMES[cleansed]+' Cleansed!','#ffaaff',18);
-    } else {
-      addFloat(cx2,ty,'🌸 Cleansed!','#ffaaff',20);
-    }
+    const casterX=caster==='p1'?bW*.22:bW*.78;
     flash('#ffaaff');
-    // Offensive strip: 40% chance to remove one random active buff from opponent
-    const oppBuffs=[];
-    if(targetState.shield>0)      oppBuffs.push('shield');
-    if(targetState.foresight)     oppBuffs.push('foresight');
-    if(targetState.regen)         oppBuffs.push('regen');
-    if(targetState.resist>0)      oppBuffs.push('resist');
-    if(targetState.frostArmor>0)  oppBuffs.push('frostArmor');
-    if(targetState.flameShield>0) oppBuffs.push('flameShield');
-    if(targetState.empowered)     oppBuffs.push('empowered');
-    if(targetState.ward>0)        oppBuffs.push('ward');
-    if(targetState.haste>0)       oppBuffs.push('haste');
-    if(targetState.blink>0)       oppBuffs.push('blink');
-    if(targetState.invisible>0)   oppBuffs.push('invisible');
-    if(targetState.counter)       oppBuffs.push('counter');
-    if(targetState.stoneskin>0)   oppBuffs.push('stoneskin');
-    if(targetState.stonesoul>0)   oppBuffs.push('stonesoul');
-    if(oppBuffs.length>0){
-      if(Math.random()<0.70){
-        const stripped=oppBuffs[Math.floor(Math.random()*oppBuffs.length)];
-        if(stripped==='shield'){targetState.shield=0; targetState.shieldHp=0;}
-        else if(stripped==='foresight') targetState.foresight=false;
-        else if(stripped==='regen')     targetState.regen=null;
-        else if(stripped==='empowered') targetState.empowered=false;
-        else if(stripped==='counter')   targetState.counter=false;
-        else targetState[stripped]=0;
-        const BUFF_NAMES={shield:'Shield',foresight:'Foresight',regen:'Regen',resist:'Resist',
-          frostArmor:'Frost Armor',flameShield:'Flame Shield',empowered:'Empower',
-          ward:'Ward',haste:'Haste',blink:'Blink',invisible:'Vanish',counter:'Counter',
-          stoneskin:'Stoneskin',stonesoul:'Stonesoul'};
-        spawnParts(tx,ty,'#ffaaff',18);
-        addFloat(tx,ty,'🌸 '+BUFF_NAMES[stripped]+' Stripped!','#ffaaff',14);
+    if(dispelSelf){
+      const DEBUFF_NAMES={agony:'Agony',corruption:'Corruption',silence:'Silence',burn:'Burn',
+        frozen:'Freeze',blizzard:'Blizzard',vineWhip:'Vine Whip',timeDrain:'Time Drain',
+        conductivity:'Conductivity',candle:'Candle'};
+      const activeDebuffs=[];
+      ['agony','corruption','silence','burn','frozen','blizzard','vineWhip','timeDrain','conductivity','candle'].forEach(s=>{
+        if(casterState[s]) activeDebuffs.push(s);
+      });
+      spawnParts(casterX,bH*.38,'#ffaaff',30); spawnParts(casterX,bH*.38,'#ffffff',15);
+      if(activeDebuffs.length>0){
+        const cleansed=activeDebuffs[Math.floor(Math.random()*activeDebuffs.length)];
+        casterState[cleansed]=0;
+        addFloat(casterX,bH*.38,'🌸 '+DEBUFF_NAMES[cleansed]+' Cleansed!','#ffaaff',18);
       } else {
-        addFloat(tx,ty,'🌸 Resisted!','#cc88aa',13);
+        addFloat(casterX,bH*.38,'🌸 Nothing to Cleanse!','#cc88aa',18);
+      }
+    } else {
+      const BUFF_NAMES={shield:'Shield',foresight:'Foresight',regen:'Regen',resist:'Resist',
+        frostArmor:'Frost Armor',flameShield:'Flame Shield',empowered:'Empower',
+        ward:'Ward',haste:'Haste',blink:'Blink',invisible:'Vanish',counter:'Counter',
+        stoneskin:'Stoneskin',stonesoul:'Stonesoul'};
+      const oppBuffs=[];
+      if(targetState.shield>0)      oppBuffs.push('shield');
+      if(targetState.foresight)     oppBuffs.push('foresight');
+      if(targetState.regen)         oppBuffs.push('regen');
+      if(targetState.resist>0)      oppBuffs.push('resist');
+      if(targetState.frostArmor>0)  oppBuffs.push('frostArmor');
+      if(targetState.flameShield>0) oppBuffs.push('flameShield');
+      if(targetState.empowered)     oppBuffs.push('empowered');
+      if(targetState.ward>0)        oppBuffs.push('ward');
+      if(targetState.haste>0)       oppBuffs.push('haste');
+      if(targetState.blink>0)       oppBuffs.push('blink');
+      if(targetState.invisible>0)   oppBuffs.push('invisible');
+      if(targetState.counter)       oppBuffs.push('counter');
+      if(targetState.stoneskin>0)   oppBuffs.push('stoneskin');
+      if(targetState.stonesoul>0)   oppBuffs.push('stonesoul');
+      spawnParts(tx,ty,'#ffaaff',20);
+      if(oppBuffs.length>0){
+        if(Math.random()<0.70){
+          const stripped=oppBuffs[Math.floor(Math.random()*oppBuffs.length)];
+          if(stripped==='shield'){targetState.shield=0; targetState.shieldHp=0;}
+          else if(stripped==='foresight') targetState.foresight=false;
+          else if(stripped==='regen')     targetState.regen=null;
+          else if(stripped==='empowered') targetState.empowered=false;
+          else if(stripped==='counter')   targetState.counter=false;
+          else targetState[stripped]=0;
+          spawnParts(tx,ty,'#ffffff',10);
+          addFloat(tx,ty,'🌸 '+BUFF_NAMES[stripped]+' Stripped!','#ffaaff',14);
+        } else {
+          addFloat(tx,ty,'🌸 Resisted!','#cc88aa',13);
+        }
+      } else {
+        addFloat(tx,ty,'🌸 No Buffs to Strip!','#cc88aa',13);
       }
     }
     if(caster==='p1'){anim('p1','cast',800);}else{anim('p2','cast',800);}
@@ -2954,7 +2972,10 @@ function doAI(){
     if(dispelSpell){
       const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
       const oppHasKeyBuff=gs.p1.shield>0||gs.p1.foresight||gs.p1.resist>1||gs.p1.invisible>1||gs.p1.stoneskin>0||gs.p1.stonesoul>0;
-      if(needsCleanse||(oppHasKeyBuff&&Math.random()<0.35)) chosen=dispelSpell;
+      if(needsCleanse||(oppHasKeyBuff&&Math.random()<0.35)){
+        chosen=dispelSpell;
+        dispelSelf=needsCleanse;
+      }
     }
   }
   // Use Mana Burn when player is mana-rich (strong as catchup, weak when opponent already starved)
@@ -3036,11 +3057,16 @@ function doAI(){
     tickStatuses(ai);
     if(Math.random()<0.8){
       ai.mana-=chosen.cost;
-      spawnProj(bW*.78,bH*.38,bW*.22,bH*.38,chosen.element,chosen.col,()=>{
-        if(!battleRunning) return;
-        castSpell(chosen,gs.p1,bW*.22,bH*.38,'p2');
+      if(chosen.element==='dispel'&&dispelSelf){
+        castSpell(chosen,gs.p2,bW*.78,bH*.38,'p2');
         finishAI();
-      });
+      } else {
+        spawnProj(bW*.78,bH*.38,bW*.22,bH*.38,chosen.element,chosen.col,()=>{
+          if(!battleRunning) return;
+          castSpell(chosen,gs.p1,bW*.22,bH*.38,'p2');
+          finishAI();
+        });
+      }
     } else {
       addFloat(bW*.78,bH*.33,'Fizzled!','#ff8844',12);
       ai.mana=Math.max(0,ai.mana-1);
@@ -4517,6 +4543,18 @@ function flash(col){
   const el=document.getElementById('flash');
   el.style.background=col; el.classList.add('on');
   setTimeout(()=>el.classList.remove('on'),120);
+}
+
+// ── DISPEL TARGET SELECTION ────────────────────────────────
+function showDispelTarget(cb){
+  const overlay=document.getElementById('dispel-target-overlay');
+  overlay.classList.add('active');
+  document.getElementById('dt-self').addEventListener('click',()=>{
+    overlay.classList.remove('active'); cb(true);
+  },{once:true});
+  document.getElementById('dt-opp').addEventListener('click',()=>{
+    overlay.classList.remove('active'); cb(false);
+  },{once:true});
 }
 
 // ── ACTION BAR SETUP ───────────────────────────────────────
