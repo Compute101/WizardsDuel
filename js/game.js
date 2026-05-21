@@ -4422,7 +4422,7 @@ function launchArcanePattern(spell,cb){
         }
         if(!s.spawned) return;
         s.x+=DRIFT_SPEED;
-        if(s.x>cw+30) s.x=-30;  // loop: reappear from the left
+        if(s.x>cw+30) return;  // drifted off-screen — don't wrap
 
         let alpha=1;
         if(s.x<50) alpha=Math.max(0,(s.x+30)/80);
