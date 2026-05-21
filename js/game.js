@@ -1317,6 +1317,7 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
 // ── PLAYER ACTIONS ─────────────────────────────────────────
 function act(type){
   if(!gs.myTurn||gs.busy) return;
+  resizeBC();
 
   const who=twoPlayerMode?gs.turnPlayer:'p1';
   const whoCfg=who==='p1'?p1Cfg:p2Cfg;
