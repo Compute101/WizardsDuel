@@ -430,6 +430,7 @@ body {
 }
 .wname.p1 { color:#4af0ff; }
 .wname.p2 { color:#ff4a6e; }
+.shico-row { display: flex; flex-direction: row; gap: 3px; align-items: center; }
 .shico { font-size: 11px; }
 .ctrico { color: #ffd700; opacity: 0.18; transition: opacity 0.2s; }
 .ctrico.active { opacity: 1; text-shadow: 0 0 6px #ffd700; }
