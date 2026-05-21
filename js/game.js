@@ -121,6 +121,8 @@ function newState(){
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  const pzExit=document.getElementById('btn-pz-exit');
+  if(pzExit) pzExit.style.display=(id==='puzzle-screen'&&trainingMode)?'':'none';
 }
 
 // ── TOURNAMENT BRACKET ─────────────────────────────────────
@@ -5574,14 +5576,16 @@ window.addEventListener('DOMContentLoaded', ()=>{
     p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key];
     startTrainingBattle();
   });
-  document.getElementById('btn-training-menu').addEventListener('click',()=>{
+  function exitTrainingToMenu(){
     if(aiTid){ clearTimeout(aiTid); aiTid=null; }
     if(mazeRAF){ cancelAnimationFrame(mazeRAF); mazeRAF=null; }
     if(mazeTid){ clearInterval(mazeTid); mazeTid=null; }
     battleRunning=false; gameEnded=false; trainingMode=false;
     document.getElementById('btn-training-menu').style.display='none';
     showScreen('title-screen');
-  });
+  }
+  document.getElementById('btn-training-menu').addEventListener('click', exitTrainingToMenu);
+  document.getElementById('btn-pz-exit').addEventListener('click', exitTrainingToMenu);
   document.getElementById('btn-back').addEventListener('click',()=>{
     if(trainingMode){
       trainingPickPhase=null;
