@@ -2350,7 +2350,13 @@ function castSpell(spell,target,tx,ty,caster){
       ['agony','corruption','silence','burn','frozen','blizzard','vineWhip','timeDrain','conductivity','candle'].forEach(s=>{
         if(casterState[s]) activeDebuffs.push(s);
       });
-      spawnParts(casterX,bH*.38,'#ffaaff',30); spawnParts(casterX,bH*.38,'#ffffff',15);
+      spawnParts(casterX,bH*.38,'#ffaaff',30);
+      for(let i=0;i<32;i++){
+        const a=-Math.PI/2+(-0.55+Math.random()*1.1), sp=0.6+Math.random()*1.8;
+        gs.parts.push({x:casterX+(Math.random()-.5)*bH*.08,y:bH*.38+(Math.random()-.5)*bH*.05,
+          col:i%4===0?'#ffddee':'#ffffff',
+          vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*3,life:1,dec:.010+Math.random()*.009,noGrav:true});
+      }
       if(activeDebuffs.length>0){
         const cleansed=activeDebuffs[Math.floor(Math.random()*activeDebuffs.length)];
         casterState[cleansed]=0;
@@ -2388,7 +2394,12 @@ function castSpell(spell,target,tx,ty,caster){
           else if(stripped==='empowered') targetState.empowered=false;
           else if(stripped==='counter')   targetState.counter=false;
           else targetState[stripped]=0;
-          spawnParts(tx,ty,'#ffffff',10);
+          for(let i=0;i<28;i++){
+            const a=-Math.PI/2+(-0.55+Math.random()*1.1), sp=0.7+Math.random()*1.8;
+            gs.parts.push({x:tx+(Math.random()-.5)*bH*.08,y:ty+(Math.random()-.5)*bH*.05,
+              col:i%4===0?'#ffddee':'#ffffff',
+              vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*3,life:1,dec:.010+Math.random()*.009,noGrav:true});
+          }
           addFloat(tx,ty,'🌸 '+BUFF_NAMES[stripped]+' Stripped!','#ffaaff',14);
         } else {
           addFloat(tx,ty,'🌸 Resisted!','#cc88aa',13);
