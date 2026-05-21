@@ -2388,6 +2388,7 @@ function castSpell(spell,target,tx,ty,caster){
         addFloat(casterX,bH*.38,'🌸 Nothing to Cleanse!','#cc88aa',18);
       }
     } else {
+      const dispelTargetX=caster==='p1'?bW*.78:bW*.22;
       const BUFF_NAMES={shield:'Shield',foresight:'Foresight',regen:'Regen',resist:'Resist',
         frostArmor:'Frost Armor',flameShield:'Flame Shield',empowered:'Empower',
         ward:'Ward',haste:'Haste',blink:'Blink',invisible:'Vanish',counter:'Counter',
@@ -2407,7 +2408,7 @@ function castSpell(spell,target,tx,ty,caster){
       if(targetState.counter)       oppBuffs.push('counter');
       if(targetState.stoneskin>0)   oppBuffs.push('stoneskin');
       if(targetState.stonesoul>0)   oppBuffs.push('stonesoul');
-      spawnParts(tx,ty,'#ffaaff',20);
+      spawnParts(dispelTargetX,ty,'#ffaaff',20);
       if(oppBuffs.length>0){
         if(Math.random()<0.70){
           const stripped=oppBuffs[Math.floor(Math.random()*oppBuffs.length)];
@@ -2419,16 +2420,16 @@ function castSpell(spell,target,tx,ty,caster){
           else targetState[stripped]=0;
           for(let i=0;i<28;i++){
             const a=-Math.PI/2+(-0.55+Math.random()*1.1), sp=0.7+Math.random()*1.8;
-            gs.parts.push({x:tx+(Math.random()-.5)*bH*.08,y:ty+(Math.random()-.5)*bH*.05,
+            gs.parts.push({x:dispelTargetX+(Math.random()-.5)*bH*.08,y:ty+(Math.random()-.5)*bH*.05,
               col:i%4===0?'#ffddee':'#ffffff',
               vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*3,life:1,dec:.010+Math.random()*.009,noGrav:true});
           }
-          addFloat(tx,ty,'🌸 '+BUFF_NAMES[stripped]+' Stripped!','#ffaaff',14);
+          addFloat(dispelTargetX,ty,'🌸 '+BUFF_NAMES[stripped]+' Stripped!','#ffaaff',14);
         } else {
-          addFloat(tx,ty,'🌸 Resisted!','#cc88aa',13);
+          addFloat(dispelTargetX,ty,'🌸 Resisted!','#cc88aa',13);
         }
       } else {
-        addFloat(tx,ty,'🌸 No Buffs to Strip!','#cc88aa',13);
+        addFloat(dispelTargetX,ty,'🌸 No Buffs to Strip!','#cc88aa',13);
       }
     }
     if(caster==='p1'){anim('p1','cast',800);}else{anim('p2','cast',800);}
