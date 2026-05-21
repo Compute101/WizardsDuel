@@ -938,6 +938,15 @@ body {
   animation: bpArrive 0.55s cubic-bezier(0.22,1,0.36,1) forwards !important;
 }
 
+/* ── IRON MAN MODE ── */
+.btn-ironman {
+  background: linear-gradient(135deg, #1a4a1a, #2a6a2a);
+  border-color: #66ff88;
+  color: #66ff88;
+  box-shadow: 0 0 18px rgba(102,255,136,0.25);
+}
+.btn-ironman:hover { box-shadow: 0 0 28px rgba(102,255,136,0.45); }
+
 /* ── 2 PLAYER MODE ── */
 .btn-2p {
   background: linear-gradient(135deg, #1a3a8a, #3a5aaa);
