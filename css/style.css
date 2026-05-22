@@ -938,6 +938,14 @@ body {
   animation: bpArrive 0.55s cubic-bezier(0.22,1,0.36,1) forwards !important;
 }
 
+/* ── DUEL MAIN BUTTON ── */
+.btn-duel-main {
+  background: linear-gradient(135deg, #7a1aaa, #aa3abb);
+  border-color: #f0cc6a;
+  box-shadow: 0 0 22px rgba(201,168,76,0.4);
+}
+.btn-duel-main:hover { box-shadow: 0 0 32px rgba(201,168,76,0.65); }
+
 /* ── IRON MAN MODE ── */
 .btn-ironman {
   background: linear-gradient(135deg, #1a4a1a, #2a6a2a);

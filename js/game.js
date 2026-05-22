@@ -5538,17 +5538,27 @@ window.addEventListener('DOMContentLoaded', ()=>{
     });
   });
 
-  document.getElementById('btn-start').addEventListener('click',()=>{
+  const duelOverlay=document.getElementById('duel-overlay');
+  document.getElementById('btn-duel').addEventListener('click',()=>{
+    duelOverlay.style.display='flex';
+  });
+  document.getElementById('btn-duel-back').addEventListener('click',()=>{
+    duelOverlay.style.display='none';
+  });
+  document.getElementById('btn-duel-arcade').addEventListener('click',()=>{
+    duelOverlay.style.display='none';
     trainingMode=false; twoPlayerMode=false; twoPlayerPhase=1; arcadeMode=true;
     document.getElementById('char-player-label').style.display='none';
     showScreen('char-screen');
   });
-  document.getElementById('btn-ironman').addEventListener('click',()=>{
+  document.getElementById('btn-duel-ironman').addEventListener('click',()=>{
+    duelOverlay.style.display='none';
     trainingMode=false; twoPlayerMode=false; twoPlayerPhase=1; arcadeMode=false;
     document.getElementById('char-player-label').style.display='none';
     showScreen('char-screen');
   });
-  document.getElementById('btn-2player').addEventListener('click',()=>{
+  document.getElementById('btn-duel-2player').addEventListener('click',()=>{
+    duelOverlay.style.display='none';
     trainingMode=false; twoPlayerMode=true; twoPlayerPhase=1;
     const lbl=document.getElementById('char-player-label');
     lbl.textContent='Player 1: Choose Your Wizard';
@@ -5655,7 +5665,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     pickCharacter(key);
   });
 
-  document.getElementById('btn-help').addEventListener('click',()=>{
+  document.getElementById('btn-tutorial').addEventListener('click',()=>{
     document.getElementById('helpmodal').style.display='flex';
   });
   document.getElementById('btn-closehelp').addEventListener('click',()=>{
