@@ -42,7 +42,7 @@ const CHAR_DISPLAY={
     stats:[['❤ HP','105'],['🩸 War Paint','3 mana → 33% resist / 5T'],['⚔️ Charge','15 HP → 32 pierce all'],['💢 Frenzy','15 HP → 3× rapid strikes']],
     flavour:'Blood and bone. No magic — just fury.'
   },
-  emberic:{
+  cinder:{
     stats:[['❤ HP','83'],['🎱 Fireball','18–28 random fire dmg'],['🛡️ Flame Shield','16 fire retaliate / 5T'],['🕯️ Candle','Channel → catch fire / 4T']],
     flavour:'Roll the dice. Fan the flames. Win big or burn together.'
   },
@@ -219,7 +219,7 @@ function resizeBC(){
 function drawBG(){
   ({eldrad:drawBG_moonlight,mal:drawBG_hellfire,sylvara:drawBG_forest,
     aurelia:drawBG_dawn,gnash:drawBG_storm,ponder:drawBG_astral,
-    skadi:drawBG_winter,emberic:drawBG_embers,zacharius:drawBG_arc,mary:drawBG_holy,mordant:drawBG_abyss,
+    skadi:drawBG_winter,cinder:drawBG_embers,zacharius:drawBG_arc,mary:drawBG_holy,mordant:drawBG_abyss,
     durin:drawBG_stone}[p2Key]||drawBG_moonlight)();
 }
 
@@ -5649,7 +5649,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-aurelia').addEventListener('click',()=>showWizardDetail('aurelia'));
   document.getElementById('pick-gnash').addEventListener('click',()=>showWizardDetail('gnash'));
   document.getElementById('pick-skadi').addEventListener('click',()=>showWizardDetail('skadi'));
-  document.getElementById('pick-emberic').addEventListener('click',()=>showWizardDetail('emberic'));
+  document.getElementById('pick-cinder').addEventListener('click',()=>showWizardDetail('cinder'));
   document.getElementById('pick-zacharius').addEventListener('click',()=>showWizardDetail('zacharius'));
   document.getElementById('pick-mary').addEventListener('click',()=>showWizardDetail('mary'));
   document.getElementById('pick-mordant').addEventListener('click',()=>showWizardDetail('mordant'));
