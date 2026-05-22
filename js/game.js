@@ -39,7 +39,7 @@ const CHAR_DISPLAY={
     flavour:'Bend time — foresee attacks and drain your foe.'
   },
   gnash:{
-    stats:[['❤ HP','105'],['🩸 War Paint','3 mana → 33% resist / 5T'],['⚔️ Charge','15 HP → 32 pierce all'],['💢 Frenzy','15 HP → 3× rapid strikes']],
+    stats:[['❤ HP','105'],['🩸 War Paint','3 mana → 33% resist + reduces self-harm / 5T'],['⚔️ Charge','15 HP (10 w/ War Paint) → 32 pierce all'],['💢 Frenzy','15 HP (10 w/ War Paint) → 3× rapid strikes']],
     flavour:'Blood and bone. No magic — just fury.'
   },
   cinder:{
@@ -1321,14 +1321,20 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='foresight')  return casterState.foresight;
   if(spellId==='timedrain')  return targetState.timeDrain>0;
   if(spellId==='warpaint')   return casterState.resist>0;
-  if(spellId==='charge')    return casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='charge'){
+    const cost=casterState.resist>0?Math.round((casterCfg.frenzyHpCost||15)*0.67):(casterCfg.frenzyHpCost||15);
+    return casterState.hp<=cost;
+  }
   if(spellId==='vanish')     return casterState.invisible>0;
   if(spellId==='manasiphon') return !casterState.invisible||targetState.mana<=0;
   if(spellId==='ward')       return casterState.ward>0;
   if(spellId==='drain')      return false;
   if(spellId==='vinewhip')   return targetState.vineWhip>0;
   if(spellId==='haste')      return casterState.haste>0;
-  if(spellId==='frenzy')     return casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='frenzy'){
+    const cost=casterState.resist>0?Math.round((casterCfg.frenzyHpCost||15)*0.67):(casterCfg.frenzyHpCost||15);
+    return casterState.hp<=cost;
+  }
   if(spellId==='blink')      return casterState.blink>0;
   if(spellId==='icelance')    return false;
   if(spellId==='frostarmor')  return casterState.frostArmor>0;
@@ -1608,7 +1614,8 @@ function resolveCharSpell(spellId,caster){
     anim(caster,'shield',700);
     refreshHUD();
   } else if(spellId==='charge'){
-    casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
+    const chargeSelfCost=casterState.resist>0?Math.round(casterCfg.frenzyHpCost*0.67):casterCfg.frenzyHpCost;
+    casterState.hp=Math.max(1,casterState.hp-chargeSelfCost);
     if(casterState.invisible>0){
       casterState.invisible=0;
       addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
@@ -1768,7 +1775,8 @@ function resolveCharSpell(spellId,caster){
     }
     anim(caster,'cast',700);
   } else if(spellId==='frenzy'){
-    casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
+    const frenzySelfCost=casterState.resist>0?Math.round(casterCfg.frenzyHpCost*0.67):casterCfg.frenzyHpCost;
+    casterState.hp=Math.max(1,casterState.hp-frenzySelfCost);
     if(casterState.invisible>0){
       casterState.invisible=0;
       addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
