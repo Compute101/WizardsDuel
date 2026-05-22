@@ -43,7 +43,7 @@ const CHAR_DISPLAY={
     flavour:'Blood and bone. No magic — just fury.'
   },
   emberic:{
-    stats:[['❤ HP','83'],['🎱 Fireball','10–26 random fire dmg'],['🛡️ Flame Shield','6–12 fire retaliate / 5T'],['🕯️ Candle','Channel → catch fire / 4T']],
+    stats:[['❤ HP','83'],['🎱 Fireball','18–28 random fire dmg'],['🛡️ Flame Shield','16 fire retaliate / 5T'],['🕯️ Candle','Channel → catch fire / 4T']],
     flavour:'Roll the dice. Fan the flames. Win big or burn together.'
   },
   skadi:{
@@ -1794,7 +1794,7 @@ function resolveCharSpell(spellId,caster){
       casterState.invisible=0;
       addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
     }
-    const baseRoll=10+Math.floor(Math.random()*17);
+    const baseRoll=16+Math.floor(Math.random()*9);
     let dmg=Math.round(baseRoll*casterCfg.dmgMult);
     if(targetState.foresight){
       addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
@@ -2690,7 +2690,7 @@ function applyDischarge(targetState,casterState,casterX,targetX){
 }
 
 function applyFlameShieldRetaliation(casterState,cx){
-  const fireDmg=6+Math.floor(Math.random()*7);
+  const fireDmg=16;
   casterState.hp=Math.max(0,casterState.hp-fireDmg);
   addFloat(cx,bH*.33,'🔥 Flame! −'+fireDmg,'#ff6622',12);
   spawnParts(cx,bH*.38,'#ff6600',8);
