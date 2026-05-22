@@ -863,11 +863,12 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.shadowBlur=0; bx.globalAlpha=1; bx.restore();
   }
   if(state&&state.charge>0){
-    for(let i=0;i<6;i++){
-      const a=t/500+i/6*Math.PI*2, r=sz*(0.72+0.08*Math.sin(t/300+i));
-      bx.globalAlpha=0.6+0.3*Math.sin(t/220+i*1.5);
+    const n=state.charge;
+    for(let i=0;i<n;i++){
+      const a=t/700+i/n*Math.PI*2, r=sz*(0.78+0.06*Math.sin(t/300+i));
+      bx.globalAlpha=0.55+0.3*Math.sin(t/220+i*1.3);
       bx.fillStyle=i%2?'#aaff44':'#88ffcc'; bx.shadowColor='#aaff44'; bx.shadowBlur=6;
-      bx.beginPath(); bx.arc(x+Math.cos(a)*r,wy+Math.sin(a)*r*0.5,sz*.032,0,Math.PI*2); bx.fill();
+      bx.beginPath(); bx.arc(x+Math.cos(a)*r,wy+Math.sin(a)*r*0.5,sz*.025,0,Math.PI*2); bx.fill();
     }
     bx.globalAlpha=1; bx.shadowBlur=0;
   }
