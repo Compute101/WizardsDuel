@@ -42,7 +42,7 @@ const CHAR_DISPLAY={
     stats:[['❤ HP','105'],['🩸 War Paint','3 mana → 33% resist / 5T'],['⚔️ Charge','15 HP → 32 pierce all'],['💢 Frenzy','15 HP → 3× rapid strikes']],
     flavour:'Blood and bone. No magic — just fury.'
   },
-  emberic:{
+  cinder:{
     stats:[['❤ HP','83'],['🎱 Fireball','18–28 random fire dmg'],['🛡️ Flame Shield','16 fire retaliate / 5T'],['🕯️ Candle','Channel → catch fire / 4T']],
     flavour:'Roll the dice. Fan the flames. Win big or burn together.'
   },
@@ -219,7 +219,7 @@ function resizeBC(){
 function drawBG(){
   ({eldrad:drawBG_moonlight,mal:drawBG_hellfire,sylvara:drawBG_forest,
     aurelia:drawBG_dawn,gnash:drawBG_storm,ponder:drawBG_astral,
-    skadi:drawBG_winter,emberic:drawBG_embers,zacharius:drawBG_arc,mary:drawBG_holy,mordant:drawBG_abyss,
+    skadi:drawBG_winter,cinder:drawBG_embers,zacharius:drawBG_arc,mary:drawBG_holy,mordant:drawBG_abyss,
     durin:drawBG_stone}[p2Key]||drawBG_moonlight)();
 }
 
@@ -1061,7 +1061,7 @@ function spawnParts(x,y,col,n=16){
 function tickFloats(){
   gs.floats=gs.floats.filter(f=>f.life>0);
   gs.floats.forEach(f=>{
-    f.y-=1.1; f.life-=.016;
+    f.y-=0.55; f.life-=.016;
     bx.globalAlpha=Math.min(1,f.life*3); bx.fillStyle=f.col;
     bx.font=`bold ${f.sz}px Cinzel,serif`; bx.textAlign='center';
     bx.shadowColor=f.col; bx.shadowBlur=10;
@@ -5530,15 +5530,15 @@ function startTrainingBattle(){
 // ── TUTORIAL ─────────────────────────────────────────────────────────────────
 const CHAR_COLORS_TUT={
   eldrad:'#4af0ff',mal:'#ff4a6e',sylvara:'#44cc88',aurelia:'#ffcc44',
-  gnash:'#dd8822',emberic:'#ff6600',skadi:'#88ddff',zacharius:'#aaff44',
+  gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zacharius:'#aaff44',
   mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040'
 };
 const CHAR_NAMES_TUT={
   eldrad:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
-  gnash:'Gnash',emberic:'Emberic',skadi:'Skadi',zacharius:'Zacharius',
+  gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zacharius',
   mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin'
 };
-const CHAR_KEYS_TUT=['eldrad','mal','sylvara','aurelia','gnash','emberic','skadi','zacharius','mary','mordant','ponder','durin'];
+const CHAR_KEYS_TUT=['eldrad','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin'];
 
 const TUTORIAL_TOPICS=[
   {id:'welcome',     label:'Welcome'},
@@ -5638,11 +5638,12 @@ const TUTORIAL_CONVOS={
     {key:'gnash',text:"Frenzy — also costs 15 HP. Three rapid strikes, fast fast fast! Gnash run out of mana? Fine. Gnash still has HP to spend. HP IS mana to Gnash!"},
     {key:'gnash',text:"Little mage thinks Gnash simple? Gnash simple but Gnash EFFECTIVE. You run out of spells. Gnash never runs out of fists."},
   ],
-  emberic:[
-    {key:'emberic',text:"Fireball. My favourite. Rolls 18 to 28 damage — sometimes barely a singe, sometimes the whole arena goes up. That's the game. You love it or you play someone boring."},
-    {key:'emberic',text:"Flame Shield is my reliable piece — 3 mana, and for 5 turns anyone who hits me takes 16 fire damage right back. Suddenly they think twice about throwing punches."},
-    {key:'emberic',text:"Candle is the crowd-pleaser. 2 mana, 3 turns — my opponent catches fire every time they channel. You want mana? It'll cost you. Suddenly nobody wants to channel at all."},
-    {key:'emberic',text:"Ember is my free attack. About 9 damage. Nothing special — I save my excitement for the real plays. 83 HP, 7 starting mana. I live fast and I burn bright."},
+  cinder:[
+    {key:'cinder',text:"You thought the heat would break me? I am the heat. 83 HP, 7 starting mana. I hit hard, I hit fast, and if the fire takes us both — well, I was born in it."},
+    {key:'cinder',text:"Fireball rolls 18 to 28 damage. Sometimes barely a singe, sometimes the arena goes up. Roll the dice, fan the flames, and never bet against fire."},
+    {key:'cinder',text:"Flame Shield is 3 mana — for 5 turns, anyone who strikes me takes 16 fire damage back. You want to throw punches at me? Go ahead. I want you to."},
+    {key:'cinder',text:"Candle is 2 mana. For 3 turns, my opponent catches fire every time they channel. Suddenly the safe move isn't safe anymore. That's when the fun starts."},
+    {key:'cinder',text:"Ember is my free attack — about 9 damage. Nothing flashy. I save the spectacle for when it counts. Still smouldering. Still standing."},
   ],
   skadi:[
     {key:'skadi',text:"Patience. That is the first lesson. The cold does not rush. I have 88 HP and 6 mana, and I am content to let the fight come to me."},
@@ -5652,10 +5653,11 @@ const TUTORIAL_CONVOS={
     {key:'skadi',text:"The permafrost claims all things eventually. Even stubborn wizards."},
   ],
   zacharius:[
-    {key:'zacharius',text:"My whole game is about stored charge. Galvanize costs 4 mana and grants 8 charge — electrical energy in reserve. When someone hits me physically, it discharges as bonus damage."},
-    {key:'zacharius',text:"Chain Lightning costs 8 charge — not mana. After Galvanizing, I strike for 24 damage with a 35% chance to arc for 10 more, spending no mana on the attack itself."},
-    {key:'zacharius',text:"Conductivity costs 2 mana and makes my opponent take 35% extra damage from all sources for 3 turns. Stack it with a Lightning Bolt and the mathematics become very favourable."},
-    {key:'zacharius',text:"Spark is my free attack — 9 lightning damage. 92 HP, 7 starting mana. Think of every Spark as priming the field for something much bigger."},
+    {key:'zacharius',text:"I had already won before you cast your first spell. You simply hadn't realised it yet. That is what it means to play the long game. 92 HP, 7 starting mana."},
+    {key:'zacharius',text:"Galvanize costs 4 mana and stores 8 charge — electrical energy held in reserve. Every joule of energy you waste attacking me, I absorb, shape, and return against you."},
+    {key:'zacharius',text:"Chain Lightning costs 8 charge — not mana. After Galvanizing I strike for 24 damage with a 35% chance to arc for 10 more. The storm obeys me. Did you truly believe you wouldn't?"},
+    {key:'zacharius',text:"Conductivity costs 2 mana — my opponent takes 35% extra damage from all sources for 3 turns. Stack it with a Lightning Bolt and the mathematics are no longer in your favour."},
+    {key:'zacharius',text:"Spark is my free attack. 9 lightning damage. Think of it as priming the field. The outcome was never in doubt."},
   ],
   mary:[
     {key:'mary',text:"I am a healer first, a combatant second. 88 HP and 6 mana. My purpose is to endure and outlast through faith and restoration."},
@@ -5894,7 +5896,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-aurelia').addEventListener('click',()=>showWizardDetail('aurelia'));
   document.getElementById('pick-gnash').addEventListener('click',()=>showWizardDetail('gnash'));
   document.getElementById('pick-skadi').addEventListener('click',()=>showWizardDetail('skadi'));
-  document.getElementById('pick-emberic').addEventListener('click',()=>showWizardDetail('emberic'));
+  document.getElementById('pick-cinder').addEventListener('click',()=>showWizardDetail('cinder'));
   document.getElementById('pick-zacharius').addEventListener('click',()=>showWizardDetail('zacharius'));
   document.getElementById('pick-mary').addEventListener('click',()=>showWizardDetail('mary'));
   document.getElementById('pick-mordant').addEventListener('click',()=>showWizardDetail('mordant'));

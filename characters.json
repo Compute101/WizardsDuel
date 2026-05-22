@@ -114,11 +114,16 @@
       {"id": "frenzy",   "name": "Frenzy",        "icon": "💢", "cost": 0, "costLabel": "15 HP",   "effectLabel": "3 rapid strikes (~9 phys dmg each)", "aiHint": "frenzy"}
     ]
   },
-  "emberic": {
-    "name": "EMBERIC",
+  "cinder": {
+    "name": "CINDER",
     "title": "The Volatile",
     "sprite": "sprites/mage-dark.png",
     "col": "#ff6600",
+    "taunts": [
+      "You thought the heat would break me? I am the heat.",
+      "Roll the dice, fan the flames — and never, ever bet against fire.",
+      "Still smouldering. Still standing. Come back when you're ready to burn."
+    ],
     "hp": 83,
     "startMana": 7,
     "channelAmt": 5,
@@ -161,6 +166,11 @@
     "title": "The Conductor",
     "sprite": "sprites/mage-light.png",
     "col": "#aaff44",
+    "taunts": [
+      "I had already won before you cast your first spell. You simply hadn't realised it yet.",
+      "Every joule of energy you wasted — I stored it, shaped it, and returned it. Against you.",
+      "The storm obeys me. Did you truly believe you wouldn't?"
+    ],
     "hp": 92,
     "startMana": 7,
     "channelAmt": 6,

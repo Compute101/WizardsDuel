@@ -145,7 +145,7 @@ const CHARS={
   gnash:{name:'GNASH',title:'The Feral',col:'#dd8822',icon:'👊',
     hp:105,startMana:5,channelAmt:4,dmgMult:1.15,frenzyHpCost:15,chargeDmg:32,
     spells:[{id:'basicattack',dmg:9,cost:0,physical:true},{id:'warpaint',cost:0},{id:'charge',cost:5},{id:'frenzy',cost:0}]},
-  emberic:{name:'EMBERIC',title:'The Volatile',col:'#ff6600',icon:'🔥',
+  cinder:{name:'CINDER',title:'The Volatile',col:'#ff6600',icon:'🔥',
     hp:83,startMana:7,channelAmt:5,dmgMult:1.15,
     fireballMin:10,fireballMax:26,flameShieldDmgMin:6,flameShieldDmgMax:12,flameShieldDur:5,candleDur:4,
     spells:[{id:'basicattack',dmg:9,cost:0,physical:false},{id:'fireball',cost:4},{id:'flameshield',cost:3},{id:'candle',cost:3}]},
@@ -476,7 +476,7 @@ function choose(key,self,opp,sc){
       if(!self.resist&&self.hp>20)return 'warpaint';
       if(self.hp>20)return 'frenzy';
       return 'basicattack';
-    case 'emberic':
+    case 'cinder':
       if(!self.flameShield&&can(3))return 'flameshield';
       if(!opp.candle&&can(3)&&!oi)return 'candle';
       if(can(4))return 'fireball';
@@ -628,7 +628,7 @@ const MATCHUP_NOTES={
   'gnash|ponder':'⚠️ Gnash\'s 105 HP + War Paint (33% resist) makes Ponder\'s chip damage extremely slow. Frenzy\'s 2 physical hits can shred through Blink.',
   'ponder|gnash':'⚠️ Ponder needs many turns siphoning and chipping to bring down 105 HP with resistance up.',
   'mordant|aurelia':'Mordant\'s Silence hampers Aurelia\'s costly kit (Foresight 4m, Time Drain 3m, Haste 3m). Agony punishes casting. Aurelia\'s Foresight can block one hex.',
-  'emberic|skadi':'Skadi\'s Frost Armor retaliates on every Fireball and reduces damage by 30%. Blizzard starves Emberic\'s 83 HP down quickly while his random damage is unreliable.',
+  'cinder|skadi':'Skadi\'s Frost Armor retaliates on every Fireball and reduces damage by 30%. Blizzard starves Cinder\'s 83 HP down quickly while her random damage is unreliable.',
 };
 
 function getNote(a,b){
@@ -694,7 +694,7 @@ function buildParamPanel(){
     sylvara:[['healAmt','Regen HP total',10,80,5],['entangleChance','Entangle chance',0.3,1.0,0.05],['vineWhipDur','Vine Whip turns',1,6,1]],
     aurelia:[['timeDrainTurns','Time Drain dur',1,10,1]],
     gnash:[['chargeDmg','Savage Charge dmg',10,60,1],['frenzyHpCost','Frenzy HP cost',5,30,1]],
-    emberic:[['fireballMin','Fireball min',5,25,1],['fireballMax','Fireball max',15,50,1],['flameShieldDur','Flame Shield dur',2,8,1]],
+    cinder:[['fireballMin','Fireball min',5,25,1],['fireballMax','Fireball max',15,50,1],['flameShieldDur','Flame Shield dur',2,8,1]],
     skadi:[['iceLanceDmg','Ice Lance dmg',10,50,1],['iceLanceFreeze','Lance freeze%',0.05,0.8,0.05],['frostArmorDur','Frost Armor dur',1,8,1],['frostArmorRetaliationDmg','FA ret dmg',1,15,1],['blizzardDur','Blizzard dur',1,10,1]],
     zacharius:[['chainLightningDmg','Chain Lightning dmg',10,50,1],['chainArcChance','Arc chance',0.1,0.7,0.05],['chainArcDmg','Arc dmg',3,25,1],['conductivityDur','Conductivity dur',1,6,1],['conductivityMult','Conductivity mult',1.0,2.0,0.05],['galvanizeChargeGain','Galvanize charge',4,16,1]],
     mary:[['healAmt','Heal HP',10,80,5],['radiantDmg','Radiant dmg',5,40,1]],
