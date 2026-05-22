@@ -176,7 +176,7 @@
     "channelAmt": 6,
     "dmgMult": 1.10,
     "galvanizeManaCoast": 4,
-    "galvanizeChargeGain": 8,
+    "galvanizeChargeGain": 16,
     "chainLightningChargeCost": 8,
     "chainLightningDmg": 24,
     "chainArcChance": 0.35,

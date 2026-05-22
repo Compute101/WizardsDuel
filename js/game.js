@@ -5654,7 +5654,7 @@ const TUTORIAL_CONVOS={
   ],
   zacharius:[
     {key:'zacharius',text:"I had already won before you cast your first spell. You simply hadn't realised it yet. That is what it means to play the long game. 92 HP, 7 starting mana."},
-    {key:'zacharius',text:"Galvanize costs 4 mana and stores 8 charge — electrical energy held in reserve. Every joule of energy you waste attacking me, I absorb, shape, and return against you."},
+    {key:'zacharius',text:"Galvanize costs 4 mana and stores 16 charge — electrical energy held in reserve. Every joule of energy you waste attacking me, I absorb, shape, and return against you."},
     {key:'zacharius',text:"Chain Lightning costs 8 charge — not mana. After Galvanizing I strike for 24 damage with a 35% chance to arc for 10 more. The storm obeys me. Did you truly believe you wouldn't?"},
     {key:'zacharius',text:"Conductivity costs 2 mana — my opponent takes 35% extra damage from all sources for 3 turns. Stack it with a Lightning Bolt and the mathematics are no longer in your favour."},
     {key:'zacharius',text:"Spark is my free attack. 9 lightning damage. Think of it as priming the field. The outcome was never in doubt."},
