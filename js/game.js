@@ -74,6 +74,7 @@ const CHAR_DISPLAY={
 
 // ── DIFFICULTY ─────────────────────────────────────────────
 let diffMult=1.0, diffName='normal';
+let aiDifficulty='easy';
 
 // ── TOURNAMENT ─────────────────────────────────────────────
 const ARCADE_BOSSES=['gnash','zacharius','mal','mordant']; // fixed final-4 in arcade mode
@@ -1365,7 +1366,7 @@ function act(type){
   if(!twoPlayerMode&&gs.p2&&gs.p2.haste>0&&!gs.skipAITurn){
     gs.myTurn=false; gs.busy=true;
     gs.pendingAction=type;
-    doAI();
+    (aiDifficulty==='normal'?doAINormal:doAI)();
     return;
   }
 
@@ -2877,7 +2878,7 @@ function endMyTurn(skipShieldDecrement=false){
     tickStatuses(gs.p1);
     gs.round++;
     if(aiTid) clearTimeout(aiTid);
-    aiTid=setTimeout(doAI, gs.p2&&gs.p2.haste>0 ? 400 : 1400);
+    aiTid=setTimeout(aiDifficulty==='normal'?doAINormal:doAI, gs.p2&&gs.p2.haste>0 ? 400 : 1400);
   }
 }
 
@@ -3124,6 +3125,325 @@ function doAI(){
   },700);
 }
 
+// ── NORMAL AI TURN (combo-aware) ───────────────────────────
+function doAINormal(){
+  if(!gs||!battleRunning||gameEnded) return;
+
+  if(gs.skipAITurn){
+    gs.skipAITurn=false;
+    finishAI();
+    return;
+  }
+
+  // Training mode with AI off: opponent just channels every turn
+  if(trainingMode&&!trainingAI){
+    if(gs.p1.invisible>0) gs.p1.invisible--;
+    if(gs.p2.invisible>0) gs.p2.invisible--;
+    if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
+    gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
+    if(gs.p2.frozen>0){
+      gs.p2.frozen--;
+      addFloat(bW*.78,bH*.38,'❄️ Frozen!','#88ddff',13);
+      setTimeout(finishAI,1200);
+      return;
+    }
+    const aiNoAI=gs.p2;
+    if(aiNoAI.timeDrain>0){
+      aiNoAI.mana=Math.min(MAX_MANA,aiNoAI.mana+2);
+      addFloat(bW*.78,bH*.38,'⏳ Drained! +2','#ffcc44',13);
+    } else {
+      aiNoAI.mana=Math.min(MAX_MANA,aiNoAI.mana+p2Cfg.channelAmt);
+      addFloat(bW*.78,bH*.38,'✨ Channeling...','#aaaaff',13);
+    }
+    if(aiNoAI.candle>0) triggerCandleBurn(aiNoAI,bW*.78);
+    anim('p2','cast',700);
+    if(aiNoAI.shield>0){ aiNoAI.shield--; if(aiNoAI.shield<=0) aiNoAI.shieldHp=0; }
+    tickStatuses(aiNoAI);
+    finishAI();
+    return;
+  }
+
+  if(gs.p1.invisible>0) gs.p1.invisible--;
+  if(gs.p2.invisible>0) gs.p2.invisible--;
+
+  if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+  if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+  if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+  if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
+
+  gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
+
+  if(gs.p2.frozen>0){
+    gs.p2.frozen--;
+    addFloat(bW*.78,bH*.38,'❄️ Frozen!','#88ddff',13);
+    setTimeout(finishAI,1200);
+    return;
+  }
+
+  const ai=gs.p2;
+  const p1=gs.p1;
+  const allSpells=[...SPELLS,...(p2Cfg.spells||[])];
+
+  // Available list — same filters as easy AI except Malachar's Drain is unrestricted
+  const available=allSpells.filter(s=>{
+    if(ai.mana<s.cost) return false;
+    if(s.id&&charSpellBlocked(s.id,ai,p2Cfg,p1)) return false;
+    if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
+    if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
+    if(s.aiHint==='drain'&&p2Key!=='mal'&&ai.hp>ai.maxHp*0.75) return false;
+    if(ai.frenzied>0&&s.element) return false;
+    if(p1.invisible>0&&(s.element&&!s.area&&s.element!=='dispel'&&s.element!=='manaburn'||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption'||s.id==='rockfall')) return false;
+    return true;
+  });
+
+  const charSpells=available.filter(s=>s.id);
+  const universalSpells=available.filter(s=>s.element);
+
+  let chosen=null;
+
+  // ── ELDRIN: Shield first, Counter next, then Ward ───────────
+  if(p2Key==='eldrad'&&!chosen){
+    const canShield=charSpells.find(s=>s.id==='shield');
+    const canCounter=charSpells.find(s=>s.id==='counter');
+    const canWard=charSpells.find(s=>s.id==='ward');
+    if(canShield) chosen=canShield;
+    else if(canCounter) chosen=canCounter;
+    else if(canWard) chosen=canWard;
+  }
+
+  // ── MALACHAR: Empower → Drain combo; Blood Pact when mana-hungry ──
+  if(p2Key==='mal'&&!chosen){
+    const canBloodPact=charSpells.find(s=>s.id==='bloodpact');
+    const canEmpower=charSpells.find(s=>s.id==='empower');
+    const canDrain=charSpells.find(s=>s.id==='drain');
+    if(ai.empowered&&canDrain) chosen=canDrain;
+    else if(!ai.empowered&&canEmpower) chosen=canEmpower;
+    else if(canBloodPact&&ai.mana<5&&ai.hp>(p2Cfg.bpCost||22)+15) chosen=canBloodPact;
+    else if(canDrain) chosen=canDrain;
+  }
+
+  // ── SYLVARA: Entangle (freeze) → Vine Whip; Regen to sustain ──
+  if(p2Key==='sylvara'&&!chosen){
+    const canEntangle=charSpells.find(s=>s.id==='entangle');
+    const canVineWhip=charSpells.find(s=>s.id==='vinewhip');
+    const canRegen=charSpells.find(s=>s.id==='heal');
+    if(ai.hp<ai.maxHp*0.50&&canRegen) chosen=canRegen;
+    else if(canEntangle) chosen=canEntangle;
+    else if(canVineWhip&&!p1.shield) chosen=canVineWhip;
+    else if(!ai.regen&&canRegen&&ai.hp<ai.maxHp*0.80) chosen=canRegen;
+  }
+
+  // ── AURELIA: Foresight → Time Drain → Haste ─────────────────
+  if(p2Key==='aurelia'&&!chosen){
+    const canForesight=charSpells.find(s=>s.id==='foresight');
+    const canTimeDrain=charSpells.find(s=>s.id==='timedrain');
+    const canHaste=charSpells.find(s=>s.id==='haste');
+    if(canForesight) chosen=canForesight;
+    else if(canTimeDrain) chosen=canTimeDrain;
+    else if(canHaste) chosen=canHaste;
+  }
+
+  // ── GNASH: War Paint first, then burst with Frenzy/Savage Charge ──
+  if(p2Key==='gnash'&&!chosen){
+    const canWarpaint=charSpells.find(s=>s.id==='warpaint');
+    const canFrenzy=charSpells.find(s=>s.id==='frenzy');
+    const canCharge=charSpells.find(s=>s.id==='charge');
+    if(canWarpaint) chosen=canWarpaint;
+    else if(canFrenzy) chosen=canFrenzy;
+    else if(canCharge) chosen=canCharge;
+  }
+
+  // ── CINDER: Candle → Flame Shield → Fireball ────────────────
+  if(p2Key==='cinder'&&!chosen){
+    const canCandle=charSpells.find(s=>s.id==='candle');
+    const canFlameShield=charSpells.find(s=>s.id==='flameshield');
+    const canFireball=charSpells.find(s=>s.id==='fireball');
+    if(canCandle) chosen=canCandle;
+    else if(canFlameShield) chosen=canFlameShield;
+    else if(canFireball) chosen=canFireball;
+  }
+
+  // ── SKADI: Blizzard → Frost Armor → Ice Lance ───────────────
+  if(p2Key==='skadi'&&!chosen){
+    const canBlizzard=charSpells.find(s=>s.id==='blizzard');
+    const canFrostArmor=charSpells.find(s=>s.id==='frostarmor');
+    const canIceLance=charSpells.find(s=>s.id==='icelance');
+    if(canBlizzard) chosen=canBlizzard;
+    else if(canFrostArmor) chosen=canFrostArmor;
+    else if(canIceLance) chosen=canIceLance;
+  }
+
+  // ── ZACHARIUS: Conductivity → Galvanize → Chain Lightning ───
+  if(p2Key==='zacharius'&&!chosen){
+    const chainReady=charSpells.find(s=>s.id==='chainlightning');
+    const canGalvanize=charSpells.find(s=>s.id==='galvanize');
+    const canConductivity=charSpells.find(s=>s.id==='conductivity');
+    if(chainReady&&ai.charge>=(p2Cfg.chainLightningChargeCost||8)) chosen=chainReady;
+    else if(canConductivity&&(!p1.conductivity||p1.conductivity<=1)) chosen=canConductivity;
+    else if(canGalvanize) chosen=canGalvanize;
+  }
+
+  // ── MARY: Purge debuffs → Heal → Radiant (bypasses shields) ──
+  if(p2Key==='mary'&&!chosen){
+    const canRadiant=charSpells.find(s=>s.id==='radiant');
+    const canHeal=charSpells.find(s=>s.id==='divineheal');
+    const canPurge=charSpells.find(s=>s.id==='purge');
+    const hasDebuff=ai.burn>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
+    if(hasDebuff&&canPurge) chosen=canPurge;
+    else if(ai.hp<ai.maxHp*0.55&&canHeal) chosen=canHeal;
+    else if(canRadiant&&(p1.shield>0||p1.resist>0||p1.frostArmor>0)) chosen=canRadiant;
+    else if(canRadiant&&Math.random()<0.55) chosen=canRadiant;
+  }
+
+  // ── MORDANT: Layer hexes — Corruption → Agony → Silence; channel under own Agony ──
+  if(p2Key==='mordant'&&!chosen){
+    const canCorruption=charSpells.find(s=>s.id==='corruption');
+    const canAgony=charSpells.find(s=>s.id==='agony');
+    const canSilence=charSpells.find(s=>s.id==='silence');
+    if(!ai.agony){
+      if(canCorruption) chosen=canCorruption;
+      else if(canAgony) chosen=canAgony;
+      else if(canSilence) chosen=canSilence;
+    }
+    // ai.agony>0: chosen stays null — Dispel block below handles cleanse, else channel
+  }
+
+  // ── PONDER: Vanish → Mana Siphon loop; Blink as fallback ───
+  if(p2Key==='ponder'&&!chosen){
+    const canVanish=charSpells.find(s=>s.id==='vanish');
+    const canManaSiphon=charSpells.find(s=>s.id==='manasiphon');
+    const canBlink=charSpells.find(s=>s.id==='blink');
+    if(ai.invisible>0){
+      if(canManaSiphon) chosen=canManaSiphon;
+      // else: stay invisible by channeling (chosen=null falls through)
+    } else {
+      if(canVanish) chosen=canVanish;
+      else if(canBlink) chosen=canBlink;
+    }
+  }
+
+  // ── DURIN: Proactive armor (no HP threshold), then Rockfall ──
+  if(p2Key==='durin'&&!chosen){
+    const canStoneskin=charSpells.find(s=>s.id==='stoneskin');
+    const canStonesoul=charSpells.find(s=>s.id==='stonesoul');
+    const canRockfall=charSpells.find(s=>s.id==='rockfall');
+    if(canStoneskin) chosen=canStoneskin;
+    else if(canStonesoul) chosen=canStonesoul;
+    else if(canRockfall&&Math.random()<0.70) chosen=canRockfall;
+  }
+
+  // ── Dispel: cleanse self or strip opponent's key buffs ──────
+  if(!chosen){
+    const dispelSpell=universalSpells.find(s=>s.element==='dispel');
+    if(dispelSpell){
+      const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
+      const oppHasKeyBuff=p1.shield>0||p1.foresight||p1.resist>1||p1.invisible>1||p1.stoneskin>0||p1.stonesoul>0||p1.ward>0||p1.counter;
+      if(needsCleanse||(oppHasKeyBuff&&Math.random()<0.45)){
+        chosen=dispelSpell;
+        dispelSelf=needsCleanse;
+      }
+    }
+  }
+
+  // ── Mana Burn: when player is mana-rich ─────────────────────
+  if(!chosen){
+    const manaBurnSpell=universalSpells.find(s=>s.element==='manaburn');
+    if(manaBurnSpell&&p1.mana>=7) chosen=manaBurnSpell;
+  }
+
+  // ── Generic fallback ────────────────────────────────────────
+  if(!chosen&&available.length>0){
+    if(charSpells.length>0&&Math.random()<0.50){
+      chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
+    } else if(universalSpells.length>0){
+      if(p1.shield>0&&universalSpells.find(s=>s.element==='lightning')){
+        chosen=universalSpells.find(s=>s.element==='lightning');
+      } else if(!p1.shield&&universalSpells.find(s=>s.element==='fire')){
+        chosen=universalSpells.find(s=>s.element==='fire');
+      } else if(p1.mana>=3&&universalSpells.find(s=>s.element==='ice')){
+        chosen=universalSpells.find(s=>s.element==='ice');
+      } else {
+        const randPool=universalSpells.filter(s=>s.element!=='dispel');
+        if(randPool.length>0) chosen=randPool[Math.floor(Math.random()*randPool.length)];
+      }
+    } else {
+      chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
+    }
+  }
+
+  // ── Channel fallback ────────────────────────────────────────
+  if(!chosen){
+    if(ai.timeDrain>0){
+      ai.mana=Math.min(MAX_MANA,ai.mana+2);
+      addFloat(bW*.78,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
+    } else {
+      ai.mana=Math.min(MAX_MANA,ai.mana+p2Cfg.channelAmt);
+      addFloat(bW*.78,bH*.38,'+'+p2Cfg.channelAmt+' Mana','#ff8888',13);
+    }
+    if(ai.candle>0) triggerCandleBurn(ai,bW*.78);
+    anim('p2','cast',700);
+    if(ai.shield>0){
+      ai.shield--;
+      if(ai.shield<=0) ai.shieldHp=0;
+    }
+    tickStatuses(ai);
+    finishAI();
+    return;
+  }
+
+  // Agony: AI takes damage for any non-channel action
+  if(ai.agony>0){
+    const agonDmg=ai.agonyDmg||12;
+    ai.hp=Math.max(0,ai.hp-agonDmg);
+    addFloat(bW*.78,bH*.38,'💀 Agony! −'+agonDmg,'#9944cc',14);
+    spawnParts(bW*.78,bH*.38,'#9944cc',12); flash('#330033');
+    checkWin(); if(!battleRunning) return;
+  }
+
+  // Silence: 45% chance mana-cost spells fizzle
+  if(chosen.id&&chosen.cost>0&&ai.silence>0&&Math.random()<0.45){
+    showSilenceBlock(bW*.78,bH*.33); anim('p2','cast',600);
+    tickStatuses(ai); finishAI(); return;
+  }
+  if(!chosen.id&&ai.silence>0&&Math.random()<0.45){
+    showSilenceBlock(bW*.78,bH*.33); anim('p2','cast',600);
+    ai.mana=Math.max(0,ai.mana-1); tickStatuses(ai); finishAI(); return;
+  }
+
+  if(chosen.id){
+    resolveCharSpell(chosen.id,'p2');
+    return;
+  }
+
+  // Universal spell
+  addFloat(bW*.78,bH*.26,chosen.icon+' '+chosen.name+'!',chosen.col,12);
+  anim('p2','cast',800);
+  setTimeout(()=>{
+    if(!battleRunning) return;
+    tickStatuses(ai);
+    if(Math.random()<0.8){
+      ai.mana-=chosen.cost;
+      if(chosen.element==='dispel'&&dispelSelf){
+        castSpell(chosen,gs.p2,bW*.78,bH*.38,'p2');
+        finishAI();
+      } else {
+        spawnProj(bW*.78,bH*.38,bW*.22,bH*.38,chosen.element,chosen.col,()=>{
+          if(!battleRunning) return;
+          castSpell(chosen,gs.p1,bW*.22,bH*.38,'p2');
+          finishAI();
+        });
+      }
+    } else {
+      addFloat(bW*.78,bH*.33,'Fizzled!','#ff8844',12);
+      ai.mana=Math.max(0,ai.mana-1);
+      finishAI();
+    }
+  },700);
+}
+
 function finishAI(){
   if(!battleRunning||gameEnded) return;
   checkWin(); if(!battleRunning) return;
@@ -3166,7 +3486,7 @@ function finishAI(){
   if(gs.p1.frozen>0){
     gs.p1.frozen--;
     addFloat(bW*.22,bH*.38,'❄️ Frozen!','#88ddff',13);
-    setTimeout(()=>{ gs.round++; if(aiTid) clearTimeout(aiTid); aiTid=setTimeout(doAI,1200); },1200);
+    setTimeout(()=>{ gs.round++; if(aiTid) clearTimeout(aiTid); aiTid=setTimeout(aiDifficulty==='normal'?doAINormal:doAI,1200); },1200);
     return;
   }
 
@@ -5785,6 +6105,15 @@ window.addEventListener('DOMContentLoaded', ()=>{
       diffMult=diffName==='easy'?1.6:diffName==='hard'?0.55:1.0;
     });
   });
+  document.querySelectorAll('.ai-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.ai-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      aiDifficulty=btn.dataset.ai;
+      const hint=document.getElementById('training-ai-hint');
+      if(hint&&trainingAI) hint.textContent=aiDifficulty==='normal'?'Opponent plays smart combos':'Opponent plays normally';
+    });
+  });
 
   const duelOverlay=document.getElementById('duel-overlay');
   document.getElementById('btn-duel').addEventListener('click',()=>{
@@ -5827,7 +6156,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     }
     document.getElementById('tai-on').classList.add('active');
     document.getElementById('tai-off').classList.remove('active');
-    document.getElementById('training-ai-hint').textContent='Opponent plays normally';
+    document.getElementById('training-ai-hint').textContent=aiDifficulty==='normal'?'Opponent plays smart combos':'Opponent plays normally';
     showScreen('training-screen');
   });
   document.getElementById('btn-training-back').addEventListener('click',()=>{
@@ -5852,7 +6181,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     trainingAI=true;
     document.getElementById('tai-on').classList.add('active');
     document.getElementById('tai-off').classList.remove('active');
-    document.getElementById('training-ai-hint').textContent='Opponent plays normally';
+    document.getElementById('training-ai-hint').textContent=aiDifficulty==='normal'?'Opponent plays smart combos':'Opponent plays normally';
   });
   document.getElementById('tai-off').addEventListener('click',()=>{
     trainingAI=false;
