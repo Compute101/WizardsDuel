@@ -5566,7 +5566,7 @@ const TUTORIAL_CONVOS={
   ],
   channeling:[
     {key:'ponder', text:"Channeling is the most important action you'll take! When you channel, you restore mana — and without mana, you can't cast spells or use most abilities."},
-    {key:'sylvara',text:"By default, channeling restores 4 mana. Some wizards have abilities that change this — and some opponents can make your channeling painful or costly."},
+    {key:'sylvara',text:"By default, channeling restores 5 mana. Some wizards have abilities that change this — and some opponents can make your channeling painful or costly."},
     {key:'ponder', text:"Here's the catch: channeling skips your attack for that turn. You can't channel AND strike. So it's always a trade-off between power now and power later."},
     {key:'sylvara',text:"Timing your channels is everything. Channel too little and you'll run dry. Channel too often and you leave yourself open to free attacks!"},
   ],
@@ -5635,7 +5635,7 @@ const TUTORIAL_CONVOS={
     {key:'gnash',text:"GNASH NOT WIZARD. Gnash warrior-mage! Gnash hits. HARD. No fancy shields, no status tricks — Gnash has 105 HP and two very effective fists."},
     {key:'gnash',text:"Feral Strike — free, costs nothing, hits 9 damage. Pierces Counter AND Discharge. Magic reflect tricks? HAH. Gnash hit anyway! No exception for Gnash."},
     {key:'gnash',text:"War Paint — 3 mana, Gnash takes 33% less damage for 5 turns. Then Savage Charge — costs 15 HP, NOT mana — smashes for 32 damage and pierces everything."},
-    {key:'gnash',text:"Frenzy — also costs 15 HP. Three rapid strikes, fast fast fast! Gnash run out of mana? Fine. Gnash still has HP to spend. HP IS mana to Gnash!"},
+    {key:'gnash',text:"Frenzy — also costs 15 HP. Three rapid strikes, fast fast fast! Gnash also only channel 4 mana — less than most wizards! Fine. Gnash still has HP to spend. HP IS mana to Gnash!"},
     {key:'gnash',text:"Little mage thinks Gnash simple? Gnash simple but Gnash EFFECTIVE. You run out of spells. Gnash never runs out of fists."},
   ],
   cinder:[
@@ -5653,8 +5653,8 @@ const TUTORIAL_CONVOS={
     {key:'skadi',text:"The permafrost claims all things eventually. Even stubborn wizards."},
   ],
   zacharius:[
-    {key:'zacharius',text:"I had already won before you cast your first spell. You simply hadn't realised it yet. That is what it means to play the long game. 92 HP, 7 starting mana."},
-    {key:'zacharius',text:"Galvanize costs 4 mana and stores 8 charge — electrical energy held in reserve. Every joule of energy you waste attacking me, I absorb, shape, and return against you."},
+    {key:'zacharius',text:"I had already won before you cast your first spell. You simply hadn't realised it yet. That is what it means to play the long game. 92 HP, 7 starting mana — and I channel 6 mana per turn, above the usual 5. Every advantage compounds."},
+    {key:'zacharius',text:"Galvanize costs 4 mana and stores 16 charge — electrical energy held in reserve. Every joule of energy you waste attacking me, I absorb, shape, and return against you."},
     {key:'zacharius',text:"Chain Lightning costs 8 charge — not mana. After Galvanizing I strike for 24 damage with a 35% chance to arc for 10 more. The storm obeys me. Did you truly believe you wouldn't?"},
     {key:'zacharius',text:"Conductivity costs 2 mana — my opponent takes 35% extra damage from all sources for 3 turns. Stack it with a Lightning Bolt and the mathematics are no longer in your favour."},
     {key:'zacharius',text:"Spark is my free attack. 9 lightning damage. Think of it as priming the field. The outcome was never in doubt."},
@@ -5680,7 +5680,7 @@ const TUTORIAL_CONVOS={
     {key:'ponder',text:"85 HP, 5 mana. Not the strongest. But by the time they catch me, I've already drained half their mana and they don't have enough left to finish the job. Surprise!"},
   ],
   durin:[
-    {key:'durin',text:"I am Durin. I have 110 HP. I start with no mana. Before you worry — I channel frequently. What matters is that when spells come, they barely scratch me."},
+    {key:'durin',text:"I am Durin. I have 110 HP. I start with no mana and channel only 4 mana per turn — below the usual 5. Before you worry — I channel frequently. What matters is that when spells come, they barely scratch me."},
     {key:'durin',text:"Stoneskin absorbs 10 damage per hit for up to 30 total HP, lasting 10 turns — all for 3 mana. Against basic attacks, I become nearly impervious."},
     {key:'durin',text:"Stonesoul reduces magical damage by 40% for 5 turns. A Lightning Bolt that would kill a lesser wizard? A minor inconvenience to Durin."},
     {key:'durin',text:"Rockfall drops three boulders — about 9 damage each, all physical. It pierces magical shields and resistances entirely. 4 mana for a powerful, unavoidable attack."},
