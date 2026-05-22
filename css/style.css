@@ -1038,3 +1038,195 @@ body {
   margin-top: 4px;
 }
 
+/* ── TUTORIAL MODAL ── */
+#tutorial-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+#tutorial-modal.active { display: flex; }
+
+#tut-panel {
+  width: 100%;
+  max-width: 480px;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #130826;
+}
+
+#tut-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid rgba(201,168,76,0.3);
+  flex-shrink: 0;
+}
+
+.tut-title-text {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 16px;
+  color: #f0cc6a;
+  text-shadow: 0 0 12px #c9a84c;
+}
+
+.tut-close-btn {
+  background: none;
+  border: 1px solid rgba(201,168,76,0.4);
+  color: rgba(240,204,106,0.7);
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.tut-close-btn:active { opacity: 0.6; }
+
+#tut-topic-bar {
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(201,168,76,0.12);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+#tut-topic-bar::-webkit-scrollbar { display: none; }
+
+.tut-topic-btn {
+  display: inline-block;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(240,204,106,0.55);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 20px;
+  padding: 5px 12px;
+  margin-right: 7px;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tut-topic-btn.active {
+  color: #f0cc6a;
+  background: rgba(138,58,170,0.45);
+  border-color: #c9a84c;
+}
+.tut-topic-btn:hover { opacity: 0.85; }
+
+.tut-chars-label {
+  font-size: 8px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(201,168,76,0.35);
+  text-align: center;
+  padding: 6px 0 2px;
+  flex-shrink: 0;
+}
+
+#tut-char-bar {
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 6px 14px 10px;
+  border-bottom: 2px solid rgba(201,168,76,0.2);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+#tut-char-bar::-webkit-scrollbar { display: none; }
+
+.tut-char-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-right: 12px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.tut-char-btn img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center 15%;
+  border: 2px solid rgba(201,168,76,0.3);
+  transition: border-color 0.15s, transform 0.15s;
+}
+.tut-char-btn.active img { transform: scale(1.1); }
+.tut-char-btn:hover img { transform: scale(1.05); }
+.tut-char-name {
+  font-family: 'Cinzel', serif;
+  font-size: 7px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+.tut-char-btn.active .tut-char-name { opacity: 1; }
+
+#tut-convo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 16px 24px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201,168,76,0.3) transparent;
+}
+
+.tut-msg {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  animation: tutMsgIn 0.22s ease-out both;
+}
+@keyframes tutMsgIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tut-msg-portrait {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center 15%;
+  border: 2px solid rgba(201,168,76,0.35);
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+.tut-bubble {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0 8px 8px 8px;
+  padding: 10px 13px;
+}
+.tut-speaker {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.tut-text {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  color: rgba(255,255,255,0.82);
+  line-height: 1.8;
+}
+
