@@ -5527,6 +5527,253 @@ function startTrainingBattle(){
   requestAnimationFrame(battleLoop);
 }
 
+// ── TUTORIAL ─────────────────────────────────────────────────────────────────
+const CHAR_COLORS_TUT={
+  eldrad:'#4af0ff',mal:'#ff4a6e',sylvara:'#44cc88',aurelia:'#ffcc44',
+  gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zacharius:'#aaff44',
+  mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040'
+};
+const CHAR_NAMES_TUT={
+  eldrad:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
+  gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zacharius',
+  mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin'
+};
+const CHAR_KEYS_TUT=['eldrad','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin'];
+
+const TUTORIAL_TOPICS=[
+  {id:'welcome',     label:'Welcome'},
+  {id:'health-mana', label:'Health & Mana'},
+  {id:'channeling',  label:'Channeling'},
+  {id:'casting',     label:'Casting Spells'},
+  {id:'spells',      label:'Arcane Spells'},
+  {id:'alphabet',    label:'The Alphabet'},
+  {id:'watching',    label:'Watch Games'},
+  {id:'difficulty',  label:'Difficulty'},
+];
+
+const TUTORIAL_CONVOS={
+  welcome:[
+    {key:'eldrad', text:"Greetings, young mage. Welcome to the arena of wizards — a place where arcane knowledge and quick thinking decide everything."},
+    {key:'sylvara',text:"Don't be intimidated! Every duel starts with the same foundation. Use the topics above to explore each part of how the game works."},
+    {key:'ponder', text:"You can also tap any character portrait below to hear that wizard explain their own abilities. I'm Ponder — I'd love to tell you about mine when you're ready!"},
+    {key:'eldrad', text:"Browse the mechanics guides, then seek out each wizard's own words. We are all here to help."},
+  ],
+  'health-mana':[
+    {key:'eldrad', text:"Every wizard enters the duel with two vital resources: Health Points and Mana. When your HP reaches zero, the duel is over."},
+    {key:'sylvara',text:"Mana is your casting energy. You need it to use abilities and spells. Each wizard starts with a different amount — I begin with 6, while Malachar starts with 7."},
+    {key:'eldrad', text:"HP totals vary too. I stand at 90 HP. Gnash, being a warrior, has a hearty 105. Meanwhile Malachar trades resilience for aggression at just 80 HP."},
+    {key:'sylvara',text:"Keep an eye on the HP and Mana bars at the top of the screen during battle. They tell you the entire story of the duel at a glance."},
+  ],
+  channeling:[
+    {key:'ponder', text:"Channeling is the most important action you'll take! When you channel, you restore mana — and without mana, you can't cast spells or use most abilities."},
+    {key:'sylvara',text:"By default, channeling restores 2 mana. Some wizards have abilities that change this — and some opponents can make your channeling painful or costly."},
+    {key:'ponder', text:"Here's the catch: channeling skips your attack for that turn. You can't channel AND strike. So it's always a trade-off between power now and power later."},
+    {key:'sylvara',text:"Timing your channels is everything. Channel too little and you'll run dry. Channel too often and you leave yourself open to free attacks!"},
+  ],
+  casting:[
+    {key:'eldrad', text:"Every wizard has four unique personal abilities listed on the action bar during battle. Each has a mana cost — when you can afford it, tap 'Cast Spell' to use one."},
+    {key:'ponder', text:"Beyond personal abilities, every wizard can cast five great elemental spells: Inferno, Lightning Bolt, Frost Nova, Arcane Surge, and Dispel. Shared by all!"},
+    {key:'eldrad', text:"Elemental spells require a casting ritual — a minigame where you must prove your arcane focus. Choose your spell, perform the ritual, and unleash it."},
+    {key:'ponder', text:"Each wizard also has a free basic attack that costs nothing. Useful when you're conserving mana between big plays!"},
+  ],
+  spells:[
+    {key:'aurelia',text:"The five elemental spells are available to every wizard. Each demands a casting ritual, but the power they offer is well worth it."},
+    {key:'aurelia',text:"🔥 Inferno (12 mana). Sets your foe ablaze for 5 damage per round over 2 rounds. Patient — not instant — but relentless. It burns through their health steadily."},
+    {key:'aurelia',text:"⚡ Lightning Bolt (9 mana). Thirty direct damage, and it pierces shields entirely. The definitive answer to anyone relying on magical barriers."},
+    {key:'aurelia',text:"❄️ Frost Nova (6 mana). Deals 18 damage and freezes your opponent — they skip their next turn entirely. Control is its own kind of power."},
+    {key:'aurelia',text:"🌀 Arcane Surge (9 mana). The wild spell. Somewhere between 15 and 55 damage — you never know exactly. The ceiling is enormous, but so is the risk."},
+    {key:'aurelia',text:"🌸 Dispel (5 mana). Choose: cleanse one of your own debuffs, or attempt a 70% strip of one of your opponent's active buffs. Exceptional utility."},
+  ],
+  alphabet:[
+    {key:'sylvara',text:"Every casting ritual uses symbols from the Arcane Alphabet — twelve sacred glyphs that form the language of magic itself."},
+    {key:'ponder', text:"The twelve glyphs are: ϟ Δ ∇ Ψ Ω ∞ ☽ ✸ ⊕ ⊗ θ Φ. Each spell's ritual draws upon four of these in its sequence."},
+    {key:'sylvara',text:"Each spell has its own assigned glyphs: Inferno uses ϟ Δ ⊕ Ω, Lightning uses Ψ ∇ ⊗ ✸, Ice uses θ Φ ☽ ∞. The symbols have meaning — they are not random."},
+    {key:'ponder', text:"Arcane Surge is special — it shares one glyph with every other element, because Arcane is the underlying force of all magic. That makes it the hardest set to memorise!"},
+    {key:'sylvara',text:"Dispel also draws one glyph from each element: ∞ from Ice, ⊕ from Inferno, ∇ from Lightning, θ from Arcane. A universal spell built from universal symbols."},
+  ],
+  watching:[
+    {key:'ponder', text:"When you cast an elemental spell, a ritual begins. First: the Watch Phase. Glyphs rise from the ground — red ones are noise, ignore them. White glowing ones are your sequence."},
+    {key:'sylvara',text:"Each white glyph has a coloured glow and a small number badge showing its position. Watch carefully — they appear one by one, staggered three seconds apart."},
+    {key:'ponder', text:"After the last glyph appears, you have four seconds before the Input Phase begins. A 3×4 keyboard of all twelve glyphs appears — tap them in the order you saw them."},
+    {key:'sylvara',text:"Get the sequence right and the spell fires! Make a mistake and the ritual fails. Casting under pressure is a true test of arcane focus — you'll improve with practice."},
+    {key:'ponder', text:"Tip: on Easy mode each spell uses the same fixed sequence every time, so you can memorise it. On Normal and Hard the sequence is randomised each cast."},
+  ],
+  difficulty:[
+    {key:'ponder',text:"The difficulty setting changes how the casting ritual works. Easy mode uses a fixed 4-glyph sequence for each spell — the same every time, fully memorisable."},
+    {key:'ponder',text:"On Easy, the keyboard also greys out glyphs that don't belong to that spell. You only see the four relevant symbols. Much more manageable for learning!"},
+    {key:'ponder',text:"Normal mode uses a random 5-glyph sequence built from the spell's four symbols. The keyboard still greys out irrelevant glyphs, but you must watch each cast carefully."},
+    {key:'ponder',text:"Hard mode is intense. A 7-glyph sequence. ALL twelve glyphs are active on the keyboard — nothing is greyed out. You are relying entirely on memory and focus. Good luck."},
+  ],
+  eldrad:[
+    {key:'eldrad',text:"I am Eldrin — the Stalwart. My philosophy is endurance. 90 HP, 5 starting mana. My abilities focus entirely on surviving long enough to outlast my foe."},
+    {key:'eldrad',text:"Magic Missile is my free attack — about 8 damage per cast, no mana required. Useful for chipping away while I conserve resources for when it truly matters."},
+    {key:'eldrad',text:"Shield creates a 60 HP barrier for 10 turns at just 3 mana. It absorbs damage in my place. Combined with my base HP, I can weather tremendous punishment."},
+    {key:'eldrad',text:"Counter reflects 20 damage back to whoever strikes me — cast it and let my opponent injure themselves. Ward protects me from the next status effect for 3 turns."},
+    {key:'eldrad',text:"My strength is that I never go down easily. The fight is always on my terms. I wait, I endure, and eventually even the most aggressive foe runs out of mana."},
+  ],
+  mal:[
+    {key:'mal',text:"Pain is power. I start with 7 mana and I intend to spend every drop. Empower is free — cast it before any ability for 50% more damage. No mana cost. No excuse not to use it."},
+    {key:'mal',text:"Blood Pact is my centrepiece. I sacrifice 22 HP for 15 mana instantly. Reckless? No. Efficient. Health is just mana you haven't spent yet."},
+    {key:'mal',text:"Drain hits for about 20 damage and heals me for 45% of it back. Pair it with Empower for a devastating, self-sustaining burst. I take their health and keep my own."},
+    {key:'mal',text:"My weakness is raw HP — just 80. I cannot afford to trade hits carelessly. I strike first, I strike hard, and I never let up. The relentless always win."},
+  ],
+  sylvara:[
+    {key:'sylvara',text:"Hello! I'm Sylvara, and I believe in working with nature rather than against it. 92 HP and 6 starting mana. I prefer patience and control over brute force."},
+    {key:'sylvara',text:"Regen is my lifeline — 4 mana restores 40 HP over 10 turns. Combined with my high base HP, I can survive punishment that would flatten most opponents."},
+    {key:'sylvara',text:"Entangle has a 75% chance to freeze my foe for 1 to 3 turns. On a lucky cast, that's three free attacks without them being able to respond. Very powerful."},
+    {key:'sylvara',text:"Vine Whip deals damage over time for 3 turns, and it's blocked by shields — so it pairs well with Entangle while they're frozen and unable to set up defences."},
+    {key:'sylvara',text:"I'm not the hardest hitter in the arena. But I'm still standing when they're not. The forest always reclaims what it's owed."},
+  ],
+  aurelia:[
+    {key:'aurelia',text:"I see three moves ahead. Always. Foresight makes me immune to free attacks and absorbs the next paid spell entirely — at 4 mana, the most efficient defence in the game."},
+    {key:'aurelia',text:"Time Drain is subtle but decisive. For 3 mana, my opponent's channels gain 2 less mana for 5 turns. That is stolen resources, compounding every single round."},
+    {key:'aurelia',text:"Haste gives me a 25% dodge chance for 3 turns — and I act with greater speed. Combine it with Foresight and I become remarkably difficult to land a hit on."},
+    {key:'aurelia',text:"Magic Missile is my free attack. 90 HP, 6 starting mana. I win by denying my opponent the resources and opportunities they need to finish the job."},
+    {key:'aurelia',text:"I have already foreseen how this duel ends. I need only wait for you to arrive at the conclusion I have prepared."},
+  ],
+  gnash:[
+    {key:'gnash',text:"GNASH NOT WIZARD. Gnash warrior-mage! Gnash hits. HARD. No fancy shields, no status tricks — Gnash has 105 HP and two very effective fists."},
+    {key:'gnash',text:"Feral Strike — free, costs nothing, hits 9 damage. Pierces Counter AND Discharge. Magic reflect tricks? HAH. Gnash hit anyway! No exception for Gnash."},
+    {key:'gnash',text:"War Paint — 3 mana, Gnash takes 33% less damage for 5 turns. Then Savage Charge — costs 15 HP, NOT mana — smashes for 32 damage and pierces everything."},
+    {key:'gnash',text:"Frenzy — also costs 15 HP. Three rapid strikes, fast fast fast! Gnash run out of mana? Fine. Gnash still has HP to spend. HP IS mana to Gnash!"},
+    {key:'gnash',text:"Little mage thinks Gnash simple? Gnash simple but Gnash EFFECTIVE. You run out of spells. Gnash never runs out of fists."},
+  ],
+  cinder:[
+    {key:'cinder',text:"You thought the heat would break me? I am the heat. 83 HP, 7 starting mana. I hit hard, I hit fast, and if the fire takes us both — well, I was born in it."},
+    {key:'cinder',text:"Fireball rolls 18 to 28 damage. Sometimes barely a singe, sometimes the arena goes up. Roll the dice, fan the flames, and never bet against fire."},
+    {key:'cinder',text:"Flame Shield is 3 mana — for 5 turns, anyone who strikes me takes 16 fire damage back. You want to throw punches at me? Go ahead. I want you to."},
+    {key:'cinder',text:"Candle is 2 mana. For 3 turns, my opponent catches fire every time they channel. Suddenly the safe move isn't safe anymore. That's when the fun starts."},
+    {key:'cinder',text:"Ember is my free attack — about 9 damage. Nothing flashy. I save the spectacle for when it counts. Still smouldering. Still standing."},
+  ],
+  skadi:[
+    {key:'skadi',text:"Patience. That is the first lesson. The cold does not rush. I have 88 HP and 6 mana, and I am content to let the fight come to me."},
+    {key:'skadi',text:"Frost Bolt is my free attack — 8 ice damage per cast. Ice Lance costs 4 mana for 28 damage with a 25% freeze chance. Straightforward. Results matter, not spectacle."},
+    {key:'skadi',text:"Frost Armor is where I truly shine. 4 mana — 30% damage reduction for 5 turns, and anyone who strikes me takes 4 damage in return. Costlier to attack and harder to hurt."},
+    {key:'skadi',text:"Blizzard. 4 mana. Five turns of 5 damage, 2 mana drain per turn, and a 15% freeze chance per turn. It compounds. It accumulates. By turn five, they have no mana and no hope."},
+    {key:'skadi',text:"The permafrost claims all things eventually. Even stubborn wizards."},
+  ],
+  zacharius:[
+    {key:'zacharius',text:"I had already won before you cast your first spell. You simply hadn't realised it yet. That is what it means to play the long game. 92 HP, 7 starting mana."},
+    {key:'zacharius',text:"Galvanize costs 4 mana and stores 8 charge — electrical energy held in reserve. Every joule of energy you waste attacking me, I absorb, shape, and return against you."},
+    {key:'zacharius',text:"Chain Lightning costs 8 charge — not mana. After Galvanizing I strike for 24 damage with a 35% chance to arc for 10 more. The storm obeys me. Did you truly believe you wouldn't?"},
+    {key:'zacharius',text:"Conductivity costs 2 mana — my opponent takes 35% extra damage from all sources for 3 turns. Stack it with a Lightning Bolt and the mathematics are no longer in your favour."},
+    {key:'zacharius',text:"Spark is my free attack. 9 lightning damage. Think of it as priming the field. The outcome was never in doubt."},
+  ],
+  mary:[
+    {key:'mary',text:"I am a healer first, a combatant second. 88 HP and 6 mana. My purpose is to endure and outlast through faith and restoration."},
+    {key:'mary',text:"Heal instantly restores 40 HP for 4 mana. Simple and powerful. Combined with my base HP, I can absorb tremendous punishment and keep standing."},
+    {key:'mary',text:"Purge removes ALL active debuffs from me for just 2 mana. Silence, Agony, Corruption, Entangle — gone. Every last one. A complete reset."},
+    {key:'mary',text:"Radiant is unique — 3 mana for 15 holy damage that bypasses shields and resistances entirely. Against a fortified opponent, it is often the only direct damage I can reliably land."},
+    {key:'mary',text:"The light does not yield. Neither do I."},
+  ],
+  mordant:[
+    {key:'mordant',text:"Do not think of me as aggressive. I am patient. Agony costs 3 mana and places a hex — 12 damage every time my foe takes any non-channel action for 5 turns."},
+    {key:'mordant',text:"Silence is 2 mana — 45% spell failure for 5 turns. Combined with Agony, my opponent cannot act freely in any direction. Cast a spell? Maybe it fails. Take any action? Take damage."},
+    {key:'mordant',text:"Corruption is the slow kill. 3 mana — they gain 2 less mana per channel for 3 turns. Starve them of resources. Let them watch their options narrow to nothing."},
+    {key:'mordant',text:"Dark Bolt is my free attack — 8 dark damage. 82 HP, 6 mana. I am not here for a fair fight. The hex is already written. You just haven't felt it yet."},
+  ],
+  ponder:[
+    {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. But don't underestimate me! My entire kit is about misdirection and resource theft. I'm far harder to catch than I look."},
+    {key:'ponder',text:"Vanish makes me invisible for 3 turns. While invisible, attacks cannot reach me. And more importantly — while invisible, I can use Mana Siphon."},
+    {key:'ponder',text:"Mana Siphon is only available while invisible. It steals 4 mana from my opponent — they lose it AND I gain it. That is an 8-point swing in a single action!"},
+    {key:'ponder',text:"Blink gives me a 50% dodge chance for 3 turns. Half their attacks just... miss. Combined with Vanish and Siphon, I become very difficult to fight effectively."},
+    {key:'ponder',text:"85 HP, 5 mana. Not the strongest. But by the time they catch me, I've already drained half their mana and they don't have enough left to finish the job. Surprise!"},
+  ],
+  durin:[
+    {key:'durin',text:"I am Durin. I have 110 HP. I start with no mana. Before you worry — I channel frequently. What matters is that when spells come, they barely scratch me."},
+    {key:'durin',text:"Stoneskin absorbs 10 damage per hit for up to 30 total HP, lasting 10 turns — all for 3 mana. Against basic attacks, I become nearly impervious."},
+    {key:'durin',text:"Stonesoul reduces magical damage by 40% for 5 turns. A Lightning Bolt that would kill a lesser wizard? A minor inconvenience to Durin."},
+    {key:'durin',text:"Rockfall drops three boulders — about 9 damage each, all physical. It pierces magical shields and resistances entirely. 4 mana for a powerful, unavoidable attack."},
+    {key:'durin',text:"I am slow. I am deliberate. I channel while others waste mana on panicked shields. And when I am ready... the mountain falls."},
+  ],
+};
+
+let activeTutTopic='welcome';
+
+function buildTutorialUI(){
+  const topicBar=document.getElementById('tut-topic-bar');
+  topicBar.innerHTML='';
+  TUTORIAL_TOPICS.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.className='tut-topic-btn'+(t.id===activeTutTopic?' active':'');
+    btn.textContent=t.label;
+    btn.dataset.topic=t.id;
+    btn.addEventListener('click',()=>setTutTopic(t.id));
+    topicBar.appendChild(btn);
+  });
+
+  const charBar=document.getElementById('tut-char-bar');
+  charBar.innerHTML='';
+  CHAR_KEYS_TUT.forEach(key=>{
+    const btn=document.createElement('button');
+    btn.className='tut-char-btn'+(key===activeTutTopic?' active':'');
+    btn.dataset.topic=key;
+    const col=CHAR_COLORS_TUT[key];
+    const name=CHAR_NAMES_TUT[key];
+    const img=document.createElement('img');
+    img.src='portraits/'+key+'.png';
+    img.alt=name;
+    img.style.borderColor=key===activeTutTopic?col:'rgba(201,168,76,0.3)';
+    const lbl=document.createElement('span');
+    lbl.className='tut-char-name';
+    lbl.style.color=col;
+    lbl.textContent=name;
+    btn.appendChild(img);
+    btn.appendChild(lbl);
+    btn.addEventListener('click',()=>setTutTopic(key));
+    charBar.appendChild(btn);
+  });
+
+  renderTutConvo();
+}
+
+function setTutTopic(id){
+  activeTutTopic=id;
+  document.querySelectorAll('.tut-topic-btn').forEach(btn=>{
+    btn.classList.toggle('active',btn.dataset.topic===id);
+  });
+  document.querySelectorAll('.tut-char-btn').forEach(btn=>{
+    const isActive=btn.dataset.topic===id;
+    btn.classList.toggle('active',isActive);
+    const img=btn.querySelector('img');
+    if(img) img.style.borderColor=isActive?CHAR_COLORS_TUT[id]:'rgba(201,168,76,0.3)';
+  });
+  renderTutConvo();
+}
+
+function renderTutConvo(){
+  const convo=document.getElementById('tut-convo');
+  const msgs=TUTORIAL_CONVOS[activeTutTopic]||[];
+  convo.innerHTML='';
+  msgs.forEach((msg,i)=>{
+    const col=CHAR_COLORS_TUT[msg.key]||'#f0cc6a';
+    const name=CHAR_NAMES_TUT[msg.key]||msg.key;
+    const div=document.createElement('div');
+    div.className='tut-msg';
+    div.style.animationDelay=(i*0.06)+'s';
+    const portrait=document.createElement('img');
+    portrait.className='tut-msg-portrait';
+    portrait.src='portraits/'+msg.key+'.png';
+    portrait.alt=name;
+    portrait.style.borderColor=col;
+    const bubble=document.createElement('div');
+    bubble.className='tut-bubble';
+    const speaker=document.createElement('div');
+    speaker.className='tut-speaker';
+    speaker.style.color=col;
+    speaker.textContent=name;
+    const text=document.createElement('div');
+    text.className='tut-text';
+    text.textContent=msg.text;
+    bubble.appendChild(speaker);
+    bubble.appendChild(text);
+    div.appendChild(portrait);
+    div.appendChild(bubble);
+    convo.appendChild(div);
+  });
+  convo.scrollTop=0;
+}
+
 window.addEventListener('DOMContentLoaded', ()=>{
   // Wire up all buttons immediately — independent of the fetch below
   document.querySelectorAll('.diff-btn').forEach(btn=>{
@@ -5666,10 +5913,11 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
 
   document.getElementById('btn-tutorial').addEventListener('click',()=>{
-    document.getElementById('helpmodal').style.display='flex';
+    document.getElementById('tutorial-modal').classList.add('active');
+    buildTutorialUI();
   });
-  document.getElementById('btn-closehelp').addEventListener('click',()=>{
-    document.getElementById('helpmodal').style.display='none';
+  document.getElementById('btn-closetutorial').addEventListener('click',()=>{
+    document.getElementById('tutorial-modal').classList.remove('active');
   });
 
   document.getElementById('bchannel').addEventListener('click',()=>act('channel'));

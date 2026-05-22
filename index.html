@@ -232,22 +232,17 @@
     </div>
   </div>
 
-  <!-- HOW TO PLAY MODAL -->
-  <div id="helpmodal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
-    <div style="max-width:380px;width:100%;background:#1a0a30;border:2px solid #c9a84c;border-radius:8px;padding:24px;text-align:left;">
-      <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#f0cc6a;text-align:center;margin-bottom:18px;">Tutorial</div>
-      <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.9;">
-        <div style="margin-bottom:10px;">🛡 <b style="color:#4af0ff;">SHIELD</b> (3 Mana)<br>Creates a 60 HP barrier lasting 10 turns. Lightning shatters it instantly.</div>
-        <div style="margin-bottom:10px;">✨ <b style="color:#aa66ff;">CHANNEL</b><br>Restore 2 mana. Skip your attack this turn.</div>
-        <div style="margin-bottom:14px;">✨ <b style="color:#c9a84c;">CAST SPELL</b><br>Choose an elemental spell — each has its own puzzle and effect.</div>
-        <div style="color:rgba(255,255,255,0.7);font-size:11px;line-height:2;border-top:1px solid rgba(201,168,76,0.2);padding-top:12px;">
-          🔥 <b>Inferno</b> (4) — Burns 5 dmg/round × 2 · Ember Pattern<br>
-          ⚡ <b>Lightning</b> (3) — Pierces shields · Arc Conduit maze<br>
-          ❄️ <b>Frost Nova</b> (2) — Freezes enemy turn · Ice Slide<br>
-          🌀 <b>Arcane Surge</b> (3) — Wild 15–55 dmg · Memory Runes
-        </div>
+  <!-- TUTORIAL MODAL -->
+  <div id="tutorial-modal">
+    <div id="tut-panel">
+      <div id="tut-header">
+        <div class="tut-title-text">Tutorial</div>
+        <button id="btn-closetutorial" class="tut-close-btn">✕</button>
       </div>
-      <button class="btn" id="btn-closehelp" style="margin-top:20px;width:100%;">Got It ✓</button>
+      <div id="tut-topic-bar"></div>
+      <div class="tut-chars-label">★ Character Guides ★</div>
+      <div id="tut-char-bar"></div>
+      <div id="tut-convo"></div>
     </div>
   </div>
 
