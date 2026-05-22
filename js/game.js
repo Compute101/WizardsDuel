@@ -867,7 +867,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     for(let i=0;i<n;i++){
       const a=t/700+i/n*Math.PI*2, r=sz*(0.78+0.06*Math.sin(t/300+i));
       bx.globalAlpha=0.55+0.3*Math.sin(t/220+i*1.3);
-      bx.fillStyle='#44aaff'; bx.shadowColor='#88ccff'; bx.shadowBlur=7;
+      bx.fillStyle=i%2?'#aaff44':'#88ffcc'; bx.shadowColor='#aaff44'; bx.shadowBlur=6;
       bx.beginPath(); bx.arc(x+Math.cos(a)*r,wy+Math.sin(a)*r*0.5,sz*.025,0,Math.PI*2); bx.fill();
     }
     bx.globalAlpha=1; bx.shadowBlur=0;
