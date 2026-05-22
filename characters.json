@@ -166,6 +166,11 @@
     "title": "The Conductor",
     "sprite": "sprites/mage-light.png",
     "col": "#aaff44",
+    "taunts": [
+      "I had already won before you cast your first spell. You simply hadn't realised it yet.",
+      "Every joule of energy you wasted — I stored it, shaped it, and returned it. Against you.",
+      "The storm obeys me. Did you truly believe you wouldn't?"
+    ],
     "hp": 92,
     "startMana": 7,
     "channelAmt": 6,
