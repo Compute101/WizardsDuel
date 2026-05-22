@@ -81,6 +81,14 @@ let arcadeMode=false;
 let tournamentQueue=[];   // ordered opponent keys
 let tournamentIndex=0;    // index of current opponent in queue
 
+// ── TOURNEY MODE ────────────────────────────────────────────
+let watchMode=false;        // both players AI-controlled
+let tourneyMode=false;      // live tourney match (watch or play)
+let tourneyPickMode=false;  // picking character for tourney bracket
+let tourneyBracket=null;    // {playerKey, rounds:[[{p1Key,p2Key,winner}]]}
+let tourneyCurrentMatch=null;  // {round,matchIdx} — which match is live
+let tourneyPendingResult=null; // {round,matchIdx,winnerKey} — set after live match
+
 // ── STATE ──────────────────────────────────────────────────
 let gs={}, puzzleCB=null, aiTid=null;
 let bW=0, bH=0;
@@ -204,6 +212,219 @@ function showBracket(animate){
       if(activeCol) activeCol.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
     },400);
   }
+}
+
+// ── TOURNEY BRACKET ────────────────────────────────────────
+function buildTourneyBracket(playerKey){
+  const others=Object.keys(CHAR_DEFS).filter(k=>k!==playerKey);
+  for(let i=others.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [others[i],others[j]]=[others[j],others[i]];
+  }
+  const opp=others.slice(0,7);
+  tourneyBracket={
+    playerKey,
+    rounds:[
+      [
+        {p1Key:playerKey, p2Key:opp[0], winner:null},
+        {p1Key:opp[1],    p2Key:opp[2], winner:null},
+        {p1Key:opp[3],    p2Key:opp[4], winner:null},
+        {p1Key:opp[5],    p2Key:opp[6], winner:null},
+      ],
+      [
+        {p1Key:null, p2Key:null, winner:null},
+        {p1Key:null, p2Key:null, winner:null},
+      ],
+      [
+        {p1Key:null, p2Key:null, winner:null},
+      ],
+    ],
+  };
+}
+
+function renderTourneyBracket(){
+  const container=document.getElementById('tourney-bracket');
+  container.innerHTML='';
+  const roundLabels=['Quarter-Finals','Semi-Finals','Final'];
+  const tb=tourneyBracket;
+
+  tb.rounds.forEach((matches,rIdx)=>{
+    const roundDiv=document.createElement('div');
+    roundDiv.className='tourney-round';
+
+    const labelEl=document.createElement('div');
+    labelEl.className='tourney-round-label';
+    labelEl.textContent=roundLabels[rIdx]||('Round '+(rIdx+1));
+    roundDiv.appendChild(labelEl);
+
+    matches.forEach((match,mIdx)=>{
+      const matchDiv=document.createElement('div');
+      matchDiv.className='tourney-match';
+      if(match.winner) matchDiv.classList.add('match-done');
+
+      const bothKnown=match.p1Key&&match.p2Key;
+
+      function makeSide(key,isWinner,isLoser){
+        const side=document.createElement('div');
+        side.className='tourney-combatant';
+        if(isWinner) side.classList.add('winner');
+        if(isLoser) side.classList.add('loser');
+        if(key&&key===tb.playerKey) side.classList.add('is-player');
+
+        if(key){
+          const img=document.createElement('img');
+          img.className='tourney-portrait';
+          img.src='portraits/'+key+'.png';
+          img.alt=CHAR_DEFS[key]?CHAR_DEFS[key].name:key;
+          side.appendChild(img);
+          const name=document.createElement('span');
+          name.className='tourney-name';
+          name.textContent=CHAR_DEFS[key]?CHAR_DEFS[key].name:key;
+          name.style.color=(CHAR_DEFS[key]&&CHAR_DEFS[key].col)||'#f0cc6a';
+          side.appendChild(name);
+        } else {
+          const ph=document.createElement('div');
+          ph.className='tourney-tbd-portrait';
+          ph.textContent='?';
+          side.appendChild(ph);
+          const name=document.createElement('span');
+          name.className='tourney-name tourney-tbd';
+          name.textContent='TBD';
+          side.appendChild(name);
+        }
+        return side;
+      }
+
+      const isP1Win=match.winner===match.p1Key;
+      const isP2Win=match.winner===match.p2Key;
+
+      const combRow=document.createElement('div');
+      combRow.className='tourney-combatants';
+      combRow.appendChild(makeSide(match.p1Key,isP1Win,match.winner&&!isP1Win));
+      const vsEl=document.createElement('span');
+      vsEl.className='tourney-vs';
+      vsEl.textContent='VS';
+      combRow.appendChild(vsEl);
+      combRow.appendChild(makeSide(match.p2Key,isP2Win,match.winner&&!isP2Win));
+      matchDiv.appendChild(combRow);
+
+      if(!match.winner){
+        const actDiv=document.createElement('div');
+        actDiv.className='tourney-actions';
+
+        const simBtn=document.createElement('button');
+        simBtn.className='tourney-btn tourney-sim-btn';
+        simBtn.textContent='⚡ Simulate';
+        simBtn.disabled=!bothKnown;
+        simBtn.addEventListener('click',()=>simulateTourneyMatch(rIdx,mIdx));
+        actDiv.appendChild(simBtn);
+
+        const watchBtn=document.createElement('button');
+        watchBtn.className='tourney-btn tourney-watch-btn';
+        watchBtn.textContent='👁 Watch';
+        watchBtn.disabled=!bothKnown;
+        watchBtn.addEventListener('click',()=>startWatchTourneyMatch(rIdx,mIdx));
+        actDiv.appendChild(watchBtn);
+
+        const playerIn=match.p1Key===tb.playerKey||match.p2Key===tb.playerKey;
+        const playBtn=document.createElement('button');
+        playBtn.className='tourney-btn tourney-play-btn';
+        playBtn.textContent='⚔ Play';
+        playBtn.disabled=!bothKnown||!playerIn;
+        playBtn.addEventListener('click',()=>startPlayTourneyMatch(rIdx,mIdx));
+        actDiv.appendChild(playBtn);
+
+        matchDiv.appendChild(actDiv);
+      } else {
+        const resultEl=document.createElement('div');
+        resultEl.className='tourney-result';
+        const wCfg=CHAR_DEFS[match.winner];
+        resultEl.textContent=(wCfg?wCfg.name:match.winner)+' advances';
+        resultEl.style.color=(wCfg&&wCfg.col)||'#f0cc6a';
+        matchDiv.appendChild(resultEl);
+      }
+
+      roundDiv.appendChild(matchDiv);
+    });
+
+    container.appendChild(roundDiv);
+  });
+}
+
+function showTourneyScreen(){
+  renderTourneyBracket();
+  showScreen('tourney-screen');
+}
+
+function setTourneyMatchWinner(round,matchIdx,winnerKey){
+  tourneyBracket.rounds[round][matchIdx].winner=winnerKey;
+  // Propagate winner to next round
+  if(round===0){
+    const sfIdx=Math.floor(matchIdx/2);
+    const slot=matchIdx%2===0?'p1Key':'p2Key';
+    tourneyBracket.rounds[1][sfIdx][slot]=winnerKey;
+  } else if(round===1){
+    const slot=matchIdx===0?'p1Key':'p2Key';
+    tourneyBracket.rounds[2][0][slot]=winnerKey;
+  }
+  renderTourneyBracket();
+  // Tournament champion
+  if(round===2) setTimeout(()=>showTourneyChampion(winnerKey),600);
+}
+
+function showTourneyChampion(winnerKey){
+  const cfg=CHAR_DEFS[winnerKey];
+  const isPlayer=winnerKey===tourneyBracket.playerKey;
+  document.getElementById('ovico').textContent='🏆';
+  document.getElementById('ovtitle').textContent=(cfg?cfg.name:winnerKey)+' wins the Tournament!';
+  document.getElementById('ovtitle').style.color=(cfg&&cfg.col)||'#f0cc6a';
+  document.getElementById('ovdesc').textContent=isPlayer?
+    'Your wizard has triumphed over all challengers!':
+    (cfg?cfg.name:winnerKey)+' is the Tournament Champion!';
+  document.getElementById('btn-continue').textContent='Back to Title';
+  document.getElementById('overlay').classList.add('active');
+}
+
+function simulateTourneyMatch(round,matchIdx){
+  const match=tourneyBracket.rounds[round][matchIdx];
+  if(!match.p1Key||!match.p2Key||match.winner) return;
+  const winnerKey=simulateMatch(match.p1Key,match.p2Key);
+  setTourneyMatchWinner(round,matchIdx,winnerKey);
+}
+
+function startWatchTourneyMatch(round,matchIdx){
+  const match=tourneyBracket.rounds[round][matchIdx];
+  if(!match.p1Key||!match.p2Key||match.winner) return;
+  watchMode=true; tourneyMode=true;
+  tourneyCurrentMatch={round,matchIdx};
+  p1Key=match.p1Key; p2Key=match.p2Key;
+  p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key];
+  tournamentQueue=[]; tournamentIndex=0;
+  trainingMode=false; twoPlayerMode=false; arcadeMode=false;
+  startNextBattle();
+  // Override myTurn so AI drives p1's first move
+  gs.myTurn=false; gs.busy=true;
+  document.getElementById('actionbar').style.display='none';
+  setTimeout(doAIAsP1,1200);
+}
+
+function startPlayTourneyMatch(round,matchIdx){
+  const match=tourneyBracket.rounds[round][matchIdx];
+  if(!match.p1Key||!match.p2Key||match.winner) return;
+  const tb=tourneyBracket;
+  watchMode=false; tourneyMode=true;
+  tourneyCurrentMatch={round,matchIdx};
+  // Player's character is always p1 for play mode
+  if(match.p1Key===tb.playerKey){
+    p1Key=match.p1Key; p2Key=match.p2Key;
+  } else {
+    p1Key=match.p2Key; p2Key=match.p1Key;
+  }
+  p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key];
+  tournamentQueue=[]; tournamentIndex=0;
+  trainingMode=false; twoPlayerMode=false; arcadeMode=false;
+  document.getElementById('actionbar').style.display='';
+  startNextBattle();
 }
 
 // ── BATTLE CANVAS ──────────────────────────────────────────
@@ -3124,6 +3345,156 @@ function doAI(){
   },700);
 }
 
+// ── P1 AI TURN (watch mode) ────────────────────────────────
+function doAIAsP1(){
+  if(!gs||!battleRunning||gameEnded) return;
+
+  const ai=gs.p1;
+  const allSpells=[...SPELLS,...(p1Cfg.spells||[])];
+
+  // Build available list mirroring doAI heuristics
+  const available=allSpells.filter(s=>{
+    if(ai.mana<s.cost) return false;
+    if(s.id&&charSpellBlocked(s.id,ai,p1Cfg,gs.p2)) return false;
+    if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
+    if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
+    if(s.aiHint==='drain'&&ai.hp>ai.maxHp*0.75) return false;
+    if(ai.frenzied>0&&s.element) return false;
+    if(gs.p2.invisible>0&&(s.element&&!s.area&&s.element!=='dispel'&&s.element!=='manaburn'||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption'||s.id==='rockfall')) return false;
+    return true;
+  });
+
+  const charSpells=available.filter(s=>s.id);
+  const universalSpells=available.filter(s=>s.element);
+
+  let chosen=null;
+  if(p1Key==='mordant'&&ai.agony>0) chosen=null;
+  else if(p1Key==='mordant'&&!chosen){
+    const hexSpells=charSpells.filter(s=>['agony','silence','corruption'].includes(s.id));
+    if(hexSpells.length>0&&Math.random()<0.65) chosen=hexSpells[Math.floor(Math.random()*hexSpells.length)];
+  }
+  if(p1Key==='mary'){
+    const hasDebuff=ai.burn>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
+    const canPurge=charSpells.find(s=>s.id==='purge');
+    const canHeal=charSpells.find(s=>s.id==='divineheal');
+    if(hasDebuff&&canPurge) chosen=canPurge;
+    else if(ai.hp<ai.maxHp*0.60&&canHeal) chosen=canHeal;
+  }
+  if(p1Key==='zacharius'){
+    const chainReady=charSpells.find(s=>s.id==='chainlightning');
+    const canGalvanize=charSpells.find(s=>s.id==='galvanize');
+    const canConductivity=charSpells.find(s=>s.id==='conductivity');
+    if(chainReady&&ai.charge>=(p1Cfg.chainLightningChargeCost||8)) chosen=chainReady;
+    else if(canConductivity&&!gs.p2.conductivity&&ai.mana>=canConductivity.cost) chosen=canConductivity;
+    else if(canGalvanize) chosen=canGalvanize;
+  }
+  if(p1Key==='durin'){
+    const canStoneskin=charSpells.find(s=>s.id==='stoneskin');
+    const canStonesoul=charSpells.find(s=>s.id==='stonesoul');
+    const canRockfall=charSpells.find(s=>s.id==='rockfall');
+    if(ai.stoneskin<=0&&canStoneskin&&ai.hp<ai.maxHp*0.85) chosen=canStoneskin;
+    else if(ai.stonesoul<=0&&canStonesoul&&ai.hp<ai.maxHp*0.70) chosen=canStonesoul;
+    else if(canRockfall&&Math.random()<0.55) chosen=canRockfall;
+  }
+  if(!chosen){
+    const dispelSpell=universalSpells.find(s=>s.element==='dispel');
+    if(dispelSpell){
+      const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
+      const oppHasKeyBuff=gs.p2.shield>0||gs.p2.foresight||gs.p2.resist>1||gs.p2.invisible>1||gs.p2.stoneskin>0||gs.p2.stonesoul>0||gs.p2.ward>0||gs.p2.counter;
+      if(needsCleanse||(oppHasKeyBuff&&Math.random()<0.35)){
+        chosen=dispelSpell;
+        dispelSelf=needsCleanse;
+      }
+    }
+  }
+  if(!chosen){
+    const manaBurnSpell=universalSpells.find(s=>s.element==='manaburn');
+    if(manaBurnSpell&&gs.p2.mana>=8) chosen=manaBurnSpell;
+  }
+  if(!chosen&&available.length>0){
+    if(charSpells.length>0&&Math.random()<0.40){
+      chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
+    } else if(universalSpells.length>0){
+      if(gs.p2.shield>0&&universalSpells.find(s=>s.element==='lightning')){
+        chosen=universalSpells.find(s=>s.element==='lightning');
+      } else if(!gs.p2.shield&&universalSpells.find(s=>s.element==='fire')){
+        chosen=universalSpells.find(s=>s.element==='fire');
+      } else if(gs.p2.mana>=3&&universalSpells.find(s=>s.element==='ice')){
+        chosen=universalSpells.find(s=>s.element==='ice');
+      } else {
+        const randPool=universalSpells.filter(s=>s.element!=='dispel');
+        if(randPool.length>0) chosen=randPool[Math.floor(Math.random()*randPool.length)];
+      }
+    } else if(charSpells.length>0){
+      chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
+    }
+  }
+
+  if(!chosen){
+    // Channel
+    if(ai.timeDrain>0){
+      ai.mana=Math.min(MAX_MANA,ai.mana+2);
+      addFloat(bW*.22,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
+    } else {
+      ai.mana=Math.min(MAX_MANA,ai.mana+p1Cfg.channelAmt);
+      addFloat(bW*.22,bH*.38,'+'+p1Cfg.channelAmt+' Mana','#aaaaff',13);
+    }
+    if(ai.candle>0) triggerCandleBurn(ai,bW*.22);
+    anim('p1','cast',700);
+    endMyTurn(false);
+    return;
+  }
+
+  // Agony: take damage for any non-channel action
+  if(ai.agony>0){
+    const agonDmg=ai.agonyDmg||12;
+    ai.hp=Math.max(0,ai.hp-agonDmg);
+    addFloat(bW*.22,bH*.38,'💀 Agony! −'+agonDmg,'#9944cc',14);
+    spawnParts(bW*.22,bH*.38,'#9944cc',12); flash('#330033');
+    checkWin(); if(!battleRunning) return;
+  }
+
+  // Silence: 45% fizzle
+  if(chosen.id&&chosen.cost>0&&ai.silence>0&&Math.random()<0.45){
+    showSilenceBlock(bW*.22,bH*.33); anim('p1','cast',600);
+    endMyTurn(false); return;
+  }
+  if(!chosen.id&&ai.silence>0&&Math.random()<0.45){
+    showSilenceBlock(bW*.22,bH*.33); anim('p1','cast',600);
+    ai.mana=Math.max(0,ai.mana-1);
+    endMyTurn(false); return;
+  }
+
+  if(chosen.id){
+    resolveCharSpell(chosen.id,'p1');
+    return;
+  }
+
+  // Universal spell
+  addFloat(bW*.22,bH*.26,chosen.icon+' '+chosen.name+'!',chosen.col,12);
+  anim('p1','cast',800);
+  setTimeout(()=>{
+    if(!battleRunning) return;
+    if(Math.random()<0.8){
+      ai.mana-=chosen.cost;
+      if(chosen.element==='dispel'&&dispelSelf){
+        castSpell(chosen,gs.p1,bW*.22,bH*.38,'p1');
+        endMyTurn(false);
+      } else {
+        spawnProj(bW*.22,bH*.38,bW*.78,bH*.38,chosen.element,chosen.col,()=>{
+          if(!battleRunning) return;
+          castSpell(chosen,gs.p2,bW*.78,bH*.38,'p1');
+          endMyTurn(false);
+        });
+      }
+    } else {
+      addFloat(bW*.22,bH*.33,'Fizzled!','#ff8844',12);
+      ai.mana=Math.max(0,ai.mana-1);
+      endMyTurn(false);
+    }
+  },700);
+}
+
 function finishAI(){
   if(!battleRunning||gameEnded) return;
   checkWin(); if(!battleRunning) return;
@@ -3170,7 +3541,7 @@ function finishAI(){
     return;
   }
 
-  gs.myTurn=true; gs.busy=false;
+  if(watchMode){ setTimeout(doAIAsP1,800); } else { gs.myTurn=true; gs.busy=false; }
 }
 
 // ── RETRY SCREEN ───────────────────────────────────────────
@@ -3288,6 +3659,26 @@ function endGame(won){
   gameEnded=true;
   gs.myTurn=false; gs.busy=true;
   gs[won?'p2anim':'p1anim']='death';
+
+  // Tourney live match (watch or play) — update bracket then return
+  if(tourneyMode&&tourneyCurrentMatch!==null){
+    const winnerKey=won?p1Key:p2Key;
+    const {round,matchIdx}=tourneyCurrentMatch;
+    tourneyPendingResult={round,matchIdx,winnerKey};
+    setTimeout(()=>{
+      battleRunning=false; watchMode=false; tourneyCurrentMatch=null;
+      document.getElementById('actionbar').style.display='';
+      const wCfg=CHAR_DEFS[winnerKey];
+      document.getElementById('ovico').textContent='⚔️';
+      document.getElementById('ovtitle').textContent=(wCfg?wCfg.name:winnerKey)+' wins!';
+      document.getElementById('ovtitle').style.color=(wCfg&&wCfg.col)||'#f0cc6a';
+      document.getElementById('ovdesc').textContent='';
+      document.getElementById('btn-continue').textContent='← Back to Tournament';
+      document.getElementById('overlay').classList.add('active');
+    },1000);
+    return;
+  }
+
   setTimeout(()=>{
     if(twoPlayerMode){
       battleRunning=false;
@@ -5314,6 +5705,13 @@ function showWizardDetail(key){
 }
 
 function pickCharacter(key){
+  if(tourneyPickMode){
+    tourneyPickMode=false;
+    document.getElementById('char-player-label').style.display='none';
+    buildTourneyBracket(key);
+    showTourneyScreen();
+    return;
+  }
   if(trainingMode){
     if(trainingPickPhase==='p1'){
       p1Key=key; p1Cfg=CHAR_DEFS[key];
@@ -5487,14 +5885,13 @@ function startNextBattle(){
   p2hud.style.visibility='';
   document.getElementById('p2name').textContent=p2Cfg.name;
   document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
-  // Show fight progress in HUD (e.g. "Fight 2 / 4")
+  // Show fight progress in HUD
   const fightLbl=document.getElementById('fightlbl');
   if(fightLbl){
-    if(tournamentQueue.length>1){
-      fightLbl.textContent='Fight '+(tournamentIndex+1)+' / '+tournamentQueue.length;
-    } else {
-      fightLbl.textContent='';
-    }
+    if(watchMode) fightLbl.textContent='Watching';
+    else if(tourneyMode) fightLbl.textContent='Tournament';
+    else if(tournamentQueue.length>1) fightLbl.textContent='Fight '+(tournamentIndex+1)+' / '+tournamentQueue.length;
+    else fightLbl.textContent='';
   }
   newState();
   gameEnded=false;
@@ -5813,6 +6210,21 @@ window.addEventListener('DOMContentLoaded', ()=>{
     lbl.style.display='';
     showScreen('char-screen');
   });
+  document.getElementById('btn-duel-tourney').addEventListener('click',()=>{
+    duelOverlay.style.display='none';
+    trainingMode=false; twoPlayerMode=false; arcadeMode=false;
+    tourneyPickMode=true; tourneyMode=false; watchMode=false;
+    tourneyBracket=null; tourneyCurrentMatch=null; tourneyPendingResult=null;
+    const lbl=document.getElementById('char-player-label');
+    lbl.textContent='Choose Your Wizard';
+    lbl.style.display='';
+    showScreen('char-screen');
+  });
+  document.getElementById('btn-tourney-back').addEventListener('click',()=>{
+    tourneyMode=false; watchMode=false; tourneyBracket=null;
+    tourneyCurrentMatch=null; tourneyPendingResult=null;
+    showScreen('title-screen');
+  });
   document.getElementById('btn-practice').addEventListener('click',()=>{
     trainingMode=true; trainingAI=true; trainingPickPhase=null;
     twoPlayerMode=false;
@@ -5876,6 +6288,12 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btn-training-menu').addEventListener('click', exitTrainingToMenu);
   document.getElementById('btn-pz-exit').addEventListener('click', exitTrainingToMenu);
   document.getElementById('btn-back').addEventListener('click',()=>{
+    if(tourneyPickMode){
+      tourneyPickMode=false;
+      document.getElementById('char-player-label').style.display='none';
+      duelOverlay.style.display='flex';
+      return;
+    }
     if(trainingMode){
       trainingPickPhase=null;
       document.getElementById('char-player-label').style.display='none';
@@ -5939,6 +6357,24 @@ window.addEventListener('DOMContentLoaded', ()=>{
 
   document.getElementById('btn-continue').addEventListener('click',()=>{
     document.getElementById('overlay').classList.remove('active');
+    // Tourney live match result
+    if(tourneyPendingResult){
+      const {round,matchIdx,winnerKey}=tourneyPendingResult;
+      tourneyPendingResult=null;
+      gameEnded=false; battleRunning=false;
+      document.getElementById('btn-continue').textContent='Continue';
+      setTourneyMatchWinner(round,matchIdx,winnerKey);
+      showTourneyScreen();
+      return;
+    }
+    // Tourney champion overlay → back to title
+    if(tourneyBracket&&document.getElementById('ovtitle').textContent.includes('Tournament')){
+      tourneyMode=false; watchMode=false; tourneyBracket=null;
+      gameEnded=false; battleRunning=false;
+      document.getElementById('btn-continue').textContent='Continue';
+      showScreen('title-screen');
+      return;
+    }
     if(twoPlayerMode){
       const isMatchOver=p1MatchWins>=2||p2MatchWins>=2||matchRound>=3;
       if(isMatchOver){

@@ -254,8 +254,19 @@
       <button class="btn" id="btn-duel-arcade">🏆 Arcade</button>
       <button class="btn btn-ironman" id="btn-duel-ironman">⚔ Iron Man</button>
       <button class="btn btn-2p" id="btn-duel-2player">⚔ 2 Player Duel</button>
+      <button class="btn btn-tourney" id="btn-duel-tourney">🏆 Tournament</button>
       <button class="btn btn-training-back-btn" id="btn-duel-back" style="margin-top:12px;">← Back</button>
     </div>
+  </div>
+
+  <!-- TOURNEY BRACKET SCREEN -->
+  <div id="tourney-screen" class="screen">
+    <div class="tourney-header">
+      <div class="tourney-title">Tournament of Wizards</div>
+      <div class="tourney-sub">★ Simulate · Watch · Play ★</div>
+    </div>
+    <div id="tourney-bracket" class="tourney-bracket-scroll"></div>
+    <button class="btn btn-tourney-back" id="btn-tourney-back">← Back to Title</button>
   </div>
 
   <!-- HANDOFF OVERLAY (2P mode) -->
@@ -307,6 +318,7 @@
   </div>
 </div>
 
+<script src="js/sim.js?v=1"></script>
 <script src="js/game.js?v=0.11"></script>
 </body>
 </html>
