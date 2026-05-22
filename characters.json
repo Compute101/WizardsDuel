@@ -114,11 +114,16 @@
       {"id": "frenzy",   "name": "Frenzy",        "icon": "💢", "cost": 0, "costLabel": "15 HP",   "effectLabel": "3 rapid strikes (~9 phys dmg each)", "aiHint": "frenzy"}
     ]
   },
-  "emberic": {
-    "name": "EMBERIC",
+  "cinder": {
+    "name": "CINDER",
     "title": "The Volatile",
     "sprite": "sprites/mage-dark.png",
     "col": "#ff6600",
+    "taunts": [
+      "You thought the heat would break me? I am the heat.",
+      "Roll the dice, fan the flames — and never, ever bet against fire.",
+      "Still smouldering. Still standing. Come back when you're ready to burn."
+    ],
     "hp": 83,
     "startMana": 7,
     "channelAmt": 5,
