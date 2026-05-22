@@ -1061,7 +1061,7 @@ function spawnParts(x,y,col,n=16){
 function tickFloats(){
   gs.floats=gs.floats.filter(f=>f.life>0);
   gs.floats.forEach(f=>{
-    f.y-=1.1; f.life-=.016;
+    f.y-=0.55; f.life-=.016;
     bx.globalAlpha=Math.min(1,f.life*3); bx.fillStyle=f.col;
     bx.font=`bold ${f.sz}px Cinzel,serif`; bx.textAlign='center';
     bx.shadowColor=f.col; bx.shadowBlur=10;
