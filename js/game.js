@@ -158,7 +158,7 @@ function buildBracket(){
     if(i<tournamentQueue.length-1){
       const arr=document.createElement('div');
       arr.className='bracket-arrow';
-      arr.textContent='▶';
+      arr.textContent='▲';
       track.appendChild(arr);
     }
   });
@@ -196,14 +196,14 @@ function showBracket(animate){
     }
   });
 
+  showScreen('tournament-screen');
+
   if(animate){
     setTimeout(()=>{
       const activeCol=document.querySelector('#bracket-track .bracket-round.br-active');
-      if(activeCol) activeCol.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+      if(activeCol) activeCol.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
     },400);
   }
-
-  showScreen('tournament-screen');
 }
 
 // ── BATTLE CANVAS ──────────────────────────────────────────
