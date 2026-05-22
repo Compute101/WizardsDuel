@@ -5566,7 +5566,7 @@ const TUTORIAL_CONVOS={
   ],
   channeling:[
     {key:'ponder', text:"Channeling is the most important action you'll take! When you channel, you restore mana — and without mana, you can't cast spells or use most abilities."},
-    {key:'sylvara',text:"By default, channeling restores 4 mana. Some wizards have abilities that change this — and some opponents can make your channeling painful or costly."},
+    {key:'sylvara',text:"By default, channeling restores 5 mana. Some wizards have abilities that change this — and some opponents can make your channeling painful or costly."},
     {key:'ponder', text:"Here's the catch: channeling skips your attack for that turn. You can't channel AND strike. So it's always a trade-off between power now and power later."},
     {key:'sylvara',text:"Timing your channels is everything. Channel too little and you'll run dry. Channel too often and you leave yourself open to free attacks!"},
   ],
