@@ -21,11 +21,9 @@
       <button class="diff-btn active" data-diff="normal">Normal</button>
       <button class="diff-btn" data-diff="hard">Hard</button>
     </div>
-    <button class="btn" id="btn-start">🏆 Arcade Mode</button>
-    <button class="btn btn-ironman" id="btn-ironman">⚔ Iron Man Mode</button>
-    <button class="btn btn-2p" id="btn-2player">⚔ 2 Player Duel</button>
+    <button class="btn btn-duel-main" id="btn-duel">⚔ Duel</button>
     <button class="btn" id="btn-practice">🎯 Practice Mode</button>
-    <button class="btn" id="btn-help">📜 How to Play</button>
+    <button class="btn" id="btn-tutorial">📜 Tutorial</button>
     <div class="hint">CAST SPELLS · RAISE SHIELDS · SOLVE MAZES<br>DEFEAT YOUR RIVAL WIZARD</div>
     <div style="position:absolute;bottom:12px;right:16px;font-size:10px;color:rgba(201,168,76,0.4);letter-spacing:1px;">v0.9</div>
   </div>
@@ -237,7 +235,7 @@
   <!-- HOW TO PLAY MODAL -->
   <div id="helpmodal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
     <div style="max-width:380px;width:100%;background:#1a0a30;border:2px solid #c9a84c;border-radius:8px;padding:24px;text-align:left;">
-      <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#f0cc6a;text-align:center;margin-bottom:18px;">How to Play</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#f0cc6a;text-align:center;margin-bottom:18px;">Tutorial</div>
       <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.9;">
         <div style="margin-bottom:10px;">🛡 <b style="color:#4af0ff;">SHIELD</b> (3 Mana)<br>Creates a 60 HP barrier lasting 10 turns. Lightning shatters it instantly.</div>
         <div style="margin-bottom:10px;">✨ <b style="color:#aa66ff;">CHANNEL</b><br>Restore 2 mana. Skip your attack this turn.</div>
@@ -250,6 +248,18 @@
         </div>
       </div>
       <button class="btn" id="btn-closehelp" style="margin-top:20px;width:100%;">Got It ✓</button>
+    </div>
+  </div>
+
+  <!-- DUEL MODE OVERLAY -->
+  <div id="duel-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;flex-direction:column;align-items:center;justify-content:center;">
+    <div style="text-align:center;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:20px;color:#f0cc6a;text-shadow:0 0 18px #c9a84c;margin-bottom:6px;">Choose Mode</div>
+      <div style="font-size:10px;letter-spacing:3px;color:rgba(201,168,76,0.4);text-transform:uppercase;margin-bottom:28px;">★ Select Your Battle ★</div>
+      <button class="btn" id="btn-duel-arcade">🏆 Arcade</button>
+      <button class="btn btn-ironman" id="btn-duel-ironman">⚔ Iron Man</button>
+      <button class="btn btn-2p" id="btn-duel-2player">⚔ 2 Player Duel</button>
+      <button class="btn btn-training-back-btn" id="btn-duel-back" style="margin-top:12px;">← Back</button>
     </div>
   </div>
 
