@@ -5970,7 +5970,7 @@ const TUTORIAL_CONVOS={
     {key:'eldrad',text:"I am Eldrin — the Stalwart. My philosophy is endurance. 90 HP, 5 starting mana. My abilities focus entirely on surviving long enough to outlast my foe."},
     {key:'eldrad',text:"Magic Missile is my free attack — about 8 damage per cast, no mana required. Useful for chipping away while I conserve resources for when it truly matters."},
     {key:'eldrad',text:"Shield creates a 60 HP barrier for 10 turns at just 3 mana. It absorbs damage in my place. Combined with my base HP, I can weather tremendous punishment."},
-    {key:'eldrad',text:"Counter reflects 20 damage back to whoever strikes me — cast it and let my opponent injure themselves. Ward protects me from the next status effect for 3 turns."},
+    {key:'eldrad',text:"Counter costs 2 mana and reflects 20 damage back to whoever strikes me — pair it with Shield and let my opponent injure themselves. Note: if the Shield is lost, Counter is lost with it. Ward protects me from the next status effect for 3 turns."},
     {key:'eldrad',text:"My strength is that I never go down easily. The fight is always on my terms. I wait, I endure, and eventually even the most aggressive foe runs out of mana."},
   ],
   mal:[
