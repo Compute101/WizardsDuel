@@ -16,6 +16,17 @@ const SPELLS=[
    effectLabel:'Deal 2× opp mana as dmg; drain 4 mana (pierces shields)'},
 ];
 
+// ── BUFF TILE-MATCH GLYPH SETS ──────────────────────────────
+// 4 glyphs (indices into ALPHABET) per buff spell — thematic choices
+const BUFF_TILE_GLYPHS={
+  shield:      [4,8,10,11], // Ω ⊕ θ Φ — arch, binding, crystal, polar axis
+  foresight:   [5,7,6,1],   // ∞ ✸ ☽ Δ — eternity, radiance, crescent, clarity
+  flameshield: [0,4,7,8],   // ϟ Ω ✸ ⊕ — bolt, arch, burst, solar ward
+  frostarmor:  [10,11,2,6], // θ Φ ∇ ☽ — crystal, axis, cold descent, frost moon
+  stoneskin:   [1,2,3,8],   // Δ ∇ Ψ ⊕ — stone layers, fork, binding
+  warpaint:    [0,3,9,7],   // ϟ Ψ ⊗ ✸ — bolt, trident, X-slash, burst
+};
+
 // ── CHARACTER DEFINITIONS (loaded from characters.json) ───────
 let CHAR_DEFS={};
 let p1Key='eldrad', p2Key='mal';
@@ -23,7 +34,7 @@ let p1Cfg, p2Cfg;
 
 const CHAR_DISPLAY={
   eldrad:{
-    stats:[['❤ HP','115'],['🛡 Shield','60 HP / 10T'],['⚡ Counter','20 reflect'],['🔰 Ward','Block next status / 3T']],
+    stats:[['❤ HP','115'],['🛡 Shield','60 HP / 10T'],['⚡ Counter','20 reflect / 2M'],['🔰 Ward','Block next status / 3T']],
     flavour:'Outlast your foe with arcane endurance.'
   },
   mal:{
@@ -1686,12 +1697,26 @@ function act(type){
       showSilenceBlock(cx,bH*.33); anim(who,'cast',600);
       setTimeout(()=>endMyTurn(), 1200); return;
     }
+    // Buff spells with tile-match ritual minigame
+    if(BUFF_TILE_GLYPHS[type]){
+      gs.busy=true;
+      launchBuffTileMatch(charSpell,type,who,(ok,perfect)=>{
+        if(ok){
+          resolveCharSpell(type,who,perfect);
+        } else {
+          addFloat(cx,bH*.33,'Ritual Failed!','#ff8844',13);
+          whoState.mana=Math.max(0,whoState.mana-1);
+          endMyTurn();
+        }
+      });
+      return;
+    }
     resolveCharSpell(type,who);
   }
 }
 
 // ── CHARACTER SPELLS (instant) ─────────────────────────────
-function resolveCharSpell(spellId,caster){
+function resolveCharSpell(spellId,caster,perfect=false){
   const casterState=caster==='p1'?gs.p1:gs.p2;
   const casterCfg  =caster==='p1'?p1Cfg:p2Cfg;
   const targetState=caster==='p1'?gs.p2:gs.p1;
@@ -1704,8 +1729,9 @@ function resolveCharSpell(spellId,caster){
 
   if(spellId==='shield'){
     casterState.shield=casterCfg.shieldDuration||10;
-    casterState.shieldHp=casterCfg.shieldMaxHp||60;
+    casterState.shieldHp=(casterCfg.shieldMaxHp||60)+(perfect?5:0);
     addFloat(cx,bH*.33,'🛡 Shielded! ('+casterState.shieldHp+' HP)','#4af0ff',12);
+    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +5 HP','#ffff88',11);
     anim(caster,'shield',700);
   } else if(spellId==='counter'){
     casterState.counter=true;
@@ -1826,8 +1852,9 @@ function resolveCharSpell(spellId,caster){
       refreshHUD();
     }
   } else if(spellId==='warpaint'){
-    casterState.resist=5;
+    casterState.resist=5+(perfect?1:0);
     addFloat(cx,bH*.33,'🩸 War Paint! -33% dmg',casterCfg.col,12);
+    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
     for(let i=0;i<8;i++)
       gs.parts.push({x:cx+(Math.random()-.5)*bH*.05,y:bH*.35,col:'#cc1111',
         vx:(Math.random()-.5)*1.5,vy:1+Math.random()*2.5,sz:2+Math.random()*2,life:1,dec:.025});
@@ -1872,7 +1899,7 @@ function resolveCharSpell(spellId,caster){
           targetState.shieldHp-=absorbed;
           dmg-=absorbed;
           if(targetState.shieldHp<=0){
-            targetState.shield=0;
+            targetState.shield=0; targetState.counter=false;
             addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
             spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
           } else {
@@ -1940,7 +1967,7 @@ function resolveCharSpell(spellId,caster){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed; drainBase-=absorbed;
         if(targetState.shieldHp<=0){
-          targetState.shield=0;
+          targetState.shield=0; targetState.counter=false;
           addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
           spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
         } else {
@@ -2067,7 +2094,7 @@ function resolveCharSpell(spellId,caster){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed;
         if(targetState.shieldHp<=0){
-          targetState.shield=0;
+          targetState.shield=0; targetState.counter=false;
           addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
           spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
         } else {
@@ -2091,8 +2118,9 @@ function resolveCharSpell(spellId,caster){
       refreshHUD(); checkWin();
     }
   } else if(spellId==='flameshield'){
-    casterState.flameShield=5;
-    addFloat(cx,bH*.33,'🔥 Flame Shield! (5T)',casterCfg.col,13);
+    casterState.flameShield=5+(perfect?1:0);
+    addFloat(cx,bH*.33,'🔥 Flame Shield! ('+casterState.flameShield+'T)',casterCfg.col,13);
+    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
     for(let i=0;i<14;i++){
       const a=i/14*Math.PI*2;
       gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#ff6600':'#ffaa00',
@@ -2160,7 +2188,7 @@ function resolveCharSpell(spellId,caster){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed;
         if(targetState.shieldHp<=0){
-          targetState.shield=0;
+          targetState.shield=0; targetState.counter=false;
           addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
           spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
         } else {
@@ -2192,8 +2220,9 @@ function resolveCharSpell(spellId,caster){
       refreshHUD(); checkWin();
     }
   } else if(spellId==='frostarmor'){
-    casterState.frostArmor=casterCfg.frostArmorDur||4;
+    casterState.frostArmor=(casterCfg.frostArmorDur||4)+(perfect?1:0);
     addFloat(cx,bH*.33,'❄️ Frost Armor! ('+casterState.frostArmor+'T)','#88ddff',13);
+    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
     for(let i=0;i<16;i++){
       const a=i/16*Math.PI*2;
       gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#88ddff',
@@ -2267,7 +2296,7 @@ function resolveCharSpell(spellId,caster){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed;
         if(targetState.shieldHp<=0){
-          targetState.shield=0;
+          targetState.shield=0; targetState.counter=false;
           addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
           spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
         } else {
@@ -2431,8 +2460,9 @@ function resolveCharSpell(spellId,caster){
     refreshHUD(); checkWin();
   } else if(spellId==='stoneskin'){
     casterState.stoneskin=casterCfg.stoneskinDuration||10;
-    casterState.stoneskinHp=casterCfg.stoneskinHpMax||30;
+    casterState.stoneskinHp=(casterCfg.stoneskinHpMax||30)+(perfect?5:0);
     addFloat(cx,bH*.33,'🧱 Stoneskin! ('+casterState.stoneskin+'T / '+casterState.stoneskinHp+' HP)',casterCfg.col,12);
+    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +5 HP','#ffff88',11);
     // Three waves of rocks fly inward and "coat" the caster
     [0,220,440].forEach((delay,wave)=>{
       setTimeout(()=>{
@@ -2536,7 +2566,7 @@ function resolveCharSpell(spellId,caster){
           targetState.shieldHp-=absorbed;
           dmg-=absorbed;
           if(targetState.shieldHp<=0){
-            targetState.shield=0;
+            targetState.shield=0; targetState.counter=false;
             addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
             spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
           } else {
@@ -2588,7 +2618,7 @@ function resolveCharSpell(spellId,caster){
   } else {
     if(spellId!=='counter' && casterState.shield>0){
       casterState.shield--;
-      if(casterState.shield<=0) casterState.shieldHp=0;
+      if(casterState.shield<=0){ casterState.shieldHp=0; casterState.counter=false; }
     }
     tickStatuses(casterState);
     setTimeout(finishAI,900);
@@ -2655,7 +2685,7 @@ function castSpell(spell,target,tx,ty,caster){
       if(oppBuffs.length>0){
         if(Math.random()<0.70){
           const stripped=oppBuffs[Math.floor(Math.random()*oppBuffs.length)];
-          if(stripped==='shield'){targetState.shield=0; targetState.shieldHp=0;}
+          if(stripped==='shield'){targetState.shield=0; targetState.shieldHp=0; targetState.counter=false;}
           else if(stripped==='foresight') targetState.foresight=false;
           else if(stripped==='regen')     targetState.regen=null;
           else if(stripped==='empowered') targetState.empowered=false;
@@ -2767,7 +2797,7 @@ function castSpell(spell,target,tx,ty,caster){
   // Target: Shield
   if(targetState.shield>0){
     if(spell.element==='lightning'){
-      targetState.shield=0;
+      targetState.shield=0; targetState.counter=false;
       targetState.shieldHp=0;
       addFloat(tx,ty-20,'⚡ Pierced!','#ffee44',15);
       spawnParts(tx,ty,'#ffee44',18); spawnParts(tx,ty,'#4af0ff',12); spawnParts(tx,ty,'#ffffff',8);
@@ -2776,7 +2806,7 @@ function castSpell(spell,target,tx,ty,caster){
       targetState.shieldHp-=absorbed;
       dmg-=absorbed;
       if(targetState.shieldHp<=0){
-        targetState.shield=0;
+        targetState.shield=0; targetState.counter=false;
         addFloat(tx,ty-20,'🛡 SHATTERED!','#88ffff',22);
         spawnParts(tx,ty,'#4af0ff',24); spawnParts(tx,ty,'#ffffff',10);
       } else {
@@ -2865,7 +2895,7 @@ function processVineWhip(target,tx,ty){
     const absorbed=Math.min(dmg,target.shieldHp);
     target.shieldHp-=absorbed; dmg-=absorbed;
     if(target.shieldHp<=0){
-      target.shield=0;
+      target.shield=0; target.counter=false;
       addFloat(tx,ty-20,'🛡 SHATTERED!','#88ffff',18);
       spawnParts(tx,ty,'#4af0ff',16);
     } else {
@@ -2988,7 +3018,7 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
     const absorbed=Math.min(dmg,targetState.shieldHp);
     targetState.shieldHp-=absorbed; dmg-=absorbed;
     if(targetState.shieldHp<=0){
-      targetState.shield=0;
+      targetState.shield=0; targetState.counter=false;
       addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
       spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
     } else {
@@ -3043,7 +3073,7 @@ function doRockfallHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx)
     const absorbed=Math.min(dmg,targetState.shieldHp);
     targetState.shieldHp-=absorbed; dmg-=absorbed;
     if(targetState.shieldHp<=0){
-      targetState.shield=0;
+      targetState.shield=0; targetState.counter=false;
       addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',18);
       spawnParts(tx,bH*.38,'#4af0ff',18); spawnParts(tx,bH*.38,'#ffffff',6);
     } else {
@@ -3088,7 +3118,7 @@ function endMyTurn(skipShieldDecrement=false){
     const whoState=gs[who];
     if(!skipShieldDecrement&&whoState.shield>0){
       whoState.shield--;
-      if(whoState.shield<=0) whoState.shieldHp=0;
+      if(whoState.shield<=0){ whoState.shieldHp=0; whoState.counter=false; }
     }
     tickStatuses(whoState);
     gs.round++;
@@ -3102,7 +3132,7 @@ function endMyTurn(skipShieldDecrement=false){
   } else {
     if(!skipShieldDecrement&&gs.p1.shield>0){
       gs.p1.shield--;
-      if(gs.p1.shield<=0) gs.p1.shieldHp=0;
+      if(gs.p1.shield<=0){ gs.p1.shieldHp=0; gs.p1.counter=false; }
     }
     tickStatuses(gs.p1);
     gs.round++;
@@ -3157,7 +3187,7 @@ function doAI(who='p2'){
     anim('p2','cast',700);
     if(aiNoAI.shield>0){
       aiNoAI.shield--;
-      if(aiNoAI.shield<=0) aiNoAI.shieldHp=0;
+      if(aiNoAI.shield<=0){ aiNoAI.shieldHp=0; aiNoAI.counter=false; }
     }
     tickStatuses(aiNoAI);
     finishAI();
@@ -3308,7 +3338,7 @@ function doAI(who='p2'){
     anim(who,'cast',700);
     if(ai.shield>0){
       ai.shield--;
-      if(ai.shield<=0) ai.shieldHp=0;
+      if(ai.shield<=0){ ai.shieldHp=0; ai.counter=false; }
     }
     tickStatuses(ai);
     endTurn();
@@ -3411,7 +3441,7 @@ function doAINormal(who='p2'){
     anim('p2','cast',700);
     if(aiNoAI.shield>0){
       aiNoAI.shield--;
-      if(aiNoAI.shield<=0) aiNoAI.shieldHp=0;
+      if(aiNoAI.shield<=0){ aiNoAI.shieldHp=0; aiNoAI.counter=false; }
     }
     tickStatuses(aiNoAI);
     finishAI();
@@ -3671,7 +3701,7 @@ function doAINormal(who='p2'){
     anim(who,'cast',700);
     if(ai.shield>0){
       ai.shield--;
-      if(ai.shield<=0) ai.shieldHp=0;
+      if(ai.shield<=0){ ai.shieldHp=0; ai.counter=false; }
     }
     tickStatuses(ai);
     endTurn();
@@ -3980,6 +4010,261 @@ function puzzleFinish(ok,cb){
 
 function setDpadVisible(v){
   document.getElementById('dpad').style.display=v?'':'none';
+}
+
+// ── PUZZLE: BUFF TILE MATCH ─────────────────────────────────
+// Circular memory-match minigame for protective buff spells (Shield, Foresight).
+// 8 tiles (4 glyph pairs) arranged in a ring. 3 strikes before failure.
+function launchBuffTileMatch(spell,spellId,who,cb){
+  let done=false;
+
+  const SPELL_THEMES={
+    //                                                                         back RGB (for closed tile face)
+    shield:      {title:'Ward Rune Trial',     bg1:'#001a33',bg2:'#000810',accent:'#4af0ff',rgb:'74,240,255',  tile:'#001833',back:'0,28,56'},
+    foresight:   {title:'Seer\'s Rune Trial',  bg1:'#201400',bg2:'#0a0600',accent:'#ffcc44',rgb:'255,204,68', tile:'#1a1000',back:'38,24,0'},
+    flameshield: {title:'Pyre Seal Trial',     bg1:'#2a0a00',bg2:'#100200',accent:'#ff6622',rgb:'255,102,34', tile:'#1e0800',back:'42,12,0'},
+    frostarmor:  {title:'Permafrost Trial',    bg1:'#001828',bg2:'#000a12',accent:'#88ddff',rgb:'136,221,255',tile:'#001020',back:'0,22,38'},
+    stoneskin:   {title:'Stone Rite Trial',    bg1:'#1a1200',bg2:'#080600',accent:'#c09050',rgb:'192,144,80', tile:'#140e00',back:'26,18,0'},
+    warpaint:    {title:'Blood Rite Trial',    bg1:'#200a00',bg2:'#0a0300',accent:'#dd8822',rgb:'221,136,34', tile:'#180800',back:'32,12,0'},
+  };
+  const th=SPELL_THEMES[spellId]||SPELL_THEMES.shield;
+
+  document.getElementById('pztitle').textContent=th.title;
+  document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
+  document.getElementById('pztimer').textContent='';
+  setDpadVisible(false);
+
+  // Full 12-glyph alphabet (sym + glow colour per CLAUDE.md)
+  const ALPHABET=[
+    {sym:'ϟ',glowCol:'#ccffff'},{sym:'Δ',glowCol:'#ff9944'},
+    {sym:'∇',glowCol:'#44aaff'},{sym:'Ψ',glowCol:'#aaff88'},
+    {sym:'Ω',glowCol:'#ff4444'},{sym:'∞',glowCol:'#44ffcc'},
+    {sym:'☽',glowCol:'#aaddff'},{sym:'✸',glowCol:'#ffff55'},
+    {sym:'⊕',glowCol:'#ffee77'},{sym:'⊗',glowCol:'#ff44aa'},
+    {sym:'θ',glowCol:'#88ff88'},{sym:'Φ',glowCol:'#dd88ff'},
+  ];
+
+  // 4 glyphs × 2 copies = 8 tiles (4 pairs)
+  const glyphIdxs=BUFF_TILE_GLYPHS[spellId];
+  const deck=[...glyphIdxs,...glyphIdxs].sort(()=>Math.random()-.5);
+  const TILE_N=deck.length; // 8
+
+  const TS=54, R=90;
+  const cw=284, ch=334;
+  const CX=cw/2, CY=ch*0.53;
+
+  mc.width=cw; mc.height=ch;
+  const mw=Math.min(cw,(window.innerWidth||360)-32);
+  mc.style.width=mw+'px'; mc.style.height='auto';
+
+  // Place tiles evenly in a ring, starting at the top
+  const tiles=deck.map((gIdx,i)=>{
+    const angle=i/TILE_N*Math.PI*2-Math.PI/2;
+    return {gIdx,i,angle,
+      x:CX+Math.cos(angle)*R, y:CY+Math.sin(angle)*R,
+      flipped:false, matched:false, mismatch:false};
+  });
+
+  let revealed=[];
+  let locked=false;
+  let strikes=0;
+  const MAX_STRIKES=diffName==='hard'?2:3;
+
+  // Brief face-up preview at start (difficulty-dependent)
+  const PREVIEW_MS=diffName==='easy'?3000:diffName==='hard'?0:1500;
+  let previewActive=PREVIEW_MS>0;
+  if(previewActive){
+    tiles.forEach(t=>t.flipped=true);
+    setTimeout(()=>{
+      if(done) return;
+      previewActive=false;
+      tiles.forEach(t=>{if(!t.matched)t.flipped=false;});
+    },PREVIEW_MS);
+  }
+
+  const sparks=Array.from({length:20},()=>({
+    x:Math.random()*cw, y:Math.random()*ch,
+    speed:0.08+Math.random()*.25, size:0.5+Math.random()*1.3,
+    phase:Math.random()*Math.PI*2,
+  }));
+
+  function tileAt(px,py){
+    const hs=TS/2;
+    for(const t of tiles){
+      if(t.matched) continue;
+      if(Math.abs(px-t.x)<=hs&&Math.abs(py-t.y)<=hs) return t;
+    }
+    return null;
+  }
+
+  function onPointer(e){
+    if(done||locked||previewActive) return;
+    e.preventDefault();
+    const rect=mc.getBoundingClientRect();
+    const sx=mc.width/rect.width, sy=mc.height/rect.height;
+    const px=(e.clientX-rect.left)*sx, py=(e.clientY-rect.top)*sy;
+    const tile=tileAt(px,py);
+    if(!tile||tile.flipped||tile.matched) return;
+    tile.flipped=true;
+    revealed.push(tile);
+    if(revealed.length===2){
+      locked=true;
+      if(revealed[0].gIdx===revealed[1].gIdx){
+        // Matched pair
+        setTimeout(()=>{
+          revealed.forEach(t=>t.matched=true);
+          revealed=[]; locked=false;
+          if(tiles.every(t=>t.matched)) finish(true);
+        },500);
+      } else {
+        // Mismatch — mark for red flash, then flip back
+        revealed.forEach(t=>t.mismatch=true);
+        strikes++;
+        setTimeout(()=>{
+          revealed.forEach(t=>{t.flipped=false; t.mismatch=false;});
+          revealed=[]; locked=false;
+          if(strikes>=MAX_STRIKES) finish(false);
+        },900);
+      }
+    }
+  }
+  mc.addEventListener('pointerdown',onPointer);
+
+  function cleanup(){
+    mc.removeEventListener('pointerdown',onPointer);
+    setDpadVisible(true);
+    if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
+    if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
+  }
+  function finish(ok){if(done)return;done=true;cleanup();const perf=strikes===0;puzzleFinish(ok,r=>cb(r,perf));}
+
+  function draw(ts){
+    if(done) return;
+    const W=cw, H=ch;
+
+    // Radial background
+    const bg=mx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.72);
+    bg.addColorStop(0,th.bg1);
+    bg.addColorStop(1,th.bg2);
+    mx.fillStyle=bg; mx.fillRect(0,0,W,H);
+
+    const accentCol=th.accent;
+    const accentRgb=th.rgb;
+
+    // Ritual ring guides + spokes
+    mx.save();
+    mx.strokeStyle=`rgba(${accentRgb},0.18)`; mx.lineWidth=1.5;
+    mx.beginPath(); mx.arc(CX,CY,R+TS*.6,0,Math.PI*2); mx.stroke();
+    mx.beginPath(); mx.arc(CX,CY,R-TS*.6,0,Math.PI*2); mx.stroke();
+    mx.lineWidth=0.8;
+    for(let i=0;i<TILE_N;i++){
+      const a=i/TILE_N*Math.PI*2;
+      mx.beginPath();
+      mx.moveTo(CX+Math.cos(a)*(R-TS*.52),CY+Math.sin(a)*(R-TS*.52));
+      mx.lineTo(CX+Math.cos(a)*(R+TS*.52),CY+Math.sin(a)*(R+TS*.52));
+      mx.stroke();
+    }
+    // Slow rotating inner glyph
+    const rotA=ts/12000;
+    mx.strokeStyle=`rgba(${accentRgb},0.12)`; mx.lineWidth=1.2;
+    for(let k=0;k<4;k++){
+      const a=k/4*Math.PI+rotA;
+      mx.beginPath();
+      mx.moveTo(CX+Math.cos(a)*(R-TS*.55),CY+Math.sin(a)*(R-TS*.55));
+      mx.lineTo(CX+Math.cos(a+Math.PI)*(R-TS*.55),CY+Math.sin(a+Math.PI)*(R-TS*.55));
+      mx.stroke();
+    }
+    mx.restore();
+
+    // Ambient sparks
+    mx.save();
+    sparks.forEach(s=>{
+      s.y-=s.speed; if(s.y<-4){s.y=H+4;s.x=Math.random()*W;}
+      mx.globalAlpha=0.07+0.18*Math.abs(Math.sin(ts/900+s.phase));
+      mx.fillStyle=accentCol; mx.shadowColor=accentCol; mx.shadowBlur=4;
+      mx.beginPath(); mx.arc(s.x,s.y,s.size,0,Math.PI*2); mx.fill();
+    });
+    mx.globalAlpha=1; mx.shadowBlur=0;
+    mx.restore();
+
+    // Strike indicator dots
+    const dotR=7, dotSpacing=22;
+    const dotsLeft=W/2-(MAX_STRIKES-1)*dotSpacing/2;
+    for(let i=0;i<MAX_STRIKES;i++){
+      const sdx=dotsLeft+i*dotSpacing, sdy=18;
+      mx.beginPath(); mx.arc(sdx,sdy,dotR,0,Math.PI*2);
+      mx.fillStyle=i<strikes?'#ff3333':'rgba(255,255,255,0.08)';
+      mx.fill();
+      mx.strokeStyle=i<strikes?'#ff8888':accentCol;
+      mx.lineWidth=1.5; mx.stroke();
+    }
+
+    // Pairs counter
+    const matchedPairs=tiles.filter(t=>t.matched).length/2;
+    mx.fillStyle=accentCol; mx.font='bold 11px Cinzel,serif';
+    mx.textAlign='center'; mx.textBaseline='top';
+    mx.fillText('Pairs: '+matchedPairs+' / '+(TILE_N/2),W/2,34);
+
+    if(previewActive){
+      mx.fillStyle='rgba(255,255,255,0.55)';
+      mx.font='10px Cinzel,serif';
+      mx.fillText('Memorise the runes…',W/2,52);
+    }
+
+    // Tiles
+    const hs=TS/2;
+    tiles.forEach(t=>{
+      const tx=t.x, ty=t.y;
+      if(t.matched){
+        // Ghost form — matched glyph lingers faintly
+        const gl=ALPHABET[t.gIdx];
+        mx.save();
+        mx.globalAlpha=0.18+0.07*Math.sin(ts/700+t.i*.9);
+        mx.fillStyle=gl.glowCol; mx.shadowColor=gl.glowCol; mx.shadowBlur=6;
+        mx.font=`${TS*.52}px serif`; mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(gl.sym,tx,ty);
+        mx.restore();
+      } else if(t.flipped){
+        // Front face — show the glyph
+        const gl=ALPHABET[t.gIdx];
+        const bc=t.mismatch?'#ff4444':gl.glowCol;
+        mx.fillStyle=th.tile;
+        mx.shadowColor=bc; mx.shadowBlur=16;
+        mx.beginPath(); mx.roundRect(tx-hs,ty-hs,TS,TS,7); mx.fill();
+        mx.strokeStyle=bc; mx.lineWidth=t.mismatch?2.5:2;
+        mx.beginPath(); mx.roundRect(tx-hs,ty-hs,TS,TS,7); mx.stroke();
+        mx.shadowBlur=0;
+        mx.fillStyle=t.mismatch?'#ff9999':'#ffffff';
+        mx.font=`${TS*.52}px serif`; mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(gl.sym,tx,ty);
+      } else {
+        // Back face — decorated with a small concentric pattern
+        const pulse=0.35+0.12*Math.sin(ts/700+t.i*.6);
+        mx.fillStyle=`rgba(${th.back},${pulse+0.22})`;
+        mx.shadowColor=`rgba(${accentRgb},0.3)`; mx.shadowBlur=5;
+        mx.beginPath(); mx.roundRect(tx-hs,ty-hs,TS,TS,7); mx.fill();
+        mx.strokeStyle=`rgba(${accentRgb},0.6)`; mx.lineWidth=1.5;
+        mx.beginPath(); mx.roundRect(tx-hs,ty-hs,TS,TS,7); mx.stroke();
+        mx.shadowBlur=0;
+        // Inner circle + spokes pattern on back
+        mx.strokeStyle=`rgba(${accentRgb},0.22)`; mx.lineWidth=0.8;
+        mx.beginPath(); mx.arc(tx,ty,TS*.22,0,Math.PI*2); mx.stroke();
+        mx.beginPath(); mx.arc(tx,ty,TS*.1,0,Math.PI*2); mx.stroke();
+        for(let k=0;k<4;k++){
+          const a=k/4*Math.PI*2+ts/5000;
+          mx.beginPath();
+          mx.moveTo(tx+Math.cos(a)*TS*.1,ty+Math.sin(a)*TS*.1);
+          mx.lineTo(tx+Math.cos(a)*TS*.22,ty+Math.sin(a)*TS*.22);
+          mx.stroke();
+        }
+      }
+    });
+
+    mazeRAF=requestAnimationFrame(draw);
+  }
+
+  showScreen('puzzle-screen');
+  mazeRAF=requestAnimationFrame(draw);
 }
 
 // ── PUZZLE: PATTERN ECHO (Fire) ────────────────────────────
@@ -6233,8 +6518,8 @@ const TUTORIAL_CONVOS={
   eldrad:[
     {key:'eldrad',text:"I am Eldrin — the Stalwart. My philosophy is endurance. 90 HP, 5 starting mana. My abilities focus entirely on surviving long enough to outlast my foe."},
     {key:'eldrad',text:"Magic Missile is my free attack — about 8 damage per cast, no mana required. Useful for chipping away while I conserve resources for when it truly matters."},
-    {key:'eldrad',text:"Shield creates a 60 HP barrier for 10 turns at just 3 mana. It absorbs damage in my place. Combined with my base HP, I can weather tremendous punishment."},
-    {key:'eldrad',text:"Counter reflects 20 damage back to whoever strikes me — cast it and let my opponent injure themselves. Ward protects me from the next status effect for 3 turns."},
+    {key:'eldrad',text:"Shield creates a 60 HP barrier for 10 turns — it costs 5 mana, my entire starting pool, but I can cast it on the very first round. It absorbs damage in my place. Combined with my base HP, I can weather tremendous punishment."},
+    {key:'eldrad',text:"Counter costs 2 mana and reflects 20 damage back to whoever strikes me — pair it with Shield and let my opponent injure themselves. Note: if the Shield is lost, Counter is lost with it. Ward protects me from the next status effect for 3 turns."},
     {key:'eldrad',text:"My strength is that I never go down easily. The fight is always on my terms. I wait, I endure, and eventually even the most aggressive foe runs out of mana."},
   ],
   mal:[
