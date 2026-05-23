@@ -3416,6 +3416,7 @@ function doAINormal(){
   const p1=gs.p1;
   const allSpells=[...SPELLS,...(p2Cfg.spells||[])];
 
+  // Available list — same filters as easy AI except Malachar's Drain is unrestricted
   const available=allSpells.filter(s=>{
     if(ai.mana<s.cost) return false;
     if(s.id&&charSpellBlocked(s.id,ai,p2Cfg,p1)) return false;
@@ -3620,6 +3621,7 @@ function doAINormal(){
       chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
     }
   }
+  // ── Channel fallback ────────────────────────────────────────
   if(!chosen){
     if(ai.timeDrain>0){
       ai.mana=Math.min(MAX_MANA,ai.mana+2);
@@ -3635,6 +3637,7 @@ function doAINormal(){
     finishAI();
     return;
   }
+  // Agony: AI takes damage for any non-channel action
   if(ai.agony>0){
     const agonDmg=ai.agonyDmg||12;
     ai.hp=Math.max(0,ai.hp-agonDmg);
@@ -3642,6 +3645,7 @@ function doAINormal(){
     spawnParts(bW*.78,bH*.38,'#9944cc',12); flash('#330033');
     checkWin(); if(!battleRunning) return;
   }
+  // Silence: 45% chance mana-cost spells fizzle
   if(chosen.id&&chosen.cost>0&&ai.silence>0&&Math.random()<0.45){
     showSilenceBlock(bW*.78,bH*.33); anim('p2','cast',600);
     tickStatuses(ai); finishAI(); return;
@@ -3654,6 +3658,7 @@ function doAINormal(){
     resolveCharSpell(chosen.id,'p2');
     return;
   }
+  // Universal spell
   addFloat(bW*.78,bH*.26,chosen.icon+' '+chosen.name+'!',chosen.col,12);
   anim('p2','cast',800);
   setTimeout(()=>{
