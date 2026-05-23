@@ -19,7 +19,7 @@
     "spells": [
       {"id": "basicattack", "name": "Magic Missile", "icon": "✨", "cost": 0, "costLabel": "Free", "dmg": 8, "effectLabel": "Deal ~8 magic damage"},
       {"id": "shield",  "name": "Shield",  "icon": "🛡", "cost": 3, "costLabel": "3 Mana", "effectLabel": "60 HP barrier for 10 turns"},
-      {"id": "counter", "name": "Counter", "icon": "⚡", "cost": 0, "costLabel": "Free",   "effectLabel": "Reflect 20 dmg when struck"},
+      {"id": "counter", "name": "Counter", "icon": "⚡", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Reflect 20 dmg when struck"},
       {"id": "ward",    "name": "Ward",    "icon": "🔰", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Block the next status effect for 3 turns"}
     ]
   },
