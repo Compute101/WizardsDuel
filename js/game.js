@@ -1479,9 +1479,9 @@ function act(type){
     // Buff spells with tile-match ritual minigame
     if(BUFF_TILE_GLYPHS[type]){
       gs.busy=true;
-      launchBuffTileMatch(charSpell,type,who,ok=>{
+      launchBuffTileMatch(charSpell,type,who,(ok,perfect)=>{
         if(ok){
-          resolveCharSpell(type,who);
+          resolveCharSpell(type,who,perfect);
         } else {
           addFloat(cx,bH*.33,'Ritual Failed!','#ff8844',13);
           whoState.mana=Math.max(0,whoState.mana-1);
@@ -1495,7 +1495,7 @@ function act(type){
 }
 
 // ── CHARACTER SPELLS (instant) ─────────────────────────────
-function resolveCharSpell(spellId,caster){
+function resolveCharSpell(spellId,caster,perfect=false){
   const casterState=caster==='p1'?gs.p1:gs.p2;
   const casterCfg  =caster==='p1'?p1Cfg:p2Cfg;
   const targetState=caster==='p1'?gs.p2:gs.p1;
@@ -1508,8 +1508,9 @@ function resolveCharSpell(spellId,caster){
 
   if(spellId==='shield'){
     casterState.shield=casterCfg.shieldDuration||10;
-    casterState.shieldHp=casterCfg.shieldMaxHp||60;
+    casterState.shieldHp=(casterCfg.shieldMaxHp||60)+(perfect?5:0);
     addFloat(cx,bH*.33,'🛡 Shielded! ('+casterState.shieldHp+' HP)','#4af0ff',12);
+    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +5 HP','#ffff88',11);
     anim(caster,'shield',700);
   } else if(spellId==='counter'){
     casterState.counter=true;
@@ -1630,8 +1631,9 @@ function resolveCharSpell(spellId,caster){
       refreshHUD();
     }
   } else if(spellId==='warpaint'){
-    casterState.resist=5;
+    casterState.resist=5+(perfect?1:0);
     addFloat(cx,bH*.33,'🩸 War Paint! -33% dmg',casterCfg.col,12);
+    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
     for(let i=0;i<8;i++)
       gs.parts.push({x:cx+(Math.random()-.5)*bH*.05,y:bH*.35,col:'#cc1111',
         vx:(Math.random()-.5)*1.5,vy:1+Math.random()*2.5,sz:2+Math.random()*2,life:1,dec:.025});
@@ -1895,8 +1897,9 @@ function resolveCharSpell(spellId,caster){
       refreshHUD(); checkWin();
     }
   } else if(spellId==='flameshield'){
-    casterState.flameShield=5;
-    addFloat(cx,bH*.33,'🔥 Flame Shield! (5T)',casterCfg.col,13);
+    casterState.flameShield=5+(perfect?1:0);
+    addFloat(cx,bH*.33,'🔥 Flame Shield! ('+casterState.flameShield+'T)',casterCfg.col,13);
+    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
     for(let i=0;i<14;i++){
       const a=i/14*Math.PI*2;
       gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#ff6600':'#ffaa00',
@@ -1996,8 +1999,9 @@ function resolveCharSpell(spellId,caster){
       refreshHUD(); checkWin();
     }
   } else if(spellId==='frostarmor'){
-    casterState.frostArmor=casterCfg.frostArmorDur||4;
+    casterState.frostArmor=(casterCfg.frostArmorDur||4)+(perfect?1:0);
     addFloat(cx,bH*.33,'❄️ Frost Armor! ('+casterState.frostArmor+'T)','#88ddff',13);
+    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
     for(let i=0;i<16;i++){
       const a=i/16*Math.PI*2;
       gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#88ddff',
@@ -2235,8 +2239,9 @@ function resolveCharSpell(spellId,caster){
     refreshHUD(); checkWin();
   } else if(spellId==='stoneskin'){
     casterState.stoneskin=casterCfg.stoneskinDuration||10;
-    casterState.stoneskinHp=casterCfg.stoneskinHpMax||30;
+    casterState.stoneskinHp=(casterCfg.stoneskinHpMax||30)+(perfect?5:0);
     addFloat(cx,bH*.33,'🧱 Stoneskin! ('+casterState.stoneskin+'T / '+casterState.stoneskinHp+' HP)',casterCfg.col,12);
+    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +5 HP','#ffff88',11);
     // Three waves of rocks fly inward and "coat" the caster
     [0,220,440].forEach((delay,wave)=>{
       setTimeout(()=>{
@@ -3873,7 +3878,7 @@ function launchBuffTileMatch(spell,spellId,who,cb){
     if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
     if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
+  function finish(ok){if(done)return;done=true;cleanup();const perf=strikes===0;puzzleFinish(ok,r=>cb(r,perf));}
 
   function draw(ts){
     if(done) return;
