@@ -100,6 +100,8 @@ let tourneyPickMode=false;  // picking character for tourney bracket
 let tourneyBracket=null;    // {playerKey, rounds:[[{p1Key,p2Key,winner}]]}
 let tourneyCurrentMatch=null;  // {round,matchIdx} — which match is live
 let tourneyPendingResult=null; // {round,matchIdx,winnerKey} — set after live match
+let headless=false;            // suppress all visuals for instant AI-vs-AI simulation
+let headlessWinner=null;       // set by endGame() when headless
 
 // ── STATE ──────────────────────────────────────────────────
 let gs={}, puzzleCB=null, aiTid=null;
@@ -1286,6 +1288,7 @@ function tickManaBurnFire(){
 }
 
 function spawnParts(x,y,col,n=16){
+  if(headless) return;
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2, sp=1.5+Math.random()*3.5;
     gs.parts.push({x,y,col,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2.5,sz:2+Math.random()*3,life:1,dec:.022+Math.random()*.03});
@@ -1303,10 +1306,11 @@ function tickFloats(){
   });
 }
 
-function addFloat(x,y,t,col,sz=17){gs.floats.push({x,y,t,col,sz,life:1});}
+function addFloat(x,y,t,col,sz=17){ if(headless) return; gs.floats.push({x,y,t,col,sz,life:1}); }
 
 // ── SPELL PROJECTILES ──────────────────────────────────────
 function spawnProj(x1,y1,x2,y2,element,col,cb){
+  if(headless){ if(cb) cb(); return; }
   const speeds={fire:0.055,lightning:0.3,ice:0.065,arcane:0.06,physical:0.09,dispel:0.07,manaburn:0.08};
   gs.projs.push({x1,y1,x2,y2,progress:0,speed:speeds[element]||0.065,element,col,cb,done:false});
 }
@@ -1397,6 +1401,7 @@ function tickProjs(){
 
 // ── BEAM FLASH EFFECTS ─────────────────────────────────────
 function spawnBeam(x1,y1,x2,y2,col){
+  if(headless) return;
   gs.beams.push({x1,y1,x2,y2,col,ttl:8});
 }
 
@@ -1499,6 +1504,7 @@ function battleLoop(ts){
 
 // ── HUD ────────────────────────────────────────────────────
 function refreshHUD(){
+  if(headless) return;
   document.getElementById('p1hpf').style.height=Math.max(0,gs.p1.hp/gs.p1.maxHp*100)+'%';
   document.getElementById('p2hpf').style.height=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
   document.getElementById('sh1').style.opacity=gs.p1.shield>0||gs.p1.ward>0?'1':'0.18';
@@ -1922,7 +1928,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       }
       refreshHUD(); checkWin(); if(!battleRunning) return;
       if(caster==='p1'||twoPlayerMode){ endMyTurn(); }
-      else { tickStatuses(casterState); setTimeout(finishAI,900); }
+      else { tickStatuses(casterState); combatTimeout(finishAI,900); }
     });
     return;
   } else if(spellId==='ward'){
@@ -2041,13 +2047,13 @@ function resolveCharSpell(spellId,caster,perfect=false){
         refreshHUD(); checkWin(); if(!battleRunning) return;
         frenzyHitsDone++;
         if(frenzyHitsDone<3){
-          setTimeout(doFrenzyStrike,300);
+          combatTimeout(doFrenzyStrike,300);
         } else {
           if(caster==='p1'||twoPlayerMode){
             endMyTurn();
           } else {
             tickStatuses(casterState);
-            setTimeout(finishAI,900);
+            combatTimeout(finishAI,900);
           }
         }
       });
@@ -2512,13 +2518,13 @@ function resolveCharSpell(spellId,caster,perfect=false){
         refreshHUD(); checkWin(); if(!battleRunning) return;
         rocksDone++;
         if(rocksDone<3){
-          setTimeout(fireRock,350);
+          combatTimeout(fireRock,350);
         } else {
           if(caster==='p1'||twoPlayerMode){
             endMyTurn();
           } else {
             tickStatuses(casterState);
-            setTimeout(finishAI,900);
+            combatTimeout(finishAI,900);
           }
         }
       });
@@ -2601,7 +2607,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       if(!battleRunning) return;
       if(basicSpell.lungeAmt){
         if(caster==='p1'||twoPlayerMode){ endMyTurn(); }
-        else { tickStatuses(casterState); setTimeout(finishAI,900); }
+        else { tickStatuses(casterState); combatTimeout(finishAI,900); }
       }
     }
     if(basicSpell.lungeAmt){
@@ -2621,7 +2627,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       if(casterState.shield<=0){ casterState.shieldHp=0; casterState.counter=false; }
     }
     tickStatuses(casterState);
-    setTimeout(finishAI,900);
+    combatTimeout(finishAI,900);
   }
 }
 
@@ -3099,17 +3105,24 @@ function doRockfallHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx)
 }
 
 function anim(who,state,ms){
+  if(headless) return;
   gs[who+'anim']=state;
   gs.lastAnimEnd=Math.max(gs.lastAnimEnd||0, Date.now()+ms);
   setTimeout(()=>{if(gs[who+'anim']!=='death') gs[who+'anim']='idle';},ms);
 }
 
 function lunge(who,amt,cb){
+  // Normalize: charge spell passes callback as 2nd arg with no lungeAmt
+  const lungeAmt=typeof amt==='function'?0.12:amt;
+  const callback=typeof amt==='function'?amt:cb;
+  if(headless){ if(callback) callback(); return; }
   const dir=who==='p1'?1:-1;
-  gs[who+'xOff']=dir*bW*amt;
+  gs[who+'xOff']=dir*bW*lungeAmt;
   anim(who,'cast',300);
-  setTimeout(()=>{ gs[who+'xOff']=0; if(cb) cb(); },180);
+  setTimeout(()=>{ gs[who+'xOff']=0; if(callback) callback(); },180);
 }
+
+function combatTimeout(fn,delay){ if(headless){fn();}else{setTimeout(fn,delay);} }
 
 function endMyTurn(skipShieldDecrement=false){
   gs.myTurn=false; gs.busy=false;
@@ -3137,7 +3150,8 @@ function endMyTurn(skipShieldDecrement=false){
     tickStatuses(gs.p1);
     gs.round++;
     if(aiTid) clearTimeout(aiTid);
-    aiTid=setTimeout(aiDifficulty==='normal'?doAINormal:doAI, gs.p2&&gs.p2.haste>0 ? 400 : 1400);
+    const _fn=aiDifficulty==='normal'?doAINormal:doAI;
+    if(headless){ _fn(); } else { aiTid=setTimeout(_fn, gs.p2&&gs.p2.haste>0 ? 400 : 1400); }
   }
 }
 
@@ -3228,7 +3242,7 @@ function doAI(who='p2'){
   if(ai.frozen>0){
     ai.frozen--;
     addFloat(ax,bH*.38,'❄️ Frozen!','#88ddff',13);
-    setTimeout(endTurn,1200);
+    combatTimeout(endTurn,1200);
     return;
   }
 
@@ -3373,7 +3387,7 @@ function doAI(who='p2'){
   // Universal spell
   addFloat(ax,bH*.26,chosen.icon+' '+chosen.name+'!',chosen.col,12);
   anim(who,'cast',800);
-  setTimeout(()=>{
+  combatTimeout(()=>{
     if(!battleRunning) return;
     tickStatuses(ai);
     if(Math.random()<0.8){
@@ -3464,7 +3478,7 @@ function doAINormal(who='p2'){
   if(ai.frozen>0){
     ai.frozen--;
     addFloat(ax,bH*.38,'❄️ Frozen!','#88ddff',13);
-    setTimeout(endTurn,1200);
+    combatTimeout(endTurn,1200);
     return;
   }
 
@@ -3731,7 +3745,7 @@ function doAINormal(who='p2'){
   // Universal spell
   addFloat(ax,bH*.26,chosen.icon+' '+chosen.name+'!',chosen.col,12);
   anim(who,'cast',800);
-  setTimeout(()=>{
+  combatTimeout(()=>{
     if(!battleRunning) return;
     tickStatuses(ai);
     if(Math.random()<0.8){
@@ -3755,6 +3769,8 @@ function doAINormal(who='p2'){
 }
 function finishAI(){
   if(!battleRunning||gameEnded) return;
+  // Safety: cap runaway battles in headless mode
+  if(headless&&gs.round>400){ endGame(gs.p1.hp>=gs.p2.hp); return; }
   checkWin(); if(!battleRunning) return;
 
   // Haste interrupt: player has a queued action — run it now, defer end-of-round effects
@@ -3795,11 +3811,11 @@ function finishAI(){
   if(gs.p1.frozen>0){
     gs.p1.frozen--;
     addFloat(bW*.22,bH*.38,'❄️ Frozen!','#88ddff',13);
-    setTimeout(()=>{ gs.round++; if(aiTid) clearTimeout(aiTid); aiTid=setTimeout(aiDifficulty==='normal'?doAINormal:doAI,1200); },1200);
+    combatTimeout(()=>{ gs.round++; if(aiTid) clearTimeout(aiTid); const _fn=aiDifficulty==='normal'?doAINormal:doAI; if(headless){_fn();}else{aiTid=setTimeout(_fn,1200);} },1200);
     return;
   }
 
-  if(watchMode){ setTimeout(()=>(aiDifficulty==='normal'?doAINormal:doAI)('p1'),800); } else { gs.myTurn=true; gs.busy=false; }
+  if(watchMode){ combatTimeout(()=>(aiDifficulty==='normal'?doAINormal:doAI)('p1'),800); } else { gs.myTurn=true; gs.busy=false; }
 }
 
 // ── RETRY SCREEN ───────────────────────────────────────────
@@ -3915,6 +3931,7 @@ function resetTrainingRound(knockedOut){
 function endGame(won){
   if(gameEnded) return;
   gameEnded=true;
+  if(headless){ battleRunning=false; headlessWinner=won?p1Key:p2Key; return; }
   gs.myTurn=false; gs.busy=true;
   gs[won?'p2anim':'p1anim']='death';
 
@@ -6131,6 +6148,7 @@ function launchDispelPattern(spell,cb){
 
 // ── FLASH ──────────────────────────────────────────────────
 function flash(col){
+  if(headless) return;
   const el=document.getElementById('flash');
   el.style.background=col; el.classList.add('on');
   setTimeout(()=>el.classList.remove('on'),120);
@@ -6926,6 +6944,47 @@ window.addEventListener('DOMContentLoaded', ()=>{
     startNextBattle();
   });
 
+
+// ── HEADLESS MATCH SIMULATION ──────────────────────────────
+// Runs a complete AI-vs-AI match using the real game engine with
+// all visual/DOM calls no-oped. Returns the winning character key.
+function simulateMatch(k1, k2) {
+  const c1=CHAR_DEFS[k1], c2=CHAR_DEFS[k2];
+  if(!c1||!c2) return k1;
+
+  // Save all mutable state the battle engine will modify
+  const saved={
+    p1Key, p2Key, p1Cfg, p2Cfg, gs,
+    battleRunning, gameEnded,
+    watchMode, tourneyMode, tourneyCurrentMatch,
+    trainingMode, twoPlayerMode, arcadeMode,
+    aiTid, headless, headlessWinner,
+  };
+
+  // Configure headless battle
+  headless=true; headlessWinner=null;
+  p1Key=k1; p2Key=k2; p1Cfg=c1; p2Cfg=c2;
+  watchMode=true; tourneyMode=false; tourneyCurrentMatch=null;
+  trainingMode=false; twoPlayerMode=false; arcadeMode=false;
+  aiTid=null;
+  newState();
+  gameEnded=false; battleRunning=true;
+
+  // p1 acts first — mirrors startWatchTourneyMatch
+  (aiDifficulty==='normal'?doAINormal:doAI)('p1');
+
+  // endGame() sets headlessWinner; fall back to HP on timeout
+  const winner=headlessWinner||(gs.p1.hp>=gs.p2.hp?k1:k2);
+
+  // Restore pre-simulation state
+  ({p1Key, p2Key, p1Cfg, p2Cfg, gs,
+    battleRunning, gameEnded,
+    watchMode, tourneyMode, tourneyCurrentMatch,
+    trainingMode, twoPlayerMode, arcadeMode,
+    aiTid, headless, headlessWinner}=saved);
+
+  return winner;
+}
   window.addEventListener('resize',()=>{ if(battleRunning) resizeBC(); });
 
   // Load character data — must complete before a character can be picked
