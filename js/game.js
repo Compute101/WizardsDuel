@@ -23,7 +23,7 @@ let p1Cfg, p2Cfg;
 
 const CHAR_DISPLAY={
   eldrad:{
-    stats:[['❤ HP','115'],['🛡 Shield','60 HP / 10T'],['⚡ Counter','20 reflect'],['🔰 Ward','Block next status / 3T']],
+    stats:[['❤ HP','115'],['🛡 Shield','60 HP / 10T'],['⚡ Counter','20 reflect / 2M'],['🔰 Ward','Block next status / 3T']],
     flavour:'Outlast your foe with arcane endurance.'
   },
   mal:{
@@ -1651,7 +1651,7 @@ function resolveCharSpell(spellId,caster){
           targetState.shieldHp-=absorbed;
           dmg-=absorbed;
           if(targetState.shieldHp<=0){
-            targetState.shield=0;
+            targetState.shield=0; targetState.counter=false;
             addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
             spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
           } else {
@@ -1719,7 +1719,7 @@ function resolveCharSpell(spellId,caster){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed; drainBase-=absorbed;
         if(targetState.shieldHp<=0){
-          targetState.shield=0;
+          targetState.shield=0; targetState.counter=false;
           addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
           spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
         } else {
@@ -1846,7 +1846,7 @@ function resolveCharSpell(spellId,caster){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed;
         if(targetState.shieldHp<=0){
-          targetState.shield=0;
+          targetState.shield=0; targetState.counter=false;
           addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
           spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
         } else {
@@ -1939,7 +1939,7 @@ function resolveCharSpell(spellId,caster){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed;
         if(targetState.shieldHp<=0){
-          targetState.shield=0;
+          targetState.shield=0; targetState.counter=false;
           addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
           spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
         } else {
@@ -2046,7 +2046,7 @@ function resolveCharSpell(spellId,caster){
         const absorbed=Math.min(dmg,targetState.shieldHp);
         targetState.shieldHp-=absorbed; dmg-=absorbed;
         if(targetState.shieldHp<=0){
-          targetState.shield=0;
+          targetState.shield=0; targetState.counter=false;
           addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
           spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
         } else {
@@ -2315,7 +2315,7 @@ function resolveCharSpell(spellId,caster){
           targetState.shieldHp-=absorbed;
           dmg-=absorbed;
           if(targetState.shieldHp<=0){
-            targetState.shield=0;
+            targetState.shield=0; targetState.counter=false;
             addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
             spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
           } else {
@@ -2367,7 +2367,7 @@ function resolveCharSpell(spellId,caster){
   } else {
     if(spellId!=='counter' && casterState.shield>0){
       casterState.shield--;
-      if(casterState.shield<=0) casterState.shieldHp=0;
+      if(casterState.shield<=0){ casterState.shieldHp=0; casterState.counter=false; }
     }
     tickStatuses(casterState);
     setTimeout(finishAI,900);
@@ -2434,7 +2434,7 @@ function castSpell(spell,target,tx,ty,caster){
       if(oppBuffs.length>0){
         if(Math.random()<0.70){
           const stripped=oppBuffs[Math.floor(Math.random()*oppBuffs.length)];
-          if(stripped==='shield'){targetState.shield=0; targetState.shieldHp=0;}
+          if(stripped==='shield'){targetState.shield=0; targetState.shieldHp=0; targetState.counter=false;}
           else if(stripped==='foresight') targetState.foresight=false;
           else if(stripped==='regen')     targetState.regen=null;
           else if(stripped==='empowered') targetState.empowered=false;
@@ -2546,7 +2546,7 @@ function castSpell(spell,target,tx,ty,caster){
   // Target: Shield
   if(targetState.shield>0){
     if(spell.element==='lightning'){
-      targetState.shield=0;
+      targetState.shield=0; targetState.counter=false;
       targetState.shieldHp=0;
       addFloat(tx,ty-20,'⚡ Pierced!','#ffee44',15);
       spawnParts(tx,ty,'#ffee44',18); spawnParts(tx,ty,'#4af0ff',12); spawnParts(tx,ty,'#ffffff',8);
@@ -2555,7 +2555,7 @@ function castSpell(spell,target,tx,ty,caster){
       targetState.shieldHp-=absorbed;
       dmg-=absorbed;
       if(targetState.shieldHp<=0){
-        targetState.shield=0;
+        targetState.shield=0; targetState.counter=false;
         addFloat(tx,ty-20,'🛡 SHATTERED!','#88ffff',22);
         spawnParts(tx,ty,'#4af0ff',24); spawnParts(tx,ty,'#ffffff',10);
       } else {
@@ -2644,7 +2644,7 @@ function processVineWhip(target,tx,ty){
     const absorbed=Math.min(dmg,target.shieldHp);
     target.shieldHp-=absorbed; dmg-=absorbed;
     if(target.shieldHp<=0){
-      target.shield=0;
+      target.shield=0; target.counter=false;
       addFloat(tx,ty-20,'🛡 SHATTERED!','#88ffff',18);
       spawnParts(tx,ty,'#4af0ff',16);
     } else {
@@ -2767,7 +2767,7 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
     const absorbed=Math.min(dmg,targetState.shieldHp);
     targetState.shieldHp-=absorbed; dmg-=absorbed;
     if(targetState.shieldHp<=0){
-      targetState.shield=0;
+      targetState.shield=0; targetState.counter=false;
       addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
       spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
     } else {
@@ -2822,7 +2822,7 @@ function doRockfallHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx)
     const absorbed=Math.min(dmg,targetState.shieldHp);
     targetState.shieldHp-=absorbed; dmg-=absorbed;
     if(targetState.shieldHp<=0){
-      targetState.shield=0;
+      targetState.shield=0; targetState.counter=false;
       addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',18);
       spawnParts(tx,bH*.38,'#4af0ff',18); spawnParts(tx,bH*.38,'#ffffff',6);
     } else {
@@ -2867,7 +2867,7 @@ function endMyTurn(skipShieldDecrement=false){
     const whoState=gs[who];
     if(!skipShieldDecrement&&whoState.shield>0){
       whoState.shield--;
-      if(whoState.shield<=0) whoState.shieldHp=0;
+      if(whoState.shield<=0){ whoState.shieldHp=0; whoState.counter=false; }
     }
     tickStatuses(whoState);
     gs.round++;
@@ -2881,7 +2881,7 @@ function endMyTurn(skipShieldDecrement=false){
   } else {
     if(!skipShieldDecrement&&gs.p1.shield>0){
       gs.p1.shield--;
-      if(gs.p1.shield<=0) gs.p1.shieldHp=0;
+      if(gs.p1.shield<=0){ gs.p1.shieldHp=0; gs.p1.counter=false; }
     }
     tickStatuses(gs.p1);
     gs.round++;
@@ -2926,7 +2926,7 @@ function doAI(){
     }
     if(aiNoAI.candle>0) triggerCandleBurn(aiNoAI,bW*.78);
     anim('p2','cast',700);
-    if(aiNoAI.shield>0){ aiNoAI.shield--; if(aiNoAI.shield<=0) aiNoAI.shieldHp=0; }
+    if(aiNoAI.shield>0){ aiNoAI.shield--; if(aiNoAI.shield<=0){ aiNoAI.shieldHp=0; aiNoAI.counter=false; } }
     tickStatuses(aiNoAI);
     finishAI();
     return;
@@ -3075,7 +3075,7 @@ function doAI(){
     anim('p2','cast',700);
     if(ai.shield>0){
       ai.shield--;
-      if(ai.shield<=0) ai.shieldHp=0;
+      if(ai.shield<=0){ ai.shieldHp=0; ai.counter=false; }
     }
     tickStatuses(ai);
     finishAI();
@@ -3168,7 +3168,7 @@ function doAINormal(){
     }
     if(aiNoAI.candle>0) triggerCandleBurn(aiNoAI,bW*.78);
     anim('p2','cast',700);
-    if(aiNoAI.shield>0){ aiNoAI.shield--; if(aiNoAI.shield<=0) aiNoAI.shieldHp=0; }
+    if(aiNoAI.shield>0){ aiNoAI.shield--; if(aiNoAI.shield<=0){ aiNoAI.shieldHp=0; aiNoAI.counter=false; } }
     tickStatuses(aiNoAI);
     finishAI();
     return;
@@ -3428,7 +3428,7 @@ function doAINormal(){
     anim('p2','cast',700);
     if(ai.shield>0){
       ai.shield--;
-      if(ai.shield<=0) ai.shieldHp=0;
+      if(ai.shield<=0){ ai.shieldHp=0; ai.counter=false; }
     }
     tickStatuses(ai);
     finishAI();
