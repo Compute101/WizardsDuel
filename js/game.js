@@ -19,8 +19,12 @@ const SPELLS=[
 // ── BUFF TILE-MATCH GLYPH SETS ──────────────────────────────
 // 4 glyphs (indices into ALPHABET) per buff spell — thematic choices
 const BUFF_TILE_GLYPHS={
-  shield:    [4,8,10,11], // Ω ⊕ θ Φ — arch, binding, crystal, polar axis
-  foresight: [5,7,6,1],  // ∞ ✸ ☽ Δ — eternity, radiance, crescent, clarity
+  shield:      [4,8,10,11], // Ω ⊕ θ Φ — arch, binding, crystal, polar axis
+  foresight:   [5,7,6,1],   // ∞ ✸ ☽ Δ — eternity, radiance, crescent, clarity
+  flameshield: [0,4,7,8],   // ϟ Ω ✸ ⊕ — bolt, arch, burst, solar ward
+  frostarmor:  [10,11,2,6], // θ Φ ∇ ☽ — crystal, axis, cold descent, frost moon
+  stoneskin:   [1,2,3,8],   // Δ ∇ Ψ ⊕ — stone layers, fork, binding
+  warpaint:    [0,3,9,7],   // ϟ Ψ ⊗ ✸ — bolt, trident, X-slash, burst
 };
 
 // ── CHARACTER DEFINITIONS (loaded from characters.json) ───────
@@ -3750,8 +3754,19 @@ function setDpadVisible(v){
 // 8 tiles (4 glyph pairs) arranged in a ring. 3 strikes before failure.
 function launchBuffTileMatch(spell,spellId,who,cb){
   let done=false;
-  const isShield=spellId==='shield';
-  document.getElementById('pztitle').textContent=isShield?'Ward Rune Trial':'Seer\'s Rune Trial';
+
+  const SPELL_THEMES={
+    //                                                                         back RGB (for closed tile face)
+    shield:      {title:'Ward Rune Trial',     bg1:'#001a33',bg2:'#000810',accent:'#4af0ff',rgb:'74,240,255',  tile:'#001833',back:'0,28,56'},
+    foresight:   {title:'Seer\'s Rune Trial',  bg1:'#201400',bg2:'#0a0600',accent:'#ffcc44',rgb:'255,204,68', tile:'#1a1000',back:'38,24,0'},
+    flameshield: {title:'Pyre Seal Trial',     bg1:'#2a0a00',bg2:'#100200',accent:'#ff6622',rgb:'255,102,34', tile:'#1e0800',back:'42,12,0'},
+    frostarmor:  {title:'Permafrost Trial',    bg1:'#001828',bg2:'#000a12',accent:'#88ddff',rgb:'136,221,255',tile:'#001020',back:'0,22,38'},
+    stoneskin:   {title:'Stone Rite Trial',    bg1:'#1a1200',bg2:'#080600',accent:'#c09050',rgb:'192,144,80', tile:'#140e00',back:'26,18,0'},
+    warpaint:    {title:'Blood Rite Trial',    bg1:'#200a00',bg2:'#0a0300',accent:'#dd8822',rgb:'221,136,34', tile:'#180800',back:'32,12,0'},
+  };
+  const th=SPELL_THEMES[spellId]||SPELL_THEMES.shield;
+
+  document.getElementById('pztitle').textContent=th.title;
   document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
   document.getElementById('pztimer').textContent='';
   setDpadVisible(false);
@@ -3866,12 +3881,12 @@ function launchBuffTileMatch(spell,spellId,who,cb){
 
     // Radial background
     const bg=mx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.72);
-    bg.addColorStop(0,isShield?'#001a33':'#201400');
-    bg.addColorStop(1,isShield?'#000810':'#0a0600');
+    bg.addColorStop(0,th.bg1);
+    bg.addColorStop(1,th.bg2);
     mx.fillStyle=bg; mx.fillRect(0,0,W,H);
 
-    const accentCol=isShield?'#4af0ff':'#ffcc44';
-    const accentRgb=isShield?'74,240,255':'255,204,68';
+    const accentCol=th.accent;
+    const accentRgb=th.rgb;
 
     // Ritual ring guides + spokes
     mx.save();
@@ -3950,7 +3965,7 @@ function launchBuffTileMatch(spell,spellId,who,cb){
         // Front face — show the glyph
         const gl=ALPHABET[t.gIdx];
         const bc=t.mismatch?'#ff4444':gl.glowCol;
-        mx.fillStyle=isShield?'#001833':'#1a1000';
+        mx.fillStyle=th.tile;
         mx.shadowColor=bc; mx.shadowBlur=16;
         mx.beginPath(); mx.roundRect(tx-hs,ty-hs,TS,TS,7); mx.fill();
         mx.strokeStyle=bc; mx.lineWidth=t.mismatch?2.5:2;
@@ -3962,8 +3977,7 @@ function launchBuffTileMatch(spell,spellId,who,cb){
       } else {
         // Back face — decorated with a small concentric pattern
         const pulse=0.35+0.12*Math.sin(ts/700+t.i*.6);
-        mx.fillStyle=isShield
-          ?`rgba(0,28,56,${pulse+0.22})`:`rgba(38,24,0,${pulse+0.22})`;
+        mx.fillStyle=`rgba(${th.back},${pulse+0.22})`;
         mx.shadowColor=`rgba(${accentRgb},0.3)`; mx.shadowBlur=5;
         mx.beginPath(); mx.roundRect(tx-hs,ty-hs,TS,TS,7); mx.fill();
         mx.strokeStyle=`rgba(${accentRgb},0.6)`; mx.lineWidth=1.5;
