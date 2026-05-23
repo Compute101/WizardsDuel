@@ -39,7 +39,7 @@ const CHAR_DISPLAY={
     flavour:'Bend time — foresee attacks and drain your foe.'
   },
   gnash:{
-    stats:[['❤ HP','105'],['🩸 War Paint','3 mana → 33% resist / 5T'],['⚔️ Charge','15 HP → 32 pierce all'],['💢 Frenzy','15 HP → 3× rapid strikes']],
+    stats:[['❤ HP','105'],['🩸 War Paint','3 mana → 33% resist + reduces self-harm / 5T'],['⚔️ Charge','15 HP (10 w/ War Paint) → 32 pierce all'],['💢 Frenzy','15 HP (10 w/ War Paint) → 3× rapid strikes']],
     flavour:'Blood and bone. No magic — just fury.'
   },
   cinder:{
@@ -74,6 +74,7 @@ const CHAR_DISPLAY={
 
 // ── DIFFICULTY ─────────────────────────────────────────────
 let diffMult=1.0, diffName='normal';
+let aiDifficulty='easy';
 
 // ── TOURNAMENT ─────────────────────────────────────────────
 const ARCADE_BOSSES=['gnash','zacharius','mal','mordant']; // fixed final-4 in arcade mode
@@ -1541,14 +1542,20 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='foresight')  return casterState.foresight;
   if(spellId==='timedrain')  return targetState.timeDrain>0;
   if(spellId==='warpaint')   return casterState.resist>0;
-  if(spellId==='charge')    return casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='charge'){
+    const cost=casterState.resist>0?Math.round((casterCfg.frenzyHpCost||15)*0.67):(casterCfg.frenzyHpCost||15);
+    return casterState.hp<=cost;
+  }
   if(spellId==='vanish')     return casterState.invisible>0;
   if(spellId==='manasiphon') return !casterState.invisible||targetState.mana<=0;
   if(spellId==='ward')       return casterState.ward>0;
   if(spellId==='drain')      return false;
   if(spellId==='vinewhip')   return targetState.vineWhip>0;
   if(spellId==='haste')      return casterState.haste>0;
-  if(spellId==='frenzy')     return casterState.hp<=(casterCfg.frenzyHpCost||15);
+  if(spellId==='frenzy'){
+    const cost=casterState.resist>0?Math.round((casterCfg.frenzyHpCost||15)*0.67):(casterCfg.frenzyHpCost||15);
+    return casterState.hp<=cost;
+  }
   if(spellId==='blink')      return casterState.blink>0;
   if(spellId==='icelance')    return false;
   if(spellId==='frostarmor')  return casterState.frostArmor>0;
@@ -1586,7 +1593,7 @@ function act(type){
   if(!twoPlayerMode&&gs.p2&&gs.p2.haste>0&&!gs.skipAITurn){
     gs.myTurn=false; gs.busy=true;
     gs.pendingAction=type;
-    doAI();
+    (aiDifficulty==='normal'?doAINormal:doAI)();
     return;
   }
 
@@ -1828,7 +1835,8 @@ function resolveCharSpell(spellId,caster){
     anim(caster,'shield',700);
     refreshHUD();
   } else if(spellId==='charge'){
-    casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
+    const chargeSelfCost=casterState.resist>0?Math.round(casterCfg.frenzyHpCost*0.67):casterCfg.frenzyHpCost;
+    casterState.hp=Math.max(1,casterState.hp-chargeSelfCost);
     if(casterState.invisible>0){
       casterState.invisible=0;
       addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
@@ -1988,7 +1996,8 @@ function resolveCharSpell(spellId,caster){
     }
     anim(caster,'cast',700);
   } else if(spellId==='frenzy'){
-    casterState.hp=Math.max(1,casterState.hp-casterCfg.frenzyHpCost);
+    const frenzySelfCost=casterState.resist>0?Math.round(casterCfg.frenzyHpCost*0.67):casterCfg.frenzyHpCost;
+    casterState.hp=Math.max(1,casterState.hp-frenzySelfCost);
     if(casterState.invisible>0){
       casterState.invisible=0;
       addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
@@ -3098,7 +3107,7 @@ function endMyTurn(skipShieldDecrement=false){
     tickStatuses(gs.p1);
     gs.round++;
     if(aiTid) clearTimeout(aiTid);
-    aiTid=setTimeout(doAI, gs.p2&&gs.p2.haste>0 ? 400 : 1400);
+    aiTid=setTimeout(aiDifficulty==='normal'?doAINormal:doAI, gs.p2&&gs.p2.haste>0 ? 400 : 1400);
   }
 }
 
@@ -3345,6 +3354,301 @@ function doAI(){
   },700);
 }
 
+// ── NORMAL AI TURN (combo-aware) ───────────────────────────
+function doAINormal(){
+  if(!gs||!battleRunning||gameEnded) return;
+
+  if(gs.skipAITurn){
+    gs.skipAITurn=false;
+    finishAI();
+    return;
+  }
+
+  // Training mode with AI off: opponent just channels every turn
+  if(trainingMode&&!trainingAI){
+    if(gs.p1.invisible>0) gs.p1.invisible--;
+    if(gs.p2.invisible>0) gs.p2.invisible--;
+    if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
+    gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
+    if(gs.p2.frozen>0){
+      gs.p2.frozen--;
+      addFloat(bW*.78,bH*.38,'❄️ Frozen!','#88ddff',13);
+      setTimeout(finishAI,1200);
+      return;
+    }
+    const aiNoAI=gs.p2;
+    if(aiNoAI.timeDrain>0){
+      aiNoAI.mana=Math.min(MAX_MANA,aiNoAI.mana+2);
+      addFloat(bW*.78,bH*.38,'⏳ Drained! +2','#ffcc44',13);
+    } else {
+      aiNoAI.mana=Math.min(MAX_MANA,aiNoAI.mana+p2Cfg.channelAmt);
+      addFloat(bW*.78,bH*.38,'✨ Channeling...','#aaaaff',13);
+    }
+    if(aiNoAI.candle>0) triggerCandleBurn(aiNoAI,bW*.78);
+    anim('p2','cast',700);
+    if(aiNoAI.shield>0){ aiNoAI.shield--; if(aiNoAI.shield<=0) aiNoAI.shieldHp=0; }
+    tickStatuses(aiNoAI);
+    finishAI();
+    return;
+  }
+
+  if(gs.p1.invisible>0) gs.p1.invisible--;
+  if(gs.p2.invisible>0) gs.p2.invisible--;
+
+  if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+  if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+  if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+  if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
+
+  gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
+
+  if(gs.p2.frozen>0){
+    gs.p2.frozen--;
+    addFloat(bW*.78,bH*.38,'❄️ Frozen!','#88ddff',13);
+    setTimeout(finishAI,1200);
+    return;
+  }
+
+  const ai=gs.p2;
+  const p1=gs.p1;
+  const allSpells=[...SPELLS,...(p2Cfg.spells||[])];
+
+  const available=allSpells.filter(s=>{
+    if(ai.mana<s.cost) return false;
+    if(s.id&&charSpellBlocked(s.id,ai,p2Cfg,p1)) return false;
+    if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
+    if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
+    if(s.aiHint==='drain'&&p2Key!=='mal'&&ai.hp>ai.maxHp*0.75) return false;
+    if(ai.frenzied>0&&s.element) return false;
+    if(p1.invisible>0&&(s.element&&!s.area&&s.element!=='dispel'&&s.element!=='manaburn'||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption'||s.id==='rockfall')) return false;
+    return true;
+  });
+
+  const charSpells=available.filter(s=>s.id);
+  const universalSpells=available.filter(s=>s.element);
+
+  let chosen=null;
+  let forceChannel=false;
+
+  if(p2Key==='eldrad'&&!chosen){
+    const canShield=charSpells.find(s=>s.id==='shield');
+    const canCounter=charSpells.find(s=>s.id==='counter');
+    const canWard=charSpells.find(s=>s.id==='ward');
+    if(canShield) chosen=canShield;
+    else if(canCounter) chosen=canCounter;
+    else if(canWard) chosen=canWard;
+    else if(!ai.shieldHp&&ai.mana<3&&ai.hp>ai.maxHp*0.50&&Math.random()<0.60) forceChannel=true;
+  }
+  if(p2Key==='mal'&&!chosen){
+    const canBloodPact=charSpells.find(s=>s.id==='bloodpact');
+    const canEmpower=charSpells.find(s=>s.id==='empower');
+    const canDrain=charSpells.find(s=>s.id==='drain');
+    if(ai.empowered&&canDrain) chosen=canDrain;
+    else if(!ai.empowered&&canEmpower) chosen=canEmpower;
+    else if(canBloodPact&&ai.mana<5&&ai.hp>(p2Cfg.bpCost||22)+15) chosen=canBloodPact;
+    else if(canDrain) chosen=canDrain;
+    else if(ai.empowered&&ai.mana<3&&ai.hp>ai.maxHp*0.45&&Math.random()<0.60) forceChannel=true;
+  }
+  if(p2Key==='sylvara'&&!chosen){
+    const canEntangle=charSpells.find(s=>s.id==='entangle');
+    const canVineWhip=charSpells.find(s=>s.id==='vinewhip');
+    const canRegen=charSpells.find(s=>s.id==='heal');
+    if(ai.hp<ai.maxHp*0.50&&canRegen) chosen=canRegen;
+    else if(canEntangle) chosen=canEntangle;
+    else if(canVineWhip&&!p1.shield) chosen=canVineWhip;
+    else if(!ai.regen&&canRegen&&ai.hp<ai.maxHp*0.80) chosen=canRegen;
+    else if(!ai.regen&&ai.hp<ai.maxHp*0.65&&ai.mana<4&&Math.random()<0.55) forceChannel=true;
+  }
+  if(p2Key==='aurelia'&&!chosen){
+    const canForesight=charSpells.find(s=>s.id==='foresight');
+    const canTimeDrain=charSpells.find(s=>s.id==='timedrain');
+    const canHaste=charSpells.find(s=>s.id==='haste');
+    if(canForesight) chosen=canForesight;
+    else if(canTimeDrain) chosen=canTimeDrain;
+    else if(canHaste) chosen=canHaste;
+    else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&Math.random()<0.60) forceChannel=true;
+  }
+  if(p2Key==='gnash'&&!chosen){
+    const canWarpaint=charSpells.find(s=>s.id==='warpaint');
+    const canFrenzy=charSpells.find(s=>s.id==='frenzy');
+    const canCharge=charSpells.find(s=>s.id==='charge');
+    if(canWarpaint) chosen=canWarpaint;
+    else if(ai.resist>0){
+      if(canFrenzy) chosen=canFrenzy;
+      else if(canCharge) chosen=canCharge;
+    } else if(ai.mana<3&&ai.hp>ai.maxHp*0.50&&Math.random()<0.55){
+      forceChannel=true;
+    } else {
+      if(canFrenzy) chosen=canFrenzy;
+      else if(canCharge) chosen=canCharge;
+    }
+  }
+  if(p2Key==='cinder'&&!chosen){
+    const canCandle=charSpells.find(s=>s.id==='candle');
+    const canFlameShield=charSpells.find(s=>s.id==='flameshield');
+    const canFireball=charSpells.find(s=>s.id==='fireball');
+    if(canCandle) chosen=canCandle;
+    else if(canFlameShield) chosen=canFlameShield;
+    else if(canFireball) chosen=canFireball;
+    else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&Math.random()<0.55) forceChannel=true;
+  }
+  if(p2Key==='skadi'&&!chosen){
+    const canBlizzard=charSpells.find(s=>s.id==='blizzard');
+    const canFrostArmor=charSpells.find(s=>s.id==='frostarmor');
+    const canIceLance=charSpells.find(s=>s.id==='icelance');
+    if(canBlizzard) chosen=canBlizzard;
+    else if(canFrostArmor) chosen=canFrostArmor;
+    else if(canIceLance) chosen=canIceLance;
+    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&Math.random()<0.65) forceChannel=true;
+  }
+  if(p2Key==='zacharius'&&!chosen){
+    const chainReady=charSpells.find(s=>s.id==='chainlightning');
+    const canGalvanize=charSpells.find(s=>s.id==='galvanize');
+    const canConductivity=charSpells.find(s=>s.id==='conductivity');
+    if(chainReady&&ai.charge>=(p2Cfg.chainLightningChargeCost||8)) chosen=chainReady;
+    else if(canConductivity&&(!p1.conductivity||p1.conductivity<=1)) chosen=canConductivity;
+    else if(canGalvanize) chosen=canGalvanize;
+    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&Math.random()<0.55) forceChannel=true;
+  }
+  if(p2Key==='mary'&&!chosen){
+    const canRadiant=charSpells.find(s=>s.id==='radiant');
+    const canHeal=charSpells.find(s=>s.id==='divineheal');
+    const canPurge=charSpells.find(s=>s.id==='purge');
+    const hasDebuff=ai.burn>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
+    if(hasDebuff&&canPurge) chosen=canPurge;
+    else if(ai.hp<ai.maxHp*0.55&&canHeal) chosen=canHeal;
+    else if(canRadiant&&(p1.shield>0||p1.resist>0||p1.frostArmor>0)) chosen=canRadiant;
+    else if(canRadiant&&Math.random()<0.55) chosen=canRadiant;
+    else if(ai.mana<3&&ai.hp>ai.maxHp*0.50&&Math.random()<0.55) forceChannel=true;
+  }
+  if(p2Key==='mordant'&&!chosen){
+    const canCorruption=charSpells.find(s=>s.id==='corruption');
+    const canAgony=charSpells.find(s=>s.id==='agony');
+    const canSilence=charSpells.find(s=>s.id==='silence');
+    if(!ai.agony){
+      if(canCorruption) chosen=canCorruption;
+      else if(canAgony) chosen=canAgony;
+      else if(canSilence) chosen=canSilence;
+      else if(ai.mana<2&&ai.hp>ai.maxHp*0.45&&Math.random()<0.60) forceChannel=true;
+    }
+  }
+  if(p2Key==='ponder'&&!chosen){
+    const canVanish=charSpells.find(s=>s.id==='vanish');
+    const canManaSiphon=charSpells.find(s=>s.id==='manasiphon');
+    const canBlink=charSpells.find(s=>s.id==='blink');
+    if(ai.invisible>0){
+      if(canManaSiphon) chosen=canManaSiphon;
+    } else {
+      if(canVanish) chosen=canVanish;
+      else if(canBlink) chosen=canBlink;
+      else if(ai.mana<2&&ai.hp>ai.maxHp*0.45&&Math.random()<0.55) forceChannel=true;
+    }
+  }
+  if(p2Key==='durin'&&!chosen){
+    const canStoneskin=charSpells.find(s=>s.id==='stoneskin');
+    const canStonesoul=charSpells.find(s=>s.id==='stonesoul');
+    const canRockfall=charSpells.find(s=>s.id==='rockfall');
+    if(canStoneskin) chosen=canStoneskin;
+    else if(canStonesoul) chosen=canStonesoul;
+    else if(canRockfall&&Math.random()<0.70) chosen=canRockfall;
+    else if(ai.mana<3&&ai.hp>ai.maxHp*0.40&&Math.random()<0.65) forceChannel=true;
+  }
+  if(!chosen){
+    const dispelSpell=universalSpells.find(s=>s.element==='dispel');
+    if(dispelSpell){
+      const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
+      const oppHasKeyBuff=p1.shield>0||p1.foresight||p1.resist>1||p1.invisible>1||p1.stoneskin>0||p1.stonesoul>0||p1.ward>0||p1.counter;
+      if(needsCleanse){
+        chosen=dispelSpell; dispelSelf=true; forceChannel=false;
+      } else if(!forceChannel&&oppHasKeyBuff&&Math.random()<0.45){
+        chosen=dispelSpell; dispelSelf=false;
+      }
+    }
+  }
+  if(!chosen&&!forceChannel){
+    const manaBurnSpell=universalSpells.find(s=>s.element==='manaburn');
+    if(manaBurnSpell&&p1.mana>=7) chosen=manaBurnSpell;
+  }
+  if(!chosen&&!forceChannel&&available.length>0){
+    if(charSpells.length>0&&Math.random()<0.50){
+      chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
+    } else if(universalSpells.length>0){
+      if(p1.shield>0&&universalSpells.find(s=>s.element==='lightning')){
+        chosen=universalSpells.find(s=>s.element==='lightning');
+      } else if(!p1.shield&&universalSpells.find(s=>s.element==='fire')){
+        chosen=universalSpells.find(s=>s.element==='fire');
+      } else if(p1.mana>=3&&universalSpells.find(s=>s.element==='ice')){
+        chosen=universalSpells.find(s=>s.element==='ice');
+      } else {
+        const randPool=universalSpells.filter(s=>s.element!=='dispel');
+        if(randPool.length>0) chosen=randPool[Math.floor(Math.random()*randPool.length)];
+      }
+    } else {
+      chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
+    }
+  }
+  if(!chosen){
+    if(ai.timeDrain>0){
+      ai.mana=Math.min(MAX_MANA,ai.mana+2);
+      addFloat(bW*.78,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
+    } else {
+      ai.mana=Math.min(MAX_MANA,ai.mana+p2Cfg.channelAmt);
+      addFloat(bW*.78,bH*.38,'+'+p2Cfg.channelAmt+' Mana','#ff8888',13);
+    }
+    if(ai.candle>0) triggerCandleBurn(ai,bW*.78);
+    anim('p2','cast',700);
+    if(ai.shield>0){ ai.shield--; if(ai.shield<=0) ai.shieldHp=0; }
+    tickStatuses(ai);
+    finishAI();
+    return;
+  }
+  if(ai.agony>0){
+    const agonDmg=ai.agonyDmg||12;
+    ai.hp=Math.max(0,ai.hp-agonDmg);
+    addFloat(bW*.78,bH*.38,'💀 Agony! −'+agonDmg,'#9944cc',14);
+    spawnParts(bW*.78,bH*.38,'#9944cc',12); flash('#330033');
+    checkWin(); if(!battleRunning) return;
+  }
+  if(chosen.id&&chosen.cost>0&&ai.silence>0&&Math.random()<0.45){
+    showSilenceBlock(bW*.78,bH*.33); anim('p2','cast',600);
+    tickStatuses(ai); finishAI(); return;
+  }
+  if(!chosen.id&&ai.silence>0&&Math.random()<0.45){
+    showSilenceBlock(bW*.78,bH*.33); anim('p2','cast',600);
+    ai.mana=Math.max(0,ai.mana-1); tickStatuses(ai); finishAI(); return;
+  }
+  if(chosen.id){
+    resolveCharSpell(chosen.id,'p2');
+    return;
+  }
+  addFloat(bW*.78,bH*.26,chosen.icon+' '+chosen.name+'!',chosen.col,12);
+  anim('p2','cast',800);
+  setTimeout(()=>{
+    if(!battleRunning) return;
+    tickStatuses(ai);
+    if(Math.random()<0.8){
+      ai.mana-=chosen.cost;
+      if(chosen.element==='dispel'&&dispelSelf){
+        castSpell(chosen,gs.p2,bW*.78,bH*.38,'p2');
+        finishAI();
+      } else {
+        spawnProj(bW*.78,bH*.38,bW*.22,bH*.38,chosen.element,chosen.col,()=>{
+          if(!battleRunning) return;
+          castSpell(chosen,gs.p1,bW*.22,bH*.38,'p2');
+          finishAI();
+        });
+      }
+    } else {
+      addFloat(bW*.78,bH*.33,'Fizzled!','#ff8844',12);
+      ai.mana=Math.max(0,ai.mana-1);
+      finishAI();
+    }
+  },700);
+}
+
 // ── P1 AI TURN (watch mode) ────────────────────────────────
 function doAIAsP1(){
   if(!gs||!battleRunning||gameEnded) return;
@@ -3352,7 +3656,6 @@ function doAIAsP1(){
   const ai=gs.p1;
   const allSpells=[...SPELLS,...(p1Cfg.spells||[])];
 
-  // Build available list mirroring doAI heuristics
   const available=allSpells.filter(s=>{
     if(ai.mana<s.cost) return false;
     if(s.id&&charSpellBlocked(s.id,ai,p1Cfg,gs.p2)) return false;
@@ -3429,9 +3732,7 @@ function doAIAsP1(){
       chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
     }
   }
-
   if(!chosen){
-    // Channel
     if(ai.timeDrain>0){
       ai.mana=Math.min(MAX_MANA,ai.mana+2);
       addFloat(bW*.22,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
@@ -3444,8 +3745,6 @@ function doAIAsP1(){
     endMyTurn(false);
     return;
   }
-
-  // Agony: take damage for any non-channel action
   if(ai.agony>0){
     const agonDmg=ai.agonyDmg||12;
     ai.hp=Math.max(0,ai.hp-agonDmg);
@@ -3453,8 +3752,6 @@ function doAIAsP1(){
     spawnParts(bW*.22,bH*.38,'#9944cc',12); flash('#330033');
     checkWin(); if(!battleRunning) return;
   }
-
-  // Silence: 45% fizzle
   if(chosen.id&&chosen.cost>0&&ai.silence>0&&Math.random()<0.45){
     showSilenceBlock(bW*.22,bH*.33); anim('p1','cast',600);
     endMyTurn(false); return;
@@ -3464,13 +3761,10 @@ function doAIAsP1(){
     ai.mana=Math.max(0,ai.mana-1);
     endMyTurn(false); return;
   }
-
   if(chosen.id){
     resolveCharSpell(chosen.id,'p1');
     return;
   }
-
-  // Universal spell
   addFloat(bW*.22,bH*.26,chosen.icon+' '+chosen.name+'!',chosen.col,12);
   anim('p1','cast',800);
   setTimeout(()=>{
@@ -3494,6 +3788,7 @@ function doAIAsP1(){
     }
   },700);
 }
+
 
 function finishAI(){
   if(!battleRunning||gameEnded) return;
@@ -3537,7 +3832,7 @@ function finishAI(){
   if(gs.p1.frozen>0){
     gs.p1.frozen--;
     addFloat(bW*.22,bH*.38,'❄️ Frozen!','#88ddff',13);
-    setTimeout(()=>{ gs.round++; if(aiTid) clearTimeout(aiTid); aiTid=setTimeout(doAI,1200); },1200);
+    setTimeout(()=>{ gs.round++; if(aiTid) clearTimeout(aiTid); aiTid=setTimeout(aiDifficulty==='normal'?doAINormal:doAI,1200); },1200);
     return;
   }
 
@@ -6182,6 +6477,15 @@ window.addEventListener('DOMContentLoaded', ()=>{
       diffMult=diffName==='easy'?1.6:diffName==='hard'?0.55:1.0;
     });
   });
+  document.querySelectorAll('.ai-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.ai-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      aiDifficulty=btn.dataset.ai;
+      const hint=document.getElementById('training-ai-hint');
+      if(hint&&trainingAI) hint.textContent=aiDifficulty==='normal'?'Opponent plays smart combos':'Opponent plays normally';
+    });
+  });
 
   const duelOverlay=document.getElementById('duel-overlay');
   document.getElementById('btn-duel').addEventListener('click',()=>{
@@ -6239,7 +6543,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     }
     document.getElementById('tai-on').classList.add('active');
     document.getElementById('tai-off').classList.remove('active');
-    document.getElementById('training-ai-hint').textContent='Opponent plays normally';
+    document.getElementById('training-ai-hint').textContent=aiDifficulty==='normal'?'Opponent plays smart combos':'Opponent plays normally';
     showScreen('training-screen');
   });
   document.getElementById('btn-training-back').addEventListener('click',()=>{
@@ -6264,7 +6568,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     trainingAI=true;
     document.getElementById('tai-on').classList.add('active');
     document.getElementById('tai-off').classList.remove('active');
-    document.getElementById('training-ai-hint').textContent='Opponent plays normally';
+    document.getElementById('training-ai-hint').textContent=aiDifficulty==='normal'?'Opponent plays smart combos':'Opponent plays normally';
   });
   document.getElementById('tai-off').addEventListener('click',()=>{
     trainingAI=false;

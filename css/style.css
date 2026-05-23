@@ -120,6 +120,21 @@ body {
 .diff-btn.active[data-diff="normal"] { border-color: #c9a84c; color: #f0cc6a; background: rgba(201,168,76,0.1); }
 .diff-btn.active[data-diff="hard"]   { border-color: #ff4a6e; color: #ff4a6e; background: rgba(255,74,110,0.12); }
 
+.ai-btn {
+  flex: 1; padding: 8px 0;
+  font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  border-radius: 4px; cursor: pointer;
+  border: 2px solid rgba(201,168,76,0.25);
+  background: rgba(0,0,0,0.4);
+  color: rgba(201,168,76,0.35);
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ai-btn:hover { opacity: 0.85; }
+.ai-btn.active[data-ai="easy"]   { border-color: #4af0ff; color: #4af0ff; background: rgba(74,240,255,0.1); }
+.ai-btn.active[data-ai="normal"] { border-color: #aaff44; color: #aaff44; background: rgba(170,255,68,0.1); }
+
 .hint {
   font-size: 10px;
   letter-spacing: 2px;
