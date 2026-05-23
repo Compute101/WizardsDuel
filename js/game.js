@@ -3431,8 +3431,9 @@ function doAINormal(){
   const universalSpells=available.filter(s=>s.element);
 
   let chosen=null;
-  let forceChannel=false;
+  let forceChannel=false; // set by character blocks to prefer channel over weak fallback
 
+  // ── ELDRIN: Shield first, Counter next, then Ward ───────────
   if(p2Key==='eldrad'&&!chosen){
     const canShield=charSpells.find(s=>s.id==='shield');
     const canCounter=charSpells.find(s=>s.id==='counter');
@@ -3440,8 +3441,10 @@ function doAINormal(){
     if(canShield) chosen=canShield;
     else if(canCounter) chosen=canCounter;
     else if(canWard) chosen=canWard;
+    // Save up for Shield when no defences are up
     else if(!ai.shieldHp&&ai.mana<3&&ai.hp>ai.maxHp*0.50&&Math.random()<0.60) forceChannel=true;
   }
+  // ── MALACHAR: Empower → Drain combo; Blood Pact when mana-hungry ──
   if(p2Key==='mal'&&!chosen){
     const canBloodPact=charSpells.find(s=>s.id==='bloodpact');
     const canEmpower=charSpells.find(s=>s.id==='empower');
@@ -3450,8 +3453,10 @@ function doAINormal(){
     else if(!ai.empowered&&canEmpower) chosen=canEmpower;
     else if(canBloodPact&&ai.mana<5&&ai.hp>(p2Cfg.bpCost||22)+15) chosen=canBloodPact;
     else if(canDrain) chosen=canDrain;
+    // Already empowered but can't afford Drain — channel to deliver the combo
     else if(ai.empowered&&ai.mana<3&&ai.hp>ai.maxHp*0.45&&Math.random()<0.60) forceChannel=true;
   }
+  // ── SYLVARA: Entangle (freeze) → Vine Whip; Regen to sustain ──
   if(p2Key==='sylvara'&&!chosen){
     const canEntangle=charSpells.find(s=>s.id==='entangle');
     const canVineWhip=charSpells.find(s=>s.id==='vinewhip');
@@ -3460,8 +3465,10 @@ function doAINormal(){
     else if(canEntangle) chosen=canEntangle;
     else if(canVineWhip&&!p1.shield) chosen=canVineWhip;
     else if(!ai.regen&&canRegen&&ai.hp<ai.maxHp*0.80) chosen=canRegen;
+    // Channel to reach Regen threshold when moderately hurt
     else if(!ai.regen&&ai.hp<ai.maxHp*0.65&&ai.mana<4&&Math.random()<0.55) forceChannel=true;
   }
+  // ── AURELIA: Foresight → Time Drain → Haste ─────────────────
   if(p2Key==='aurelia'&&!chosen){
     const canForesight=charSpells.find(s=>s.id==='foresight');
     const canTimeDrain=charSpells.find(s=>s.id==='timedrain');
@@ -3469,23 +3476,28 @@ function doAINormal(){
     if(canForesight) chosen=canForesight;
     else if(canTimeDrain) chosen=canTimeDrain;
     else if(canHaste) chosen=canHaste;
+    // Channel to afford next utility spell
     else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&Math.random()<0.60) forceChannel=true;
   }
+  // ── GNASH: War Paint first, then burst with Frenzy/Savage Charge ──
   if(p2Key==='gnash'&&!chosen){
     const canWarpaint=charSpells.find(s=>s.id==='warpaint');
     const canFrenzy=charSpells.find(s=>s.id==='frenzy');
     const canCharge=charSpells.find(s=>s.id==='charge');
     if(canWarpaint) chosen=canWarpaint;
     else if(ai.resist>0){
+      // War Paint is active — burst safely
       if(canFrenzy) chosen=canFrenzy;
       else if(canCharge) chosen=canCharge;
     } else if(ai.mana<3&&ai.hp>ai.maxHp*0.50&&Math.random()<0.55){
+      // Save up for War Paint rather than spending HP on unprotected burst
       forceChannel=true;
     } else {
       if(canFrenzy) chosen=canFrenzy;
       else if(canCharge) chosen=canCharge;
     }
   }
+  // ── CINDER: Candle → Flame Shield → Fireball ────────────────
   if(p2Key==='cinder'&&!chosen){
     const canCandle=charSpells.find(s=>s.id==='candle');
     const canFlameShield=charSpells.find(s=>s.id==='flameshield');
@@ -3493,8 +3505,10 @@ function doAINormal(){
     if(canCandle) chosen=canCandle;
     else if(canFlameShield) chosen=canFlameShield;
     else if(canFireball) chosen=canFireball;
+    // Channel to afford next combo piece (cheapest remaining is Flame Shield at 3)
     else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&Math.random()<0.55) forceChannel=true;
   }
+  // ── SKADI: Blizzard → Frost Armor → Ice Lance ───────────────
   if(p2Key==='skadi'&&!chosen){
     const canBlizzard=charSpells.find(s=>s.id==='blizzard');
     const canFrostArmor=charSpells.find(s=>s.id==='frostarmor');
@@ -3502,8 +3516,10 @@ function doAINormal(){
     if(canBlizzard) chosen=canBlizzard;
     else if(canFrostArmor) chosen=canFrostArmor;
     else if(canIceLance) chosen=canIceLance;
+    // Everything costs 4 — channel to reach threshold rather than spam Frost Bolt
     else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&Math.random()<0.65) forceChannel=true;
   }
+  // ── ZACHARIUS: Conductivity → Galvanize → Chain Lightning ───
   if(p2Key==='zacharius'&&!chosen){
     const chainReady=charSpells.find(s=>s.id==='chainlightning');
     const canGalvanize=charSpells.find(s=>s.id==='galvanize');
@@ -3511,8 +3527,10 @@ function doAINormal(){
     if(chainReady&&ai.charge>=(p2Cfg.chainLightningChargeCost||8)) chosen=chainReady;
     else if(canConductivity&&(!p1.conductivity||p1.conductivity<=1)) chosen=canConductivity;
     else if(canGalvanize) chosen=canGalvanize;
+    // Channel to reach Galvanize cost
     else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&Math.random()<0.55) forceChannel=true;
   }
+  // ── MARY: Purge debuffs → Heal → Radiant (bypasses shields) ──
   if(p2Key==='mary'&&!chosen){
     const canRadiant=charSpells.find(s=>s.id==='radiant');
     const canHeal=charSpells.find(s=>s.id==='divineheal');
@@ -3522,8 +3540,10 @@ function doAINormal(){
     else if(ai.hp<ai.maxHp*0.55&&canHeal) chosen=canHeal;
     else if(canRadiant&&(p1.shield>0||p1.resist>0||p1.frostArmor>0)) chosen=canRadiant;
     else if(canRadiant&&Math.random()<0.55) chosen=canRadiant;
+    // Channel to afford Radiant
     else if(ai.mana<3&&ai.hp>ai.maxHp*0.50&&Math.random()<0.55) forceChannel=true;
   }
+  // ── MORDANT: Layer hexes — Corruption → Agony → Silence; channel under own Agony ──
   if(p2Key==='mordant'&&!chosen){
     const canCorruption=charSpells.find(s=>s.id==='corruption');
     const canAgony=charSpells.find(s=>s.id==='agony');
@@ -3532,21 +3552,27 @@ function doAINormal(){
       if(canCorruption) chosen=canCorruption;
       else if(canAgony) chosen=canAgony;
       else if(canSilence) chosen=canSilence;
+      // Channel to afford cheapest hex (Silence at 2)
       else if(ai.mana<2&&ai.hp>ai.maxHp*0.45&&Math.random()<0.60) forceChannel=true;
     }
+    // ai.agony>0: chosen stays null — Dispel block below handles cleanse, else channel
   }
+  // ── PONDER: Vanish → Mana Siphon loop; Blink as fallback ───
   if(p2Key==='ponder'&&!chosen){
     const canVanish=charSpells.find(s=>s.id==='vanish');
     const canManaSiphon=charSpells.find(s=>s.id==='manasiphon');
     const canBlink=charSpells.find(s=>s.id==='blink');
     if(ai.invisible>0){
       if(canManaSiphon) chosen=canManaSiphon;
+      // else: stay invisible by channeling (chosen=null falls through)
     } else {
       if(canVanish) chosen=canVanish;
       else if(canBlink) chosen=canBlink;
+      // Channel to afford Vanish
       else if(ai.mana<2&&ai.hp>ai.maxHp*0.45&&Math.random()<0.55) forceChannel=true;
     }
   }
+  // ── DURIN: Proactive armor (no HP threshold), then Rockfall ──
   if(p2Key==='durin'&&!chosen){
     const canStoneskin=charSpells.find(s=>s.id==='stoneskin');
     const canStonesoul=charSpells.find(s=>s.id==='stonesoul');
@@ -3554,8 +3580,10 @@ function doAINormal(){
     if(canStoneskin) chosen=canStoneskin;
     else if(canStonesoul) chosen=canStonesoul;
     else if(canRockfall&&Math.random()<0.70) chosen=canRockfall;
+    // Channel to afford next armour layer or Rockfall
     else if(ai.mana<3&&ai.hp>ai.maxHp*0.40&&Math.random()<0.65) forceChannel=true;
   }
+  // ── Dispel: urgent self-cleanse overrides forceChannel; buff-strip skipped when saving ──
   if(!chosen){
     const dispelSpell=universalSpells.find(s=>s.element==='dispel');
     if(dispelSpell){
@@ -3568,10 +3596,12 @@ function doAINormal(){
       }
     }
   }
+  // ── Mana Burn: when player is mana-rich (skip when saving for combo) ──
   if(!chosen&&!forceChannel){
     const manaBurnSpell=universalSpells.find(s=>s.element==='manaburn');
     if(manaBurnSpell&&p1.mana>=7) chosen=manaBurnSpell;
   }
+  // ── Generic fallback (skipped when saving mana for combo) ───
   if(!chosen&&!forceChannel&&available.length>0){
     if(charSpells.length>0&&Math.random()<0.50){
       chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
