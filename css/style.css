@@ -1530,6 +1530,24 @@ body {
   color: #88bbff;
 }
 
+.p2p-stun-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.38);
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.p2p-stun-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #f0cc6a;
+  cursor: pointer;
+}
+
 /* ── P2P WAITING OVERLAY ── */
 #p2p-waiting-overlay {
   display: none;

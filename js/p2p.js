@@ -3,17 +3,18 @@
 // WebRTC DataChannel P2P layer for WizardsDuel.
 // Handles offer/answer exchange and message passing; no game logic here.
 const WizardsP2P = (() => {
-  const ICE = [
+  const STUN = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
   ];
   const GATHER_TIMEOUT = 6000;
 
+  let useStun = false;  // opt-in; local Wi-Fi works without it
   let pc = null, dc = null, _role = null;
   let _onMsg = null, _onOpen = null, _onClose = null;
 
   function initPC() {
-    pc = new RTCPeerConnection({ iceServers: ICE });
+    pc = new RTCPeerConnection({ iceServers: useStun ? STUN : [] });
     pc.oniceconnectionstatechange = () => {
       if (['disconnected','failed','closed'].includes(pc.iceConnectionState)) {
         if (_onClose) _onClose(pc.iceConnectionState);
@@ -89,6 +90,8 @@ const WizardsP2P = (() => {
 
   return {
     host, join, acceptAnswer, send, isOpen, role, cleanup,
+    set useStun(v)    { useStun  = !!v; },
+    get useStun()     { return useStun; },
     set onMessage(fn) { _onMsg   = fn; },
     set onOpen(fn)    { _onOpen  = fn; },
     set onClose(fn)   { _onClose = fn; },

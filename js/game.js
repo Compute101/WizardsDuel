@@ -7024,9 +7024,11 @@ window.addEventListener('DOMContentLoaded', ()=>{
     duelOverlay.style.display='none';
   });
   document.getElementById('p2p-btn-host').addEventListener('click',()=>{
+    WizardsP2P.useStun=document.getElementById('p2p-stun-toggle').checked;
     p2pStartHost();
   });
   document.getElementById('p2p-btn-join').addEventListener('click',()=>{
+    WizardsP2P.useStun=document.getElementById('p2p-stun-toggle').checked;
     p2pStartJoin();
   });
   document.getElementById('p2p-host-back').addEventListener('click',()=>{
