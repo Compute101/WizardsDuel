@@ -116,6 +116,14 @@ let twoPlayerPhase=1; // 1=p1 picking, 2=p2 picking
 let matchRound=0;
 let p1MatchWins=0, p2MatchWins=0;
 
+// ── P2P MODE ──────────────────────────────────────────────
+let p2pMode=false;
+let p2pRole=null;           // 'host' (=p1) | 'guest' (=p2)
+let p2pMyCharSelected=false;
+let p2pTheirCharKey=null;
+let p2pLastAction=null;
+let p2pGameOverReceived=false;
+
 // ── TRAINING MODE ──────────────────────────────────────────
 let trainingMode=false;
 let trainingAI=true;
@@ -1598,6 +1606,7 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
 function act(type){
   if(!gs.myTurn||gs.busy) return;
   resizeBC();
+  if(p2pMode) p2pLastAction=type;
 
   const who=twoPlayerMode?gs.turnPlayer:'p1';
   const whoCfg=who==='p1'?p1Cfg:p2Cfg;
@@ -3957,7 +3966,13 @@ function endGame(won){
   setTimeout(()=>{
     if(twoPlayerMode){
       battleRunning=false;
-      if(won) p1MatchWins++; else p2MatchWins++;
+      if(!p2pGameOverReceived){ if(won) p1MatchWins++; else p2MatchWins++; }
+      if(p2pMode&&WizardsP2P.isOpen()&&!p2pGameOverReceived){
+        WizardsP2P.send({type:'game_over',winner:won?'p1':'p2',
+          p1MatchWins,p2MatchWins,matchRound});
+      }
+      p2pGameOverReceived=false;
+      p2pHideWaiting();
       const winnerCfg=won?p1Cfg:p2Cfg;
       const winnerNum=won?1:2;
       const isMatchOver=p1MatchWins>=2||p2MatchWins>=2||matchRound>=3;
@@ -6258,6 +6273,7 @@ function pickCharacter(key){
     showScreen('training-screen');
     return;
   }
+  if(p2pMode){ p2pHandleCharSelect(key); return; }
   if(twoPlayerMode){
     if(twoPlayerPhase===1){
       p1Key=key; p1Cfg=CHAR_DEFS[key];
@@ -6316,6 +6332,8 @@ function startNextTwoPlayerRound(){
 }
 
 function startTwoPlayerBattle(firstPlayer){
+  p2pGameOverReceived=false;
+  p2pLastAction=null;
   document.getElementById('btn-training-menu').style.display='none';
   loadSprites();
   updateActionBar(firstPlayer==='p1'?p1Cfg:p2Cfg);
@@ -6339,6 +6357,39 @@ function startTwoPlayerBattle(firstPlayer){
 }
 
 function showHandoffOverlay(toPlayer, callback){
+  if(p2pMode){
+    const me=p2pRole==='host'?'p1':'p2';
+    if(toPlayer===me){
+      // My turn — show a "Your Turn!" overlay (reuse handoff box, tweak text)
+      const cfg=toPlayer==='p1'?p1Cfg:p2Cfg;
+      document.getElementById('handoff-player-num').textContent='Your Turn!';
+      document.getElementById('handoff-char-name').textContent=cfg.name.toUpperCase();
+      const portrait=document.getElementById('handoff-portrait');
+      portrait.src='portraits/'+(toPlayer==='p1'?p1Key:p2Key)+'.png';
+      portrait.style.borderColor=cfg.col;
+      const p1s='★'.repeat(Math.min(2,p1MatchWins))+'☆'.repeat(Math.max(0,2-p1MatchWins));
+      const p2s='★'.repeat(Math.min(2,p2MatchWins))+'☆'.repeat(Math.max(0,2-p2MatchWins));
+      document.getElementById('handoff-match-info').textContent=
+        'Match Round '+matchRound+' of 3  ·  P1 '+p1s+'  vs  P2 '+p2s;
+      document.getElementById('handoff-sub').textContent='Opponent is ready — cast your spells!';
+      const overlay=document.getElementById('handoff-overlay');
+      const btn=document.getElementById('handoff-btn');
+      btn.textContent='⚔ Fight!';
+      btn.onclick=null;
+      overlay.classList.add('active');
+      btn.onclick=()=>{
+        overlay.classList.remove('active');
+        btn.textContent='✓ I\'m Ready!';
+        document.getElementById('handoff-sub').textContent='Pass the phone · tap when ready';
+        if(callback) callback();
+      };
+    } else {
+      // Opponent's turn — send state, show waiting overlay
+      p2pSendTurnEnd(false, null);
+      p2pShowWaiting();
+    }
+    return;
+  }
   const cfg=toPlayer==='p1'?p1Cfg:p2Cfg;
   const num=toPlayer==='p1'?1:2;
   document.getElementById('handoff-player-num').textContent='Player '+num;
@@ -6703,6 +6754,214 @@ function renderTutConvo(){
   convo.scrollTop=0;
 }
 
+// ── P2P GAME INTEGRATION ──────────────────────────────────
+
+function p2pMyRoleKey()   { return p2pRole==='host'?'p1':'p2'; }
+function p2pTheirRoleKey(){ return p2pRole==='host'?'p2':'p1'; }
+
+function p2pExtractGS(){
+  return {
+    p1: Object.assign({},gs.p1),
+    p2: Object.assign({},gs.p2),
+    round: gs.round,
+    matchRound, p1MatchWins, p2MatchWins,
+  };
+}
+
+function p2pApplyGS(state){
+  Object.assign(gs.p1, state.p1);
+  Object.assign(gs.p2, state.p2);
+  gs.round=state.round;
+  matchRound=state.matchRound;
+  p1MatchWins=state.p1MatchWins;
+  p2MatchWins=state.p2MatchWins;
+}
+
+function p2pSendTurnEnd(gameOver, winner){
+  WizardsP2P.send({
+    type: 'turn_end',
+    state: p2pExtractGS(),
+    action: p2pLastAction,
+    gameOver: gameOver||false,
+    winner: winner||null,
+  });
+  p2pLastAction=null;
+}
+
+function p2pShowWaiting(sub){
+  document.getElementById('p2p-wait-sub').textContent=sub||'Waiting…';
+  document.getElementById('p2p-waiting-overlay').classList.add('active');
+}
+
+function p2pHideWaiting(){
+  document.getElementById('p2p-waiting-overlay').classList.remove('active');
+}
+
+function p2pHandleCharSelect(key){
+  if(p2pRole==='host'){ p1Key=key; p1Cfg=CHAR_DEFS[key]; }
+  else                { p2Key=key; p2Cfg=CHAR_DEFS[key]; }
+  p2pMyCharSelected=true;
+  WizardsP2P.send({type:'char_select',key});
+  const lbl=document.getElementById('char-player-label');
+  lbl.textContent='Waiting for opponent…';
+  lbl.style.display='';
+  if(p2pTheirCharKey!==null){
+    if(p2pRole==='host'){ p2Key=p2pTheirCharKey; p2Cfg=CHAR_DEFS[p2pTheirCharKey]; }
+    else                { p1Key=p2pTheirCharKey; p1Cfg=CHAR_DEFS[p2pTheirCharKey]; }
+    p2pBothCharsReady();
+  }
+}
+
+function p2pBothCharsReady(){
+  document.getElementById('char-player-label').style.display='none';
+  twoPlayerMode=true;
+  startTwoPlayerMatch();
+}
+
+function p2pReset(){
+  p2pMode=false; p2pRole=null;
+  p2pMyCharSelected=false; p2pTheirCharKey=null;
+  p2pLastAction=null; p2pGameOverReceived=false;
+}
+
+function p2pCleanup(){
+  WizardsP2P.cleanup();
+  p2pReset();
+}
+
+function p2pOnMessage(msg){
+  switch(msg.type){
+    case 'char_select':
+      p2pTheirCharKey=msg.key;
+      if(p2pRole==='host'){ p2Key=msg.key; p2Cfg=CHAR_DEFS[msg.key]; }
+      else                { p1Key=msg.key; p1Cfg=CHAR_DEFS[msg.key]; }
+      if(p2pMyCharSelected) p2pBothCharsReady();
+      break;
+
+    case 'turn_end': {
+      if(!battleRunning||gameEnded) break;
+      p2pApplyGS(msg.state);
+      p2pHideWaiting();
+      if(msg.gameOver){
+        p2pGameOverReceived=true;
+        const won=(msg.winner==='p1');
+        gameEnded=false; // allow endGame to run
+        endGame(won);
+        break;
+      }
+      const me=p2pMyRoleKey();
+      const actionName=p2pActionLabel(msg.action);
+      document.getElementById('p2p-wait-sub').textContent='Opponent: '+actionName;
+      // Brief toast then start my turn
+      setTimeout(()=>{
+        if(battleRunning&&!gameEnded) startPlayerTurn(me);
+      }, 800);
+      break;
+    }
+
+    case 'game_over':
+      if(gameEnded&&!p2pGameOverReceived) break; // already handled locally
+      p2pGameOverReceived=true;
+      p1MatchWins=msg.p1MatchWins;
+      p2MatchWins=msg.p2MatchWins;
+      matchRound=msg.matchRound;
+      p2pHideWaiting();
+      gameEnded=false;
+      endGame(msg.winner==='p1');
+      break;
+
+    case 'next_round':
+      if(!battleRunning) startNextTwoPlayerRound();
+      break;
+  }
+}
+
+function p2pActionLabel(type){
+  const names={
+    channel:'channelled mana',
+    fire:'cast Inferno',lightning:'cast Lightning',
+    ice:'cast Frost Nova',arcane:'cast Arcane Surge',
+    dispel:'used Dispel',manaburn:'cast Mana Burn',
+  };
+  if(!type) return 'acted';
+  return names[type]||('cast '+type);
+}
+
+function p2pEnterGame(role){
+  p2pReset();
+  p2pMode=true;
+  p2pRole=role;
+  WizardsP2P.onMessage=p2pOnMessage;
+  WizardsP2P.onClose=(state)=>{
+    if(p2pMode||twoPlayerMode){
+      p2pHideWaiting();
+      document.getElementById('handoff-overlay').classList.remove('active');
+      alert('Opponent disconnected ('+state+'). Returning to title.');
+      p2pCleanup();
+      twoPlayerMode=false; battleRunning=false; gameEnded=true;
+      showScreen('title-screen');
+    }
+  };
+  // Show char select with appropriate label
+  trainingMode=false; twoPlayerMode=false; twoPlayerPhase=1;
+  const lbl=document.getElementById('char-player-label');
+  lbl.textContent='Choose Your Wizard (You are Player '+(role==='host'?'1':'2')+')';
+  lbl.style.display='';
+  showScreen('char-screen');
+}
+
+// ── P2P SETUP UI helpers ──────────────────────────────────
+
+function p2pShowPanel(id){
+  ['p2p-role-panel','p2p-host-panel','p2p-join-panel'].forEach(pid=>{
+    document.getElementById(pid).style.display=(pid===id)?'flex':'none';
+  });
+}
+
+async function p2pStartHost(){
+  p2pShowPanel('p2p-host-panel');
+  document.getElementById('p2p-offer-code').value='';
+  document.getElementById('p2p-offer-status').textContent='Generating offer…';
+  document.getElementById('p2p-offer-actions').style.display='none';
+  document.getElementById('p2p-answer-input').value='';
+  try {
+    const code=await WizardsP2P.host();
+    document.getElementById('p2p-offer-code').value=code;
+    document.getElementById('p2p-offer-status').textContent='Share this code with your opponent';
+    document.getElementById('p2p-offer-actions').style.display='flex';
+  } catch(e){
+    document.getElementById('p2p-offer-status').textContent='Error: '+e.message;
+  }
+}
+
+async function p2pStartJoin(){
+  p2pShowPanel('p2p-join-panel');
+  document.getElementById('p2p-offer-input').value='';
+  const rev=document.getElementById('p2p-answer-reveal');
+  rev.style.display='none';
+}
+
+function p2pCopyText(text, btn){
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig=btn.textContent;
+    btn.textContent='✓ Copied!';
+    setTimeout(()=>{ btn.textContent=orig; },1800);
+  }).catch(()=>{
+    // Fallback: select the textarea
+    const ta=document.getElementById('p2p-offer-code')||document.getElementById('p2p-answer-code');
+    if(ta){ ta.select(); document.execCommand('copy'); }
+  });
+}
+
+function p2pShareText(text, title){
+  if(navigator.share){
+    navigator.share({title, text}).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).catch(()=>{});
+    alert('Code copied to clipboard — paste it to your opponent.');
+  }
+}
+
 window.addEventListener('DOMContentLoaded', ()=>{
   // Wire up all buttons immediately — independent of the fetch below
   document.querySelectorAll('.diff-btn').forEach(btn=>{
@@ -6749,6 +7008,84 @@ window.addEventListener('DOMContentLoaded', ()=>{
     lbl.textContent='Player 1: Choose Your Wizard';
     lbl.style.display='';
     showScreen('char-screen');
+  });
+
+  // ── P2P DUEL BUTTON ──
+  document.getElementById('btn-duel-p2p').addEventListener('click',()=>{
+    duelOverlay.style.display='none';
+    p2pShowPanel('p2p-role-panel');
+    showScreen('p2p-screen');
+  });
+
+  // P2P screen navigation
+  document.getElementById('p2p-btn-back').addEventListener('click',()=>{
+    WizardsP2P.cleanup();
+    showScreen('title-screen');
+    duelOverlay.style.display='none';
+  });
+  document.getElementById('p2p-btn-host').addEventListener('click',()=>{
+    p2pStartHost();
+  });
+  document.getElementById('p2p-btn-join').addEventListener('click',()=>{
+    p2pStartJoin();
+  });
+  document.getElementById('p2p-host-back').addEventListener('click',()=>{
+    WizardsP2P.cleanup();
+    p2pShowPanel('p2p-role-panel');
+  });
+  document.getElementById('p2p-join-back').addEventListener('click',()=>{
+    WizardsP2P.cleanup();
+    p2pShowPanel('p2p-role-panel');
+  });
+
+  // Host: copy / share offer
+  document.getElementById('p2p-copy-offer').addEventListener('click',function(){
+    p2pCopyText(document.getElementById('p2p-offer-code').value, this);
+  });
+  document.getElementById('p2p-share-offer').addEventListener('click',()=>{
+    p2pShareText(document.getElementById('p2p-offer-code').value, "Wizard's Duel — Join Code");
+  });
+
+  // Host: submit answer
+  document.getElementById('p2p-submit-answer').addEventListener('click',async()=>{
+    const code=document.getElementById('p2p-answer-input').value.trim();
+    if(!code){ alert('Paste the answer code first.'); return; }
+    const btn=document.getElementById('p2p-submit-answer');
+    btn.textContent='Connecting…'; btn.disabled=true;
+    try {
+      await WizardsP2P.acceptAnswer(code);
+      WizardsP2P.onOpen=()=>{ p2pEnterGame('host'); };
+    } catch(e){
+      alert('Connection failed: '+e.message);
+      btn.textContent='⚔ Connect'; btn.disabled=false;
+    }
+  });
+
+  // Guest: generate answer from host's offer
+  document.getElementById('p2p-join-connect').addEventListener('click',async()=>{
+    const code=document.getElementById('p2p-offer-input').value.trim();
+    if(!code){ alert('Paste the host code first.'); return; }
+    const btn=document.getElementById('p2p-join-connect');
+    btn.textContent='Generating…'; btn.disabled=true;
+    try {
+      const answerCode=await WizardsP2P.join(code);
+      document.getElementById('p2p-answer-code').value=answerCode;
+      const rev=document.getElementById('p2p-answer-reveal');
+      rev.style.display='flex';
+      WizardsP2P.onOpen=()=>{ p2pEnterGame('guest'); };
+      btn.textContent='Generate Answer →'; btn.disabled=false;
+    } catch(e){
+      alert('Failed to process host code: '+e.message);
+      btn.textContent='Generate Answer →'; btn.disabled=false;
+    }
+  });
+
+  // Guest: copy / share answer
+  document.getElementById('p2p-copy-answer').addEventListener('click',function(){
+    p2pCopyText(document.getElementById('p2p-answer-code').value, this);
+  });
+  document.getElementById('p2p-share-answer').addEventListener('click',()=>{
+    p2pShareText(document.getElementById('p2p-answer-code').value, "Wizard's Duel — Answer Code");
   });
   document.getElementById('btn-duel-tourney').addEventListener('click',()=>{
     duelOverlay.style.display='none';
@@ -6917,6 +7254,22 @@ window.addEventListener('DOMContentLoaded', ()=>{
     }
     if(twoPlayerMode){
       const isMatchOver=p1MatchWins>=2||p2MatchWins>=2||matchRound>=3;
+      if(p2pMode){
+        if(isMatchOver){
+          // Match over — clean up P2P and go to title
+          p2pMode=false; p2pRole=null;
+          WizardsP2P.cleanup();
+          battleRunning=false; gameEnded=false;
+          twoPlayerMode=false; twoPlayerPhase=1;
+          document.getElementById('btn-continue').textContent='Continue';
+          showScreen('title-screen');
+        } else {
+          // Notify peer and start next round
+          WizardsP2P.send({type:'next_round'});
+          startNextTwoPlayerRound();
+        }
+        return;
+      }
       if(isMatchOver){
         battleRunning=false; gameEnded=false;
         twoPlayerMode=false; twoPlayerPhase=1;

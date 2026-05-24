@@ -1427,3 +1427,153 @@ body {
   color: #f0cc6a;
 }
 
+/* ── P2P SCREEN ── */
+#p2p-screen {
+  background: radial-gradient(ellipse at 50% 35%, #1a0840 0%, #0d0820 70%);
+  overflow-y: auto;
+  padding-bottom: 60px;
+}
+
+.p2p-panel {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.p2p-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(20px, 6vw, 28px);
+  color: #f0cc6a;
+  text-shadow: 0 0 20px #c9a84c;
+  letter-spacing: 2px;
+}
+
+.p2p-sub {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(201,168,76,0.45);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.p2p-step {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+}
+
+.p2p-code {
+  width: 100%;
+  height: 76px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 8px;
+  color: #f0cc6a;
+  font-family: monospace;
+  font-size: 10px;
+  line-height: 1.4;
+  padding: 10px;
+  resize: none;
+  word-break: break-all;
+  letter-spacing: 0.3px;
+}
+
+.p2p-code.p2p-input {
+  color: #fff;
+  border-color: rgba(255,255,255,0.2);
+}
+
+.p2p-code::placeholder { color: rgba(255,255,255,0.22); }
+
+.p2p-btn-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+.p2p-small-btn {
+  width: 130px !important;
+  padding: 10px 0 !important;
+  font-size: 12px !important;
+}
+
+.p2p-status {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  animation: p2pPulse 2s ease-in-out infinite;
+}
+
+.p2p-status.p2p-generating { color: rgba(201,168,76,0.6); }
+
+@keyframes p2pPulse {
+  0%,100% { opacity: 0.5; }
+  50%      { opacity: 1;   }
+}
+
+.p2p-divider {
+  width: 80%;
+  height: 1px;
+  background: rgba(201,168,76,0.15);
+  margin: 4px 0;
+}
+
+.btn-p2p {
+  border-color: rgba(136,187,255,0.4);
+  color: #88bbff;
+}
+
+/* ── P2P WAITING OVERLAY ── */
+#p2p-waiting-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(4,1,12,0.92);
+  z-index: 210;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+#p2p-waiting-overlay.active { display: flex; }
+
+#p2p-waiting-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.p2p-wait-ring {
+  width: 56px;
+  height: 56px;
+  border: 3px solid rgba(201,168,76,0.18);
+  border-top-color: #f0cc6a;
+  border-radius: 50%;
+  animation: p2pSpin 1.1s linear infinite;
+}
+
+@keyframes p2pSpin { to { transform: rotate(360deg); } }
+
+#p2p-wait-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 20px;
+  color: #f0cc6a;
+  text-shadow: 0 0 16px #c9a84c;
+}
+
+#p2p-wait-sub {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.38);
+  text-transform: uppercase;
+}
+
