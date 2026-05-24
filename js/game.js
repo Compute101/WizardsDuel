@@ -6529,6 +6529,7 @@ const TUTORIAL_TOPICS=[
   {id:'alphabet',    label:'The Alphabet'},
   {id:'watching',    label:'Watch Games'},
   {id:'difficulty',  label:'Difficulty'},
+  {id:'p2p-duel',    label:'P2P Duel'},
 ];
 
 const TUTORIAL_CONVOS={
@@ -6583,6 +6584,14 @@ const TUTORIAL_CONVOS={
     {key:'ponder',text:"On Easy, the keyboard also greys out glyphs that don't belong to that spell. You only see the four relevant symbols. Much more manageable for learning!"},
     {key:'ponder',text:"Normal mode uses a random 5-glyph sequence built from the spell's four symbols. The keyboard still greys out irrelevant glyphs, but you must watch each cast carefully."},
     {key:'ponder',text:"Hard mode is intense. A 7-glyph sequence. ALL twelve glyphs are active on the keyboard — nothing is greyed out. You are relying entirely on memory and focus. Good luck."},
+  ],
+  'p2p-duel':[
+    {key:'ponder', text:"P2P Duel lets two phones battle each other directly — no server, no account, no internet required (as long as both phones are on the same Wi-Fi). Just tap ⚔ Duel → P2P Duel to get started!"},
+    {key:'sylvara',text:"One phone is the Host and one is the Guest. The Host taps 'Host a Duel' — a connection code appears on screen. Share that code with your opponent however you like: copy it, or tap Share to send it via any messaging app."},
+    {key:'ponder', text:"The Guest taps 'Join a Duel', pastes the Host's code, and taps 'Generate Answer'. A second code appears — share that one back to the Host. The Host pastes it and taps Connect. That's it — you're linked!"},
+    {key:'sylvara',text:"Once connected, each player privately picks their own wizard. No peeking! The duel begins when both players have chosen. You'll see a 'Your Turn!' banner when it's time to act, and a waiting screen while your opponent is casting."},
+    {key:'ponder', text:"The 'Different networks' checkbox is for the rare case where the two phones are on completely separate networks — like one on home Wi-Fi and one on mobile data. Ticking it asks a Google server to help the two phones find each other across the internet. That server only ever sees your IP address briefly — it never touches the game itself."},
+    {key:'sylvara',text:"Leave that checkbox unticked when both phones are on the same Wi-Fi — it works fine without any outside help, and nothing leaves your local network. Tick it only when you truly need it."},
   ],
   eldrad:[
     {key:'eldrad',text:"I am Eldrin — the Stalwart. My philosophy is endurance. 90 HP, 5 starting mana. My abilities focus entirely on surviving long enough to outlast my foe."},
