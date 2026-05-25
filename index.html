@@ -258,7 +258,8 @@
       <div style="font-size:10px;letter-spacing:3px;color:rgba(201,168,76,0.4);text-transform:uppercase;margin-bottom:28px;">★ Select Your Battle ★</div>
       <button class="btn" id="btn-duel-arcade">🏆 Arcade</button>
       <button class="btn btn-ironman" id="btn-duel-ironman">⚔ Iron Man</button>
-      <button class="btn btn-2p" id="btn-duel-2player">⚔ 2 Player Duel</button>
+      <button class="btn btn-2p" id="btn-duel-2player">⚔ 2 Player (Same Device)</button>
+      <button class="btn btn-p2p" id="btn-duel-p2p">📱 P2P Duel (2 Phones)</button>
       <button class="btn btn-tourney" id="btn-duel-tourney">🏆 Tournament</button>
       <button class="btn btn-training-back-btn" id="btn-duel-back" style="margin-top:12px;">← Back</button>
     </div>
@@ -311,6 +312,68 @@
   </div>
 
   <div id="flash"></div>
+
+  <!-- P2P SETUP SCREEN -->
+  <div id="p2p-screen" class="screen">
+    <!-- Role choice -->
+    <div id="p2p-role-panel" class="p2p-panel">
+      <div class="p2p-title">P2P Duel</div>
+      <div class="p2p-sub">★ Two phones · no server ★</div>
+      <button class="btn" id="p2p-btn-host">⚔ Host a Duel</button>
+      <button class="btn" id="p2p-btn-join">📲 Join a Duel</button>
+      <label class="p2p-stun-label">
+        <input type="checkbox" id="p2p-stun-toggle">
+        Different networks (use STUN)
+      </label>
+      <button class="btn btn-training-back-btn" id="p2p-btn-back">← Back</button>
+    </div>
+
+    <!-- Host: show offer, accept answer -->
+    <div id="p2p-host-panel" class="p2p-panel" style="display:none;">
+      <div class="p2p-title">Host a Duel</div>
+      <div class="p2p-step">Step 1 — Share this code with your opponent</div>
+      <textarea id="p2p-offer-code" class="p2p-code" readonly></textarea>
+      <div class="p2p-status p2p-generating" id="p2p-offer-status">Generating…</div>
+      <div class="p2p-btn-row" id="p2p-offer-actions" style="display:none;">
+        <button class="btn p2p-small-btn" id="p2p-copy-offer">📋 Copy</button>
+        <button class="btn p2p-small-btn" id="p2p-share-offer">↗ Share</button>
+      </div>
+      <div class="p2p-divider"></div>
+      <div class="p2p-step">Step 2 — Paste your opponent's answer</div>
+      <textarea id="p2p-answer-input" class="p2p-code p2p-input" placeholder="Paste answer code here…"></textarea>
+      <button class="btn" id="p2p-submit-answer">⚔ Connect</button>
+      <button class="btn btn-training-back-btn" id="p2p-host-back">← Cancel</button>
+    </div>
+
+    <!-- Guest: paste offer, show answer -->
+    <div id="p2p-join-panel" class="p2p-panel" style="display:none;">
+      <div class="p2p-title">Join a Duel</div>
+      <div class="p2p-step">Step 1 — Paste the host's code</div>
+      <textarea id="p2p-offer-input" class="p2p-code p2p-input" placeholder="Paste host's code here…"></textarea>
+      <button class="btn" id="p2p-join-connect">Generate Answer →</button>
+      <div id="p2p-answer-reveal" style="display:none;width:100%;max-width:360px;flex-direction:column;align-items:center;gap:10px;">
+        <div class="p2p-divider"></div>
+        <div class="p2p-step">Step 2 — Share this answer with the host</div>
+        <textarea id="p2p-answer-code" class="p2p-code" readonly></textarea>
+        <div class="p2p-btn-row">
+          <button class="btn p2p-small-btn" id="p2p-copy-answer">📋 Copy</button>
+          <button class="btn p2p-small-btn" id="p2p-share-answer">↗ Share</button>
+        </div>
+        <div class="p2p-status" id="p2p-join-status">Waiting for host to connect…</div>
+      </div>
+      <button class="btn btn-training-back-btn" id="p2p-join-back">← Cancel</button>
+    </div>
+  </div>
+
+  <!-- P2P WAITING OVERLAY (shown during opponent's turn) -->
+  <div id="p2p-waiting-overlay">
+    <div id="p2p-waiting-box">
+      <div class="p2p-wait-ring"></div>
+      <div id="p2p-wait-title">Opponent's Turn</div>
+      <div id="p2p-wait-sub">Waiting…</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- DISPEL TARGET SELECT -->
@@ -323,6 +386,7 @@
   </div>
 </div>
 
+<script src="js/p2p.js"></script>
 <script src="js/game.js?v=0.12"></script>
 </body>
 </html>
