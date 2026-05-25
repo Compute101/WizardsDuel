@@ -402,7 +402,13 @@ function showTourneyChampion(winnerKey){
 function simulateTourneyMatch(round,matchIdx){
   const match=tourneyBracket.rounds[round][matchIdx];
   if(!match.p1Key||!match.p2Key||match.winner) return;
-  const winnerKey=simulateMatch(match.p1Key,match.p2Key);
+  let winnerKey;
+  try {
+    winnerKey=simulateMatch(match.p1Key,match.p2Key);
+  } catch(e) {
+    console.error('simulateMatch error:',e);
+    winnerKey=Math.random()<0.5?match.p1Key:match.p2Key;
+  }
   setTourneyMatchWinner(round,matchIdx,winnerKey);
 }
 

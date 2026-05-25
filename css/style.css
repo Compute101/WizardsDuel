@@ -7,7 +7,7 @@ body {
   font-family: 'Cinzel', serif;
   min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   overflow: hidden;
 }
@@ -1248,6 +1248,7 @@ body {
 #tourney-screen {
   flex-direction: column;
   align-items: stretch;
+  justify-content: flex-start;
   padding: 0 0 80px 0;
   overflow: hidden;
   height: 100vh;
