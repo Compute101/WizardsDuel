@@ -116,6 +116,15 @@ let twoPlayerPhase=1; // 1=p1 picking, 2=p2 picking
 let matchRound=0;
 let p1MatchWins=0, p2MatchWins=0;
 
+// ── SIMULTANEOUS TURNS ────────────────────────────────────
+let simCallback=null;       // intercepted by endMyTurn/finishAI during resolution
+let pendingP1Action=null;   // {type,ok,dispelSelf,perfect,...} collected action
+let pendingP2Action=null;   // same for ai/p2
+let skipAIAction=false;     // when true, doAI skips decision → finishAI (ticks only)
+let _rng=Math.random;       // replaceable RNG for deterministic replay
+let deferWinCheck=false;    // suppress checkWin during double-KO resolution
+let pendingWin=null;        // {won} accumulated during deferred win check
+
 // ── P2P MODE ──────────────────────────────────────────────
 let p2pMode=false;
 let p2pRole=null;           // 'host' (=p1) | 'guest' (=p2)
@@ -240,7 +249,7 @@ function showBracket(animate){
 function buildTourneyBracket(playerKey){
   const others=Object.keys(CHAR_DEFS).filter(k=>k!==playerKey);
   for(let i=others.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
+    const j=Math.floor(_rng()*(i+1));
     [others[i],others[j]]=[others[j],others[i]];
   }
   const opp=others.slice(0,7);
@@ -737,7 +746,7 @@ function drawBG_arc(){
     const ax=bW*(0.3+Math.sin(t/370)*0.25), ay=0, steps=7;
     bx.beginPath(); bx.moveTo(ax,ay);
     for(let i=1;i<=steps;i++){
-      bx.lineTo(ax+(Math.random()-.5)*bW*0.07, ay+bH*0.65*(i/steps));
+      bx.lineTo(ax+(_rng()-.5)*bW*0.07, ay+bH*0.65*(i/steps));
     }
     bx.stroke();
     bx.shadowBlur=0;
@@ -750,7 +759,7 @@ function drawBG_arc(){
     const ax2=bW*(0.6+Math.cos(t/510)*0.2), ay2=bH*0.05, steps=5;
     bx.beginPath(); bx.moveTo(ax2,ay2);
     for(let i=1;i<=steps;i++){
-      bx.lineTo(ax2+(Math.random()-.5)*bW*0.05, ay2+bH*0.55*(i/steps));
+      bx.lineTo(ax2+(_rng()-.5)*bW*0.05, ay2+bH*0.55*(i/steps));
     }
     bx.stroke();
     bx.shadowBlur=0;
@@ -1277,19 +1286,19 @@ function tickManaBurnFire(){
   const now=Date.now();
   gs.manaBurnFires=gs.manaBurnFires.filter(f=>now<f.end);
   gs.manaBurnFires.forEach(f=>{
-    const n=2+(Math.random()<0.4?1:0);
+    const n=2+(_rng()<0.4?1:0);
     for(let i=0;i<n;i++){
-      const col=MANA_BURN_FIRE_COLS[Math.floor(Math.random()*MANA_BURN_FIRE_COLS.length)];
+      const col=MANA_BURN_FIRE_COLS[Math.floor(_rng()*MANA_BURN_FIRE_COLS.length)];
       const spread=bW*.018;
       gs.parts.push({
-        x:f.x+(Math.random()-.5)*spread*2,
-        y:f.y+(Math.random()-.5)*spread,
+        x:f.x+(_rng()-.5)*spread*2,
+        y:f.y+(_rng()-.5)*spread,
         col,
-        vx:(Math.random()-.5)*1.2,
-        vy:-(2.5+Math.random()*3.5),
-        sz:1.5+Math.random()*3,
+        vx:(_rng()-.5)*1.2,
+        vy:-(2.5+_rng()*3.5),
+        sz:1.5+_rng()*3,
         life:1,
-        dec:.018+Math.random()*.022,
+        dec:.018+_rng()*.022,
       });
     }
   });
@@ -1298,8 +1307,8 @@ function tickManaBurnFire(){
 function spawnParts(x,y,col,n=16){
   if(headless) return;
   for(let i=0;i<n;i++){
-    const a=Math.random()*Math.PI*2, sp=1.5+Math.random()*3.5;
-    gs.parts.push({x,y,col,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2.5,sz:2+Math.random()*3,life:1,dec:.022+Math.random()*.03});
+    const a=_rng()*Math.PI*2, sp=1.5+_rng()*3.5;
+    gs.parts.push({x,y,col,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2.5,sz:2+_rng()*3,life:1,dec:.022+_rng()*.03});
   }
 }
 
@@ -1344,14 +1353,14 @@ function tickProjs(){
       const jitter=bH*.022;
       bx.beginPath(); bx.moveTo(p.x1,p.y1);
       for(let i=1;i<segs;i++){
-        const mx=p.x1+dx*i+nx*jitter*(i%2?1:-1)*(0.5+Math.random()*.9);
-        const my=p.y1+dy*i+ny*jitter*(i%2?1:-1)*(0.5+Math.random()*.9);
+        const mx=p.x1+dx*i+nx*jitter*(i%2?1:-1)*(0.5+_rng()*.9);
+        const my=p.y1+dy*i+ny*jitter*(i%2?1:-1)*(0.5+_rng()*.9);
         bx.lineTo(mx,my);
       }
       bx.lineTo(p.x2,p.y2);
       bx.strokeStyle='#ffffff'; bx.lineWidth=2.5;
       bx.shadowColor='#ffee44'; bx.shadowBlur=18;
-      bx.globalAlpha=0.8+0.2*Math.random(); bx.stroke();
+      bx.globalAlpha=0.8+0.2*_rng(); bx.stroke();
       bx.beginPath(); bx.moveTo(p.x1,p.y1); bx.lineTo(p.x2,p.y2);
       bx.strokeStyle='#ffff99'; bx.lineWidth=1; bx.shadowBlur=8; bx.stroke();
       bx.shadowBlur=0; bx.globalAlpha=1;
@@ -1615,51 +1624,33 @@ function act(type){
   const cx=who==='p1'?bW*.22:bW*.78;
   const tx=who==='p1'?bW*.78:bW*.22;
 
-  // Aurelia haste: AI acts first before the player's action resolves (AI mode only)
-  if(!twoPlayerMode&&gs.p2&&gs.p2.haste>0&&!gs.skipAITurn){
-    gs.myTurn=false; gs.busy=true;
-    gs.pendingAction=type;
-    (aiDifficulty==='normal'?doAINormal:doAI)();
+  // Commit action and hand off to resolution phase.
+  // 2P: endMyTurn() shows next-player handoff or triggers resolveSimRound.
+  // AI mode: grab AI decision synchronously then call resolveSimRound directly.
+  const commitAction=action=>{
+    if(who==='p1') pendingP1Action=action;
+    else pendingP2Action=action;
+    if(twoPlayerMode){
+      endMyTurn();
+    } else {
+      pendingP2Action=aiChooseSync('p2');
+      resolveSimRound();
+    }
+  };
+
+  if(type==='channel'){
+    commitAction({type:'channel', channelGain:whoState.timeDrain>0?2:whoCfg.channelAmt});
     return;
   }
 
-  // Agony: player takes damage for any non-channel action
-  if(type!=='channel'&&whoState.agony>0){
-    const agonDmg=whoState.agonyDmg||12;
-    whoState.hp=Math.max(0,whoState.hp-agonDmg);
-    addFloat(cx,bH*.38,'💀 Agony! −'+agonDmg,'#9944cc',14);
-    spawnParts(cx,bH*.38,'#9944cc',12); flash('#330033');
-    checkWin(); if(!battleRunning) return;
-  }
-
-  if(type==='channel'){
-    let channelGain;
-    if(whoState.timeDrain>0){
-      channelGain=2;
-      addFloat(cx,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
-    } else {
-      channelGain=whoCfg.channelAmt;
-      addFloat(cx,bH*.38,'+'+whoCfg.channelAmt+' Mana','#88aaff',13);
-    }
-    if(whoState.corruption>0){
-      const drain=Math.min(channelGain,2);
-      channelGain=Math.max(0,channelGain-2);
-      addFloat(cx,bH*.5,'☠️ −'+drain+' Corrupted!','#9944cc',12);
-    }
-    whoState.mana=Math.min(MAX_MANA,whoState.mana+channelGain);
-    if(whoState.candle>0) triggerCandleBurn(whoState,cx);
-    anim(who,'cast',700); endMyTurn(); return;
-  }
-
-  // Universal spell (with puzzle)
+  // Universal spell (with puzzle minigame)
   const spell=SPELLS.find(s=>s.element===type);
   if(spell){
     if(whoState.mana<spell.cost) return;
     if(whoState.frenzied>0) return;
-    if(whoState.silence>0&&Math.random()<0.45){
-      gs.busy=true;
-      showSilenceBlock(cx,bH*.33); anim(who,'cast',600);
-      setTimeout(()=>endMyTurn(), 1200); return;
+    if(whoState.silence>0&&_rng()<0.45){
+      commitAction({type, ok:false, silenced:true});
+      return;
     }
     const launchers={
       fire:      launchPatternEcho,
@@ -1672,61 +1663,35 @@ function act(type){
     const doLaunch=()=>{
       gs.busy=true;
       launchers[type](spell, ok=>{
-        if(ok){
-          if(whoState.invisible>0){
-            whoState.invisible=0;
-            addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-          }
-          whoState.mana-=spell.cost;
-          if(type==='dispel'&&dispelSelf){
-            castSpell(spell,whoState,cx,bH*.38,who);
-            endMyTurn();
-          } else {
-            spawnProj(cx,bH*.38,tx,bH*.38,spell.element,spell.col,()=>{
-              castSpell(spell,oppState,tx,bH*.38,who);
-              endMyTurn();
-            });
-          }
-        } else {
-          addFloat(cx,bH*.33,'Fizzled!','#ff8844',13);
-          whoState.mana=Math.max(0,whoState.mana-1);
-          endMyTurn();
-        }
+        commitAction({type, ok, dispelSelf});
       });
     };
     if(type==='dispel'){
-      showDispelTarget(selfTarget=>{ dispelSelf=selfTarget; doLaunch(); });
+      gs.busy=true;
+      showDispelTarget(selfTarget=>{ gs.busy=false; dispelSelf=selfTarget; doLaunch(); });
     } else {
       doLaunch();
     }
     return;
   }
 
-  // Character spell (instant)
+  // Character spell
   const charSpell=whoCfg.spells&&whoCfg.spells.find(s=>s.id===type);
   if(charSpell){
     if(whoState.mana<charSpell.cost) return;
     if(charSpellBlocked(type,whoState,whoCfg,oppState)) return;
-    if(charSpell.cost>0&&whoState.silence>0&&Math.random()<0.45){
-      gs.busy=true;
-      showSilenceBlock(cx,bH*.33); anim(who,'cast',600);
-      setTimeout(()=>endMyTurn(), 1200); return;
+    if(charSpell.cost>0&&whoState.silence>0&&_rng()<0.45){
+      commitAction({type, ok:false, silenced:true});
+      return;
     }
-    // Buff spells with tile-match ritual minigame
     if(BUFF_TILE_GLYPHS[type]){
       gs.busy=true;
       launchBuffTileMatch(charSpell,type,who,(ok,perfect)=>{
-        if(ok){
-          resolveCharSpell(type,who,perfect);
-        } else {
-          addFloat(cx,bH*.33,'Ritual Failed!','#ff8844',13);
-          whoState.mana=Math.max(0,whoState.mana-1);
-          endMyTurn();
-        }
+        commitAction({type, ok, perfect, isCharSpell:true});
       });
       return;
     }
-    resolveCharSpell(type,who);
+    commitAction({type, ok:true, isCharSpell:true});
   }
 }
 
@@ -1763,21 +1728,21 @@ function resolveCharSpell(spellId,caster,perfect=false){
     casterState.mana=Math.min(MAX_MANA,casterState.mana+casterCfg.bpGain);
     addFloat(cx,bH*.33,'🩸 -'+casterCfg.bpCost+'HP +'+casterCfg.bpGain+' Mana',casterCfg.col,11);
     for(let i=0;i<8;i++)
-      gs.parts.push({x:cx+(Math.random()-.5)*bH*.05,y:bH*.38,col:'#cc1111',
-        vx:(Math.random()-.5),vy:1.5+Math.random()*3,sz:2+Math.random()*2,life:1,dec:.02});
+      gs.parts.push({x:cx+(_rng()-.5)*bH*.05,y:bH*.38,col:'#cc1111',
+        vx:(_rng()-.5),vy:1.5+_rng()*3,sz:2+_rng()*2,life:1,dec:.02});
     for(let i=0;i<10;i++){
-      const a=-Math.PI/2+(-0.6+Math.random()*1.2), sp=1.5+Math.random()*2.5;
-      gs.parts.push({x:cx+(Math.random()-.5)*bH*.04,y:bH*.38,col:'#8844ff',
-        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+Math.random()*2,life:1,dec:.02,noGrav:true});
+      const a=-Math.PI/2+(-0.6+_rng()*1.2), sp=1.5+_rng()*2.5;
+      gs.parts.push({x:cx+(_rng()-.5)*bH*.04,y:bH*.38,col:'#8844ff',
+        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+_rng()*2,life:1,dec:.02,noGrav:true});
     }
     anim(caster,'cast',700); refreshHUD();
   } else if(spellId==='heal'){
     casterState.regen={remaining:casterCfg.healAmt,turns:10};
     addFloat(cx,bH*.33,'💚 Regenerating!','#44cc88',14);
     for(let i=0;i<14;i++){
-      const a=-Math.PI/2+(-0.8+Math.random()*1.6), sp=1+Math.random()*2.5;
-      gs.parts.push({x:cx+(Math.random()-.5)*bH*.05,y:bH*.38,col:i%2?'#44ee88':'#88ffcc',
-        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*3,life:1,dec:.014,noGrav:true});
+      const a=-Math.PI/2+(-0.8+_rng()*1.6), sp=1+_rng()*2.5;
+      gs.parts.push({x:cx+(_rng()-.5)*bH*.05,y:bH*.38,col:i%2?'#44ee88':'#88ffcc',
+        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+_rng()*3,life:1,dec:.014,noGrav:true});
     }
     anim(caster,'cast',700);
   } else if(spellId==='entangle'){
@@ -1785,7 +1750,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       anim(caster,'cast',600);
-    } else if(targetState.haste>0&&Math.random()<0.25){
+    } else if(targetState.haste>0&&_rng()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
@@ -1795,19 +1760,19 @@ function resolveCharSpell(spellId,caster,perfect=false){
       spawnParts(tx,bH*.38,'#ffcc44',14);
       anim(caster,'cast',600);
     } else {
-      if(Math.random()<0.75){
-        targetState.frozen=Math.floor(Math.random()*3)+1;
+      if(_rng()<0.75){
+        targetState.frozen=Math.floor(_rng()*3)+1;
         for(let i=0;i<10;i++){
           const a=i/10*Math.PI*2;
           gs.parts.push({x:tx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#44cc88',
-            vx:Math.cos(a+Math.PI)*.9,vy:Math.sin(a+Math.PI)*.9,sz:2+Math.random()*2,life:1,dec:.02});
+            vx:Math.cos(a+Math.PI)*.9,vy:Math.sin(a+Math.PI)*.9,sz:2+_rng()*2,life:1,dec:.02});
         }
         spawnParts(tx,bH*.38,'#44cc88',8);
         addFloat(tx,bH*.33,'🌿 Entangled!','#44cc88',13);
       } else {
         for(let i=0;i<8;i++)
-          gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:bH*.38-bH*.04,col:'#665522',
-            vx:(Math.random()-.5)*1.5,vy:Math.random()*2,sz:2,life:1,dec:.025});
+          gs.parts.push({x:tx+(_rng()-.5)*bH*.06,y:bH*.38-bH*.04,col:'#665522',
+            vx:(_rng()-.5)*1.5,vy:_rng()*2,sz:2,life:1,dec:.025});
         addFloat(tx,bH*.33,'🌿 Resisted!','#888866',11);
       }
       anim(caster,'cast',800);
@@ -1823,7 +1788,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       anim(caster,'cast',600);
-    } else if(targetState.haste>0&&Math.random()<0.25){
+    } else if(targetState.haste>0&&_rng()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
@@ -1871,8 +1836,8 @@ function resolveCharSpell(spellId,caster,perfect=false){
     addFloat(cx,bH*.33,'🩸 War Paint! -33% dmg',casterCfg.col,12);
     if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
     for(let i=0;i<8;i++)
-      gs.parts.push({x:cx+(Math.random()-.5)*bH*.05,y:bH*.35,col:'#cc1111',
-        vx:(Math.random()-.5)*1.5,vy:1+Math.random()*2.5,sz:2+Math.random()*2,life:1,dec:.025});
+      gs.parts.push({x:cx+(_rng()-.5)*bH*.05,y:bH*.35,col:'#cc1111',
+        vx:(_rng()-.5)*1.5,vy:1+_rng()*2.5,sz:2+_rng()*2,life:1,dec:.025});
     spawnParts(cx,bH*.38,casterCfg.col,10);
     anim(caster,'shield',700);
     refreshHUD();
@@ -1896,10 +1861,10 @@ function resolveCharSpell(spellId,caster,perfect=false){
       } else if(targetState.invisible>0){
         addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
         spawnParts(tx,bH*.38,'#b8a0e8',12);
-      } else if(targetState.haste>0&&Math.random()<0.25){
+      } else if(targetState.haste>0&&_rng()<0.25){
         addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
         spawnParts(tx,bH*.38,'#ffcc44',12);
-      } else if(targetState.blink>0&&Math.random()<0.5){
+      } else if(targetState.blink>0&&_rng()<0.5){
         addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
         spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
         flash('#9988cc');
@@ -1937,7 +1902,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       }
       refreshHUD(); checkWin(); if(!battleRunning) return;
       if(caster==='p1'||twoPlayerMode){ endMyTurn(); }
-      else { tickStatuses(casterState); combatTimeout(finishAI,900); }
+      else { if(!simCallback) tickStatuses(casterState); combatTimeout(finishAI,900); }
     });
     return;
   } else if(spellId==='ward'){
@@ -1960,7 +1925,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       anim(caster,'cast',600);
-    } else if(targetState.haste>0&&Math.random()<0.25){
+    } else if(targetState.haste>0&&_rng()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
@@ -1997,9 +1962,9 @@ function resolveCharSpell(spellId,caster,perfect=false){
       spawnBeam(cx,bH*.38,tx,bH*.38,'#cc1111');
       spawnParts(tx,bH*.38,'#cc1111',18);
       for(let i=0;i<10;i++){
-        const a=-Math.PI/2+(-0.6+Math.random()*1.2),sp=1.5+Math.random()*2.5;
-        gs.parts.push({x:cx+(Math.random()-.5)*bH*.04,y:bH*.38,col:'#cc1111',
-          vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+Math.random()*2,life:1,dec:.018,noGrav:true});
+        const a=-Math.PI/2+(-0.6+_rng()*1.2),sp=1.5+_rng()*2.5;
+        gs.parts.push({x:cx+(_rng()-.5)*bH*.04,y:bH*.38,col:'#cc1111',
+          vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+_rng()*2,life:1,dec:.018,noGrav:true});
       }
       addFloat(tx,bH*.38,'-'+dmg,'#cc1111',20);
       addFloat(cx,bH*.33,'+'+healAmt+' 🩸',casterCfg.col,14);
@@ -2013,7 +1978,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       anim(caster,'cast',600);
-    } else if(targetState.haste>0&&Math.random()<0.25){
+    } else if(targetState.haste>0&&_rng()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
@@ -2022,7 +1987,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       for(let i=0;i<12;i++){
         const a=i/12*Math.PI*2;
         gs.parts.push({x:tx+Math.cos(a)*bH*.07,y:bH*.38+Math.sin(a)*bH*.04,col:'#44cc88',
-          vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2,sz:2+Math.random()*2,life:1,dec:.02});
+          vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2,sz:2+_rng()*2,life:1,dec:.02});
       }
       spawnParts(tx,bH*.38,'#44cc88',10);
       addFloat(tx,bH*.33,'🌱 Vine Whip! (3T)','#44cc88',13);
@@ -2032,9 +1997,9 @@ function resolveCharSpell(spellId,caster,perfect=false){
     casterState.haste=3;
     addFloat(cx,bH*.33,'💨 Haste! (3T)',casterCfg.col,13);
     for(let i=0;i<14;i++){
-      const a=-Math.PI/2+(-1.0+Math.random()*2.0),sp=1.5+Math.random()*3;
+      const a=-Math.PI/2+(-1.0+_rng()*2.0),sp=1.5+_rng()*3;
       gs.parts.push({x:cx,y:bH*.38,col:i%2?casterCfg.col:'#ffffff',
-        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*2.5,life:1,dec:.016,noGrav:true});
+        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+_rng()*2.5,life:1,dec:.016,noGrav:true});
     }
     anim(caster,'cast',700);
   } else if(spellId==='frenzy'){
@@ -2061,7 +2026,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
           if(caster==='p1'||twoPlayerMode){
             endMyTurn();
           } else {
-            tickStatuses(casterState);
+            if(!simCallback) tickStatuses(casterState);
             combatTimeout(finishAI,900);
           }
         }
@@ -2079,7 +2044,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       casterState.invisible=0;
       addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
     }
-    const baseRoll=16+Math.floor(Math.random()*9);
+    const baseRoll=16+Math.floor(_rng()*9);
     let dmg=Math.round(baseRoll*casterCfg.dmgMult);
     if(targetState.foresight){
       addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
@@ -2090,11 +2055,11 @@ function resolveCharSpell(spellId,caster,perfect=false){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       anim(caster,'cast',600);
-    } else if(targetState.haste>0&&Math.random()<0.25){
+    } else if(targetState.haste>0&&_rng()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
-    } else if(targetState.blink>0&&Math.random()<0.5){
+    } else if(targetState.blink>0&&_rng()<0.5){
       addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
       spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
       flash('#9988cc'); anim(caster,'cast',600);
@@ -2123,7 +2088,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       for(let i=0;i<18;i++){
         const a=i/18*Math.PI*2;
         gs.parts.push({x:tx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#ff6600':'#ffaa00',
-          vx:Math.cos(a+Math.PI)*1.4,vy:Math.sin(a+Math.PI)*1.4-0.5,sz:2+Math.random()*3,life:1,dec:.02});
+          vx:Math.cos(a+Math.PI)*1.4,vy:Math.sin(a+Math.PI)*1.4-0.5,sz:2+_rng()*3,life:1,dec:.02});
       }
       spawnParts(tx,bH*.38,'#ff6600',20);
       addFloat(tx,bH*.38,'-'+dmg,'#ff6600',20);
@@ -2139,7 +2104,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
     for(let i=0;i<14;i++){
       const a=i/14*Math.PI*2;
       gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#ff6600':'#ffaa00',
-        vx:Math.cos(a)*1.0,vy:Math.sin(a)*1.0-0.5,sz:2+Math.random()*2.5,life:1,dec:.018,noGrav:true});
+        vx:Math.cos(a)*1.0,vy:Math.sin(a)*1.0-0.5,sz:2+_rng()*2.5,life:1,dec:.018,noGrav:true});
     }
     spawnParts(cx,bH*.38,'#ff6600',8); spawnParts(cx,bH*.38,'#ffaa00',4);
     anim(caster,'shield',700);
@@ -2148,7 +2113,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       anim(caster,'cast',600);
-    } else if(targetState.haste>0&&Math.random()<0.25){
+    } else if(targetState.haste>0&&_rng()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
@@ -2160,9 +2125,9 @@ function resolveCharSpell(spellId,caster,perfect=false){
     } else {
       targetState.candle=3;
       for(let i=0;i<12;i++){
-        const a=Math.random()*Math.PI*2;
-        gs.parts.push({x:tx+(Math.random()-.5)*bH*.05,y:bH*.38,col:i%2?'#ff6600':'#ffaa00',
-          vx:Math.cos(a)*0.7,vy:Math.sin(a)*0.7-1.5,sz:1.5+Math.random()*2,life:1,dec:.018,noGrav:true});
+        const a=_rng()*Math.PI*2;
+        gs.parts.push({x:tx+(_rng()-.5)*bH*.05,y:bH*.38,col:i%2?'#ff6600':'#ffaa00',
+          vx:Math.cos(a)*0.7,vy:Math.sin(a)*0.7-1.5,sz:1.5+_rng()*2,life:1,dec:.018,noGrav:true});
       }
       spawnParts(tx,bH*.38,'#ff6600',10);
       addFloat(tx,bH*.33,'🕯️ Candle! (4T)',casterCfg.col,13);
@@ -2183,11 +2148,11 @@ function resolveCharSpell(spellId,caster,perfect=false){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       anim(caster,'cast',600);
-    } else if(targetState.haste>0&&Math.random()<0.25){
+    } else if(targetState.haste>0&&_rng()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
-    } else if(targetState.blink>0&&Math.random()<0.5){
+    } else if(targetState.blink>0&&_rng()<0.5){
       addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
       spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
       flash('#9988cc');
@@ -2216,12 +2181,12 @@ function resolveCharSpell(spellId,caster,perfect=false){
       for(let i=0;i<16;i++){
         const a=i/16*Math.PI*2;
         gs.parts.push({x:tx+Math.cos(a)*bH*.05,y:bH*.38+Math.sin(a)*bH*.03,col:'#88ddff',
-          vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2,sz:2+Math.random()*2.5,life:1,dec:.02});
+          vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2,sz:2+_rng()*2.5,life:1,dec:.02});
       }
       spawnParts(tx,bH*.38,'#88ddff',18);
       addFloat(tx,bH*.38,'-'+dmg,'#88ddff',20);
       flash('#88ddff');
-      if(Math.random()<(casterCfg.iceLanceFreeze||0.35)&&targetState.frozen<=0){
+      if(_rng()<(casterCfg.iceLanceFreeze||0.35)&&targetState.frozen<=0){
         if(targetState.ward>0){
           targetState.ward=0;
           addFloat(tx,bH*.33+20,'🔰 Warded!','#ffcc44',11);
@@ -2241,7 +2206,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
     for(let i=0;i<16;i++){
       const a=i/16*Math.PI*2;
       gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#88ddff',
-        vx:Math.cos(a)*0.8,vy:Math.sin(a)*0.8-0.5,sz:2+Math.random()*2.5,life:1,dec:.016,noGrav:true});
+        vx:Math.cos(a)*0.8,vy:Math.sin(a)*0.8-0.5,sz:2+_rng()*2.5,life:1,dec:.016,noGrav:true});
     }
     spawnParts(cx,bH*.38,'#aaeeff',8); spawnParts(cx,bH*.38,'#ffffff',4);
     anim(caster,'shield',700);
@@ -2258,10 +2223,10 @@ function resolveCharSpell(spellId,caster,perfect=false){
     } else {
       targetState.blizzard=casterCfg.blizzardDur||5;
       for(let i=0;i<20;i++){
-        const a=Math.random()*Math.PI*2, r=bH*(0.05+Math.random()*0.08);
+        const a=_rng()*Math.PI*2, r=bH*(0.05+_rng()*0.08);
         gs.parts.push({x:tx+Math.cos(a)*r,y:bH*.38+Math.sin(a)*r*0.5,col:'#88ddff',
-          vx:Math.cos(a)*0.6+(Math.random()-.5)*0.8,vy:Math.sin(a)*0.6-1-Math.random()*2,
-          sz:1.5+Math.random()*2.5,life:1,dec:.012,noGrav:true});
+          vx:Math.cos(a)*0.6+(_rng()-.5)*0.8,vy:Math.sin(a)*0.6-1-_rng()*2,
+          sz:1.5+_rng()*2.5,life:1,dec:.012,noGrav:true});
       }
       spawnParts(tx,bH*.38,'#88ddff',12); spawnParts(tx,bH*.38,'#aaeeff',6);
       addFloat(tx,bH*.33,'🌨️ Blizzard! ('+targetState.blizzard+'T)','#88ddff',13);
@@ -2274,7 +2239,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
     for(let i=0;i<12;i++){
       const a=i/12*Math.PI*2;
       gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#aaff44':'#88ffcc',
-        vx:Math.cos(a)*0.9,vy:Math.sin(a)*0.9-0.5,sz:2+Math.random()*2.5,life:1,dec:.018,noGrav:true});
+        vx:Math.cos(a)*0.9,vy:Math.sin(a)*0.9-0.5,sz:2+_rng()*2.5,life:1,dec:.018,noGrav:true});
     }
     spawnParts(cx,bH*.38,'#aaff44',8); spawnParts(cx,bH*.38,'#ffffff',4);
     anim(caster,'shield',700);
@@ -2292,11 +2257,11 @@ function resolveCharSpell(spellId,caster,perfect=false){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       anim(caster,'cast',600);
-    } else if(targetState.haste>0&&Math.random()<0.25){
+    } else if(targetState.haste>0&&_rng()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
-    } else if(targetState.blink>0&&Math.random()<0.5){
+    } else if(targetState.blink>0&&_rng()<0.5){
       addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
       spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
       flash('#9988cc'); anim(caster,'cast',600);
@@ -2326,14 +2291,14 @@ function resolveCharSpell(spellId,caster,perfect=false){
       for(let i=0;i<14;i++){
         const a=i/14*Math.PI*2;
         gs.parts.push({x:tx+Math.cos(a)*bH*.05,y:bH*.38+Math.sin(a)*bH*.03,col:i%2?'#aaff44':'#ffffff',
-          vx:Math.cos(a+Math.PI)*1.5,vy:Math.sin(a+Math.PI)*1.5,sz:2+Math.random()*2,life:1,dec:.022});
+          vx:Math.cos(a+Math.PI)*1.5,vy:Math.sin(a+Math.PI)*1.5,sz:2+_rng()*2,life:1,dec:.022});
       }
       spawnBeam(cx,bH*.38,tx,bH*.38,casterCfg.col);
       spawnParts(tx,bH*.38,casterCfg.col,18);
       addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,20);
       flash(casterCfg.col);
       // Arc chance
-      if(Math.random()<(casterCfg.chainArcChance||0.35)){
+      if(_rng()<(casterCfg.chainArcChance||0.35)){
         const arcDmg=casterCfg.chainArcDmg||10;
         if(targetState.hp>0){
           targetState.hp=Math.max(0,targetState.hp-arcDmg);
@@ -2350,7 +2315,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       anim(caster,'cast',600);
-    } else if(targetState.haste>0&&Math.random()<0.25){
+    } else if(targetState.haste>0&&_rng()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
@@ -2362,9 +2327,9 @@ function resolveCharSpell(spellId,caster,perfect=false){
     } else {
       targetState.conductivity=casterCfg.conductivityDur||3;
       for(let i=0;i<14;i++){
-        const a=Math.random()*Math.PI*2;
-        gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:bH*.38,col:i%2?'#aaff44':'#88ffcc',
-          vx:Math.cos(a)*0.8,vy:Math.sin(a)*0.8-1.2,sz:1.5+Math.random()*2,life:1,dec:.016,noGrav:true});
+        const a=_rng()*Math.PI*2;
+        gs.parts.push({x:tx+(_rng()-.5)*bH*.06,y:bH*.38,col:i%2?'#aaff44':'#88ffcc',
+          vx:Math.cos(a)*0.8,vy:Math.sin(a)*0.8-1.2,sz:1.5+_rng()*2,life:1,dec:.016,noGrav:true});
       }
       spawnParts(tx,bH*.38,casterCfg.col,10);
       addFloat(tx,bH*.33,'💡 Conductive! ('+targetState.conductivity+'T)',casterCfg.col,13);
@@ -2377,7 +2342,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       targetState.foresight=false; spawnParts(tx,bH*.38,'#ffcc44',14); anim(caster,'cast',600);
     } else if(targetState.invisible>0){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12); anim(caster,'cast',600);
-    } else if(targetState.haste>0&&Math.random()<0.25){
+    } else if(targetState.haste>0&&_rng()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15); spawnParts(tx,bH*.38,'#ffcc44',12); anim(caster,'cast',600);
     } else if(targetState.ward>0){
       targetState.ward--;
@@ -2405,9 +2370,9 @@ function resolveCharSpell(spellId,caster,perfect=false){
     casterState.hp=Math.min(casterState.maxHp, casterState.hp+healAmt);
     addFloat(cx,bH*.33,'💛 +'+actual+' Healed!',casterCfg.col,14);
     for(let i=0;i<16;i++){
-      const a=-Math.PI/2+(-0.9+Math.random()*1.8), sp=1+Math.random()*2.5;
-      gs.parts.push({x:cx+(Math.random()-.5)*bH*.05,y:bH*.38,col:i%2?'#ffe090':'#fff8c0',
-        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*3,life:1,dec:.014,noGrav:true});
+      const a=-Math.PI/2+(-0.9+_rng()*1.8), sp=1+_rng()*2.5;
+      gs.parts.push({x:cx+(_rng()-.5)*bH*.05,y:bH*.38,col:i%2?'#ffe090':'#fff8c0',
+        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+_rng()*3,life:1,dec:.014,noGrav:true});
     }
     flash(casterCfg.col);
     anim(caster,'cast',700); refreshHUD();
@@ -2440,11 +2405,11 @@ function resolveCharSpell(spellId,caster,perfect=false){
       addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
       spawnParts(tx,bH*.38,'#b8a0e8',12);
       anim(caster,'cast',600);
-    } else if(targetState.haste>0&&Math.random()<0.25){
+    } else if(targetState.haste>0&&_rng()<0.25){
       addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
       spawnParts(tx,bH*.38,'#ffcc44',12);
       anim(caster,'cast',600);
-    } else if(targetState.blink>0&&Math.random()<0.5){
+    } else if(targetState.blink>0&&_rng()<0.5){
       addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
       spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
       flash('#9988cc'); anim(caster,'cast',600);
@@ -2487,10 +2452,10 @@ function resolveCharSpell(spellId,caster,perfect=false){
         for(let j=0;j<4;j++){
           const a=angle+j/4*Math.PI*2;
           const srcX=cx+Math.cos(a)*srcDist, srcY=bH*.38+Math.sin(a)*srcDist*0.55;
-          const speed=0.06+Math.random()*0.04;
+          const speed=0.06+_rng()*0.04;
           gs.parts.push({x:srcX,y:srcY,col:j%2?'#8b7355':'#a08060',
             vx:(cx-srcX)*speed,vy:(bH*.38-srcY)*speed,
-            sz:3+Math.random()*3,life:1,dec:.028,noGrav:true});
+            sz:3+_rng()*3,life:1,dec:.028,noGrav:true});
         }
         spawnParts(cx,bH*.38,casterCfg.col,4);
       },delay);
@@ -2504,7 +2469,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       gs.parts.push({x:cx+Math.cos(a)*bH*.07,y:bH*.38+Math.sin(a)*bH*.05,
         col:i%3===0?'#b08040':i%3===1?'#8b6914':'#c8a060',
         vx:Math.cos(a)*0.7,vy:Math.sin(a)*0.7-0.3,
-        sz:1.5+Math.random()*2.5,life:1,dec:.015,noGrav:true});
+        sz:1.5+_rng()*2.5,life:1,dec:.015,noGrav:true});
     }
     spawnParts(cx,bH*.38,'#c8a060',8); spawnParts(cx,bH*.38,'#ffffff',4);
     anim(caster,'shield',700);
@@ -2532,7 +2497,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
           if(caster==='p1'||twoPlayerMode){
             endMyTurn();
           } else {
-            tickStatuses(casterState);
+            if(!simCallback) tickStatuses(casterState);
             combatTimeout(finishAI,900);
           }
         }
@@ -2562,11 +2527,11 @@ function resolveCharSpell(spellId,caster,perfect=false){
         addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
         spawnParts(tx,bH*.38,'#b8a0e8',12);
         if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-      } else if(targetState.haste>0&&Math.random()<0.25){
+      } else if(targetState.haste>0&&_rng()<0.25){
         addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
         spawnParts(tx,bH*.38,'#ffcc44',12);
         if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-      } else if(targetState.blink>0&&Math.random()<0.5){
+      } else if(targetState.blink>0&&_rng()<0.5){
         addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
         spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
         flash('#9988cc');
@@ -2616,7 +2581,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       if(!battleRunning) return;
       if(basicSpell.lungeAmt){
         if(caster==='p1'||twoPlayerMode){ endMyTurn(); }
-        else { tickStatuses(casterState); combatTimeout(finishAI,900); }
+        else { if(!simCallback) tickStatuses(casterState); combatTimeout(finishAI,900); }
       }
     }
     if(basicSpell.lungeAmt){
@@ -2631,11 +2596,13 @@ function resolveCharSpell(spellId,caster,perfect=false){
   if(caster==='p1'||twoPlayerMode){
     endMyTurn(spellId==='counter');
   } else {
-    if(spellId!=='counter' && casterState.shield>0){
-      casterState.shield--;
-      if(casterState.shield<=0){ casterState.shieldHp=0; casterState.counter=false; }
+    if(!simCallback){
+      if(spellId!=='counter' && casterState.shield>0){
+        casterState.shield--;
+        if(casterState.shield<=0){ casterState.shieldHp=0; casterState.counter=false; }
+      }
+      tickStatuses(casterState);
     }
-    tickStatuses(casterState);
     combatTimeout(finishAI,900);
   }
 }
@@ -2663,13 +2630,13 @@ function castSpell(spell,target,tx,ty,caster){
       });
       spawnParts(casterX,bH*.38,'#ffaaff',30);
       for(let i=0;i<32;i++){
-        const a=-Math.PI/2+(-0.55+Math.random()*1.1), sp=0.6+Math.random()*1.8;
-        gs.parts.push({x:casterX+(Math.random()-.5)*bH*.08,y:bH*.38+(Math.random()-.5)*bH*.05,
+        const a=-Math.PI/2+(-0.55+_rng()*1.1), sp=0.6+_rng()*1.8;
+        gs.parts.push({x:casterX+(_rng()-.5)*bH*.08,y:bH*.38+(_rng()-.5)*bH*.05,
           col:i%4===0?'#ffddee':'#ffffff',
-          vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*3,life:1,dec:.010+Math.random()*.009,noGrav:true});
+          vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+_rng()*3,life:1,dec:.010+_rng()*.009,noGrav:true});
       }
       if(activeDebuffs.length>0){
-        const cleansed=activeDebuffs[Math.floor(Math.random()*activeDebuffs.length)];
+        const cleansed=activeDebuffs[Math.floor(_rng()*activeDebuffs.length)];
         casterState[cleansed]=0;
         addFloat(casterX,bH*.38,'🌸 '+DEBUFF_NAMES[cleansed]+' Cleansed!','#ffaaff',18);
       } else {
@@ -2698,8 +2665,8 @@ function castSpell(spell,target,tx,ty,caster){
       if(targetState.stonesoul>0)   oppBuffs.push('stonesoul');
       spawnParts(dispelTargetX,ty,'#ffaaff',20);
       if(oppBuffs.length>0){
-        if(Math.random()<0.70){
-          const stripped=oppBuffs[Math.floor(Math.random()*oppBuffs.length)];
+        if(_rng()<0.70){
+          const stripped=oppBuffs[Math.floor(_rng()*oppBuffs.length)];
           if(stripped==='shield'){targetState.shield=0; targetState.shieldHp=0; targetState.counter=false;}
           else if(stripped==='foresight') targetState.foresight=false;
           else if(stripped==='regen')     targetState.regen=null;
@@ -2707,10 +2674,10 @@ function castSpell(spell,target,tx,ty,caster){
           else if(stripped==='counter')   targetState.counter=false;
           else targetState[stripped]=0;
           for(let i=0;i<28;i++){
-            const a=-Math.PI/2+(-0.55+Math.random()*1.1), sp=0.7+Math.random()*1.8;
-            gs.parts.push({x:dispelTargetX+(Math.random()-.5)*bH*.08,y:ty+(Math.random()-.5)*bH*.05,
+            const a=-Math.PI/2+(-0.55+_rng()*1.1), sp=0.7+_rng()*1.8;
+            gs.parts.push({x:dispelTargetX+(_rng()-.5)*bH*.08,y:ty+(_rng()-.5)*bH*.05,
               col:i%4===0?'#ffddee':'#ffffff',
-              vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+Math.random()*3,life:1,dec:.010+Math.random()*.009,noGrav:true});
+              vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+_rng()*3,life:1,dec:.010+_rng()*.009,noGrav:true});
           }
           addFloat(dispelTargetX,ty,'🌸 '+BUFF_NAMES[stripped]+' Stripped!','#ffaaff',14);
         } else {
@@ -2725,7 +2692,7 @@ function castSpell(spell,target,tx,ty,caster){
   }
 
   let dmg=Math.round(spell.dmg*casterCfg.dmgMult);
-  if(spell.element==='arcane') dmg=Math.round((15+Math.floor(Math.random()*41))*casterCfg.dmgMult);
+  if(spell.element==='arcane') dmg=Math.round((15+Math.floor(_rng()*41))*casterCfg.dmgMult);
 
   let impactCount=22;
 
@@ -2794,7 +2761,7 @@ function castSpell(spell,target,tx,ty,caster){
   }
 
   // Target: Haste — 25% dodge
-  if(targetState.haste>0&&Math.random()<0.25){
+  if(targetState.haste>0&&_rng()<0.25){
     addFloat(tx,ty,'💨 Dodged!','#ffcc44',15);
     spawnParts(tx,ty,'#ffcc44',12);
     if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
@@ -2879,10 +2846,10 @@ function processBurn(target,tx,ty){
   target.hp=Math.max(0,target.hp-BURN_DMG);
   target.burn--;
   for(let i=0;i<14;i++){
-    const a=-Math.PI/2+(-0.75+Math.random()*1.5);
-    const sp=2+Math.random()*3.5;
-    gs.parts.push({x:tx+(Math.random()-.5)*bH*.05,y:ty,col:i%3?'#ff4400':'#ff9900',
-      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+Math.random()*3,life:1,dec:.026+Math.random()*.02});
+    const a=-Math.PI/2+(-0.75+_rng()*1.5);
+    const sp=2+_rng()*3.5;
+    gs.parts.push({x:tx+(_rng()-.5)*bH*.05,y:ty,col:i%3?'#ff4400':'#ff9900',
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+_rng()*3,life:1,dec:.026+_rng()*.02});
   }
   addFloat(tx,ty,'🔥 -'+BURN_DMG,'#ff6622',13);
 }
@@ -2895,9 +2862,9 @@ function processRegen(target,tx,ty){
   if(target.regen.turns<=0) target.regen=null;
   target.hp=Math.min(target.maxHp,target.hp+healThis);
   for(let i=0;i<10;i++){
-    const a=-Math.PI/2+(-0.55+Math.random()*1.1), sp=0.8+Math.random()*1.8;
-    gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:i%2?'#44ee88':'#88ffcc',
-      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-0.5,sz:1.5+Math.random()*2.5,life:1,dec:.011+Math.random()*.01,noGrav:true});
+    const a=-Math.PI/2+(-0.55+_rng()*1.1), sp=0.8+_rng()*1.8;
+    gs.parts.push({x:tx+(_rng()-.5)*bH*.06,y:ty,col:i%2?'#44ee88':'#88ffcc',
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-0.5,sz:1.5+_rng()*2.5,life:1,dec:.011+_rng()*.01,noGrav:true});
   }
   addFloat(tx,ty,'+'+healThis+' 💚','#44cc88',12);
 }
@@ -2921,9 +2888,9 @@ function processVineWhip(target,tx,ty){
   if(dmg>0){
     target.hp=Math.max(0,target.hp-dmg);
     for(let i=0;i<10;i++){
-      const a=Math.random()*Math.PI*2;
-      gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:i%2?'#44cc88':'#22aa66',
-        vx:Math.cos(a)*1.2,vy:Math.sin(a)*1.2-0.5,sz:2+Math.random()*2.5,life:1,dec:.02});
+      const a=_rng()*Math.PI*2;
+      gs.parts.push({x:tx+(_rng()-.5)*bH*.06,y:ty,col:i%2?'#44cc88':'#22aa66',
+        vx:Math.cos(a)*1.2,vy:Math.sin(a)*1.2-0.5,sz:2+_rng()*2.5,life:1,dec:.02});
     }
     addFloat(tx,ty,'🌱 -'+dmg,'#44cc88',13);
   }
@@ -2936,13 +2903,13 @@ function processBlizzard(target,tx,ty){
   target.mana=Math.max(0,target.mana-drained);
   target.blizzard--;
   for(let i=0;i<10;i++){
-    const a=Math.random()*Math.PI*2;
-    gs.parts.push({x:tx+(Math.random()-.5)*bH*.06,y:ty,col:'#88ddff',
-      vx:Math.cos(a)*0.6,vy:Math.sin(a)*0.6-1.8,sz:1.5+Math.random()*2,life:1,dec:.016,noGrav:true});
+    const a=_rng()*Math.PI*2;
+    gs.parts.push({x:tx+(_rng()-.5)*bH*.06,y:ty,col:'#88ddff',
+      vx:Math.cos(a)*0.6,vy:Math.sin(a)*0.6-1.8,sz:1.5+_rng()*2,life:1,dec:.016,noGrav:true});
   }
   addFloat(tx,ty,'❄️ -5','#88ddff',13);
   if(drained>0) addFloat(tx,ty+22,'−'+drained+' Mana','#88ddff',11);
-  if(Math.random()<0.15&&target.frozen<=0) target.frozen=1;
+  if(_rng()<0.15&&target.frozen<=0) target.frozen=1;
 }
 
 const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink','stonesoul','stoneskin'];
@@ -2955,10 +2922,10 @@ function triggerCandleBurn(state,cx){
   state.burn=BURN_ROUNDS;
   addFloat(cx,bH*.38,'🕯️ Candle!','#ff6622',12);
   for(let i=0;i<8;i++){
-    const a=-Math.PI/2+(-0.7+Math.random()*1.4),sp=1.5+Math.random()*2.5;
-    gs.parts.push({x:cx+(Math.random()-.5)*bH*.04,y:bH*.38,
+    const a=-Math.PI/2+(-0.7+_rng()*1.4),sp=1.5+_rng()*2.5;
+    gs.parts.push({x:cx+(_rng()-.5)*bH*.04,y:bH*.38,
       col:i%2?'#ff6622':'#ff9900',vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
-      sz:1.5+Math.random()*2.5,life:1,dec:.02,noGrav:true});
+      sz:1.5+_rng()*2.5,life:1,dec:.02,noGrav:true});
   }
 }
 
@@ -3015,12 +2982,12 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
     spawnParts(tx,bH*.38,'#b8a0e8',10);
     return;
   }
-  if(targetState.haste>0&&Math.random()<0.25){
+  if(targetState.haste>0&&_rng()<0.25){
     addFloat(tx,bH*.38,'💨 Dodged!','#ffcc44',15);
     spawnParts(tx,bH*.38,'#ffcc44',10);
     return;
   }
-  if(targetState.blink>0&&Math.random()<0.5){
+  if(targetState.blink>0&&_rng()<0.5){
     addFloat(tx,bH*.38,'💫 Blinked!','#cc99ff',18);
     spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
     flash('#9988cc');
@@ -3070,12 +3037,12 @@ function doRockfallHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx)
     spawnParts(tx,bH*.38,'#b8a0e8',8);
     return;
   }
-  if(targetState.haste>0&&Math.random()<0.25){
+  if(targetState.haste>0&&_rng()<0.25){
     addFloat(tx,bH*.38,'💨 Dodged!','#ffcc44',13);
     spawnParts(tx,bH*.38,'#ffcc44',8);
     return;
   }
-  if(targetState.blink>0&&Math.random()<0.5){
+  if(targetState.blink>0&&_rng()<0.5){
     addFloat(tx,bH*.38,'💫 Blinked!','#cc99ff',15);
     spawnParts(tx,bH*.38,'#9988cc',14); spawnParts(tx,bH*.38,'#ffffff',5);
     flash('#9988cc');
@@ -3104,7 +3071,7 @@ function doRockfallHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx)
     const a=i/10*Math.PI*2;
     gs.parts.push({x:tx+Math.cos(a)*bH*.04,y:bH*.38+Math.sin(a)*bH*.03,
       col:i%2?'#b08040':'#8b6914',vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2-0.3,
-      sz:2+Math.random()*3,life:1,dec:.022});
+      sz:2+_rng()*3,life:1,dec:.022});
   }
   spawnParts(tx,bH*.38,casterCfg.col,10);
   addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,16);
@@ -3133,24 +3100,203 @@ function lunge(who,amt,cb){
 
 function combatTimeout(fn,delay){ if(headless){fn();}else{setTimeout(fn,delay);} }
 
+// ── SIMULTANEOUS RESOLUTION ────────────────────────────────
+
+// Execute a pre-committed action for `who`. Calls cb() when done (via simCallback or directly).
+function executeQueuedSpell(who, action, cb){
+  const whoCfg=who==='p1'?p1Cfg:p2Cfg;
+  const whoState=gs[who];
+  const oppState=who==='p1'?gs.p2:gs.p1;
+  const cx=who==='p1'?bW*.22:bW*.78;
+  const tx=who==='p1'?bW*.78:bW*.22;
+
+  if(action.type==='__frozen__'){
+    addFloat(cx,bH*.38,'❄️ Frozen — turn skipped!','#88ddff',13);
+    combatTimeout(cb,1200);
+    return;
+  }
+
+  // Agony: damage for any non-channel action
+  if(action.type!=='channel'&&whoState.agony>0){
+    const agonDmg=whoState.agonyDmg||12;
+    whoState.hp=Math.max(0,whoState.hp-agonDmg);
+    addFloat(cx,bH*.38,'💀 Agony! −'+agonDmg,'#9944cc',14);
+    spawnParts(cx,bH*.38,'#9944cc',12); flash('#330033');
+    checkWin(); if(!battleRunning) return;
+  }
+
+  if(action.type==='channel'){
+    let channelGain=action.channelGain!=null?action.channelGain:(whoState.timeDrain>0?2:whoCfg.channelAmt);
+    if(whoState.corruption>0){ const d=Math.min(channelGain,2); channelGain=Math.max(0,channelGain-2); addFloat(cx,bH*.5,'☠️ −'+d+' Corrupted!','#9944cc',12); }
+    whoState.mana=Math.min(MAX_MANA,whoState.mana+channelGain);
+    addFloat(cx,bH*.38,'+'+(channelGain)+' Mana','#88aaff',13);
+    if(whoState.candle>0) triggerCandleBurn(whoState,cx);
+    anim(who,'cast',700);
+    combatTimeout(cb,800);
+    return;
+  }
+
+  // Universal spell
+  const spell=SPELLS.find(s=>s.element===action.type);
+  if(spell){
+    if(!action.ok){
+      addFloat(cx,bH*.33,'Fizzled!','#ff8844',13);
+      whoState.mana=Math.max(0,whoState.mana-1);
+      combatTimeout(cb,600);
+      return;
+    }
+    if(action.silenced){
+      showSilenceBlock(cx,bH*.33); anim(who,'cast',600);
+      combatTimeout(cb,1200);
+      return;
+    }
+    whoState.mana-=spell.cost;
+    if(whoState.invisible>0){ whoState.invisible=0; addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11); }
+    if(action.type==='dispel'&&action.dispelSelf){
+      castSpell(spell,whoState,cx,bH*.38,who);
+      combatTimeout(cb,500);
+    } else {
+      spawnProj(cx,bH*.38,tx,bH*.38,spell.element,spell.col,()=>{
+        castSpell(spell,oppState,tx,bH*.38,who);
+        combatTimeout(cb,500);
+      });
+    }
+    return;
+  }
+
+  // Character spell
+  const charSpell=whoCfg.spells&&whoCfg.spells.find(s=>s.id===action.type);
+  if(charSpell){
+    if(!action.ok){
+      addFloat(cx,bH*.33,'Ritual Failed!','#ff8844',13);
+      whoState.mana=Math.max(0,whoState.mana-1);
+      combatTimeout(cb,600);
+      return;
+    }
+    if(action.silenced){
+      showSilenceBlock(cx,bH*.33); anim(who,'cast',600);
+      combatTimeout(cb,1200);
+      return;
+    }
+    // resolveCharSpell ends by calling endMyTurn/finishAI — intercept with simCallback
+    simCallback=cb;
+    resolveCharSpell(action.type,who,action.perfect||false);
+    return;
+  }
+
+  combatTimeout(cb,200);
+}
+
+// Sort two actions by priority and execute in order. Lower priority number = acts first.
+// If equal priority, both execute (defer win check for double-KO detection).
+function resolveSimRound(){
+  if(!pendingP1Action||!pendingP2Action) return;
+  const p1Act=pendingP1Action, p2Act=pendingP2Action;
+  pendingP1Action=null; pendingP2Action=null;
+  gs.myTurn=false; gs.busy=true;
+
+  const p1Pri=(ACTION_PRIORITY[p1Act.type]||4);
+  const p2Pri=(ACTION_PRIORITY[p2Act.type]||4);
+  const isTie=p1Pri===p2Pri;
+
+  let firstWho,firstAct,secondWho,secondAct;
+  if(p1Pri<=p2Pri){ firstWho='p1'; firstAct=p1Act; secondWho='p2'; secondAct=p2Act; }
+  else             { firstWho='p2'; firstAct=p2Act; secondWho='p1'; secondAct=p1Act; }
+
+  // Show priority order banner
+  if(!headless&&!isTie&&firstAct.type!=='__frozen__'){
+    const firstCfg=firstWho==='p1'?p1Cfg:p2Cfg;
+    const firstCx=firstWho==='p1'?bW*.22:bW*.78;
+    addFloat(firstCx,bH*.20,'⚡ Goes first!',firstCfg.col,11);
+  }
+
+  const frozenBefore={p1:gs.p1.frozen,p2:gs.p2.frozen};
+
+  const afterFirst=()=>{
+    if(!battleRunning) return;
+    checkWin(); if(!battleRunning) return;
+
+    // Interrupt: second actor was frozen by the first action
+    const justFrozen=gs[secondWho].frozen>frozenBefore[secondWho];
+    if(justFrozen&&secondAct.type!=='__frozen__'){
+      const scx=secondWho==='p1'?bW*.22:bW*.78;
+      addFloat(scx,bH*.24,'💨 Interrupted!','#ff6644',15);
+      combatTimeout(endSimRound,1200);
+      return;
+    }
+
+    if(isTie) deferWinCheck=true;
+    executeQueuedSpell(secondWho,secondAct,()=>{
+      deferWinCheck=false;
+      if(!battleRunning) return;
+      // Check deferred double-KO
+      if(pendingWin){
+        const pw=pendingWin; pendingWin=null;
+        if(pw.p1Dead&&pw.p2Dead) endGame('draw');
+        else if(pw.p1Dead) endGame(false);
+        else if(pw.p2Dead) endGame(true);
+        return;
+      }
+      checkWin(); if(!battleRunning) return;
+      endSimRound();
+    });
+  };
+
+  executeQueuedSpell(firstWho,firstAct,afterFirst);
+}
+
+// End-of-round cleanup after simultaneous resolution.
+function endSimRound(){
+  if(!battleRunning||gameEnded) return;
+  gs.myTurn=false; gs.busy=false;
+  // Tick both players' shields and status timers
+  if(gs.p1.shield>0){ gs.p1.shield--; if(gs.p1.shield<=0){gs.p1.shieldHp=0;gs.p1.counter=false;} }
+  tickStatuses(gs.p1);
+  if(gs.p2.shield>0){ gs.p2.shield--; if(gs.p2.shield<=0){gs.p2.shieldHp=0;gs.p2.counter=false;} }
+  tickStatuses(gs.p2);
+  gs.round++;
+
+  if(twoPlayerMode){
+    // 2P: start next collection phase — P1 picks first each round
+    if(!gameEnded){
+      const delay=Math.max(0,(gs.lastAnimEnd||0)-Date.now())+600;
+      setTimeout(()=>{
+        if(!gameEnded){
+          pendingP1Action=null; pendingP2Action=null;
+          showHandoffOverlay('p1',()=>startPlayerTurn('p1'));
+        }
+      },delay);
+    }
+  } else {
+    // AI mode: use skipAIAction so doAI runs DOT ticks but not decision
+    skipAIAction=true;
+    if(aiTid) clearTimeout(aiTid);
+    const _fn=aiDifficulty==='normal'?doAINormal:doAI;
+    if(headless){ _fn(); } else { aiTid=setTimeout(_fn,gs.p2&&gs.p2.haste>0?400:1400); }
+  }
+}
+
 function endMyTurn(skipShieldDecrement=false){
+  // Simultaneous resolution hook — skip normal turn-end logic
+  if(simCallback){ gs.myTurn=false; gs.busy=false; const cb=simCallback; simCallback=null; cb(); return; }
+
   gs.myTurn=false; gs.busy=false;
   if(twoPlayerMode){
     const who=gs.turnPlayer;
     const whoState=gs[who];
-    if(!skipShieldDecrement&&whoState.shield>0){
-      whoState.shield--;
-      if(whoState.shield<=0){ whoState.shieldHp=0; whoState.counter=false; }
-    }
-    tickStatuses(whoState);
-    gs.round++;
-    const nextPlayer=who==='p1'?'p2':'p1';
-    if(!gameEnded){
+
+    // Simultaneous 2P: after P1 commits, skip ticks and show P2 handoff for their input
+    if(who==='p1'){
       const delay=Math.max(0,(gs.lastAnimEnd||0)-Date.now())+600;
-      setTimeout(()=>{
-        if(!gameEnded) showHandoffOverlay(nextPlayer,()=>startPlayerTurn(nextPlayer));
+      if(!gameEnded) setTimeout(()=>{
+        if(!gameEnded) showHandoffOverlay('p2',()=>startPlayerTurn('p2'));
       }, delay);
+      return;
     }
+
+    // P2 just finished input — resolve both actions simultaneously
+    resolveSimRound();
+
   } else {
     if(!skipShieldDecrement&&gs.p1.shield>0){
       gs.p1.shield--;
@@ -3162,6 +3308,248 @@ function endMyTurn(skipShieldDecrement=false){
     const _fn=aiDifficulty==='normal'?doAINormal:doAI;
     if(headless){ _fn(); } else { aiTid=setTimeout(_fn, gs.p2&&gs.p2.haste>0 ? 400 : 1400); }
   }
+}
+
+// ── AI DECISION LOGIC (shared by doAI, doAINormal, aiChooseSync) ──
+function aiDecideEasy(who){
+  const opp=who==='p2'?'p1':'p2';
+  const aiCfg=who==='p2'?p2Cfg:p1Cfg;
+  const aiKey=who==='p2'?p2Key:p1Key;
+  const ai=gs[who];
+  const allSpells=[...SPELLS,...(aiCfg.spells||[])];
+  const available=allSpells.filter(s=>{
+    if(ai.mana<s.cost) return false;
+    if(s.id&&charSpellBlocked(s.id,ai,aiCfg,gs[opp])) return false;
+    if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
+    if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
+    if(s.aiHint==='drain'&&ai.hp>ai.maxHp*0.75) return false;
+    if(ai.frenzied>0&&s.element) return false;
+    if(gs[opp].invisible>0&&(s.element&&!s.area&&s.element!=='dispel'&&s.element!=='manaburn'||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption'||s.id==='rockfall')) return false;
+    return true;
+  });
+  const charSpells=available.filter(s=>s.id);
+  const universalSpells=available.filter(s=>s.element);
+  let chosen=null, aiDispelSelf=false;
+  if(aiKey==='mordant'&&ai.agony>0) chosen=null;
+  else if(aiKey==='mordant'){
+    const hexSpells=charSpells.filter(s=>['agony','silence','corruption'].includes(s.id));
+    if(hexSpells.length>0&&_rng()<0.65) chosen=hexSpells[Math.floor(_rng()*hexSpells.length)];
+  }
+  if(aiKey==='mary'){
+    const hasDebuff=ai.burn>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
+    const canPurge=charSpells.find(s=>s.id==='purge');
+    const canHeal=charSpells.find(s=>s.id==='divineheal');
+    if(hasDebuff&&canPurge) chosen=canPurge;
+    else if(ai.hp<ai.maxHp*0.60&&canHeal) chosen=canHeal;
+  }
+  if(aiKey==='zacharius'){
+    const chainReady=charSpells.find(s=>s.id==='chainlightning');
+    const canGalvanize=charSpells.find(s=>s.id==='galvanize');
+    const canConductivity=charSpells.find(s=>s.id==='conductivity');
+    if(chainReady&&ai.charge>=(aiCfg.chainLightningChargeCost||8)) chosen=chainReady;
+    else if(canConductivity&&!gs[opp].conductivity&&ai.mana>=canConductivity.cost) chosen=canConductivity;
+    else if(canGalvanize) chosen=canGalvanize;
+  }
+  if(aiKey==='durin'){
+    const canStoneskin=charSpells.find(s=>s.id==='stoneskin');
+    const canStonesoul=charSpells.find(s=>s.id==='stonesoul');
+    const canRockfall=charSpells.find(s=>s.id==='rockfall');
+    if(ai.stoneskin<=0&&canStoneskin&&ai.hp<ai.maxHp*0.85) chosen=canStoneskin;
+    else if(ai.stonesoul<=0&&canStonesoul&&ai.hp<ai.maxHp*0.70) chosen=canStonesoul;
+    else if(canRockfall&&_rng()<0.55) chosen=canRockfall;
+  }
+  if(!chosen){
+    const dispelSpell=universalSpells.find(s=>s.element==='dispel');
+    if(dispelSpell){
+      const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
+      const oppHasKeyBuff=gs[opp].shield>0||gs[opp].foresight||gs[opp].resist>1||gs[opp].invisible>1||gs[opp].stoneskin>0||gs[opp].stonesoul>0||gs[opp].ward>0||gs[opp].counter;
+      if(needsCleanse||(oppHasKeyBuff&&_rng()<0.35)){ chosen=dispelSpell; aiDispelSelf=needsCleanse; }
+    }
+  }
+  if(!chosen){
+    const manaBurnSpell=universalSpells.find(s=>s.element==='manaburn');
+    if(manaBurnSpell&&gs[opp].mana>=8) chosen=manaBurnSpell;
+  }
+  if(!chosen&&available.length>0){
+    if(charSpells.length>0&&_rng()<0.40){
+      chosen=charSpells[Math.floor(_rng()*charSpells.length)];
+    } else if(universalSpells.length>0){
+      if(gs[opp].shield>0&&universalSpells.find(s=>s.element==='lightning')) chosen=universalSpells.find(s=>s.element==='lightning');
+      else if(!gs[opp].shield&&universalSpells.find(s=>s.element==='fire')) chosen=universalSpells.find(s=>s.element==='fire');
+      else if(gs[opp].mana>=3&&universalSpells.find(s=>s.element==='ice')) chosen=universalSpells.find(s=>s.element==='ice');
+      else { const randPool=universalSpells.filter(s=>s.element!=='dispel'); if(randPool.length>0) chosen=randPool[Math.floor(_rng()*randPool.length)]; }
+    } else { chosen=charSpells[Math.floor(_rng()*charSpells.length)]; }
+  }
+  return {chosen, aiDispelSelf};
+}
+
+function aiDecideNormal(who){
+  const opp=who==='p2'?'p1':'p2';
+  const aiCfg=who==='p2'?p2Cfg:p1Cfg;
+  const aiKey=who==='p2'?p2Key:p1Key;
+  const ai=gs[who];
+  const p1=gs[opp];
+  const allSpells=[...SPELLS,...(aiCfg.spells||[])];
+  const available=allSpells.filter(s=>{
+    if(ai.mana<s.cost) return false;
+    if(s.id&&charSpellBlocked(s.id,ai,aiCfg,p1)) return false;
+    if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
+    if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
+    if(s.aiHint==='drain'&&aiKey!=='mal'&&ai.hp>ai.maxHp*0.75) return false;
+    if(ai.frenzied>0&&s.element) return false;
+    if(p1.invisible>0&&(s.element&&!s.area&&s.element!=='dispel'&&s.element!=='manaburn'||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption'||s.id==='rockfall')) return false;
+    return true;
+  });
+  const charSpells=available.filter(s=>s.id);
+  const universalSpells=available.filter(s=>s.element);
+  let chosen=null, aiDispelSelf=false, forceChannel=false;
+  if(aiKey==='eldrad'&&!chosen){
+    const canShield=charSpells.find(s=>s.id==='shield');
+    const canCounter=charSpells.find(s=>s.id==='counter');
+    const canWard=charSpells.find(s=>s.id==='ward');
+    if(canShield) chosen=canShield;
+    else if(canCounter) chosen=canCounter;
+    else if(canWard) chosen=canWard;
+    else if(!ai.shieldHp&&ai.mana<3&&ai.hp>ai.maxHp*0.50&&_rng()<0.60) forceChannel=true;
+  }
+  if(aiKey==='mal'&&!chosen){
+    const canBloodPact=charSpells.find(s=>s.id==='bloodpact');
+    const canEmpower=charSpells.find(s=>s.id==='empower');
+    const canDrain=charSpells.find(s=>s.id==='drain');
+    if(ai.empowered&&canDrain) chosen=canDrain;
+    else if(!ai.empowered&&canEmpower) chosen=canEmpower;
+    else if(canBloodPact&&ai.mana<5&&ai.hp>(aiCfg.bpCost||22)+15) chosen=canBloodPact;
+    else if(canDrain) chosen=canDrain;
+    else if(ai.empowered&&ai.mana<3&&ai.hp>ai.maxHp*0.45&&_rng()<0.60) forceChannel=true;
+  }
+  if(aiKey==='sylvara'&&!chosen){
+    const canEntangle=charSpells.find(s=>s.id==='entangle');
+    const canVineWhip=charSpells.find(s=>s.id==='vinewhip');
+    const canRegen=charSpells.find(s=>s.id==='heal');
+    if(ai.hp<ai.maxHp*0.50&&canRegen) chosen=canRegen;
+    else if(canEntangle) chosen=canEntangle;
+    else if(canVineWhip&&!p1.shield) chosen=canVineWhip;
+    else if(!ai.regen&&canRegen&&ai.hp<ai.maxHp*0.80) chosen=canRegen;
+    else if(!ai.regen&&ai.hp<ai.maxHp*0.65&&ai.mana<4&&_rng()<0.55) forceChannel=true;
+  }
+  if(aiKey==='aurelia'&&!chosen){
+    const canForesight=charSpells.find(s=>s.id==='foresight');
+    const canTimeDrain=charSpells.find(s=>s.id==='timedrain');
+    const canHaste=charSpells.find(s=>s.id==='haste');
+    if(canForesight) chosen=canForesight;
+    else if(canTimeDrain) chosen=canTimeDrain;
+    else if(canHaste) chosen=canHaste;
+    else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&_rng()<0.60) forceChannel=true;
+  }
+  if(aiKey==='gnash'&&!chosen){
+    const canWarpaint=charSpells.find(s=>s.id==='warpaint');
+    const canFrenzy=charSpells.find(s=>s.id==='frenzy');
+    const canCharge=charSpells.find(s=>s.id==='charge');
+    if(canWarpaint) chosen=canWarpaint;
+    else if(ai.resist>0){ if(canFrenzy) chosen=canFrenzy; else if(canCharge) chosen=canCharge; }
+    else if(ai.mana<3&&ai.hp>ai.maxHp*0.50&&_rng()<0.55) forceChannel=true;
+    else { if(canFrenzy) chosen=canFrenzy; else if(canCharge) chosen=canCharge; }
+  }
+  if(aiKey==='cinder'&&!chosen){
+    const canCandle=charSpells.find(s=>s.id==='candle');
+    const canFlameShield=charSpells.find(s=>s.id==='flameshield');
+    const canFireball=charSpells.find(s=>s.id==='fireball');
+    if(canCandle) chosen=canCandle;
+    else if(canFlameShield) chosen=canFlameShield;
+    else if(canFireball) chosen=canFireball;
+    else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&_rng()<0.55) forceChannel=true;
+  }
+  if(aiKey==='skadi'&&!chosen){
+    const canBlizzard=charSpells.find(s=>s.id==='blizzard');
+    const canFrostArmor=charSpells.find(s=>s.id==='frostarmor');
+    const canIceLance=charSpells.find(s=>s.id==='icelance');
+    if(canBlizzard) chosen=canBlizzard;
+    else if(canFrostArmor) chosen=canFrostArmor;
+    else if(canIceLance) chosen=canIceLance;
+    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&_rng()<0.65) forceChannel=true;
+  }
+  if(aiKey==='zacharius'&&!chosen){
+    const chainReady=charSpells.find(s=>s.id==='chainlightning');
+    const canGalvanize=charSpells.find(s=>s.id==='galvanize');
+    const canConductivity=charSpells.find(s=>s.id==='conductivity');
+    if(chainReady&&ai.charge>=(aiCfg.chainLightningChargeCost||8)) chosen=chainReady;
+    else if(canConductivity&&(!p1.conductivity||p1.conductivity<=1)) chosen=canConductivity;
+    else if(canGalvanize) chosen=canGalvanize;
+    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&_rng()<0.55) forceChannel=true;
+  }
+  if(aiKey==='mary'&&!chosen){
+    const canRadiant=charSpells.find(s=>s.id==='radiant');
+    const canHeal=charSpells.find(s=>s.id==='divineheal');
+    const canPurge=charSpells.find(s=>s.id==='purge');
+    const hasDebuff=ai.burn>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
+    if(hasDebuff&&canPurge) chosen=canPurge;
+    else if(ai.hp<ai.maxHp*0.55&&canHeal) chosen=canHeal;
+    else if(canRadiant&&(p1.shield>0||p1.resist>0||p1.frostArmor>0)) chosen=canRadiant;
+    else if(canRadiant&&_rng()<0.55) chosen=canRadiant;
+    else if(ai.mana<3&&ai.hp>ai.maxHp*0.50&&_rng()<0.55) forceChannel=true;
+  }
+  if(aiKey==='mordant'&&!chosen){
+    const canCorruption=charSpells.find(s=>s.id==='corruption');
+    const canAgony=charSpells.find(s=>s.id==='agony');
+    const canSilence=charSpells.find(s=>s.id==='silence');
+    if(!ai.agony){
+      if(canCorruption) chosen=canCorruption;
+      else if(canAgony) chosen=canAgony;
+      else if(canSilence) chosen=canSilence;
+      else if(ai.mana<2&&ai.hp>ai.maxHp*0.45&&_rng()<0.60) forceChannel=true;
+    }
+  }
+  if(aiKey==='ponder'&&!chosen){
+    const canVanish=charSpells.find(s=>s.id==='vanish');
+    const canManaSiphon=charSpells.find(s=>s.id==='manasiphon');
+    const canBlink=charSpells.find(s=>s.id==='blink');
+    if(ai.invisible>0){ if(canManaSiphon) chosen=canManaSiphon; }
+    else { if(canVanish) chosen=canVanish; else if(canBlink) chosen=canBlink; else if(ai.mana<2&&ai.hp>ai.maxHp*0.45&&_rng()<0.55) forceChannel=true; }
+  }
+  if(aiKey==='durin'&&!chosen){
+    const canStoneskin=charSpells.find(s=>s.id==='stoneskin');
+    const canStonesoul=charSpells.find(s=>s.id==='stonesoul');
+    const canRockfall=charSpells.find(s=>s.id==='rockfall');
+    if(canStoneskin) chosen=canStoneskin;
+    else if(canStonesoul) chosen=canStonesoul;
+    else if(canRockfall&&_rng()<0.70) chosen=canRockfall;
+    else if(ai.mana<3&&ai.hp>ai.maxHp*0.40&&_rng()<0.65) forceChannel=true;
+  }
+  if(!chosen){
+    const dispelSpell=universalSpells.find(s=>s.element==='dispel');
+    if(dispelSpell){
+      const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
+      const oppHasKeyBuff=p1.shield>0||p1.foresight||p1.resist>1||p1.invisible>1||p1.stoneskin>0||p1.stonesoul>0||p1.ward>0||p1.counter;
+      if(needsCleanse){ chosen=dispelSpell; aiDispelSelf=true; forceChannel=false; }
+      else if(!forceChannel&&oppHasKeyBuff&&_rng()<0.45){ chosen=dispelSpell; aiDispelSelf=false; }
+    }
+  }
+  if(!chosen&&!forceChannel){
+    const manaBurnSpell=universalSpells.find(s=>s.element==='manaburn');
+    if(manaBurnSpell&&p1.mana>=7) chosen=manaBurnSpell;
+  }
+  if(!chosen&&!forceChannel&&available.length>0){
+    if(charSpells.length>0&&_rng()<0.50){
+      chosen=charSpells[Math.floor(_rng()*charSpells.length)];
+    } else if(universalSpells.length>0){
+      if(p1.shield>0&&universalSpells.find(s=>s.element==='lightning')) chosen=universalSpells.find(s=>s.element==='lightning');
+      else if(!p1.shield&&universalSpells.find(s=>s.element==='fire')) chosen=universalSpells.find(s=>s.element==='fire');
+      else if(p1.mana>=3&&universalSpells.find(s=>s.element==='ice')) chosen=universalSpells.find(s=>s.element==='ice');
+      else { const randPool=universalSpells.filter(s=>s.element!=='dispel'); if(randPool.length>0) chosen=randPool[Math.floor(_rng()*randPool.length)]; }
+    } else { chosen=charSpells[Math.floor(_rng()*charSpells.length)]; }
+  }
+  return {chosen, aiDispelSelf, forceChannel};
+}
+
+// Returns committed action object for AI without executing — used by simultaneous resolution
+function aiChooseSync(who){
+  const ai=gs[who];
+  if(ai.frozen>0) return {type:'__frozen__', ok:true};
+  const decide=aiDifficulty==='normal'?aiDecideNormal:aiDecideEasy;
+  const {chosen, aiDispelSelf, forceChannel}=decide(who);
+  if(!chosen||forceChannel) return {type:'channel', ok:true};
+  if(chosen.id) return {type:chosen.id, ok:true, isCharSpell:true};
+  return {type:chosen.element, ok:true, dispelSelf:!!aiDispelSelf};
 }
 
 // ── AI TURN ────────────────────────────────────────────────
@@ -3185,6 +3573,18 @@ function doAI(who='p2'){
 
   // Training mode with AI off: opponent just channels every turn
   if(who==='p2'&&trainingMode&&!trainingAI){
+    if(skipAIAction){
+      skipAIAction=false;
+      if(gs.p1.invisible>0) gs.p1.invisible--;
+      if(gs.p2.invisible>0) gs.p2.invisible--;
+      if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+      if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+      if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+      if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
+      gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
+      if(gs.p2.frozen>0){ gs.p2.frozen--; }
+      finishAI(); return;
+    }
     if(gs.p1.invisible>0) gs.p1.invisible--;
     if(gs.p2.invisible>0) gs.p2.invisible--;
     if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
@@ -3247,7 +3647,14 @@ function doAI(who='p2'){
   // Passive mana regen
   ai.mana=Math.min(MAX_MANA,ai.mana+1);
 
-  // Frozen: skip turn
+  // Simultaneous: skip action; decrement frozen silently (float shown at execution time)
+  if(skipAIAction){
+    skipAIAction=false;
+    if(ai.frozen>0){ ai.frozen--; }
+    endTurn(); return;
+  }
+
+  // Frozen: skip turn (sequential path)
   if(ai.frozen>0){
     ai.frozen--;
     addFloat(ax,bH*.38,'❄️ Frozen!','#88ddff',13);
@@ -3255,98 +3662,8 @@ function doAI(who='p2'){
     return;
   }
 
-  const allSpells=[...SPELLS,...(aiCfg.spells||[])];
-
-  // Build available list: affordable, not blocked, respecting aiHint
-  // Don't use attack spells if opponent is invisible
-  const available=allSpells.filter(s=>{
-    if(ai.mana<s.cost) return false;
-    if(s.id&&charSpellBlocked(s.id,ai,aiCfg,gs[opp])) return false;
-    if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
-    if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
-    if(s.aiHint==='drain'&&ai.hp>ai.maxHp*0.75) return false;
-    if(ai.frenzied>0&&s.element) return false;
-    if(gs[opp].invisible>0&&(s.element&&!s.area&&s.element!=='dispel'&&s.element!=='manaburn'||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption'||s.id==='rockfall')) return false;
-    return true;
-  });
-
-  const charSpells=available.filter(s=>s.id);
-  const universalSpells=available.filter(s=>s.element);
-
-  // Select a spell using heuristics
-  let chosen=null;
-  // Mordant: channel when under agony; otherwise favour hexes
-  if(aiKey==='mordant'&&ai.agony>0) chosen=null;
-  else if(aiKey==='mordant'&&!chosen){
-    const hexSpells=charSpells.filter(s=>['agony','silence','corruption'].includes(s.id));
-    if(hexSpells.length>0&&Math.random()<0.65) chosen=hexSpells[Math.floor(Math.random()*hexSpells.length)];
-  }
-  // Mary: purge debuffs first, heal when hurt
-  if(aiKey==='mary'){
-    const hasDebuff=ai.burn>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
-    const canPurge=charSpells.find(s=>s.id==='purge');
-    const canHeal=charSpells.find(s=>s.id==='divineheal');
-    if(hasDebuff&&canPurge)                        chosen=canPurge;
-    else if(ai.hp<ai.maxHp*0.60&&canHeal)          chosen=canHeal;
-  }
-  // Zacharius: apply conductivity first, then build charge and spend with chain lightning
-  if(aiKey==='zacharius'){
-    const chainReady=charSpells.find(s=>s.id==='chainlightning');
-    const canGalvanize=charSpells.find(s=>s.id==='galvanize');
-    const canConductivity=charSpells.find(s=>s.id==='conductivity');
-    if(chainReady&&ai.charge>=(aiCfg.chainLightningChargeCost||8)){
-      chosen=chainReady;
-    } else if(canConductivity&&!gs[opp].conductivity&&ai.mana>=canConductivity.cost){
-      chosen=canConductivity;
-    } else if(canGalvanize){
-      chosen=canGalvanize;
-    }
-  }
-  // Durin: layer defenses then use rockfall for burst
-  if(aiKey==='durin'){
-    const canStoneskin=charSpells.find(s=>s.id==='stoneskin');
-    const canStonesoul=charSpells.find(s=>s.id==='stonesoul');
-    const canRockfall=charSpells.find(s=>s.id==='rockfall');
-    if(ai.stoneskin<=0&&canStoneskin&&ai.hp<ai.maxHp*0.85) chosen=canStoneskin;
-    else if(ai.stonesoul<=0&&canStonesoul&&ai.hp<ai.maxHp*0.70) chosen=canStonesoul;
-    else if(canRockfall&&Math.random()<0.55) chosen=canRockfall;
-  }
-  // Use Dispel if AI is suffering active hexes/DoT, or opponent has a high-value buff worth gambling on
-  if(!chosen){
-    const dispelSpell=universalSpells.find(s=>s.element==='dispel');
-    if(dispelSpell){
-      const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
-      const oppHasKeyBuff=gs[opp].shield>0||gs[opp].foresight||gs[opp].resist>1||gs[opp].invisible>1||gs[opp].stoneskin>0||gs[opp].stonesoul>0||gs[opp].ward>0||gs[opp].counter;
-      if(needsCleanse||(oppHasKeyBuff&&Math.random()<0.35)){
-        chosen=dispelSpell;
-        dispelSelf=needsCleanse;
-      }
-    }
-  }
-  // Use Mana Burn when opponent is mana-rich (strong as catchup, weak when opponent already starved)
-  if(!chosen){
-    const manaBurnSpell=universalSpells.find(s=>s.element==='manaburn');
-    if(manaBurnSpell&&gs[opp].mana>=8) chosen=manaBurnSpell;
-  }
-
-  if(!chosen&&available.length>0){
-    if(charSpells.length>0&&Math.random()<0.40){
-      chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
-    } else if(universalSpells.length>0){
-      if(gs[opp].shield>0&&universalSpells.find(s=>s.element==='lightning')){
-        chosen=universalSpells.find(s=>s.element==='lightning');
-      } else if(!gs[opp].shield&&universalSpells.find(s=>s.element==='fire')){
-        chosen=universalSpells.find(s=>s.element==='fire');
-      } else if(gs[opp].mana>=3&&universalSpells.find(s=>s.element==='ice')){
-        chosen=universalSpells.find(s=>s.element==='ice');
-      } else {
-        const randPool=universalSpells.filter(s=>s.element!=='dispel');
-        if(randPool.length>0) chosen=randPool[Math.floor(Math.random()*randPool.length)];
-      }
-    } else {
-      chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
-    }
-  }
+  const {chosen, aiDispelSelf}=aiDecideEasy(who);
+  dispelSelf=aiDispelSelf;
 
   if(!chosen){
     // Channel
@@ -3378,11 +3695,11 @@ function doAI(who='p2'){
   }
 
   // Silence: 45% chance mana-cost spells fizzle
-  if(chosen.id&&chosen.cost>0&&ai.silence>0&&Math.random()<0.45){
+  if(chosen.id&&chosen.cost>0&&ai.silence>0&&_rng()<0.45){
     showSilenceBlock(ax,bH*.33); anim(who,'cast',600);
     tickStatuses(ai); endTurn(); return;
   }
-  if(!chosen.id&&ai.silence>0&&Math.random()<0.45){
+  if(!chosen.id&&ai.silence>0&&_rng()<0.45){
     showSilenceBlock(ax,bH*.33); anim(who,'cast',600);
     ai.mana=Math.max(0,ai.mana-1); tickStatuses(ai); endTurn(); return;
   }
@@ -3399,7 +3716,7 @@ function doAI(who='p2'){
   combatTimeout(()=>{
     if(!battleRunning) return;
     tickStatuses(ai);
-    if(Math.random()<0.8){
+    if(_rng()<0.8){
       ai.mana-=chosen.cost;
       if(chosen.element==='dispel'&&dispelSelf){
         castSpell(chosen,gs[who],ax,bH*.38,who);
@@ -3439,6 +3756,18 @@ function doAINormal(who='p2'){
 
   // Training mode with AI off: opponent just channels every turn
   if(who==='p2'&&trainingMode&&!trainingAI){
+    if(skipAIAction){
+      skipAIAction=false;
+      if(gs.p1.invisible>0) gs.p1.invisible--;
+      if(gs.p2.invisible>0) gs.p2.invisible--;
+      if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+      if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+      if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+      if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
+      gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
+      if(gs.p2.frozen>0){ gs.p2.frozen--; }
+      finishAI(); return;
+    }
     if(gs.p1.invisible>0) gs.p1.invisible--;
     if(gs.p2.invisible>0) gs.p2.invisible--;
     if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
@@ -3484,6 +3813,14 @@ function doAINormal(who='p2'){
 
   ai.mana=Math.min(MAX_MANA,ai.mana+1);
 
+  // Simultaneous: skip action; decrement frozen silently (float shown at execution time)
+  if(skipAIAction){
+    skipAIAction=false;
+    if(ai.frozen>0){ ai.frozen--; }
+    endTurn(); return;
+  }
+
+  // Frozen: skip turn (sequential path)
   if(ai.frozen>0){
     ai.frozen--;
     addFloat(ax,bH*.38,'❄️ Frozen!','#88ddff',13);
@@ -3491,226 +3828,8 @@ function doAINormal(who='p2'){
     return;
   }
 
-  const p1=gs[opp]; // alias: the AI's target
-  const allSpells=[...SPELLS,...(aiCfg.spells||[])];
-
-  // Available list — same filters as easy AI except Malachar's Drain is unrestricted
-  const available=allSpells.filter(s=>{
-    if(ai.mana<s.cost) return false;
-    if(s.id&&charSpellBlocked(s.id,ai,aiCfg,p1)) return false;
-    if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
-    if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
-    if(s.aiHint==='drain'&&aiKey!=='mal'&&ai.hp>ai.maxHp*0.75) return false;
-    if(ai.frenzied>0&&s.element) return false;
-    if(p1.invisible>0&&(s.element&&!s.area&&s.element!=='dispel'&&s.element!=='manaburn'||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption'||s.id==='rockfall')) return false;
-    return true;
-  });
-
-  const charSpells=available.filter(s=>s.id);
-  const universalSpells=available.filter(s=>s.element);
-
-  let chosen=null;
-  let forceChannel=false; // set by character blocks to prefer channel over weak fallback
-
-  // ── ELDRIN: Shield first, Counter next, then Ward ───────────
-  if(aiKey==='eldrad'&&!chosen){
-    const canShield=charSpells.find(s=>s.id==='shield');
-    const canCounter=charSpells.find(s=>s.id==='counter');
-    const canWard=charSpells.find(s=>s.id==='ward');
-    if(canShield) chosen=canShield;
-    else if(canCounter) chosen=canCounter;
-    else if(canWard) chosen=canWard;
-    // Save up for Shield when no defences are up
-    else if(!ai.shieldHp&&ai.mana<3&&ai.hp>ai.maxHp*0.50&&Math.random()<0.60) forceChannel=true;
-  }
-
-  // ── MALACHAR: Empower → Drain combo; Blood Pact when mana-hungry ──
-  if(aiKey==='mal'&&!chosen){
-    const canBloodPact=charSpells.find(s=>s.id==='bloodpact');
-    const canEmpower=charSpells.find(s=>s.id==='empower');
-    const canDrain=charSpells.find(s=>s.id==='drain');
-    if(ai.empowered&&canDrain) chosen=canDrain;
-    else if(!ai.empowered&&canEmpower) chosen=canEmpower;
-    else if(canBloodPact&&ai.mana<5&&ai.hp>(aiCfg.bpCost||22)+15) chosen=canBloodPact;
-    else if(canDrain) chosen=canDrain;
-    // Already empowered but can't afford Drain — channel to deliver the combo
-    else if(ai.empowered&&ai.mana<3&&ai.hp>ai.maxHp*0.45&&Math.random()<0.60) forceChannel=true;
-  }
-
-  // ── SYLVARA: Entangle (freeze) → Vine Whip; Regen to sustain ──
-  if(aiKey==='sylvara'&&!chosen){
-    const canEntangle=charSpells.find(s=>s.id==='entangle');
-    const canVineWhip=charSpells.find(s=>s.id==='vinewhip');
-    const canRegen=charSpells.find(s=>s.id==='heal');
-    if(ai.hp<ai.maxHp*0.50&&canRegen) chosen=canRegen;
-    else if(canEntangle) chosen=canEntangle;
-    else if(canVineWhip&&!p1.shield) chosen=canVineWhip;
-    else if(!ai.regen&&canRegen&&ai.hp<ai.maxHp*0.80) chosen=canRegen;
-    // Channel to reach Regen threshold when moderately hurt
-    else if(!ai.regen&&ai.hp<ai.maxHp*0.65&&ai.mana<4&&Math.random()<0.55) forceChannel=true;
-  }
-
-  // ── AURELIA: Foresight → Time Drain → Haste ─────────────────
-  if(aiKey==='aurelia'&&!chosen){
-    const canForesight=charSpells.find(s=>s.id==='foresight');
-    const canTimeDrain=charSpells.find(s=>s.id==='timedrain');
-    const canHaste=charSpells.find(s=>s.id==='haste');
-    if(canForesight) chosen=canForesight;
-    else if(canTimeDrain) chosen=canTimeDrain;
-    else if(canHaste) chosen=canHaste;
-    // Channel to afford next utility spell
-    else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&Math.random()<0.60) forceChannel=true;
-  }
-
-  // ── GNASH: War Paint first, then burst with Frenzy/Savage Charge ──
-  if(aiKey==='gnash'&&!chosen){
-    const canWarpaint=charSpells.find(s=>s.id==='warpaint');
-    const canFrenzy=charSpells.find(s=>s.id==='frenzy');
-    const canCharge=charSpells.find(s=>s.id==='charge');
-    if(canWarpaint) chosen=canWarpaint;
-    else if(ai.resist>0){
-      // War Paint is active — burst safely
-      if(canFrenzy) chosen=canFrenzy;
-      else if(canCharge) chosen=canCharge;
-    } else if(ai.mana<3&&ai.hp>ai.maxHp*0.50&&Math.random()<0.55){
-      // Save up for War Paint rather than spending HP on unprotected burst
-      forceChannel=true;
-    } else {
-      if(canFrenzy) chosen=canFrenzy;
-      else if(canCharge) chosen=canCharge;
-    }
-  }
-
-  // ── CINDER: Candle → Flame Shield → Fireball ────────────────
-  if(aiKey==='cinder'&&!chosen){
-    const canCandle=charSpells.find(s=>s.id==='candle');
-    const canFlameShield=charSpells.find(s=>s.id==='flameshield');
-    const canFireball=charSpells.find(s=>s.id==='fireball');
-    if(canCandle) chosen=canCandle;
-    else if(canFlameShield) chosen=canFlameShield;
-    else if(canFireball) chosen=canFireball;
-    // Channel to afford next combo piece (cheapest remaining is Flame Shield at 3)
-    else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&Math.random()<0.55) forceChannel=true;
-  }
-
-  // ── SKADI: Blizzard → Frost Armor → Ice Lance ───────────────
-  if(aiKey==='skadi'&&!chosen){
-    const canBlizzard=charSpells.find(s=>s.id==='blizzard');
-    const canFrostArmor=charSpells.find(s=>s.id==='frostarmor');
-    const canIceLance=charSpells.find(s=>s.id==='icelance');
-    if(canBlizzard) chosen=canBlizzard;
-    else if(canFrostArmor) chosen=canFrostArmor;
-    else if(canIceLance) chosen=canIceLance;
-    // Everything costs 4 — channel to reach threshold rather than spam Frost Bolt
-    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&Math.random()<0.65) forceChannel=true;
-  }
-
-  // ── ZACHARIUS: Conductivity → Galvanize → Chain Lightning ───
-  if(aiKey==='zacharius'&&!chosen){
-    const chainReady=charSpells.find(s=>s.id==='chainlightning');
-    const canGalvanize=charSpells.find(s=>s.id==='galvanize');
-    const canConductivity=charSpells.find(s=>s.id==='conductivity');
-    if(chainReady&&ai.charge>=(aiCfg.chainLightningChargeCost||8)) chosen=chainReady;
-    else if(canConductivity&&(!p1.conductivity||p1.conductivity<=1)) chosen=canConductivity;
-    else if(canGalvanize) chosen=canGalvanize;
-    // Channel to reach Galvanize cost
-    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&Math.random()<0.55) forceChannel=true;
-  }
-
-  // ── MARY: Purge debuffs → Heal → Radiant (bypasses shields) ──
-  if(aiKey==='mary'&&!chosen){
-    const canRadiant=charSpells.find(s=>s.id==='radiant');
-    const canHeal=charSpells.find(s=>s.id==='divineheal');
-    const canPurge=charSpells.find(s=>s.id==='purge');
-    const hasDebuff=ai.burn>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
-    if(hasDebuff&&canPurge) chosen=canPurge;
-    else if(ai.hp<ai.maxHp*0.55&&canHeal) chosen=canHeal;
-    else if(canRadiant&&(p1.shield>0||p1.resist>0||p1.frostArmor>0)) chosen=canRadiant;
-    else if(canRadiant&&Math.random()<0.55) chosen=canRadiant;
-    // Channel to afford Radiant
-    else if(ai.mana<3&&ai.hp>ai.maxHp*0.50&&Math.random()<0.55) forceChannel=true;
-  }
-
-  // ── MORDANT: Layer hexes — Corruption → Agony → Silence; channel under own Agony ──
-  if(aiKey==='mordant'&&!chosen){
-    const canCorruption=charSpells.find(s=>s.id==='corruption');
-    const canAgony=charSpells.find(s=>s.id==='agony');
-    const canSilence=charSpells.find(s=>s.id==='silence');
-    if(!ai.agony){
-      if(canCorruption) chosen=canCorruption;
-      else if(canAgony) chosen=canAgony;
-      else if(canSilence) chosen=canSilence;
-      // Channel to afford cheapest hex (Silence at 2)
-      else if(ai.mana<2&&ai.hp>ai.maxHp*0.45&&Math.random()<0.60) forceChannel=true;
-    }
-    // ai.agony>0: chosen stays null — Dispel block below handles cleanse, else channel
-  }
-
-  // ── PONDER: Vanish → Mana Siphon loop; Blink as fallback ───
-  if(aiKey==='ponder'&&!chosen){
-    const canVanish=charSpells.find(s=>s.id==='vanish');
-    const canManaSiphon=charSpells.find(s=>s.id==='manasiphon');
-    const canBlink=charSpells.find(s=>s.id==='blink');
-    if(ai.invisible>0){
-      if(canManaSiphon) chosen=canManaSiphon;
-      // else: stay invisible by channeling (chosen=null falls through)
-    } else {
-      if(canVanish) chosen=canVanish;
-      else if(canBlink) chosen=canBlink;
-      // Channel to afford Vanish
-      else if(ai.mana<2&&ai.hp>ai.maxHp*0.45&&Math.random()<0.55) forceChannel=true;
-    }
-  }
-
-  // ── DURIN: Proactive armor (no HP threshold), then Rockfall ──
-  if(aiKey==='durin'&&!chosen){
-    const canStoneskin=charSpells.find(s=>s.id==='stoneskin');
-    const canStonesoul=charSpells.find(s=>s.id==='stonesoul');
-    const canRockfall=charSpells.find(s=>s.id==='rockfall');
-    if(canStoneskin) chosen=canStoneskin;
-    else if(canStonesoul) chosen=canStonesoul;
-    else if(canRockfall&&Math.random()<0.70) chosen=canRockfall;
-    // Channel to afford next armour layer or Rockfall
-    else if(ai.mana<3&&ai.hp>ai.maxHp*0.40&&Math.random()<0.65) forceChannel=true;
-  }
-
-  // ── Dispel: urgent self-cleanse overrides forceChannel; buff-strip skipped when saving ──
-  if(!chosen){
-    const dispelSpell=universalSpells.find(s=>s.element==='dispel');
-    if(dispelSpell){
-      const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
-      const oppHasKeyBuff=p1.shield>0||p1.foresight||p1.resist>1||p1.invisible>1||p1.stoneskin>0||p1.stonesoul>0||p1.ward>0||p1.counter;
-      if(needsCleanse){
-        chosen=dispelSpell; dispelSelf=true; forceChannel=false;
-      } else if(!forceChannel&&oppHasKeyBuff&&Math.random()<0.45){
-        chosen=dispelSpell; dispelSelf=false;
-      }
-    }
-  }
-  // ── Mana Burn: when player is mana-rich (skip when saving for combo) ──
-  if(!chosen&&!forceChannel){
-    const manaBurnSpell=universalSpells.find(s=>s.element==='manaburn');
-    if(manaBurnSpell&&p1.mana>=7) chosen=manaBurnSpell;
-  }
-  // ── Generic fallback (skipped when saving mana for combo) ───
-  if(!chosen&&!forceChannel&&available.length>0){
-    if(charSpells.length>0&&Math.random()<0.50){
-      chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
-    } else if(universalSpells.length>0){
-      if(p1.shield>0&&universalSpells.find(s=>s.element==='lightning')){
-        chosen=universalSpells.find(s=>s.element==='lightning');
-      } else if(!p1.shield&&universalSpells.find(s=>s.element==='fire')){
-        chosen=universalSpells.find(s=>s.element==='fire');
-      } else if(p1.mana>=3&&universalSpells.find(s=>s.element==='ice')){
-        chosen=universalSpells.find(s=>s.element==='ice');
-      } else {
-        const randPool=universalSpells.filter(s=>s.element!=='dispel');
-        if(randPool.length>0) chosen=randPool[Math.floor(Math.random()*randPool.length)];
-      }
-    } else {
-      chosen=charSpells[Math.floor(Math.random()*charSpells.length)];
-    }
-  }
+  const {chosen, aiDispelSelf, forceChannel}=aiDecideNormal(who);
+  dispelSelf=aiDispelSelf;
   // ── Channel fallback ────────────────────────────────────────
   if(!chosen){
     if(ai.timeDrain>0){
@@ -3739,11 +3858,11 @@ function doAINormal(who='p2'){
     checkWin(); if(!battleRunning) return;
   }
   // Silence: 45% chance mana-cost spells fizzle
-  if(chosen.id&&chosen.cost>0&&ai.silence>0&&Math.random()<0.45){
+  if(chosen.id&&chosen.cost>0&&ai.silence>0&&_rng()<0.45){
     showSilenceBlock(ax,bH*.33); anim(who,'cast',600);
     tickStatuses(ai); endTurn(); return;
   }
-  if(!chosen.id&&ai.silence>0&&Math.random()<0.45){
+  if(!chosen.id&&ai.silence>0&&_rng()<0.45){
     showSilenceBlock(ax,bH*.33); anim(who,'cast',600);
     ai.mana=Math.max(0,ai.mana-1); tickStatuses(ai); endTurn(); return;
   }
@@ -3757,7 +3876,7 @@ function doAINormal(who='p2'){
   combatTimeout(()=>{
     if(!battleRunning) return;
     tickStatuses(ai);
-    if(Math.random()<0.8){
+    if(_rng()<0.8){
       ai.mana-=chosen.cost;
       if(chosen.element==='dispel'&&dispelSelf){
         castSpell(chosen,gs[who],ax,bH*.38,who);
@@ -3777,6 +3896,7 @@ function doAINormal(who='p2'){
   },700);
 }
 function finishAI(){
+  if(simCallback){ const cb=simCallback; simCallback=null; cb(); return; }
   if(!battleRunning||gameEnded) return;
   // Safety: cap runaway battles in headless mode
   if(headless&&gs.round>400){ endGame(gs.p1.hp>=gs.p2.hp); return; }
@@ -3816,11 +3936,15 @@ function finishAI(){
   // Passive mana regen
   gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+1);
 
-  // Frozen: auto-skip player turn
+  // Frozen: auto-commit frozen action for P1; float shown at execution time
   if(gs.p1.frozen>0){
     gs.p1.frozen--;
-    addFloat(bW*.22,bH*.38,'❄️ Frozen!','#88ddff',13);
-    combatTimeout(()=>{ gs.round++; if(aiTid) clearTimeout(aiTid); const _fn=aiDifficulty==='normal'?doAINormal:doAI; if(headless){_fn();}else{aiTid=setTimeout(_fn,1200);} },1200);
+    combatTimeout(()=>{
+      if(!battleRunning||gameEnded) return;
+      pendingP1Action={type:'__frozen__'};
+      pendingP2Action=aiChooseSync('p2');
+      resolveSimRound();
+    }, 400);
     return;
   }
 
@@ -3837,7 +3961,7 @@ function showRetryScreen(){
 
   // Populate opponent taunt
   if(p2Cfg && p2Cfg.taunts && p2Cfg.taunts.length){
-    const taunt=p2Cfg.taunts[Math.floor(Math.random()*p2Cfg.taunts.length)];
+    const taunt=p2Cfg.taunts[Math.floor(_rng()*p2Cfg.taunts.length)];
     document.getElementById('retry-portrait').src='portraits/'+p2Key+'.png';
     document.getElementById('retry-portrait').alt=p2Cfg.name;
     document.getElementById('retry-taunt-text').textContent='“'+taunt+'”';
@@ -3898,10 +4022,16 @@ function onRetryExpired(overlay){
 }
 
 function checkWin(){
-  if(gs.p1.hp<=0){
+  const p1Dead=gs.p1.hp<=0, p2Dead=gs.p2.hp<=0;
+  if(!p1Dead&&!p2Dead) return;
+  if(deferWinCheck){ pendingWin={p1Dead,p2Dead}; return; }
+  if(p1Dead&&p2Dead){
+    endGame('draw'); return;
+  }
+  if(p1Dead){
     if(trainingMode){ resetTrainingRound('p1'); return; }
     endGame(false);
-  } else if(gs.p2.hp<=0){
+  } else {
     if(trainingMode){ resetTrainingRound('p2'); return; }
     endGame(true);
   }
@@ -3940,9 +4070,11 @@ function resetTrainingRound(knockedOut){
 function endGame(won){
   if(gameEnded) return;
   gameEnded=true;
-  if(headless){ battleRunning=false; headlessWinner=won?p1Key:p2Key; return; }
+  const isDraw=won==='draw';
+  if(headless){ battleRunning=false; headlessWinner=isDraw?null:(won?p1Key:p2Key); return; }
   gs.myTurn=false; gs.busy=true;
-  gs[won?'p2anim':'p1anim']='death';
+  if(isDraw){ gs.p1anim='death'; gs.p2anim='death'; }
+  else { gs[won?'p2anim':'p1anim']='death'; }
 
   // Tourney live match (watch or play) — update bracket then return
   if(tourneyMode&&tourneyCurrentMatch!==null){
@@ -3966,21 +4098,27 @@ function endGame(won){
   setTimeout(()=>{
     if(twoPlayerMode){
       battleRunning=false;
-      if(!p2pGameOverReceived){ if(won) p1MatchWins++; else p2MatchWins++; }
-      if(p2pMode&&WizardsP2P.isOpen()&&!p2pGameOverReceived){
+      if(isDraw){ /* no win points on draw */ }
+      else if(!p2pGameOverReceived){ if(won) p1MatchWins++; else p2MatchWins++; }
+      if(!isDraw&&p2pMode&&WizardsP2P.isOpen()&&!p2pGameOverReceived){
         WizardsP2P.send({type:'game_over',winner:won?'p1':'p2',
           p1MatchWins,p2MatchWins,matchRound});
       }
       p2pGameOverReceived=false;
       p2pHideWaiting();
-      const winnerCfg=won?p1Cfg:p2Cfg;
-      const winnerNum=won?1:2;
-      const isMatchOver=p1MatchWins>=2||p2MatchWins>=2||matchRound>=3;
+      const isMatchOver=isDraw||(p1MatchWins>=2||p2MatchWins>=2||matchRound>=3);
+      const winnerCfg=isDraw?null:(won?p1Cfg:p2Cfg);
+      const winnerNum=isDraw?0:(won?1:2);
       const continueBtn=document.getElementById('btn-continue');
       document.getElementById('ovico').textContent=isMatchOver?'🏆':'⚔️';
-      document.getElementById('ovtitle').textContent=
-        isMatchOver?'Player '+winnerNum+' Wins the Match!':'Player '+winnerNum+' Wins Round '+matchRound+'!';
-      document.getElementById('ovtitle').style.color=winnerCfg.col;
+      if(isDraw){
+        document.getElementById('ovtitle').textContent='⚡ Double Knock-Out!';
+        document.getElementById('ovtitle').style.color='#ff8844';
+      } else {
+        document.getElementById('ovtitle').textContent=
+          isMatchOver?'Player '+winnerNum+' Wins the Match!':'Player '+winnerNum+' Wins Round '+matchRound+'!';
+        document.getElementById('ovtitle').style.color=winnerCfg.col;
+      }
       const p1s='★'.repeat(Math.min(2,p1MatchWins))+'☆'.repeat(Math.max(0,2-p1MatchWins));
       const p2s='★'.repeat(Math.min(2,p2MatchWins))+'☆'.repeat(Math.max(0,2-p2MatchWins));
       document.getElementById('ovdesc').textContent=
@@ -4078,7 +4216,7 @@ function launchBuffTileMatch(spell,spellId,who,cb){
 
   // 4 glyphs × 2 copies = 8 tiles (4 pairs)
   const glyphIdxs=BUFF_TILE_GLYPHS[spellId];
-  const deck=[...glyphIdxs,...glyphIdxs].sort(()=>Math.random()-.5);
+  const deck=[...glyphIdxs,...glyphIdxs].sort(()=>_rng()-.5);
   const TILE_N=deck.length; // 8
 
   const TS=54, R=90;
@@ -4115,9 +4253,9 @@ function launchBuffTileMatch(spell,spellId,who,cb){
   }
 
   const sparks=Array.from({length:20},()=>({
-    x:Math.random()*cw, y:Math.random()*ch,
-    speed:0.08+Math.random()*.25, size:0.5+Math.random()*1.3,
-    phase:Math.random()*Math.PI*2,
+    x:_rng()*cw, y:_rng()*ch,
+    speed:0.08+_rng()*.25, size:0.5+_rng()*1.3,
+    phase:_rng()*Math.PI*2,
   }));
 
   function tileAt(px,py){
@@ -4211,7 +4349,7 @@ function launchBuffTileMatch(spell,spellId,who,cb){
     // Ambient sparks
     mx.save();
     sparks.forEach(s=>{
-      s.y-=s.speed; if(s.y<-4){s.y=H+4;s.x=Math.random()*W;}
+      s.y-=s.speed; if(s.y<-4){s.y=H+4;s.x=_rng()*W;}
       mx.globalAlpha=0.07+0.18*Math.abs(Math.sin(ts/900+s.phase));
       mx.fillStyle=accentCol; mx.shadowColor=accentCol; mx.shadowBlur=4;
       mx.beginPath(); mx.arc(s.x,s.y,s.size,0,Math.PI*2); mx.fill();
@@ -4353,7 +4491,7 @@ function launchPatternEcho(spell,cb){
   const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
   const seq=diffName==='easy'
     ?[0,1,4,8]  // canonical Inferno word: ϟ Δ Ω ⊕
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
   const playerSeq=[];
   let phase='watch';
   let timeLeft=Math.round(20*diffMult);
@@ -4364,19 +4502,19 @@ function launchPatternEcho(spell,cb){
   // Noise flames — all 12 arcana glyphs rise in deep red
   const NOISE_COLS=['#bb1100','#991100','#cc2200','#aa1500','#881000'];
   const noise=Array.from({length:44},()=>({
-    x:Math.random()*cw, y:Math.random()*ch,
-    spd:0.6+Math.random()*1.4,
-    sz:9+Math.random()*13,
-    ai:Math.floor(Math.random()*12),
-    col:NOISE_COLS[Math.floor(Math.random()*5)],
-    ph:Math.random()*Math.PI*2,
-    alpha:0.1+Math.random()*0.28,
+    x:_rng()*cw, y:_rng()*ch,
+    spd:0.6+_rng()*1.4,
+    sz:9+_rng()*13,
+    ai:Math.floor(_rng()*12),
+    col:NOISE_COLS[Math.floor(_rng()*5)],
+    ph:_rng()*Math.PI*2,
+    alpha:0.1+_rng()*0.28,
   }));
 
   // White sequence symbols
   const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
     const frac=(i+0.5)/SEQ_LEN;
-    return Math.max(28,Math.min(cw-28,cw*frac+(Math.random()-0.5)*22));
+    return Math.max(28,Math.min(cw-28,cw*frac+(_rng()-0.5)*22));
   });
   const SPAWN_DELAY=500,SPAWN_INTERVAL=3000,RISE_SPD=0.9;
   const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+4000;
@@ -4449,7 +4587,7 @@ function launchPatternEcho(spell,cb){
       mx.save();
       noise.forEach(f=>{
         f.y-=f.spd;
-        if(f.y<-24){f.y=ch+10;f.x=Math.random()*cw;f.ai=Math.floor(Math.random()*12);}
+        if(f.y<-24){f.y=ch+10;f.x=_rng()*cw;f.ai=Math.floor(_rng()*12);}
         const pulse=0.55+0.45*Math.abs(Math.sin(t/650+f.ph));
         mx.globalAlpha=f.alpha*pulse;
         mx.fillStyle=f.col; mx.shadowColor=f.col; mx.shadowBlur=7;
@@ -4503,7 +4641,7 @@ function launchPatternEcho(spell,cb){
       mx.save();
       noise.slice(0,14).forEach(f=>{
         f.y-=f.spd*0.35;
-        if(f.y<-24){f.y=ch+10;f.x=Math.random()*cw;}
+        if(f.y<-24){f.y=ch+10;f.x=_rng()*cw;}
         mx.globalAlpha=f.alpha*0.22;
         mx.fillStyle=f.col;
         mx.font=`${f.sz}px serif`;
@@ -4632,7 +4770,7 @@ function launchLightningPattern(spell,cb){
   const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
   const seq=diffName==='easy'
     ?[3,2,9,7]  // canonical Lightning word: Ψ ∇ ⊗ ✸
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
   const playerSeq=[];
   let phase='watch';
   let timeLeft=Math.round(20*diffMult);
@@ -4643,11 +4781,11 @@ function launchLightningPattern(spell,cb){
   // Pre-generate jagged bolt path from top to glyph position
   function genBolt(x1,y1,x2,y2){
     const pts=[{x:x1,y:y1}];
-    const segs=7+Math.floor(Math.random()*4);
+    const segs=7+Math.floor(_rng()*4);
     for(let i=1;i<segs;i++){
       const t=i/segs;
       pts.push({
-        x:x1+(x2-x1)*t+(Math.random()-0.5)*28,
+        x:x1+(x2-x1)*t+(_rng()-0.5)*28,
         y:y1+(y2-y1)*t,
       });
     }
@@ -4657,11 +4795,11 @@ function launchLightningPattern(spell,cb){
 
   const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
     const frac=(i+0.5)/SEQ_LEN;
-    return Math.max(28,Math.min(cw-28,cw*frac+(Math.random()-0.5)*22));
+    return Math.max(28,Math.min(cw-28,cw*frac+(_rng()-0.5)*22));
   });
   const Y_BANDS=[0.38,0.55,0.42,0.60,0.48,0.52,0.45];
   const ySlots=Array.from({length:SEQ_LEN},(_,i)=>
-    Math.max(50,Math.min(ch-60,ch*Y_BANDS[i%Y_BANDS.length]+(Math.random()-0.5)*28))
+    Math.max(50,Math.min(ch-60,ch*Y_BANDS[i%Y_BANDS.length]+(_rng()-0.5)*28))
   );
 
   const SPAWN_DELAY=600,SPAWN_INTERVAL=3500;
@@ -4675,7 +4813,7 @@ function launchLightningPattern(spell,cb){
 
   const symStates=seq.map((ai,i)=>{
     const gx=xSlots[i],gy=ySlots[i];
-    const topX=gx+(Math.random()-0.5)*30;
+    const topX=gx+(_rng()-0.5)*30;
     return {
       ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
       x:gx,y:gy,
@@ -4688,13 +4826,13 @@ function launchLightningPattern(spell,cb){
   // Noise: distant storm flashes — random glyphs briefly illuminated then gone
   const STORM_COLS=['#aaccff','#88bbff','#ccddff','#7799dd','#99bbff'];
   const noise=Array.from({length:32},()=>({
-    x:Math.random()*cw, y:Math.random()*ch,
-    sz:8+Math.random()*12,
-    ai:Math.floor(Math.random()*12),
-    col:STORM_COLS[Math.floor(Math.random()*5)],
-    flashAt:Date.now()+Math.random()*4000+300,
-    flashDur:80+Math.random()*160,
-    interval:1500+Math.random()*4000,
+    x:_rng()*cw, y:_rng()*ch,
+    sz:8+_rng()*12,
+    ai:Math.floor(_rng()*12),
+    col:STORM_COLS[Math.floor(_rng()*5)],
+    flashAt:Date.now()+_rng()*4000+300,
+    flashDur:80+_rng()*160,
+    interval:1500+_rng()*4000,
   }));
 
   function startTimer(){
@@ -4768,9 +4906,9 @@ function launchLightningPattern(spell,cb){
           mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
         } else if(age>=f.flashDur){
           // Reschedule next flash at a new random position
-          f.flashAt=t+f.interval+Math.random()*1000;
-          f.ai=Math.floor(Math.random()*12);
-          f.x=Math.random()*cw; f.y=Math.random()*ch;
+          f.flashAt=t+f.interval+_rng()*1000;
+          f.ai=Math.floor(_rng()*12);
+          f.x=_rng()*cw; f.y=_rng()*ch;
         }
       });
       mx.globalAlpha=1; mx.shadowBlur=0;
@@ -4856,8 +4994,8 @@ function launchLightningPattern(spell,cb){
           mx.textAlign='center'; mx.textBaseline='middle';
           mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
         } else if(age>=f.flashDur){
-          f.flashAt=t+f.interval+Math.random()*1000;
-          f.ai=Math.floor(Math.random()*12);
+          f.flashAt=t+f.interval+_rng()*1000;
+          f.ai=Math.floor(_rng()*12);
         }
       });
       mx.globalAlpha=1;
@@ -4975,7 +5113,7 @@ function launchManaBurnPattern(spell,cb){
   const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
   const seq=diffName==='easy'
     ?[3,2,9,7]  // canonical Mana Burn word: Ψ ∇ ⊗ ✸
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
   const playerSeq=[];
   let phase='watch';
   let timeLeft=Math.round(20*diffMult);
@@ -4996,31 +5134,31 @@ function launchManaBurnPattern(spell,cb){
   // Noise glyphs — all 12 arcana scattered across bottom half, faint blue
   const NOISE_BLUE=['#1133bb','#2244cc','#0d2eaa','#1a44dd','#2233bb'];
   const noise=Array.from({length:44},()=>{
-    const y=ch*0.5+Math.random()*ch*0.5;
+    const y=ch*0.5+_rng()*ch*0.5;
     return {
-      x:Math.random()*cw,
+      x:_rng()*cw,
       y,
       startY:y,
-      sz:9+Math.random()*14,
-      ai:Math.floor(Math.random()*12),
-      col:NOISE_BLUE[Math.floor(Math.random()*5)],
-      ph:Math.random()*Math.PI*2,
-      alpha:0.12+Math.random()*0.22,
-      spd:NOISE_RISE_SPD*(0.7+Math.random()*0.65),
+      sz:9+_rng()*14,
+      ai:Math.floor(_rng()*12),
+      col:NOISE_BLUE[Math.floor(_rng()*5)],
+      ph:_rng()*Math.PI*2,
+      alpha:0.12+_rng()*0.22,
+      spd:NOISE_RISE_SPD*(0.7+_rng()*0.65),
     };
   });
 
   // Spell glyphs — spread horizontally at the very bottom, all visible from start
   const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
     const frac=(i+0.5)/SEQ_LEN;
-    return Math.max(30,Math.min(cw-30,cw*frac+(Math.random()-0.5)*12));
+    return Math.max(30,Math.min(cw-30,cw*frac+(_rng()-0.5)*12));
   });
   const symStates=seq.map((ai,i)=>({
     ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
     x:xSlots[i],
     y:ch-22,
     idx:i,
-    spd:SPELL_RISE_SPD*(0.85+Math.random()*0.3),
+    spd:SPELL_RISE_SPD*(0.85+_rng()*0.3),
   }));
 
   function startTimer(){
@@ -5091,7 +5229,7 @@ function launchManaBurnPattern(spell,cb){
       noise.forEach(f=>{
         if(noiseBurning){
           f.y-=f.spd;
-          if(f.y<-24){f.y=ch+10;f.x=Math.random()*cw;f.ai=Math.floor(Math.random()*12);}
+          if(f.y<-24){f.y=ch+10;f.x=_rng()*cw;f.ai=Math.floor(_rng()*12);}
         }
         const pulse=0.55+0.45*Math.abs(Math.sin(t/680+f.ph));
         const brightAlpha=f.alpha+burnT*f.alpha*2.2;
@@ -5164,7 +5302,7 @@ function launchManaBurnPattern(spell,cb){
       mx.save();
       noise.slice(0,14).forEach(f=>{
         f.y-=f.spd*0.18;
-        if(f.y<-24){f.y=ch+10;f.x=Math.random()*cw;}
+        if(f.y<-24){f.y=ch+10;f.x=_rng()*cw;}
         mx.globalAlpha=f.alpha*0.14;
         mx.fillStyle=f.col;
         mx.font=`${f.sz}px serif`;
@@ -5288,7 +5426,7 @@ function launchIcePattern(spell,cb){
   const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
   const seq=diffName==='easy'
     ?[10,11,6,5]  // canonical Ice word: θ Φ ☽ ∞
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
   const playerSeq=[];
   let phase='watch';
   let timeLeft=Math.round(20*diffMult);
@@ -5299,22 +5437,22 @@ function launchIcePattern(spell,cb){
   // Frost noise — all 12 arcana glyphs slowly crystallize and dissolve
   const FROST_COLS=['#336688','#2a5577','#224466','#1a3355','#2a4466'];
   const noise=Array.from({length:40},()=>({
-    x:Math.random()*cw, y:Math.random()*ch,
-    sz:8+Math.random()*14,
-    ai:Math.floor(Math.random()*12),
-    col:FROST_COLS[Math.floor(Math.random()*5)],
-    ph:Math.random()*Math.PI*2,
-    period:5000+Math.random()*7000,
+    x:_rng()*cw, y:_rng()*ch,
+    sz:8+_rng()*14,
+    ai:Math.floor(_rng()*12),
+    col:FROST_COLS[Math.floor(_rng()*5)],
+    ph:_rng()*Math.PI*2,
+    period:5000+_rng()*7000,
   }));
 
   // Sequence glyph positions scattered across the full canvas
   const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
     const frac=(i+0.5)/SEQ_LEN;
-    return Math.max(30,Math.min(cw-30,cw*frac+(Math.random()-0.5)*22));
+    return Math.max(30,Math.min(cw-30,cw*frac+(_rng()-0.5)*22));
   });
   const Y_BANDS=[0.18,0.38,0.58,0.28,0.48,0.68,0.22];
   const ySlots=Array.from({length:SEQ_LEN},(_,i)=>
-    Math.max(35,Math.min(ch-50,ch*Y_BANDS[i%Y_BANDS.length]+(Math.random()-0.5)*35))
+    Math.max(35,Math.min(ch-50,ch*Y_BANDS[i%Y_BANDS.length]+(_rng()-0.5)*35))
   );
 
   const SPAWN_DELAY=500,SPAWN_INTERVAL=3000;
@@ -5591,7 +5729,7 @@ function launchArcanePattern(spell,cb){
   const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
   const seq=diffName==='easy'
     ?[4,5,3,10]  // canonical Arcane word: Ω ∞ Ψ θ
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
   const playerSeq=[];
   let phase='watch';
   let timeLeft=Math.round(20*diffMult);
@@ -5602,16 +5740,16 @@ function launchArcanePattern(spell,cb){
   // Noise glyphs — float in random directions, lilac purple
   const LILAC_COLS=['#bb88dd','#cc99ee','#aa77cc','#cc88ee','#b080d8'];
   const noise=Array.from({length:44},()=>{
-    const angle=Math.random()*Math.PI*2;
-    const spd=0.35+Math.random()*0.7;
+    const angle=_rng()*Math.PI*2;
+    const spd=0.35+_rng()*0.7;
     return {
-      x:Math.random()*cw, y:Math.random()*ch,
+      x:_rng()*cw, y:_rng()*ch,
       dx:Math.cos(angle)*spd, dy:Math.sin(angle)*spd,
-      sz:8+Math.random()*13,
-      ai:Math.floor(Math.random()*12),
-      col:LILAC_COLS[Math.floor(Math.random()*5)],
-      ph:Math.random()*Math.PI*2,
-      alpha:0.1+Math.random()*0.25,
+      sz:8+_rng()*13,
+      ai:Math.floor(_rng()*12),
+      col:LILAC_COLS[Math.floor(_rng()*5)],
+      ph:_rng()*Math.PI*2,
+      alpha:0.1+_rng()*0.25,
     };
   });
 
@@ -5624,7 +5762,7 @@ function launchArcanePattern(spell,cb){
 
   const Y_BANDS=[0.12,0.30,0.48,0.22,0.40,0.55,0.18];
   const ySlots=Array.from({length:SEQ_LEN},(_,i)=>
-    Math.max(30,Math.min(ch*0.72, ch*Y_BANDS[i%Y_BANDS.length]+(Math.random()-0.5)*25))
+    Math.max(30,Math.min(ch*0.72, ch*Y_BANDS[i%Y_BANDS.length]+(_rng()-0.5)*25))
   );
 
   const symStates=seq.map((ai,i)=>({
@@ -5884,7 +6022,7 @@ function launchDispelPattern(spell,cb){
   const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
   const seq=diffName==='easy'
     ?[5,8,2,10]  // canonical Dispel word: ∞ ⊕ ∇ θ
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(Math.random()*4)]);
+    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
   const playerSeq=[];
   let phase='watch';
   let timeLeft=Math.round(20*diffMult);
@@ -5910,12 +6048,12 @@ function launchDispelPattern(spell,cb){
 
   // Pre-generated static noise rings — random glyph symbols, evenly spread with tiny jitter
   const outerNoise=Array.from({length:12},(_,i)=>({
-    ai:Math.floor(Math.random()*12),
-    angle:(i/12)*Math.PI*2+(Math.random()-0.5)*0.1,
+    ai:Math.floor(_rng()*12),
+    angle:(i/12)*Math.PI*2+(_rng()-0.5)*0.1,
   }));
   const midNoise=Array.from({length:8},(_,i)=>({
-    ai:Math.floor(Math.random()*12),
-    angle:(i/8)*Math.PI*2+(Math.random()-0.5)*0.15,
+    ai:Math.floor(_rng()*12),
+    angle:(i/8)*Math.PI*2+(_rng()-0.5)*0.15,
   }));
 
   // Inner ring: sequence glyphs, starting at top (−π/2), clockwise
@@ -6296,7 +6434,7 @@ function pickCharacter(key){
     // 4 random non-boss opponents, then 4 fixed bosses in order
     const pool=Object.keys(CHAR_DEFS).filter(k=>k!==key&&!ARCADE_BOSSES.includes(k));
     for(let i=pool.length-1;i>0;i--){
-      const j=Math.floor(Math.random()*(i+1));
+      const j=Math.floor(_rng()*(i+1));
       [pool[i],pool[j]]=[pool[j],pool[i]];
     }
     const earlyFoes=pool.slice(0,4);
@@ -6306,7 +6444,7 @@ function pickCharacter(key){
     // Iron Man: every opponent, fully randomised
     const others=Object.keys(CHAR_DEFS).filter(k=>k!==key);
     for(let i=others.length-1;i>0;i--){
-      const j=Math.floor(Math.random()*(i+1));
+      const j=Math.floor(_rng()*(i+1));
       [others[i],others[j]]=[others[j],others[i]];
     }
     tournamentQueue=others;
@@ -6437,16 +6575,20 @@ function startPlayerTurn(who){
   // Passive mana
   whoState.mana=Math.min(MAX_MANA,whoState.mana+1);
 
-  // Frozen: skip this player's turn
+  // Frozen: auto-commit frozen action and advance to next input or resolution
+  // Float shown at execution time by executeQueuedSpell
   if(whoState.frozen>0){
     whoState.frozen--;
-    addFloat(tx,bH*.38,'❄️ Frozen — turn skipped!','#88ddff',13);
-    const nextPlayer=who==='p1'?'p2':'p1';
-    setTimeout(()=>{
-      if(!battleRunning||gameEnded) return;
-      gs.round++;
-      showHandoffOverlay(nextPlayer,()=>startPlayerTurn(nextPlayer));
-    },1400);
+    if(who==='p1'){
+      pendingP1Action={type:'__frozen__'};
+      setTimeout(()=>{
+        if(!battleRunning||gameEnded) return;
+        showHandoffOverlay('p2',()=>startPlayerTurn('p2'));
+      },1400);
+    } else {
+      pendingP2Action={type:'__frozen__'};
+      setTimeout(()=>{ if(!battleRunning||gameEnded) return; resolveSimRound(); },1400);
+    }
     return;
   }
 
