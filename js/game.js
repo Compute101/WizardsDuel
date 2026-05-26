@@ -7121,6 +7121,14 @@ window.addEventListener('DOMContentLoaded', ()=>{
       btn.classList.add('active');
       diffName=btn.dataset.diff;
       diffMult=diffName==='easy'?1.6:diffName==='hard'?0.55:1.0;
+      if(diffName==='normal'||diffName==='hard'){
+        aiDifficulty='normal';
+        document.querySelectorAll('.ai-btn').forEach(b=>{
+          b.classList.toggle('active', b.dataset.ai==='normal');
+        });
+        const hint=document.getElementById('training-ai-hint');
+        if(hint&&trainingAI) hint.textContent='Opponent plays smart combos';
+      }
     });
   });
   document.querySelectorAll('.ai-btn').forEach(btn=>{
