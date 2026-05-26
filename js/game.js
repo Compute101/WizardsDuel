@@ -85,7 +85,7 @@ const CHAR_DISPLAY={
 
 // ── DIFFICULTY ─────────────────────────────────────────────
 let diffMult=1.0, diffName='normal';
-let aiDifficulty='easy';
+let aiDifficulty='normal';
 
 // ── TOURNAMENT ─────────────────────────────────────────────
 const ARCADE_BOSSES=['gnash','zacharius','mal','mordant']; // fixed final-4 in arcade mode
