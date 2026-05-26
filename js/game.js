@@ -6791,6 +6791,8 @@ function p2pSendTurnEnd(gameOver, winner){
     type: 'turn_end',
     state: p2pExtractGS(),
     action: p2pLastAction,
+    // Include our committed action so the peer can run resolveSimRound()
+    pendingAction: pendingP1Action||pendingP2Action||null,
     gameOver: gameOver||false,
     winner: winner||null,
   });
@@ -6851,6 +6853,11 @@ function p2pOnMessage(msg){
       if(!battleRunning||gameEnded) break;
       p2pApplyGS(msg.state);
       p2pHideWaiting();
+      // Restore sender's committed action so resolveSimRound() has both sides
+      if(msg.pendingAction){
+        if(p2pRole==='guest') pendingP1Action=msg.pendingAction;
+        else pendingP2Action=msg.pendingAction;
+      }
       if(msg.gameOver){
         p2pGameOverReceived=true;
         const won=(msg.winner==='p1');
