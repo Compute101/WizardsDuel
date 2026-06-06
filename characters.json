@@ -284,5 +284,136 @@
       {"id": "stonesoul",   "name": "Stonesoul", "icon": "💎", "cost": 3, "costLabel": "3 Mana", "effectLabel": "40% magical damage reduction for 5 turns"},
       {"id": "rockfall",    "name": "Rockfall",  "icon": "⛰️", "cost": 4, "costLabel": "4 Mana", "effectLabel": "3 rocks × ~9 phys dmg each", "aiHint": "burst"}
     ]
+  },
+  "weizan": {
+    "name": "WEIZAN",
+    "title": "The Bladecaller",
+    "sprite": "sprites/mage-green.png",
+    "col": "#66aa88",
+    "taunts": [
+      "Steel remembers every hand that has held it. Mine remembered yours.",
+      "You counted the blades. You forgot to count the one behind you.",
+      "The patient sword outlasts the hasty one. Always."
+    ],
+    "hp": 90,
+    "startMana": 6,
+    "channelAmt": 5,
+    "dmgMult": 1.0,
+    "maxBlades": 3,
+    "bladeDmgPerTurn": 4,
+    "bladestormDmg": 12,
+    "spells": [
+      {"id": "basicattack",  "name": "Steel Whisper", "icon": "⚔️", "cost": 0, "costLabel": "Free",        "dmg": 9, "physical": true, "piercesDischarge": true, "effectLabel": "Deal ~9 phys damage"},
+      {"id": "conjureblade", "name": "Conjure Blade", "icon": "🗡️", "cost": 2, "costLabel": "2 Mana",      "effectLabel": "Summon 1 orbiting blade (max 3); each deals 4 phys dmg/turn"},
+      {"id": "bladestorm",   "name": "Bladestorm",    "icon": "💫", "cost": 0, "costLabel": "All Blades",  "effectLabel": "Launch all blades — each deals 12 phys damage; costs no mana", "aiHint": "burst"},
+      {"id": "ironpatience", "name": "Iron Patience",  "icon": "🧘", "cost": 2, "costLabel": "2 Mana",      "effectLabel": "30% damage reduction for 3 turns"}
+    ]
+  },
+  "gretch": {
+    "name": "GRETCH",
+    "title": "The Festering",
+    "sprite": "sprites/mage-dark.png",
+    "col": "#55aa33",
+    "taunts": [
+      "The rot was already inside you. Gretch just let it out.",
+      "You called it ugly. Gretch calls it efficient.",
+      "The swamp takes all things. Even stubborn little wizards."
+    ],
+    "hp": 85,
+    "startMana": 5,
+    "channelAmt": 5,
+    "dmgMult": 1.0,
+    "plagueDoTDmg": 6,
+    "plagueDoTDur": 5,
+    "plagueSpellDmg": 8,
+    "maggotCloudDrain": 3,
+    "maggotCloudDur": 3,
+    "boneTotemRegen": 5,
+    "boneTotemDur": 4,
+    "spells": [
+      {"id": "basicattack", "name": "Hex Bolt",     "icon": "🌑", "cost": 0, "costLabel": "Free",   "dmg": 8, "effectLabel": "Deal ~8 dark damage"},
+      {"id": "plague",      "name": "Plague",       "icon": "☠️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "6 dmg/turn × 5T; casting any spell while plagued deals +8 dmg"},
+      {"id": "maggotcloud", "name": "Maggot Cloud", "icon": "🪲", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Drain 3 mana + reduce enemy channel by 1 for 3 turns"},
+      {"id": "bonetotem",   "name": "Bone Totem",   "icon": "💀", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Regen 5 HP/turn × 4T; blocks enemy Purge while active", "aiHint": "regen"}
+    ]
+  },
+  "valdris": {
+    "name": "VALDRIS",
+    "title": "The Undying",
+    "sprite": "sprites/mage-dark.png",
+    "col": "#8844cc",
+    "taunts": [
+      "I have outlasted empires. Did you truly think you would be different?",
+      "Death is not an ending. It is merely an inconvenience.",
+      "Kneel before the undying, or be consumed by it. There is no third option."
+    ],
+    "hp": 82,
+    "startMana": 8,
+    "channelAmt": 6,
+    "dmgMult": 1.0,
+    "deathlessCost": 6,
+    "skelMaxHp": 25,
+    "skelDmgPerTurn": 7,
+    "skelHealOnDeath": 8,
+    "skelReinforceAmt": 15,
+    "necroticDrainDmg": 18,
+    "necroticDrainHeal": 8,
+    "spells": [
+      {"id": "basicattack",   "name": "Death Bolt",      "icon": "🌑", "cost": 0, "costLabel": "Free",   "dmg": 9, "effectLabel": "Deal ~9 necrotic damage"},
+      {"id": "raisedead",     "name": "Raise Dead",      "icon": "💀", "cost": 4, "costLabel": "4 Mana", "effectLabel": "Summon skeleton (max 2): 25 HP shield, 7 phys dmg/turn, heals 8 HP on death", "aiHint": "summon"},
+      {"id": "necroticdrain", "name": "Necrotic Drain",  "icon": "🩸", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Deal ~18 damage; heal 8 HP", "aiHint": "drain"},
+      {"id": "reinforce",     "name": "Reinforce",       "icon": "🔧", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Restore 15 HP to weakest active skeleton"}
+    ]
+  },
+  "mirel": {
+    "name": "MIREL",
+    "title": "The Deceiver",
+    "sprite": "sprites/mage-dark.png",
+    "col": "#b86ef4",
+    "taunts": [
+      "You were fighting my shadow the entire time. I was never even there.",
+      "Which one was real? Wrong answer — they all were.",
+      "Deception is not dishonesty. It is simply a more elegant form of truth."
+    ],
+    "hp": 85,
+    "startMana": 5,
+    "channelAmt": 5,
+    "dmgMult": 1.0,
+    "simulacrumMaxHp": 20,
+    "simulacrumStartMana": 6,
+    "simulacrumChannelAmt": 5,
+    "feintDmg": 15,
+    "spells": [
+      {"id": "basicattack", "name": "Phantom Bolt", "icon": "👁",  "cost": 0, "costLabel": "Free",   "dmg": 8, "effectLabel": "Deal ~8 magic damage"},
+      {"id": "simulacrum",  "name": "Simulacrum",   "icon": "🪞", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Summon autonomous copy (max 2): 20 HP, casts any spell, 50% redirect chance"},
+      {"id": "bewitch",     "name": "Bewitch",      "icon": "🪄", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Enemy's next active spell reflects back onto themselves"},
+      {"id": "feint",       "name": "Feint",        "icon": "🗡️", "cost": 2, "costLabel": "2 Mana", "effectLabel": "~15 damage; bypasses all shields and defensive buffs"}
+    ]
+  },
+  "thessaly": {
+    "name": "THESSALY",
+    "title": "The Gilded",
+    "sprite": "sprites/mage-light.png",
+    "col": "#ddaa22",
+    "taunts": [
+      "I had already won before you cast your first spell. You simply hadn't realised it yet.",
+      "You fought well. You just fought the wrong opponent.",
+      "Every spell you cast was mine to exploit. You were generous."
+    ],
+    "hp": 88,
+    "startMana": 6,
+    "channelAmt": 5,
+    "dmgMult": 1.0,
+    "arcaneWeaveDmgBonus": 6,
+    "arcaneWeaveManaDrain": 2,
+    "arcaneWeaveAttacks": 3,
+    "spellbindExtraCost": 3,
+    "spellbindDur": 5,
+    "spells": [
+      {"id": "basicattack", "name": "Gilded Bolt",   "icon": "✨", "cost": 0, "costLabel": "Free",   "dmg": 9, "effectLabel": "Deal ~9 magic damage"},
+      {"id": "enthral",     "name": "Enthral",       "icon": "🌀", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Enemy forced to channel on their next turn"},
+      {"id": "arcaneweave", "name": "Arcane Weave",  "icon": "🌟", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Next 3 basic attacks deal +6 dmg and drain 2 mana from enemy"},
+      {"id": "spellbind",   "name": "Spellbind",     "icon": "🔒", "cost": 3, "costLabel": "3 Mana", "effectLabel": "One enemy spell costs +3 mana for 5 turns"}
+    ]
   }
 }
