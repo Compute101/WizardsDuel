@@ -185,7 +185,7 @@
     "conductivityMult": 1.35,
     "spells": [
       {"id": "basicattack",    "name": "Spark",          "icon": "⚡", "cost": 0, "costLabel": "Free",     "dmg": 9, "effectLabel": "Deal ~9 lightning damage"},
-      {"id": "galvanize",      "name": "Galvanize",      "icon": "🔋", "cost": 4, "costLabel": "4 Mana",   "effectLabel": "Gain 8 charge; physical hits discharge it as damage", "aiHint": "charge_build"},
+      {"id": "galvanize",      "name": "Galvanize",      "icon": "🔋", "cost": 4, "costLabel": "4 Mana",   "effectLabel": "Gain 16 charge; physical hits discharge it as damage", "aiHint": "charge_build"},
       {"id": "chainlightning", "name": "Chain Lightning","icon": "🌩️", "cost": 0, "costLabel": "8 Charge", "effectLabel": "24 damage; 35% chance to arc for 10 more", "aiHint": "chain_attack"},
       {"id": "conductivity",   "name": "Conductivity",   "icon": "💡", "cost": 2, "costLabel": "2 Mana",   "effectLabel": "Target takes +35% damage for 3 turns"}
     ]
@@ -333,7 +333,7 @@
     "spells": [
       {"id": "basicattack", "name": "Hex Bolt",     "icon": "🌑", "cost": 0, "costLabel": "Free",   "dmg": 8, "effectLabel": "Deal ~8 dark damage"},
       {"id": "plague",      "name": "Plague",       "icon": "☠️", "cost": 3, "costLabel": "3 Mana", "effectLabel": "6 dmg/turn × 5T; casting any spell while plagued deals +8 dmg"},
-      {"id": "maggotcloud", "name": "Maggot Cloud", "icon": "🪲", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Drain 3 mana + reduce enemy channel by 1 for 3 turns"},
+      {"id": "maggotcloud", "name": "Maggot Cloud", "icon": "🪲", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Drain 3 mana now + reduce enemy channel by 3 for 3 turns"},
       {"id": "bonetotem",   "name": "Bone Totem",   "icon": "💀", "cost": 3, "costLabel": "3 Mana", "effectLabel": "Regen 5 HP/turn × 4T; blocks enemy Purge while active", "aiHint": "regen"}
     ]
   },

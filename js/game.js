@@ -7507,7 +7507,7 @@ const TUTORIAL_CONVOS={
   ],
   spells:[
     {key:'aurelia',text:"The five elemental spells are available to every wizard. Each demands a casting ritual, but the power they offer is well worth it."},
-    {key:'aurelia',text:"🔥 Inferno (12 mana). Sets your foe ablaze for 5 damage per round over 2 rounds. Patient — not instant — but relentless. It burns through their health steadily."},
+    {key:'aurelia',text:"🔥 Inferno (12 mana). Deals 38 direct fire damage and sets your foe ablaze — an additional 5 damage per round over 2 rounds. The highest raw damage of any elemental spell, plus a lingering burn."},
     {key:'aurelia',text:"⚡ Lightning Bolt (9 mana). Thirty direct damage, and it pierces shields entirely. The definitive answer to anyone relying on magical barriers."},
     {key:'aurelia',text:"❄️ Frost Nova (6 mana). Deals 18 damage and freezes your opponent — they skip their next turn entirely. Control is its own kind of power."},
     {key:'aurelia',text:"🌀 Arcane Surge (9 mana). The wild spell. Somewhere between 15 and 55 damage — you never know exactly. The ceiling is enormous, but so is the risk."},
@@ -7563,7 +7563,7 @@ const TUTORIAL_CONVOS={
   ],
   aurelia:[
     {key:'aurelia',text:"I see three moves ahead. Always. Foresight makes me immune to free attacks and absorbs the next paid spell entirely — at 4 mana, the most efficient defence in the game."},
-    {key:'aurelia',text:"Time Drain is subtle but decisive. For 3 mana, my opponent's channels gain 2 less mana for 5 turns. That is stolen resources, compounding every single round."},
+    {key:'aurelia',text:"Time Drain is subtle but decisive. For 3 mana, my opponent's channels are reduced to 2 mana for 5 turns. That is stolen resources, compounding every single round — and it affects them regardless of how much they normally channel."},
     {key:'aurelia',text:"Haste gives me a 25% dodge chance for 3 turns — and I act with greater speed. Combine it with Foresight and I become remarkably difficult to land a hit on."},
     {key:'aurelia',text:"Magic Missile is my free attack. 90 HP, 6 starting mana. I win by denying my opponent the resources and opportunities they need to finish the job."},
     {key:'aurelia',text:"I have already foreseen how this duel ends. I need only wait for you to arrive at the conclusion I have prepared."},
@@ -7641,7 +7641,7 @@ const TUTORIAL_CONVOS={
     {key:'valdris',text:"I am Valdris. The Deathless. I do not fear mortality — I have already negotiated terms with it. 82 HP, 8 mana. My skeletons are my body and my shield."},
     {key:'valdris',text:"Raise Dead costs 4 mana and summons a skeleton with 25 HP. It attacks for 7 damage per turn and absorbs all damage meant for me first. Up to two skeletons at once. My enemies must kill my servants before they can touch me."},
     {key:'valdris',text:"Necrotic Drain costs 3 mana — deals 18 dark damage and heals me for 8 HP. When my skeletons can't save me fast enough, I take their life force directly."},
-    {key:'valdris',text:"Reinforce costs 2 mana and heals all my skeletons for 15 HP. Damaged skeletons become fresh barriers. Keep them healthy and the wall never breaks."},
+    {key:'valdris',text:"Reinforce costs 2 mana and heals my most damaged skeleton for 15 HP. A skeleton on the brink becomes a fresh barrier. Keep rotating and the wall never fully falls."},
     {key:'valdris',text:"The Deathless passive: if a blow would kill me while I have mana, I survive — spending 6 mana to endure the hit. Channel wisely. While mana flows, death cannot claim me. When it runs dry... even the Deathless must fall."},
   ],
   mirel:[
