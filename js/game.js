@@ -86,7 +86,7 @@ const CHAR_DISPLAY={
     flavour:'Build blades slowly. Release all at once. Dispel kills your investment — protect it.'
   },
   gretch:{
-    stats:[['❤ HP','85'],['☠️ Plague','3M → 6 dmg/turn×5T; casting while plagued = +8 dmg'],['🪲 Maggot Cloud','2M → drain 3 mana + −1 channel/turn for 3T'],['💀 Bone Totem','3M → 5 HP regen/turn×4T; active totem blocks enemy Purge']],
+    stats:[['❤ HP','85'],['☠️ Plague','3M → 6 dmg/turn×5T; casting while plagued = +8 dmg'],['🪲 Maggot Cloud','2M → drain 3 mana + −3 channel/turn for 3T'],['💀 Bone Totem','3M → 5 HP regen/turn×4T; active totem blocks enemy Purge']],
     flavour:'Infect and drain. The totem heals you — but Dispelling it skips Purge. Choose wisely.'
   },
   valdris:{
@@ -8200,6 +8200,11 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-mordant').addEventListener('click',()=>showWizardDetail('mordant'));
   document.getElementById('pick-ponder').addEventListener('click',()=>showWizardDetail('ponder'));
   document.getElementById('pick-durin').addEventListener('click',()=>showWizardDetail('durin'));
+  document.getElementById('pick-weizan').addEventListener('click',()=>showWizardDetail('weizan'));
+  document.getElementById('pick-gretch').addEventListener('click',()=>showWizardDetail('gretch'));
+  document.getElementById('pick-valdris').addEventListener('click',()=>showWizardDetail('valdris'));
+  document.getElementById('pick-mirel').addEventListener('click',()=>showWizardDetail('mirel'));
+  document.getElementById('pick-thessaly').addEventListener('click',()=>showWizardDetail('thessaly'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{
     document.getElementById('wizard-detail').classList.remove('active');
