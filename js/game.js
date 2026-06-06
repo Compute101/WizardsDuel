@@ -80,6 +80,26 @@ const CHAR_DISPLAY={
   durin:{
     stats:[['❤ HP','110'],['🧱 Stoneskin','10 absorb/hit, 30 HP total, 10T'],['💎 Stonesoul','40% magic reduction / 5T'],['⛰️ Rockfall','3×9 phys dmg']],
     flavour:'The mountain endures. Outlast every spell — stone by stone.'
+  },
+  weizan:{
+    stats:[['❤ HP','90'],['🗡️ Conjure Blade','2M → +1 blade (max 3); each deals 4 phys dmg/turn'],['💫 Bladestorm','Free (costs all blades) → 12 phys dmg per blade'],['🧘 Iron Patience','2M → 30% dmg reduction / 3T']],
+    flavour:'Build blades slowly. Release all at once. Dispel kills your investment — protect it.'
+  },
+  gretch:{
+    stats:[['❤ HP','85'],['☠️ Plague','3M → 6 dmg/turn×5T; casting while plagued = +8 dmg'],['🪲 Maggot Cloud','2M → drain 3 mana + −1 channel/turn for 3T'],['💀 Bone Totem','3M → 5 HP regen/turn×4T; active totem blocks enemy Purge']],
+    flavour:'Infect and drain. The totem heals you — but Dispelling it skips Purge. Choose wisely.'
+  },
+  valdris:{
+    stats:[['❤ HP','82'],['💀 Raise Dead','4M → skeleton: 25 HP shield, 7 phys dmg/turn, heals 8 on death'],['🩸 Necrotic Drain','3M → ~18 dmg + heal 8 HP'],['🔧 Reinforce','2M → restore 15 HP to weakest skeleton']],
+    flavour:'Deathless: cannot die while mana > 0 (costs 6 mana). Drain his mana to kill him. Dispel his skeletons — but each dying skeleton heals him.'
+  },
+  mirel:{
+    stats:[['❤ HP','85'],['🪞 Simulacrum','3M → autonomous copy (max 2): 20 HP, 6 mana, casts any spell, 50% redirect'],['🪄 Bewitch','3M → enemy\'s next active spell reflects back on them'],['🗡️ Feint','2M → 15 dmg bypassing all shields and defences']],
+    flavour:'Simulacra start with mana and act every turn — destroy them fast or they Dispel your buffs. Bewitch punishes any spell cast while active.'
+  },
+  thessaly:{
+    stats:[['❤ HP','88'],['🌀 Enthral','3M → enemy forced to channel next turn'],['🌟 Arcane Weave','2M → next 3 basic attacks: +6 dmg, drain 2 mana each'],['🔒 Spellbind','3M → one enemy spell costs +3 mana for 5 turns']],
+    flavour:'Enthral wastes their turn. Spellbind targets their most expensive spell. Weave turns basic attacks into mana denial.'
   }
 };
 
@@ -144,12 +164,22 @@ function newState(){
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
         ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0,
-        stoneskin:0, stoneskinHp:0, stonesoul:0},
+        stoneskin:0, stoneskinHp:0, stonesoul:0,
+        blades:0,
+        plague:0, plagueSpellDmg:0, maggotCloud:0, boneTotem:0,
+        skeletons:[],
+        bewitched:false, simulacra:[],
+        enthralled:0, arcaneWeave:0, spellbound:null},
     p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
         ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0,
-        stoneskin:0, stoneskinHp:0, stonesoul:0},
+        stoneskin:0, stoneskinHp:0, stonesoul:0,
+        blades:0,
+        plague:0, plagueSpellDmg:0, maggotCloud:0, boneTotem:0,
+        skeletons:[],
+        bewitched:false, simulacra:[],
+        enthralled:0, arcaneWeave:0, spellbound:null},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
     parts:[], floats:[], projs:[], beams:[], manaBurnFires:[],
@@ -1222,6 +1252,141 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.strokeStyle=`rgba(200,160,255,${gv*4})`; bx.lineWidth=2;
     bx.shadowColor='#cc99ff'; bx.shadowBlur=8; bx.stroke(); bx.shadowBlur=0;
   }
+  // Plague: green toxic aura
+  if(state&&state.plague>0){
+    bx.globalAlpha=0.09+0.05*Math.sin(t/280); bx.fillStyle='#33bb22';
+    bx.beginPath(); bx.arc(x,wy,sz*.7,0,Math.PI*2); bx.fill(); bx.globalAlpha=1;
+    for(let i=0;i<4;i++){
+      const phase=((t/900+i*0.25)%1);
+      const px=x+Math.sin(t/400+i*1.7)*sz*.2, py=y-phase*sz*.85;
+      const alpha=phase<0.6?phase*1.2:Math.max(0,(1-phase)*3)*0.7;
+      bx.globalAlpha=alpha; bx.fillStyle='#44dd22'; bx.shadowColor='#33bb22'; bx.shadowBlur=4;
+      bx.beginPath(); bx.arc(px,py,sz*.022,0,Math.PI*2); bx.fill();
+    }
+    bx.globalAlpha=1; bx.shadowBlur=0;
+  }
+  // Maggot Cloud: buzzing dark dots
+  if(state&&state.maggotCloud>0){
+    for(let i=0;i<6;i++){
+      const a=(t/400+i/6*Math.PI*2)%(Math.PI*2);
+      const r=sz*(0.65+0.08*Math.sin(t/220+i*1.3));
+      bx.globalAlpha=0.5+0.25*Math.sin(t/180+i);
+      bx.fillStyle='#334400'; bx.shadowColor='#667700'; bx.shadowBlur=3;
+      bx.beginPath(); bx.arc(x+Math.cos(a)*r,wy+Math.sin(a)*r*0.45,sz*.018,0,Math.PI*2); bx.fill();
+    }
+    bx.globalAlpha=1; bx.shadowBlur=0;
+  }
+  // Bone Totem: small skull circle below wizard
+  if(state&&state.boneTotem>0){
+    const tx2=x, ty2=y+sz*.18;
+    bx.globalAlpha=0.8+0.15*Math.sin(t/400);
+    bx.fillStyle='#cccc88'; bx.shadowColor='#aa9944'; bx.shadowBlur=6;
+    bx.beginPath(); bx.arc(tx2,ty2,sz*.09,0,Math.PI*2); bx.fill();
+    bx.fillStyle='#553300'; bx.beginPath(); bx.arc(tx2,ty2,sz*.035,0,Math.PI*2); bx.fill();
+    bx.strokeStyle='#aa9944'; bx.lineWidth=1.5;
+    bx.beginPath(); bx.arc(tx2,ty2,sz*.13,0,Math.PI*2); bx.stroke();
+    bx.globalAlpha=1; bx.shadowBlur=0;
+  }
+  // Enthralled: purple swirl rings
+  if(state&&state.enthralled>0){
+    for(let off=0;off<2;off++){
+      const phase=((t/800+off*0.5)%1);
+      const r=sz*(0.55+phase*0.35);
+      bx.beginPath(); bx.arc(x,wy,r,0,Math.PI*2);
+      bx.strokeStyle=`rgba(180,80,255,${(1-phase)*0.5})`; bx.lineWidth=2; bx.stroke();
+    }
+    const rot=t/500;
+    bx.strokeStyle=`rgba(180,80,255,${0.35+0.15*Math.sin(t/280)})`; bx.lineWidth=1.5;
+    bx.beginPath(); bx.arc(x,wy,sz*.72,rot,rot+Math.PI*.7); bx.stroke();
+    bx.beginPath(); bx.arc(x,wy,sz*.72,rot+Math.PI,rot+Math.PI*1.7); bx.stroke();
+  }
+  // Arcane Weave: golden shimmer threads
+  if(state&&state.arcaneWeave>0){
+    bx.save(); bx.translate(x,wy);
+    for(let i=0;i<state.arcaneWeave;i++){
+      const a=t/600+i/3*Math.PI*2;
+      bx.globalAlpha=0.6+0.25*Math.sin(t/250+i*1.5);
+      bx.strokeStyle='#ffdd44'; bx.lineWidth=1.5; bx.shadowColor='#ffdd44'; bx.shadowBlur=6;
+      bx.beginPath(); bx.moveTo(Math.cos(a)*sz*.3,Math.sin(a)*sz*.18);
+      bx.lineTo(Math.cos(a+.9)*sz*.65,Math.sin(a+.9)*sz*.4); bx.stroke();
+    }
+    bx.globalAlpha=1; bx.shadowBlur=0; bx.restore();
+  }
+  // Spellbound: pulsing purple chain on this wizard (they have the debuff)
+  if(state&&state.spellbound){
+    bx.strokeStyle=`rgba(140,40,200,${0.45+0.2*Math.sin(t/350)})`; bx.lineWidth=2;
+    bx.shadowColor='#8822cc'; bx.shadowBlur=8;
+    bx.beginPath(); bx.arc(x,wy,sz*.76,0,Math.PI*2); bx.stroke();
+    bx.shadowBlur=0;
+    const spells=state.spellbound.spellId?state.spellbound.spellId:'';
+    bx.globalAlpha=0.55+0.2*Math.sin(t/300); bx.fillStyle='#aa44ff';
+    bx.font=`${Math.round(sz*.15)}px serif`; bx.textAlign='center';
+    bx.fillText('⛓', x, wy-sz*.58);
+    bx.globalAlpha=1;
+  }
+  // Bewitched: mirror shimmer
+  if(state&&state.bewitched){
+    bx.globalAlpha=0.12+0.07*Math.sin(t/300); bx.fillStyle='#ff88ff';
+    bx.beginPath(); bx.arc(x,wy,sz*.68,0,Math.PI*2); bx.fill(); bx.globalAlpha=1;
+    bx.strokeStyle=`rgba(255,140,255,${0.4+0.2*Math.sin(t/280)})`; bx.lineWidth=1.5;
+    bx.shadowColor='#ff88ff'; bx.shadowBlur=7;
+    bx.beginPath(); bx.arc(x,wy,sz*.68,0,Math.PI*2); bx.stroke(); bx.shadowBlur=0;
+  }
+  // Blades (Weizan): orbiting silver blades
+  if(state&&state.blades>0){
+    const n=state.blades;
+    for(let i=0;i<n;i++){
+      const a=t/800+i/n*Math.PI*2;
+      const bx2=x+Math.cos(a)*sz*.82, by2=wy+Math.sin(a)*sz*.46;
+      bx.save(); bx.translate(bx2,by2); bx.rotate(a+Math.PI/4);
+      bx.globalAlpha=0.85+0.12*Math.sin(t/300+i*1.4);
+      bx.fillStyle='#ccddff'; bx.shadowColor='#aabbee'; bx.shadowBlur=6;
+      bx.beginPath(); bx.moveTo(0,-sz*.075); bx.lineTo(sz*.018,sz*.075);
+      bx.lineTo(-sz*.018,sz*.075); bx.closePath(); bx.fill();
+      bx.shadowBlur=0; bx.restore();
+    }
+    bx.globalAlpha=1;
+  }
+  // Skeletons (Valdris): small bone-coloured circles beside wizard
+  if(state&&state.skeletons&&state.skeletons.length>0){
+    const maxSkelHp=state.skeletons[0]?25:25;
+    state.skeletons.forEach((skel,i)=>{
+      const sx=x+(i===0?sz*1.3:sz*2.1), sy=wy;
+      bx.globalAlpha=0.85; bx.fillStyle='#ccccbb'; bx.shadowColor='#aaaaaa'; bx.shadowBlur=4;
+      bx.beginPath(); bx.arc(sx,sy,sz*.18,0,Math.PI*2); bx.fill();
+      bx.fillStyle='#333'; bx.font=`${Math.round(sz*.14)}px serif`;
+      bx.textAlign='center'; bx.fillText('💀',sx,sy+sz*.06);
+      // HP bar
+      const barW=sz*.38, barH=sz*.05;
+      const hpFrac=Math.max(0,skel.hp/25);
+      bx.fillStyle='#330000'; bx.fillRect(sx-barW/2,sy+sz*.22,barW,barH);
+      bx.fillStyle=hpFrac>0.5?'#44cc44':'#cc4444';
+      bx.fillRect(sx-barW/2,sy+sz*.22,barW*hpFrac,barH);
+      bx.strokeStyle='#666'; bx.lineWidth=0.5; bx.strokeRect(sx-barW/2,sy+sz*.22,barW,barH);
+      bx.globalAlpha=1; bx.shadowBlur=0;
+    });
+  }
+  // Simulacra (Mirel): ghostly wizard copies with HP/mana
+  if(state&&state.simulacra&&state.simulacra.length>0){
+    state.simulacra.forEach((sim,i)=>{
+      const sx=x+(i===0?sz*1.5:sz*2.6), sy=wy;
+      bx.globalAlpha=0.35+0.1*Math.sin(t/600+i);
+      bx.fillStyle='#88aaff'; bx.shadowColor='#4466dd'; bx.shadowBlur=8;
+      bx.beginPath(); bx.arc(sx,sy,sz*.22,0,Math.PI*2); bx.fill();
+      bx.globalAlpha=0.6; bx.font=`${Math.round(sz*.16)}px serif`;
+      bx.textAlign='center'; bx.fillText('👤',sx,sy+sz*.07);
+      // HP bar
+      const barW=sz*.42, hpFrac=Math.max(0,sim.hp/20);
+      bx.globalAlpha=0.8;
+      bx.fillStyle='#330000'; bx.fillRect(sx-barW/2,sy+sz*.26,barW,sz*.045);
+      bx.fillStyle='#44cc44'; bx.fillRect(sx-barW/2,sy+sz*.26,barW*hpFrac,sz*.045);
+      // Mana bar
+      const mFrac=Math.min(1,sim.mana/12);
+      bx.fillStyle='#001133'; bx.fillRect(sx-barW/2,sy+sz*.33,barW,sz*.04);
+      bx.fillStyle='#4488ff'; bx.fillRect(sx-barW/2,sy+sz*.33,barW*mFrac,sz*.04);
+      bx.globalAlpha=1; bx.shadowBlur=0;
+    });
+  }
   if(state&&state.invisible>0) bx.globalAlpha=0.35;
   else if(state&&state.blink>0) bx.globalAlpha=0.3+0.7*(0.5+0.5*Math.sin(t/350));
   if(state&&state.stoneskin>0&&state.stoneskinHp>0) bx.filter='grayscale(0.75) sepia(0.15)';
@@ -1461,6 +1626,16 @@ function refreshStatusBar(){
   if(gs.p1.agony>0)         tags.push(`<span class="status-tag burn">💀 ${p1Cfg.name} AGONY (${gs.p1.agony})</span>`);
   if(gs.p1.silence>0)       tags.push(`<span class="status-tag timedrain">🔇 ${p1Cfg.name} SILENCED (${gs.p1.silence})</span>`);
   if(gs.p1.corruption>0)    tags.push(`<span class="status-tag burn">☠️ ${p1Cfg.name} CORRUPTED (${gs.p1.corruption})</span>`);
+  if(gs.p1.plague>0)        tags.push(`<span class="status-tag burn">🦠 ${p1Cfg.name} PLAGUED (${gs.p1.plague})</span>`);
+  if(gs.p1.maggotCloud>0)   tags.push(`<span class="status-tag burn">🪲 ${p1Cfg.name} MAGGOT CLOUD (${gs.p1.maggotCloud})</span>`);
+  if(gs.p1.boneTotem>0)     tags.push(`<span class="status-tag regen">💀 ${p1Cfg.name} BONE TOTEM (${gs.p1.boneTotem})</span>`);
+  if(gs.p1.enthralled>0)    tags.push(`<span class="status-tag timedrain">🌀 ${p1Cfg.name} ENTHRALLED (${gs.p1.enthralled})</span>`);
+  if(gs.p1.arcaneWeave>0)   tags.push(`<span class="status-tag foresight">✨ ${p1Cfg.name} ARCANE WEAVE (${gs.p1.arcaneWeave})</span>`);
+  if(gs.p1.spellbound)      tags.push(`<span class="status-tag timedrain">⛓ ${p1Cfg.name} SPELLBOUND (${gs.p1.spellbound.turns})</span>`);
+  if(gs.p1.bewitched)       tags.push(`<span class="status-tag burn">🪞 ${p1Cfg.name} BEWITCHED</span>`);
+  if(gs.p1.blades>0)        tags.push(`<span class="status-tag foresight">🗡️ ${p1Cfg.name} BLADES (${gs.p1.blades})</span>`);
+  if(gs.p1.skeletons&&gs.p1.skeletons.length>0) tags.push(`<span class="status-tag regen">💀 ${p1Cfg.name} SKELETONS (${gs.p1.skeletons.length})</span>`);
+  if(gs.p1.simulacra&&gs.p1.simulacra.length>0) tags.push(`<span class="status-tag foresight">👤 ${p1Cfg.name} SIMULACRA (${gs.p1.simulacra.length})</span>`);
   if(p2Cfg){
     if(gs.p2.resist>0)    tags.push(`<span class="status-tag resist">🩸 ${p2Cfg.name} RESIST (${gs.p2.resist})</span>`);
     if(gs.p2.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
@@ -1485,6 +1660,16 @@ function refreshStatusBar(){
     if(gs.p2.agony>0)         tags.push(`<span class="status-tag burn">💀 ${p2Cfg.name} AGONY (${gs.p2.agony})</span>`);
     if(gs.p2.silence>0)       tags.push(`<span class="status-tag timedrain">🔇 ${p2Cfg.name} SILENCED (${gs.p2.silence})</span>`);
     if(gs.p2.corruption>0)    tags.push(`<span class="status-tag burn">☠️ ${p2Cfg.name} CORRUPTED (${gs.p2.corruption})</span>`);
+    if(gs.p2.plague>0)        tags.push(`<span class="status-tag burn">🦠 ${p2Cfg.name} PLAGUED (${gs.p2.plague})</span>`);
+    if(gs.p2.maggotCloud>0)   tags.push(`<span class="status-tag burn">🪲 ${p2Cfg.name} MAGGOT CLOUD (${gs.p2.maggotCloud})</span>`);
+    if(gs.p2.boneTotem>0)     tags.push(`<span class="status-tag regen">💀 ${p2Cfg.name} BONE TOTEM (${gs.p2.boneTotem})</span>`);
+    if(gs.p2.enthralled>0)    tags.push(`<span class="status-tag timedrain">🌀 ${p2Cfg.name} ENTHRALLED (${gs.p2.enthralled})</span>`);
+    if(gs.p2.arcaneWeave>0)   tags.push(`<span class="status-tag foresight">✨ ${p2Cfg.name} ARCANE WEAVE (${gs.p2.arcaneWeave})</span>`);
+    if(gs.p2.spellbound)      tags.push(`<span class="status-tag timedrain">⛓ ${p2Cfg.name} SPELLBOUND (${gs.p2.spellbound.turns})</span>`);
+    if(gs.p2.bewitched)       tags.push(`<span class="status-tag burn">🪞 ${p2Cfg.name} BEWITCHED</span>`);
+    if(gs.p2.blades>0)        tags.push(`<span class="status-tag foresight">🗡️ ${p2Cfg.name} BLADES (${gs.p2.blades})</span>`);
+    if(gs.p2.skeletons&&gs.p2.skeletons.length>0) tags.push(`<span class="status-tag regen">💀 ${p2Cfg.name} SKELETONS (${gs.p2.skeletons.length})</span>`);
+    if(gs.p2.simulacra&&gs.p2.simulacra.length>0) tags.push(`<span class="status-tag foresight">👤 ${p2Cfg.name} SIMULACRA (${gs.p2.simulacra.length})</span>`);
   }
   el.innerHTML=tags.join('');
 }
@@ -1601,13 +1786,28 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='chainlightning') return casterState.charge<(casterCfg.chainLightningChargeCost||8);
   if(spellId==='conductivity')   return targetState.conductivity>0;
   if(spellId==='divineheal')     return casterState.hp>=casterState.maxHp;
-  if(spellId==='purge')          return !(casterState.burn>0||casterState.frozen>0||casterState.blizzard>0||casterState.vineWhip>0||casterState.timeDrain>0||casterState.conductivity>0||casterState.candle>0||casterState.agony>0||casterState.corruption>0||casterState.silence>0);
+  if(spellId==='purge')          return !(casterState.burn>0||casterState.frozen>0||casterState.blizzard>0||casterState.vineWhip>0||casterState.timeDrain>0||casterState.conductivity>0||casterState.candle>0||casterState.agony>0||casterState.corruption>0||casterState.silence>0||casterState.plague>0||casterState.maggotCloud>0);
   if(spellId==='agony')          return targetState.agony>0;
   if(spellId==='silence')        return targetState.silence>0;
   if(spellId==='corruption')     return targetState.corruption>0;
   if(spellId==='stoneskin')      return casterState.stoneskin>0;
   if(spellId==='stonesoul')      return casterState.stonesoul>0;
   if(spellId==='rockfall')       return false;
+  if(spellId==='conjureblade')   return casterState.blades>=(casterCfg.maxBlades||3);
+  if(spellId==='bladestorm')     return casterState.blades<=0;
+  if(spellId==='ironpatience')   return casterState.resist>0;
+  if(spellId==='plague')         return targetState.plague>0;
+  if(spellId==='maggotcloud')    return targetState.maggotCloud>0;
+  if(spellId==='bonetotem')      return casterState.boneTotem>0;
+  if(spellId==='raisedead')      return casterState.skeletons&&casterState.skeletons.length>=2;
+  if(spellId==='necroticdrain')  return false;
+  if(spellId==='reinforce')      return !casterState.skeletons||casterState.skeletons.length===0;
+  if(spellId==='simulacrum')     return casterState.simulacra&&casterState.simulacra.length>=2;
+  if(spellId==='bewitch')        return targetState.bewitched;
+  if(spellId==='feint')          return false;
+  if(spellId==='enthral')        return targetState.enthralled>0;
+  if(spellId==='arcaneweave')    return casterState.arcaneWeave>0;
+  if(spellId==='spellbind')      return false;
   return false;
 }
 
@@ -1639,6 +1839,13 @@ function act(type){
   };
 
   if(type==='channel'){
+    commitAction({type:'channel', channelGain:whoState.timeDrain>0?2:whoCfg.channelAmt});
+    return;
+  }
+
+  // Enthralled: forced to channel
+  if(whoState.enthralled>0){
+    addFloat(cx,bH*.33,'🌀 Enthralled!','#cc88ff',13);
     commitAction({type:'channel', channelGain:whoState.timeDrain>0?2:whoCfg.channelAmt});
     return;
   }
@@ -1705,7 +1912,38 @@ function resolveCharSpell(spellId,caster,perfect=false){
   const tx=caster==='p1'?bW*.78:bW*.22;
 
   const spell=casterCfg.spells.find(s=>s.id===spellId);
-  casterState.mana=Math.max(0,casterState.mana-spell.cost);
+  // Apply spellbound extra cost
+  if(casterState.spellbound&&casterState.spellbound.spellId===spellId&&casterState.spellbound.turns>0){
+    casterState.mana=Math.max(0,casterState.mana-(spell.cost+casterState.spellbound.extraCost));
+  } else {
+    casterState.mana=Math.max(0,casterState.mana-spell.cost);
+  }
+
+  // Plague punish: casting any spell while plagued deals extra damage to caster
+  if(casterState.plague>0){
+    const pDmg=casterState.plagueSpellDmg||8;
+    casterState.hp=Math.max(0,casterState.hp-pDmg);
+    addFloat(cx,bH*.33,'☠️ Plague Punish! −'+pDmg,'#55aa33',12);
+    spawnParts(cx,bH*.38,'#55aa33',10);
+    checkWin(); if(!battleRunning) return;
+  }
+
+  // Bewitch: reflect active spells (non-basic) back on caster
+  if(casterState.bewitched&&spellId!=='basicattack'){
+    casterState.bewitched=false;
+    addFloat(cx,bH*.33,'🪄 Bewitched! Reflected!','#b86ef4',14);
+    spawnParts(cx,bH*.38,'#b86ef4',20); spawnParts(cx,bH*.38,'#ffffff',8);
+    flash('#b86ef4');
+    // Refund mana and cancel spell
+    casterState.mana=Math.min(MAX_MANA,casterState.mana+spell.cost);
+    // Deal a portion of the spell cost as reflected damage (approx)
+    const reflectDmg=10+spell.cost*3;
+    casterState.hp=Math.max(0,casterState.hp-reflectDmg);
+    addFloat(cx,bH*.38,'−'+reflectDmg+' (Reflected!)','#b86ef4',14);
+    if(caster==='p1'){anim('p1','hit',800);} else {anim('p2','hit',800);}
+    refreshHUD(); checkWin(); if(!battleRunning) return;
+    return; // spell does not resolve normally
+  }
 
   if(spellId==='shield'){
     casterState.shield=casterCfg.shieldDuration||10;
@@ -2388,6 +2626,8 @@ function resolveCharSpell(spellId,caster,perfect=false){
     if(casterState.agony>0)       {casterState.agony=0;        cleared.push('💀');}
     if(casterState.corruption>0)  {casterState.corruption=0;   cleared.push('☠️');}
     if(casterState.silence>0)     {casterState.silence=0;      cleared.push('🔇');}
+    if(casterState.plague>0)      {casterState.plague=0;       cleared.push('🦠');}
+    if(casterState.maggotCloud>0) {casterState.maggotCloud=0;  cleared.push('🪲');}
     addFloat(cx,bH*.33,'✨ Purged! '+cleared.join(''),casterCfg.col,13);
     spawnParts(cx,bH*.38,'#fffde0',18); spawnParts(cx,bH*.38,'#ffffff',8);
     flash('#fffff0');
@@ -2473,6 +2713,226 @@ function resolveCharSpell(spellId,caster,perfect=false){
     }
     spawnParts(cx,bH*.38,'#c8a060',8); spawnParts(cx,bH*.38,'#ffffff',4);
     anim(caster,'shield',700);
+  // ── WEIZAN ──────────────────────────────────────────────────
+  } else if(spellId==='conjureblade'){
+    casterState.blades++;
+    addFloat(cx,bH*.33,'🗡️ Blade Conjured! ('+casterState.blades+')','#66aa88',12);
+    spawnParts(cx,bH*.38,'#aaaadd',14); spawnParts(cx,bH*.38,'#ffffff',5);
+    anim(caster,'cast',700);
+  } else if(spellId==='bladestorm'){
+    if(casterState.invisible>0){ casterState.invisible=0; addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11); }
+    gs.busy=true;
+    const numBlades=casterState.blades;
+    casterState.blades=0;
+    addFloat(cx,bH*.28,'💫 BLADESTORM! ('+numBlades+'×)','#66aa88',16);
+    spawnParts(cx,bH*.38,'#aaaadd',16);
+    anim(caster,'cast',900);
+    let bladesDone=0;
+    function fireBlade(){
+      if(!battleRunning) return;
+      const yOff=bH*(bladesDone===0?-0.04:bladesDone===1?0:0.04);
+      spawnProj(cx,bH*.38+yOff,tx,bH*.38+yOff,'physical','#aaaadd',()=>{
+        if(!battleRunning) return;
+        let bDmg=casterCfg.bladestormDmg||12;
+        if(targetState.resist>0) bDmg=Math.round(bDmg*0.67);
+        if(targetState.conductivity>0) bDmg=Math.round(bDmg*1.35);
+        const targetWho=caster==='p1'?'p2':'p1';
+        dealDmgToPlayer(targetWho,bDmg,tx,bH*.38+yOff,false,false);
+        if(targetState.frostArmor>0&&bDmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+        addFloat(tx,bH*.38+yOff,'🗡️ −'+bDmg,casterCfg.col,14);
+        spawnParts(tx,bH*.38+yOff,casterCfg.col,10);
+        refreshHUD(); checkWin(); if(!battleRunning) return;
+        bladesDone++;
+        if(bladesDone<numBlades){ combatTimeout(fireBlade,320); }
+        else {
+          flash(casterCfg.col);
+          if(caster==='p1'||twoPlayerMode){ endMyTurn(); }
+          else { if(!simCallback) tickStatuses(casterState); combatTimeout(finishAI,900); }
+        }
+      });
+    }
+    fireBlade();
+    return;
+  } else if(spellId==='ironpatience'){
+    casterState.resist=3;
+    addFloat(cx,bH*.33,'🧘 Iron Patience! −30% dmg','#66aa88',12);
+    spawnParts(cx,bH*.38,'#888899',12); spawnParts(cx,bH*.38,'#ffffff',4);
+    anim(caster,'shield',700);
+
+  // ── GRETCH ──────────────────────────────────────────────────
+  } else if(spellId==='plague'){
+    if(targetState.ward>0){
+      targetState.ward=0;
+      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14);
+      anim(caster,'cast',600);
+    } else {
+      targetState.plague=casterCfg.plagueDoTDur||5;
+      targetState.plagueDoTDmg=casterCfg.plagueDoTDmg||6;
+      targetState.plagueSpellDmg=casterCfg.plagueSpellDmg||8;
+      addFloat(tx,bH*.33,'☠️ Plagued! ('+targetState.plague+'T)','#55aa33',13);
+      spawnParts(tx,bH*.38,'#55aa33',16); spawnParts(tx,bH*.38,'#aaddaa',5);
+      anim(caster,'cast',800);
+    }
+  } else if(spellId==='maggotcloud'){
+    if(targetState.ward>0){
+      targetState.ward=0;
+      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14);
+      anim(caster,'cast',600);
+    } else {
+      const drained=Math.min(casterCfg.maggotCloudDrain||3,targetState.mana);
+      targetState.mana=Math.max(0,targetState.mana-drained);
+      targetState.maggotCloud=casterCfg.maggotCloudDur||3;
+      addFloat(tx,bH*.33,'🪲 Maggot Cloud!','#55aa33',12);
+      if(drained>0) addFloat(tx,bH*.38+22,'−'+drained+' Mana','#55aa33',11);
+      spawnParts(tx,bH*.38,'#55aa33',14); spawnParts(tx,bH*.38,'#aaddaa',5);
+      anim(caster,'cast',800);
+    }
+  } else if(spellId==='bonetotem'){
+    casterState.boneTotem=casterCfg.boneTotemDur||4;
+    addFloat(cx,bH*.33,'💀 Bone Totem Raised!','#55aa33',13);
+    spawnParts(cx,bH*.38,'#55aa33',14); spawnParts(cx,bH*.38,'#aaddaa',6);
+    anim(caster,'shield',700);
+
+  // ── VALDRIS ─────────────────────────────────────────────────
+  } else if(spellId==='raisedead'){
+    casterState.skeletons.push({hp:casterCfg.skelMaxHp||25, maxHp:casterCfg.skelMaxHp||25});
+    addFloat(cx,bH*.33,'💀 Skeleton Raised! ('+casterState.skeletons.length+')','#8844cc',12);
+    spawnParts(cx,bH*.38,'#8844cc',14); spawnParts(cx,bH*.38,'#ffffff',5);
+    anim(caster,'cast',800);
+  } else if(spellId==='necroticdrain'){
+    if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.haste>0&&_rng()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15); spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else if(targetState.blink>0&&_rng()<0.5){
+      addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
+      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
+      flash('#9988cc'); anim(caster,'cast',600);
+    } else {
+      const counterTriggered=targetState.counter&&targetState.shield>0;
+      let drainDmg=Math.round((casterCfg.necroticDrainDmg||18)*casterCfg.dmgMult);
+      if(targetState.resist>0) drainDmg=Math.round(drainDmg*0.67);
+      if(targetState.frostArmor>0) drainDmg=Math.round(drainDmg*0.70);
+      if(targetState.conductivity>0) drainDmg=Math.round(drainDmg*1.35);
+      if(counterTriggered){
+        casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
+        targetState.counter=false;
+        addFloat(cx,bH*.33,'⚡ Counter! −'+targetCfg.counterDmg,'#4af0ff',14);
+        spawnParts(cx,bH*.38,'#4af0ff',16);
+        spawnBeam(tx,bH*.38,cx,bH*.38,'#4af0ff');
+        checkWin(); if(!battleRunning) return;
+      }
+      const targetWho=caster==='p1'?'p2':'p1';
+      dealDmgToPlayer(targetWho,drainDmg,tx,bH*.38,false,false);
+      if(targetState.frostArmor>0&&drainDmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+      if(targetState.flameShield>0&&drainDmg>0) applyFlameShieldRetaliation(casterState,cx);
+      const healAmt=casterCfg.necroticDrainHeal||8;
+      casterState.hp=Math.min(casterState.maxHp,casterState.hp+healAmt);
+      addFloat(tx,bH*.33,'🩸 Drain! −'+drainDmg,casterCfg.col,16);
+      addFloat(cx,bH*.38,'+'+healAmt+' HP','#8844cc',13);
+      spawnParts(tx,bH*.38,'#8844cc',16);
+      spawnBeam(cx,bH*.38,tx,bH*.38,'#8844cc');
+      flash('#8844cc');
+      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+      else             {anim('p2','cast',800); anim('p1','hit',800);}
+      refreshHUD(); checkWin(); if(!battleRunning) return;
+    }
+  } else if(spellId==='reinforce'){
+    const reinAmt=casterCfg.skelReinforceAmt||15;
+    const weakest=casterState.skeletons.reduce((a,b)=>b.hp<a.hp?b:a);
+    weakest.hp=Math.min(weakest.maxHp,weakest.hp+reinAmt);
+    addFloat(cx,bH*.33,'🔧 Reinforced! +'+reinAmt+' HP','#8844cc',12);
+    spawnParts(cx,bH*.38,'#8844cc',10);
+    anim(caster,'cast',700);
+
+  // ── MIREL ───────────────────────────────────────────────────
+  } else if(spellId==='simulacrum'){
+    casterState.simulacra.push({hp:casterCfg.simulacrumMaxHp||20, maxHp:casterCfg.simulacrumMaxHp||20, mana:casterCfg.simulacrumStartMana||6});
+    addFloat(cx,bH*.33,'👁 Simulacrum! ('+casterState.simulacra.length+')','#b86ef4',13);
+    spawnParts(cx,bH*.38,'#b86ef4',16); spawnParts(cx,bH*.38,'#ffffff',6);
+    anim(caster,'shield',800);
+  } else if(spellId==='bewitch'){
+    if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.ward>0){
+      targetState.ward=0;
+      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14);
+      anim(caster,'cast',600);
+    } else {
+      targetState.bewitched=true;
+      addFloat(tx,bH*.33,'🪄 Bewitched!',casterCfg.col,14);
+      spawnParts(tx,bH*.38,casterCfg.col,18); spawnParts(tx,bH*.38,'#ffffff',6);
+      anim(caster,'cast',800);
+    }
+  } else if(spellId==='feint'){
+    if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.haste>0&&_rng()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15); spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else {
+      let feintDmg=casterCfg.feintDmg||15;
+      if(casterState.empowered){ feintDmg=Math.round(feintDmg*(casterCfg.empowerMult||1.5)); casterState.empowered=false; addFloat(tx,bH*.33,'💪 Empowered!',casterCfg.col,10); }
+      if(targetState.conductivity>0) feintDmg=Math.round(feintDmg*1.35);
+      // Feint bypasses shield, foresight, ward, stoneskin, skeletons, simulacra — pure deception
+      const targetWho=caster==='p1'?'p2':'p1';
+      dealDmgToPlayer(targetWho,feintDmg,tx,bH*.38,true,true);
+      if(targetState.flameShield>0) applyFlameShieldRetaliation(casterState,cx);
+      addFloat(tx,bH*.33,'🗡️ Feint! −'+feintDmg,casterCfg.col,16);
+      spawnParts(tx,bH*.38,casterCfg.col,18);
+      flash(casterCfg.col);
+      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+      else             {anim('p2','cast',800); anim('p1','hit',800);}
+      refreshHUD(); checkWin(); if(!battleRunning) return;
+    }
+
+  // ── THESSALY ─────────────────────────────────────────────────
+  } else if(spellId==='enthral'){
+    if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.ward>0){
+      targetState.ward=0;
+      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14);
+      anim(caster,'cast',600);
+    } else {
+      targetState.enthralled=1;
+      addFloat(tx,bH*.33,'🌀 Enthralled!',casterCfg.col,14);
+      spawnParts(tx,bH*.38,casterCfg.col,18); spawnParts(tx,bH*.38,'#ffffff',6);
+      anim(caster,'cast',800);
+    }
+  } else if(spellId==='arcaneweave'){
+    casterState.arcaneWeave=casterCfg.arcaneWeaveAttacks||3;
+    addFloat(cx,bH*.33,'🌟 Arcane Weave! ('+casterState.arcaneWeave+'× atk)',casterCfg.col,12);
+    spawnParts(cx,bH*.38,casterCfg.col,14); spawnParts(cx,bH*.38,'#ffdd88',5);
+    anim(caster,'cast',700);
+  } else if(spellId==='spellbind'){
+    if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.ward>0){
+      targetState.ward=0;
+      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14);
+      anim(caster,'cast',600);
+    } else {
+      const bindableCfg=caster==='p1'?p2Cfg:p1Cfg;
+      const bindable=(bindableCfg.spells||[]).filter(s=>s.cost>0&&(!targetState.spellbound||targetState.spellbound.spellId!==s.id));
+      if(bindable.length>0){
+        const tgt=bindable.reduce((a,b)=>b.cost>a.cost?b:a);
+        targetState.spellbound={spellId:tgt.id, extraCost:casterCfg.spellbindExtraCost||3, turns:casterCfg.spellbindDur||5};
+        addFloat(tx,bH*.33,'🔒 '+tgt.name+' Bound! (+'+targetState.spellbound.extraCost+' cost)',casterCfg.col,13);
+        spawnParts(tx,bH*.38,casterCfg.col,16); spawnParts(tx,bH*.38,'#ffdd88',5);
+        anim(caster,'cast',800);
+      } else {
+        addFloat(tx,bH*.33,'🔒 Nothing to Bind!','#888888',11);
+        anim(caster,'cast',400);
+        casterState.mana=Math.min(MAX_MANA,casterState.mana+spell.cost); // refund
+      }
+    }
   } else if(spellId==='rockfall'){
     if(casterState.invisible>0){
       casterState.invisible=0;
@@ -2513,6 +2973,9 @@ function resolveCharSpell(spellId,caster,perfect=false){
     const basicSpell=casterCfg.spells.find(s=>s.id==='basicattack');
     let dmg=Math.round((basicSpell.dmg||8)*casterCfg.dmgMult);
     const isPhysical=!!basicSpell.physical;
+    // Arcane Weave bonus
+    let arcaneWeaveBonusDmg=0, arcaneWeaveManaDrain=0;
+    if(casterState.arcaneWeave>0){ arcaneWeaveBonusDmg=casterCfg.arcaneWeaveDmgBonus||6; arcaneWeaveManaDrain=casterCfg.arcaneWeaveManaDrain||2; casterState.arcaneWeave--; }
     if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
     if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
     if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
@@ -2563,7 +3026,10 @@ function resolveCharSpell(spellId,caster,perfect=false){
           spawnBeam(tx,bH*.38,casterX,bH*.38,'#4af0ff');
           checkWin(); if(!battleRunning) return;
         }
-        targetState.hp=Math.max(0,targetState.hp-dmg);
+        // Arcane Weave: bonus damage + mana drain
+        if(arcaneWeaveBonusDmg>0){ dmg+=arcaneWeaveBonusDmg; const md=Math.min(arcaneWeaveManaDrain,targetState.mana); targetState.mana=Math.max(0,targetState.mana-md); addFloat(cx,bH*.38-20,'🌟 Weave +'+arcaneWeaveBonusDmg+', −'+md+' Mana','#ddaa22',10); }
+        const targetWhoBA=caster==='p1'?'p2':'p1';
+        dealDmgToPlayer(targetWhoBA,dmg,tx,bH*.38,false,false);
         if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
         if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
         if(isPhysical&&!basicSpell.piercesDischarge&&targetState.charge>0){
@@ -2623,9 +3089,9 @@ function castSpell(spell,target,tx,ty,caster){
     if(dispelSelf){
       const DEBUFF_NAMES={agony:'Agony',corruption:'Corruption',silence:'Silence',burn:'Burn',
         frozen:'Freeze',blizzard:'Blizzard',vineWhip:'Vine Whip',timeDrain:'Time Drain',
-        conductivity:'Conductivity',candle:'Candle'};
+        conductivity:'Conductivity',candle:'Candle',plague:'Plague',maggotCloud:'Maggot Cloud'};
       const activeDebuffs=[];
-      ['agony','corruption','silence','burn','frozen','blizzard','vineWhip','timeDrain','conductivity','candle'].forEach(s=>{
+      ['agony','corruption','silence','burn','frozen','blizzard','vineWhip','timeDrain','conductivity','candle','plague','maggotCloud'].forEach(s=>{
         if(casterState[s]) activeDebuffs.push(s);
       });
       spawnParts(casterX,bH*.38,'#ffaaff',30);
@@ -2647,7 +3113,9 @@ function castSpell(spell,target,tx,ty,caster){
       const BUFF_NAMES={shield:'Shield',foresight:'Foresight',regen:'Regen',resist:'Resist',
         frostArmor:'Frost Armor',flameShield:'Flame Shield',empowered:'Empower',
         ward:'Ward',haste:'Haste',blink:'Blink',invisible:'Vanish',counter:'Counter',
-        stoneskin:'Stoneskin',stonesoul:'Stonesoul'};
+        stoneskin:'Stoneskin',stonesoul:'Stonesoul',blades:'Blades',boneTotem:'Bone Totem',
+        skeletons:'Skeletons',simulacra:'Simulacra',bewitched:'Bewitch',
+        arcaneWeave:'Arcane Weave',spellbound:'Spellbound'};
       const oppBuffs=[];
       if(targetState.shield>0)      oppBuffs.push('shield');
       if(targetState.foresight)     oppBuffs.push('foresight');
@@ -2663,6 +3131,13 @@ function castSpell(spell,target,tx,ty,caster){
       if(targetState.counter)       oppBuffs.push('counter');
       if(targetState.stoneskin>0)   oppBuffs.push('stoneskin');
       if(targetState.stonesoul>0)   oppBuffs.push('stonesoul');
+      if(targetState.blades>0)      oppBuffs.push('blades');
+      if(targetState.boneTotem>0)   oppBuffs.push('boneTotem');
+      if(targetState.skeletons&&targetState.skeletons.length>0) oppBuffs.push('skeletons');
+      if(targetState.simulacra&&targetState.simulacra.length>0) oppBuffs.push('simulacra');
+      if(targetState.bewitched)     oppBuffs.push('bewitched');
+      if(targetState.arcaneWeave>0) oppBuffs.push('arcaneWeave');
+      if(targetState.spellbound)    oppBuffs.push('spellbound');
       spawnParts(dispelTargetX,ty,'#ffaaff',20);
       if(oppBuffs.length>0){
         if(_rng()<0.70){
@@ -2672,6 +3147,10 @@ function castSpell(spell,target,tx,ty,caster){
           else if(stripped==='regen')     targetState.regen=null;
           else if(stripped==='empowered') targetState.empowered=false;
           else if(stripped==='counter')   targetState.counter=false;
+          else if(stripped==='skeletons') targetState.skeletons=[];
+          else if(stripped==='simulacra') targetState.simulacra=[];
+          else if(stripped==='bewitched') targetState.bewitched=false;
+          else if(stripped==='spellbound') targetState.spellbound=null;
           else targetState[stripped]=0;
           for(let i=0;i<28;i++){
             const a=-Math.PI/2+(-0.55+_rng()*1.1), sp=0.7+_rng()*1.8;
@@ -2912,10 +3391,208 @@ function processBlizzard(target,tx,ty){
   if(_rng()<0.15&&target.frozen<=0) target.frozen=1;
 }
 
-const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink','stonesoul','stoneskin'];
+const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink','stonesoul','stoneskin','plague','maggotCloud','boneTotem','enthralled'];
 function tickStatuses(state){
   STATUS_TIMERS.forEach(k=>{ if(state[k]>0) state[k]--; });
   if(state.stoneskin<=0) state.stoneskinHp=0;
+  if(state.spellbound&&state.spellbound.turns>0){ state.spellbound.turns--; if(state.spellbound.turns<=0) state.spellbound=null; }
+}
+
+// ── DEATHLESS (Valdris passive) ────────────────────────────
+function checkDeathless(who,x,y){
+  const state=gs[who];
+  const key=who==='p1'?p1Key:p2Key;
+  if(key!=='valdris') return;
+  if(state.hp<=0&&state.mana>0){
+    const cost=(who==='p1'?p1Cfg:p2Cfg).deathlessCost||6;
+    state.mana=Math.max(0,state.mana-cost);
+    state.hp=1;
+    addFloat(x,y-30,'💀 DEATHLESS! −'+cost+' Mana','#8844cc',16);
+    spawnParts(x,y,'#8844cc',24); spawnParts(x,y,'#ffffff',10);
+    flash('#8844cc');
+  }
+}
+
+// ── SKELETON ABSORPTION (Valdris) ─────────────────────────
+function absorbWithSkeletons(who,dmg,x,y){
+  const state=gs[who];
+  if(!state.skeletons||state.skeletons.length===0) return dmg;
+  const cfg=who==='p1'?p1Cfg:p2Cfg;
+  const healAmt=cfg.skelHealOnDeath||8;
+  while(state.skeletons.length>0&&dmg>0){
+    const skel=state.skeletons[0];
+    if(skel.hp>=dmg){
+      skel.hp-=dmg;
+      addFloat(x,y-20,'💀 −'+dmg+' (Skeleton '+(skel.hp)+' HP)','#8844cc',10);
+      if(skel.hp<=0){
+        state.skeletons.shift();
+        state.hp=Math.min(state.maxHp,state.hp+healAmt);
+        addFloat(x,y-35,'💀 Skeleton Slain! +'+healAmt+' HP','#8844cc',12);
+        spawnParts(x,y,'#8844cc',10);
+      }
+      return 0;
+    } else {
+      dmg-=skel.hp;
+      state.skeletons.shift();
+      state.hp=Math.min(state.maxHp,state.hp+healAmt);
+      addFloat(x,y-35,'💀 Skeleton Slain! +'+healAmt+' HP','#8844cc',12);
+      spawnParts(x,y,'#8844cc',10);
+    }
+  }
+  return dmg;
+}
+
+// ── SIMULACRUM REDIRECT (Mirel) ───────────────────────────
+function trySimulacrumRedirect(who,dmg,x,y){
+  const state=gs[who];
+  const key=who==='p1'?p1Key:p2Key;
+  if(key!=='mirel'||!state.simulacra||state.simulacra.length===0) return dmg;
+  for(let i=0;i<state.simulacra.length;i++){
+    if(_rng()<0.5){
+      const sim=state.simulacra[i];
+      sim.hp-=dmg;
+      addFloat(x,y-20,'👁 −'+dmg+' (Simulacrum)','#b86ef4',12);
+      if(sim.hp<=0){
+        state.simulacra.splice(i,1);
+        addFloat(x,y-36,'👁 Simulacrum Shattered!','#b86ef4',14);
+        spawnParts(x,y,'#b86ef4',14);
+      }
+      return 0;
+    }
+  }
+  return dmg;
+}
+
+// Unified damage-to-player helper: routes through simulacra redirect then skeletons then Deathless
+function dealDmgToPlayer(who,dmg,x,y,bypassRedirect,bypassSkeletons){
+  if(dmg<=0) return;
+  const state=gs[who];
+  if(!bypassRedirect){ dmg=trySimulacrumRedirect(who,dmg,x,y); if(dmg<=0) return; }
+  if(!bypassSkeletons){ dmg=absorbWithSkeletons(who,dmg,x,y); if(dmg<=0){ checkDeathless(who,x,y); return; } }
+  state.hp=Math.max(0,state.hp-dmg);
+  checkDeathless(who,x,y);
+}
+
+// ── PER-TURN: PLAGUE DoT ──────────────────────────────────
+function processPlagueDoT(target,tx,ty){
+  if(!target.plague||target.plague<=0) return;
+  const dmg=target.plagueDoTDmg||6;
+  target.hp=Math.max(0,target.hp-dmg);
+  for(let i=0;i<8;i++){
+    const a=_rng()*Math.PI*2;
+    gs.parts.push({x:tx+(_rng()-.5)*bH*.05,y:ty,col:'#44bb22',
+      vx:Math.cos(a)*0.8,vy:Math.sin(a)*0.8-1,sz:1.5+_rng()*2,life:1,dec:.02,noGrav:true});
+  }
+  addFloat(tx,ty,'☠️ −'+dmg+' Plague','#55aa33',12);
+}
+
+// ── PER-TURN: BONE TOTEM REGEN ────────────────────────────
+function processBoneTotem(target,tx,ty){
+  if(!target.boneTotem||target.boneTotem<=0) return;
+  const healAmt=5;
+  target.hp=Math.min(target.maxHp,target.hp+healAmt);
+  for(let i=0;i<6;i++){
+    const a=-Math.PI/2+(_rng()-.5)*1.2;
+    gs.parts.push({x:tx+(_rng()-.5)*bH*.04,y:ty,col:'#55aa33',
+      vx:Math.cos(a)*0.7,vy:Math.sin(a)*0.7-0.3,sz:1.5+_rng()*2,life:1,dec:.016,noGrav:true});
+  }
+  addFloat(tx,ty,'+'+healAmt+' 💀','#55aa33',11);
+}
+
+// ── PER-TURN: BLADE STRIKES (Weizan) ─────────────────────
+function processBlades(casterWho,targetState,tx,ty){
+  const casterState=gs[casterWho];
+  if(!casterState.blades||casterState.blades<=0) return;
+  const cfg=casterWho==='p1'?p1Cfg:p2Cfg;
+  const dmgPer=cfg.bladeDmgPerTurn||4;
+  const total=dmgPer*casterState.blades;
+  const targetWho=casterWho==='p1'?'p2':'p1';
+  dealDmgToPlayer(targetWho,total,tx,ty,false,false);
+  for(let i=0;i<casterState.blades*4;i++){
+    const a=_rng()*Math.PI*2;
+    gs.parts.push({x:tx+(_rng()-.5)*bH*.05,y:ty,col:'#aaaadd',
+      vx:Math.cos(a)*1.2,vy:Math.sin(a)*1.2-0.5,sz:1.5+_rng()*2,life:1,dec:.022});
+  }
+  addFloat(tx,ty,'🗡️ −'+total+' ('+casterState.blades+'× blade)','#66aa88',12);
+}
+
+// ── PER-TURN: SKELETON STRIKES (Valdris) ──────────────────
+function processSkeletonStrikes(casterWho,targetState,tx,ty){
+  const casterState=gs[casterWho];
+  if(!casterState.skeletons||casterState.skeletons.length===0) return;
+  const cfg=casterWho==='p1'?p1Cfg:p2Cfg;
+  const dmgPer=cfg.skelDmgPerTurn||7;
+  const targetWho=casterWho==='p1'?'p2':'p1';
+  casterState.skeletons.forEach((_skel,i)=>{
+    const yOff=bH*(i===0?0:0.05);
+    const skDmg=dmgPer;
+    dealDmgToPlayer(targetWho,skDmg,tx,ty+yOff,false,false);
+    for(let j=0;j<6;j++){
+      const a=_rng()*Math.PI*2;
+      gs.parts.push({x:tx+(_rng()-.5)*bH*.04,y:ty+yOff,col:'#9966cc',
+        vx:Math.cos(a)*1,vy:Math.sin(a)*1-0.5,sz:1.5+_rng()*2,life:1,dec:.022});
+    }
+    addFloat(tx,ty+yOff-16,'💀 −'+skDmg,'#8844cc',11);
+  });
+}
+
+// ── PER-TURN: SIMULACRA ACTIONS (Mirel) ───────────────────
+function processSimulacra(ownerWho,targetState,tx,ty){
+  const ownerState=gs[ownerWho];
+  if(!ownerState.simulacra||ownerState.simulacra.length===0) return;
+  const targetWho=ownerWho==='p1'?'p2':'p1';
+  const ownerCfg=ownerWho==='p1'?p1Cfg:p2Cfg;
+  ownerState.simulacra.forEach((sim,idx)=>{
+    const simY=ty-bH*0.07*idx;
+    if(sim.mana>=3&&_rng()<0.55){
+      // Try to cast: prefer Dispel if opponent has buffs, else random global or Feint
+      const tState=gs[targetWho];
+      const hasOppBuff=tState.shield>0||tState.foresight||tState.regen||tState.resist>0||tState.ward>0||tState.stoneskin>0||tState.stonesoul>0||tState.boneTotem>0;
+      let action=null;
+      if(hasOppBuff&&_rng()<0.6){ action='dispel'; }
+      else if(_rng()<0.4){ action='feint'; }
+      else {
+        const pool=['fire','ice','lightning','arcane'];
+        action=pool[Math.floor(_rng()*pool.length)];
+      }
+      if(action==='feint'&&sim.mana>=2){
+        sim.mana-=2;
+        const fDmg=ownerCfg.feintDmg||15;
+        dealDmgToPlayer(targetWho,fDmg,tx,simY,true,true);
+        addFloat(tx,simY,'👁 Feint! −'+fDmg,'#b86ef4',13);
+        spawnParts(tx,simY,'#b86ef4',10);
+      } else if(action==='dispel'&&sim.mana>=3){
+        sim.mana-=3;
+        // Strip a random buff
+        const BUFF_KEYS=['shield','foresight','regen','resist','frostArmor','flameShield','empowered','ward','haste','blink','invisible','counter','stoneskin','stonesoul','boneTotem','blades'];
+        const active=BUFF_KEYS.filter(k=>tState[k]&&tState[k]!==false&&tState[k]!==null&&tState[k]!==0&&!(Array.isArray(tState[k])&&tState[k].length===0));
+        if(active.length>0&&_rng()<0.7){
+          const stripped=active[Math.floor(_rng()*active.length)];
+          if(stripped==='shield'){tState.shield=0;tState.shieldHp=0;tState.counter=false;}
+          else if(stripped==='foresight') tState.foresight=false;
+          else if(stripped==='regen') tState.regen=null;
+          else if(stripped==='empowered') tState.empowered=false;
+          else if(stripped==='blades') tState.blades=0;
+          else tState[stripped]=0;
+          addFloat(tx,simY,'👁 '+stripped+' Stripped!','#b86ef4',12);
+          spawnParts(tx,simY,'#b86ef4',10);
+        }
+      } else {
+        // Global spell — simplified direct damage
+        const dmgMap={fire:14,ice:12,lightning:18,arcane:Math.round(15+_rng()*20)};
+        const glDmg=dmgMap[action]||12;
+        sim.mana-=3;
+        dealDmgToPlayer(targetWho,glDmg,tx,simY,false,false);
+        const cols={fire:'#ff6622',ice:'#88ddff',lightning:'#aaff44',arcane:'#9944cc'};
+        spawnParts(tx,simY,cols[action]||'#b86ef4',14);
+        addFloat(tx,simY,'👁 −'+glDmg+' ('+action+')','#b86ef4',12);
+      }
+    } else {
+      // Channel
+      sim.mana=Math.min(20,sim.mana+(ownerCfg.simulacrumChannelAmt||5));
+      addFloat(tx,simY,'👁 Sim +mana','#b86ef4',9);
+    }
+  });
 }
 
 function triggerCandleBurn(state,cx){
@@ -3128,6 +3805,7 @@ function executeQueuedSpell(who, action, cb){
   if(action.type==='channel'){
     let channelGain=action.channelGain!=null?action.channelGain:(whoState.timeDrain>0?2:whoCfg.channelAmt);
     if(whoState.corruption>0){ const d=Math.min(channelGain,2); channelGain=Math.max(0,channelGain-2); addFloat(cx,bH*.5,'☠️ −'+d+' Corrupted!','#9944cc',12); }
+    if(whoState.maggotCloud>0){ const drain=Math.min(3,channelGain); channelGain=Math.max(0,channelGain-drain); addFloat(cx,bH*.5,'🪲 −'+drain+' Drained!','#55aa33',12); }
     whoState.mana=Math.min(MAX_MANA,whoState.mana+channelGain);
     addFloat(cx,bH*.38,'+'+(channelGain)+' Mana','#88aaff',13);
     if(whoState.candle>0) triggerCandleBurn(whoState,cx);
@@ -3332,6 +4010,7 @@ function aiDecideEasy(who){
   const charSpells=available.filter(s=>s.id);
   const universalSpells=available.filter(s=>s.element);
   let chosen=null, aiDispelSelf=false;
+  if(ai.enthralled>0) return {chosen:null, aiDispelSelf:false, forceChannel:true};
   if(aiKey==='mordant'&&ai.agony>0) chosen=null;
   else if(aiKey==='mordant'){
     const hexSpells=charSpells.filter(s=>['agony','silence','corruption'].includes(s.id));
@@ -3359,6 +4038,49 @@ function aiDecideEasy(who){
     if(ai.stoneskin<=0&&canStoneskin&&ai.hp<ai.maxHp*0.85) chosen=canStoneskin;
     else if(ai.stonesoul<=0&&canStonesoul&&ai.hp<ai.maxHp*0.70) chosen=canStonesoul;
     else if(canRockfall&&_rng()<0.55) chosen=canRockfall;
+  }
+  if(aiKey==='weizan'){
+    const canConjure=charSpells.find(s=>s.id==='conjureblade');
+    const canBladestorm=charSpells.find(s=>s.id==='bladestorm');
+    const canPatience=charSpells.find(s=>s.id==='ironpatience');
+    if(canBladestorm&&ai.blades>=(aiCfg.maxBlades||3)) chosen=canBladestorm;
+    else if(canPatience&&ai.hp<ai.maxHp*0.60&&!ai.resist) chosen=canPatience;
+    else if(canConjure&&ai.blades<(aiCfg.maxBlades||3)) chosen=canConjure;
+  }
+  if(aiKey==='gretch'){
+    const canPlague=charSpells.find(s=>s.id==='plague');
+    const canMaggot=charSpells.find(s=>s.id==='maggotcloud');
+    const canTotem=charSpells.find(s=>s.id==='bonetotem');
+    if(canPlague&&!gs[opp].plague) chosen=canPlague;
+    else if(canTotem&&!ai.boneTotem&&ai.hp<ai.maxHp*0.75) chosen=canTotem;
+    else if(canMaggot&&!gs[opp].maggotCloud) chosen=canMaggot;
+  }
+  if(aiKey==='valdris'){
+    const canRaise=charSpells.find(s=>s.id==='raisedead');
+    const canDrain=charSpells.find(s=>s.id==='necroticdrain');
+    const canReinforce=charSpells.find(s=>s.id==='reinforce');
+    const skelCount=ai.skeletons?ai.skeletons.length:0;
+    const skelHpLow=ai.skeletons&&ai.skeletons.some(s=>s.hp<(aiCfg.skelMaxHp||25)*0.5);
+    if(canReinforce&&skelHpLow) chosen=canReinforce;
+    else if(canRaise&&skelCount<2) chosen=canRaise;
+    else if(canDrain&&ai.hp<ai.maxHp*0.65) chosen=canDrain;
+  }
+  if(aiKey==='mirel'){
+    const canSim=charSpells.find(s=>s.id==='simulacrum');
+    const canBewitch=charSpells.find(s=>s.id==='bewitch');
+    const canFeint=charSpells.find(s=>s.id==='feint');
+    const simCount=ai.simulacra?ai.simulacra.length:0;
+    if(canSim&&simCount<2) chosen=canSim;
+    else if(canBewitch&&!gs[opp].bewitched&&_rng()<0.55) chosen=canBewitch;
+    else if(canFeint&&ai.hp<ai.maxHp*0.65) chosen=canFeint;
+  }
+  if(aiKey==='thessaly'){
+    const canEnthral=charSpells.find(s=>s.id==='enthral');
+    const canWeave=charSpells.find(s=>s.id==='arcaneweave');
+    const canSpellbind=charSpells.find(s=>s.id==='spellbind');
+    if(canSpellbind&&!gs[opp].spellbound&&_rng()<0.60) chosen=canSpellbind;
+    else if(canWeave&&!ai.arcaneWeave) chosen=canWeave;
+    else if(canEnthral&&!gs[opp].enthralled&&_rng()<0.50) chosen=canEnthral;
   }
   if(!chosen){
     const dispelSpell=universalSpells.find(s=>s.element==='dispel');
@@ -3405,6 +4127,7 @@ function aiDecideNormal(who){
   const charSpells=available.filter(s=>s.id);
   const universalSpells=available.filter(s=>s.element);
   let chosen=null, aiDispelSelf=false, forceChannel=false;
+  if(ai.enthralled>0) return {chosen:null, aiDispelSelf:false, forceChannel:true};
   if(aiKey==='eldrad'&&!chosen){
     const canShield=charSpells.find(s=>s.id==='shield');
     const canCounter=charSpells.find(s=>s.id==='counter');
@@ -3517,6 +4240,54 @@ function aiDecideNormal(who){
     else if(canRockfall&&_rng()<0.70) chosen=canRockfall;
     else if(ai.mana<3&&ai.hp>ai.maxHp*0.40&&_rng()<0.65) forceChannel=true;
   }
+  if(aiKey==='weizan'&&!chosen){
+    const canConjure=charSpells.find(s=>s.id==='conjureblade');
+    const canBladestorm=charSpells.find(s=>s.id==='bladestorm');
+    const canPatience=charSpells.find(s=>s.id==='ironpatience');
+    if(canBladestorm&&ai.blades>=(aiCfg.maxBlades||3)) chosen=canBladestorm;
+    else if(canPatience&&ai.hp<ai.maxHp*0.55&&!ai.resist) chosen=canPatience;
+    else if(canConjure&&ai.blades<(aiCfg.maxBlades||3)) chosen=canConjure;
+    else if(ai.mana<2&&ai.hp>ai.maxHp*0.40&&_rng()<0.55) forceChannel=true;
+  }
+  if(aiKey==='gretch'&&!chosen){
+    const canPlague=charSpells.find(s=>s.id==='plague');
+    const canMaggot=charSpells.find(s=>s.id==='maggotcloud');
+    const canTotem=charSpells.find(s=>s.id==='bonetotem');
+    if(canPlague&&!p1.plague) chosen=canPlague;
+    else if(canTotem&&!ai.boneTotem&&ai.hp<ai.maxHp*0.70) chosen=canTotem;
+    else if(canMaggot&&!p1.maggotCloud) chosen=canMaggot;
+    else if(ai.mana<2&&ai.hp>ai.maxHp*0.40&&_rng()<0.55) forceChannel=true;
+  }
+  if(aiKey==='valdris'&&!chosen){
+    const canRaise=charSpells.find(s=>s.id==='raisedead');
+    const canDrain=charSpells.find(s=>s.id==='necroticdrain');
+    const canReinforce=charSpells.find(s=>s.id==='reinforce');
+    const skelCount=ai.skeletons?ai.skeletons.length:0;
+    const skelHpLow=ai.skeletons&&ai.skeletons.some(s=>s.hp<(aiCfg.skelMaxHp||25)*0.5);
+    if(canReinforce&&skelHpLow) chosen=canReinforce;
+    else if(canRaise&&skelCount<2) chosen=canRaise;
+    else if(canDrain&&ai.hp<ai.maxHp*0.60) chosen=canDrain;
+    else if(ai.mana<3&&ai.hp>ai.maxHp*0.40&&_rng()<0.55) forceChannel=true;
+  }
+  if(aiKey==='mirel'&&!chosen){
+    const canSim=charSpells.find(s=>s.id==='simulacrum');
+    const canBewitch=charSpells.find(s=>s.id==='bewitch');
+    const canFeint=charSpells.find(s=>s.id==='feint');
+    const simCount=ai.simulacra?ai.simulacra.length:0;
+    if(canSim&&simCount<2) chosen=canSim;
+    else if(canBewitch&&!p1.bewitched&&_rng()<0.60) chosen=canBewitch;
+    else if(canFeint&&ai.hp<ai.maxHp*0.60) chosen=canFeint;
+    else if(ai.mana<2&&ai.hp>ai.maxHp*0.40&&_rng()<0.50) forceChannel=true;
+  }
+  if(aiKey==='thessaly'&&!chosen){
+    const canEnthral=charSpells.find(s=>s.id==='enthral');
+    const canWeave=charSpells.find(s=>s.id==='arcaneweave');
+    const canSpellbind=charSpells.find(s=>s.id==='spellbind');
+    if(canSpellbind&&!p1.spellbound&&_rng()<0.65) chosen=canSpellbind;
+    else if(canWeave&&!ai.arcaneWeave) chosen=canWeave;
+    else if(canEnthral&&!p1.enthralled&&_rng()<0.55) chosen=canEnthral;
+    else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&_rng()<0.55) forceChannel=true;
+  }
   if(!chosen){
     const dispelSpell=universalSpells.find(s=>s.element==='dispel');
     if(dispelSpell){
@@ -3583,6 +4354,11 @@ function doAI(who='p2'){
       if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
       if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
       if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
+      if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+      if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
+      if(gs.p1.blades>0){ processBlades('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+      if(gs.p1.skeletons&&gs.p1.skeletons.length>0){ processSkeletonStrikes('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+      if(gs.p1.simulacra&&gs.p1.simulacra.length>0){ processSimulacra('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
       gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
       if(gs.p2.frozen>0){ gs.p2.frozen--; }
       finishAI(); return;
@@ -3593,6 +4369,11 @@ function doAI(who='p2'){
     if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
     if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
     if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
+    if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
+    if(gs.p1.blades>0){ processBlades('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+    if(gs.p1.skeletons&&gs.p1.skeletons.length>0){ processSkeletonStrikes('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+    if(gs.p1.simulacra&&gs.p1.simulacra.length>0){ processSimulacra('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
     gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
     if(gs.p2.frozen>0){
       gs.p2.frozen--;
@@ -3645,6 +4426,11 @@ function doAI(who='p2'){
 
   // Regen tick for AI
   if(ai.regen) processRegen(ai,ax,bH*.38);
+  if(ai.plague>0){ processPlagueDoT(ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+  if(ai.boneTotem>0) processBoneTotem(ai,ax,bH*.38);
+  if(gs[opp].blades>0){ processBlades(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+  if(gs[opp].skeletons&&gs[opp].skeletons.length>0){ processSkeletonStrikes(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+  if(gs[opp].simulacra&&gs[opp].simulacra.length>0){ processSimulacra(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
 
   // Passive mana regen
   ai.mana=Math.min(MAX_MANA,ai.mana+1);
@@ -3669,13 +4455,11 @@ function doAI(who='p2'){
 
   if(!chosen){
     // Channel
-    if(ai.timeDrain>0){
-      ai.mana=Math.min(MAX_MANA,ai.mana+2);
-      addFloat(ax,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
-    } else {
-      ai.mana=Math.min(MAX_MANA,ai.mana+aiCfg.channelAmt);
-      addFloat(ax,bH*.38,'+'+aiCfg.channelAmt+' Mana','#ff8888',13);
-    }
+    let aiChanGain=ai.timeDrain>0?2:aiCfg.channelAmt;
+    if(ai.maggotCloud>0){ const d=Math.min(3,aiChanGain); aiChanGain=Math.max(0,aiChanGain-d); addFloat(ax,bH*.5,'🪲 −'+d+' Drained!','#55aa33',12); }
+    if(ai.timeDrain>0){ addFloat(ax,bH*.38,'⏳ Drained! +'+aiChanGain+' Mana','#ffcc44',13); }
+    else { addFloat(ax,bH*.38,'+'+aiChanGain+' Mana','#ff8888',13); }
+    ai.mana=Math.min(MAX_MANA,ai.mana+aiChanGain);
     if(ai.candle>0) triggerCandleBurn(ai,ax);
     anim(who,'cast',700);
     if(ai.shield>0){
@@ -3766,6 +4550,11 @@ function doAINormal(who='p2'){
       if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
       if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
       if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
+      if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+      if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
+      if(gs.p1.blades>0){ processBlades('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+      if(gs.p1.skeletons&&gs.p1.skeletons.length>0){ processSkeletonStrikes('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+      if(gs.p1.simulacra&&gs.p1.simulacra.length>0){ processSimulacra('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
       gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
       if(gs.p2.frozen>0){ gs.p2.frozen--; }
       finishAI(); return;
@@ -3776,6 +4565,11 @@ function doAINormal(who='p2'){
     if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
     if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
     if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
+    if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
+    if(gs.p1.blades>0){ processBlades('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+    if(gs.p1.skeletons&&gs.p1.skeletons.length>0){ processSkeletonStrikes('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+    if(gs.p1.simulacra&&gs.p1.simulacra.length>0){ processSimulacra('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
     gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
     if(gs.p2.frozen>0){
       gs.p2.frozen--;
@@ -3812,6 +4606,11 @@ function doAINormal(who='p2'){
   if(ai.blizzard>0){ processBlizzard(ai,ax,bH*.38); checkWin(); if(!battleRunning) return; }
   if(ai.burn>0){ processBurn(ai,ax,bH*.38); checkWin(); if(!battleRunning) return; }
   if(ai.regen) processRegen(ai,ax,bH*.38);
+  if(ai.plague>0){ processPlagueDoT(ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+  if(ai.boneTotem>0) processBoneTotem(ai,ax,bH*.38);
+  if(gs[opp].blades>0){ processBlades(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+  if(gs[opp].skeletons&&gs[opp].skeletons.length>0){ processSkeletonStrikes(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+  if(gs[opp].simulacra&&gs[opp].simulacra.length>0){ processSimulacra(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
 
   ai.mana=Math.min(MAX_MANA,ai.mana+1);
 
@@ -3834,13 +4633,11 @@ function doAINormal(who='p2'){
   dispelSelf=aiDispelSelf;
   // ── Channel fallback ────────────────────────────────────────
   if(!chosen){
-    if(ai.timeDrain>0){
-      ai.mana=Math.min(MAX_MANA,ai.mana+2);
-      addFloat(ax,bH*.38,'⏳ Drained! +2 Mana','#ffcc44',13);
-    } else {
-      ai.mana=Math.min(MAX_MANA,ai.mana+aiCfg.channelAmt);
-      addFloat(ax,bH*.38,'+'+aiCfg.channelAmt+' Mana','#ff8888',13);
-    }
+    let aiChanGain=ai.timeDrain>0?2:aiCfg.channelAmt;
+    if(ai.maggotCloud>0){ const d=Math.min(3,aiChanGain); aiChanGain=Math.max(0,aiChanGain-d); addFloat(ax,bH*.5,'🪲 −'+d+' Drained!','#55aa33',12); }
+    if(ai.timeDrain>0){ addFloat(ax,bH*.38,'⏳ Drained! +'+aiChanGain+' Mana','#ffcc44',13); }
+    else { addFloat(ax,bH*.38,'+'+aiChanGain+' Mana','#ff8888',13); }
+    ai.mana=Math.min(MAX_MANA,ai.mana+aiChanGain);
     if(ai.candle>0) triggerCandleBurn(ai,ax);
     anim(who,'cast',700);
     if(ai.shield>0){
@@ -3934,6 +4731,11 @@ function finishAI(){
 
   // Regen tick for player
   if(gs.p1.regen) processRegen(gs.p1,bW*.22,bH*.38);
+  if(gs.p1.plague>0){ processPlagueDoT(gs.p1,bW*.22,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+  if(gs.p1.boneTotem>0) processBoneTotem(gs.p1,bW*.22,bH*.38);
+  if(gs.p2.blades>0){ processBlades('p2',gs.p1,bW*.22,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+  if(gs.p2.skeletons&&gs.p2.skeletons.length>0){ processSkeletonStrikes('p2',gs.p1,bW*.22,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
+  if(gs.p2.simulacra&&gs.p2.simulacra.length>0){ processSimulacra('p2',gs.p1,bW*.22,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
 
   // Passive mana regen
   gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+1);
@@ -6655,14 +7457,16 @@ function startTrainingBattle(){
 const CHAR_COLORS_TUT={
   eldrad:'#4af0ff',mal:'#ff4a6e',sylvara:'#44cc88',aurelia:'#ffcc44',
   gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zacharius:'#aaff44',
-  mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040'
+  mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040',
+  weizan:'#aabbee',gretch:'#55aa33',valdris:'#8899cc',mirel:'#cc88ff',thessaly:'#ffdd88'
 };
 const CHAR_NAMES_TUT={
   eldrad:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
   gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zacharius',
-  mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin'
+  mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin',
+  weizan:'Weizan',gretch:'Gretch',valdris:'Valdris',mirel:'Mirel',thessaly:'Thessaly'
 };
-const CHAR_KEYS_TUT=['eldrad','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin'];
+const CHAR_KEYS_TUT=['eldrad','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly'];
 
 const TUTORIAL_TOPICS=[
   {id:'welcome',     label:'Welcome'},
@@ -6818,6 +7622,41 @@ const TUTORIAL_CONVOS={
     {key:'durin',text:"Stonesoul reduces magical damage by 40% for 5 turns. A Lightning Bolt that would kill a lesser wizard? A minor inconvenience to Durin."},
     {key:'durin',text:"Rockfall drops three boulders — about 9 damage each, all physical. It pierces magical shields and resistances entirely. 4 mana for a powerful, unavoidable attack."},
     {key:'durin',text:"I am slow. I am deliberate. I channel while others waste mana on panicked shields. And when I am ready... the mountain falls."},
+  ],
+  weizan:[
+    {key:'weizan',text:"I am Weizan. My fighting style requires patience — I build up blades one by one, then release them all in a single devastating storm. 90 HP, 6 mana."},
+    {key:'weizan',text:"Conjure Blade costs 2 mana and summons a phantom blade that orbits me. Up to three blades can orbit at once. Each one deals 4 damage to my opponent every turn automatically."},
+    {key:'weizan',text:"Bladestorm releases all orbiting blades at once — about 12 damage each, all physical. It costs nothing when you have blades to spend. Wait until you have two or three for maximum impact."},
+    {key:'weizan',text:"Iron Patience costs 2 mana and grants 30% damage resistance for 3 turns. When I am building blades and need to survive long enough to unleash them, this buys me the time I need."},
+    {key:'weizan',text:"My blades are physical — they bypass magical shields and cannot be silenced. But they can be Dispelled. A smart opponent will strip them before I can unleash the storm. Do not give them the chance."},
+  ],
+  gretch:[
+    {key:'gretch',text:"Heh. Come closer. Gretch won't bite. Much. 85 HP, 5 mana. My kit is about poison and drain — I infect you, starve you, and keep myself alive while you rot."},
+    {key:'gretch',text:"Plague is 3 mana — it infects my foe for 6 damage every round over 5 turns. That's 30 damage if left untreated. And here's the cruel part: any spell they cast while plagued deals 8 extra damage to themselves."},
+    {key:'gretch',text:"Maggot Cloud is 2 mana. A swarm of flies reduces my opponent's mana per channel by 3 for 3 turns. They can barely afford anything while the cloud buzzes around them."},
+    {key:'gretch',text:"Bone Totem is 3 mana — a carved skull that heals me for 5 HP each turn for 4 turns. That's 20 total recovery. Keep me alive while the plague does its work. It can be Dispelled, so protect it when you can."},
+    {key:'gretch',text:"Hex Bolt is my free attack. Eight dark damage. Not elegant. Not subtle. Just results. Plague them, drain them, totem up, and let time finish the job."},
+  ],
+  valdris:[
+    {key:'valdris',text:"I am Valdris. The Deathless. I do not fear mortality — I have already negotiated terms with it. 82 HP, 8 mana. My skeletons are my body and my shield."},
+    {key:'valdris',text:"Raise Dead costs 4 mana and summons a skeleton with 25 HP. It attacks for 7 damage per turn and absorbs all damage meant for me first. Up to two skeletons at once. My enemies must kill my servants before they can touch me."},
+    {key:'valdris',text:"Necrotic Drain costs 3 mana — deals 18 dark damage and heals me for 8 HP. When my skeletons can't save me fast enough, I take their life force directly."},
+    {key:'valdris',text:"Reinforce costs 2 mana and heals all my skeletons for 15 HP. Damaged skeletons become fresh barriers. Keep them healthy and the wall never breaks."},
+    {key:'valdris',text:"The Deathless passive: if a blow would kill me while I have mana, I survive — spending 6 mana to endure the hit. Channel wisely. While mana flows, death cannot claim me. When it runs dry... even the Deathless must fall."},
+  ],
+  mirel:[
+    {key:'mirel',text:"Nothing you see is real. I am Mirel. 85 HP, 5 mana. I create copies of myself — simulacra — that fight on my behalf and intercept attacks. What do you do when you cannot tell which wizard to strike?"},
+    {key:'mirel',text:"Simulacrum costs 3 mana and creates a copy with 20 HP and 6 mana. It acts on my behalf every turn — channelling or casting spells from its own mana pool. Up to two simulacra at once. Each one has a 50% chance to intercept attacks aimed at me."},
+    {key:'mirel',text:"Bewitch costs 3 mana. The next non-basic spell my opponent casts is reflected back at them. They don't know which cast will betray them — so it poisons every decision they make."},
+    {key:'mirel',text:"Feint costs 2 mana and deals 15 damage directly — no minigame, no ritual, no warning. When they're focused on managing my simulacra, Feint catches them completely off guard."},
+    {key:'mirel',text:"My simulacra can be Dispelled. That is the counterplay. But while they live, every attack on me is a coin flip — and I win when my opponent runs out of dispels and patience."},
+  ],
+  thessaly:[
+    {key:'thessaly',text:"I don't fight you. I rearrange the battlefield until you can no longer fight me effectively. 88 HP, 6 mana. I control what spells cost, when they fire, and whether they work at all."},
+    {key:'thessaly',text:"Enthral costs 3 mana — my opponent is mesmerised for 1 turn and can only channel. A free action for me while they lose tempo. Simple, but the timing is everything."},
+    {key:'thessaly',text:"Arcane Weave costs 2 mana — for my next 3 basic attacks, each one deals 6 extra damage and drains 2 mana from my opponent. Every free strike suddenly becomes a resource battle."},
+    {key:'thessaly',text:"Spellbind costs 3 mana — I choose one of my opponent's spells and make it cost 3 extra mana for 5 turns. Pick their key ability. Suddenly their signature move is barely affordable."},
+    {key:'thessaly',text:"She doesn't fight you. She engineers a position where you cannot win. By the time you understand what I've done, you've already run out of answers."},
   ],
 };
 
