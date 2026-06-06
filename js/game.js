@@ -3285,16 +3285,18 @@ function endMyTurn(skipShieldDecrement=false){
     const who=gs.turnPlayer;
     const whoState=gs[who];
 
-    // Simultaneous 2P: after P1 commits, skip ticks and show P2 handoff for their input
-    if(who==='p1'){
+    // Simultaneous 2P: first submitter waits for the other; both submitted → resolve
+    const other=who==='p1'?'p2':'p1';
+    const otherPending=who==='p1'?pendingP2Action:pendingP1Action;
+    if(!otherPending){
       const delay=Math.max(0,(gs.lastAnimEnd||0)-Date.now())+600;
       if(!gameEnded) setTimeout(()=>{
-        if(!gameEnded) showHandoffOverlay('p2',()=>startPlayerTurn('p2'));
+        if(!gameEnded) showHandoffOverlay(other,()=>startPlayerTurn(other));
       }, delay);
       return;
     }
 
-    // P2 just finished input — resolve both actions simultaneously
+    // Both players have committed — resolve simultaneously
     resolveSimRound();
 
   } else {
