@@ -100,6 +100,10 @@ const CHAR_DISPLAY={
   thessaly:{
     stats:[['❤ HP','88'],['🌀 Enthral','3M → enemy forced to channel next turn'],['🌟 Arcane Weave','2M → next 3 basic attacks: +6 dmg, drain 2 mana each'],['🔒 Spellbind','3M → one enemy spell costs +3 mana for 5 turns']],
     flavour:'Enthral wastes their turn. Spellbind targets their most expensive spell. Weave turns basic attacks into mana denial.'
+  },
+  korvath:{
+    stats:[['❤ HP','95'],['🐉 Dragon Scales','4M → 33% dmg reduction / 5T; attacker takes 5 fire dmg'],['🌋 Wyrmfire Breath','4M → 16 fire dmg + 5 dmg/turn × 2T burn'],['💥 Ancient Wrath','6M → 35 fire damage. Once per duel.']],
+    flavour:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.'
   }
 };
 
@@ -163,23 +167,23 @@ function newState(){
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0,
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0, dragonScales:0,
         stoneskin:0, stoneskinHp:0, stonesoul:0,
         blades:0,
         plague:0, plagueSpellDmg:0, maggotCloud:0, boneTotem:0,
         skeletons:[],
         bewitched:false, simulacra:[],
-        enthralled:0, arcaneWeave:0, spellbound:null},
+        enthralled:0, arcaneWeave:0, spellbound:null, usedSpells:{}},
     p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
         shield:0, shieldHp:0, burn:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0,
+        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0, dragonScales:0,
         stoneskin:0, stoneskinHp:0, stonesoul:0,
         blades:0,
         plague:0, plagueSpellDmg:0, maggotCloud:0, boneTotem:0,
         skeletons:[],
         bewitched:false, simulacra:[],
-        enthralled:0, arcaneWeave:0, spellbound:null},
+        enthralled:0, arcaneWeave:0, spellbound:null, usedSpells:{}},
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
     parts:[], floats:[], projs:[], beams:[], manaBurnFires:[],
@@ -1144,6 +1148,20 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.strokeStyle=`rgba(136,221,255,${0.35+0.1*Math.sin(t/240)})`; bx.stroke();
     bx.shadowBlur=0; bx.globalAlpha=1; bx.restore();
   }
+  if(state&&state.dragonScales>0){
+    bx.save(); bx.translate(x,wy);
+    bx.globalAlpha=0.5+0.15*Math.sin(t/300); bx.strokeStyle='#cc6622'; bx.fillStyle='rgba(204,102,34,0.18)';
+    bx.lineWidth=1.5; bx.shadowColor='#ff8844'; bx.shadowBlur=6;
+    for(let row=-1;row<=1;row++){
+      for(let col=-2;col<=2;col++){
+        const sx=col*sz*.18, sy=row*sz*.20+sz*.05;
+        const r=Math.sqrt(sx*sx+(sy*1.6)*(sy*1.6));
+        if(r>sz*.78) continue;
+        bx.beginPath(); bx.arc(sx,sy,sz*.10,0.15*Math.PI,0.85*Math.PI); bx.fill(); bx.stroke();
+      }
+    }
+    bx.shadowBlur=0; bx.globalAlpha=1; bx.restore();
+  }
   if(state&&state.charge>0){
     const n=state.charge;
     for(let i=0;i<n;i++){
@@ -1636,6 +1654,7 @@ function refreshStatusBar(){
   if(gs.p1.blades>0)        tags.push(`<span class="status-tag foresight">🗡️ ${p1Cfg.name} BLADES (${gs.p1.blades})</span>`);
   if(gs.p1.skeletons&&gs.p1.skeletons.length>0) tags.push(`<span class="status-tag regen">💀 ${p1Cfg.name} SKELETONS (${gs.p1.skeletons.length})</span>`);
   if(gs.p1.simulacra&&gs.p1.simulacra.length>0) tags.push(`<span class="status-tag foresight">👤 ${p1Cfg.name} SIMULACRA (${gs.p1.simulacra.length})</span>`);
+  if(gs.p1.dragonScales>0)  tags.push(`<span class="status-tag freeze">🐉 ${p1Cfg.name} DRAGON SCALES (${gs.p1.dragonScales})</span>`);
   if(p2Cfg){
     if(gs.p2.resist>0)    tags.push(`<span class="status-tag resist">🩸 ${p2Cfg.name} RESIST (${gs.p2.resist})</span>`);
     if(gs.p2.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
@@ -1670,6 +1689,7 @@ function refreshStatusBar(){
     if(gs.p2.blades>0)        tags.push(`<span class="status-tag foresight">🗡️ ${p2Cfg.name} BLADES (${gs.p2.blades})</span>`);
     if(gs.p2.skeletons&&gs.p2.skeletons.length>0) tags.push(`<span class="status-tag regen">💀 ${p2Cfg.name} SKELETONS (${gs.p2.skeletons.length})</span>`);
     if(gs.p2.simulacra&&gs.p2.simulacra.length>0) tags.push(`<span class="status-tag foresight">👤 ${p2Cfg.name} SIMULACRA (${gs.p2.simulacra.length})</span>`);
+    if(gs.p2.dragonScales>0)  tags.push(`<span class="status-tag freeze">🐉 ${p2Cfg.name} DRAGON SCALES (${gs.p2.dragonScales})</span>`);
   }
   el.innerHTML=tags.join('');
 }
@@ -1808,6 +1828,9 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='enthral')        return targetState.enthralled>0;
   if(spellId==='arcaneweave')    return casterState.arcaneWeave>0;
   if(spellId==='spellbind')      return false;
+  if(spellId==='dragonscales')   return casterState.resist>0;
+  if(spellId==='wyrmfirebreath') return false;
+  if(spellId==='ancientwrath')   return casterState.usedSpells&&casterState.usedSpells.ancientwrath;
   return false;
 }
 
@@ -2128,6 +2151,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
         targetState.hp=Math.max(0,targetState.hp-dmg);
         if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
         if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+        if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
         if(targetState.charge>0){
           applyDischarge(targetState,casterState,cx,tx);
           checkWin(); if(!battleRunning) return;
@@ -2323,6 +2347,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       targetState.hp=Math.max(0,targetState.hp-dmg);
       if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
       if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
       for(let i=0;i<18;i++){
         const a=i/18*Math.PI*2;
         gs.parts.push({x:tx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#ff6600':'#ffaa00',
@@ -2525,6 +2550,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       targetState.hp=Math.max(0,targetState.hp-dmg);
       if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
       if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
       // Lightning arc visual
       for(let i=0;i<14;i++){
         const a=i/14*Math.PI*2;
@@ -2670,6 +2696,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       }
       targetState.hp=Math.max(0,targetState.hp-dmg);
       if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
       spawnParts(tx,bH*.38,casterCfg.col,16);
       spawnBeam(cx,bH*.38,tx,bH*.38,casterCfg.col);
       addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
@@ -2828,6 +2855,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       dealDmgToPlayer(targetWho,drainDmg,tx,bH*.38,false,false);
       if(targetState.frostArmor>0&&drainDmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
       if(targetState.flameShield>0&&drainDmg>0) applyFlameShieldRetaliation(casterState,cx);
+      if(targetState.dragonScales>0&&drainDmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
       const healAmt=casterCfg.necroticDrainHeal||8;
       casterState.hp=Math.min(casterState.maxHp,casterState.hp+healAmt);
       addFloat(tx,bH*.33,'🩸 Drain! −'+drainDmg,casterCfg.col,16);
@@ -2882,6 +2910,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
       const targetWho=caster==='p1'?'p2':'p1';
       dealDmgToPlayer(targetWho,feintDmg,tx,bH*.38,true,true);
       if(targetState.flameShield>0) applyFlameShieldRetaliation(casterState,cx);
+      if(targetState.dragonScales>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
       addFloat(tx,bH*.33,'🗡️ Feint! −'+feintDmg,casterCfg.col,16);
       spawnParts(tx,bH*.38,casterCfg.col,18);
       flash(casterCfg.col);
@@ -2965,6 +2994,135 @@ function resolveCharSpell(spellId,caster,perfect=false){
     }
     fireRock();
     return;
+  // ── KORVATH ──────────────────────────────────────────────────
+  } else if(spellId==='dragonscales'){
+    casterState.resist=(casterCfg.dragonScalesDur||5)+(perfect?1:0);
+    casterState.dragonScales=casterState.resist;
+    addFloat(cx,bH*.33,'🐉 Dragon Scales! ('+casterState.resist+'T)',casterCfg.col,13);
+    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
+    for(let i=0;i<16;i++){
+      const a=i/16*Math.PI*2;
+      gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#cc6622',
+        vx:Math.cos(a)*0.8,vy:Math.sin(a)*0.8-0.5,sz:2+_rng()*2.5,life:1,dec:.016,noGrav:true});
+    }
+    spawnParts(cx,bH*.38,'#dd8844',8); spawnParts(cx,bH*.38,'#ffcc88',4);
+    anim(caster,'shield',700);
+  } else if(spellId==='wyrmfirebreath'){
+    if(casterState.invisible>0){
+      casterState.invisible=0;
+      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+    }
+    let dmg=Math.round((casterCfg.wyrmfireDmg||16)*casterCfg.dmgMult);
+    if(targetState.foresight){
+      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
+      targetState.foresight=false;
+      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#ff6622',6);
+      anim(caster,'cast',600);
+    } else if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.haste>0&&_rng()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else if(targetState.blink>0&&_rng()<0.5){
+      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
+      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
+      flash('#9988cc');
+      anim(caster,'cast',600);
+    } else {
+      if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
+      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
+      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
+      const [wfDmg,wfSkin]=applyTargetSkins(targetState,dmg,false);
+      dmg=wfDmg;
+      if(wfSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+wfSkin+' Skin','#b08040',10);
+      if(targetState.shield>0){
+        const absorbed=Math.min(dmg,targetState.shieldHp);
+        targetState.shieldHp-=absorbed; dmg-=absorbed;
+        if(targetState.shieldHp<=0){
+          targetState.shield=0; targetState.counter=false;
+          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
+          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
+        } else {
+          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+          spawnParts(tx,bH*.38,'#4af0ff',8);
+        }
+      }
+      targetState.hp=Math.max(0,targetState.hp-dmg);
+      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
+      spawnParts(tx,bH*.38,'#ff6622',18); spawnParts(tx,bH*.38,'#ffaa44',8);
+      addFloat(tx,bH*.38,'-'+dmg,'#ff6622',20);
+      flash('#ff6622');
+      if(targetState.ward>0){
+        targetState.ward=0;
+        addFloat(tx,bH*.33+20,'🔰 Warded!','#ffcc44',11);
+      } else if(dmg>0){
+        targetState.burn=BURN_ROUNDS;
+        addFloat(tx,bH*.33+20,'🔥 Ablaze! ('+BURN_ROUNDS+'T)','#ff6622',12);
+      }
+      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+      else             {anim('p2','cast',800); anim('p1','hit',800);}
+    }
+  } else if(spellId==='ancientwrath'){
+    if(casterState.invisible>0){
+      casterState.invisible=0;
+      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+    }
+    casterState.usedSpells=casterState.usedSpells||{};
+    casterState.usedSpells.ancientwrath=true;
+    let dmg=Math.round((casterCfg.ancientWrathDmg||35)*casterCfg.dmgMult);
+    if(targetState.foresight){
+      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
+      targetState.foresight=false;
+      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#ff4400',6);
+      anim(caster,'cast',600);
+    } else if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.haste>0&&_rng()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else if(targetState.blink>0&&_rng()<0.5){
+      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
+      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
+      flash('#9988cc');
+      anim(caster,'cast',600);
+    } else {
+      if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
+      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
+      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
+      const [awDmg,awSkin]=applyTargetSkins(targetState,dmg,false);
+      dmg=awDmg;
+      if(awSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+awSkin+' Skin','#b08040',10);
+      if(targetState.shield>0){
+        const absorbed=Math.min(dmg,targetState.shieldHp);
+        targetState.shieldHp-=absorbed; dmg-=absorbed;
+        if(targetState.shieldHp<=0){
+          targetState.shield=0; targetState.counter=false;
+          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
+          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
+        } else {
+          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+          spawnParts(tx,bH*.38,'#4af0ff',8);
+        }
+      }
+      targetState.hp=Math.max(0,targetState.hp-dmg);
+      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
+      addFloat(cx,bH*.26,'💥 ANCIENT WRATH!',casterCfg.col,16);
+      spawnParts(tx,bH*.38,'#ff4400',24); spawnParts(tx,bH*.38,'#ffaa00',10);
+      addFloat(tx,bH*.38,'-'+dmg,'#ff4400',24);
+      flash('#ff4400');
+      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+      else             {anim('p2','cast',800); anim('p1','hit',800);}
+    }
   } else if(spellId==='basicattack'){
     if(casterState.invisible>0){
       casterState.invisible=0;
@@ -3032,6 +3190,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
         dealDmgToPlayer(targetWhoBA,dmg,tx,bH*.38,false,false);
         if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
         if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+        if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
         if(isPhysical&&!basicSpell.piercesDischarge&&targetState.charge>0){
           applyDischarge(targetState,casterState,cx,tx);
           checkWin(); if(!battleRunning) return;
@@ -3115,7 +3274,7 @@ function castSpell(spell,target,tx,ty,caster){
         ward:'Ward',haste:'Haste',blink:'Blink',invisible:'Vanish',counter:'Counter',
         stoneskin:'Stoneskin',stonesoul:'Stonesoul',blades:'Blades',boneTotem:'Bone Totem',
         skeletons:'Skeletons',simulacra:'Simulacra',bewitched:'Bewitch',
-        arcaneWeave:'Arcane Weave',spellbound:'Spellbound'};
+        arcaneWeave:'Arcane Weave',spellbound:'Spellbound',dragonScales:'Dragon Scales'};
       const oppBuffs=[];
       if(targetState.shield>0)      oppBuffs.push('shield');
       if(targetState.foresight)     oppBuffs.push('foresight');
@@ -3138,6 +3297,7 @@ function castSpell(spell,target,tx,ty,caster){
       if(targetState.bewitched)     oppBuffs.push('bewitched');
       if(targetState.arcaneWeave>0) oppBuffs.push('arcaneWeave');
       if(targetState.spellbound)    oppBuffs.push('spellbound');
+      if(targetState.dragonScales>0) oppBuffs.push('dragonScales');
       spawnParts(dispelTargetX,ty,'#ffaaff',20);
       if(oppBuffs.length>0){
         if(_rng()<0.70){
@@ -3151,6 +3311,7 @@ function castSpell(spell,target,tx,ty,caster){
           else if(stripped==='simulacra') targetState.simulacra=[];
           else if(stripped==='bewitched') targetState.bewitched=false;
           else if(stripped==='spellbound') targetState.spellbound=null;
+          else if(stripped==='dragonScales'){targetState.dragonScales=0; targetState.resist=0;}
           else targetState[stripped]=0;
           for(let i=0;i<28;i++){
             const a=-Math.PI/2+(-0.55+_rng()*1.1), sp=0.7+_rng()*1.8;
@@ -3292,6 +3453,7 @@ function castSpell(spell,target,tx,ty,caster){
   const rx=caster==='p1'?bW*.22:bW*.78;
   if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,rx);
   if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,rx);
+  if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,rx);
   spawnParts(tx,ty,spell.col,impactCount);
   addFloat(tx,ty,'-'+dmg,spell.col,22);
   flash(spell.col);
@@ -3391,7 +3553,7 @@ function processBlizzard(target,tx,ty){
   if(_rng()<0.15&&target.frozen<=0) target.frozen=1;
 }
 
-const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink','stonesoul','stoneskin','plague','maggotCloud','boneTotem','enthralled'];
+const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink','stonesoul','stoneskin','plague','maggotCloud','boneTotem','enthralled','dragonScales'];
 function tickStatuses(state){
   STATUS_TIMERS.forEach(k=>{ if(state[k]>0) state[k]--; });
   if(state.stoneskin<=0) state.stoneskinHp=0;
@@ -3630,6 +3792,13 @@ function applyFlameShieldRetaliation(casterState,cx){
   spawnParts(cx,bH*.38,'#ff6600',8);
 }
 
+function applyDragonScalesRetaliation(casterState,targetCfg,cx){
+  const fireDmg=targetCfg.dragonScalesRetaliationDmg||5;
+  casterState.hp=Math.max(0,casterState.hp-fireDmg);
+  addFloat(cx,bH*.33,'🐉 Scales! −'+fireDmg,'#cc6622',12);
+  spawnParts(cx,bH*.38,'#cc6622',8);
+}
+
 function applyTargetSkins(targetState,dmg,isPhysical){
   if(!isPhysical&&targetState.stonesoul>0) dmg=Math.round(dmg*0.6);
   let skinAbsorbed=0;
@@ -3688,6 +3857,7 @@ function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
   targetState.hp=Math.max(0,targetState.hp-dmg);
   if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
   if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+  if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
   if(basicSpell.physical&&!basicSpell.piercesDischarge&&targetState.charge>0){
     applyDischarge(targetState,casterState,cx,tx);
   }
@@ -3743,6 +3913,7 @@ function doRockfallHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx)
   targetState.hp=Math.max(0,targetState.hp-dmg);
   if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
   if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+  if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
   if(targetState.charge>0) applyDischarge(targetState,casterState,cx,tx);
   for(let i=0;i<10;i++){
     const a=i/10*Math.PI*2;
@@ -4082,6 +4253,14 @@ function aiDecideEasy(who){
     else if(canWeave&&!ai.arcaneWeave) chosen=canWeave;
     else if(canEnthral&&!gs[opp].enthralled&&_rng()<0.50) chosen=canEnthral;
   }
+  if(aiKey==='korvath'){
+    const canScales=charSpells.find(s=>s.id==='dragonscales');
+    const canWyrmfire=charSpells.find(s=>s.id==='wyrmfirebreath');
+    const canWrath=charSpells.find(s=>s.id==='ancientwrath');
+    if(canWrath&&gs[opp].hp<=(aiCfg.ancientWrathDmg||35)) chosen=canWrath;
+    else if(canScales&&ai.resist<=0&&ai.hp<ai.maxHp*0.75) chosen=canScales;
+    else if(canWyrmfire&&gs[opp].burn<=0) chosen=canWyrmfire;
+  }
   if(!chosen){
     const dispelSpell=universalSpells.find(s=>s.element==='dispel');
     if(dispelSpell){
@@ -4287,6 +4466,15 @@ function aiDecideNormal(who){
     else if(canWeave&&!ai.arcaneWeave) chosen=canWeave;
     else if(canEnthral&&!p1.enthralled&&_rng()<0.55) chosen=canEnthral;
     else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&_rng()<0.55) forceChannel=true;
+  }
+  if(aiKey==='korvath'&&!chosen){
+    const canScales=charSpells.find(s=>s.id==='dragonscales');
+    const canWyrmfire=charSpells.find(s=>s.id==='wyrmfirebreath');
+    const canWrath=charSpells.find(s=>s.id==='ancientwrath');
+    if(canWrath&&p1.hp<=(aiCfg.ancientWrathDmg||35)) chosen=canWrath;
+    else if(canScales&&ai.resist<=0&&ai.hp<ai.maxHp*0.75) chosen=canScales;
+    else if(canWyrmfire&&p1.burn<=0) chosen=canWyrmfire;
+    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&_rng()<0.45) forceChannel=true;
   }
   if(!chosen){
     const dispelSpell=universalSpells.find(s=>s.element==='dispel');
@@ -7458,15 +7646,17 @@ const CHAR_COLORS_TUT={
   eldrad:'#4af0ff',mal:'#ff4a6e',sylvara:'#44cc88',aurelia:'#ffcc44',
   gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zacharius:'#aaff44',
   mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040',
-  weizan:'#aabbee',gretch:'#55aa33',valdris:'#8899cc',mirel:'#cc88ff',thessaly:'#ffdd88'
+  weizan:'#aabbee',gretch:'#55aa33',valdris:'#8899cc',mirel:'#cc88ff',thessaly:'#ffdd88',
+  korvath:'#cc6622'
 };
 const CHAR_NAMES_TUT={
   eldrad:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
   gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zacharius',
   mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin',
-  weizan:'Weizan',gretch:'Gretch',valdris:'Valdris',mirel:'Mirel',thessaly:'Thessaly'
+  weizan:'Weizan',gretch:'Gretch',valdris:'Valdris',mirel:'Mirel',thessaly:'Thessaly',
+  korvath:'Korvath'
 };
-const CHAR_KEYS_TUT=['eldrad','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly'];
+const CHAR_KEYS_TUT=['eldrad','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath'];
 
 const TUTORIAL_TOPICS=[
   {id:'welcome',     label:'Welcome'},
@@ -7657,6 +7847,13 @@ const TUTORIAL_CONVOS={
     {key:'thessaly',text:"Arcane Weave costs 2 mana — for my next 3 basic attacks, each one deals 6 extra damage and drains 2 mana from my opponent. Every free strike suddenly becomes a resource battle."},
     {key:'thessaly',text:"Spellbind costs 3 mana — I choose one of my opponent's spells and make it cost 3 extra mana for 5 turns. Pick their key ability. Suddenly their signature move is barely affordable."},
     {key:'thessaly',text:"She doesn't fight you. She engineers a position where you cannot win. By the time you understand what I've done, you've already run out of answers."},
+  ],
+  korvath:[
+    {key:'korvath',text:"My ancestors bonded with dragons before your kingdom had a name. 95 HP, 6 mana. I am built to outlast you — and to end you, once, when it matters most."},
+    {key:'korvath',text:"Dragon Scales costs 4 mana — 33% damage reduction for 5 turns, and anyone who strikes me takes 5 fire damage in return. Hit me while it's up and you're paying for the privilege."},
+    {key:'korvath',text:"Wyrmfire Breath costs 4 mana — 16 direct fire damage, then 5 more damage per turn for 2 turns. Patient damage that adds up while you're busy defending."},
+    {key:'korvath',text:"Ancient Wrath costs 6 mana and deals 35 fire damage — but I can only call on it once per duel. When my dragon's spirit answers, make it count."},
+    {key:'korvath',text:"Outlast me, and you'll think you've won. Then I unleash Ancient Wrath — and you'll wish you'd ended this before I got the chance."},
   ],
 };
 
@@ -8205,6 +8402,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-valdris').addEventListener('click',()=>showWizardDetail('valdris'));
   document.getElementById('pick-mirel').addEventListener('click',()=>showWizardDetail('mirel'));
   document.getElementById('pick-thessaly').addEventListener('click',()=>showWizardDetail('thessaly'));
+  document.getElementById('pick-korvath').addEventListener('click',()=>showWizardDetail('korvath'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{
     document.getElementById('wizard-detail').classList.remove('active');

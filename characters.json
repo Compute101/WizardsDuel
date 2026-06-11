@@ -415,5 +415,30 @@
       {"id": "arcaneweave", "name": "Arcane Weave",  "icon": "🌟", "cost": 2, "costLabel": "2 Mana", "effectLabel": "Next 3 basic attacks deal +6 dmg and drain 2 mana from enemy"},
       {"id": "spellbind",   "name": "Spellbind",     "icon": "🔒", "cost": 3, "costLabel": "3 Mana", "effectLabel": "One enemy spell costs +3 mana for 5 turns"}
     ]
+  },
+  "korvath": {
+    "name": "KORVATH",
+    "title": "The Wyrmlord",
+    "sprite": "sprites/mage-dark.png",
+    "col": "#cc6622",
+    "taunts": [
+      "My ancestors burned kingdoms to ash. You are not even a kingdom.",
+      "Strike me. My scales have tasted dragonfire and grown harder for it.",
+      "I have one wrath left in me. You have already wasted my patience earning it."
+    ],
+    "hp": 95,
+    "startMana": 6,
+    "channelAmt": 5,
+    "dmgMult": 1.05,
+    "dragonScalesDur": 5,
+    "dragonScalesRetaliationDmg": 5,
+    "wyrmfireDmg": 16,
+    "ancientWrathDmg": 35,
+    "spells": [
+      {"id": "basicattack",   "name": "Drake Fang",     "icon": "🦷", "cost": 0, "costLabel": "Free",   "dmg": 9, "effectLabel": "Deal ~9 fire damage"},
+      {"id": "dragonscales",  "name": "Dragon Scales",  "icon": "🐉", "cost": 4, "costLabel": "4 Mana", "effectLabel": "33% dmg reduction for 5 turns; attacker takes 5 fire damage"},
+      {"id": "wyrmfirebreath","name": "Wyrmfire Breath","icon": "🌋", "cost": 4, "costLabel": "4 Mana", "effectLabel": "16 direct fire damage; sets ablaze for 5 dmg/turn over 2 turns"},
+      {"id": "ancientwrath",  "name": "Ancient Wrath",  "icon": "💥", "cost": 6, "costLabel": "6 Mana", "effectLabel": "35 fire damage. Once per duel.", "aiHint": "burst"}
+    ]
   }
 }
