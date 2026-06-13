@@ -1038,5 +1038,61 @@
         "aiHint": "burst"
       }
     ]
+  },
+  "nyxara": {
+    "name": "NYXARA",
+    "title": "The Hollow",
+    "sprite": "sprites/mage-dark.png",
+    "col": "#6633aa",
+    "taunts": [
+      "Every star dies eventually. I simply help them along.",
+      "You cling to your strength as if it makes you safe. The bigger they are, the more there is to take.",
+      "Don't struggle. The void doesn't hate you. It just... empties."
+    ],
+    "hp": 78,
+    "startMana": 6,
+    "channelAmt": 5,
+    "dmgMult": 1.0,
+    "gravityWellPct": 0.25,
+    "gravityWellMin": 5,
+    "eventHorizonPct": 0.4,
+    "eventHorizonMin": 10,
+    "eventHorizonRecoil": 6,
+    "spells": [
+      {
+        "id": "basicattack",
+        "name": "Void Lash",
+        "icon": "🖤",
+        "cost": 0,
+        "costLabel": "Free",
+        "dmg": 8,
+        "effectLabel": "Deal ~8 void damage"
+      },
+      {
+        "id": "singularity",
+        "name": "Singularity",
+        "icon": "🌀",
+        "cost": 4,
+        "costLabel": "4 Mana",
+        "effectLabel": "Opens a collapsing rift: 4/8/12 dmg over 3 turns (24 total)"
+      },
+      {
+        "id": "gravitywell",
+        "name": "Gravity Well",
+        "icon": "🌑",
+        "cost": 4,
+        "costLabel": "4 Mana",
+        "effectLabel": "Deals 25% of target's current HP (min 5)"
+      },
+      {
+        "id": "eventhorizon",
+        "name": "Event Horizon",
+        "icon": "🕳️",
+        "cost": 10,
+        "costLabel": "10 Mana",
+        "effectLabel": "Deals 40% of target's current HP (min 10); 6 recoil damage to self",
+        "aiHint": "burst"
+      }
+    ]
   }
 }

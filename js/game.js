@@ -1,5 +1,5 @@
 // ── CONSTANTS ──────────────────────────────────────────────
-const MAX_MANA=20, SHIELD_COST=3, BURN_DMG=5, BURN_ROUNDS=2, POISON_DMG=5, POISON_ROUNDS=3;
+const MAX_MANA=20, SHIELD_COST=3, BURN_DMG=5, BURN_ROUNDS=2, POISON_DMG=5, POISON_ROUNDS=3, VOID_COLLAPSE_DMG_STEP=4, VOID_COLLAPSE_ROUNDS=3;
 
 const SPELLS=[
   {name:'Inferno',        element:'fire',      icon:'🔥', dmg:38, cost:12, col:'#ff6622',
@@ -108,6 +108,10 @@ const CHAR_DISPLAY={
   fizzwick:{
     stats:[['❤ HP','80'],['🧪 Caustic Bomb','4M → 10 dmg + poison 5 dmg/turn × 3T'],['⚗️ Volatile Tonic','3M → 50% heal 20 HP, 50% Empowered'],['🧫 Unstable Concoction','5M → random 10-30 dmg']],
     flavour:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.'
+  },
+  nyxara:{
+    stats:[['❤ HP','78'],['🌀 Singularity','4M → collapsing rift: 4/8/12 dmg over 3T (24 total)'],['🌑 Gravity Well','4M → 25% of target\'s current HP (min 5)'],['🕳️ Event Horizon','10M → 40% of target\'s current HP (min 10); 6 recoil dmg to self']],
+    flavour:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.'
   }
 };
 
@@ -169,7 +173,7 @@ let trainingPickPhase=null; // 'p1' or 'p2' — which side is being chosen
 function newState(){
   gs={
     p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:p1Cfg.startMana,
-        shield:0, shieldHp:0, burn:0, poison:0, frozen:0, regen:null,
+        shield:0, shieldHp:0, burn:0, poison:0, voidCollapse:0, voidCollapseTick:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
         ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0, dragonScales:0,
         stoneskin:0, stoneskinHp:0, stonesoul:0,
@@ -179,7 +183,7 @@ function newState(){
         bewitched:false, simulacra:[],
         enthralled:0, arcaneWeave:0, spellbound:null, usedSpells:{}},
     p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:p2Cfg.startMana,
-        shield:0, shieldHp:0, burn:0, poison:0, frozen:0, regen:null,
+        shield:0, shieldHp:0, burn:0, poison:0, voidCollapse:0, voidCollapseTick:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
         ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0, dragonScales:0,
         stoneskin:0, stoneskinHp:0, stonesoul:0,
@@ -1130,6 +1134,22 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
     bx.globalAlpha=1; bx.shadowBlur=0;
   }
+  if(state&&state.voidCollapse>0){
+    bx.save(); bx.translate(x,wy);
+    for(let i=0;i<5;i++){
+      const phase=((t/900+i*0.2)%1);
+      const r=sz*.85*(1-phase);
+      const a=t/250+i*(Math.PI*2/5);
+      const px=Math.cos(a)*r, py=Math.sin(a)*r*0.5;
+      bx.globalAlpha=phase*0.9; bx.fillStyle=i%2?'#aa66ff':'#6633aa';
+      bx.shadowColor='#aa66ff'; bx.shadowBlur=6;
+      bx.beginPath(); bx.arc(px,py,sz*.03,0,Math.PI*2); bx.fill();
+    }
+    bx.globalAlpha=0.12+0.05*Math.sin(t/220); bx.fillStyle='#330055';
+    bx.beginPath(); bx.arc(0,0,sz*.18,0,Math.PI*2); bx.fill();
+    bx.globalAlpha=1; bx.shadowBlur=0;
+    bx.restore();
+  }
   if(state&&state.resist>0){
     bx.save(); bx.translate(x,wy);
     bx.globalAlpha=0.45+0.1*Math.sin(t/350); bx.strokeStyle='#cc3300'; bx.lineWidth=2.5;
@@ -1641,6 +1661,7 @@ function refreshStatusBar(){
   if(gs.p1.resist>0)      tags.push(`<span class="status-tag resist">🩸 ${p1Cfg.name} RESIST (${gs.p1.resist})</span>`);
   if(gs.p1.burn>0)        tags.push(`<span class="status-tag burn">🔥 ${p1Cfg.name} BURNING (${gs.p1.burn})</span>`);
   if(gs.p1.poison>0)      tags.push(`<span class="status-tag poison">🧪 ${p1Cfg.name} POISONED (${gs.p1.poison})</span>`);
+  if(gs.p1.voidCollapse>0) tags.push(`<span class="status-tag voidcollapse">🌀 ${p1Cfg.name} SINGULARITY (${gs.p1.voidCollapse})</span>`);
   if(gs.p1.frozen>0)      tags.push(`<span class="status-tag freeze">❄️ ${p1Cfg.name} FROZEN (${gs.p1.frozen})</span>`);
   if(gs.p1.empowered)     tags.push(`<span class="status-tag empower">💪 ${p1Cfg.name} EMPOWERED</span>`);
   if(gs.p1.foresight)     tags.push(`<span class="status-tag foresight">🔮 ${p1Cfg.name} FORESIGHT</span>`);
@@ -1677,6 +1698,7 @@ function refreshStatusBar(){
     if(gs.p2.resist>0)    tags.push(`<span class="status-tag resist">🩸 ${p2Cfg.name} RESIST (${gs.p2.resist})</span>`);
     if(gs.p2.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
     if(gs.p2.poison>0)    tags.push(`<span class="status-tag poison">🧪 ${p2Cfg.name} POISONED (${gs.p2.poison})</span>`);
+    if(gs.p2.voidCollapse>0) tags.push(`<span class="status-tag voidcollapse">🌀 ${p2Cfg.name} SINGULARITY (${gs.p2.voidCollapse})</span>`);
     if(gs.p2.frozen>0)    tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN (${gs.p2.frozen})</span>`);
     if(gs.p2.empowered)   tags.push(`<span class="status-tag empower">💪 ${p2Cfg.name} EMPOWERED</span>`);
     if(gs.p2.foresight)   tags.push(`<span class="status-tag foresight">🔮 ${p2Cfg.name} FORESIGHT</span>`);
@@ -1825,7 +1847,7 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='chainlightning') return casterState.charge<(casterCfg.chainLightningChargeCost||8);
   if(spellId==='conductivity')   return targetState.conductivity>0;
   if(spellId==='divineheal')     return casterState.hp>=casterState.maxHp;
-  if(spellId==='purge')          return !(casterState.burn>0||casterState.poison>0||casterState.frozen>0||casterState.blizzard>0||casterState.vineWhip>0||casterState.timeDrain>0||casterState.conductivity>0||casterState.candle>0||casterState.agony>0||casterState.corruption>0||casterState.silence>0||casterState.plague>0||casterState.maggotCloud>0);
+  if(spellId==='purge')          return !(casterState.burn>0||casterState.poison>0||casterState.voidCollapse>0||casterState.frozen>0||casterState.blizzard>0||casterState.vineWhip>0||casterState.timeDrain>0||casterState.conductivity>0||casterState.candle>0||casterState.agony>0||casterState.corruption>0||casterState.silence>0||casterState.plague>0||casterState.maggotCloud>0);
   if(spellId==='agony')          return targetState.agony>0;
   if(spellId==='silence')        return targetState.silence>0;
   if(spellId==='corruption')     return targetState.corruption>0;
@@ -1853,6 +1875,9 @@ function charSpellBlocked(spellId,casterState,casterCfg,targetState){
   if(spellId==='causticbomb')    return false;
   if(spellId==='volatiletonic')  return false;
   if(spellId==='unstableconcoction') return false;
+  if(spellId==='singularity')    return targetState.voidCollapse>0;
+  if(spellId==='gravitywell')    return false;
+  if(spellId==='eventhorizon')   return false;
   return false;
 }
 
@@ -2666,6 +2691,7 @@ function resolveCharSpell(spellId,caster,perfect=false){
     const cleared=[];
     if(casterState.burn>0)        {casterState.burn=0;         cleared.push('🔥');}
     if(casterState.poison>0)      {casterState.poison=0;       cleared.push('🧪');}
+    if(casterState.voidCollapse>0){casterState.voidCollapse=0; casterState.voidCollapseTick=0; cleared.push('🌀');}
     if(casterState.frozen>0)      {casterState.frozen=0;       cleared.push('❄️');}
     if(casterState.blizzard>0)    {casterState.blizzard=0;     cleared.push('🌨️');}
     if(casterState.vineWhip>0)    {casterState.vineWhip=0;     cleared.push('🌿');}
@@ -3283,6 +3309,115 @@ function resolveCharSpell(spellId,caster,perfect=false){
       if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
       else             {anim('p2','cast',800); anim('p1','hit',800);}
     }
+  // ── NYXARA ───────────────────────────────────────────────────
+  } else if(spellId==='singularity'){
+    if(casterState.invisible>0){
+      casterState.invisible=0;
+      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+    }
+    if(targetState.foresight){
+      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
+      targetState.foresight=false;
+      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#aa66ff',6);
+      anim(caster,'cast',600);
+    } else if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.haste>0&&_rng()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else if(targetState.blink>0&&_rng()<0.5){
+      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
+      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
+      flash('#9988cc');
+      anim(caster,'cast',600);
+    } else if(targetState.ward>0){
+      targetState.ward=0;
+      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13);
+      spawnParts(tx,bH*.38,'#ffcc44',14);
+      anim(caster,'cast',600);
+    } else {
+      targetState.voidCollapse=VOID_COLLAPSE_ROUNDS;
+      targetState.voidCollapseTick=0;
+      addFloat(tx,bH*.33,'🌀 Singularity! ('+VOID_COLLAPSE_ROUNDS+'T)','#aa66ff',13);
+      for(let i=0;i<16;i++){
+        const a=i/16*Math.PI*2;
+        gs.parts.push({x:tx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#6633aa',
+          vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2,sz:2+_rng()*2.5,life:1,dec:.018});
+      }
+      spawnParts(tx,bH*.38,'#aa66ff',10); spawnParts(tx,bH*.38,'#330055',6);
+      anim(caster,'cast',800);
+    }
+  } else if(spellId==='gravitywell'||spellId==='eventhorizon'){
+    if(casterState.invisible>0){
+      casterState.invisible=0;
+      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
+    }
+    const pct=spellId==='gravitywell'?(casterCfg.gravityWellPct||0.25):(casterCfg.eventHorizonPct||0.40);
+    const minDmg=spellId==='gravitywell'?(casterCfg.gravityWellMin||5):(casterCfg.eventHorizonMin||10);
+    let dmg=Math.max(minDmg,Math.round(targetState.hp*pct));
+    if(targetState.foresight){
+      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
+      targetState.foresight=false;
+      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#aa66ff',6);
+      anim(caster,'cast',600);
+    } else if(targetState.invisible>0){
+      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
+      spawnParts(tx,bH*.38,'#b8a0e8',12);
+      anim(caster,'cast',600);
+    } else if(targetState.haste>0&&_rng()<0.25){
+      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
+      spawnParts(tx,bH*.38,'#ffcc44',12);
+      anim(caster,'cast',600);
+    } else if(targetState.blink>0&&_rng()<0.5){
+      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
+      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
+      flash('#9988cc');
+      anim(caster,'cast',600);
+    } else {
+      if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
+      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
+      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
+      const [gwDmg,gwSkin]=applyTargetSkins(targetState,dmg,false);
+      dmg=gwDmg;
+      if(gwSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+gwSkin+' Skin','#b08040',10);
+      if(targetState.shield>0){
+        const absorbed=Math.min(dmg,targetState.shieldHp);
+        targetState.shieldHp-=absorbed; dmg-=absorbed;
+        if(targetState.shieldHp<=0){
+          targetState.shield=0; targetState.counter=false;
+          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
+          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
+        } else {
+          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
+          spawnParts(tx,bH*.38,'#4af0ff',8);
+        }
+      }
+      targetState.hp=Math.max(0,targetState.hp-dmg);
+      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
+      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
+      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
+      if(spellId==='eventhorizon'){
+        const recoil=casterCfg.eventHorizonRecoil||6;
+        casterState.hp=Math.max(0,casterState.hp-recoil);
+        addFloat(cx,bH*.26,'🕳 EVENT HORIZON!',casterCfg.col,16);
+        addFloat(cx,bH*.33,'-'+recoil+' Recoil','#aa66ff',12);
+        spawnParts(cx,bH*.38,'#6633aa',12);
+      } else {
+        addFloat(cx,bH*.26,'🌑 GRAVITY WELL!',casterCfg.col,14);
+      }
+      spawnParts(tx,bH*.38,'#aa66ff',22); spawnParts(tx,bH*.38,'#6633aa',8);
+      addFloat(tx,bH*.38,'-'+dmg,'#aa66ff',22);
+      flash('#6633aa');
+      if(targetState.ward>0){
+        targetState.ward=0;
+        addFloat(tx,bH*.33+20,'🔰 Warded!','#ffcc44',11);
+      }
+      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
+      else             {anim('p2','cast',800); anim('p1','hit',800);}
+    }
   } else if(spellId==='basicattack'){
     if(casterState.invisible>0){
       casterState.invisible=0;
@@ -3406,11 +3541,11 @@ function castSpell(spell,target,tx,ty,caster){
     const casterX=caster==='p1'?bW*.22:bW*.78;
     flash('#ffaaff');
     if(dispelSelf){
-      const DEBUFF_NAMES={agony:'Agony',corruption:'Corruption',silence:'Silence',burn:'Burn',poison:'Poison',
+      const DEBUFF_NAMES={agony:'Agony',corruption:'Corruption',silence:'Silence',burn:'Burn',poison:'Poison',voidCollapse:'Singularity',
         frozen:'Freeze',blizzard:'Blizzard',vineWhip:'Vine Whip',timeDrain:'Time Drain',
         conductivity:'Conductivity',candle:'Candle',plague:'Plague',maggotCloud:'Maggot Cloud'};
       const activeDebuffs=[];
-      ['agony','corruption','silence','burn','poison','frozen','blizzard','vineWhip','timeDrain','conductivity','candle','plague','maggotCloud'].forEach(s=>{
+      ['agony','corruption','silence','burn','poison','voidCollapse','frozen','blizzard','vineWhip','timeDrain','conductivity','candle','plague','maggotCloud'].forEach(s=>{
         if(casterState[s]) activeDebuffs.push(s);
       });
       spawnParts(casterX,bH*.38,'#ffaaff',30);
@@ -3423,6 +3558,7 @@ function castSpell(spell,target,tx,ty,caster){
       if(activeDebuffs.length>0){
         const cleansed=activeDebuffs[Math.floor(_rng()*activeDebuffs.length)];
         casterState[cleansed]=0;
+        if(cleansed==='voidCollapse') casterState.voidCollapseTick=0;
         addFloat(casterX,bH*.38,'🌸 '+DEBUFF_NAMES[cleansed]+' Cleansed!','#ffaaff',18);
       } else {
         addFloat(casterX,bH*.38,'🌸 Nothing to Cleanse!','#cc88aa',18);
@@ -3666,6 +3802,22 @@ function processPoison(target,tx,ty){
       vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+_rng()*3,life:1,dec:.026+_rng()*.02});
   }
   addFloat(tx,ty,'🧪 -'+POISON_DMG,'#88dd44',13);
+}
+
+function processVoidCollapse(target,tx,ty){
+  if(target.voidCollapse<=0) return;
+  target.voidCollapseTick++;
+  const dmg=target.voidCollapseTick*VOID_COLLAPSE_DMG_STEP;
+  target.hp=Math.max(0,target.hp-dmg);
+  target.voidCollapse--;
+  if(target.voidCollapse<=0) target.voidCollapseTick=0;
+  for(let i=0;i<14;i++){
+    const a=-Math.PI/2+(-0.75+_rng()*1.5);
+    const sp=2+_rng()*3.5;
+    gs.parts.push({x:tx+(_rng()-.5)*bH*.05,y:ty,col:i%3?'#6633aa':'#aa66ff',
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+_rng()*3,life:1,dec:.026+_rng()*.02});
+  }
+  addFloat(tx,ty,'🌀 -'+dmg,'#aa66ff',13);
 }
 
 function processRegen(target,tx,ty){
@@ -4361,7 +4513,7 @@ function aiDecideEasy(who){
     if(hexSpells.length>0&&_rng()<0.65) chosen=hexSpells[Math.floor(_rng()*hexSpells.length)];
   }
   if(aiKey==='mary'){
-    const hasDebuff=ai.burn>0||ai.poison>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
+    const hasDebuff=ai.burn>0||ai.poison>0||ai.voidCollapse>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
     const canPurge=charSpells.find(s=>s.id==='purge');
     const canHeal=charSpells.find(s=>s.id==='divineheal');
     if(hasDebuff&&canPurge) chosen=canPurge;
@@ -4441,6 +4593,14 @@ function aiDecideEasy(who){
     if(canTonic&&ai.hp<ai.maxHp*0.5&&!ai.empowered) chosen=canTonic;
     else if(canBomb&&gs[opp].poison<=0) chosen=canBomb;
     else if(canConcoction) chosen=canConcoction;
+  }
+  if(aiKey==='nyxara'){
+    const canSingularity=charSpells.find(s=>s.id==='singularity');
+    const canGravityWell=charSpells.find(s=>s.id==='gravitywell');
+    const canEventHorizon=charSpells.find(s=>s.id==='eventhorizon');
+    if(canEventHorizon&&ai.mana>=canEventHorizon.cost) chosen=canEventHorizon;
+    else if(canGravityWell) chosen=canGravityWell;
+    else if(canSingularity&&gs[opp].voidCollapse<=0) chosen=canSingularity;
   }
   if(!chosen){
     const dispelSpell=universalSpells.find(s=>s.element==='dispel');
@@ -4566,7 +4726,7 @@ function aiDecideNormal(who){
     const canRadiant=charSpells.find(s=>s.id==='radiant');
     const canHeal=charSpells.find(s=>s.id==='divineheal');
     const canPurge=charSpells.find(s=>s.id==='purge');
-    const hasDebuff=ai.burn>0||ai.poison>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
+    const hasDebuff=ai.burn>0||ai.poison>0||ai.voidCollapse>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
     if(hasDebuff&&canPurge) chosen=canPurge;
     else if(ai.hp<ai.maxHp*0.55&&canHeal) chosen=canHeal;
     else if(canRadiant&&(p1.shield>0||p1.resist>0||p1.frostArmor>0)) chosen=canRadiant;
@@ -4657,6 +4817,15 @@ function aiDecideNormal(who){
     else if(canWyrmfire&&p1.burn<=0) chosen=canWyrmfire;
     else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&_rng()<0.45) forceChannel=true;
   }
+  if(aiKey==='nyxara'&&!chosen){
+    const canSingularity=charSpells.find(s=>s.id==='singularity');
+    const canGravityWell=charSpells.find(s=>s.id==='gravitywell');
+    const canEventHorizon=charSpells.find(s=>s.id==='eventhorizon');
+    if(canEventHorizon&&ai.mana>=canEventHorizon.cost) chosen=canEventHorizon;
+    else if(canGravityWell&&ai.mana>=canGravityWell.cost) chosen=canGravityWell;
+    else if(canSingularity&&p1.voidCollapse<=0&&ai.mana>=canSingularity.cost) chosen=canSingularity;
+    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&_rng()<0.45) forceChannel=true;
+  }
   if(aiKey==='fizzwick'&&!chosen){
     const canBomb=charSpells.find(s=>s.id==='causticbomb');
     const canTonic=charSpells.find(s=>s.id==='volatiletonic');
@@ -4732,6 +4901,7 @@ function doAI(who='p2'){
       if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
       if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
       if(gs.p2.poison>0){ processPoison(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+      if(gs.p2.voidCollapse>0){ processVoidCollapse(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
       if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
       if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
       if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
@@ -4748,6 +4918,7 @@ function doAI(who='p2'){
     if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
     if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
     if(gs.p2.poison>0){ processPoison(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.voidCollapse>0){ processVoidCollapse(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
     if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
     if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
     if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
@@ -4805,6 +4976,10 @@ function doAI(who='p2'){
   }
   if(ai.poison>0){
     processPoison(ai,ax,bH*.38);
+    checkWin(); if(!battleRunning) return;
+  }
+  if(ai.voidCollapse>0){
+    processVoidCollapse(ai,ax,bH*.38);
     checkWin(); if(!battleRunning) return;
   }
 
@@ -4934,6 +5109,7 @@ function doAINormal(who='p2'){
       if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
       if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
       if(gs.p2.poison>0){ processPoison(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+      if(gs.p2.voidCollapse>0){ processVoidCollapse(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
       if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
       if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
       if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
@@ -4950,6 +5126,7 @@ function doAINormal(who='p2'){
     if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
     if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
     if(gs.p2.poison>0){ processPoison(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
+    if(gs.p2.voidCollapse>0){ processVoidCollapse(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
     if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
     if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
     if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
@@ -4992,6 +5169,7 @@ function doAINormal(who='p2'){
   if(ai.blizzard>0){ processBlizzard(ai,ax,bH*.38); checkWin(); if(!battleRunning) return; }
   if(ai.burn>0){ processBurn(ai,ax,bH*.38); checkWin(); if(!battleRunning) return; }
   if(ai.poison>0){ processPoison(ai,ax,bH*.38); checkWin(); if(!battleRunning) return; }
+  if(ai.voidCollapse>0){ processVoidCollapse(ai,ax,bH*.38); checkWin(); if(!battleRunning) return; }
   if(ai.regen) processRegen(ai,ax,bH*.38);
   if(ai.plague>0){ processPlagueDoT(ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
   if(ai.boneTotem>0) processBoneTotem(ai,ax,bH*.38);
@@ -5119,6 +5297,10 @@ function finishAI(){
     processPoison(gs.p1,bW*.22,bH*.38);
     checkWin(); if(!battleRunning) return;
   }
+  if(gs.p1.voidCollapse>0){
+    processVoidCollapse(gs.p1,bW*.22,bH*.38);
+    checkWin(); if(!battleRunning) return;
+  }
 
   // Regen tick for player
   if(gs.p1.regen) processRegen(gs.p1,bW*.22,bH*.38);
@@ -5243,7 +5425,7 @@ function resetTrainingRound(knockedOut){
     if(!battleRunning) return;
     function resetPlayer(st,cfg){
       st.hp=cfg.hp; st.maxHp=cfg.hp; st.mana=cfg.startMana;
-      st.shield=0; st.shieldHp=0; st.burn=0; st.poison=0; st.frozen=0; st.regen=null;
+      st.shield=0; st.shieldHp=0; st.burn=0; st.poison=0; st.voidCollapse=0; st.voidCollapseTick=0; st.frozen=0; st.regen=null;
       st.counter=false; st.empowered=false; st.foresight=false; st.timeDrain=0;
       st.resist=0; st.invisible=0; st.ward=0; st.vineWhip=0; st.haste=0;
       st.frenzied=0; st.blink=0; st.frostArmor=0; st.blizzard=0; st.flameShield=0;
@@ -7769,6 +7951,10 @@ function startPlayerTurn(who){
     processPoison(whoState,tx,bH*.38);
     checkWin(); if(!battleRunning) return;
   }
+  if(whoState.voidCollapse>0){
+    processVoidCollapse(whoState,tx,bH*.38);
+    checkWin(); if(!battleRunning) return;
+  }
   if(whoState.regen) processRegen(whoState,tx,bH*.38);
 
   // Passive mana
@@ -7854,16 +8040,16 @@ const CHAR_COLORS_TUT={
   gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zacharius:'#aaff44',
   mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040',
   weizan:'#aabbee',gretch:'#55aa33',valdris:'#8899cc',mirel:'#cc88ff',thessaly:'#ffdd88',
-  korvath:'#cc6622',fizzwick:'#99cc44'
+  korvath:'#cc6622',fizzwick:'#99cc44',nyxara:'#6633aa'
 };
 const CHAR_NAMES_TUT={
   eldrad:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
   gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zacharius',
   mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin',
   weizan:'Weizan',gretch:'Gretch',valdris:'Valdris',mirel:'Mirel',thessaly:'Thessaly',
-  korvath:'Korvath',fizzwick:'Fizzwick'
+  korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara'
 };
-const CHAR_KEYS_TUT=['eldrad','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick'];
+const CHAR_KEYS_TUT=['eldrad','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara'];
 
 const TUTORIAL_TOPICS=[
   {id:'welcome',     label:'Welcome'},
@@ -8068,6 +8254,13 @@ const TUTORIAL_CONVOS={
     {key:'fizzwick',text:"Volatile Tonic costs 3 mana — 50/50 chance. Either I heal 20 HP, or I get Empowered for +50% damage on my next hit. Either way, something good happens to me."},
     {key:'fizzwick',text:"Unstable Concoction costs 5 mana — anywhere from 10 to 30 damage, completely random. Could be a dud. Could end the fight. That's chemistry for you."},
     {key:'fizzwick',text:"Most duelists plan for consistency. I bring chaos in a bottle. Sometimes that's all it takes to win."},
+  ],
+  nyxara:[
+    {key:'nyxara',text:"78 HP, 6 mana, and a hunger that doesn't fill. My magic doesn't care how strong you are — only how much of you is left."},
+    {key:'nyxara',text:"Singularity costs 4 mana — it opens a rift on you that collapses over 3 turns, dealing 4, then 8, then 12 damage. 24 in total, if you let it run."},
+    {key:'nyxara',text:"Gravity Well costs 4 mana — it tears away a quarter of your current HP, minimum 5. The fuller you are, the more it takes."},
+    {key:'nyxara',text:"Event Horizon costs 10 mana — 40% of your current HP, minimum 10. It costs me 6 HP in recoil to open it, but against someone at full health, that's a trade I'll make every time."},
+    {key:'nyxara',text:"You'll notice my strongest spells get weaker the lower you fall. So don't fall low. Don't fall at all. Either way, I win."},
   ],
 };
 
@@ -8618,6 +8811,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-thessaly').addEventListener('click',()=>showWizardDetail('thessaly'));
   document.getElementById('pick-korvath').addEventListener('click',()=>showWizardDetail('korvath'));
   document.getElementById('pick-fizzwick').addEventListener('click',()=>showWizardDetail('fizzwick'));
+  document.getElementById('pick-nyxara').addEventListener('click',()=>showWizardDetail('nyxara'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{
     document.getElementById('wizard-detail').classList.remove('active');
