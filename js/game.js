@@ -1403,10 +1403,11 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.globalAlpha=1;
   }
   // Skeletons (Valdris): small bone-coloured circles beside wizard
+  const minionDir=flip?1:-1;
   if(state&&state.skeletons&&state.skeletons.length>0){
     const maxSkelHp=state.skeletons[0]?25:25;
     state.skeletons.forEach((skel,i)=>{
-      const sx=x+(i===0?sz*1.3:sz*2.1), sy=wy;
+      const sx=x+minionDir*(i===0?sz*1.3:sz*2.1), sy=wy;
       bx.globalAlpha=0.85; bx.fillStyle='#ccccbb'; bx.shadowColor='#aaaaaa'; bx.shadowBlur=4;
       bx.beginPath(); bx.arc(sx,sy,sz*.18,0,Math.PI*2); bx.fill();
       bx.fillStyle='#333'; bx.font=`${Math.round(sz*.14)}px serif`;
@@ -1424,7 +1425,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   // Simulacra (Mirel): ghostly wizard copies with HP/mana
   if(state&&state.simulacra&&state.simulacra.length>0){
     state.simulacra.forEach((sim,i)=>{
-      const sx=x+(i===0?sz*1.5:sz*2.6), sy=wy;
+      const sx=x+minionDir*(i===0?sz*1.5:sz*2.6), sy=wy;
       bx.globalAlpha=0.35+0.1*Math.sin(t/600+i);
       bx.fillStyle='#88aaff'; bx.shadowColor='#4466dd'; bx.shadowBlur=8;
       bx.beginPath(); bx.arc(sx,sy,sz*.22,0,Math.PI*2); bx.fill();
