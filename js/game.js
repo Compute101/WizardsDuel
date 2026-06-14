@@ -1422,25 +1422,48 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
       bx.globalAlpha=1; bx.shadowBlur=0;
     });
   }
-  // Simulacra (Mirel): ghostly wizard copies with HP/mana
+  // Simulacra (Mirel): ghostly wizard clones, same sprite/animation as the caster
   if(state&&state.simulacra&&state.simulacra.length>0){
+    const simSz=sz*.62;
     state.simulacra.forEach((sim,i)=>{
-      const sx=x+minionDir*(i===0?sz*1.5:sz*2.6), sy=wy;
-      bx.globalAlpha=0.35+0.1*Math.sin(t/600+i);
-      bx.fillStyle='#88aaff'; bx.shadowColor='#4466dd'; bx.shadowBlur=8;
-      bx.beginPath(); bx.arc(sx,sy,sz*.22,0,Math.PI*2); bx.fill();
-      bx.globalAlpha=0.6; bx.font=`${Math.round(sz*.16)}px serif`;
-      bx.textAlign='center'; bx.fillText('👤',sx,sy+sz*.07);
-      // HP bar
-      const barW=sz*.42, hpFrac=Math.max(0,sim.hp/20);
+      const sx=x+minionDir*(i===0?sz*1.5:sz*2.6);
+      const pulse=0.5+0.15*Math.sin(t/600+i);
+      const bob=Math.sin(t/500+i*2)*simSz*.04;
+      bx.save();
+      bx.globalAlpha=pulse;
+      const img=sprites[who];
+      if(img&&spriteStatus[who]==='ready'){
+        const cfg=SPRITE_CFG;
+        const row=cfg.animRows.idle;
+        const frame=animState[who].frame%ANIM_FRAMES.idle;
+        const srcX=frame*cfg.frameW, srcY=row*cfg.frameH;
+        const scale=simSz/cfg.frameH, dw=cfg.frameW*scale, dh=cfg.frameH*scale;
+        bx.shadowColor='#4466dd'; bx.shadowBlur=12;
+        if(flip){
+          bx.scale(-1,1);
+          bx.drawImage(img,srcX,srcY,cfg.frameW,cfg.frameH,-sx-dw/2,y-dh+bob,dw,dh);
+        } else {
+          bx.drawImage(img,srcX,srcY,cfg.frameW,cfg.frameH,sx-dw/2,y-dh+bob,dw,dh);
+        }
+        bx.shadowBlur=0;
+      } else {
+        bx.fillStyle='#88aaff'; bx.shadowColor='#4466dd'; bx.shadowBlur=8;
+        bx.beginPath(); bx.arc(sx,wy,sz*.22,0,Math.PI*2); bx.fill();
+        bx.font=`${Math.round(sz*.16)}px serif`;
+        bx.textAlign='center'; bx.fillText('👤',sx,wy+sz*.07);
+        bx.shadowBlur=0;
+      }
+      bx.restore();
+      // HP/mana bars above the clone's head
+      const barW=sz*.42, barY=y-simSz-sz*.08;
+      const hpFrac=Math.max(0,sim.hp/20);
       bx.globalAlpha=0.8;
-      bx.fillStyle='#330000'; bx.fillRect(sx-barW/2,sy+sz*.26,barW,sz*.045);
-      bx.fillStyle='#44cc44'; bx.fillRect(sx-barW/2,sy+sz*.26,barW*hpFrac,sz*.045);
-      // Mana bar
+      bx.fillStyle='#330000'; bx.fillRect(sx-barW/2,barY,barW,sz*.045);
+      bx.fillStyle='#44cc44'; bx.fillRect(sx-barW/2,barY,barW*hpFrac,sz*.045);
       const mFrac=Math.min(1,sim.mana/12);
-      bx.fillStyle='#001133'; bx.fillRect(sx-barW/2,sy+sz*.33,barW,sz*.04);
-      bx.fillStyle='#4488ff'; bx.fillRect(sx-barW/2,sy+sz*.33,barW*mFrac,sz*.04);
-      bx.globalAlpha=1; bx.shadowBlur=0;
+      bx.fillStyle='#001133'; bx.fillRect(sx-barW/2,barY+sz*.05,barW,sz*.04);
+      bx.fillStyle='#4488ff'; bx.fillRect(sx-barW/2,barY+sz*.05,barW*mFrac,sz*.04);
+      bx.globalAlpha=1;
     });
   }
   if(state&&state.invisible>0) bx.globalAlpha=0.35;
