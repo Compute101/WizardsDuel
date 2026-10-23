@@ -139,9 +139,9 @@ let p1MatchWins=0, p2MatchWins=0;
 
 // ── SIMULTANEOUS TURNS ────────────────────────────────────
 let simCallback=null;       // intercepted by endMyTurn/finishAI during resolution
-let pendingP1Action=null;   // {type,ok,dispelSelf,perfect,...} collected action
-let pendingP2Action=null;   // same for ai/p2
-let skipAIAction=false;     // when true, doAI skips decision → finishAI (ticks only)
+// Seats in pick order. Everything round-based (picking, reveal, ticks, resolution)
+// iterates this list so 3–4 player duels only need more seats here.
+const PLAYERS=['p1','p2'];
 let _rng=Math.random;       // replaceable RNG for deterministic replay
 let deferWinCheck=false;    // suppress checkWin during double-KO resolution
 let pendingWin=null;        // {won} accumulated during deferred win check
@@ -176,7 +176,7 @@ function newState(){
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
     parts:[], floats:[], projs:[], beams:[], manaBurnFires:[],
-    pendingAction:null, skipAITurn:false,
+    pending:{},   // who → committed action {type,ok,dispelSelf,perfect,...}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
 }
@@ -1681,19 +1681,8 @@ function act(type){
   const cx=who==='p1'?bW*.22:bW*.78;
   const tx=who==='p1'?bW*.78:bW*.22;
 
-  // Commit action and hand off to resolution phase.
-  // 2P: endMyTurn() shows next-player handoff or triggers resolveSimRound.
-  // AI mode: grab AI decision synchronously then call resolveSimRound directly.
-  const commitAction=action=>{
-    if(who==='p1') pendingP1Action=action;
-    else pendingP2Action=action;
-    if(twoPlayerMode){
-      endMyTurn();
-    } else {
-      pendingP2Action=aiChooseSync('p2');
-      resolveSimRound();
-    }
-  };
+  // Commit the action face-down; nothing resolves until every seat has picked.
+  const commitAction=action=>commitPick(who,action);
 
   if(type==='channel'){
     commitAction({type:'channel', channelGain:whoState.timeDrain>0?2:whoCfg.channelAmt});
@@ -4146,132 +4135,227 @@ function executeQueuedSpell(who, action, cb){
   combatTimeout(cb,200);
 }
 
-// Sort two actions by priority and execute in order. Lower priority number = acts first.
-// If equal priority, both execute (defer win check for double-KO detection).
+// ── ROUND FLOW ─────────────────────────────────────────────
+// Every round: each seat picks in secret → all picks are revealed together →
+// the round resolves on the shared screen → round-end ticks → next pick phase.
+
+function seatCfg(who){ return who==='p1'?p1Cfg:p2Cfg; }
+function seatKey(who){ return who==='p1'?p1Key:p2Key; }
+function seatX(who){ return who==='p1'?bW*.22:bW*.78; }
+function isHumanSeat(who){ return twoPlayerMode||who==='p1'; }
+
+function beginPickPhase(){
+  if(!battleRunning||gameEnded) return;
+  gs.pending={};
+  promptNextPicker();
+}
+
+// Hand over to the next seat that hasn't picked; reveal once everyone has.
+function promptNextPicker(){
+  if(!battleRunning||gameEnded) return;
+  const who=PLAYERS.find(w=>!gs.pending[w]);
+  if(!who){ showReveal(); return; }
+  if(gs[who].frozen>0){
+    gs[who].frozen--;
+    gs.pending[who]={type:'__frozen__'};
+    promptNextPicker();
+    return;
+  }
+  if(!isHumanSeat(who)){
+    gs.pending[who]=aiChooseSync(who);
+    promptNextPicker();
+  } else if(twoPlayerMode){
+    showHandoffOverlay(who,()=>startPlayerTurn(who));
+  } else {
+    startPlayerTurn(who);
+  }
+}
+
+function startPlayerTurn(who){
+  if(!battleRunning||gameEnded) return;
+  gs.turnPlayer=who;
+  updateActionBar(seatCfg(who));
+  gs.myTurn=true; gs.busy=false;
+}
+
+function commitPick(who,action){
+  gs.pending[who]=action;
+  gs.myTurn=false; gs.busy=true;
+  // Short beat so the picker sees their choice register before the handoff covers it
+  setTimeout(promptNextPicker,twoPlayerMode?500:0);
+}
+
+function describeAction(who,action){
+  if(action.type==='__frozen__') return {icon:'❄️',name:'Frozen'};
+  if(action.type==='channel')    return {icon:'✨',name:'Channel'};
+  const spell=SPELLS.find(s=>s.element===action.type);
+  if(spell) return {icon:spell.icon,name:spell.name+(action.type==='dispel'&&action.dispelSelf?' (Self)':'')};
+  const charSpell=(seatCfg(who).spells||[]).find(s=>s.id===action.type);
+  if(charSpell) return {icon:charSpell.icon,name:charSpell.name};
+  return {icon:'❔',name:action.type};
+}
+
+// Card-game style reveal: every seat's pick flips face-up at once, then the round plays out.
+// Pass-the-phone waits for a tap so the device can be put where everyone can see it.
+function showReveal(){
+  const overlay=document.getElementById('reveal-overlay');
+  const cards=document.getElementById('rv-cards');
+  const btn=document.getElementById('rv-btn');
+  cards.innerHTML=PLAYERS.map((who,i)=>{
+    const cfg=seatCfg(who), d=describeAction(who,gs.pending[who]);
+    const label=twoPlayerMode?'Player '+(i+1):cfg.name;
+    return `<div class="rv-card" style="--rv-col:${cfg.col}"><div class="rv-inner">`+
+      `<div class="rv-face rv-back"><img class="rv-portrait" src="portraits/${seatKey(who)}.png" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
+      `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span><span class="rv-name">${label}</span></div>`+
+      `</div></div>`;
+  }).join('');
+  overlay.classList.toggle('rv-quick',!twoPlayerMode);
+  overlay.classList.add('active');
+
+  let fightTid=null, started=false;
+  const fight=()=>{
+    if(started) return; started=true;
+    clearTimeout(fightTid);
+    overlay.classList.remove('active');
+    resolveSimRound();
+  };
+  const flip=()=>{
+    cards.querySelectorAll('.rv-card').forEach((c,i)=>setTimeout(()=>c.classList.add('flipped'),i*180));
+    document.getElementById('rv-sub').textContent='Tap to begin';
+    btn.textContent='⚔ Fight!';
+    btn.onclick=fight;
+    overlay.onclick=fight;
+    fightTid=setTimeout(fight,twoPlayerMode?3500:1800);
+  };
+  overlay.onclick=null;
+  if(twoPlayerMode){
+    document.getElementById('rv-title').textContent='All Spells Chosen';
+    document.getElementById('rv-sub').textContent='Place the phone where every wizard can see';
+    btn.textContent='✨ Reveal!';
+    btn.onclick=e=>{ e.stopPropagation(); flip(); };
+  } else {
+    document.getElementById('rv-title').textContent='Spells Revealed';
+    btn.textContent='⚔ Fight!';
+    btn.onclick=fight;
+    setTimeout(flip,300);
+  }
+}
+
+// Resolve every committed action. Seats are grouped into ACTION_PRIORITY tiers
+// (lower acts first); actions within a tier are simultaneous, so win checks wait
+// until the whole tier has acted (double KO → draw).
 function resolveSimRound(){
-  if(!pendingP1Action||!pendingP2Action) return;
-  const p1Act=pendingP1Action, p2Act=pendingP2Action;
-  pendingP1Action=null; pendingP2Action=null;
+  if(PLAYERS.some(w=>!gs.pending[w])) return;
+  const acts=gs.pending;
+  gs.pending={};
   gs.myTurn=false; gs.busy=true;
 
-  const p1Pri=(ACTION_PRIORITY[p1Act.type]||4);
-  const p2Pri=(ACTION_PRIORITY[p2Act.type]||4);
-  const isTie=p1Pri===p2Pri;
+  const tiers=[];
+  PLAYERS.forEach(who=>{
+    const pri=ACTION_PRIORITY[acts[who].type]||4;
+    let tier=tiers.find(t=>t.pri===pri);
+    if(!tier){ tier={pri,seats:[]}; tiers.push(tier); }
+    tier.seats.push(who);
+  });
+  tiers.sort((a,b)=>a.pri-b.pri);
 
-  let firstWho,firstAct,secondWho,secondAct;
-  if(p1Pri<=p2Pri){ firstWho='p1'; firstAct=p1Act; secondWho='p2'; secondAct=p2Act; }
-  else             { firstWho='p2'; firstAct=p2Act; secondWho='p1'; secondAct=p1Act; }
+  if(tiers.length>1) tiers[0].seats.forEach(who=>{
+    if(acts[who].type!=='__frozen__') addFloat(seatX(who),bH*.20,'⚡ Goes first!',seatCfg(who).col,11);
+  });
 
-  // Show priority order banner
-  if(!isTie&&firstAct.type!=='__frozen__'){
-    const firstCfg=firstWho==='p1'?p1Cfg:p2Cfg;
-    const firstCx=firstWho==='p1'?bW*.22:bW*.78;
-    addFloat(firstCx,bH*.20,'⚡ Goes first!',firstCfg.col,11);
-  }
+  const frozenBefore={};
+  PLAYERS.forEach(w=>{ frozenBefore[w]=gs[w].frozen; });
 
-  const frozenBefore={p1:gs.p1.frozen,p2:gs.p2.frozen};
-
-  const afterFirst=()=>{
-    if(!battleRunning) return;
-    checkWin(); if(!battleRunning) return;
-
-    // Interrupt: second actor was frozen by the first action
-    const justFrozen=gs[secondWho].frozen>frozenBefore[secondWho];
-    if(justFrozen&&secondAct.type!=='__frozen__'){
-      const scx=secondWho==='p1'?bW*.22:bW*.78;
-      addFloat(scx,bH*.24,'💨 Interrupted!','#ff6644',15);
-      combatTimeout(endSimRound,1200);
-      return;
-    }
-
-    if(isTie) deferWinCheck=true;
-    executeQueuedSpell(secondWho,secondAct,()=>{
-      deferWinCheck=false;
+  let ti=0;
+  const runTier=()=>{
+    if(!battleRunning||gameEnded) return;
+    if(ti>=tiers.length){ endSimRound(); return; }
+    const seats=tiers[ti++].seats;
+    const laterTier=ti>1;
+    let si=0;
+    deferWinCheck=true;
+    const next=()=>{
       if(!battleRunning) return;
-      // Check deferred double-KO
-      if(pendingWin){
-        const pw=pendingWin; pendingWin=null;
-        if(pw.p1Dead&&pw.p2Dead) endGame('draw');
-        else if(pw.p1Dead) endGame(false);
-        else if(pw.p2Dead) endGame(true);
+      if(si>=seats.length){
+        settleWin();
+        runTier();
         return;
       }
-      checkWin(); if(!battleRunning) return;
-      endSimRound();
-    });
+      const who=seats[si++];
+      // Frozen by an earlier tier this round → loses this round's action
+      if(laterTier&&gs[who].frozen>frozenBefore[who]&&acts[who].type!=='__frozen__'){
+        addFloat(seatX(who),bH*.24,'💨 Interrupted!','#ff6644',15);
+        combatTimeout(next,1200);
+        return;
+      }
+      executeQueuedSpell(who,acts[who],next);
+    };
+    next();
   };
-
-  executeQueuedSpell(firstWho,firstAct,afterFirst);
+  runTier();
 }
 
-// End-of-round cleanup after simultaneous resolution.
+// Per-round effects landing on `who`: DoTs, regen, enemy summons, passive mana.
+// Callers defer win checks so simultaneous tick deaths resolve as a draw.
+function tickRound(who){
+  const st=gs[who], x=seatX(who), y=bH*.38;
+  processVineWhip(st,x,y);
+  processBlizzard(st,x,y);
+  processBurn(st,x,y);
+  processPoison(st,x,y);
+  processVoidCollapse(st,x,y);
+  if(st.hp>0) processRegen(st,x,y);
+  processPlagueDoT(st,x,y);
+  if(st.hp>0) processBoneTotem(st,x,y);
+  PLAYERS.filter(w=>w!==who).forEach(enemy=>{
+    processBlades(enemy,st,x,y);
+    processSkeletonStrikes(enemy,st,x,y);
+    processSimulacra(enemy,st,x,y);
+  });
+  st.mana=Math.min(MAX_MANA,st.mana+1);
+}
+
+function runRoundTicks(){
+  PLAYERS.forEach(w=>{ if(gs[w].invisible>0) gs[w].invisible--; });
+  deferWinCheck=true;
+  PLAYERS.forEach(tickRound);
+  settleWin();
+}
+
+// End-of-round cleanup, then round-end ticks on the shared screen, then the next pick phase.
 function endSimRound(){
   if(!battleRunning||gameEnded) return;
-  gs.myTurn=false; gs.busy=false;
-  // Tick both players' shields and status timers
-  if(gs.p1.shield>0){ gs.p1.shield--; if(gs.p1.shield<=0){gs.p1.shieldHp=0;gs.p1.counter=false;} }
-  tickStatuses(gs.p1);
-  if(gs.p2.shield>0){ gs.p2.shield--; if(gs.p2.shield<=0){gs.p2.shieldHp=0;gs.p2.counter=false;} }
-  tickStatuses(gs.p2);
+  gs.myTurn=false; gs.busy=true;
+  PLAYERS.forEach(w=>{
+    const st=gs[w];
+    if(st.shield>0){ st.shield--; if(st.shield<=0){ st.shieldHp=0; st.counter=false; } }
+    tickStatuses(st);
+  });
   gs.round++;
 
-  if(twoPlayerMode){
-    // 2P: start next collection phase — P1 picks first each round
-    if(!gameEnded){
-      const delay=Math.max(0,(gs.lastAnimEnd||0)-Date.now())+600;
-      setTimeout(()=>{
-        if(!gameEnded){
-          pendingP1Action=null; pendingP2Action=null;
-          showHandoffOverlay('p1',()=>startPlayerTurn('p1'));
-        }
-      },delay);
-    }
-  } else {
-    // AI mode: use skipAIAction so doAI runs DOT ticks but not decision
-    skipAIAction=true;
-    if(aiTid) clearTimeout(aiTid);
-    const _fn=aiDifficulty==='normal'?doAINormal:doAI;
-    aiTid=setTimeout(_fn,gs.p2&&gs.p2.haste>0?400:1400);
-  }
+  const delay=Math.max(0,(gs.lastAnimEnd||0)-Date.now())+600;
+  if(aiTid) clearTimeout(aiTid);
+  aiTid=setTimeout(()=>{
+    if(!battleRunning||gameEnded) return;
+    const floatsBefore=gs.floats.length;
+    runRoundTicks();
+    if(!battleRunning||gameEnded) return;
+    // Give any tick numbers time to be read before the screen is handed over
+    aiTid=setTimeout(beginPickPhase,gs.floats.length>floatsBefore?1300:200);
+  },delay);
 }
 
-function endMyTurn(skipShieldDecrement=false){
-  // Simultaneous resolution hook — skip normal turn-end logic
-  if(simCallback){ gs.myTurn=false; gs.busy=false; const cb=simCallback; simCallback=null; cb(); return; }
-
-  gs.myTurn=false; gs.busy=false;
-  if(twoPlayerMode){
-    const who=gs.turnPlayer;
-    const whoState=gs[who];
-
-    // Simultaneous 2P: first submitter waits for the other; both submitted → resolve
-    const other=who==='p1'?'p2':'p1';
-    const otherPending=who==='p1'?pendingP2Action:pendingP1Action;
-    if(!otherPending){
-      const delay=Math.max(0,(gs.lastAnimEnd||0)-Date.now())+600;
-      if(!gameEnded) setTimeout(()=>{
-        if(!gameEnded) showHandoffOverlay(other,()=>startPlayerTurn(other));
-      }, delay);
-      return;
-    }
-
-    // Both players have committed — resolve simultaneously
-    resolveSimRound();
-
-  } else {
-    if(!skipShieldDecrement&&gs.p1.shield>0){
-      gs.p1.shield--;
-      if(gs.p1.shield<=0){ gs.p1.shieldHp=0; gs.p1.counter=false; }
-    }
-    tickStatuses(gs.p1);
-    gs.round++;
-    if(aiTid) clearTimeout(aiTid);
-    const _fn=aiDifficulty==='normal'?doAINormal:doAI;
-    aiTid=setTimeout(_fn, gs.p2&&gs.p2.haste>0 ? 400 : 1400);
-  }
+// resolveCharSpell ends by calling endMyTurn (p1 / 2P) or finishAI (AI p2);
+// during resolution simCallback carries control back to the round sequencer.
+function endMyTurn(){
+  gs.myTurn=false;
+  if(simCallback){ const cb=simCallback; simCallback=null; cb(); }
+}
+function finishAI(){
+  if(simCallback){ const cb=simCallback; simCallback=null; cb(); }
 }
 
-// ── AI DECISION LOGIC (shared by doAI, doAINormal, aiChooseSync) ──
+// ── AI DECISION LOGIC (shared by aiChooseSync) ──
 function aiDecideEasy(who){
   const opp=who==='p2'?'p1':'p2';
   const aiCfg=who==='p2'?p2Cfg:p1Cfg;
@@ -4650,465 +4734,12 @@ function aiDecideNormal(who){
 function aiChooseSync(who){
   const ai=gs[who];
   if(ai.frozen>0) return {type:'__frozen__', ok:true};
+  if(trainingMode&&!trainingAI) return {type:'channel', ok:true};
   const decide=aiDifficulty==='normal'?aiDecideNormal:aiDecideEasy;
   const {chosen, aiDispelSelf, forceChannel}=decide(who);
   if(!chosen||forceChannel) return {type:'channel', ok:true};
   if(chosen.id) return {type:chosen.id, ok:true, isCharSpell:true};
   return {type:chosen.element, ok:true, dispelSelf:!!aiDispelSelf};
-}
-
-// ── AI TURN ────────────────────────────────────────────────
-function doAI(who='p2'){
-  if(!gs||!battleRunning||gameEnded) return;
-
-  const opp = who==='p2' ? 'p1' : 'p2';
-  const aiCfg = who==='p2' ? p2Cfg : p1Cfg;
-  const aiKey = who==='p2' ? p2Key : p1Key;
-  const ai = gs[who];
-  const ax = who==='p2' ? bW*.78 : bW*.22;
-  const tx = who==='p2' ? bW*.22 : bW*.78;
-  const endTurn = who==='p2' ? finishAI : ()=>endMyTurn(false);
-
-  // AI already acted this round (haste interrupt) — skip to end-of-round cleanup
-  if(who==='p2'&&gs.skipAITurn){
-    gs.skipAITurn=false;
-    finishAI();
-    return;
-  }
-
-  // Training mode with AI off: opponent just channels every turn
-  if(who==='p2'&&trainingMode&&!trainingAI){
-    if(skipAIAction){
-      skipAIAction=false;
-      if(gs.p1.invisible>0) gs.p1.invisible--;
-      if(gs.p2.invisible>0) gs.p2.invisible--;
-      if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.poison>0){ processPoison(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.voidCollapse>0){ processVoidCollapse(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
-      if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
-      if(gs.p1.blades>0){ processBlades('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-      if(gs.p1.skeletons&&gs.p1.skeletons.length>0){ processSkeletonStrikes('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-      if(gs.p1.simulacra&&gs.p1.simulacra.length>0){ processSimulacra('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-      gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
-      if(gs.p2.frozen>0){ gs.p2.frozen--; }
-      finishAI(); return;
-    }
-    if(gs.p1.invisible>0) gs.p1.invisible--;
-    if(gs.p2.invisible>0) gs.p2.invisible--;
-    if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.poison>0){ processPoison(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.voidCollapse>0){ processVoidCollapse(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
-    if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
-    if(gs.p1.blades>0){ processBlades('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-    if(gs.p1.skeletons&&gs.p1.skeletons.length>0){ processSkeletonStrikes('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-    if(gs.p1.simulacra&&gs.p1.simulacra.length>0){ processSimulacra('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-    gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
-    if(gs.p2.frozen>0){
-      gs.p2.frozen--;
-      addFloat(bW*.78,bH*.38,'❄️ Frozen!','#88ddff',13);
-      setTimeout(finishAI,1200);
-      return;
-    }
-    const aiNoAI=gs.p2;
-    if(aiNoAI.timeDrain>0){
-      aiNoAI.mana=Math.min(MAX_MANA,aiNoAI.mana+2);
-      addFloat(bW*.78,bH*.38,'⏳ Drained! +2','#ffcc44',13);
-    } else {
-      aiNoAI.mana=Math.min(MAX_MANA,aiNoAI.mana+p2Cfg.channelAmt);
-      addFloat(bW*.78,bH*.38,'✨ Channeling...','#aaaaff',13);
-    }
-    if(aiNoAI.candle>0) triggerCandleBurn(aiNoAI,bW*.78);
-    anim('p2','cast',700);
-    if(aiNoAI.shield>0){
-      aiNoAI.shield--;
-      if(aiNoAI.shield<=0){ aiNoAI.shieldHp=0; aiNoAI.counter=false; }
-    }
-    tickStatuses(aiNoAI);
-    finishAI();
-    return;
-  }
-
-  // Decrement invisible counters once per round (at the p2 AI's turn boundary)
-  if(who==='p2'){
-    if(gs.p1.invisible>0) gs.p1.invisible--;
-    if(gs.p2.invisible>0) gs.p2.invisible--;
-  }
-
-  // Vine whip tick for AI
-  if(ai.vineWhip>0){
-    processVineWhip(ai,ax,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-
-  // Blizzard tick for AI
-  if(ai.blizzard>0){
-    processBlizzard(ai,ax,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-
-  // Burn tick for AI
-  if(ai.burn>0){
-    processBurn(ai,ax,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-  if(ai.poison>0){
-    processPoison(ai,ax,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-  if(ai.voidCollapse>0){
-    processVoidCollapse(ai,ax,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-
-  // Regen tick for AI
-  if(ai.regen) processRegen(ai,ax,bH*.38);
-  if(ai.plague>0){ processPlagueDoT(ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-  if(ai.boneTotem>0) processBoneTotem(ai,ax,bH*.38);
-  if(gs[opp].blades>0){ processBlades(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-  if(gs[opp].skeletons&&gs[opp].skeletons.length>0){ processSkeletonStrikes(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-  if(gs[opp].simulacra&&gs[opp].simulacra.length>0){ processSimulacra(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-
-  // Passive mana regen
-  ai.mana=Math.min(MAX_MANA,ai.mana+1);
-
-  // Simultaneous: skip action; decrement frozen silently (float shown at execution time)
-  if(skipAIAction){
-    skipAIAction=false;
-    if(ai.frozen>0){ ai.frozen--; }
-    endTurn(); return;
-  }
-
-  // Frozen: skip turn (sequential path)
-  if(ai.frozen>0){
-    ai.frozen--;
-    addFloat(ax,bH*.38,'❄️ Frozen!','#88ddff',13);
-    combatTimeout(endTurn,1200);
-    return;
-  }
-
-  const {chosen, aiDispelSelf}=aiDecideEasy(who);
-  dispelSelf=aiDispelSelf;
-
-  if(!chosen){
-    // Channel
-    let aiChanGain=ai.timeDrain>0?2:aiCfg.channelAmt;
-    if(ai.maggotCloud>0){ const d=Math.min(3,aiChanGain); aiChanGain=Math.max(0,aiChanGain-d); addFloat(ax,bH*.5,'🪲 −'+d+' Drained!','#55aa33',12); }
-    if(ai.timeDrain>0){ addFloat(ax,bH*.38,'⏳ Drained! +'+aiChanGain+' Mana','#ffcc44',13); }
-    else { addFloat(ax,bH*.38,'+'+aiChanGain+' Mana','#ff8888',13); }
-    ai.mana=Math.min(MAX_MANA,ai.mana+aiChanGain);
-    if(ai.candle>0) triggerCandleBurn(ai,ax);
-    anim(who,'cast',700);
-    if(ai.shield>0){
-      ai.shield--;
-      if(ai.shield<=0){ ai.shieldHp=0; ai.counter=false; }
-    }
-    tickStatuses(ai);
-    endTurn();
-    return;
-  }
-
-  // Agony: AI takes damage for any non-channel action
-  if(ai.agony>0){
-    const agonDmg=ai.agonyDmg||12;
-    ai.hp=Math.max(0,ai.hp-agonDmg);
-    addFloat(ax,bH*.38,'💀 Agony! −'+agonDmg,'#9944cc',14);
-    spawnParts(ax,bH*.38,'#9944cc',12); flash('#330033');
-    checkWin(); if(!battleRunning) return;
-  }
-
-  // Silence: 45% chance mana-cost spells fizzle
-  if(chosen.id&&chosen.cost>0&&ai.silence>0&&_rng()<0.45){
-    showSilenceBlock(ax,bH*.33); anim(who,'cast',600);
-    tickStatuses(ai); endTurn(); return;
-  }
-  if(!chosen.id&&ai.silence>0&&_rng()<0.45){
-    showSilenceBlock(ax,bH*.33); anim(who,'cast',600);
-    ai.mana=Math.max(0,ai.mana-1); tickStatuses(ai); endTurn(); return;
-  }
-
-  if(chosen.id){
-    // Character spell (instant)
-    resolveCharSpell(chosen.id,who);
-    return;
-  }
-
-  // Universal spell
-  addFloat(ax,bH*.26,chosen.icon+' '+chosen.name+'!',chosen.col,12);
-  anim(who,'cast',800);
-  combatTimeout(()=>{
-    if(!battleRunning) return;
-    tickStatuses(ai);
-    if(_rng()<0.8){
-      ai.mana-=chosen.cost;
-      if(chosen.element==='dispel'&&dispelSelf){
-        castSpell(chosen,gs[who],ax,bH*.38,who);
-        endTurn();
-      } else {
-        spawnProj(ax,bH*.38,tx,bH*.38,chosen.element,chosen.col,()=>{
-          if(!battleRunning) return;
-          castSpell(chosen,gs[opp],tx,bH*.38,who);
-          endTurn();
-        });
-      }
-    } else {
-      addFloat(ax,bH*.33,'Fizzled!','#ff8844',12);
-      ai.mana=Math.max(0,ai.mana-1);
-      endTurn();
-    }
-  },700);
-}
-
-// ── NORMAL AI TURN (combo-aware) ───────────────────────────
-function doAINormal(who='p2'){
-  if(!gs||!battleRunning||gameEnded) return;
-
-  const opp = who==='p2' ? 'p1' : 'p2';
-  const aiCfg = who==='p2' ? p2Cfg : p1Cfg;
-  const aiKey = who==='p2' ? p2Key : p1Key;
-  const ai = gs[who];
-  const ax = who==='p2' ? bW*.78 : bW*.22;
-  const tx = who==='p2' ? bW*.22 : bW*.78;
-  const endTurn = who==='p2' ? finishAI : ()=>endMyTurn(false);
-
-  if(who==='p2'&&gs.skipAITurn){
-    gs.skipAITurn=false;
-    finishAI();
-    return;
-  }
-
-  // Training mode with AI off: opponent just channels every turn
-  if(who==='p2'&&trainingMode&&!trainingAI){
-    if(skipAIAction){
-      skipAIAction=false;
-      if(gs.p1.invisible>0) gs.p1.invisible--;
-      if(gs.p2.invisible>0) gs.p2.invisible--;
-      if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.poison>0){ processPoison(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.voidCollapse>0){ processVoidCollapse(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
-      if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-      if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
-      if(gs.p1.blades>0){ processBlades('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-      if(gs.p1.skeletons&&gs.p1.skeletons.length>0){ processSkeletonStrikes('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-      if(gs.p1.simulacra&&gs.p1.simulacra.length>0){ processSimulacra('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-      gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
-      if(gs.p2.frozen>0){ gs.p2.frozen--; }
-      finishAI(); return;
-    }
-    if(gs.p1.invisible>0) gs.p1.invisible--;
-    if(gs.p2.invisible>0) gs.p2.invisible--;
-    if(gs.p2.vineWhip>0){ processVineWhip(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.blizzard>0){ processBlizzard(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.burn>0){ processBurn(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.poison>0){ processPoison(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.voidCollapse>0){ processVoidCollapse(gs.p2,bW*.78,bH*.38); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.regen) processRegen(gs.p2,bW*.78,bH*.38);
-    if(gs.p2.plague>0){ processPlagueDoT(gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-    if(gs.p2.boneTotem>0) processBoneTotem(gs.p2,bW*.78,bH*.38);
-    if(gs.p1.blades>0){ processBlades('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-    if(gs.p1.skeletons&&gs.p1.skeletons.length>0){ processSkeletonStrikes('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-    if(gs.p1.simulacra&&gs.p1.simulacra.length>0){ processSimulacra('p1',gs.p2,bW*.78,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-    gs.p2.mana=Math.min(MAX_MANA,gs.p2.mana+1);
-    if(gs.p2.frozen>0){
-      gs.p2.frozen--;
-      addFloat(bW*.78,bH*.38,'❄️ Frozen!','#88ddff',13);
-      setTimeout(finishAI,1200);
-      return;
-    }
-    const aiNoAI=gs.p2;
-    if(aiNoAI.timeDrain>0){
-      aiNoAI.mana=Math.min(MAX_MANA,aiNoAI.mana+2);
-      addFloat(bW*.78,bH*.38,'⏳ Drained! +2','#ffcc44',13);
-    } else {
-      aiNoAI.mana=Math.min(MAX_MANA,aiNoAI.mana+p2Cfg.channelAmt);
-      addFloat(bW*.78,bH*.38,'✨ Channeling...','#aaaaff',13);
-    }
-    if(aiNoAI.candle>0) triggerCandleBurn(aiNoAI,bW*.78);
-    anim('p2','cast',700);
-    if(aiNoAI.shield>0){
-      aiNoAI.shield--;
-      if(aiNoAI.shield<=0){ aiNoAI.shieldHp=0; aiNoAI.counter=false; }
-    }
-    tickStatuses(aiNoAI);
-    finishAI();
-    return;
-  }
-
-  // Decrement invisible counters once per round (at the p2 AI's turn boundary)
-  if(who==='p2'){
-    if(gs.p1.invisible>0) gs.p1.invisible--;
-    if(gs.p2.invisible>0) gs.p2.invisible--;
-  }
-
-  if(ai.vineWhip>0){ processVineWhip(ai,ax,bH*.38); checkWin(); if(!battleRunning) return; }
-  if(ai.blizzard>0){ processBlizzard(ai,ax,bH*.38); checkWin(); if(!battleRunning) return; }
-  if(ai.burn>0){ processBurn(ai,ax,bH*.38); checkWin(); if(!battleRunning) return; }
-  if(ai.poison>0){ processPoison(ai,ax,bH*.38); checkWin(); if(!battleRunning) return; }
-  if(ai.voidCollapse>0){ processVoidCollapse(ai,ax,bH*.38); checkWin(); if(!battleRunning) return; }
-  if(ai.regen) processRegen(ai,ax,bH*.38);
-  if(ai.plague>0){ processPlagueDoT(ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-  if(ai.boneTotem>0) processBoneTotem(ai,ax,bH*.38);
-  if(gs[opp].blades>0){ processBlades(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-  if(gs[opp].skeletons&&gs[opp].skeletons.length>0){ processSkeletonStrikes(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-  if(gs[opp].simulacra&&gs[opp].simulacra.length>0){ processSimulacra(opp,ai,ax,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-
-  ai.mana=Math.min(MAX_MANA,ai.mana+1);
-
-  // Simultaneous: skip action; decrement frozen silently (float shown at execution time)
-  if(skipAIAction){
-    skipAIAction=false;
-    if(ai.frozen>0){ ai.frozen--; }
-    endTurn(); return;
-  }
-
-  // Frozen: skip turn (sequential path)
-  if(ai.frozen>0){
-    ai.frozen--;
-    addFloat(ax,bH*.38,'❄️ Frozen!','#88ddff',13);
-    combatTimeout(endTurn,1200);
-    return;
-  }
-
-  const {chosen, aiDispelSelf, forceChannel}=aiDecideNormal(who);
-  dispelSelf=aiDispelSelf;
-  // ── Channel fallback ────────────────────────────────────────
-  if(!chosen){
-    let aiChanGain=ai.timeDrain>0?2:aiCfg.channelAmt;
-    if(ai.maggotCloud>0){ const d=Math.min(3,aiChanGain); aiChanGain=Math.max(0,aiChanGain-d); addFloat(ax,bH*.5,'🪲 −'+d+' Drained!','#55aa33',12); }
-    if(ai.timeDrain>0){ addFloat(ax,bH*.38,'⏳ Drained! +'+aiChanGain+' Mana','#ffcc44',13); }
-    else { addFloat(ax,bH*.38,'+'+aiChanGain+' Mana','#ff8888',13); }
-    ai.mana=Math.min(MAX_MANA,ai.mana+aiChanGain);
-    if(ai.candle>0) triggerCandleBurn(ai,ax);
-    anim(who,'cast',700);
-    if(ai.shield>0){
-      ai.shield--;
-      if(ai.shield<=0){ ai.shieldHp=0; ai.counter=false; }
-    }
-    tickStatuses(ai);
-    endTurn();
-    return;
-  }
-  // Agony: AI takes damage for any non-channel action
-  if(ai.agony>0){
-    const agonDmg=ai.agonyDmg||12;
-    ai.hp=Math.max(0,ai.hp-agonDmg);
-    addFloat(ax,bH*.38,'💀 Agony! −'+agonDmg,'#9944cc',14);
-    spawnParts(ax,bH*.38,'#9944cc',12); flash('#330033');
-    checkWin(); if(!battleRunning) return;
-  }
-  // Silence: 45% chance mana-cost spells fizzle
-  if(chosen.id&&chosen.cost>0&&ai.silence>0&&_rng()<0.45){
-    showSilenceBlock(ax,bH*.33); anim(who,'cast',600);
-    tickStatuses(ai); endTurn(); return;
-  }
-  if(!chosen.id&&ai.silence>0&&_rng()<0.45){
-    showSilenceBlock(ax,bH*.33); anim(who,'cast',600);
-    ai.mana=Math.max(0,ai.mana-1); tickStatuses(ai); endTurn(); return;
-  }
-  if(chosen.id){
-    resolveCharSpell(chosen.id,who);
-    return;
-  }
-  // Universal spell
-  addFloat(ax,bH*.26,chosen.icon+' '+chosen.name+'!',chosen.col,12);
-  anim(who,'cast',800);
-  combatTimeout(()=>{
-    if(!battleRunning) return;
-    tickStatuses(ai);
-    if(_rng()<0.8){
-      ai.mana-=chosen.cost;
-      if(chosen.element==='dispel'&&dispelSelf){
-        castSpell(chosen,gs[who],ax,bH*.38,who);
-        endTurn();
-      } else {
-        spawnProj(ax,bH*.38,tx,bH*.38,chosen.element,chosen.col,()=>{
-          if(!battleRunning) return;
-          castSpell(chosen,gs[opp],tx,bH*.38,who);
-          endTurn();
-        });
-      }
-    } else {
-      addFloat(ax,bH*.33,'Fizzled!','#ff8844',12);
-      ai.mana=Math.max(0,ai.mana-1);
-      endTurn();
-    }
-  },700);
-}
-function finishAI(){
-  if(simCallback){ const cb=simCallback; simCallback=null; cb(); return; }
-  if(!battleRunning||gameEnded) return;
-  checkWin(); if(!battleRunning) return;
-
-  // Haste interrupt: player has a queued action — run it now, defer end-of-round effects
-  if(gs.pendingAction){
-    const pa=gs.pendingAction;
-    gs.pendingAction=null;
-    gs.skipAITurn=true;
-    gs.myTurn=true; gs.busy=false;
-    act(pa);
-    return;
-  }
-
-  // Vine whip tick for player
-  if(gs.p1.vineWhip>0){
-    processVineWhip(gs.p1,bW*.22,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-
-  // Blizzard tick for player
-  if(gs.p1.blizzard>0){
-    processBlizzard(gs.p1,bW*.22,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-
-  // Burn tick for player
-  if(gs.p1.burn>0){
-    processBurn(gs.p1,bW*.22,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-  if(gs.p1.poison>0){
-    processPoison(gs.p1,bW*.22,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-  if(gs.p1.voidCollapse>0){
-    processVoidCollapse(gs.p1,bW*.22,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-
-  // Regen tick for player
-  if(gs.p1.regen) processRegen(gs.p1,bW*.22,bH*.38);
-  if(gs.p1.plague>0){ processPlagueDoT(gs.p1,bW*.22,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-  if(gs.p1.boneTotem>0) processBoneTotem(gs.p1,bW*.22,bH*.38);
-  if(gs.p2.blades>0){ processBlades('p2',gs.p1,bW*.22,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-  if(gs.p2.skeletons&&gs.p2.skeletons.length>0){ processSkeletonStrikes('p2',gs.p1,bW*.22,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-  if(gs.p2.simulacra&&gs.p2.simulacra.length>0){ processSimulacra('p2',gs.p1,bW*.22,bH*.38); refreshHUD(); checkWin(); if(!battleRunning) return; }
-
-  // Passive mana regen
-  gs.p1.mana=Math.min(MAX_MANA,gs.p1.mana+1);
-
-  // Frozen: auto-commit frozen action for P1; float shown at execution time
-  if(gs.p1.frozen>0){
-    gs.p1.frozen--;
-    combatTimeout(()=>{
-      if(!battleRunning||gameEnded) return;
-      pendingP1Action={type:'__frozen__'};
-      pendingP2Action=aiChooseSync('p2');
-      resolveSimRound();
-    }, 400);
-    return;
-  }
-
-  gs.myTurn=true; gs.busy=false;
 }
 
 // ── RETRY SCREEN ───────────────────────────────────────────
@@ -5184,7 +4815,23 @@ function onRetryExpired(overlay){
 function checkWin(){
   const p1Dead=gs.p1.hp<=0, p2Dead=gs.p2.hp<=0;
   if(!p1Dead&&!p2Dead) return;
-  if(deferWinCheck){ pendingWin={p1Dead,p2Dead}; return; }
+  // Deferred: remember every KO seen until settleWin (a later heal doesn't undo it)
+  if(deferWinCheck){
+    pendingWin={p1Dead:p1Dead||!!(pendingWin&&pendingWin.p1Dead), p2Dead:p2Dead||!!(pendingWin&&pendingWin.p2Dead)};
+    return;
+  }
+  declareKO(p1Dead,p2Dead);
+}
+
+// End a deferred-win window (simultaneous tier or round ticks) and apply any KOs.
+function settleWin(){
+  deferWinCheck=false;
+  const pw=pendingWin; pendingWin=null;
+  if(pw) declareKO(pw.p1Dead||gs.p1.hp<=0, pw.p2Dead||gs.p2.hp<=0);
+  else checkWin();
+}
+
+function declareKO(p1Dead,p2Dead){
   if(p1Dead&&p2Dead){
     endGame('draw'); return;
   }
@@ -5219,7 +4866,7 @@ function resetTrainingRound(knockedOut){
     resetPlayer(gs.p2,p2Cfg);
     gs.p1anim='idle'; gs.p2anim='idle';
     gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[];
-    gs.pendingAction=null; gs.skipAITurn=false;
+    gs.pending={};
     const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
     addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
     gameEnded=false;
@@ -7579,15 +7226,13 @@ function startTwoPlayerMatch(){
 
 function startNextTwoPlayerRound(){
   matchRound++;
-  // P1 goes first in rounds 1 & 3, P2 goes first in round 2
-  const firstPlayer=(matchRound===2)?'p2':'p1';
-  startTwoPlayerBattle(firstPlayer);
+  startTwoPlayerBattle();
 }
 
-function startTwoPlayerBattle(firstPlayer){
+function startTwoPlayerBattle(){
   document.getElementById('btn-training-menu').style.display='none';
   loadSprites();
-  updateActionBar(firstPlayer==='p1'?p1Cfg:p2Cfg);
+  updateActionBar(p1Cfg);
   document.getElementById('p1name').textContent=p1Cfg.name+' (P1)';
   document.getElementById('p1-portrait').style.visibility='';
   document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
@@ -7596,7 +7241,6 @@ function startTwoPlayerBattle(firstPlayer){
   document.getElementById('p2name').textContent=p2Cfg.name+' (P2)';
   document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
   newState();
-  gs.turnPlayer=firstPlayer;
   gs.myTurn=false; gs.busy=true;
   gameEnded=false;
   battleRunning=true;
@@ -7604,7 +7248,7 @@ function startTwoPlayerBattle(firstPlayer){
   resizeBC();
   showScreen('battle-screen');
   requestAnimationFrame(battleLoop);
-  setTimeout(()=>showHandoffOverlay(firstPlayer,()=>{ gs.myTurn=true; gs.busy=false; }),200);
+  setTimeout(beginPickPhase,200);
 }
 
 function showHandoffOverlay(toPlayer, callback){
@@ -7624,65 +7268,6 @@ function showHandoffOverlay(toPlayer, callback){
   btn.onclick=null;
   overlay.classList.add('active');
   btn.onclick=()=>{ overlay.classList.remove('active'); if(callback) callback(); };
-}
-
-function startPlayerTurn(who){
-  if(!battleRunning||gameEnded) return;
-  const whoState=gs[who];
-  const tx=who==='p1'?bW*.22:bW*.78;
-
-  // Decrement invisible once per full round (at P1→P2 transition)
-  if(who==='p2'){
-    if(gs.p1.invisible>0) gs.p1.invisible--;
-    if(gs.p2.invisible>0) gs.p2.invisible--;
-  }
-
-  // DOT ticks for this player before they act
-  if(whoState.vineWhip>0){
-    processVineWhip(whoState,tx,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-  if(whoState.blizzard>0){
-    processBlizzard(whoState,tx,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-  if(whoState.burn>0){
-    processBurn(whoState,tx,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-  if(whoState.poison>0){
-    processPoison(whoState,tx,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-  if(whoState.voidCollapse>0){
-    processVoidCollapse(whoState,tx,bH*.38);
-    checkWin(); if(!battleRunning) return;
-  }
-  if(whoState.regen) processRegen(whoState,tx,bH*.38);
-
-  // Passive mana
-  whoState.mana=Math.min(MAX_MANA,whoState.mana+1);
-
-  // Frozen: auto-commit frozen action and advance to next input or resolution
-  // Float shown at execution time by executeQueuedSpell
-  if(whoState.frozen>0){
-    whoState.frozen--;
-    if(who==='p1'){
-      pendingP1Action={type:'__frozen__'};
-      setTimeout(()=>{
-        if(!battleRunning||gameEnded) return;
-        showHandoffOverlay('p2',()=>startPlayerTurn('p2'));
-      },1400);
-    } else {
-      pendingP2Action={type:'__frozen__'};
-      setTimeout(()=>{ if(!battleRunning||gameEnded) return; resolveSimRound(); },1400);
-    }
-    return;
-  }
-
-  gs.turnPlayer=who;
-  updateActionBar(who==='p1'?p1Cfg:p2Cfg);
-  gs.myTurn=true; gs.busy=false;
 }
 
 function startNextBattle(){

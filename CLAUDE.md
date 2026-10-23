@@ -97,6 +97,11 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 
 ---
 
+## Round flow & RPS redesign
+Every round goes: secret picks → simultaneous reveal → resolution → round-end ticks. That flow is the "ROUND FLOW" section of `js/game.js`. Loop over `PLAYERS` and `gs.pending`; don't hard-code p1/p2 in new round logic. The agreed Damage / Protection / Dispel design, and the phases still to build, are in `docs/rps-duel-design.md`.
+
+---
+
 ## Key file locations
 
 | Thing | File | Approx. lines |
