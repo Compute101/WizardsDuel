@@ -44,10 +44,11 @@ Starting numbers (to be tuned):
 
 **Damage types** (6, one wheel sector each): fire, ice, lightning, arcane, physical, dark/necrotic.
 
-## Minigames (Phase 2)
+## Minigames (Phase 2 — implemented)
 
-- 5 s to watch the glyphs, then 5 s to enter them.
+- 5 s to watch the glyphs, then 5 s to enter them. This applies to all seven minigames, including the tile-match, which used to have no time limit.
 - The minigame decides success or fizzle. The strength ring sets its difficulty: inner is 2 glyphs, outer is 4.
+  The wheel will set `spell.tier` (1–3) on the spell passed to the launcher. Until then every cast is tier 2.
 - The Arcana alphabet and the canonical words in CLAUDE.md still apply.
 
 ## Characters (Phase 4) — option B + C
