@@ -18,7 +18,34 @@ Code: `PLAYERS`, `gs.pending`, `beginPickPhase` → `promptNextPicker` → `comm
 `showReveal` → `resolveSimRound` → `endSimRound` → `runRoundTicks` → `tickRound` in `js/game.js`.
 Win checks inside a simultaneous window go through `deferWinCheck` / `settleWin`, so a double KO is a draw.
 
-## Core rules (Phase 3 — to build)
+## Core rules (Phase 3 — implemented, as Elemental rules)
+
+There is a Rules switch on the title screen: **Elemental** (default) or **Classic** (the old character
+spell kits and Channel). Elemental applies to every mode: 2 Player, Arcade and Practice.
+All the numbers below are constants at the top of the `ELEMENTAL DUEL` section of `js/game.js`.
+
+What was built, including choices made while building:
+- **Picking:** three buttons (⚔️ Damage, 🛡 Protection, ✦ Dispel), then the strength wheel: 6 element
+  sectors × 3 rings. A ring you can't afford is greyed out. Dispel also has a **Cleanse Self** button,
+  which removes Chill.
+- **Minigames:** Damage uses its element's minigame. Physical borrows Inferno's minigame and Dark
+  borrows Mana Burn's, each with its own glyph set. Protection uses the tile-match and Dispel uses the
+  Dispel minigame. A failed minigame fizzles and costs 1 mana.
+- **Mana:** everyone starts with 6 and gains +4 at the end of every round. There's no Channel, and the
+  cheapest spell costs 1, so you can always cast something.
+- **Wards:** raising one replaces any existing ward. A ward stops damage in the same round it's raised.
+- **Lightning** burns 1 / 2 / 3 mana, even when it hits a ward.
+- **Ice:** a middle- or outer-ring hit that reaches HP **chills** the target. A chilled player can't
+  pick Damage next round. This replaces Freeze.
+- **Character stats:** each character's HP and damage multiplier still apply. Eldrin's wards cost 2
+  less (`shieldCostMod` in `characters.json`). Character spell kits are hidden under Elemental rules
+  until Phase 4.
+- **AI:** a weighted mixed strategy. It dispels when you have a ward, and on Normal it matches your
+  ward's element. It wards more when you can afford a strong hit or its HP is low. On Normal it avoids
+  striking into your ward's element. Its minigame success rate is 90% on Normal and 78% on Easy.
+  Phase 5 replaces this with a better AI.
+
+Original spec:
 
 **Categories**: Damage (medium cost, the only way to win), Protection (high cost, persistent),
 Dispel (low cost, strips shields and enchantments, can target self).
