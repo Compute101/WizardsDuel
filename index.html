@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wizard's Duel</title>
-<link rel="stylesheet" href="css/style.css?v=0.12">
+<link rel="stylesheet" href="css/style.css?v=0.13">
 </head>
 <body>
 <div id="app">
@@ -306,6 +306,16 @@
     </div>
   </div>
 
+  <!-- REVEAL OVERLAY (all picks flip face-up together before the round resolves) -->
+  <div id="reveal-overlay">
+    <div id="rv-box">
+      <div id="rv-title">All Spells Chosen</div>
+      <div id="rv-sub"></div>
+      <div id="rv-cards"></div>
+      <button class="btn" id="rv-btn">✨ Reveal!</button>
+    </div>
+  </div>
+
   <!-- RETRY SCREEN -->
   <div id="retry-overlay">
     <div id="retry-taunt">
@@ -345,6 +355,6 @@
 </div>
 
 <script src="js/resolver.js"></script>
-<script src="js/game.js?v=0.13"></script>
+<script src="js/game.js?v=0.14"></script>
 </body>
 </html>
