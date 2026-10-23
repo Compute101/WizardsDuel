@@ -52,13 +52,15 @@ Suggested glyph sets for when these are implemented:
 
 Each spell's minigame has three difficulty modes. Difficulty is set globally in `diffName` (`'easy'` / `'normal'` / `'hard'`).
 
+**Pacing (all minigames):** 5 s to watch (`MG_WATCH_MS`), then 5 s to enter (`MG_INPUT_S`). Sequence length comes from cast strength, not difficulty: `spell.tier` 1 / 2 / 3 (inner / middle / outer strength ring) means 2 / 3 / 4 glyphs. The tile-match uses 2 / 3 / 4 pairs. With no tier, a cast uses the middle ring. The shared helpers `mgSeqLen` / `mgSeq` / `mgSpawnInterval` sit just above `launchBuffTileMatch`.
+
 ### Inferno (launchPatternEcho) — the reference implementation
 The Inferno minigame was redesigned as an animated rising-glyph mechanic and serves as the model for how the new system should work in all spells.
 
 **Watch phase:**
 - Red glyphs (noise) rise continuously from the bottom — visual distraction.
-- White glyphs (the sequence) rise one at a time, staggered 3 s apart, with a coloured glow unique to each glyph and a small order-number badge.
-- 4 seconds of viewing time after the last glyph appears before input phase begins.
+- White glyphs (the sequence) rise one at a time, spread evenly across the 5 s watch window, with a coloured glow unique to each glyph and a small order-number badge.
+- 1.5 seconds of viewing time after the last glyph appears before input phase begins.
 
 **Glyph glow colours** (used on white sequence glyphs during watch phase — defined for all 12):
 
@@ -79,11 +81,11 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 
 **Input phase — difficulty rules:**
 
-| Mode | Sequence length | Keyboard | Fixed or random |
-|------|-----------------|----------|-----------------|
-| Easy | 4 | 3×4 grid (all 12 glyphs), non-spell glyphs greyed out | Fixed canonical word |
-| Normal | 5 | 3×4 grid, non-spell glyphs greyed out | Random from spell's 4 |
-| Hard | 7 | 3×4 grid, nothing greyed out — all 12 active | Random from spell's 4 |
+| Mode | Keyboard | Fixed or random |
+|------|----------|-----------------|
+| Easy | 3×4 grid (all 12 glyphs), non-spell glyphs greyed out | Fixed canonical word (first 2–4 glyphs, by strength) |
+| Normal | 3×4 grid, non-spell glyphs greyed out | Random from spell's 4 |
+| Hard | 3×4 grid, nothing greyed out — all 12 active; a wrong glyph fails | Random from spell's 4 |
 
 **Easy mode canonical words** (the fixed sequence a player can learn for each spell):
 

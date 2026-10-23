@@ -116,7 +116,7 @@ const CHAR_DISPLAY={
 };
 
 // ── DIFFICULTY ─────────────────────────────────────────────
-let diffMult=1.0, diffName='normal';
+let diffName='normal';
 let aiDifficulty='normal';
 
 // ── ARCADE ─────────────────────────────────────────────────
@@ -4966,6 +4966,22 @@ function setDpadVisible(v){
 // ── PUZZLE: BUFF TILE MATCH ─────────────────────────────────
 // Circular memory-match minigame for protective buff spells (Shield, Foresight).
 // 8 tiles (4 glyph pairs) arranged in a ring. 3 strikes before failure.
+// ── MINIGAME PACING (shared) ───────────────────────────────
+// Every casting minigame: MG_WATCH_MS to study the glyphs, then MG_INPUT_S to enter them.
+const MG_WATCH_MS=5000, MG_INPUT_S=5;
+// Glyph count follows cast strength: spell.tier 1 (inner ring) … 3 (outer ring) → 2…4 glyphs.
+// Casts without a tier use the middle ring.
+function mgSeqLen(spell){ return Math.max(1,Math.min(3,spell.tier||2))+1; }
+// Easy: the spell's canonical word, trimmed to length. Normal/hard: random from the spell's glyphs.
+function mgSeq(spell,canon,spellIdx){
+  const n=mgSeqLen(spell);
+  return diffName==='easy'
+    ?canon.slice(0,n)
+    :Array.from({length:n},()=>spellIdx[Math.floor(_rng()*spellIdx.length)]);
+}
+// Stagger n glyph spawns across the watch window, leaving `tail` ms to study the last one.
+function mgSpawnInterval(n,delay,tail){ return n>1?(MG_WATCH_MS-delay-tail)/(n-1):0; }
+
 function launchBuffTileMatch(spell,spellId,who,cb){
   let done=false;
 
@@ -4982,7 +4998,6 @@ function launchBuffTileMatch(spell,spellId,who,cb){
 
   document.getElementById('pztitle').textContent=th.title;
   document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
-  document.getElementById('pztimer').textContent='';
   setDpadVisible(false);
 
   // Full 12-glyph alphabet (sym + glow colour per CLAUDE.md)
@@ -4995,10 +5010,10 @@ function launchBuffTileMatch(spell,spellId,who,cb){
     {sym:'θ',glowCol:'#88ff88'},{sym:'Φ',glowCol:'#dd88ff'},
   ];
 
-  // 4 glyphs × 2 copies = 8 tiles (4 pairs)
-  const glyphIdxs=BUFF_TILE_GLYPHS[spellId];
+  // One pair per glyph; cast strength sets how many of the spell's 4 glyphs are used (2–4 pairs)
+  const glyphIdxs=BUFF_TILE_GLYPHS[spellId].slice(0,mgSeqLen(spell));
   const deck=[...glyphIdxs,...glyphIdxs].sort(()=>_rng()-.5);
-  const TILE_N=deck.length; // 8
+  const TILE_N=deck.length;
 
   const TS=54, R=90;
   const cw=284, ch=334;
@@ -5021,17 +5036,25 @@ function launchBuffTileMatch(spell,spellId,who,cb){
   let strikes=0;
   const MAX_STRIKES=diffName==='hard'?2:3;
 
-  // Brief face-up preview at start (difficulty-dependent)
-  const PREVIEW_MS=diffName==='easy'?3000:diffName==='hard'?0:1500;
-  let previewActive=PREVIEW_MS>0;
-  if(previewActive){
-    tiles.forEach(t=>t.flipped=true);
-    setTimeout(()=>{
+  // Face-up study window, then MG_INPUT_S to match every pair
+  const timerEl=document.getElementById('pztimer');
+  timerEl.textContent='—'; timerEl.classList.remove('urgent');
+  let timeLeft=MG_INPUT_S;
+  let previewActive=true;
+  tiles.forEach(t=>t.flipped=true);
+  setTimeout(()=>{
+    if(done) return;
+    previewActive=false;
+    tiles.forEach(t=>{if(!t.matched)t.flipped=false;});
+    timerEl.textContent=timeLeft;
+    if(mazeTid) clearInterval(mazeTid);
+    mazeTid=setInterval(()=>{
       if(done) return;
-      previewActive=false;
-      tiles.forEach(t=>{if(!t.matched)t.flipped=false;});
-    },PREVIEW_MS);
-  }
+      timeLeft--; timerEl.textContent=timeLeft;
+      if(timeLeft<=2) timerEl.classList.add('urgent');
+      if(timeLeft<=0) finish(false);
+    },1000);
+  },MG_WATCH_MS);
 
   const sparks=Array.from({length:20},()=>({
     x:_rng()*cw, y:_rng()*ch,
@@ -5066,7 +5089,7 @@ function launchBuffTileMatch(spell,spellId,who,cb){
           revealed.forEach(t=>t.matched=true);
           revealed=[]; locked=false;
           if(tiles.every(t=>t.matched)) finish(true);
-        },500);
+        },250);
       } else {
         // Mismatch — mark for red flash, then flip back
         revealed.forEach(t=>t.mismatch=true);
@@ -5075,7 +5098,7 @@ function launchBuffTileMatch(spell,spellId,who,cb){
           revealed.forEach(t=>{t.flipped=false; t.mismatch=false;});
           revealed=[]; locked=false;
           if(strikes>=MAX_STRIKES) finish(false);
-        },900);
+        },550);
       }
     }
   }
@@ -5269,13 +5292,12 @@ function launchPatternEcho(spell,cb){
   }));
 
   // Sequence (stored as alphabet indices)
-  const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
-  const seq=diffName==='easy'
-    ?[0,1,4,8]  // canonical Inferno word: ϟ Δ Ω ⊕
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
+  // Easy: prefix of the canonical Inferno word: ϟ Δ Ω ⊕
+  const seq=mgSeq(spell,[0,1,4,8],SPELL_IDX);
+  const SEQ_LEN=seq.length;
   const playerSeq=[];
   let phase='watch';
-  let timeLeft=Math.round(20*diffMult);
+  let timeLeft=MG_INPUT_S;
 
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
@@ -5297,8 +5319,8 @@ function launchPatternEcho(spell,cb){
     const frac=(i+0.5)/SEQ_LEN;
     return Math.max(28,Math.min(cw-28,cw*frac+(_rng()-0.5)*22));
   });
-  const SPAWN_DELAY=500,SPAWN_INTERVAL=3000,RISE_SPD=0.9;
-  const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+4000;
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500),RISE_SPD=0.9;
+  const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false;
   const symStates=seq.map((ai,i)=>({
@@ -5311,7 +5333,7 @@ function launchPatternEcho(spell,cb){
     mazeTid=setInterval(()=>{
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
-      if(timeLeft<=5) timerEl.classList.add('urgent');
+      if(timeLeft<=2) timerEl.classList.add('urgent');
       if(timeLeft<=0) finish(false);
     },1000);
   }
@@ -5548,13 +5570,12 @@ function launchLightningPattern(spell,cb){
     y:tileTop+Math.floor(i/3)*(TS+GAP),
   }));
 
-  const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
-  const seq=diffName==='easy'
-    ?[3,2,9,7]  // canonical Lightning word: Ψ ∇ ⊗ ✸
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
+  // Easy: prefix of the canonical Lightning word: Ψ ∇ ⊗ ✸
+  const seq=mgSeq(spell,[3,2,9,7],SPELL_IDX);
+  const SEQ_LEN=seq.length;
   const playerSeq=[];
   let phase='watch';
-  let timeLeft=Math.round(20*diffMult);
+  let timeLeft=MG_INPUT_S;
 
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
@@ -5583,12 +5604,12 @@ function launchLightningPattern(spell,cb){
     Math.max(50,Math.min(ch-60,ch*Y_BANDS[i%Y_BANDS.length]+(_rng()-0.5)*28))
   );
 
-  const SPAWN_DELAY=600,SPAWN_INTERVAL=3500;
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500);
   const BOLT_DUR=300;     // bolt flash visible
   const GLYPH_HOLD=200;   // glyph at full brightness after strike
-  const GLYPH_FADE=2400;  // afterglow fade duration
+  const GLYPH_FADE=1800;  // afterglow fade duration
   const GLYPH_DUR=GLYPH_HOLD+GLYPH_FADE;
-  const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+4500;
+  const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false;
 
@@ -5621,7 +5642,7 @@ function launchLightningPattern(spell,cb){
     mazeTid=setInterval(()=>{
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
-      if(timeLeft<=5) timerEl.classList.add('urgent');
+      if(timeLeft<=2) timerEl.classList.add('urgent');
       if(timeLeft<=0) finish(false);
     },1000);
   }
@@ -5891,24 +5912,23 @@ function launchManaBurnPattern(spell,cb){
     y:tileTop+Math.floor(i/3)*(TS+GAP),
   }));
 
-  const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
-  const seq=diffName==='easy'
-    ?[3,2,9,7]  // canonical Mana Burn word: Ψ ∇ ⊗ ✸
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
+  // Easy: prefix of the canonical Mana Burn word: Ψ ∇ ⊗ ✸
+  const seq=mgSeq(spell,[3,2,9,7],SPELL_IDX);
+  const SEQ_LEN=seq.length;
   const playerSeq=[];
   let phase='watch';
-  let timeLeft=Math.round(20*diffMult);
+  let timeLeft=MG_INPUT_S;
 
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
 
   // Watch phase timing
-  const STATIC_HOLD=2800;        // glyphs static before burning starts
+  const STATIC_HOLD=2500;        // glyphs static before burning starts
   const NOISE_RISE_DELAY=0;      // noise starts rising immediately when burn begins
   const SPELL_RISE_DELAY=600;    // spell glyphs ignite shortly after noise
-  const NOISE_RISE_SPD=1.9;      // noise rises quickly
-  const SPELL_RISE_SPD=2.5;      // spell glyphs burn off faster
-  const watchDuration=STATIC_HOLD+5200;
+  const NOISE_RISE_SPD=2.6;      // noise rises quickly
+  const SPELL_RISE_SPD=3.4;      // spell glyphs burn off before the watch window ends
+  const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false;
 
@@ -5947,7 +5967,7 @@ function launchManaBurnPattern(spell,cb){
     mazeTid=setInterval(()=>{
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
-      if(timeLeft<=5) timerEl.classList.add('urgent');
+      if(timeLeft<=2) timerEl.classList.add('urgent');
       if(timeLeft<=0) finish(false);
     },1000);
   }
@@ -6204,13 +6224,12 @@ function launchIcePattern(spell,cb){
     y:tileTop+Math.floor(i/3)*(TS+GAP),
   }));
 
-  const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
-  const seq=diffName==='easy'
-    ?[10,11,6,5]  // canonical Ice word: θ Φ ☽ ∞
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
+  // Easy: prefix of the canonical Ice word: θ Φ ☽ ∞
+  const seq=mgSeq(spell,[10,11,6,5],SPELL_IDX);
+  const SEQ_LEN=seq.length;
   const playerSeq=[];
   let phase='watch';
-  let timeLeft=Math.round(20*diffMult);
+  let timeLeft=MG_INPUT_S;
 
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
@@ -6236,10 +6255,10 @@ function launchIcePattern(spell,cb){
     Math.max(35,Math.min(ch-50,ch*Y_BANDS[i%Y_BANDS.length]+(_rng()-0.5)*35))
   );
 
-  const SPAWN_DELAY=500,SPAWN_INTERVAL=3000;
-  const FADE_IN=1800,HOLD=1400,FADE_OUT=1800;
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500);
+  const FADE_IN=500,HOLD=1000,FADE_OUT=800;
   const GLYPH_DUR=FADE_IN+HOLD+FADE_OUT;
-  const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+4000;
+  const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false;
 
@@ -6255,7 +6274,7 @@ function launchIcePattern(spell,cb){
     mazeTid=setInterval(()=>{
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
-      if(timeLeft<=5) timerEl.classList.add('urgent');
+      if(timeLeft<=2) timerEl.classList.add('urgent');
       if(timeLeft<=0) finish(false);
     },1000);
   }
@@ -6507,13 +6526,12 @@ function launchArcanePattern(spell,cb){
     y:tileTop+Math.floor(i/3)*(TS+GAP),
   }));
 
-  const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
-  const seq=diffName==='easy'
-    ?[4,5,3,10]  // canonical Arcane word: Ω ∞ Ψ θ
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
+  // Easy: prefix of the canonical Arcane word: Ω ∞ Ψ θ
+  const seq=mgSeq(spell,[4,5,3,10],SPELL_IDX);
+  const SEQ_LEN=seq.length;
   const playerSeq=[];
   let phase='watch';
-  let timeLeft=Math.round(20*diffMult);
+  let timeLeft=MG_INPUT_S;
 
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
@@ -6536,8 +6554,8 @@ function launchArcanePattern(spell,cb){
 
   // White sequence glyphs — all drift rightward at the same speed, various heights
   const DRIFT_SPEED=0.5;  // px/frame — consistent across all sequence glyphs
-  const SPAWN_DELAY=500,SPAWN_INTERVAL=3000;
-  const watchDuration=SPAWN_DELAY+(SEQ_LEN-1)*SPAWN_INTERVAL+4000;
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500);
+  const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false;
 
@@ -6557,7 +6575,7 @@ function launchArcanePattern(spell,cb){
     mazeTid=setInterval(()=>{
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
-      if(timeLeft<=5) timerEl.classList.add('urgent');
+      if(timeLeft<=2) timerEl.classList.add('urgent');
       if(timeLeft<=0) finish(false);
     },1000);
   }
@@ -6800,13 +6818,12 @@ function launchDispelPattern(spell,cb){
     y:tileTop+Math.floor(i/3)*(TS+GAP),
   }));
 
-  const SEQ_LEN=diffName==='easy'?4:diffName==='hard'?7:5;
-  const seq=diffName==='easy'
-    ?[5,8,2,10]  // canonical Dispel word: ∞ ⊕ ∇ θ
-    :Array.from({length:SEQ_LEN},()=>SPELL_IDX[Math.floor(_rng()*4)]);
+  // Easy: prefix of the canonical Dispel word: ∞ ⊕ ∇ θ
+  const seq=mgSeq(spell,[5,8,2,10],SPELL_IDX);
+  const SEQ_LEN=seq.length;
   const playerSeq=[];
   let phase='watch';
-  let timeLeft=Math.round(20*diffMult);
+  let timeLeft=MG_INPUT_S;
 
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
@@ -6820,10 +6837,10 @@ function launchDispelPattern(spell,cb){
   const INNER_FONT=SEQ_LEN<=4?52:SEQ_LEN<=5?44:36;
 
   // Layer fade timings (ms)
-  const OUTER_FADE_START=2000, OUTER_FADE_DUR=2000;  // outer fades 2–4 s
-  const MID_FADE_START=4500,   MID_FADE_DUR=2500;    // middle fades 4.5–7 s
-  const INNER_FADE_START=7500, INNER_FADE_DUR=2500;  // inner fades 7.5–10 s
-  const watchDuration=10500;
+  const OUTER_FADE_START=1000, OUTER_FADE_DUR=1000;  // outer fades 1–2 s
+  const MID_FADE_START=2200,   MID_FADE_DUR=1300;    // middle fades 2.2–3.5 s
+  const INNER_FADE_START=3600, INNER_FADE_DUR=1300;  // inner fades 3.6–4.9 s
+  const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false;
 
@@ -6855,7 +6872,7 @@ function launchDispelPattern(spell,cb){
     mazeTid=setInterval(()=>{
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
-      if(timeLeft<=5) timerEl.classList.add('urgent');
+      if(timeLeft<=2) timerEl.classList.add('urgent');
       if(timeLeft<=0) finish(false);
     },1000);
   }
@@ -7634,7 +7651,6 @@ window.addEventListener('DOMContentLoaded', ()=>{
       document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       diffName=btn.dataset.diff;
-      diffMult=diffName==='easy'?1.6:diffName==='hard'?0.55:1.0;
       if(diffName==='normal'||diffName==='hard'){
         aiDifficulty='normal';
         document.querySelectorAll('.ai-btn').forEach(b=>{
