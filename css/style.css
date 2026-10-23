@@ -6,6 +6,7 @@ body {
   background: #0d0820;
   font-family: 'Cinzel', serif;
   min-height: 100vh;
+  min-height: 100dvh;   /* mobile: the visible height, not the height behind the URL bar */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -16,6 +17,7 @@ body {
   width: 100%;
   max-width: 480px;
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
 }
 
@@ -26,6 +28,7 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   padding: 24px 24px 50px;
   text-align: center;
@@ -416,12 +419,22 @@ body {
 
 
 /* ── BATTLE ── */
-#battle-screen { padding: 0; justify-content: flex-start; background: #0d0820; }
+/* Exactly one screen tall: HUD on top, battlefield in the middle, actions pinned to the bottom.
+   viewport-fit=cover puts the page under the notch, so pad by the safe-area inset. */
+#battle-screen {
+  padding: env(safe-area-inset-top, 0px) 0 0;
+  justify-content: flex-start;
+  background: #0d0820;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
 
 /* ── PORTRAIT HUD ── */
 #hud {
   width: 100%;
-  padding: 8px 10px;
+  padding: 14px 12px 10px;
   background: rgba(0,0,0,0.55);
   border-bottom: 1px solid rgba(201,168,76,0.18);
   flex-shrink: 0;
@@ -443,8 +456,8 @@ body {
   gap: 2px;
 }
 .phud-img {
-  width: 60px;
-  height: 60px;
+  width: 72px;
+  height: 72px;
   object-fit: cover;
   object-position: center 25%;
   border-radius: 4px;
@@ -452,7 +465,7 @@ body {
   display: block;
 }
 .wname {
-  font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+  font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
 }
 .wname.p1 { color:#4af0ff; }
 .wname.p2 { color:#ff4a6e; }
@@ -472,8 +485,8 @@ body {
   gap: 2px;
 }
 .vbar {
-  width: 9px;
-  height: 60px;
+  width: 11px;
+  height: 72px;
   position: relative;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
@@ -512,10 +525,16 @@ body {
 #roundlbl { font-size: 10px; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
 #fightlbl { font-size: 9px; letter-spacing: 2px; color: #8877aa; text-transform: uppercase; margin-top: 2px; }
 
+/* Takes the space between HUD and action bar; resizeBC sizes the canvas inside it */
+#bstage {
+  flex: 1 1 0; min-height: 0; width: 100%;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
 #bcanvas { width:100%; display:block; flex-shrink:0; }
 
 #actionbar {
-  width:100%; padding:6px 8px 8px; display:flex; flex-direction:column; gap:6px;
+  width:100%; padding:8px 10px max(12px, env(safe-area-inset-bottom, 12px)); display:flex; flex-direction:column; gap:8px;
   background:rgba(0,0,0,0.65); border-top:1px solid rgba(201,168,76,0.18);
   flex-shrink:0;
 }
@@ -776,10 +795,10 @@ body {
 .abar-row-abilities { gap:6px; }
 .abtn-ability {
   flex:1; display:flex; flex-direction:column; align-items:center;
-  padding:7px 4px; gap:2px;
+  padding:12px 4px; gap:4px;
 }
-.abtn-ico  { font-size:20px; line-height:1; }
-.abtn-name { font-size:8px; letter-spacing:0.5px; text-transform:uppercase; font-weight:700; }
+.abtn-ico  { font-size:24px; line-height:1; }
+.abtn-name { font-size:9px; letter-spacing:0.5px; text-transform:uppercase; font-weight:700; }
 
 /* Main action row */
 .abar-row-main { gap:8px; }

@@ -272,10 +272,27 @@ function showBracket(animate){
 const bc=document.getElementById('bcanvas');
 const bx=bc.getContext('2d');
 
+// The canvas fills the stage between HUD and action bar. The scene itself (bW × bH) is at most
+// BC_MAX_ASPECT × the width tall — wizards, projectiles and floats are placed as fractions of bH,
+// so a taller scene would leave effects floating far above the wizards and push shield bubbles
+// off the sides. The scene is centred (bOffY) and its sky and ground are stretched into the
+// bands above and below it.
+const BC_MIN_ASPECT=0.52, BC_MAX_ASPECT=0.85;
+let bOffY=0;
 function resizeBC(){
-  bW=bc.offsetWidth;
-  bH=Math.round(bW*0.52);
-  bc.width=bW; bc.height=bH;
+  const stage=bc.parentElement;
+  bW=stage.clientWidth;
+  bH=Math.round(Math.max(bW*BC_MIN_ASPECT,Math.min(stage.clientHeight,bW*BC_MAX_ASPECT)));
+  const fullH=Math.max(bH,stage.clientHeight);
+  bOffY=Math.round((fullH-bH)/2);
+  bc.width=bW; bc.height=fullH;
+}
+
+// Extend the scene's top and bottom pixel rows through the bands around it
+function fillSceneBands(){
+  const below=bc.height-bOffY-bH;
+  if(bOffY>0) bx.drawImage(bc,0,bOffY,bW,1,0,0,bW,bOffY);
+  if(below>0) bx.drawImage(bc,0,bOffY+bH-1,bW,1,0,bOffY+bH,bW,below);
 }
 
 function drawBG(){
@@ -1534,7 +1551,10 @@ function battleLoop(ts){
   tickAnimFrame('p1',dt);
   tickAnimFrame('p2',dt);
   resizeBC();
-  drawBG();
+  bx.setTransform(1,0,0,1,0,0);
+  bx.save(); bx.translate(0,bOffY); drawBG(); bx.restore();
+  fillSceneBands();
+  bx.setTransform(1,0,0,1,0,bOffY);   // everything else draws in scene coordinates
   const gy=bH*.74, wsz=bH*.3;
   drawWiz(bW*.22+(gs.p1xOff||0),gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1',gs.p1.foresight,gs.p1);
   drawWiz(bW*.78+(gs.p2xOff||0),gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2',gs.p2.foresight,gs.p2);
