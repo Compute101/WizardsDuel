@@ -4413,7 +4413,8 @@ const ELEM_WARD_DECAY=0.75;     // ward HP kept at each round end
 const ELEM_CHILL_MIN_TIER=2;    // Ice of this strength or more chills when it reaches HP
 const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or not
 const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
-const ELEM_DISPEL_ALL_TIER=3;   // a Greater dispel on an unwarded foe strips every buff, not just the newest
+const ELEM_DISPEL_ALL_TIER=3;
+const ELEM_CURSE_DISPEL=0.5;    // curses also hit the foe's ward with this share of a dispel's power   // a Greater dispel on an unwarded foe strips every buff, not just the newest
 
 const ELEMENTS=[
   {id:'fire',      name:'Fire',      icon:'🔥', col:'#ff6622'},
@@ -4511,11 +4512,48 @@ function elemCost(who,cat,tier){
   const mod=cat==='protect'?(seatCfg(who).shieldCostMod||0):0;
   return Math.max(1,ELEM_CATS[cat].cost[tier-1]+mod)+spellbindExtra(who,cat);
 }
-function sigCost(who,sp){ return Math.max(0,sp.el.cost+spellbindExtra(who,sp.el.cat)); }
-// Why a signature spell can't be cast right now ('' = it can)
-function sigBlocked(who,sp){
-  const st=gs[who], el=sp.el;
-  if(sigCost(who,sp)>st.mana) return 'Not enough mana';
+// A signature spell's numbers are written for the middle ring; the inner and outer rings scale them
+const SIG_COST_SCALE=[0.6,1,1.6], SIG_POWER_SCALE=[0.6,1,1.5];
+function sigAtTier(sp,tier){
+  const s=SIG_POWER_SCALE[tier-1], el=JSON.parse(JSON.stringify(sp.el));
+  const n=v=>Math.max(1,Math.round(v*s));
+  const pct=(v,cap)=>Math.min(cap,Math.round(v*s*100)/100);
+  const mult=v=>Math.round((1+(v-1)*s)*100)/100;
+  el.tier=tier;
+  if(el.cost>0) el.cost=Math.max(1,Math.round(el.cost*SIG_COST_SCALE[tier-1]));
+  ['power','retaliate','perSkeleton','perBlade','rewind','manaburn','drainNow','hpCost'].forEach(k=>{ if(el[k]) el[k]=n(el[k]); });
+  if(el.variance) el.variance=el.variance.map(n);
+  if(el.pctHp) el.pctHp=pct(el.pctHp,0.6);
+  if(el.dot) el.dot.dmg=n(el.dot.dmg);
+  if(el.arc) el.arc.dmg=n(el.arc.dmg);
+  if(el.chance!=null) el.chance=pct(el.chance,1);
+  const e=el.effect;
+  if(e){
+    ['perRound','retaliate','dmg','n','bonus','burn','extra'].forEach(k=>{ if(e[k]) e[k]=n(e[k]); });
+    if(e.ramp) e.ramp=e.ramp.map(n);
+    if(e.pct) e.pct=pct(e.pct,0.7);
+    if(e.mult) e.mult=mult(e.mult);
+    if(['absorbNext','warding','bewitch'].includes(e.type)) e.rounds=Math.max(1,e.rounds+tier-2);
+  }
+  const a=el.action;
+  if(a){ ['amt','mana','heal'].forEach(k=>{ if(a[k]) a[k]=n(a[k]); }); if(a.mult) a.mult=mult(a.mult); }
+  return el;
+}
+// The character's signature spell occupying this sector of the category's wheel, if any
+function sigAt(who,cat,elem){ return sigSpells(who,cat).find(sp=>sp.el.elem===elem)||null; }
+function sigCost(who,sp,tier){ return Math.max(0,sigAtTier(sp,tier).cost+spellbindExtra(who,sp.el.cat)); }
+function sectorCost(who,cat,elem,tier){
+  const sp=sigAt(who,cat,elem);
+  return sp?sigCost(who,sp,tier):elemCost(who,cat,tier);
+}
+function sectorOk(who,cat,elem,tier){
+  const sp=sigAt(who,cat,elem);
+  return sp?!sigBlocked(who,sp,tier):elemCost(who,cat,tier)<=gs[who].mana;
+}
+// Why a signature spell can't be cast at this ring right now ('' = it can)
+function sigBlocked(who,sp,tier){
+  const st=gs[who], el=sigAtTier(sp,tier);
+  if(sigCost(who,sp,tier)>st.mana) return 'Not enough mana';
   if(el.oncePerDuel&&st.usedSig[sp.id]) return 'Once per duel';
   if(el.requires==='blades'&&countMinions(st,'blade')===0) return 'Needs a blade';
   if(el.kind==='buff'&&el.effect.type==='minion'&&countMinions(st,el.effect.minion)>=el.effect.max) return 'Maximum reached';
@@ -4524,7 +4562,8 @@ function sigBlocked(who,sp){
 }
 function elemCanPick(who,cat){
   if(catLocked(who,cat)) return false;
-  return elemCost(who,cat,1)<=gs[who].mana||sigSpells(who,cat).some(sp=>!sigBlocked(who,sp));
+  if(cat==='dispel'&&elemCost(who,cat,1)<=gs[who].mana) return true;   // Cleanse Self
+  return ELEMENTS.some(e=>sectorOk(who,cat,e.id,1));
 }
 function actionPriority(action){
   if(action.type==='el') return ELEM_CATS[action.cat]?ELEM_CATS[action.cat].stage:4;
@@ -4535,7 +4574,7 @@ function describeElemAction(action,who){
   const cat=ELEM_CATS[action.cat];
   if(action.sig){
     const sp=sigById(who,action.sig);
-    return {icon:cat.icon+(sp?sigIcon(sp):'★'),name:sp?sigName(sp):action.sig};
+    return {icon:cat.icon+(sp?sigIcon(sp):'★'),name:ELEM_TIER_NAMES[(action.tier||2)-1]+(sp?sigName(sp):action.sig)};
   }
   if(action.self) return {icon:'✦',name:'Cleanse Self'};
   const el=elemById(action.elem);
@@ -4557,21 +4596,24 @@ function openElemWheel(cat){
   selfBtn.textContent='✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
   const ruleText={
     damage:'Lightning also burns mana · Ice (middle ring or stronger) chills: no Damage next round',
-    protect:'Lasts 3 rounds, fading each round · the chosen element only does half damage to it',
-    dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment',
+    protect:'Wards last 3 rounds, fading each round · the chosen element only does half damage to it',
+    dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
   document.getElementById('wheel-rule').textContent=ruleText;
   document.getElementById('wheel-legend').innerHTML=[0,1,2].map(t=>{
     const cost=elemCost(who,cat,t+1), off=cost>st.mana;
     return `<div class="wl-row${off?' off':''}"><span>${['Inner','Middle','Outer'][t]}</span><span>${cost} Mana</span><span>${c.power[t]} ${c.unit}</span></div>`;
   }).join('');
+  // Signature spells replace their element's sector; list what each one does
   const sigs=sigSpells(who,cat);
   document.getElementById('wheel-sig').innerHTML=sigs.length?
-    `<div class="wsig-label">★ ${seatCfg(who).name}'s spells</div>`+sigs.map(sp=>{
-      const why=sigBlocked(who,sp);
-      return `<button class="wsig-btn${why?' off':''}" data-sig="${sp.id}" title="${why}">`+
-        `<span class="wsig-ico">${sigIcon(sp)}</span><span class="wsig-name">${sigName(sp)}</span>`+
-        `<span class="wsig-cost">${sigCost(who,sp)} Mana</span><span class="wsig-desc">${why||sp.el.desc||''}</span></button>`;
+    `<div class="wsig-label">★ ${seatCfg(who).name}'s spells on this wheel</div>`+sigs.map(sp=>{
+      const e=elemById(sp.el.elem), why=sigBlocked(who,sp,1);
+      const costs=[1,2,3].map(t=>sigCost(who,sp,t)).join(' / ');
+      return `<div class="wsig-row${why?' off':''}"><span class="wsig-ico">${sigIcon(sp)}</span>`+
+        `<span class="wsig-name">${sigName(sp)} <small>${e.icon} ${e.name}</small></span>`+
+        `<span class="wsig-cost">${costs} Mana</span>`+
+        `<span class="wsig-desc">${why&&why!=='Not enough mana'?why:sp.el.desc||''} <small>(middle ring)</small></span></div>`;
     }).join(''):'';
   buildWheelSvg(who,cat);
   document.getElementById('wheel-overlay').classList.add('active');
@@ -4590,14 +4632,16 @@ function buildWheelSvg(who,cat){
   let html='';
   ELEMENTS.forEach((el,i)=>{
     const a0=-Math.PI/2-step/2+i*step, a1=a0+step, am=(a0+a1)/2;
+    const sp=sigAt(who,cat,el.id);
     WHEEL_RINGS.forEach(([r0,r1],t)=>{
-      const off=elemCost(who,cat,t+1)>st.mana;
+      const off=!sectorOk(who,cat,el.id,t+1);
       const d=`M${pt(r0,a0)} L${pt(r1,a0)} A${r1} ${r1} 0 0 1 ${pt(r1,a1)} L${pt(r0,a1)} A${r0} ${r0} 0 0 0 ${pt(r0,a0)} Z`;
-      html+=`<path class="wseg${off?' off':''}" d="${d}" data-elem="${el.id}" data-tier="${t+1}" `+
+      html+=`<path class="wseg${off?' off':''}${sp?' sig':''}" d="${d}" data-elem="${el.id}" data-tier="${t+1}" `+
         `style="fill:${off?'#2a2a33':el.col};fill-opacity:${off?0.5:[0.22,0.42,0.68][t]}"/>`;
     });
-    html+=`<text class="wicon" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${el.icon}</text>`;
-    html+=`<text class="wname" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${el.name}</text>`;
+    const label=sp?'★'+sigName(sp).split(' ')[0]:el.name;
+    html+=`<text class="wicon" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${sp?sigIcon(sp):el.icon}</text>`;
+    html+=`<text class="wname${sp?' wname-sig':''}" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${label}</text>`;
   });
   html+=`<circle class="wcentre" r="36"/><text class="wcentre-ico" y="2">${ELEM_CATS[cat].icon}</text>`;
   svg.innerHTML=html;
@@ -4609,15 +4653,10 @@ function onWheelTap(e){
   closeElemWheel();
   castElemental(cat,seg.dataset.elem,+seg.dataset.tier,false);
 }
-function onSigTap(e){
-  const btn=e.target.closest('.wsig-btn');
-  if(!btn||btn.classList.contains('off')||!wheelCat) return;
-  closeElemWheel();
-  castSignature(btn.dataset.sig);
-}
-
 function castElemental(cat,elemId,tier,self){
   const who=gs.turnPlayer;
+  const sp=self?null:sigAt(who,cat,elemId);
+  if(sp){ castSignature(sp.id,tier); return; }
   if(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)) return;
   const el=elemById(elemId);
   const target=self?who:PLAYERS.find(w=>w!==who);   // 3–4 seats: target picker goes here
@@ -4630,16 +4669,16 @@ function castElemental(cat,elemId,tier,self){
   else ELEM_MINIGAME[elemId](spell,commit);
 }
 
-function castSignature(id){
+function castSignature(id,tier){
   const who=gs.turnPlayer, sp=sigById(who,id);
-  if(!sp||sigBlocked(who,sp)||catLocked(who,sp.el.cat)) return;
+  if(!sp||sigBlocked(who,sp,tier)||catLocked(who,sp.el.cat)) return;
   const el=sp.el, elemId=el.elem||'arcane', e=elemById(elemId);
-  const spell={name:sigName(sp), icon:sigIcon(sp), element:elemId, col:e.col, tier:el.tier||2,
-    glyphs:(el.kind==='strike'||el.kind==='curse')?ELEM_GLYPHS[elemId]:undefined};
-  const commit=ok=>commitPick(who,{type:'el',cat:el.cat,sig:id,target:PLAYERS.find(w=>w!==who),ok});
+  const spell={name:ELEM_TIER_NAMES[tier-1]+sigName(sp), icon:sigIcon(sp), element:elemId, col:e.col, tier,
+    glyphs:el.kind==='strike'?ELEM_GLYPHS[elemId]:undefined};
+  const commit=ok=>commitPick(who,{type:'el',cat:el.cat,elem:elemId,tier,sig:id,target:PLAYERS.find(w=>w!==who),ok});
   gs.busy=true;
   if(el.cat==='dispel') launchDispelPattern(spell,commit);
-  else if(el.kind==='strike'||el.kind==='curse') ELEM_MINIGAME[elemId](spell,commit);
+  else if(el.kind==='strike') ELEM_MINIGAME[elemId](spell,commit);
   else launchBuffTileMatch(spell,ELEM_WARD_THEME[elemId],who,ok=>commit(ok));
 }
 
@@ -4659,7 +4698,7 @@ function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who), y=bH*.38;
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
   const sp=action.sig?sigById(who,action.sig):null;
-  const cost=sp?sigCost(who,sp):elemCost(who,action.cat,action.tier);
+  const cost=sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
 
   const agony=effectsOf(st,'agony')[0];
   if(agony) elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc');
@@ -4679,7 +4718,11 @@ function executeElemental(who,action,cb){
   st.mana-=cost;
   anim(who,'cast',600);
   st.lastCat=action.cat;   // what Spellbind targets
-  if(sp){ st.usedSig[sp.id]=true; if(sp.el.hpCost) elemFloatDmg(who,sp.el.hpCost,'🩸','#ff4444'); }
+  if(sp){
+    st.usedSig[sp.id]=true;
+    const hpCost=sigAtTier(sp,action.tier).hpCost;
+    if(hpCost) elemFloatDmg(who,hpCost,'🩸','#ff4444');
+  }
 
   const isWard=sp?sp.el.kind==='ward':(action.cat==='protect');
   const candle=effectsOf(st,'candle')[0];
@@ -4713,7 +4756,7 @@ function executeWheel(who,action,cb){
 }
 
 function executeSignature(who,sp,action,cb){
-  const st=gs[who], x=seatX(who), y=bH*.38, el=sp.el;
+  const st=gs[who], x=seatX(who), y=bH*.38, el=sigAtTier(sp,action.tier);
   const tgt=action.target, ts=gs[tgt], tx=seatX(tgt);
   const e=elemById(el.elem||'arcane');
   const effect=(overrides)=>Object.assign({id:sp.id,name:sigName(sp),icon:sigIcon(sp)},el.effect,overrides);
@@ -4727,7 +4770,7 @@ function executeSignature(who,sp,action,cb){
       removeEffects(who,effectsOf(st,'minion').filter(m=>m.minion==='blade'),'Launched');
     }
     spawnProj(x,y,tx,y,ELEM_PROJ[el.elem],e.col,()=>{
-      elemStrike(who,tgt,Object.assign({},el,{power,tier:el.tier||2,name:sigName(sp)}));
+      elemStrike(who,tgt,Object.assign({},el,{power,name:sigName(sp)}));
       combatTimeout(cb,600);
     });
     return;
@@ -4736,6 +4779,10 @@ function executeSignature(who,sp,action,cb){
     let power=el.power;
     if(el.perSkeleton) power+=el.perSkeleton*countMinions(st,'skeleton');
     raiseWard(who,el.elem,power,el.retaliate||0);
+    if(el.rewind){
+      const back=Math.min(el.rewind,st.lastRoundLoss||0);
+      if(back>0) elemHeal(who,back,'⏪');
+    }
     combatTimeout(cb,900);
     return;
   }
@@ -4754,6 +4801,8 @@ function executeSignature(who,sp,action,cb){
         addEffect(tgt,eff,who);
       }
       if(el.drainNow){ const d=Math.min(ts.mana,el.drainNow); ts.mana-=d; if(d) addFloat(tx,bH*.42,'−'+d+' Mana','#88aaff',12); }
+      // A curse is a weak dispel too: it wears at the foe's ward (never strips buffs)
+      if(hasWard(ts)) elemWardDispel(tgt,el.elem,Math.round(ELEM_CATS.dispel.power[action.tier-1]*ELEM_CURSE_DISPEL));
       combatTimeout(cb,700);
     });
     return;
@@ -4796,17 +4845,18 @@ function elemCleanse(who){
 }
 
 // A ward takes the hit first; strip enchantments only when there's no ward to protect them
+function elemWardDispel(tgt,elem,power){
+  const ts=gs[tgt], tx=seatX(tgt);
+  const match=ts.shieldType===elem;
+  const dmg=power*(match?2:1);
+  ts.shieldHp-=dmg;
+  addFloat(tx,bH*.3,'✦ −'+dmg+' ward'+(match?' (matched!)':''),'#ffaaff',14);
+  spawnParts(tx,bH*.38,'#ffaaff',12);
+  if(ts.shieldHp<=0) breakWard(ts,tx);
+}
 function elemDispelHit(tgt,elem,power,tier){
   const ts=gs[tgt], tx=seatX(tgt);
-  if(hasWard(ts)){
-    const match=ts.shieldType===elem;
-    const dmg=power*(match?2:1);
-    ts.shieldHp-=dmg;
-    addFloat(tx,bH*.3,'✦ −'+dmg+' ward'+(match?' (matched!)':''),'#ffaaff',14);
-    spawnParts(tx,bH*.38,'#ffaaff',12);
-    if(ts.shieldHp<=0) breakWard(ts,tx);
-    return;
-  }
+  if(hasWard(ts)){ elemWardDispel(tgt,elem,power); return; }
   const buffs=buffsOf(ts);
   if(!buffs.length){ addFloat(tx,bH*.3,'✦ Nothing to dispel','#ffaaff',12); return; }
   removeEffects(tgt,tier>=ELEM_DISPEL_ALL_TIER?buffs:[buffs[buffs.length-1]],'✦ Dispelled');
@@ -4950,28 +5000,31 @@ function elemAIChoose(who){
   for(const c of cats){ r-=w[c]; if(r<=0){ cat=c; break; } }
   const ok=_rng()<(smart?0.9:0.78);
 
-  const castable=sigSpells(who,cat).filter(sp=>!sigBlocked(who,sp));
-  const wheelOk=elemCost(who,cat,1)<=me.mana;
-  // Prefer signature spells that would do something; any castable one beats waiting
-  let sigs=castable.filter(sp=>aiSigSensible(who,sp));
-  if(!sigs.length&&!wheelOk) sigs=castable;
-  if(sigs.length&&(!wheelOk||_rng()<(smart?0.45:0.3))){
-    const sp=sigs[Math.floor(_rng()*sigs.length)];
-    return {type:'el',cat,sig:sp.id,target:tgt,ok};
-  }
-  if(!wheelOk) return {type:'el',cat:'pass',ok:true};
-  if(cat==='dispel'&&myCurses&&!oppWard&&!oppBuffs)
+  // Each sector of the wheel is a plain element or one of this character's signature spells
+  const sectors=ELEMENTS.map(e=>({elem:e.id,sp:sigAt(who,cat,e.id)})).filter(x=>sectorOk(who,cat,x.elem,1));
+  const plain=sectors.filter(x=>!x.sp);
+  const sigs=sectors.filter(x=>x.sp&&aiSigSensible(who,x.sp));
+  const cleanseOk=cat==='dispel'&&myCurses&&elemCost(who,'dispel',1)<=me.mana;
+  if(cleanseOk&&!oppWard&&!oppBuffs&&_rng()<0.7)
     return {type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok};
+  let choice=null;
+  if(sigs.length&&(!plain.length||_rng()<(smart?0.45:0.3))) choice=sigs[Math.floor(_rng()*sigs.length)];
+  else if(plain.length){
+    const pickFrom=list=>list[Math.floor(_rng()*list.length)];
+    const has=id=>plain.find(x=>x.elem===id);
+    choice=pickFrom(plain);
+    if(cat==='dispel'&&oppWard&&has(opp.shieldType)&&_rng()<(smart?0.8:0.4)) choice=has(opp.shieldType);
+    if(cat==='damage'&&oppWard&&smart){ const off=plain.filter(x=>x.elem!==opp.shieldType); if(off.length) choice=pickFrom(off); }
+    if(cat==='protect'&&opp.lastElem&&has(opp.lastElem)&&_rng()<(smart?0.6:0.3)) choice=has(opp.lastElem);
+  }
+  else if(sectors.length) choice=sectors[Math.floor(_rng()*sectors.length)];   // anything beats waiting
+  if(!choice) return cleanseOk?{type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok}:{type:'el',cat:'pass',ok:true};
 
   let tier=3;
-  while(tier>1&&elemCost(who,cat,tier)>me.mana) tier--;
+  while(tier>1&&!sectorOk(who,cat,choice.elem,tier)) tier--;
   if(tier>1&&_rng()<0.4) tier--;   // sometimes hold mana back
-
-  const pickFrom=list=>list[Math.floor(_rng()*list.length)].id;
-  let elem=pickFrom(ELEMENTS);
-  if(cat==='dispel'&&oppWard&&_rng()<(smart?0.8:0.4)) elem=opp.shieldType;
-  if(cat==='damage'&&oppWard&&smart) elem=pickFrom(ELEMENTS.filter(e=>e.id!==opp.shieldType));
-  if(cat==='protect'&&opp.lastElem&&_rng()<(smart?0.6:0.3)) elem=opp.lastElem;
+  const elem=choice.elem;
+  if(choice.sp) return {type:'el',cat,elem,tier,sig:choice.sp.id,target:tgt,ok};
   return {type:'el',cat,elem,tier,self:false,target:tgt,ok};
 }
 
@@ -8309,7 +8362,6 @@ window.addEventListener('DOMContentLoaded', ()=>{
     btn.addEventListener('click',()=>openElemWheel(btn.dataset.cat));
   });
   document.getElementById('wheel-svg').addEventListener('click',onWheelTap);
-  document.getElementById('wheel-sig').addEventListener('click',onSigTap);
   document.getElementById('wheel-cancel').addEventListener('click',closeElemWheel);
   document.getElementById('wheel-self').addEventListener('click',()=>{
     closeElemWheel();
