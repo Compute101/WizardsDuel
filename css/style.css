@@ -105,7 +105,7 @@ body {
   display: flex; gap: 6px; margin-bottom: 20px;
   width: 220px; position: relative; z-index: 1;
 }
-.diff-btn {
+.diff-btn, .rules-btn {
   flex: 1; padding: 8px 0;
   font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700;
   letter-spacing: 2px; text-transform: uppercase;
@@ -117,6 +117,8 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .diff-btn:hover { opacity: 0.85; }
+.rules-btn:hover { opacity: 0.85; }
+.rules-btn.active { border-color: #c9a84c; color: #f0cc6a; background: rgba(201,168,76,0.1); }
 .diff-btn.active[data-diff="easy"]   { border-color: #4af0ff; color: #4af0ff; background: rgba(74,240,255,0.1); }
 .diff-btn.active[data-diff="normal"] { border-color: #c9a84c; color: #f0cc6a; background: rgba(201,168,76,0.1); }
 .diff-btn.active[data-diff="hard"]   { border-color: #ff4a6e; color: #ff4a6e; background: rgba(255,74,110,0.12); }
@@ -1053,6 +1055,56 @@ body {
   line-height: 1.8;
   margin-top: 4px;
 }
+
+/* ── STRENGTH WHEEL ── */
+#wheel-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 1, 12, 0.94);
+  z-index: 190;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  overflow-y: auto;
+}
+#wheel-overlay.active { display: flex; }
+#wheel-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 380px;
+}
+#wheel-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(18px, 6vw, 24px);
+  color: #f0cc6a;
+  text-shadow: 0 0 18px #c9a84c;
+}
+#wheel-mana { font-size: 11px; letter-spacing: 2px; color: #88aaff; }
+#wheel-svg { width: min(100%, 340px); height: auto; touch-action: manipulation; }
+#wheel-svg .wseg { stroke: #0a0616; stroke-width: 2; cursor: pointer; transition: fill-opacity 0.1s; }
+#wheel-svg .wseg:not(.off):hover { fill-opacity: 0.9 !important; }
+#wheel-svg .wseg.off { cursor: not-allowed; }
+#wheel-svg text { pointer-events: none; text-anchor: middle; dominant-baseline: central; }
+#wheel-svg .wicon { font-size: 22px; }
+#wheel-svg .wname { font-size: 9px; font-family: 'Cinzel', serif; font-weight: 700; fill: #fff; opacity: 0.85; }
+#wheel-svg .wcentre { fill: #140c26; stroke: #c9a84c; stroke-width: 1.5; }
+#wheel-svg .wcentre-ico { font-size: 24px; fill: #f0cc6a; }
+#wheel-legend { width: 100%; max-width: 300px; font-size: 11px; }
+.wl-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  padding: 3px 6px;
+  color: rgba(255,255,255,0.8);
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+}
+.wl-row.off { color: rgba(255,255,255,0.3); }
+#wheel-rule { font-size: 10px; line-height: 1.5; color: rgba(255,255,255,0.5); max-width: 320px; }
+#wheel-self { margin-top: 4px; }
 
 /* ── REVEAL OVERLAY ── */
 #reveal-overlay {

@@ -16,6 +16,7 @@
     "shieldMaxHp": 60,
     "shieldDuration": 10,
     "counterDmg": 20,
+    "shieldCostMod": -2,
     "spells": [
       {
         "id": "basicattack",

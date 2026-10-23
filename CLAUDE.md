@@ -37,12 +37,14 @@ Every spell's casting minigame uses glyphs from a shared 12-symbol alphabet. Thi
 | Ice | ice | `θ Φ ☽ ∞` | crystal / polar axis / frost moon / eternal |
 | Arcane | arcane | `Ω ∞ Ψ θ` | cosmos / eternity / spirit / hidden |
 | Dispel | dispel | `∞ ⊕ ∇ θ` | eternal cycle / unbinding / descent / dissolution |
+| Physical (Elemental rules) | physical | `Δ ∇ Ψ ⊕` | stone layers / fork / binding — borrows the Inferno minigame |
+| Dark (Elemental rules) | dark | `☽ ⊗ ∇ Ω` | the Necromancy set — borrows the Mana Burn minigame |
 
 Arcane deliberately shares one glyph with each other element — it's the underlying force of all magic, and the hardest set to memorise in hard mode. Dispel similarly draws one glyph from each elemental set (∞ from Ice, ⊕ from Inferno, ∇ from Lightning, θ from Ice/Arcane), fitting its role as a universal spell that dissolves any type of magic.
 
 ### Planned future spells (not yet assigned)
 Suggested glyph sets for when these are implemented:
-- **Necromancy** → `☽ ⊗ ∇ Ω`  (moon / void / descent / ending)
+- **Necromancy** → `☽ ⊗ ∇ Ω`  (moon / void / descent / ending) — now used by the Dark element
 - **Enchantment** → `∞ Φ ✸ ⊕`  (endless / harmony / radiance / binding)
 - **Polymorph**   → `Δ ∇ ϟ ∞`  (up / down / flux / cycle)
 
@@ -100,7 +102,7 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 ---
 
 ## Round flow & RPS redesign
-Every round goes: secret picks → simultaneous reveal → resolution → round-end ticks. That flow is the "ROUND FLOW" section of `js/game.js`. Loop over `PLAYERS` and `gs.pending`; don't hard-code p1/p2 in new round logic. The agreed Damage / Protection / Dispel design, and the phases still to build, are in `docs/rps-duel-design.md`.
+Every round goes: secret picks → simultaneous reveal → resolution → round-end ticks. Under Elemental rules (`elementalMode`, the default, in the "ELEMENTAL DUEL" section) resolution runs in stages: every Protection, then every Dispel, then every Damage. Classic rules keep the character spell kits. That flow is the "ROUND FLOW" section of `js/game.js`. Loop over `PLAYERS` and `gs.pending`; don't hard-code p1/p2 in new round logic. The agreed Damage / Protection / Dispel design, and the phases still to build, are in `docs/rps-duel-design.md`.
 
 ---
 

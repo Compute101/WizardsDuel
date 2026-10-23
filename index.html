@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wizard's Duel</title>
-<link rel="stylesheet" href="css/style.css?v=0.13">
+<link rel="stylesheet" href="css/style.css?v=0.14">
 </head>
 <body>
 <div id="app">
@@ -20,6 +20,11 @@
       <button class="diff-btn" data-diff="easy">Easy</button>
       <button class="diff-btn active" data-diff="normal">Normal</button>
       <button class="diff-btn" data-diff="hard">Hard</button>
+    </div>
+    <div class="diff-label">Rules</div>
+    <div class="diff-selector">
+      <button class="rules-btn active" data-rules="elemental">Elemental</button>
+      <button class="rules-btn" data-rules="classic">Classic</button>
     </div>
     <div class="diff-label">Opponent AI</div>
     <div class="diff-selector">
@@ -232,6 +237,11 @@
     <canvas id="bcanvas"></canvas>
     <div id="actionbar">
       <div class="abar-row abar-row-abilities" id="spell-buttons"></div>
+      <div class="abar-row abar-row-elem" id="elem-buttons" style="display:none">
+        <button class="abtn abtn-ability abtn-elem" id="bel-damage" data-cat="damage"><span class="abtn-ico">⚔️</span><span class="abtn-name">Damage</span><span class="cost" id="bel-damage-cost"></span></button>
+        <button class="abtn abtn-ability abtn-elem" id="bel-protect" data-cat="protect"><span class="abtn-ico">🛡</span><span class="abtn-name">Protection</span><span class="cost" id="bel-protect-cost"></span></button>
+        <button class="abtn abtn-ability abtn-elem" id="bel-dispel" data-cat="dispel"><span class="abtn-ico">✦</span><span class="abtn-name">Dispel</span><span class="cost" id="bel-dispel-cost"></span></button>
+      </div>
       <div class="abar-row abar-row-main">
         <button class="abtn abtn-channel" id="bchannel">✨ Channel<span class="cost" id="channel-cost-label">+4 Mana</span></button>
         <button class="abtn abtn-castspell" id="bcastspell">⚔️ Cast Spell</button>
@@ -306,6 +316,19 @@
     </div>
   </div>
 
+  <!-- STRENGTH WHEEL (Elemental rules): pick an element; further from the centre = stronger -->
+  <div id="wheel-overlay">
+    <div id="wheel-box">
+      <div id="wheel-title"></div>
+      <div id="wheel-mana"></div>
+      <svg id="wheel-svg" viewBox="-170 -170 340 340"></svg>
+      <div id="wheel-legend"></div>
+      <div id="wheel-rule"></div>
+      <button class="btn" id="wheel-self"></button>
+      <button class="btn wd-back-btn" id="wheel-cancel">✕ Cancel</button>
+    </div>
+  </div>
+
   <!-- REVEAL OVERLAY (all picks flip face-up together before the round resolves) -->
   <div id="reveal-overlay">
     <div id="rv-box">
@@ -355,6 +378,6 @@
 </div>
 
 <script src="js/resolver.js"></script>
-<script src="js/game.js?v=0.16"></script>
+<script src="js/game.js?v=0.17"></script>
 </body>
 </html>
