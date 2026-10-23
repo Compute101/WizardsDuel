@@ -102,7 +102,7 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 ---
 
 ## Round flow & RPS redesign
-Every round goes: secret picks → simultaneous reveal → resolution → round-end ticks. Under Elemental rules (`elementalMode`, the default, in the "ELEMENTAL DUEL" section) resolution runs in stages: every Protection, then every Dispel, then every Damage. Classic rules keep the character spell kits. That flow is the "ROUND FLOW" section of `js/game.js`. Loop over `PLAYERS` and `gs.pending`; don't hard-code p1/p2 in new round logic. The agreed Damage / Protection / Dispel design, and the phases still to build, are in `docs/rps-duel-design.md`.
+Every round goes: secret picks → simultaneous reveal → resolution → round-end ticks. Under Elemental rules (`elementalMode`, the default, in the "ELEMENTAL DUEL" section) resolution runs in stages: every Protection, then every Dispel, then every Damage. Classic rules keep the character spell kits; under Elemental rules each character spell's `el` block in `characters.json` defines its Elemental version (category, kind, cost, effect). That flow is the "ROUND FLOW" section of `js/game.js`. Loop over `PLAYERS` and `gs.pending`; don't hard-code p1/p2 in new round logic. The agreed Damage / Protection / Dispel design, and the phases still to build, are in `docs/rps-duel-design.md`.
 
 ---
 

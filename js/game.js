@@ -153,7 +153,7 @@ let trainingPickPhase=null; // 'p1' or 'p2' — which side is being chosen
 
 function newState(){
   gs={
-    p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:elementalMode?ELEM_START_MANA:p1Cfg.startMana, shieldType:null, chill:0, lastElem:null,
+    p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:elementalMode?ELEM_START_MANA:p1Cfg.startMana, shieldType:null, wardRetaliate:0, effects:[], usedSig:{}, lastElem:null, lastCat:null, lastLockedRound:null, lastRoundLoss:0,
         shield:0, shieldHp:0, burn:0, poison:0, voidCollapse:0, voidCollapseTick:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
         ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0, dragonScales:0,
@@ -163,7 +163,7 @@ function newState(){
         skeletons:[],
         bewitched:false, simulacra:[],
         enthralled:0, arcaneWeave:0, spellbound:null, usedSpells:{}},
-    p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:elementalMode?ELEM_START_MANA:p2Cfg.startMana, shieldType:null, chill:0, lastElem:null,
+    p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:elementalMode?ELEM_START_MANA:p2Cfg.startMana, shieldType:null, wardRetaliate:0, effects:[], usedSig:{}, lastElem:null, lastCat:null, lastLockedRound:null, lastRoundLoss:0,
         shield:0, shieldHp:0, burn:0, poison:0, voidCollapse:0, voidCollapseTick:0, frozen:0, regen:null,
         counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
         ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0, dragonScales:0,
@@ -3683,7 +3683,7 @@ function processBlizzard(target,tx,ty){
   if(_rng()<0.15&&target.frozen<=0) target.frozen=1;
 }
 
-const STATUS_TIMERS=['chill','timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink','stonesoul','stoneskin','plague','maggotCloud','boneTotem','enthralled','dragonScales'];
+const STATUS_TIMERS=['timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink','stonesoul','stoneskin','plague','maggotCloud','boneTotem','enthralled','dragonScales'];
 function tickStatuses(state){
   STATUS_TIMERS.forEach(k=>{ if(state[k]>0) state[k]--; });
   if(state.stoneskin<=0) state.stoneskinHp=0;
@@ -4217,7 +4217,7 @@ function commitPick(who,action){
 }
 
 function describeAction(who,action){
-  if(action.type==='el') return describeElemAction(action);
+  if(action.type==='el') return describeElemAction(action,who);
   if(action.type==='__frozen__') return {icon:'❄️',name:'Frozen'};
   if(action.type==='channel')    return {icon:'✨',name:'Channel'};
   const spell=SPELLS.find(s=>s.element===action.type);
@@ -4285,6 +4285,7 @@ function resolveSimRound(){
   const acts=gs.pending;
   gs.pending={};
   gs.myTurn=false; gs.busy=true;
+  PLAYERS.forEach(w=>{ gs[w].hpAtRoundStart=gs[w].hp; });
 
   const tiers=[];
   PLAYERS.forEach(who=>{
@@ -4336,6 +4337,11 @@ function resolveSimRound(){
 // Callers defer win checks so simultaneous tick deaths resolve as a draw.
 function tickRound(who){
   const st=gs[who], x=seatX(who), y=bH*.38;
+  if(elementalMode){
+    elemTickEffects(who);
+    st.mana=Math.min(MAX_MANA,st.mana+elemIncome(who));
+    return;
+  }
   processVineWhip(st,x,y);
   processBlizzard(st,x,y);
   processBurn(st,x,y);
@@ -4349,13 +4355,14 @@ function tickRound(who){
     processSkeletonStrikes(enemy,st,x,y);
     processSimulacra(enemy,st,x,y);
   });
-  st.mana=Math.min(MAX_MANA,st.mana+(elementalMode?ELEM_INCOME:1));
+  st.mana=Math.min(MAX_MANA,st.mana+1);
 }
 
 function runRoundTicks(){
   PLAYERS.forEach(w=>{ if(gs[w].invisible>0) gs[w].invisible--; });
   deferWinCheck=true;
   PLAYERS.forEach(tickRound);
+  PLAYERS.forEach(w=>{ const st=gs[w]; st.lastRoundLoss=Math.max(0,(st.hpAtRoundStart??st.hp)-st.hp); });
   settleWin();
 }
 
@@ -4395,7 +4402,7 @@ function finishAI(){
 
 // ── ELEMENTAL DUEL (Damage / Protection / Dispel) ──────────
 // Protection beats Damage, Dispel beats Protection, Damage beats Dispel.
-// Rounds resolve in stages — every ward, then every dispel, then every strike —
+// Rounds resolve in stages — every Protection pick, then every Dispel, then every Damage —
 // so a ward raised this round already stops this round's damage. See docs/rps-duel-design.md.
 let elementalMode=true;   // false = Classic rules (character spell kits + Channel)
 
@@ -4405,6 +4412,8 @@ const ELEM_WARD_ROUNDS=3;       // a ward lasts the round it is raised + 2 more
 const ELEM_WARD_DECAY=0.75;     // ward HP kept at each round end
 const ELEM_CHILL_MIN_TIER=2;    // Ice of this strength or more chills when it reaches HP
 const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or not
+const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
+const ELEM_DISPEL_ALL_TIER=3;   // a Greater dispel on an unwarded foe strips every buff, not just the newest
 
 const ELEMENTS=[
   {id:'fire',      name:'Fire',      icon:'🔥', col:'#ff6622'},
@@ -4431,29 +4440,109 @@ const ELEM_WARD_THEME={fire:'flameshield', ice:'frostarmor', lightning:'shield',
   arcane:'foresight', physical:'stoneskin', dark:'warpaint'};
 const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane', physical:'physical', dark:'manaburn'};
 
-function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS[0]; }
+function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS[3]; }
+function hasWard(st){ return st.shield>0&&st.shieldHp>0; }
+
+// ── Signature spells: each character spell with an `el` block in characters.json ──
+// el.cat (damage/protect/dispel) sets the wheel it is listed under, its resolution stage, and
+// which locks/spellbinds affect it. el.kind: strike | ward | buff (enchantment on self) |
+// curse (enchantment on the foe) | instant.
+function sigSpells(who,cat){ return (seatCfg(who).spells||[]).filter(s=>s.el&&(!cat||s.el.cat===cat)); }
+function sigById(who,id){ return (seatCfg(who).spells||[]).find(s=>s.id===id&&s.el); }
+function sigName(sp){ return sp.el.name||sp.name; }
+function sigIcon(sp){ return sp.el.icon||sp.icon; }
+
+// ── Enchantments: st.effects = [{id,type,kind:'buff'|'curse',name,icon,rounds|null,...params}] ──
+function effectsOf(st,type){ return (st&&st.effects||[]).filter(e=>e.type===type); }
+function takeEffect(st,type,pred){
+  const i=(st.effects||[]).findIndex(e=>e.type===type&&(!pred||pred(e)));
+  if(i<0) return null;
+  return st.effects.splice(i,1)[0];
+}
+function countMinions(st,minion){ return effectsOf(st,'minion').filter(e=>e.minion===minion).length; }
+function syncMinionVisuals(st){
+  // drawWiz already draws Classic blades / skeletons / simulacra from these fields
+  st.blades=countMinions(st,'blade');
+  st.skeletons=effectsOf(st,'minion').filter(e=>e.minion==='skeleton').map(()=>({hp:25}));
+  st.simulacra=effectsOf(st,'minion').filter(e=>e.minion==='simulacrum').map(()=>({}));
+}
+function addEffect(who,eff,fromWho){
+  const st=gs[who], x=seatX(who);
+  if(eff.kind==='curse'&&effectsOf(st,'warding').length){
+    addFloat(x,bH*.3,'🔰 '+eff.name+' resisted!','#88ccff',12);
+    return false;
+  }
+  if(eff.type==='lock'){
+    if(catLocked(who,eff.cat)) return false;
+    // No back-to-back locks: the round this would block must not follow a locked round
+    if(st.lastLockedRound!=null&&gs.round+1-st.lastLockedRound<2){
+      addFloat(x,bH*.3,'💪 Breaks free!','#cccccc',12);
+      return false;
+    }
+    st.lastLockedRound=gs.round+1;   // the round the lock actually blocks
+  }
+  // Same enchantment again refreshes it; minions stack instead
+  if(eff.type!=='minion') st.effects=st.effects.filter(e=>e.id!==eff.id);
+  st.effects.push(Object.assign({from:fromWho},eff));
+  if(eff.type==='minion') syncMinionVisuals(st);
+  addFloat(x,bH*.26,eff.icon+' '+eff.name+'!',eff.kind==='curse'?'#cc88ff':'#88ffcc',13);
+  return true;
+}
+function removeEffects(who,list,reason){
+  const st=gs[who], x=seatX(who);
+  list.forEach(e=>{
+    st.effects=st.effects.filter(f=>f!==e);
+    if(e.type==='minion'&&e.healOnRemove){
+      st.hp=Math.min(st.maxHp,st.hp+e.healOnRemove);
+      addFloat(x,bH*.42,'+'+e.healOnRemove+' 💀','#88ffcc',11);
+    }
+  });
+  if(list.length) addFloat(x,bH*.3,reason+': '+list.map(e=>e.icon).join(' '),'#ffaaff',12);
+  syncMinionVisuals(st);
+}
+function buffsOf(st){ return (st.effects||[]).filter(e=>e.kind==='buff'); }
+function cursesOf(st){ return (st.effects||[]).filter(e=>e.kind==='curse'); }
+
+function catLocked(who,cat){ return effectsOf(gs[who],'lock').some(e=>e.cat===cat); }
+function spellbindExtra(who,cat){
+  return effectsOf(gs[who],'spellbind').filter(e=>e.cat===cat).reduce((a,e)=>a+e.extra,0);
+}
 function elemCost(who,cat,tier){
   const mod=cat==='protect'?(seatCfg(who).shieldCostMod||0):0;
-  return Math.max(1,ELEM_CATS[cat].cost[tier-1]+mod);
+  return Math.max(1,ELEM_CATS[cat].cost[tier-1]+mod)+spellbindExtra(who,cat);
+}
+function sigCost(who,sp){ return Math.max(0,sp.el.cost+spellbindExtra(who,sp.el.cat)); }
+// Why a signature spell can't be cast right now ('' = it can)
+function sigBlocked(who,sp){
+  const st=gs[who], el=sp.el;
+  if(sigCost(who,sp)>st.mana) return 'Not enough mana';
+  if(el.oncePerDuel&&st.usedSig[sp.id]) return 'Once per duel';
+  if(el.requires==='blades'&&countMinions(st,'blade')===0) return 'Needs a blade';
+  if(el.kind==='buff'&&el.effect.type==='minion'&&countMinions(st,el.effect.minion)>=el.effect.max) return 'Maximum reached';
+  if(el.hpCost&&st.hp<=el.hpCost) return 'Not enough HP';
+  return '';
 }
 function elemCanPick(who,cat){
-  const st=gs[who];
-  if(cat==='damage'&&st.chill>0) return false;
-  return elemCost(who,cat,1)<=st.mana;
+  if(catLocked(who,cat)) return false;
+  return elemCost(who,cat,1)<=gs[who].mana||sigSpells(who,cat).some(sp=>!sigBlocked(who,sp));
 }
-function hasWard(st){ return st.shield>0&&st.shieldHp>0; }
 function actionPriority(action){
   if(action.type==='el') return ELEM_CATS[action.cat]?ELEM_CATS[action.cat].stage:4;
   return ACTION_PRIORITY[action.type]||4;
 }
-function describeElemAction(action){
+function describeElemAction(action,who){
   if(action.cat==='pass') return {icon:'…',name:'Waits'};
+  const cat=ELEM_CATS[action.cat];
+  if(action.sig){
+    const sp=sigById(who,action.sig);
+    return {icon:cat.icon+(sp?sigIcon(sp):'★'),name:sp?sigName(sp):action.sig};
+  }
   if(action.self) return {icon:'✦',name:'Cleanse Self'};
-  const el=elemById(action.elem), cat=ELEM_CATS[action.cat];
+  const el=elemById(action.elem);
   return {icon:cat.icon+el.icon,name:ELEM_TIER_NAMES[action.tier-1]+el.name+' '+cat.verb};
 }
 
-// ── Pick UI: three category buttons → strength wheel → minigame ──
+// ── Pick UI: three category buttons → strength wheel (+ signature spells) → minigame ──
 let wheelCat=null;
 function openElemWheel(cat){
   if(!gs.myTurn||gs.busy) return;
@@ -4469,13 +4558,21 @@ function openElemWheel(cat){
   const ruleText={
     damage:'Lightning also burns mana · Ice (middle ring or stronger) chills: no Damage next round',
     protect:'Lasts 3 rounds, fading each round · the chosen element only does half damage to it',
-    dispel:'Breaks wards · double effect on a ward of the same element',
+    dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment',
   }[cat];
   document.getElementById('wheel-rule').textContent=ruleText;
   document.getElementById('wheel-legend').innerHTML=[0,1,2].map(t=>{
     const cost=elemCost(who,cat,t+1), off=cost>st.mana;
     return `<div class="wl-row${off?' off':''}"><span>${['Inner','Middle','Outer'][t]}</span><span>${cost} Mana</span><span>${c.power[t]} ${c.unit}</span></div>`;
   }).join('');
+  const sigs=sigSpells(who,cat);
+  document.getElementById('wheel-sig').innerHTML=sigs.length?
+    `<div class="wsig-label">★ ${seatCfg(who).name}'s spells</div>`+sigs.map(sp=>{
+      const why=sigBlocked(who,sp);
+      return `<button class="wsig-btn${why?' off':''}" data-sig="${sp.id}" title="${why}">`+
+        `<span class="wsig-ico">${sigIcon(sp)}</span><span class="wsig-name">${sigName(sp)}</span>`+
+        `<span class="wsig-cost">${sigCost(who,sp)} Mana</span><span class="wsig-desc">${why||sp.el.desc||''}</span></button>`;
+    }).join(''):'';
   buildWheelSvg(who,cat);
   document.getElementById('wheel-overlay').classList.add('active');
 }
@@ -4512,10 +4609,16 @@ function onWheelTap(e){
   closeElemWheel();
   castElemental(cat,seg.dataset.elem,+seg.dataset.tier,false);
 }
+function onSigTap(e){
+  const btn=e.target.closest('.wsig-btn');
+  if(!btn||btn.classList.contains('off')||!wheelCat) return;
+  closeElemWheel();
+  castSignature(btn.dataset.sig);
+}
 
 function castElemental(cat,elemId,tier,self){
   const who=gs.turnPlayer;
-  if(elemCost(who,cat,tier)>gs[who].mana) return;
+  if(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)) return;
   const el=elemById(elemId);
   const target=self?who:PLAYERS.find(w=>w!==who);   // 3–4 seats: target picker goes here
   const spell={name:describeElemAction({cat,elem:elemId,tier,self}).name, icon:el.icon,
@@ -4527,99 +4630,316 @@ function castElemental(cat,elemId,tier,self){
   else ELEM_MINIGAME[elemId](spell,commit);
 }
 
+function castSignature(id){
+  const who=gs.turnPlayer, sp=sigById(who,id);
+  if(!sp||sigBlocked(who,sp)||catLocked(who,sp.el.cat)) return;
+  const el=sp.el, elemId=el.elem||'arcane', e=elemById(elemId);
+  const spell={name:sigName(sp), icon:sigIcon(sp), element:elemId, col:e.col, tier:el.tier||2,
+    glyphs:(el.kind==='strike'||el.kind==='curse')?ELEM_GLYPHS[elemId]:undefined};
+  const commit=ok=>commitPick(who,{type:'el',cat:el.cat,sig:id,target:PLAYERS.find(w=>w!==who),ok});
+  gs.busy=true;
+  if(el.cat==='dispel') launchDispelPattern(spell,commit);
+  else if(el.kind==='strike'||el.kind==='curse') ELEM_MINIGAME[elemId](spell,commit);
+  else launchBuffTileMatch(spell,ELEM_WARD_THEME[elemId],who,ok=>commit(ok));
+}
+
 // ── Resolution ──
+function elemFloatDmg(who,n,icon,col){
+  if(n<=0) return;
+  dealDmgToPlayer(who,n,seatX(who),bH*.38,true,true);
+  addFloat(seatX(who),bH*.36,icon+' −'+n,col,13);
+}
+function elemHeal(who,n,icon){
+  const st=gs[who], before=st.hp;
+  st.hp=Math.min(st.maxHp,st.hp+n);
+  if(st.hp>before) addFloat(seatX(who),bH*.42,'+'+(st.hp-before)+' '+(icon||'💚'),'#44ee88',12);
+}
+
 function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who), y=bH*.38;
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
+  const sp=action.sig?sigById(who,action.sig):null;
+  const cost=sp?sigCost(who,sp):elemCost(who,action.cat,action.tier);
+
+  const agony=effectsOf(st,'agony')[0];
+  if(agony) elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc');
   if(!action.ok){
     addFloat(x,bH*.33,'Fizzled!','#ff8844',13);
     st.mana=Math.max(0,st.mana-1);
     combatTimeout(cb,700);
     return;
   }
-  const cat=ELEM_CATS[action.cat], el=elemById(action.elem);
-  st.mana=Math.max(0,st.mana-elemCost(who,action.cat,action.tier));
+  const silence=effectsOf(st,'silence')[0];
+  if(silence&&_rng()<silence.pct){
+    showSilenceBlock(x,bH*.33);
+    combatTimeout(cb,900);
+    return;
+  }
+  if(cost>st.mana){ addFloat(x,bH*.33,'Out of mana!','#ff8844',13); combatTimeout(cb,700); return; }
+  st.mana-=cost;
   anim(who,'cast',600);
-  const power=cat.power[action.tier-1];
+  st.lastCat=action.cat;   // what Spellbind targets
+  if(sp){ st.usedSig[sp.id]=true; if(sp.el.hpCost) elemFloatDmg(who,sp.el.hpCost,'🩸','#ff4444'); }
 
+  const isWard=sp?sp.el.kind==='ward':(action.cat==='protect');
+  const candle=effectsOf(st,'candle')[0];
+  if(isWard&&candle) elemFloatDmg(who,candle.dmg,'🕯️','#ff6622');
+
+  if(sp) executeSignature(who,sp,action,cb);
+  else executeWheel(who,action,cb);
+}
+
+function executeWheel(who,action,cb){
+  const st=gs[who], x=seatX(who), y=bH*.38;
+  const cat=ELEM_CATS[action.cat], el=elemById(action.elem);
+  const power=cat.power[action.tier-1];
   if(action.cat==='protect'){
-    st.shield=ELEM_WARD_ROUNDS; st.shieldHp=power; st.shieldType=action.elem;
-    addFloat(x,bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
-    spawnParts(x,y,el.col,18);
+    raiseWard(who,action.elem,power,0);
     combatTimeout(cb,900);
     return;
   }
   if(action.self){
-    const had=st.chill>0;
-    st.chill=0;
-    addFloat(x,bH*.28,had?'✦ Cleansed!':'✦ Nothing to cleanse','#ffaaff',13);
-    spawnParts(x,y,'#ffaaff',10);
+    elemCleanse(who);
     combatTimeout(cb,800);
     return;
   }
   const tgt=action.target, tx=seatX(tgt);
   if(action.cat==='damage') st.lastElem=action.elem;
   spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,()=>{
-    if(action.cat==='dispel') elemDispelHit(tgt,action.elem,power);
-    else elemDamageHit(who,tgt,action.elem,action.tier,power);
+    if(action.cat==='dispel') elemDispelHit(tgt,action.elem,power,action.tier);
+    else elemStrike(who,tgt,{elem:action.elem,tier:action.tier,power});
     combatTimeout(cb,600);
   });
 }
 
+function executeSignature(who,sp,action,cb){
+  const st=gs[who], x=seatX(who), y=bH*.38, el=sp.el;
+  const tgt=action.target, ts=gs[tgt], tx=seatX(tgt);
+  const e=elemById(el.elem||'arcane');
+  const effect=(overrides)=>Object.assign({id:sp.id,name:sigName(sp),icon:sigIcon(sp)},el.effect,overrides);
+  if(el.kind==='strike'){
+    st.lastElem=el.elem;
+    let power=el.power||0;
+    if(el.variance) power=el.variance[0]+Math.round(_rng()*(el.variance[1]-el.variance[0]));
+    if(el.pctHp) power=Math.max(power,Math.round(ts.hp*el.pctHp));
+    if(el.perBlade){
+      power=el.perBlade*countMinions(st,'blade');
+      removeEffects(who,effectsOf(st,'minion').filter(m=>m.minion==='blade'),'Launched');
+    }
+    spawnProj(x,y,tx,y,ELEM_PROJ[el.elem],e.col,()=>{
+      elemStrike(who,tgt,Object.assign({},el,{power,tier:el.tier||2,name:sigName(sp)}));
+      combatTimeout(cb,600);
+    });
+    return;
+  }
+  if(el.kind==='ward'){
+    let power=el.power;
+    if(el.perSkeleton) power+=el.perSkeleton*countMinions(st,'skeleton');
+    raiseWard(who,el.elem,power,el.retaliate||0);
+    combatTimeout(cb,900);
+    return;
+  }
+  if(el.kind==='buff'){
+    addEffect(who,effect({kind:'buff'}),who);
+    spawnParts(x,y,e.col,14);
+    combatTimeout(cb,900);
+    return;
+  }
+  if(el.kind==='curse'){
+    spawnProj(x,y,tx,y,ELEM_PROJ[el.elem||'arcane'],e.col,()=>{
+      if(el.chance!=null&&_rng()>el.chance) addFloat(tx,bH*.3,sigIcon(sp)+' Resisted','#cccccc',12);
+      else {
+        const eff=effect({kind:'curse'});
+        if(eff.type==='spellbind') eff.cat=ts.lastCat||'damage';
+        addEffect(tgt,eff,who);
+      }
+      if(el.drainNow){ const d=Math.min(ts.mana,el.drainNow); ts.mana-=d; if(d) addFloat(tx,bH*.42,'−'+d+' Mana','#88aaff',12); }
+      combatTimeout(cb,700);
+    });
+    return;
+  }
+  // Instants
+  const a=el.action;
+  if(a.type==='heal') elemHeal(who,a.amt);
+  else if(a.type==='bloodpact'){ st.mana=Math.min(MAX_MANA,st.mana+a.mana); addFloat(x,bH*.3,'+'+a.mana+' Mana','#88aaff',13); }
+  else if(a.type==='cleanse'){ elemCleanse(who); if(a.heal) elemHeal(who,a.heal); }
+  else if(a.type==='rewind'){ elemHeal(who,Math.min(a.max,st.lastRoundLoss||0),'⏪'); if(!st.lastRoundLoss) addFloat(x,bH*.3,'⏪ Nothing to undo','#cccccc',12); }
+  else if(a.type==='siphon'){
+    const n=Math.min(ts.mana,a.amt);
+    ts.mana-=n; st.mana=Math.min(MAX_MANA,st.mana+n);
+    addFloat(tx,bH*.42,'🌀 −'+n+' Mana','#88aaff',12); addFloat(x,bH*.42,'+'+n+' Mana','#88aaff',12);
+  }
+  else if(a.type==='tonic'){
+    if(_rng()<0.5) elemHeal(who,a.heal,'⚗️');
+    else addEffect(who,{id:sp.id,type:'empower',kind:'buff',name:'Empowered',icon:'💪',mult:a.mult,rounds:null},who);
+  }
+  spawnParts(x,y,e.col,12);
+  combatTimeout(cb,900);
+}
+
+function raiseWard(who,elem,power,retaliate){
+  const st=gs[who], el=elemById(elem);
+  st.shield=ELEM_WARD_ROUNDS; st.shieldHp=power; st.shieldType=elem; st.wardRetaliate=retaliate;
+  addFloat(seatX(who),bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
+  spawnParts(seatX(who),bH*.38,el.col,18);
+}
 function breakWard(st,x){
-  st.shield=0; st.shieldHp=0; st.shieldType=null;
+  st.shield=0; st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0;
   addFloat(x,bH*.24,'🛡 SHATTERED!','#88ffff',18);
   spawnParts(x,bH*.38,'#4af0ff',18);
 }
-
-function elemDispelHit(tgt,elem,power){
-  const ts=gs[tgt], tx=seatX(tgt);
-  if(!hasWard(ts)){ addFloat(tx,bH*.3,'✦ Nothing to dispel','#ffaaff',12); return; }
-  const match=ts.shieldType===elem;
-  const dmg=power*(match?2:1);
-  ts.shieldHp-=dmg;
-  addFloat(tx,bH*.3,'✦ −'+dmg+' ward'+(match?' (matched!)':''),'#ffaaff',14);
-  spawnParts(tx,bH*.38,'#ffaaff',12);
-  if(ts.shieldHp<=0) breakWard(ts,tx);
+function elemCleanse(who){
+  const st=gs[who], curses=cursesOf(st);
+  if(curses.length) removeEffects(who,curses,'✦ Cleansed');
+  else addFloat(seatX(who),bH*.28,'✦ Nothing to cleanse','#ffaaff',13);
+  spawnParts(seatX(who),bH*.38,'#ffaaff',10);
 }
 
-function elemDamageHit(who,tgt,elem,tier,power){
-  const ts=gs[tgt], tx=seatX(tgt), el=elemById(elem);
-  let dmg=Math.round(power*(seatCfg(who).dmgMult||1));
+// A ward takes the hit first; strip enchantments only when there's no ward to protect them
+function elemDispelHit(tgt,elem,power,tier){
+  const ts=gs[tgt], tx=seatX(tgt);
   if(hasWard(ts)){
+    const match=ts.shieldType===elem;
+    const dmg=power*(match?2:1);
+    ts.shieldHp-=dmg;
+    addFloat(tx,bH*.3,'✦ −'+dmg+' ward'+(match?' (matched!)':''),'#ffaaff',14);
+    spawnParts(tx,bH*.38,'#ffaaff',12);
+    if(ts.shieldHp<=0) breakWard(ts,tx);
+    return;
+  }
+  const buffs=buffsOf(ts);
+  if(!buffs.length){ addFloat(tx,bH*.3,'✦ Nothing to dispel','#ffaaff',12); return; }
+  removeEffects(tgt,tier>=ELEM_DISPEL_ALL_TIER?buffs:[buffs[buffs.length-1]],'✦ Dispelled');
+}
+
+// Damage that meets the target's ward first. Returns {hp, warded}.
+function elemIncoming(tgt,dmg,elem,icon,col){
+  const ts=gs[tgt], tx=seatX(tgt);
+  let warded=false;
+  if(hasWard(ts)&&dmg>0){
     // A ward of the same element only takes half damage, so it stops twice as much
     const match=ts.shieldType===elem;
     const blocked=Math.min(dmg,match?ts.shieldHp*2:ts.shieldHp);
     ts.shieldHp-=match?Math.ceil(blocked/2):blocked;
-    dmg-=blocked;
+    dmg-=blocked; warded=true;
     addFloat(tx,bH*.24,'🛡 −'+blocked+(match?' resisted':' blocked'),'#4af0ff',12);
     spawnParts(tx,bH*.38,'#4af0ff',8);
     if(ts.shieldHp<=0) breakWard(ts,tx);
   }
   if(dmg>0){
     dealDmgToPlayer(tgt,dmg,tx,bH*.38,true,true);
-    addFloat(tx,bH*.33,el.icon+' −'+dmg,el.col,16);
-    spawnParts(tx,bH*.38,el.col,16);
-    flash('#220000');
+    addFloat(tx,bH*.33,icon+' −'+dmg,col,16);
+    spawnParts(tx,bH*.38,col,16);
   }
-  if(elem==='lightning'){
-    const burn=Math.min(ts.mana,ELEM_LIGHTNING_BURN[tier-1]);
-    if(burn>0){ ts.mana-=burn; addFloat(tx,bH*.42,'⚡ −'+burn+' Mana','#ffee44',12); }
+  return {hp:Math.max(0,dmg),warded};
+}
+
+// o: {elem,tier,power, lifesteal, dot, manaburn, recoil, arc, name}
+function elemStrike(who,tgt,o){
+  const st=gs[who];
+  if(takeEffect(st,'bewitch')){
+    addFloat(seatX(who),bH*.24,'🪞 Bewitched — it rebounds!','#cc88ff',13);
+    tgt=who;
   }
-  if(elem==='ice'&&dmg>0&&tier>=ELEM_CHILL_MIN_TIER){
-    ts.chill=2;   // ticks to 1 at this round's end → blocks Damage for the next pick
-    addFloat(tx,bH*.42,'❄️ Chilled!','#88ddff',13);
+  const ts=gs[tgt], tx=seatX(tgt), el=elemById(o.elem);
+  let dmg=o.power*(seatCfg(who).dmgMult||1);
+  const emp=takeEffect(st,'empower',e=>!e.elem||e.elem===o.elem);
+  if(emp){ dmg*=emp.mult; addFloat(seatX(who),bH*.24,'💪 Empowered!','#ffcc44',11); }
+  const frenzy=effectsOf(st,'frenzy')[0];
+  if(frenzy){ dmg*=frenzy.mult; elemFloatDmg(who,frenzy.selfDmg,'💢','#dd8822'); }
+  const weave=effectsOf(st,'weave')[0];
+  let burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+(o.manaburn||0);
+  if(weave){
+    dmg+=weave.bonus; burn+=weave.burn;
+    if(--weave.charges<=0) st.effects=st.effects.filter(e=>e!==weave);
   }
+
+  if(tgt!==who){
+    if(takeEffect(ts,'absorbNext')){ addFloat(tx,bH*.28,'🔮 Absorbed!','#ffcc44',15); return; }
+    const dodge=effectsOf(ts,'dodge')[0];
+    if(dodge&&_rng()<dodge.pct){ addFloat(tx,bH*.28,'💫 Dodged!','#b8a0e8',15); return; }
+  }
+  effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
+  const resist=effectsOf(ts,'resist').filter(e=>!(e.magicOnly&&o.elem==='physical'))
+    .reduce((m,e)=>Math.max(m,e.pct),0);
+  dmg=Math.round(dmg*(1-resist));
+
+  const hit=elemIncoming(tgt,dmg,o.elem,el.icon,el.col);
+  if(hit.hp>0){
+    if(o.lifesteal) elemHeal(who,Math.round(hit.hp*o.lifesteal),'🩸');
+    if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',name:o.name||el.name,icon:el.icon},o.dot),who);
+    if(o.elem==='ice'&&(o.tier||2)>=ELEM_CHILL_MIN_TIER)
+      addEffect(tgt,{id:'chill',type:'lock',cat:'damage',kind:'curse',name:'Chilled',icon:'❄️',rounds:ELEM_LOCK_ROUNDS},who);
+  }
+  if(burn>0){
+    const n=Math.min(ts.mana,burn);
+    if(n>0){ ts.mana-=n; addFloat(tx,bH*.42,'⚡ −'+n+' Mana','#ffee44',12); }
+  }
+  if(o.arc&&_rng()<o.arc.chance){
+    addFloat(tx,bH*.2,'⚡ Arcs!','#ffee44',13);
+    elemIncoming(tgt,o.arc.dmg,o.elem,el.icon,el.col);
+  }
+  if(tgt!==who){
+    // Retaliation from the target's ward and enchantments
+    let back=hit.warded?(ts.wardRetaliate||0):0;
+    effectsOf(ts,'resist').concat(effectsOf(ts,'counter')).forEach(e=>{ back+=e.retaliate||0; });
+    if(back>0) elemFloatDmg(who,back,'↩️','#ff8844');
+  }
+  if(o.recoil) elemFloatDmg(who,o.recoil,'💥','#ff6644');
+  flash('#220000');
+}
+
+// Round-end effects on `who` (Elemental rules): DoTs, regen, the foe's minions, then durations tick down
+function elemTickEffects(who){
+  const st=gs[who], x=seatX(who);
+  effectsOf(st,'dot').forEach(e=>{
+    e.tick=(e.tick||0)+1;
+    const dmg=e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg;
+    elemFloatDmg(who,dmg,e.icon,'#cc88ff');
+    if(e.manaDrain){ const d=Math.min(st.mana,e.manaDrain); st.mana-=d; if(d) addFloat(x,bH*.46,'−'+d+' Mana','#88aaff',11); }
+  });
+  effectsOf(st,'regen').forEach(e=>{ if(st.hp>0) elemHeal(who,e.perRound,e.icon); });
+  PLAYERS.filter(w=>w!==who).forEach(owner=>{
+    effectsOf(gs[owner],'minion').forEach(m=>{
+      const el=elemById(m.elem||'physical');
+      elemIncoming(who,m.dmg,m.elem||'physical',m.icon,el.col);
+    });
+  });
+  const expired=[];
+  st.effects.forEach(e=>{ if(e.rounds!=null&&--e.rounds<=0) expired.push(e); });
+  if(expired.length){ st.effects=st.effects.filter(e=>!expired.includes(e)); syncMinionVisuals(st); }
+}
+function elemIncome(who){
+  const drain=effectsOf(gs[who],'incomeDrain').reduce((a,e)=>a+e.n,0);
+  return Math.max(0,ELEM_INCOME-drain);
 }
 
 // ── Elemental AI: a weighted mixed strategy so it can't be read every round ──
+// Would casting this signature spell do anything useful right now?
+function aiSigSensible(who,sp){
+  const st=gs[who], tgt=PLAYERS.find(w=>w!==who), ts=gs[tgt], el=sp.el;
+  const active=(s,id)=>(s.effects||[]).some(e=>e.id===id);
+  if(el.kind==='buff') return el.effect.type==='minion'||!active(st,sp.id);
+  if(el.kind==='curse') return !active(ts,sp.id)&&!(el.effect.type==='lock'&&catLocked(tgt,el.effect.cat));
+  if(el.kind==='instant'){
+    const a=el.action;
+    if(a.type==='heal'||a.type==='tonic') return st.hp<st.maxHp*0.7;
+    if(a.type==='bloodpact') return st.mana<6&&st.hp>40;
+    if(a.type==='rewind') return (st.lastRoundLoss||0)>=10;
+    if(a.type==='cleanse') return cursesOf(st).length>0;
+    if(a.type==='siphon') return ts.mana>=3;
+  }
+  return true;
+}
 function elemAIChoose(who){
   const me=gs[who], tgt=PLAYERS.find(w=>w!==who), opp=gs[tgt];
   const smart=aiDifficulty==='normal';
-  const oppWard=hasWard(opp);
+  const oppWard=hasWard(opp), oppBuffs=buffsOf(opp).length, myCurses=cursesOf(me).length;
   const w={damage:1.0, protect:0.55, dispel:0.08};
   if(oppWard){ w.dispel=smart?1.7:1.0; w.damage=0.5; }
-  if(hasWard(me)&&me.shieldHp>=15) w.protect=0.08;
+  else if(oppBuffs) w.dispel+=smart?0.9:0.4;
+  if(myCurses) w.dispel+=0.5;
+  if(hasWard(me)&&me.shieldHp>=15) w.protect=0.2;
   else {
     if(opp.mana>=elemCost(tgt,'damage',2)) w.protect+=0.35;
     if(me.hp<me.maxHp*0.35) w.protect+=0.35;
@@ -4628,19 +4948,30 @@ function elemAIChoose(who){
   if(!cats.length) return {type:'el',cat:'pass',ok:true};
   let r=_rng()*cats.reduce((sum,c)=>sum+w[c],0), cat=cats[0];
   for(const c of cats){ r-=w[c]; if(r<=0){ cat=c; break; } }
+  const ok=_rng()<(smart?0.9:0.78);
+
+  const castable=sigSpells(who,cat).filter(sp=>!sigBlocked(who,sp));
+  const wheelOk=elemCost(who,cat,1)<=me.mana;
+  // Prefer signature spells that would do something; any castable one beats waiting
+  let sigs=castable.filter(sp=>aiSigSensible(who,sp));
+  if(!sigs.length&&!wheelOk) sigs=castable;
+  if(sigs.length&&(!wheelOk||_rng()<(smart?0.45:0.3))){
+    const sp=sigs[Math.floor(_rng()*sigs.length)];
+    return {type:'el',cat,sig:sp.id,target:tgt,ok};
+  }
+  if(!wheelOk) return {type:'el',cat:'pass',ok:true};
+  if(cat==='dispel'&&myCurses&&!oppWard&&!oppBuffs)
+    return {type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok};
 
   let tier=3;
   while(tier>1&&elemCost(who,cat,tier)>me.mana) tier--;
   if(tier>1&&_rng()<0.4) tier--;   // sometimes hold mana back
 
-  const others=id=>ELEMENTS.filter(e=>e.id!==id);
   const pickFrom=list=>list[Math.floor(_rng()*list.length)].id;
   let elem=pickFrom(ELEMENTS);
   if(cat==='dispel'&&oppWard&&_rng()<(smart?0.8:0.4)) elem=opp.shieldType;
-  if(cat==='damage'&&oppWard&&smart) elem=pickFrom(others(opp.shieldType));
+  if(cat==='damage'&&oppWard&&smart) elem=pickFrom(ELEMENTS.filter(e=>e.id!==opp.shieldType));
   if(cat==='protect'&&opp.lastElem&&_rng()<(smart?0.6:0.3)) elem=opp.lastElem;
-
-  const ok=_rng()<(smart?0.9:0.78);
   return {type:'el',cat,elem,tier,self:false,target:tgt,ok};
 }
 
@@ -4652,7 +4983,11 @@ function elemStatusTags(){
       const el=elemById(st.shieldType);
       tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${st.shieldHp} (${st.shield})</span>`);
     }
-    if(st.chill>0) tags.push(`<span class="status-tag freeze">❄️ ${name} CHILLED — NO DAMAGE</span>`);
+    (st.effects||[]).filter(e=>e.type!=='minion').forEach(e=>{
+      tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.rounds!=null?' ('+e.rounds+')':''}</span>`);
+    });
+    const minions=effectsOf(st,'minion');
+    if(minions.length) tags.push(`<span class="status-tag foresight">${minions.map(m=>m.icon).join('')} ${name} ×${minions.length}</span>`);
   });
   return tags;
 }
@@ -5158,7 +5493,8 @@ function resetTrainingRound(knockedOut){
     if(!battleRunning) return;
     function resetPlayer(st,cfg){
       st.hp=cfg.hp; st.maxHp=cfg.hp; st.mana=elementalMode?ELEM_START_MANA:cfg.startMana;
-      st.shieldType=null; st.chill=0; st.lastElem=null;
+      st.shieldType=null; st.wardRetaliate=0; st.effects=[]; st.usedSig={}; st.lastElem=null; st.lastCat=null; st.lastLockedRound=null; st.lastRoundLoss=0;
+      st.blades=0; st.skeletons=[]; st.simulacra=[];
       st.shield=0; st.shieldHp=0; st.burn=0; st.poison=0; st.voidCollapse=0; st.voidCollapseTick=0; st.frozen=0; st.regen=null;
       st.counter=false; st.empowered=false; st.foresight=false; st.timeDrain=0;
       st.resist=0; st.invisible=0; st.ward=0; st.vineWhip=0; st.haste=0;
@@ -7973,6 +8309,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     btn.addEventListener('click',()=>openElemWheel(btn.dataset.cat));
   });
   document.getElementById('wheel-svg').addEventListener('click',onWheelTap);
+  document.getElementById('wheel-sig').addEventListener('click',onSigTap);
   document.getElementById('wheel-cancel').addEventListener('click',closeElemWheel);
   document.getElementById('wheel-self').addEventListener('click',()=>{
     closeElemWheel();

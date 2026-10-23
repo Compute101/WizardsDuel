@@ -33,7 +33,16 @@
         "icon": "🛡",
         "cost": 5,
         "costLabel": "5 Mana",
-        "effectLabel": "60 HP barrier for 10 turns"
+        "effectLabel": "60 HP barrier for 10 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "ward",
+          "elem": "arcane",
+          "cost": 9,
+          "power": 60,
+          "tier": 3,
+          "desc": "Arcane ward of 60"
+        }
       },
       {
         "id": "counter",
@@ -41,7 +50,20 @@
         "icon": "⚡",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "Reflect 20 dmg when struck"
+        "effectLabel": "Reflect 20 dmg when struck",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "arcane",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "counter",
+            "retaliate": 10,
+            "rounds": 3
+          },
+          "desc": "3 rounds: strikers take 10"
+        }
       },
       {
         "id": "ward",
@@ -49,7 +71,19 @@
         "icon": "🔰",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "Block the next status effect for 3 turns"
+        "effectLabel": "Block the next status effect for 3 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "arcane",
+          "cost": 2,
+          "tier": 2,
+          "effect": {
+            "type": "warding",
+            "rounds": 3
+          },
+          "desc": "3 rounds: immune to curses"
+        }
       }
     ]
   },
@@ -86,7 +120,20 @@
         "icon": "💪",
         "cost": 0,
         "costLabel": "Free",
-        "effectLabel": "Next spell deals +50% damage"
+        "effectLabel": "Next spell deals +50% damage",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "dark",
+          "cost": 2,
+          "tier": 2,
+          "effect": {
+            "type": "empower",
+            "mult": 1.5,
+            "rounds": null
+          },
+          "desc": "Next strike +50%"
+        }
       },
       {
         "id": "bloodpact",
@@ -95,7 +142,20 @@
         "cost": 0,
         "costLabel": "Free",
         "effectLabel": "Sacrifice 22 HP for 15 Mana",
-        "aiHint": "mana_restore"
+        "aiHint": "mana_restore",
+        "el": {
+          "cat": "protect",
+          "kind": "instant",
+          "elem": "dark",
+          "cost": 0,
+          "tier": 1,
+          "action": {
+            "type": "bloodpact",
+            "mana": 8
+          },
+          "desc": "Lose 15 HP, gain 8 mana",
+          "hpCost": 15
+        }
       },
       {
         "id": "drain",
@@ -104,7 +164,17 @@
         "cost": 3,
         "costLabel": "3 Mana",
         "effectLabel": "Deal ~20 dmg; heal 45% of damage dealt",
-        "aiHint": "drain"
+        "aiHint": "drain",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "dark",
+          "cost": 5,
+          "power": 15,
+          "tier": 2,
+          "desc": "15 dark; heal 45% of HP damage",
+          "lifesteal": 0.45
+        }
       }
     ]
   },
@@ -139,7 +209,20 @@
         "icon": "💚",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "Regenerate 40 HP over 10 turns"
+        "effectLabel": "Regenerate 40 HP over 10 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "physical",
+          "cost": 4,
+          "tier": 2,
+          "effect": {
+            "type": "regen",
+            "perRound": 6,
+            "rounds": 5
+          },
+          "desc": "Heal 6 a round for 5 rounds"
+        }
       },
       {
         "id": "entangle",
@@ -147,7 +230,21 @@
         "icon": "🌿",
         "cost": 1,
         "costLabel": "1 Mana",
-        "effectLabel": "75% chance to freeze enemy for 1–3 turns"
+        "effectLabel": "75% chance to freeze enemy for 1–3 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "physical",
+          "cost": 2,
+          "tier": 2,
+          "effect": {
+            "type": "lock",
+            "cat": "damage",
+            "rounds": 2
+          },
+          "desc": "75%: foe can't pick Damage next round",
+          "chance": 0.75
+        }
       },
       {
         "id": "vinewhip",
@@ -155,7 +252,20 @@
         "icon": "🌱",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "Vine strikes for 7 dmg/turn × 3 turns; blocked by shields"
+        "effectLabel": "Vine strikes for 7 dmg/turn × 3 turns; blocked by shields",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "physical",
+          "cost": 4,
+          "power": 10,
+          "tier": 2,
+          "desc": "10 physical + vines 5 a round × 3",
+          "dot": {
+            "dmg": 5,
+            "rounds": 3
+          }
+        }
       }
     ]
   },
@@ -190,7 +300,19 @@
         "icon": "🔮",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "Immune to free attacks; absorbs the next paid spell"
+        "effectLabel": "Immune to free attacks; absorbs the next paid spell",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "arcane",
+          "cost": 4,
+          "tier": 2,
+          "effect": {
+            "type": "absorbNext",
+            "rounds": 3
+          },
+          "desc": "The next strike within 3 rounds does nothing"
+        }
       },
       {
         "id": "timedrain",
@@ -198,7 +320,20 @@
         "icon": "⏳",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "Slow enemy channel to +2 Mana for 5 turns"
+        "effectLabel": "Slow enemy channel to +2 Mana for 5 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "arcane",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "incomeDrain",
+            "n": 2,
+            "rounds": 3
+          },
+          "desc": "Foe gains 2 less mana a round × 3"
+        }
       },
       {
         "id": "haste",
@@ -206,7 +341,21 @@
         "icon": "💨",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "25% dodge for 3 turns; acts faster"
+        "effectLabel": "25% dodge for 3 turns; acts faster",
+        "el": {
+          "cat": "protect",
+          "kind": "instant",
+          "elem": "arcane",
+          "cost": 4,
+          "tier": 1,
+          "action": {
+            "type": "rewind",
+            "max": 25
+          },
+          "desc": "Recover the HP you lost last round (max 25)",
+          "name": "Rewind",
+          "icon": "⏪"
+        }
       }
     ]
   },
@@ -245,7 +394,20 @@
         "icon": "🩸",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "33% dmg resistance for 5 turns; Charge & Frenzy self-cost reduced to 10 HP"
+        "effectLabel": "33% dmg resistance for 5 turns; Charge & Frenzy self-cost reduced to 10 HP",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "physical",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "resist",
+            "pct": 0.33,
+            "rounds": 3
+          },
+          "desc": "Take 33% less damage × 3 rounds"
+        }
       },
       {
         "id": "charge",
@@ -253,7 +415,17 @@
         "icon": "⚔️",
         "cost": 0,
         "costLabel": "15 HP",
-        "effectLabel": "32 phys dmg, pierces Counter"
+        "effectLabel": "32 phys dmg, pierces Counter",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "physical",
+          "cost": 5,
+          "power": 18,
+          "tier": 2,
+          "desc": "18 physical; burns 2 mana",
+          "manaburn": 2
+        }
       },
       {
         "id": "frenzy",
@@ -262,7 +434,21 @@
         "cost": 0,
         "costLabel": "15 HP",
         "effectLabel": "3 rapid strikes (~9 phys dmg each)",
-        "aiHint": "frenzy"
+        "aiHint": "frenzy",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "physical",
+          "cost": 2,
+          "tier": 2,
+          "effect": {
+            "type": "frenzy",
+            "mult": 1.4,
+            "selfDmg": 4,
+            "rounds": 2
+          },
+          "desc": "2 rounds: strikes +40%, each costs 4 HP"
+        }
       }
     ]
   },
@@ -296,7 +482,20 @@
         "icon": "🎱",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "18–28 random fire damage"
+        "effectLabel": "18–28 random fire damage",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "fire",
+          "cost": 5,
+          "power": 0,
+          "tier": 2,
+          "desc": "12–24 random fire",
+          "variance": [
+            12,
+            24
+          ]
+        }
       },
       {
         "id": "flameshield",
@@ -304,7 +503,17 @@
         "icon": "🛡️",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "5 turns: attacker takes 16 fire damage"
+        "effectLabel": "5 turns: attacker takes 16 fire damage",
+        "el": {
+          "cat": "protect",
+          "kind": "ward",
+          "elem": "fire",
+          "cost": 7,
+          "power": 30,
+          "tier": 2,
+          "desc": "Fire ward of 30; strikers take 8",
+          "retaliate": 8
+        }
       },
       {
         "id": "candle",
@@ -312,7 +521,20 @@
         "icon": "🕯️",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "3 turns: opponent catches fire each time they channel"
+        "effectLabel": "3 turns: opponent catches fire each time they channel",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "fire",
+          "cost": 2,
+          "tier": 2,
+          "effect": {
+            "type": "candle",
+            "dmg": 8,
+            "rounds": 3
+          },
+          "desc": "3 rounds: foe burns for 8 when they ward"
+        }
       }
     ]
   },
@@ -351,7 +573,16 @@
         "icon": "🧊",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "28 damage; 25% chance to freeze 1 turn"
+        "effectLabel": "28 damage; 25% chance to freeze 1 turn",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "ice",
+          "cost": 6,
+          "power": 18,
+          "tier": 2,
+          "desc": "18 ice; chills"
+        }
       },
       {
         "id": "frostarmor",
@@ -359,7 +590,21 @@
         "icon": "🛡️",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "30% dmg reduction for 5 turns; attacker takes 4 damage"
+        "effectLabel": "30% dmg reduction for 5 turns; attacker takes 4 damage",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "ice",
+          "cost": 4,
+          "tier": 2,
+          "effect": {
+            "type": "resist",
+            "pct": 0.3,
+            "retaliate": 4,
+            "rounds": 3
+          },
+          "desc": "3 rounds: −30% damage, strikers take 4"
+        }
       },
       {
         "id": "blizzard",
@@ -367,7 +612,21 @@
         "icon": "🌨️",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "5 dmg/turn × 5T + drains 2 mana/turn + 15% freeze chance"
+        "effectLabel": "5 dmg/turn × 5T + drains 2 mana/turn + 15% freeze chance",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "ice",
+          "cost": 4,
+          "tier": 2,
+          "effect": {
+            "type": "dot",
+            "dmg": 4,
+            "manaDrain": 1,
+            "rounds": 4
+          },
+          "desc": "4 a round + 1 mana drain × 4"
+        }
       }
     ]
   },
@@ -410,7 +669,21 @@
         "cost": 4,
         "costLabel": "4 Mana",
         "effectLabel": "Gain 16 charge; physical hits discharge it as damage",
-        "aiHint": "charge_build"
+        "aiHint": "charge_build",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "lightning",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "empower",
+            "mult": 1.6,
+            "elem": "lightning",
+            "rounds": null
+          },
+          "desc": "Next Lightning strike +60%"
+        }
       },
       {
         "id": "chainlightning",
@@ -419,7 +692,20 @@
         "cost": 0,
         "costLabel": "8 Charge",
         "effectLabel": "24 damage; 35% chance to arc for 10 more",
-        "aiHint": "chain_attack"
+        "aiHint": "chain_attack",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "lightning",
+          "cost": 5,
+          "power": 14,
+          "tier": 2,
+          "desc": "14 lightning; 35% to arc for 8 more",
+          "arc": {
+            "chance": 0.35,
+            "dmg": 8
+          }
+        }
       },
       {
         "id": "conductivity",
@@ -427,7 +713,20 @@
         "icon": "💡",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "Target takes +35% damage for 3 turns"
+        "effectLabel": "Target takes +35% damage for 3 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "lightning",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "vuln",
+            "pct": 0.35,
+            "rounds": 3
+          },
+          "desc": "Foe takes +35% damage × 3 rounds"
+        }
       }
     ]
   },
@@ -464,7 +763,19 @@
         "icon": "💛",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "Instantly restore 40 HP"
+        "effectLabel": "Instantly restore 40 HP",
+        "el": {
+          "cat": "protect",
+          "kind": "instant",
+          "elem": "arcane",
+          "cost": 5,
+          "tier": 1,
+          "action": {
+            "type": "heal",
+            "amt": 25
+          },
+          "desc": "Heal 25 now"
+        }
       },
       {
         "id": "purge",
@@ -472,7 +783,19 @@
         "icon": "✨",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "Remove all active debuffs from yourself"
+        "effectLabel": "Remove all active debuffs from yourself",
+        "el": {
+          "cat": "dispel",
+          "kind": "instant",
+          "elem": "arcane",
+          "cost": 2,
+          "tier": 1,
+          "action": {
+            "type": "cleanse",
+            "heal": 8
+          },
+          "desc": "Remove your curses and heal 8"
+        }
       },
       {
         "id": "radiant",
@@ -480,7 +803,17 @@
         "icon": "☀️",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "Deal 15 holy damage; bypasses shields & resistance"
+        "effectLabel": "Deal 15 holy damage; bypasses shields & resistance",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "arcane",
+          "cost": 4,
+          "power": 12,
+          "tier": 2,
+          "desc": "12 holy; burns 2 mana",
+          "manaburn": 2
+        }
       }
     ]
   },
@@ -518,7 +851,20 @@
         "icon": "💀",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "Any non-channel action deals 12 dmg to target for 5 turns"
+        "effectLabel": "Any non-channel action deals 12 dmg to target for 5 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "dark",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "agony",
+            "dmg": 6,
+            "rounds": 3
+          },
+          "desc": "3 rounds: foe takes 6 whenever they cast"
+        }
       },
       {
         "id": "silence",
@@ -526,7 +872,20 @@
         "icon": "🔇",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "45% spell failure for 5 turns"
+        "effectLabel": "45% spell failure for 5 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "dark",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "silence",
+            "pct": 0.4,
+            "rounds": 2
+          },
+          "desc": "2 rounds: foe's spells fail 40%"
+        }
       },
       {
         "id": "corruption",
@@ -534,7 +893,20 @@
         "icon": "☠️",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "Target gains 2 less mana per channel for 3 turns"
+        "effectLabel": "Target gains 2 less mana per channel for 3 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "dark",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "incomeDrain",
+            "n": 2,
+            "rounds": 3
+          },
+          "desc": "Foe gains 2 less mana a round × 3"
+        }
       }
     ]
   },
@@ -568,7 +940,19 @@
         "icon": "👻",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "Invisible 3 turns; attacks break it"
+        "effectLabel": "Invisible 3 turns; attacks break it",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "arcane",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "absorbNext",
+            "rounds": 2
+          },
+          "desc": "The next strike within 2 rounds misses"
+        }
       },
       {
         "id": "manasiphon",
@@ -577,7 +961,19 @@
         "cost": 0,
         "costLabel": "Free",
         "effectLabel": "Steal 4 mana (only while invisible; blocked by shield/foresight)",
-        "aiHint": "mana_steal"
+        "aiHint": "mana_steal",
+        "el": {
+          "cat": "dispel",
+          "kind": "instant",
+          "elem": "arcane",
+          "cost": 2,
+          "tier": 1,
+          "action": {
+            "type": "siphon",
+            "amt": 3
+          },
+          "desc": "Steal 3 mana"
+        }
       },
       {
         "id": "blink",
@@ -585,7 +981,20 @@
         "icon": "💫",
         "cost": 1,
         "costLabel": "1 Mana",
-        "effectLabel": "50% dodge chance for 3 turns"
+        "effectLabel": "50% dodge chance for 3 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "arcane",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "dodge",
+            "pct": 0.4,
+            "rounds": 3
+          },
+          "desc": "40% dodge × 3 rounds"
+        }
       }
     ]
   },
@@ -625,7 +1034,16 @@
         "icon": "🧱",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "Absorb 10 per hit; 30 HP total, 10 turns"
+        "effectLabel": "Absorb 10 per hit; 30 HP total, 10 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "ward",
+          "elem": "physical",
+          "cost": 6,
+          "power": 35,
+          "tier": 2,
+          "desc": "Physical ward of 35"
+        }
       },
       {
         "id": "stonesoul",
@@ -633,7 +1051,21 @@
         "icon": "💎",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "40% magical damage reduction for 5 turns"
+        "effectLabel": "40% magical damage reduction for 5 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "physical",
+          "cost": 4,
+          "tier": 2,
+          "effect": {
+            "type": "resist",
+            "pct": 0.4,
+            "magicOnly": true,
+            "rounds": 3
+          },
+          "desc": "−40% non-physical damage × 3"
+        }
       },
       {
         "id": "rockfall",
@@ -642,7 +1074,16 @@
         "cost": 4,
         "costLabel": "4 Mana",
         "effectLabel": "3 rocks × ~9 phys dmg each",
-        "aiHint": "burst"
+        "aiHint": "burst",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "physical",
+          "cost": 6,
+          "power": 20,
+          "tier": 3,
+          "desc": "20 physical"
+        }
       }
     ]
   },
@@ -681,7 +1122,23 @@
         "icon": "🗡️",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "Summon 1 orbiting blade (max 3); each deals 4 phys dmg/turn"
+        "effectLabel": "Summon 1 orbiting blade (max 3); each deals 4 phys dmg/turn",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "physical",
+          "cost": 2,
+          "tier": 2,
+          "effect": {
+            "type": "minion",
+            "minion": "blade",
+            "dmg": 4,
+            "elem": "physical",
+            "max": 3,
+            "rounds": null
+          },
+          "desc": "Blade (max 3): 4 a round"
+        }
       },
       {
         "id": "bladestorm",
@@ -690,7 +1147,18 @@
         "cost": 0,
         "costLabel": "All Blades",
         "effectLabel": "Launch all blades — each deals 12 phys damage; costs no mana",
-        "aiHint": "burst"
+        "aiHint": "burst",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "physical",
+          "cost": 2,
+          "power": 0,
+          "tier": 2,
+          "desc": "Launch all blades: 10 each",
+          "perBlade": 10,
+          "requires": "blades"
+        }
       },
       {
         "id": "ironpatience",
@@ -698,7 +1166,20 @@
         "icon": "🧘",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "30% damage reduction for 3 turns"
+        "effectLabel": "30% damage reduction for 3 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "physical",
+          "cost": 2,
+          "tier": 2,
+          "effect": {
+            "type": "resist",
+            "pct": 0.3,
+            "rounds": 3
+          },
+          "desc": "Take 30% less damage × 3"
+        }
       }
     ]
   },
@@ -739,7 +1220,20 @@
         "icon": "☠️",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "6 dmg/turn × 5T; casting any spell while plagued deals +8 dmg"
+        "effectLabel": "6 dmg/turn × 5T; casting any spell while plagued deals +8 dmg",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "dark",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "dot",
+            "dmg": 5,
+            "rounds": 4
+          },
+          "desc": "5 a round × 4"
+        }
       },
       {
         "id": "maggotcloud",
@@ -747,7 +1241,21 @@
         "icon": "🪲",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "Drain 3 mana now + reduce enemy channel by 3 for 3 turns"
+        "effectLabel": "Drain 3 mana now + reduce enemy channel by 3 for 3 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "dark",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "incomeDrain",
+            "n": 3,
+            "rounds": 2
+          },
+          "desc": "Drain 3 mana; −3 income × 2",
+          "drainNow": 3
+        }
       },
       {
         "id": "bonetotem",
@@ -756,7 +1264,20 @@
         "cost": 3,
         "costLabel": "3 Mana",
         "effectLabel": "Regen 5 HP/turn × 4T; blocks enemy Purge while active",
-        "aiHint": "regen"
+        "aiHint": "regen",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "dark",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "regen",
+            "perRound": 5,
+            "rounds": 4
+          },
+          "desc": "Heal 5 a round × 4"
+        }
       }
     ]
   },
@@ -798,7 +1319,24 @@
         "cost": 4,
         "costLabel": "4 Mana",
         "effectLabel": "Summon skeleton (max 2): 25 HP shield, 7 phys dmg/turn, heals 8 HP on death",
-        "aiHint": "summon"
+        "aiHint": "summon",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "dark",
+          "cost": 4,
+          "tier": 2,
+          "effect": {
+            "type": "minion",
+            "minion": "skeleton",
+            "dmg": 6,
+            "elem": "dark",
+            "max": 2,
+            "healOnRemove": 8,
+            "rounds": null
+          },
+          "desc": "Skeleton (max 2): 6 a round; heals 8 when destroyed"
+        }
       },
       {
         "id": "necroticdrain",
@@ -807,7 +1345,17 @@
         "cost": 3,
         "costLabel": "3 Mana",
         "effectLabel": "Deal ~18 damage; heal 8 HP",
-        "aiHint": "drain"
+        "aiHint": "drain",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "dark",
+          "cost": 5,
+          "power": 15,
+          "tier": 2,
+          "desc": "15 dark; heal 40% of HP damage",
+          "lifesteal": 0.4
+        }
       },
       {
         "id": "reinforce",
@@ -815,7 +1363,17 @@
         "icon": "🔧",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "Restore 15 HP to weakest active skeleton"
+        "effectLabel": "Restore 15 HP to weakest active skeleton",
+        "el": {
+          "cat": "protect",
+          "kind": "ward",
+          "elem": "dark",
+          "cost": 5,
+          "power": 20,
+          "tier": 2,
+          "desc": "Dark ward of 20 +12 per skeleton",
+          "perSkeleton": 12
+        }
       }
     ]
   },
@@ -853,7 +1411,23 @@
         "icon": "🪞",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "Summon autonomous copy (max 2): 20 HP, casts any spell, 50% redirect chance"
+        "effectLabel": "Summon autonomous copy (max 2): 20 HP, casts any spell, 50% redirect chance",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "arcane",
+          "cost": 4,
+          "tier": 2,
+          "effect": {
+            "type": "minion",
+            "minion": "simulacrum",
+            "dmg": 6,
+            "elem": "arcane",
+            "max": 2,
+            "rounds": null
+          },
+          "desc": "Simulacrum (max 2): 6 a round"
+        }
       },
       {
         "id": "bewitch",
@@ -861,7 +1435,19 @@
         "icon": "🪄",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "Enemy's next active spell reflects back onto themselves"
+        "effectLabel": "Enemy's next active spell reflects back onto themselves",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "arcane",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "bewitch",
+            "rounds": 2
+          },
+          "desc": "Foe's next strike within 2 rounds hits themselves"
+        }
       },
       {
         "id": "feint",
@@ -869,7 +1455,17 @@
         "icon": "🗡️",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "~15 damage; bypasses all shields and defensive buffs"
+        "effectLabel": "~15 damage; bypasses all shields and defensive buffs",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "arcane",
+          "cost": 4,
+          "power": 12,
+          "tier": 2,
+          "desc": "12 arcane; burns 2 mana",
+          "manaburn": 2
+        }
       }
     ]
   },
@@ -908,7 +1504,20 @@
         "icon": "🌀",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "Enemy forced to channel on their next turn"
+        "effectLabel": "Enemy forced to channel on their next turn",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "arcane",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "lock",
+            "cat": "protect",
+            "rounds": 2
+          },
+          "desc": "Foe can't pick Protection next round"
+        }
       },
       {
         "id": "arcaneweave",
@@ -916,7 +1525,22 @@
         "icon": "🌟",
         "cost": 2,
         "costLabel": "2 Mana",
-        "effectLabel": "Next 3 basic attacks deal +6 dmg and drain 2 mana from enemy"
+        "effectLabel": "Next 3 basic attacks deal +6 dmg and drain 2 mana from enemy",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "arcane",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "weave",
+            "bonus": 5,
+            "burn": 2,
+            "charges": 3,
+            "rounds": null
+          },
+          "desc": "Next 3 strikes +5 and burn 2 mana"
+        }
       },
       {
         "id": "spellbind",
@@ -924,7 +1548,20 @@
         "icon": "🔒",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "One enemy spell costs +3 mana for 5 turns"
+        "effectLabel": "One enemy spell costs +3 mana for 5 turns",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "arcane",
+          "cost": 3,
+          "tier": 2,
+          "effect": {
+            "type": "spellbind",
+            "extra": 3,
+            "rounds": 3
+          },
+          "desc": "Foe's last category costs +3 × 3"
+        }
       }
     ]
   },
@@ -962,7 +1599,21 @@
         "icon": "🐉",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "33% dmg reduction for 5 turns; attacker takes 5 fire damage"
+        "effectLabel": "33% dmg reduction for 5 turns; attacker takes 5 fire damage",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "fire",
+          "cost": 4,
+          "tier": 2,
+          "effect": {
+            "type": "resist",
+            "pct": 0.33,
+            "retaliate": 5,
+            "rounds": 3
+          },
+          "desc": "3 rounds: −33% damage, strikers take 5"
+        }
       },
       {
         "id": "wyrmfirebreath",
@@ -970,7 +1621,20 @@
         "icon": "🌋",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "16 direct fire damage; sets ablaze for 5 dmg/turn over 2 turns"
+        "effectLabel": "16 direct fire damage; sets ablaze for 5 dmg/turn over 2 turns",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "fire",
+          "cost": 5,
+          "power": 13,
+          "tier": 2,
+          "desc": "13 fire + burn 5 a round × 2",
+          "dot": {
+            "dmg": 5,
+            "rounds": 2
+          }
+        }
       },
       {
         "id": "ancientwrath",
@@ -979,7 +1643,17 @@
         "cost": 6,
         "costLabel": "6 Mana",
         "effectLabel": "35 fire damage. Once per duel.",
-        "aiHint": "burst"
+        "aiHint": "burst",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "fire",
+          "cost": 9,
+          "power": 35,
+          "tier": 3,
+          "desc": "35 fire — once per duel",
+          "oncePerDuel": true
+        }
       }
     ]
   },
@@ -1019,7 +1693,20 @@
         "icon": "🧪",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "10 direct damage; poisons for 5 dmg/turn over 3 turns"
+        "effectLabel": "10 direct damage; poisons for 5 dmg/turn over 3 turns",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "dark",
+          "cost": 4,
+          "power": 8,
+          "tier": 2,
+          "desc": "8 + poison 5 a round × 3",
+          "dot": {
+            "dmg": 5,
+            "rounds": 3
+          }
+        }
       },
       {
         "id": "volatiletonic",
@@ -1027,7 +1714,20 @@
         "icon": "⚗️",
         "cost": 3,
         "costLabel": "3 Mana",
-        "effectLabel": "50% chance: heal 20 HP. 50% chance: Empowered (next hit +50% dmg)"
+        "effectLabel": "50% chance: heal 20 HP. 50% chance: Empowered (next hit +50% dmg)",
+        "el": {
+          "cat": "protect",
+          "kind": "instant",
+          "elem": "physical",
+          "cost": 3,
+          "tier": 1,
+          "action": {
+            "type": "tonic",
+            "heal": 20,
+            "mult": 1.5
+          },
+          "desc": "50%: heal 20 · 50%: next strike +50%"
+        }
       },
       {
         "id": "unstableconcoction",
@@ -1036,7 +1736,20 @@
         "cost": 5,
         "costLabel": "5 Mana",
         "effectLabel": "Random 10-30 damage",
-        "aiHint": "burst"
+        "aiHint": "burst",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "arcane",
+          "cost": 5,
+          "power": 0,
+          "tier": 2,
+          "desc": "6–30 random arcane",
+          "variance": [
+            6,
+            30
+          ]
+        }
       }
     ]
   },
@@ -1075,7 +1788,24 @@
         "icon": "🌀",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "Opens a collapsing rift: 4/8/12 dmg over 3 turns (24 total)"
+        "effectLabel": "Opens a collapsing rift: 4/8/12 dmg over 3 turns (24 total)",
+        "el": {
+          "cat": "protect",
+          "kind": "curse",
+          "elem": "dark",
+          "cost": 4,
+          "tier": 2,
+          "effect": {
+            "type": "dot",
+            "ramp": [
+              4,
+              8,
+              12
+            ],
+            "rounds": 3
+          },
+          "desc": "Rift: 4, 8, 12 over 3 rounds"
+        }
       },
       {
         "id": "gravitywell",
@@ -1083,7 +1813,17 @@
         "icon": "🌑",
         "cost": 4,
         "costLabel": "4 Mana",
-        "effectLabel": "Deals 25% of target's current HP (min 5)"
+        "effectLabel": "Deals 25% of target's current HP (min 5)",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "dark",
+          "cost": 5,
+          "power": 10,
+          "tier": 2,
+          "desc": "25% of foe's HP (min 10)",
+          "pctHp": 0.25
+        }
       },
       {
         "id": "eventhorizon",
@@ -1092,7 +1832,18 @@
         "cost": 10,
         "costLabel": "10 Mana",
         "effectLabel": "Deals 40% of target's current HP (min 10); 6 recoil damage to self",
-        "aiHint": "burst"
+        "aiHint": "burst",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "dark",
+          "cost": 9,
+          "power": 16,
+          "tier": 3,
+          "desc": "40% of foe's HP (min 16); 6 recoil",
+          "pctHp": 0.4,
+          "recoil": 6
+        }
       }
     ]
   }

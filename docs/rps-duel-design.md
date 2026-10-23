@@ -78,12 +78,94 @@ Starting numbers (to be tuned):
   The wheel will set `spell.tier` (1–3) on the spell passed to the launcher. Until then every cast is tier 2.
 - The Arcana alphabet and the canonical words in CLAUDE.md still apply.
 
-## Characters (Phase 4) — option B + C
+## Characters (Phase 4 — implemented) — option B + C
 
-- Each signature spell becomes a *flavoured* sector of a category. For example, Flame Shield is a fire
-  shield that burns attackers, and Drain is dark damage with lifesteal.
-- Spells that fit no category (Heal, Empower, Silence, Raise Dead, Simulacrum, …) become
-  **enchantments**: they sit in the protection tier and Dispel can remove them.
+Every character's three signature spells are back under Elemental rules. Each one has an `el` block
+in `characters.json` (Classic rules ignore it), so each spell's numbers can be tuned there.
+
+- **Where they appear:** each spell belongs to a category (Damage / Protection / Dispel). That decides
+  which wheel lists it (below the rings, as "★ <name>'s spells"), which stage it resolves in, and which
+  locks or Spellbind affect it. Signature spells have a fixed cost and minigame length instead of
+  strength rings. (The original idea was to replace an element's sector on the wheel. Fixed buttons
+  avoid two spells fighting over one sector, e.g. Korvath's two Fire strikes.)
+- **Strikes** follow the normal damage rules (wards, matching elements, Lightning burn, Ice chill) plus
+  their own riders: lifesteal, damage-over-time, mana burn, random power, % of foe's HP, recoil, arcing.
+  **Piercing is gone:** Radiant, Feint and Charge burn mana instead.
+- **Signature wards** are wards with a twist: Flame Shield hits back; Reinforce grows with skeletons.
+- **Enchantments** are buffs on yourself or curses on the foe. They resolve with Protection and last a
+  set number of rounds; minions and Empower-style buffs last until used or removed.
+  - **Dispel vs enchantments:** a foe's Dispel hits your ward first. With no ward up it strips your
+    newest buff; a Greater (outer ring) dispel strips all of them. Wards now protect your buffs.
+  - **Cleanse Self** (and Mary's Purge) remove every curse on you.
+  - **Locks** (Ice chill, Entangle, Enthral) block one category for your next pick, and can't be
+    applied two rounds running, so nobody can be locked forever.
+- **Haste is gone:** Aurelia's third spell is now **Rewind** (recover the HP you lost last round, max 25).
+- **Valdris's Deathless passive still applies.**
+- **AI:** uses signature spells about 30–45% of the time when one makes sense: it won't recast an
+  active buff, heals only when hurt, cleanses when cursed, and dispels your buffs when you have no ward.
+
+| Character | Spell | Wheel | Kind | Mana | Effect |
+|---|---|---|---|---|---|
+| Eldrin | 🛡 Shield | 🛡 Protection | Ward | 9 | Arcane ward of 60 |
+| Eldrin | ⚡ Counter | 🛡 Protection | Enchantment (self) | 3 | 3 rounds: strikers take 10 |
+| Eldrin | 🔰 Ward | 🛡 Protection | Enchantment (self) | 2 | 3 rounds: immune to curses |
+| Malachar | 💪 Empower | 🛡 Protection | Enchantment (self) | 2 | Next strike +50% |
+| Malachar | 🩸 Blood Pact | 🛡 Protection | Instant | 0 | Lose 15 HP, gain 8 mana |
+| Malachar | 💀 Drain | ⚔️ Damage | Strike | 5 | 15 dark; heal 45% of HP damage |
+| Sylvara | 💚 Regen | 🛡 Protection | Enchantment (self) | 4 | Heal 6 a round for 5 rounds |
+| Sylvara | 🌿 Entangle | 🛡 Protection | Curse (foe) | 2 | 75%: foe can't pick Damage next round |
+| Sylvara | 🌱 Vine Whip | ⚔️ Damage | Strike | 4 | 10 physical + vines 5 a round × 3 |
+| Aurelia | 🔮 Foresight | 🛡 Protection | Enchantment (self) | 4 | The next strike within 3 rounds does nothing |
+| Aurelia | ⏳ Time Drain | 🛡 Protection | Curse (foe) | 3 | Foe gains 2 less mana a round × 3 |
+| Aurelia | ⏪ Rewind | 🛡 Protection | Instant | 4 | Recover the HP you lost last round (max 25) |
+| Gnash | 🩸 War Paint | 🛡 Protection | Enchantment (self) | 3 | Take 33% less damage × 3 rounds |
+| Gnash | ⚔️ Savage Charge | ⚔️ Damage | Strike | 5 | 18 physical; burns 2 mana |
+| Gnash | 💢 Frenzy | 🛡 Protection | Enchantment (self) | 2 | 2 rounds: strikes +40%, each costs 4 HP |
+| Cinder | 🎱 Fireball | ⚔️ Damage | Strike | 5 | 12–24 random fire |
+| Cinder | 🛡️ Flame Shield | 🛡 Protection | Ward | 7 | Fire ward of 30; strikers take 8 |
+| Cinder | 🕯️ Candle | 🛡 Protection | Curse (foe) | 2 | 3 rounds: foe burns for 8 when they ward |
+| Skadi | 🧊 Ice Lance | ⚔️ Damage | Strike | 6 | 18 ice; chills |
+| Skadi | 🛡️ Frost Armor | 🛡 Protection | Enchantment (self) | 4 | 3 rounds: −30% damage, strikers take 4 |
+| Skadi | 🌨️ Blizzard | 🛡 Protection | Curse (foe) | 4 | 4 a round + 1 mana drain × 4 |
+| Zacharius | 🔋 Galvanize | 🛡 Protection | Enchantment (self) | 3 | Next Lightning strike +60% |
+| Zacharius | 🌩️ Chain Lightning | ⚔️ Damage | Strike | 5 | 14 lightning; 35% to arc for 8 more |
+| Zacharius | 💡 Conductivity | 🛡 Protection | Curse (foe) | 3 | Foe takes +35% damage × 3 rounds |
+| Mary | 💛 Heal | 🛡 Protection | Instant | 5 | Heal 25 now |
+| Mary | ✨ Purge | ✦ Dispel | Instant | 2 | Remove your curses and heal 8 |
+| Mary | ☀️ Radiant | ⚔️ Damage | Strike | 4 | 12 holy; burns 2 mana |
+| Mordant | 💀 Agony | 🛡 Protection | Curse (foe) | 3 | 3 rounds: foe takes 6 whenever they cast |
+| Mordant | 🔇 Silence | 🛡 Protection | Curse (foe) | 3 | 2 rounds: foe's spells fail 40% |
+| Mordant | ☠️ Corruption | 🛡 Protection | Curse (foe) | 3 | Foe gains 2 less mana a round × 3 |
+| Ponder | 👻 Vanish | 🛡 Protection | Enchantment (self) | 3 | The next strike within 2 rounds misses |
+| Ponder | 🌀 Mana Siphon | ✦ Dispel | Instant | 2 | Steal 3 mana |
+| Ponder | 💫 Blink | 🛡 Protection | Enchantment (self) | 3 | 40% dodge × 3 rounds |
+| Durin | 🧱 Stoneskin | 🛡 Protection | Ward | 6 | Physical ward of 35 |
+| Durin | 💎 Stonesoul | 🛡 Protection | Enchantment (self) | 4 | −40% non-physical damage × 3 |
+| Durin | ⛰️ Rockfall | ⚔️ Damage | Strike | 6 | 20 physical |
+| Weizan | 🗡️ Conjure Blade | 🛡 Protection | Enchantment (self) | 2 | Blade (max 3): 4 a round |
+| Weizan | 💫 Bladestorm | ⚔️ Damage | Strike | 2 | Launch all blades: 10 each |
+| Weizan | 🧘 Iron Patience | 🛡 Protection | Enchantment (self) | 2 | Take 30% less damage × 3 |
+| Gretch | ☠️ Plague | 🛡 Protection | Curse (foe) | 3 | 5 a round × 4 |
+| Gretch | 🪲 Maggot Cloud | 🛡 Protection | Curse (foe) | 3 | Drain 3 mana; −3 income × 2 |
+| Gretch | 💀 Bone Totem | 🛡 Protection | Enchantment (self) | 3 | Heal 5 a round × 4 |
+| Valdris | 💀 Raise Dead | 🛡 Protection | Enchantment (self) | 4 | Skeleton (max 2): 6 a round; heals 8 when destroyed |
+| Valdris | 🩸 Necrotic Drain | ⚔️ Damage | Strike | 5 | 15 dark; heal 40% of HP damage |
+| Valdris | 🔧 Reinforce | 🛡 Protection | Ward | 5 | Dark ward of 20 +12 per skeleton |
+| Mirel | 🪞 Simulacrum | 🛡 Protection | Enchantment (self) | 4 | Simulacrum (max 2): 6 a round |
+| Mirel | 🪄 Bewitch | 🛡 Protection | Curse (foe) | 3 | Foe's next strike within 2 rounds hits themselves |
+| Mirel | 🗡️ Feint | ⚔️ Damage | Strike | 4 | 12 arcane; burns 2 mana |
+| Thessaly | 🌀 Enthral | 🛡 Protection | Curse (foe) | 3 | Foe can't pick Protection next round |
+| Thessaly | 🌟 Arcane Weave | 🛡 Protection | Enchantment (self) | 3 | Next 3 strikes +5 and burn 2 mana |
+| Thessaly | 🔒 Spellbind | 🛡 Protection | Curse (foe) | 3 | Foe's last category costs +3 × 3 |
+| Korvath | 🐉 Dragon Scales | 🛡 Protection | Enchantment (self) | 4 | 3 rounds: −33% damage, strikers take 5 |
+| Korvath | 🌋 Wyrmfire Breath | ⚔️ Damage | Strike | 5 | 13 fire + burn 5 a round × 2 |
+| Korvath | 💥 Ancient Wrath | ⚔️ Damage | Strike | 9 | 35 fire — once per duel |
+| Fizzwick | 🧪 Caustic Bomb | ⚔️ Damage | Strike | 4 | 8 + poison 5 a round × 3 |
+| Fizzwick | ⚗️ Volatile Tonic | 🛡 Protection | Instant | 3 | 50%: heal 20 · 50%: next strike +50% |
+| Fizzwick | 🧫 Unstable Concoction | ⚔️ Damage | Strike | 5 | 6–30 random arcane |
+| Nyxara | 🌀 Singularity | 🛡 Protection | Curse (foe) | 4 | Rift: 4, 8, 12 over 3 rounds |
+| Nyxara | 🌑 Gravity Well | ⚔️ Damage | Strike | 5 | 25% of foe's HP (min 10) |
+| Nyxara | 🕳️ Event Horizon | ⚔️ Damage | Strike | 9 | 40% of foe's HP (min 16); 6 recoil |
 
 ## Multiplayer (Phase 6)
 
