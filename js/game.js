@@ -4195,6 +4195,8 @@ function describeAction(who,action){
   return {icon:'❔',name:action.type};
 }
 
+const REVEAL_TO_FIGHT_MS=1200;   // pause on the battlefield between the reveal closing and the first action
+
 // Card-game style reveal: every seat's pick flips face-up at once, then the round plays out.
 // Pass-the-phone waits for a tap so the device can be put where everyone can see it.
 function showReveal(){
@@ -4217,7 +4219,9 @@ function showReveal(){
     if(started) return; started=true;
     clearTimeout(fightTid);
     overlay.classList.remove('active');
-    resolveSimRound();
+    // Let everyone take in the battlefield before the first spell flies
+    addFloat(bW*.5,bH*.3,'⚔ Round '+gs.round,'#f0cc6a',20);
+    setTimeout(()=>{ if(battleRunning&&!gameEnded) resolveSimRound(); },REVEAL_TO_FIGHT_MS);
   };
   const flip=()=>{
     cards.querySelectorAll('.rv-card').forEach((c,i)=>setTimeout(()=>c.classList.add('flipped'),i*180));
