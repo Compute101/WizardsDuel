@@ -230,26 +230,34 @@ matchups are worse than 25/75 (the worst is Malachar vs Gnash, 22%).
 | Zacharius | Galvanize 3 → 2 mana |
 | Durin | Rockfall 20 → 22 |
 
-### Forbidden elements as a balancing lever
+### Forbidden elements (thematic)
 
-The strongest characters are barred from elements; the rest are unrestricted. Signature elements are
-never forbidden.
+Most wizards are barred from one or two elements that clash with who they are. Only Eldrin, Aurelia,
+Thessaly and Fizzwick can cast every element. This is theme first; balance is kept with numbers.
+Signature elements are never forbidden. Fire is the most common ban, so a Fire ward is often safe.
 
-| Character | Forbidden |
-|---|---|
-| Sylvara | Fire, Lightning, Dark |
-| Mary | Dark, Lightning, Fire |
-| Mirel | Physical, Ice, Fire |
-| Gretch | Fire, Arcane, Lightning |
-| Zacharius | Physical, Ice |
-| Korvath | Ice, Arcane |
+| Character | Can't cast | Why |
+|---|---|---|
+| Malachar | Arcane | blood magic, not scholarship |
+| Sylvara | Fire, Dark | fire burns the forest, dark is rot |
+| Gnash | Arcane, Ice | no magic, just fury — and no patience |
+| Cinder | Ice | |
+| Skadi | Fire | |
+| Zacharius | Physical | stone grounds the storm |
+| Mary | Dark, Fire | a healer shuns dark and destruction |
+| Mordant | Lightning | |
+| Ponder | Dark, Fire | forbidden arts — and not trusted with fire yet |
+| Durin | Lightning, Dark | |
+| Weizan | Dark | martial discipline |
+| Gretch | Fire, Arcane | fire purges plague |
+| Valdris | Fire | the undead fear fire |
+| Mirel | Physical, Fire | an illusionist never uses brute force |
+| Korvath | Ice | |
+| Nyxara | Lightning | the void swallows energy |
 
-Tested with 80 games per matchup:
-- The first ward rule tried (own element resisted 50%, others in full) made restrictions almost
-  free, because the strongest characters cast mostly one element. Restrictions only bite once a
-  ward's own element unravels it.
-- With the 150% / 75% rule the Normal AI spread went from 42.5–57.7% (sd 4.0) to **44.9–56.3%
-  (sd 2.9)**, with no matchup under 25%. Easy: 40.8–58.7%, the same spread it had before.
+Number changes made alongside: Mary's Heal 22 → 19 and HP 88 → 85; Entangle 65% → 55%; Feint 12 → 11;
+Stoneskin 35 → 40; Nyxara HP 86 → 90; Thessaly HP 92 → 95.
+Normal AI (100 games per matchup): **44.2–56.7%**, no matchup under 25%. Easy: 39.2–61.6%.
 
 **Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
 opponent may play better in human hands. Re-run the tool after any number change, and playtest.

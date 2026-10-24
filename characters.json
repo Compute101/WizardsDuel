@@ -76,6 +76,9 @@
     ],
     "hp": 80,
     "dmgMult": 1.1,
+    "forbidden": [
+      "arcane"
+    ],
     "spells": [
       {
         "id": "empower",
@@ -142,7 +145,10 @@
     ],
     "hp": 92,
     "dmgMult": 1.0,
-    "forbidden": ["fire", "lightning", "dark"],
+    "forbidden": [
+      "fire",
+      "dark"
+    ],
     "spells": [
       {
         "id": "heal",
@@ -177,8 +183,8 @@
             "cat": "damage",
             "rounds": 2
           },
-          "desc": "65%: foe can't pick Damage next round",
-          "chance": 0.65
+          "desc": "55%: foe can't pick Damage next round",
+          "chance": 0.55
         }
       },
       {
@@ -280,6 +286,10 @@
     ],
     "hp": 105,
     "dmgMult": 1.05,
+    "forbidden": [
+      "arcane",
+      "ice"
+    ],
     "spells": [
       {
         "id": "warpaint",
@@ -347,6 +357,9 @@
     ],
     "hp": 83,
     "dmgMult": 1.15,
+    "forbidden": [
+      "ice"
+    ],
     "spells": [
       {
         "id": "fireball",
@@ -413,6 +426,9 @@
     ],
     "hp": 88,
     "dmgMult": 1.0,
+    "forbidden": [
+      "fire"
+    ],
     "spells": [
       {
         "id": "icelance",
@@ -480,7 +496,9 @@
     ],
     "hp": 92,
     "dmgMult": 1.1,
-    "forbidden": ["physical", "ice"],
+    "forbidden": [
+      "physical"
+    ],
     "spells": [
       {
         "id": "galvanize",
@@ -549,9 +567,12 @@
       "Your defeat was written before this duel began. I merely carried it out.",
       "Kneel before the radiance, or be consumed by it. There is no third option."
     ],
-    "hp": 88,
+    "hp": 85,
     "dmgMult": 1.0,
-    "forbidden": ["dark", "lightning", "fire"],
+    "forbidden": [
+      "dark",
+      "fire"
+    ],
     "spells": [
       {
         "id": "divineheal",
@@ -565,9 +586,9 @@
           "tier": 1,
           "action": {
             "type": "heal",
-            "amt": 22
+            "amt": 19
           },
-          "desc": "Heal 22 now"
+          "desc": "Heal 19 now"
         }
       },
       {
@@ -616,6 +637,9 @@
     ],
     "hp": 88,
     "dmgMult": 1.0,
+    "forbidden": [
+      "lightning"
+    ],
     "spells": [
       {
         "id": "agony",
@@ -685,6 +709,10 @@
     ],
     "hp": 85,
     "dmgMult": 1.0,
+    "forbidden": [
+      "dark",
+      "fire"
+    ],
     "spells": [
       {
         "id": "vanish",
@@ -752,6 +780,10 @@
     ],
     "hp": 110,
     "dmgMult": 1.0,
+    "forbidden": [
+      "lightning",
+      "dark"
+    ],
     "spells": [
       {
         "id": "stoneskin",
@@ -762,9 +794,9 @@
           "kind": "ward",
           "elem": "physical",
           "cost": 6,
-          "power": 35,
+          "power": 40,
           "tier": 2,
-          "desc": "Physical ward of 35"
+          "desc": "Physical ward of 40"
         }
       },
       {
@@ -814,6 +846,9 @@
     ],
     "hp": 90,
     "dmgMult": 1.0,
+    "forbidden": [
+      "dark"
+    ],
     "spells": [
       {
         "id": "conjureblade",
@@ -884,7 +919,10 @@
     ],
     "hp": 85,
     "dmgMult": 1.0,
-    "forbidden": ["fire", "arcane", "lightning"],
+    "forbidden": [
+      "fire",
+      "arcane"
+    ],
     "spells": [
       {
         "id": "plague",
@@ -955,6 +993,9 @@
     ],
     "hp": 82,
     "dmgMult": 1.0,
+    "forbidden": [
+      "fire"
+    ],
     "deathlessCost": 8,
     "spells": [
       {
@@ -1023,7 +1064,10 @@
     ],
     "hp": 85,
     "dmgMult": 1.0,
-    "forbidden": ["physical", "ice", "fire"],
+    "forbidden": [
+      "physical",
+      "fire"
+    ],
     "spells": [
       {
         "id": "simulacrum",
@@ -1072,9 +1116,9 @@
           "kind": "strike",
           "elem": "arcane",
           "cost": 5,
-          "power": 12,
+          "power": 11,
           "tier": 2,
-          "desc": "12 arcane; burns 2 mana",
+          "desc": "11 arcane; burns 2 mana",
           "manaburn": 2
         }
       }
@@ -1090,7 +1134,7 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 92,
+    "hp": 95,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1163,7 +1207,9 @@
     ],
     "hp": 95,
     "dmgMult": 1.05,
-    "forbidden": ["ice", "arcane"],
+    "forbidden": [
+      "ice"
+    ],
     "spells": [
       {
         "id": "dragonscales",
@@ -1298,8 +1344,11 @@
       "You cling to your strength as if it makes you safe. The bigger they are, the more there is to take.",
       "Don't struggle. The void doesn't hate you. It just... empties."
     ],
-    "hp": 86,
+    "hp": 90,
     "dmgMult": 1.0,
+    "forbidden": [
+      "lightning"
+    ],
     "spells": [
       {
         "id": "singularity",
