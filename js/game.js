@@ -33,7 +33,7 @@ const CHAR_FLAVOUR={
   durin:'The mountain endures. Outlast every spell — stone by stone.',
   weizan:'Build blades slowly. Release all at once. Dispel kills your investment — protect it.',
   gretch:'Infect and drain. The totem heals you — guard it with a ward, or a Dispel will strip it.',
-  valdris:'Deathless: cannot die while mana > 0 (costs 6 mana). Drain his mana to kill him. Dispel his skeletons — but each dying skeleton heals him.',
+  valdris:'Deathless: a killing blow costs him 8 mana instead, while he has it. Drain his mana to kill him. Dispel his skeletons — but each dying skeleton heals him.',
   mirel:'Simulacra strike every round until dispelled. Bewitch turns the next strike against its caster.',
   thessaly:'Enthral blocks their wards. Spellbind taxes their favourite move. Weave turns strikes into mana denial.',
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
@@ -1931,7 +1931,9 @@ const ELEM_CHILL_MIN_TIER=2;    // Ice of this strength or more chills when it r
 const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or not
 const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
 const ELEM_DISPEL_ALL_TIER=3;
-const ELEM_CURSE_DISPEL=0.5;    // curses also hit the foe's ward with this share of a dispel's power   // a Greater dispel on an unwarded foe strips every buff, not just the newest
+const ELEM_CURSE_DISPEL=0.5;
+// Share of a strike's damage a ward loses: match = a strike in the ward's own element, off = any other element
+const ELEM_WARD_TAKE={match:1.5, off:0.75};   // wards resist other elements; their own unravels them
 
 const ELEMENTS=[
   {id:'fire',      name:'Fire',      icon:'🔥', col:'#ff6622'},
@@ -1958,6 +1960,10 @@ const ELEM_WARD_THEME={fire:'flameshield', ice:'frostarmor', lightning:'shield',
   arcane:'foresight', physical:'stoneskin', dark:'warpaint'};
 const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane', physical:'physical', dark:'manaburn'};
 
+// Elements a character can't cast at all (characters.json "forbidden"): their sectors are locked
+// on every wheel. Never one of the character's own signature sectors.
+function elemForbidden(who,elem){ return (seatCfg(who).forbidden||[]).includes(elem); }
+function foesCantCast(who,elem){ return PLAYERS.filter(w=>w!==who).every(w=>elemForbidden(w,elem)); }
 function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS[3]; }
 function hasWard(st){ return st.shield>0&&st.shieldHp>0; }
 
@@ -2064,6 +2070,7 @@ function sigAtTier(sp,tier){
 function sigAt(who,cat,elem){ return sigSpells(who,cat).find(sp=>sp.el.elem===elem)||null; }
 function sigCost(who,sp,tier){ return Math.max(0,sigAtTier(sp,tier).cost+spellbindExtra(who,sp.el.cat)); }
 function sectorOk(who,cat,elem,tier){
+  if(elemForbidden(who,elem)) return false;
   const sp=sigAt(who,cat,elem);
   return sp?!sigBlocked(who,sp,tier):elemCost(who,cat,tier)<=gs[who].mana;
 }
@@ -2109,8 +2116,8 @@ function openElemWheel(cat){
   selfBtn.style.display=cat==='dispel'?'':'none';
   selfBtn.textContent='✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
   const ruleText={
-    damage:'Lightning also burns mana · Ice (middle ring or stronger) chills: no Damage next round',
-    protect:'Wards last 3 rounds, fading each round · the chosen element only does half damage to it',
+    damage:'A ward\'s own element unravels it · Lightning also burns mana · Ice (middle ring or stronger) chills: no Damage next round',
+    protect:'Wards last 3 rounds, fading each round · they resist other elements, but their own element unravels them',
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
   document.getElementById('wheel-rule').textContent=ruleText;
@@ -2145,16 +2152,16 @@ function buildWheelSvg(who,cat){
   let html='';
   ELEMENTS.forEach((el,i)=>{
     const a0=-Math.PI/2-step/2+i*step, a1=a0+step, am=(a0+a1)/2;
-    const sp=sigAt(who,cat,el.id);
+    const sp=sigAt(who,cat,el.id), banned=elemForbidden(who,el.id);
     WHEEL_RINGS.forEach(([r0,r1],t)=>{
       const off=!sectorOk(who,cat,el.id,t+1);
       const d=`M${pt(r0,a0)} L${pt(r1,a0)} A${r1} ${r1} 0 0 1 ${pt(r1,a1)} L${pt(r0,a1)} A${r0} ${r0} 0 0 0 ${pt(r0,a0)} Z`;
       html+=`<path class="wseg${off?' off':''}${sp?' sig':''}" d="${d}" data-elem="${el.id}" data-tier="${t+1}" `+
         `style="fill:${off?'#2a2a33':el.col};fill-opacity:${off?0.5:[0.22,0.42,0.68][t]}"/>`;
     });
-    const label=sp?'★'+sigName(sp).split(' ')[0]:el.name;
-    html+=`<text class="wicon" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${sp?sigIcon(sp):el.icon}</text>`;
-    html+=`<text class="wname${sp?' wname-sig':''}" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${label}</text>`;
+    const label=banned?'⛔ '+el.name:sp?'★'+sigName(sp).split(' ')[0]:el.name;
+    html+=`<text class="wicon${banned?' wicon-banned':''}" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${sp?sigIcon(sp):el.icon}</text>`;
+    html+=`<text class="wname${banned?' wname-banned':sp?' wname-sig':''}" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${label}</text>`;
   });
   html+=`<circle class="wcentre" r="36"/><text class="wcentre-ico" y="2">${ELEM_CATS[cat].icon}</text>`;
   svg.innerHTML=html;
@@ -2170,7 +2177,7 @@ function castElemental(cat,elemId,tier,self){
   const who=gs.turnPlayer;
   const sp=self?null:sigAt(who,cat,elemId);
   if(sp){ castSignature(sp.id,tier); return; }
-  if(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)) return;
+  if(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)||(!self&&elemForbidden(who,elemId))) return;
   const el=elemById(elemId);
   const target=self?who:PLAYERS.find(w=>w!==who);   // 3–4 seats: target picker goes here
   const spell={name:describeElemAction({cat,elem:elemId,tier,self}).name, icon:el.icon,
@@ -2334,6 +2341,7 @@ function executeSignature(who,sp,action,cb){
       if(el.chance!=null&&_rng()>el.chance){ addFloat(tx,bH*.3,sigIcon(sp)+' Resisted','#cccccc',12); VFX.resisted(tx); }
       else {
         const eff=effect({kind:'curse'});
+        if(!eff.elem) eff.elem=el.elem;   // a curse's ticks meet wards as its element
         if(eff.type==='spellbind') eff.cat=ts.lastCat||'damage';
         if(addEffect(tgt,eff,who)){ if(fx.hit) fx.hit(ctx); else spawnParts(tx,y,e.col,16); }
       }
@@ -2366,7 +2374,8 @@ function executeSignature(who,sp,action,cb){
 
 function raiseWard(who,elem,power,retaliate){
   const st=gs[who], el=elemById(elem);
-  st.shield=ELEM_WARD_ROUNDS; st.shieldHp=power; st.shieldType=elem; st.wardRetaliate=retaliate; st.wardSig=null;
+  st.shield=ELEM_WARD_ROUNDS;
+  st.shieldHp=power; st.shieldType=elem; st.wardRetaliate=retaliate; st.wardSig=null;
   addFloat(seatX(who),bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
   VFX.wardRaise(seatX(who),el.col);
 }
@@ -2407,12 +2416,12 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet){
   const ts=gs[tgt], tx=seatX(tgt);
   let warded=false;
   if(hasWard(ts)&&dmg>0){
-    // A ward of the same element only takes half damage, so it stops twice as much
-    const match=ts.shieldType===elem;
-    const blocked=Math.min(dmg,match?ts.shieldHp*2:ts.shieldHp);
-    ts.shieldHp-=match?Math.ceil(blocked/2):blocked;
+    // The ward loses only its take share of what it stops, so a resistant ward stops more
+    const take=ELEM_WARD_TAKE[ts.shieldType===elem?'match':'off'];
+    const blocked=Math.min(dmg,Math.floor(ts.shieldHp/take));
+    ts.shieldHp-=Math.max(1,Math.ceil(blocked*take));
     dmg-=blocked; warded=true;
-    addFloat(tx,bH*.24,'🛡 −'+blocked+(match?' resisted':' blocked'),'#4af0ff',12);
+    addFloat(tx,bH*.24,'🛡 −'+blocked+(take<1?' resisted':take>1?' unravels':' blocked'),'#4af0ff',12);
     VFX.wardBlock(tx);
     if(ts.shieldHp<=0) breakWard(ts,tx);
   }
@@ -2498,7 +2507,12 @@ function elemTickEffects(who){
   effectsOf(st,'dot').forEach(e=>{
     e.tick=(e.tick||0)+1;
     const dmg=e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg;
-    elemFloatDmg(who,dmg,e.icon,'#cc88ff');
+    // Ticks hit a ward first, like any damage — unless the effect seeps past wards (Caustic Bomb's poison)
+    if(e.bypassWard||!hasWard(st)){
+      if(e.bypassWard&&hasWard(st)) addFloat(x,bH*.3,e.icon+' Seeps past the ward!','#99dd55',11);
+      elemFloatDmg(who,dmg,e.icon,'#cc88ff');
+    }
+    else elemIncoming(who,dmg,e.elem||'arcane',e.icon,'#cc88ff',true);
     const tick=TICK_VFX[e.id]||TICK_VFX[e.elem];
     if(tick) tick(x,bH*.38);
     if(e.manaDrain){ const d=Math.min(st.mana,e.manaDrain); st.mana-=d; if(d) addFloat(x,bH*.46,'−'+d+' Mana','#88aaff',11); }
@@ -2580,8 +2594,22 @@ function elemAIChoose(who){
     const has=id=>plain.find(x=>x.elem===id);
     choice=pickFrom(plain);
     if(cat==='dispel'&&oppWard&&has(opp.shieldType)&&_rng()<(smart?0.8:0.4)) choice=has(opp.shieldType);
-    if(cat==='damage'&&oppWard&&smart){ const off=plain.filter(x=>x.elem!==opp.shieldType); if(off.length) choice=pickFrom(off); }
-    if(cat==='protect'&&opp.lastElem&&has(opp.lastElem)&&_rng()<(smart?0.6:0.3)) choice=has(opp.lastElem);
+    // Strike with whichever element the foe's ward takes more from
+    const matchHurts=ELEM_WARD_TAKE.match>ELEM_WARD_TAKE.off;
+    if(cat==='damage'&&oppWard&&smart){
+      const best=matchHurts?plain.filter(x=>x.elem===opp.shieldType):plain.filter(x=>x.elem!==opp.shieldType);
+      if(best.length) choice=pickFrom(best);
+    }
+    if(cat==='protect'){
+      const roll=_rng();
+      if(matchHurts||ELEM_WARD_TAKE.match===ELEM_WARD_TAKE.off){
+        // A ward in an element the foe can't cast can't be unravelled or matched by their dispels
+        const safe=plain.filter(x=>foesCantCast(who,x.elem));
+        if(safe.length&&roll<(smart?0.7:0.25)) choice=pickFrom(safe);
+        else if(opp.lastElem&&roll<(smart?0.8:0.4)){ const off=plain.filter(x=>x.elem!==opp.lastElem); if(off.length) choice=pickFrom(off); }
+      }
+      else if(opp.lastElem&&has(opp.lastElem)&&!elemForbidden(tgt,opp.lastElem)&&roll<(smart?0.8:0.4)) choice=has(opp.lastElem);
+    }
   }
   else if(sectors.length) choice=sectors[Math.floor(_rng()*sectors.length)];   // anything beats waiting
   if(cat==='damage'&&boost&&boost.elem){ const s=sectors.find(x=>x.elem===boost.elem); if(s) choice=s; }
@@ -5176,7 +5204,7 @@ function startTrainingBattle(){
 // where pick keys are a signature spell id, or 'damage' / 'protect' / 'dispel' / 'cleanse' / 'pass'.
 const SIM_MAX_ROUNDS=60;
 // The tool page reads the game through an iframe, where only function declarations are visible
-function simInfo(){ return {chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS}; }
+function simInfo(){ return {chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE}; }
 function simMatch(k1,k2,ai){
   simMode=true; simOutcome=null;
   twoPlayerMode=false; trainingMode=false;
@@ -5239,7 +5267,7 @@ const TUTORIAL_CONVOS={
     {key:'eldrad', text:"Learn the rules, then learn your rivals. We are all here to help."},
   ],
   'health-mana':[
-    {key:'eldrad', text:"Every wizard has Health and Mana. When your HP reaches zero, the duel is over. HP differs between wizards — Gnash and Durin are hardy, Malachar and Nyxara are fragile."},
+    {key:'eldrad', text:"Every wizard has Health and Mana. When your HP reaches zero, the duel is over. HP differs between wizards — Gnash and Durin are hardy, Malachar and Fizzwick are fragile."},
     {key:'sylvara',text:"Everyone starts with the same mana and gains more at the end of every round. There's no channelling and no free attacks — every spell costs something."},
     {key:'ponder', text:"Even the cheapest spell costs only a little, so you can always do something. The question is whether to spend big now or save for a stronger cast next round."},
     {key:'sylvara',text:"Watch your rival's mana bar! If they can't afford a big ward, they won't cast one. Reading their mana is half the game."},
@@ -5248,15 +5276,15 @@ const TUTORIAL_CONVOS={
     {key:'eldrad', text:"There are three kinds of spell: ⚔️ Damage, 🛡 Protection and ✦ Dispel. They work like rock, paper, scissors."},
     {key:'eldrad', text:"Protection beats Damage: a ward soaks up strikes, and it's raised before any damage lands — even in the same round. Strike into a ward and you've wasted your mana."},
     {key:'ponder', text:"Dispel beats Protection: dispels are cheap and tear through wards. Your rival spends a lot of mana on a ward, you break it for a little."},
-    {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the only way to win."},
+    {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the surest way to win."},
     {key:'eldrad', text:"Each round resolves in that order — every Protection first, then every Dispel, then every Damage. So the trick is guessing what your rival will choose."},
   ],
   wheel:[
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
     {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too."},
-    {key:'skadi',  text:"The element matters. A ward takes only half damage from its own element — so ward against the element you expect. And a dispel does double damage to a ward of its element."},
+    {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
     {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward. A strong Ice strike that reaches them chills them, so they can't pick Damage next round."},
-    {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one."},
+    {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],
   enchant:[
@@ -5335,12 +5363,12 @@ const TUTORIAL_CONVOS={
   ],
   mary:[
     {key:'mary',text:"I am a healer first, a combatant second. I endure and outlast through faith and restoration."},
-    {key:'mary',text:"Divine Heal, in the Arcane sector of my Protection wheel, restores HP at once."},
+    {key:'mary',text:"Heal, in the Arcane sector of my Protection wheel, restores HP at once."},
     {key:'mary',text:"Purge takes the Arcane sector of my Dispel wheel. It removes every curse on me and heals me a little. Hex me all you like."},
     {key:'mary',text:"Radiant is my Arcane strike. It burns my rival's mana as the light strikes them."},
   ],
   mordant:[
-    {key:'mordant',text:"Do not think of me as aggressive. I am patient. My whole Dispel wheel is curses — and every one of them wears at your ward too."},
+    {key:'mordant',text:"Do not think of me as aggressive. I am patient. Half my Dispel wheel is curses — and every one of them wears at your ward too."},
     {key:'mordant',text:"Agony is Dark: whenever you cast anything, you suffer. Silence is Arcane: your spells may simply fail."},
     {key:'mordant',text:"Corruption is Physical: the rot slows the mana you gain each round. Starve them, and watch their options narrow to nothing."},
     {key:'mordant',text:"Cleanse Self is the answer to me. Make them spend their rounds cleansing instead of striking. The hex is already written."},
@@ -5353,7 +5381,7 @@ const TUTORIAL_CONVOS={
   ],
   durin:[
     {key:'durin',text:"I am Durin. I have more HP than anyone in the arena. When spells come, they barely scratch me."},
-    {key:'durin',text:"Stoneskin is my Physical ward — a sturdy one. Stonesoul, in the Arcane sector, cuts all non-physical damage I take for a few rounds."},
+    {key:'durin',text:"Stoneskin is my Physical ward — a sturdy one. Stonesoul, in the Arcane sector, cuts all damage I take for a few rounds — and I'll never touch Lightning, so warding in Lightning against me is safe."},
     {key:'durin',text:"Rockfall is my Physical strike — a heavy one, with a long ritual."},
     {key:'durin',text:"I am slow. I am deliberate. And when I am ready... the mountain falls."},
   ],
@@ -5370,7 +5398,7 @@ const TUTORIAL_CONVOS={
     {key:'gretch',text:"Not elegant. Not subtle. Just results. Plague them, drain them, totem up, and let time finish the job."},
   ],
   valdris:[
-    {key:'valdris',text:"I am Valdris. The Deathless. While I have mana, a killing blow drains my mana instead of ending me."},
+    {key:'valdris',text:"I am Valdris. The Deathless. While I have 8 mana or more, a killing blow takes 8 mana instead of ending me."},
     {key:'valdris',text:"Raise Dead, in the Dark sector of my Protection wheel, summons a skeleton that strikes every round. I can have two. If they are dispelled, their death heals me."},
     {key:'valdris',text:"Necrotic Drain is my Dark strike — it heals me for part of the damage dealt. Reinforce is my Physical ward, and it grows stronger for every skeleton at my side."},
     {key:'valdris',text:"Burn my mana and the Deathless can fall. Fail, and I will outlast you."},
@@ -5395,7 +5423,7 @@ const TUTORIAL_CONVOS={
   ],
   fizzwick:[
     {key:'fizzwick',text:"Heh — a satchel full of things that probably shouldn't mix. Sometimes I'm not sure what they'll do until it's too late."},
-    {key:'fizzwick',text:"Caustic Bomb is my Dark strike — and it leaves them poisoned for a few rounds. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
+    {key:'fizzwick',text:"Caustic Bomb is my Dark strike. If it gets through to them, the poison is in their blood — it seeps straight past any ward they raise after. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
     {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, either heals me or empowers my next strike. Either way, something good happens to me."},
     {key:'fizzwick',text:"Most duellists plan for consistency. I bring chaos in a bottle."},
   ],
@@ -5410,6 +5438,8 @@ const TUTORIAL_CONVOS={
 // Character select stats, from each spell's `el` block
 function elemCharStats(cfg){
   const rows=[['❤ HP',String(cfg.hp)]];
+  if(cfg.forbidden&&cfg.forbidden.length)
+    rows.push(['⛔ Can\'t cast',cfg.forbidden.map(id=>{ const e=elemById(id); return e.icon+' '+e.name; }).join(', ')]);
   (cfg.spells||[]).filter(s=>s.el).forEach(s=>{
     const el=s.el, e=elemById(el.elem), cat=ELEM_CATS[el.cat];
     rows.push([(el.icon||s.icon)+' '+(el.name||s.name),cat.icon+' '+e.name+' · '+el.desc]);

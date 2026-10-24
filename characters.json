@@ -76,6 +76,9 @@
     ],
     "hp": 80,
     "dmgMult": 1.1,
+    "forbidden": [
+      "arcane"
+    ],
     "spells": [
       {
         "id": "empower",
@@ -142,6 +145,10 @@
     ],
     "hp": 92,
     "dmgMult": 1.0,
+    "forbidden": [
+      "fire",
+      "dark"
+    ],
     "spells": [
       {
         "id": "heal",
@@ -176,8 +183,8 @@
             "cat": "damage",
             "rounds": 2
           },
-          "desc": "65%: foe can't pick Damage next round",
-          "chance": 0.65
+          "desc": "55%: foe can't pick Damage next round",
+          "chance": 0.55
         }
       },
       {
@@ -250,7 +257,7 @@
       },
       {
         "id": "haste",
-        "name": "Haste",
+        "name": "Rewind",
         "icon": "💨",
         "el": {
           "cat": "protect",
@@ -279,6 +286,10 @@
     ],
     "hp": 105,
     "dmgMult": 1.05,
+    "forbidden": [
+      "arcane",
+      "ice"
+    ],
     "spells": [
       {
         "id": "warpaint",
@@ -346,6 +357,9 @@
     ],
     "hp": 83,
     "dmgMult": 1.15,
+    "forbidden": [
+      "ice"
+    ],
     "spells": [
       {
         "id": "fireball",
@@ -412,6 +426,9 @@
     ],
     "hp": 88,
     "dmgMult": 1.0,
+    "forbidden": [
+      "fire"
+    ],
     "spells": [
       {
         "id": "icelance",
@@ -424,7 +441,7 @@
           "cost": 6,
           "power": 18,
           "tier": 2,
-          "desc": "18 ice; chills"
+          "desc": "18 ice; chills (middle ring and up)"
         }
       },
       {
@@ -479,6 +496,9 @@
     ],
     "hp": 92,
     "dmgMult": 1.1,
+    "forbidden": [
+      "physical"
+    ],
     "spells": [
       {
         "id": "galvanize",
@@ -547,8 +567,12 @@
       "Your defeat was written before this duel began. I merely carried it out.",
       "Kneel before the radiance, or be consumed by it. There is no third option."
     ],
-    "hp": 88,
+    "hp": 85,
     "dmgMult": 1.0,
+    "forbidden": [
+      "dark",
+      "fire"
+    ],
     "spells": [
       {
         "id": "divineheal",
@@ -562,9 +586,9 @@
           "tier": 1,
           "action": {
             "type": "heal",
-            "amt": 22
+            "amt": 19
           },
-          "desc": "Heal 22 now"
+          "desc": "Heal 19 now"
         }
       },
       {
@@ -613,6 +637,9 @@
     ],
     "hp": 88,
     "dmgMult": 1.0,
+    "forbidden": [
+      "lightning"
+    ],
     "spells": [
       {
         "id": "agony",
@@ -682,6 +709,10 @@
     ],
     "hp": 85,
     "dmgMult": 1.0,
+    "forbidden": [
+      "dark",
+      "fire"
+    ],
     "spells": [
       {
         "id": "vanish",
@@ -749,6 +780,9 @@
     ],
     "hp": 110,
     "dmgMult": 1.0,
+    "forbidden": [
+      "lightning"
+    ],
     "spells": [
       {
         "id": "stoneskin",
@@ -759,9 +793,9 @@
           "kind": "ward",
           "elem": "physical",
           "cost": 6,
-          "power": 35,
+          "power": 40,
           "tier": 2,
-          "desc": "Physical ward of 35"
+          "desc": "Physical ward of 40"
         }
       },
       {
@@ -776,11 +810,10 @@
           "tier": 2,
           "effect": {
             "type": "resist",
-            "pct": 0.4,
-            "magicOnly": true,
+            "pct": 0.35,
             "rounds": 3
           },
-          "desc": "−40% non-physical damage × 3"
+          "desc": "−35% damage × 3"
         }
       },
       {
@@ -811,6 +844,9 @@
     ],
     "hp": 90,
     "dmgMult": 1.0,
+    "forbidden": [
+      "dark"
+    ],
     "spells": [
       {
         "id": "conjureblade",
@@ -881,6 +917,10 @@
     ],
     "hp": 85,
     "dmgMult": 1.0,
+    "forbidden": [
+      "fire",
+      "arcane"
+    ],
     "spells": [
       {
         "id": "plague",
@@ -951,6 +991,9 @@
     ],
     "hp": 82,
     "dmgMult": 1.0,
+    "forbidden": [
+      "fire"
+    ],
     "deathlessCost": 8,
     "spells": [
       {
@@ -1001,7 +1044,7 @@
           "cost": 5,
           "power": 20,
           "tier": 2,
-          "desc": "Dark ward of 20 +12 per skeleton",
+          "desc": "Physical ward of 20 +12 per skeleton",
           "perSkeleton": 12
         }
       }
@@ -1019,6 +1062,10 @@
     ],
     "hp": 85,
     "dmgMult": 1.0,
+    "forbidden": [
+      "physical",
+      "fire"
+    ],
     "spells": [
       {
         "id": "simulacrum",
@@ -1067,9 +1114,9 @@
           "kind": "strike",
           "elem": "arcane",
           "cost": 5,
-          "power": 12,
+          "power": 11,
           "tier": 2,
-          "desc": "12 arcane; burns 2 mana",
+          "desc": "11 arcane; burns 2 mana",
           "manaburn": 2
         }
       }
@@ -1085,7 +1132,7 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 92,
+    "hp": 95,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1158,6 +1205,9 @@
     ],
     "hp": 95,
     "dmgMult": 1.05,
+    "forbidden": [
+      "ice"
+    ],
     "spells": [
       {
         "id": "dragonscales",
@@ -1207,7 +1257,7 @@
           "cost": 9,
           "power": 35,
           "tier": 3,
-          "desc": "35 fire — once per duel",
+          "desc": "35 physical — once per duel",
           "oncePerDuel": true
         }
       }
@@ -1237,10 +1287,11 @@
           "cost": 4,
           "power": 8,
           "tier": 2,
-          "desc": "8 + poison 5 a round × 3",
+          "desc": "8 + poison 5 a round × 3 — if it reaches HP, the poison seeps past wards",
           "dot": {
             "dmg": 5,
-            "rounds": 3
+            "rounds": 3,
+            "bypassWard": true
           }
         }
       },
@@ -1292,8 +1343,11 @@
       "You cling to your strength as if it makes you safe. The bigger they are, the more there is to take.",
       "Don't struggle. The void doesn't hate you. It just... empties."
     ],
-    "hp": 86,
+    "hp": 90,
     "dmgMult": 1.0,
+    "forbidden": [
+      "lightning"
+    ],
     "spells": [
       {
         "id": "singularity",
@@ -1308,13 +1362,13 @@
           "effect": {
             "type": "dot",
             "ramp": [
-              4,
-              8,
-              12
+              5,
+              9,
+              13
             ],
             "rounds": 3
           },
-          "desc": "Rift: 4, 8, 12 over 3 rounds"
+          "desc": "Rift: 5, 9, 13 over 3 rounds"
         }
       },
       {

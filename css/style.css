@@ -1035,6 +1035,8 @@ body {
 .wsig-desc small { opacity: 0.6; }
 #wheel-svg .wseg.sig:not(.off) { stroke: #f0cc6a; stroke-width: 1.5; }
 #wheel-svg .wname-sig { fill: #f0cc6a; }
+#wheel-svg .wname-banned { fill: #ff6677; opacity: 0.7; }
+#wheel-svg .wicon-banned { opacity: 0.25; }
 
 /* ── REVEAL OVERLAY ── */
 #reveal-overlay {
