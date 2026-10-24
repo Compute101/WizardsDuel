@@ -634,6 +634,29 @@ const SPRITE_CFG={
   frameW:48, frameH:64, frames:4,
   animRows:{idle:0,cast:1,hit:2,shield:3,death:4},
 };
+// Two sprite kinds: the old 4x5 spritesheets above (facing left), or a single
+// full-body still of any other size (facing right, animated by drawWiz's bob/lift/shake).
+function isSpriteSheet(img){
+  return img.naturalWidth===SPRITE_CFG.frameW*4&&img.naturalHeight===SPRITE_CFG.frameH*5;
+}
+// Draws a sprite standing at (x,y), sz tall. flip = the p1 seat (face right).
+function drawSprite(img,animName,frame,x,y,sz,flip){
+  bx.save();
+  if(isSpriteSheet(img)){
+    const cfg=SPRITE_CFG;
+    const row=cfg.animRows[animName]??cfg.animRows.idle;
+    const srcX=frame*cfg.frameW, srcY=row*cfg.frameH;
+    const scale=sz/cfg.frameH, dw=cfg.frameW*scale, dh=cfg.frameH*scale;
+    if(flip){ bx.scale(-1,1); x=-x; }
+    bx.drawImage(img,srcX,srcY,cfg.frameW,cfg.frameH,x-dw/2,y-dh,dw,dh);
+  } else {
+    const dh=sz*1.04, dw=dh*img.naturalWidth/img.naturalHeight;
+    if(!flip){ bx.scale(-1,1); x=-x; }
+    if(animName==='death') bx.globalAlpha*=0.45;
+    bx.drawImage(img,x-dw/2,y-dh,dw,dh);
+  }
+  bx.restore();
+}
 const sprites={p1:null,p2:null};
 const spriteStatus={p1:'loading',p2:'loading'};
 
@@ -1121,18 +1144,8 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
       bx.globalAlpha=pulse;
       const img=sprites[who];
       if(img&&spriteStatus[who]==='ready'){
-        const cfg=SPRITE_CFG;
-        const row=cfg.animRows.idle;
-        const frame=animState[who].frame%ANIM_FRAMES.idle;
-        const srcX=frame*cfg.frameW, srcY=row*cfg.frameH;
-        const scale=simSz/cfg.frameH, dw=cfg.frameW*scale, dh=cfg.frameH*scale;
         bx.shadowColor='#4466dd'; bx.shadowBlur=12;
-        if(flip){
-          bx.scale(-1,1);
-          bx.drawImage(img,srcX,srcY,cfg.frameW,cfg.frameH,-sx-dw/2,y-dh+bob,dw,dh);
-        } else {
-          bx.drawImage(img,srcX,srcY,cfg.frameW,cfg.frameH,sx-dw/2,y-dh+bob,dw,dh);
-        }
+        drawSprite(img,'idle',animState[who].frame%ANIM_FRAMES.idle,sx,y+bob,simSz,flip);
         bx.shadowBlur=0;
       } else {
         bx.fillStyle='#88aaff'; bx.shadowColor='#4466dd'; bx.shadowBlur=8;
@@ -1150,21 +1163,10 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   if(state&&state.stoneskin>0&&state.stoneskinHp>0) bx.filter='grayscale(0.75) sepia(0.15)';
   const img=sprites[who];
   if(img&&spriteStatus[who]==='ready'){
-    const cfg=SPRITE_CFG;
-    const row=cfg.animRows[animName]??cfg.animRows.idle;
-    const frame=animState[who].frame;
-    const srcX=frame*cfg.frameW, srcY=row*cfg.frameH;
-    const scale=sz/cfg.frameH, dw=cfg.frameW*scale, dh=cfg.frameH*scale;
     const lift=animName==='cast'?-sz*.06:0;
     const shake=animName==='hit'?Math.sin(t/60)*sz*.03:0;
     const bob=animName==='idle'?Math.sin(t/500+x)*sz*.015:0;
-    const dy=lift+shake+bob;
-    if(flip){
-      bx.scale(-1,1);
-      bx.drawImage(img,srcX,srcY,cfg.frameW,cfg.frameH,-x-dw/2,y-dh+dy,dw,dh);
-    } else {
-      bx.drawImage(img,srcX,srcY,cfg.frameW,cfg.frameH,x-dw/2,y-dh+dy,dw,dh);
-    }
+    drawSprite(img,animName,animState[who].frame,x,y+lift+shake+bob,sz,flip);
   } else {
     if(flip){bx.scale(-1,1); x=-x;}
     const bob=animName==='idle'?Math.sin(t/500+x)*.015*sz:0;
