@@ -111,6 +111,10 @@ in `characters.json` (Classic rules ignore it), so each spell's numbers can be t
 - **AI:** treats signature sectors like any other sector, preferring them (30–45%) when they'd do
   something useful: it won't recast an active buff, heals only when hurt, cleanses when cursed, and
   dispels your buffs when you have no ward.
+- **Tutorial and character select** follow the Rules switch. The Elemental tutorial has its own topics,
+  and its character guides describe effects and wheel sectors without exact numbers. Elemental character
+  stats are generated from the `el` blocks, so they stay correct after tuning. Classic text, with free
+  attacks and Channel, is unchanged because those still exist under Classic rules.
 - **Balance pass:** still to do once all phases are in.
 
 | Character | Spell | Wheel | Sector | Kind | Mana (inner / middle / outer) | Effect (middle ring) |

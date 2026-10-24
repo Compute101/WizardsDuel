@@ -353,8 +353,8 @@ body {
   padding: 3px 0;
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-.cstat-l { color: rgba(255,255,255,0.45); }
-.cstat-r { font-weight: 700; color: rgba(255,255,255,0.85); }
+.cstat-l { color: rgba(255,255,255,0.45); flex-shrink: 0; white-space: nowrap; margin-right: 10px; }
+.cstat-r { font-weight: 700; color: rgba(255,255,255,0.85); text-align: right; }
 
 /* ── WIZARD DETAIL OVERLAY ── */
 #wizard-detail {

@@ -7879,10 +7879,12 @@ function showWizardDetail(key){
   nameEl.textContent=cfg.name||key.toUpperCase();
   nameEl.style.color=col;
   document.getElementById('wd-epithet').textContent=cfg.title||'';
-  document.getElementById('wd-stats').innerHTML=disp.stats
+  const stats=elementalMode?elemCharStats(cfg)
+    :disp.stats.map(([l,r])=>l==='❤ HP'?[l,String(cfg.hp)]:[l,r]);
+  document.getElementById('wd-stats').innerHTML=stats
     .map(([l,r])=>`<div class="cstat"><span class="cstat-l">${l}</span><span class="cstat-r">${r}</span></div>`)
     .join('');
-  document.getElementById('wd-flavour').textContent=disp.flavour;
+  document.getElementById('wd-flavour').textContent=(elementalMode&&ELEM_FLAVOUR[key])||disp.flavour;
   const chooseBtn=document.getElementById('wd-choose');
   chooseBtn.style.borderColor=col;
   chooseBtn.style.color=col;
@@ -8263,12 +8265,222 @@ const TUTORIAL_CONVOS={
   ],
 };
 
+// ── ELEMENTAL RULES TUTORIAL ─────────────────────────────────
+// Character guides describe each spell's effect and wheel sector rather than exact numbers,
+// which live in characters.json and are shown on the wheel itself.
+const TUTORIAL_TOPICS_ELEMENTAL=[
+  {id:'welcome',     label:'Welcome'},
+  {id:'health-mana', label:'Health & Mana'},
+  {id:'triangle',    label:'Strike · Ward · Dispel'},
+  {id:'wheel',       label:'The Wheel'},
+  {id:'enchant',     label:'Buffs & Curses'},
+  {id:'alphabet',    label:'The Alphabet'},
+  {id:'watching',    label:'Casting Rituals'},
+  {id:'difficulty',  label:'Difficulty'},
+];
+
+const TUTORIAL_CONVOS_ELEMENTAL={
+  welcome:[
+    {key:'eldrad', text:"Greetings, young mage. Welcome to the arena of wizards — a place where reading your rival matters as much as raw power."},
+    {key:'sylvara',text:"Every round, each wizard chooses a spell in secret. When everyone has chosen, the spells are revealed together — like turning over cards — and then they all play out."},
+    {key:'ponder', text:"Use the topics above to learn how it works, then tap any portrait below to hear that wizard explain their own spells. I'm Ponder — come find me!"},
+    {key:'eldrad', text:"Learn the rules, then learn your rivals. We are all here to help."},
+  ],
+  'health-mana':[
+    {key:'eldrad', text:"Every wizard has Health and Mana. When your HP reaches zero, the duel is over. HP differs between wizards — Gnash and Durin are hardy, Malachar and Nyxara are fragile."},
+    {key:'sylvara',text:"Everyone starts with the same mana and gains more at the end of every round. There's no channelling and no free attacks — every spell costs something."},
+    {key:'ponder', text:"Even the cheapest spell costs only a little, so you can always do something. The question is whether to spend big now or save for a stronger cast next round."},
+    {key:'sylvara',text:"Watch your rival's mana bar! If they can't afford a big ward, they won't cast one. Reading their mana is half the game."},
+  ],
+  triangle:[
+    {key:'eldrad', text:"There are three kinds of spell: ⚔️ Damage, 🛡 Protection and ✦ Dispel. They work like rock, paper, scissors."},
+    {key:'eldrad', text:"Protection beats Damage: a ward soaks up strikes, and it's raised before any damage lands — even in the same round. Strike into a ward and you've wasted your mana."},
+    {key:'ponder', text:"Dispel beats Protection: dispels are cheap and tear through wards. Your rival spends a lot of mana on a ward, you break it for a little."},
+    {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the only way to win."},
+    {key:'eldrad', text:"Each round resolves in that order — every Protection first, then every Dispel, then every Damage. So the trick is guessing what your rival will choose."},
+  ],
+  wheel:[
+    {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
+    {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too."},
+    {key:'skadi',  text:"The element matters. A ward takes only half damage from its own element — so ward against the element you expect. And a dispel does double damage to a ward of its element."},
+    {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward. A strong Ice strike that reaches them chills them, so they can't pick Damage next round."},
+    {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one."},
+    {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
+  ],
+  enchant:[
+    {key:'mary',   text:"Some wizards cast enchantments. Buffs — like Regen, War Paint or a skeleton servant — sit on the Protection wheel and last a while."},
+    {key:'mordant',text:"Curses — like Silence, Plague or Agony — sit on the Dispel wheel. As well as their hex, every curse wears at the target's ward a little, like a weak dispel."},
+    {key:'ponder', text:"A Dispel against a rival with no ward strips their newest buff — or all of them, from the outer ring. If they have a ward, the dispel hits the ward instead. Wards protect your buffs!"},
+    {key:'mary',   text:"Cursed? Open the Dispel wheel and tap Cleanse Self. It removes every curse on you for very little mana."},
+    {key:'sylvara',text:"Locks — like Ice's chill, my Entangle or Thessaly's Enthral — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
+  ],
+  alphabet:[
+    {key:'sylvara',text:"Every casting ritual uses symbols from the Arcane Alphabet — twelve sacred glyphs that form the language of magic itself."},
+    {key:'ponder', text:"The twelve glyphs are: ϟ Δ ∇ Ψ Ω ∞ ☽ ✸ ⊕ ⊗ θ Φ. Each element's ritual draws upon four of them."},
+    {key:'sylvara',text:"Fire uses ϟ Δ ⊕ Ω, Lightning uses Ψ ∇ ⊗ ✸, Ice uses θ Φ ☽ ∞, Physical uses Δ ∇ Ψ ⊕, and Dark uses ☽ ⊗ ∇ Ω. The symbols have meaning — they are not random."},
+    {key:'ponder', text:"Arcane is special — it shares a glyph with the other elements, because Arcane is the force beneath all magic. That makes it the hardest set to memorise!"},
+    {key:'sylvara',text:"Dispel also draws one glyph from each element: ∞, ⊕, ∇ and θ. A universal unbinding built from universal symbols."},
+  ],
+  watching:[
+    {key:'ponder', text:"Every spell needs a casting ritual. You get five seconds to watch the glyphs appear, then five seconds to tap them back in the same order."},
+    {key:'sylvara',text:"Ignore the faint noise glyphs. Your sequence glows brightly, with a small number showing its order."},
+    {key:'ponder', text:"The ring you chose sets the length: two glyphs on the inner ring, three on the middle, four on the outer. Bigger magic, harder ritual."},
+    {key:'eldrad', text:"Wards use a different ritual: match the pairs of tiles after studying them face-up. Get the ritual wrong and the spell fizzles, costing you a little mana."},
+    {key:'sylvara',text:"Your rival can't see your ritual — only the spell you chose, when the cards are revealed."},
+  ],
+  difficulty:[
+    {key:'ponder',text:"Difficulty changes how the rituals behave. On Easy, each element always uses the same glyphs in the same order, so you can learn them by heart."},
+    {key:'ponder',text:"On Easy and Normal, glyphs that don't belong to the spell are greyed out on the keyboard. On Normal the order is random every cast."},
+    {key:'ponder',text:"On Hard, all twelve glyphs are active and a single wrong tap breaks the ritual. You are relying entirely on memory and focus. Good luck!"},
+  ],
+  eldrad:[
+    {key:'eldrad',text:"I am Eldrin — the Stalwart. My wards cost less than anyone else's. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
+    {key:'eldrad',text:"My Shield takes the Arcane sector of my Protection wheel — a far larger ward than most wizards can raise."},
+    {key:'eldrad',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds. Ward, in the Ice sector, makes me immune to curses."},
+    {key:'eldrad',text:"Dispels are my weakness. Keep a ward between your buffs and their unbinding, and I am very hard to wear down."},
+  ],
+  mal:[
+    {key:'mal',text:"Pain is power. Empower, in the Fire sector of my Protection wheel, makes my next strike hit far harder. Cast it, then make them pay."},
+    {key:'mal',text:"Blood Pact, in the Dark sector, costs no mana — only my blood. I trade health for mana instantly. Reckless? No. Efficient."},
+    {key:'mal',text:"Drain is my Dark strike. It heals me for part of the damage that gets through. Empower it and I take their health to keep my own."},
+    {key:'mal',text:"I have little HP, so I cannot trade hits carelessly. Strike first, strike hard, and never let up."},
+  ],
+  sylvara:[
+    {key:'sylvara',text:"Hello! I'm Sylvara. I prefer patience and control over brute force — nature always wins in the end."},
+    {key:'sylvara',text:"Regen, in the Physical sector of my Protection wheel, heals me a little every round for several rounds. It's a buff, so keep a ward up to stop it being dispelled."},
+    {key:'sylvara',text:"Entangle sits on my Dispel wheel. It's a curse with a good chance to stop my rival choosing Damage next round — and like every curse, it wears at their ward too."},
+    {key:'sylvara',text:"Vine Whip is my Physical strike. If it gets through, the vines keep hurting them for a few rounds afterwards."},
+  ],
+  aurelia:[
+    {key:'aurelia',text:"I see three moves ahead. Foresight, in the Lightning sector of my Protection wheel, makes the next strike against me do nothing at all."},
+    {key:'aurelia',text:"Time Drain is an Arcane curse on my Dispel wheel. My rival gains less mana each round for a while. Stolen resources compound."},
+    {key:'aurelia',text:"Rewind takes my Arcane ward sector. It raises a ward and also gives back the HP I lost last round — the past undone, and the future guarded."},
+    {key:'aurelia',text:"I have already foreseen how this duel ends. I need only wait for you to arrive at the conclusion I have prepared."},
+  ],
+  gnash:[
+    {key:'gnash',text:"GNASH NOT WIZARD. Gnash warrior-mage! Gnash has lots of HP and very effective fists."},
+    {key:'gnash',text:"War Paint, Physical sector of Protection wheel — Gnash takes less damage for a few rounds. Frenzy, Fire sector — Gnash hits much harder for two rounds, but it hurts Gnash too."},
+    {key:'gnash',text:"Savage Charge is Gnash's Physical strike. Big smash, and it burns their mana. Magic tricks? HAH."},
+    {key:'gnash',text:"Little mage thinks Gnash simple? Gnash simple but Gnash EFFECTIVE."},
+  ],
+  cinder:[
+    {key:'cinder',text:"You thought the heat would break me? I am the heat. I hit hard and I hit fast."},
+    {key:'cinder',text:"Fireball is my Fire strike — the damage is random. Sometimes barely a singe, sometimes the arena goes up. Never bet against fire."},
+    {key:'cinder',text:"Flame Shield is my Fire ward. Anyone who strikes it gets burned. You want to throw punches at me? Go ahead."},
+    {key:'cinder',text:"Candle is a Fire curse on my Dispel wheel. While it burns, my rival takes fire damage whenever they raise a ward. Suddenly the safe move isn't safe."},
+  ],
+  skadi:[
+    {key:'skadi',text:"Patience. The cold does not rush. I let the fight come to me."},
+    {key:'skadi',text:"Ice Lance is my Ice strike — strong enough to chill whoever it reaches, so they can't strike back next round."},
+    {key:'skadi',text:"Frost Armor, in the Ice sector of my Protection wheel, cuts the damage I take and hurts anyone who strikes me."},
+    {key:'skadi',text:"Blizzard is my Ice curse. Damage every round and a steady drain on their mana. By the end they have no mana and no hope."},
+  ],
+  zacharius:[
+    {key:'zacharius',text:"I had already won before you cast your first spell. You simply hadn't realised it yet."},
+    {key:'zacharius',text:"Galvanize, in the Lightning sector of my Protection wheel, charges my next Lightning strike with far more power."},
+    {key:'zacharius',text:"Chain Lightning is my Lightning strike. It burns mana like all lightning, and it may arc for extra damage."},
+    {key:'zacharius',text:"Conductivity is my Lightning curse — my rival takes extra damage from every strike for a few rounds. Then the mathematics are no longer in your favour."},
+  ],
+  mary:[
+    {key:'mary',text:"I am a healer first, a combatant second. I endure and outlast through faith and restoration."},
+    {key:'mary',text:"Divine Heal, in the Arcane sector of my Protection wheel, restores HP at once."},
+    {key:'mary',text:"Purge takes the Arcane sector of my Dispel wheel. It removes every curse on me and heals me a little. Hex me all you like."},
+    {key:'mary',text:"Radiant is my Arcane strike. It burns my rival's mana as the light strikes them."},
+  ],
+  mordant:[
+    {key:'mordant',text:"Do not think of me as aggressive. I am patient. My whole Dispel wheel is curses — and every one of them wears at your ward too."},
+    {key:'mordant',text:"Agony is Dark: whenever you cast anything, you suffer. Silence is Arcane: your spells may simply fail."},
+    {key:'mordant',text:"Corruption is Physical: the rot slows the mana you gain each round. Starve them, and watch their options narrow to nothing."},
+    {key:'mordant',text:"Cleanse Self is the answer to me. Make them spend their rounds cleansing instead of striking. The hex is already written."},
+  ],
+  ponder:[
+    {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
+    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes the next strike miss me entirely. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds."},
+    {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. I steal mana from my rival — they lose it AND I gain it!"},
+    {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
+  ],
+  durin:[
+    {key:'durin',text:"I am Durin. I have more HP than anyone in the arena. When spells come, they barely scratch me."},
+    {key:'durin',text:"Stoneskin is my Physical ward — a sturdy one. Stonesoul, in the Arcane sector, cuts all non-physical damage I take for a few rounds."},
+    {key:'durin',text:"Rockfall is my Physical strike — a heavy one, with a long ritual."},
+    {key:'durin',text:"I am slow. I am deliberate. And when I am ready... the mountain falls."},
+  ],
+  weizan:[
+    {key:'weizan',text:"I am Weizan. I build up blades one by one, then release them all at once."},
+    {key:'weizan',text:"Conjure Blade, in the Physical sector of my Protection wheel, summons a blade that strikes my rival every round. Up to three can orbit me."},
+    {key:'weizan',text:"Bladestorm is my Physical strike. It launches every blade at once — the more I have, the harder it hits. Iron Patience, in the Arcane sector, cuts the damage I take while I build."},
+    {key:'weizan',text:"My blades are buffs, so a Dispel can strip them. Keep a ward up while you build the storm."},
+  ],
+  gretch:[
+    {key:'gretch',text:"Heh. Come closer. My kit is about poison and drain — I infect you, starve you, and keep myself alive while you rot."},
+    {key:'gretch',text:"Plague is a Dark curse — damage every round for a while. Maggot Cloud is a Physical curse — it drains mana now and slows your mana for a couple of rounds."},
+    {key:'gretch',text:"Bone Totem, in the Dark sector of my Protection wheel, heals me every round. Protect it with a ward or a Dispel will strip it."},
+    {key:'gretch',text:"Not elegant. Not subtle. Just results. Plague them, drain them, totem up, and let time finish the job."},
+  ],
+  valdris:[
+    {key:'valdris',text:"I am Valdris. The Deathless. While I have mana, a killing blow drains my mana instead of ending me."},
+    {key:'valdris',text:"Raise Dead, in the Dark sector of my Protection wheel, summons a skeleton that strikes every round. I can have two. If they are dispelled, their death heals me."},
+    {key:'valdris',text:"Necrotic Drain is my Dark strike — it heals me for part of the damage dealt. Reinforce is my Physical ward, and it grows stronger for every skeleton at my side."},
+    {key:'valdris',text:"Burn my mana and the Deathless can fall. Fail, and I will outlast you."},
+  ],
+  mirel:[
+    {key:'mirel',text:"Nothing you see is real. I am Mirel. Simulacrum, in the Arcane sector of my Protection wheel, creates a copy of me that strikes my rival every round. I can have two."},
+    {key:'mirel',text:"Bewitch is my Arcane curse. The next strike my rival makes rebounds onto themselves. Every attack becomes a gamble."},
+    {key:'mirel',text:"Feint is my Arcane strike. It burns my rival's mana as it lands."},
+    {key:'mirel',text:"My simulacra can be dispelled — that is the counterplay. So I keep a ward up, and let my copies do the work."},
+  ],
+  thessaly:[
+    {key:'thessaly',text:"I don't fight you. I rearrange the battlefield until you can no longer fight me effectively."},
+    {key:'thessaly',text:"Enthral is my Arcane curse — you can't raise Protection next round. Spellbind is my Dark curse — whatever category you used last costs more for a while."},
+    {key:'thessaly',text:"Arcane Weave, in the Arcane sector of my Protection wheel, empowers my next few strikes and makes each one burn your mana."},
+    {key:'thessaly',text:"By the time you understand what I've done, you've already run out of answers."},
+  ],
+  korvath:[
+    {key:'korvath',text:"My ancestors bonded with dragons before your kingdom had a name. I am built to outlast you — and to end you, once, when it matters most."},
+    {key:'korvath',text:"Dragon Scales, in the Fire sector of my Protection wheel, cuts the damage I take and burns anyone who strikes me."},
+    {key:'korvath',text:"Wyrmfire Breath is my Fire strike — it leaves my rival burning for a couple of rounds."},
+    {key:'korvath',text:"Ancient Wrath takes my Physical strike sector — an enormous blow I can only call on once per duel. Make it count."},
+  ],
+  fizzwick:[
+    {key:'fizzwick',text:"Heh — a satchel full of things that probably shouldn't mix. Sometimes I'm not sure what they'll do until it's too late."},
+    {key:'fizzwick',text:"Caustic Bomb is my Dark strike — and it leaves them poisoned for a few rounds. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
+    {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, either heals me or empowers my next strike. Either way, something good happens to me."},
+    {key:'fizzwick',text:"Most duellists plan for consistency. I bring chaos in a bottle."},
+  ],
+  nyxara:[
+    {key:'nyxara',text:"My magic doesn't care how strong you are — only how much of you is left."},
+    {key:'nyxara',text:"Singularity is my Dark curse — a rift that collapses over three rounds, hurting more each time."},
+    {key:'nyxara',text:"Gravity Well is my Dark strike, and Event Horizon is my Arcane strike. Both tear away a share of your current HP — the fuller you are, the more they take. Event Horizon hurts me too."},
+    {key:'nyxara',text:"So don't stay healthy for long. Either way, I win."},
+  ],
+};
+
+// Character select: the Elemental version of each wizard's stats comes from characters.json
+const ELEM_FLAVOUR={
+  gretch:'Infect and drain. The totem heals you — guard it with a ward, or a Dispel will strip it.',
+  mirel:'Simulacra strike every round until dispelled. Bewitch turns the next strike against its caster.',
+  thessaly:'Enthral blocks their wards. Spellbind taxes their favourite move. Weave turns strikes into mana denial.',
+};
+function elemCharStats(cfg){
+  const rows=[['❤ HP',String(cfg.hp)]];
+  (cfg.spells||[]).filter(s=>s.el).forEach(s=>{
+    const el=s.el, e=elemById(el.elem), cat=ELEM_CATS[el.cat];
+    rows.push([(el.icon||s.icon)+' '+(el.name||s.name),cat.icon+' '+e.name+' · '+el.desc]);
+  });
+  return rows;
+}
+
+// Tutorial text for the active Rules setting
+function tutTopics(){ return elementalMode?TUTORIAL_TOPICS_ELEMENTAL:TUTORIAL_TOPICS; }
+function tutConvos(){ return elementalMode?TUTORIAL_CONVOS_ELEMENTAL:TUTORIAL_CONVOS; }
+
 let activeTutTopic='welcome';
 
 function buildTutorialUI(){
   const topicBar=document.getElementById('tut-topic-bar');
   topicBar.innerHTML='';
-  TUTORIAL_TOPICS.forEach(t=>{
+  if(!tutConvos()[activeTutTopic]) activeTutTopic='welcome';   // topic from the other ruleset
+  tutTopics().forEach(t=>{
     const btn=document.createElement('button');
     btn.className='tut-topic-btn'+(t.id===activeTutTopic?' active':'');
     btn.textContent=t.label;
@@ -8318,7 +8530,7 @@ function setTutTopic(id){
 
 function renderTutConvo(){
   const convo=document.getElementById('tut-convo');
-  const msgs=TUTORIAL_CONVOS[activeTutTopic]||[];
+  const msgs=tutConvos()[activeTutTopic]||[];
   convo.innerHTML='';
   msgs.forEach((msg,i)=>{
     const col=CHAR_COLORS_TUT[msg.key]||'#f0cc6a';
