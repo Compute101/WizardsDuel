@@ -161,7 +161,7 @@ so each spell's numbers can be tuned there.
 | Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Steal 4 mana |
 | Ponder | 💫 Blink | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 45% dodge × 3 rounds |
 | Durin | 🧱 Stoneskin | 🛡 Protection | 👊 Physical | Ward | 4 / 6 / 10 | Physical ward of 35 |
-| Durin | 💎 Stonesoul | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | −40% non-physical damage × 3 |
+| Durin | 💎 Stonesoul | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | −35% damage × 3 |
 | Durin | ⛰️ Rockfall | ⚔️ Damage | 👊 Physical | Strike | 4 / 6 / 10 | 22 physical |
 | Weizan | 🗡️ Conjure Blade | 🛡 Protection | 👊 Physical | Enchantment (self) | 1 / 2 / 3 | Blade (max 3): 4 a round |
 | Weizan | 💫 Bladestorm | ⚔️ Damage | 👊 Physical | Strike | 1 / 2 / 3 | Launch all blades: 10 each |
@@ -247,7 +247,7 @@ Signature elements are never forbidden. Fire is the most common ban, so a Fire w
 | Mary | Dark, Fire | a healer shuns dark and destruction |
 | Mordant | Lightning | |
 | Ponder | Dark, Fire | forbidden arts — and not trusted with fire yet |
-| Durin | Lightning, Dark | |
+| Durin | Lightning | dwarven stone grounds the storm |
 | Weizan | Dark | martial discipline |
 | Gretch | Fire, Arcane | fire purges plague |
 | Valdris | Fire | the undead fear fire |
@@ -256,8 +256,9 @@ Signature elements are never forbidden. Fire is the most common ban, so a Fire w
 | Nyxara | Lightning | the void swallows energy |
 
 Number changes made alongside: Mary's Heal 22 → 19 and HP 88 → 85; Entangle 65% → 55%; Feint 12 → 11;
-Stoneskin 35 → 40; Nyxara HP 86 → 90; Thessaly HP 92 → 95.
-Normal AI (100 games per matchup): **44.2–56.7%**, no matchup under 25%. Easy: 39.2–61.6%.
+Stoneskin 35 → 40; Stonesoul −40% non-Physical → −35% all damage; Nyxara HP 86 → 90; Thessaly HP 92 → 95.
+Normal AI (100 games per matchup): **44.8–57.9%**. Matchups under 25%: Thessaly vs Mirel (24) and
+Mary vs Valdris (20). Easy: 37.8–60.9%.
 
 **Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
 opponent may play better in human hands. Re-run the tool after any number change, and playtest.

@@ -5375,7 +5375,7 @@ const TUTORIAL_CONVOS={
   ],
   durin:[
     {key:'durin',text:"I am Durin. I have more HP than anyone in the arena. When spells come, they barely scratch me."},
-    {key:'durin',text:"Stoneskin is my Physical ward — a sturdy one. Stonesoul, in the Arcane sector, cuts all non-physical damage I take for a few rounds."},
+    {key:'durin',text:"Stoneskin is my Physical ward — a sturdy one. Stonesoul, in the Arcane sector, cuts all damage I take for a few rounds — and I'll never touch Lightning, so warding in Lightning against me is safe."},
     {key:'durin',text:"Rockfall is my Physical strike — a heavy one, with a long ritual."},
     {key:'durin',text:"I am slow. I am deliberate. And when I am ready... the mountain falls."},
   ],

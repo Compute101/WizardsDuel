@@ -781,8 +781,7 @@
     "hp": 110,
     "dmgMult": 1.0,
     "forbidden": [
-      "lightning",
-      "dark"
+      "lightning"
     ],
     "spells": [
       {
@@ -811,11 +810,10 @@
           "tier": 2,
           "effect": {
             "type": "resist",
-            "pct": 0.4,
-            "magicOnly": true,
+            "pct": 0.35,
             "rounds": 3
           },
-          "desc": "−40% non-physical damage × 3"
+          "desc": "−35% damage × 3"
         }
       },
       {
