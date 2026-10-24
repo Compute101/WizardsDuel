@@ -1931,7 +1931,8 @@ const ELEM_CHILL_MIN_TIER=2;    // Ice of this strength or more chills when it r
 const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or not
 const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
 const ELEM_DISPEL_ALL_TIER=3;
-const ELEM_CURSE_DISPEL=0.5;    // curses also hit the foe's ward with this share of a dispel's power   // a Greater dispel on an unwarded foe strips every buff, not just the newest
+const ELEM_CURSE_DISPEL=0.5;
+const ELEM_WARD_UNCASTABLE_BONUS=1;   // extra rounds for a ward in an element no foe can cast    // curses also hit the foe's ward with this share of a dispel's power   // a Greater dispel on an unwarded foe strips every buff, not just the newest
 
 const ELEMENTS=[
   {id:'fire',      name:'Fire',      icon:'🔥', col:'#ff6622'},
@@ -1958,6 +1959,10 @@ const ELEM_WARD_THEME={fire:'flameshield', ice:'frostarmor', lightning:'shield',
   arcane:'foresight', physical:'stoneskin', dark:'warpaint'};
 const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane', physical:'physical', dark:'manaburn'};
 
+// Elements a character can't cast at all (characters.json "forbidden"): their sectors are locked
+// on every wheel. Never one of the character's own signature sectors.
+function elemForbidden(who,elem){ return (seatCfg(who).forbidden||[]).includes(elem); }
+function foesCantCast(who,elem){ return PLAYERS.filter(w=>w!==who).every(w=>elemForbidden(w,elem)); }
 function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS[3]; }
 function hasWard(st){ return st.shield>0&&st.shieldHp>0; }
 
@@ -2064,6 +2069,7 @@ function sigAtTier(sp,tier){
 function sigAt(who,cat,elem){ return sigSpells(who,cat).find(sp=>sp.el.elem===elem)||null; }
 function sigCost(who,sp,tier){ return Math.max(0,sigAtTier(sp,tier).cost+spellbindExtra(who,sp.el.cat)); }
 function sectorOk(who,cat,elem,tier){
+  if(elemForbidden(who,elem)) return false;
   const sp=sigAt(who,cat,elem);
   return sp?!sigBlocked(who,sp,tier):elemCost(who,cat,tier)<=gs[who].mana;
 }
@@ -2145,16 +2151,16 @@ function buildWheelSvg(who,cat){
   let html='';
   ELEMENTS.forEach((el,i)=>{
     const a0=-Math.PI/2-step/2+i*step, a1=a0+step, am=(a0+a1)/2;
-    const sp=sigAt(who,cat,el.id);
+    const sp=sigAt(who,cat,el.id), banned=elemForbidden(who,el.id);
     WHEEL_RINGS.forEach(([r0,r1],t)=>{
       const off=!sectorOk(who,cat,el.id,t+1);
       const d=`M${pt(r0,a0)} L${pt(r1,a0)} A${r1} ${r1} 0 0 1 ${pt(r1,a1)} L${pt(r0,a1)} A${r0} ${r0} 0 0 0 ${pt(r0,a0)} Z`;
       html+=`<path class="wseg${off?' off':''}${sp?' sig':''}" d="${d}" data-elem="${el.id}" data-tier="${t+1}" `+
         `style="fill:${off?'#2a2a33':el.col};fill-opacity:${off?0.5:[0.22,0.42,0.68][t]}"/>`;
     });
-    const label=sp?'★'+sigName(sp).split(' ')[0]:el.name;
-    html+=`<text class="wicon" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${sp?sigIcon(sp):el.icon}</text>`;
-    html+=`<text class="wname${sp?' wname-sig':''}" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${label}</text>`;
+    const label=banned?'⛔ '+el.name:sp?'★'+sigName(sp).split(' ')[0]:el.name;
+    html+=`<text class="wicon${banned?' wicon-banned':''}" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${sp?sigIcon(sp):el.icon}</text>`;
+    html+=`<text class="wname${banned?' wname-banned':sp?' wname-sig':''}" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${label}</text>`;
   });
   html+=`<circle class="wcentre" r="36"/><text class="wcentre-ico" y="2">${ELEM_CATS[cat].icon}</text>`;
   svg.innerHTML=html;
@@ -2170,7 +2176,7 @@ function castElemental(cat,elemId,tier,self){
   const who=gs.turnPlayer;
   const sp=self?null:sigAt(who,cat,elemId);
   if(sp){ castSignature(sp.id,tier); return; }
-  if(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)) return;
+  if(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)||(!self&&elemForbidden(who,elemId))) return;
   const el=elemById(elemId);
   const target=self?who:PLAYERS.find(w=>w!==who);   // 3–4 seats: target picker goes here
   const spell={name:describeElemAction({cat,elem:elemId,tier,self}).name, icon:el.icon,
@@ -2366,8 +2372,12 @@ function executeSignature(who,sp,action,cb){
 
 function raiseWard(who,elem,power,retaliate){
   const st=gs[who], el=elemById(elem);
-  st.shield=ELEM_WARD_ROUNDS; st.shieldHp=power; st.shieldType=elem; st.wardRetaliate=retaliate; st.wardSig=null;
+  // A ward in an element no foe can cast can't be matched by their strikes or dispels — and lasts longer
+  const uncastable=foesCantCast(who,elem);
+  st.shield=ELEM_WARD_ROUNDS+(uncastable?ELEM_WARD_UNCASTABLE_BONUS:0);
+  st.shieldHp=power; st.shieldType=elem; st.wardRetaliate=retaliate; st.wardSig=null;
   addFloat(seatX(who),bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
+  if(uncastable) addFloat(seatX(who),bH*.21,'⛔ Foe can\'t cast '+el.name+' — lasts longer','#f0cc6a',11);
   VFX.wardRaise(seatX(who),el.col);
 }
 function breakWard(st,x){
@@ -2581,7 +2591,12 @@ function elemAIChoose(who){
     choice=pickFrom(plain);
     if(cat==='dispel'&&oppWard&&has(opp.shieldType)&&_rng()<(smart?0.8:0.4)) choice=has(opp.shieldType);
     if(cat==='damage'&&oppWard&&smart){ const off=plain.filter(x=>x.elem!==opp.shieldType); if(off.length) choice=pickFrom(off); }
-    if(cat==='protect'&&opp.lastElem&&has(opp.lastElem)&&_rng()<(smart?0.6:0.3)) choice=has(opp.lastElem);
+    if(cat==='protect'){
+      // Ward in an element the foe can't cast (lasts longer, can't be matched), or in the one they strike with
+      const safe=plain.filter(x=>foesCantCast(who,x.elem)), roll=_rng();
+      if(safe.length&&roll<(smart?0.5:0.15)) choice=pickFrom(safe);
+      else if(opp.lastElem&&has(opp.lastElem)&&!elemForbidden(tgt,opp.lastElem)&&roll<(smart?0.8:0.4)) choice=has(opp.lastElem);
+    }
   }
   else if(sectors.length) choice=sectors[Math.floor(_rng()*sectors.length)];   // anything beats waiting
   if(cat==='damage'&&boost&&boost.elem){ const s=sectors.find(x=>x.elem===boost.elem); if(s) choice=s; }
@@ -5410,6 +5425,8 @@ const TUTORIAL_CONVOS={
 // Character select stats, from each spell's `el` block
 function elemCharStats(cfg){
   const rows=[['❤ HP',String(cfg.hp)]];
+  if(cfg.forbidden&&cfg.forbidden.length)
+    rows.push(['⛔ Can\'t cast',cfg.forbidden.map(id=>{ const e=elemById(id); return e.icon+' '+e.name; }).join(', ')]);
   (cfg.spells||[]).filter(s=>s.el).forEach(s=>{
     const el=s.el, e=elemById(el.elem), cat=ELEM_CATS[el.cat];
     rows.push([(el.icon||s.icon)+' '+(el.name||s.name),cat.icon+' '+e.name+' · '+el.desc]);
