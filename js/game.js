@@ -75,16 +75,16 @@ let trainingMode=false;
 let trainingAI=true;
 let trainingPickPhase=null; // 'p1' or 'p2' — which side is being chosen
 
-function newSeat(cfg){
-  return {hp:cfg.hp, maxHp:cfg.hp, mana:ELEM_START_MANA,
+function newSeat(cfg,key){
+  return {key, cfg, hp:cfg.hp, maxHp:cfg.hp, mana:ELEM_START_MANA,
     shield:0, shieldHp:0, shieldType:null, wardRetaliate:0, wardSig:null,   // ward (shield = rounds left)
     effects:[], usedSig:{}, lastElem:null, lastCat:null, lastLockedRound:null, lastRoundLoss:0,
     blades:0, skeletons:[], simulacra:[]};   // minion counts mirrored for drawWiz
 }
 function newState(){
   gs={
-    p1:newSeat(p1Cfg),
-    p2:newSeat(p2Cfg),
+    p1:newSeat(p1Cfg,p1Key),
+    p2:newSeat(p2Cfg,p2Key),
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
     parts:[], floats:[], projs:[], beams:[], manaBurnFires:[],
@@ -1449,11 +1449,10 @@ function refreshActionBar(){
 
 
 // ── DEATHLESS (Valdris passive) ────────────────────────────
+// Any seat whose character has a deathlessCost survives a killing blow by paying that much mana
 function checkDeathless(who,x,y){
-  const state=gs[who];
-  const key=who==='p1'?p1Key:p2Key;
-  if(key!=='valdris') return;
-  const cost=(who==='p1'?p1Cfg:p2Cfg).deathlessCost||6;
+  const state=gs[who], cost=seatCfg(who).deathlessCost;
+  if(!cost) return;
   if(state.hp<=0&&state.mana>=cost){
     state.mana=Math.max(0,state.mana-cost);
     state.hp=1;
@@ -1745,8 +1744,9 @@ function vfxCtx(who,tgt,extra){
 // Every round: each seat picks in secret → all picks are revealed together →
 // the round resolves on the shared screen → round-end ticks → next pick phase.
 
-function seatCfg(who){ return who==='p1'?p1Cfg:p2Cfg; }
-function seatKey(who){ return who==='p1'?p1Key:p2Key; }
+// A seat carries its own character once the duel starts; before that, fall back to the picks
+function seatCfg(who){ return (gs&&gs[who]&&gs[who].cfg)||(who==='p1'?p1Cfg:p2Cfg); }
+function seatKey(who){ return (gs&&gs[who]&&gs[who].key)||(who==='p1'?p1Key:p2Key); }
 function seatX(who){ return who==='p1'?bW*.22:bW*.78; }
 function isHumanSeat(who){ return twoPlayerMode||who==='p1'; }
 
@@ -2760,8 +2760,8 @@ function resetTrainingRound(knockedOut){
 
   setTimeout(()=>{
     if(!battleRunning) return;
-    gs.p1=newSeat(p1Cfg);
-    gs.p2=newSeat(p2Cfg);
+    gs.p1=newSeat(p1Cfg,p1Key);
+    gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
     gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[];
     gs.pending={};
