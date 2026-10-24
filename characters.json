@@ -1362,13 +1362,13 @@
           "effect": {
             "type": "dot",
             "ramp": [
-              4,
-              8,
-              12
+              5,
+              9,
+              13
             ],
             "rounds": 3
           },
-          "desc": "Rift: 4, 8, 12 over 3 rounds"
+          "desc": "Rift: 5, 9, 13 over 3 rounds"
         }
       },
       {

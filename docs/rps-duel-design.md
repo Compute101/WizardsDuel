@@ -187,7 +187,7 @@ so each spell's numbers can be tuned there.
 | Fizzwick | 🧪 Caustic Bomb | ⚔️ Damage | 💀 Dark | Strike | 2 / 4 / 6 | 8 + poison 5 a round × 3 |
 | Fizzwick | ⚗️ Volatile Tonic | 🛡 Protection | 👊 Physical | Instant | 2 / 3 / 5 | 50%: heal 20 · 50%: next strike +50% |
 | Fizzwick | 🧫 Unstable Concoction | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 6–30 random arcane |
-| Nyxara | 🌀 Singularity | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 4 / 6 | Rift: 4, 8, 12 over 3 rounds |
+| Nyxara | 🌀 Singularity | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 4 / 6 | Rift: 5, 9, 13 over 3 rounds |
 | Nyxara | 🌑 Gravity Well | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 30% of foe's HP (min 10) |
 | Nyxara | 🕳️ Event Horizon | ⚔️ Damage | 🌀 Arcane | Strike | 5 / 9 / 14 | 40% of foe's HP (min 16); 6 recoil |
 
@@ -261,7 +261,8 @@ Signature elements are never forbidden. Fire is the most common ban, so a Fire w
 Number changes made alongside: Mary's Heal 22 → 19 and HP 88 → 85; Entangle 65% → 55%; Feint 12 → 11;
 Stoneskin 35 → 40; Stonesoul −40% non-Physical → −35% all damage; Nyxara HP 86 → 90; Thessaly HP 92 → 95.
 After damage over time started hitting wards — Normal AI (100 games per matchup): **43.6–56.6%**, no
-matchup under 25%. Easy: 40.9–61.7%. Nyxara fell most (50 → 44), as Singularity's ramp now meets wards.
+matchup under 25%. Easy: 40.9–61.7%. Nyxara fell most (50 → 44), as Singularity's ramp now meets wards, so Singularity
+went from 4 / 8 / 12 to 5 / 9 / 13: Normal **45.8–56.4%**, no matchup under 25%; Easy 40.2–60.5%.
 
 **Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
 opponent may play better in human hands. Re-run the tool after any number change, and playtest.
