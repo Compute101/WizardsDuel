@@ -2,7 +2,7 @@
   "eldrad": {
     "name": "ELDRIN",
     "title": "The Stalwart",
-    "sprite": "sprites/mage-light.png",
+    "sprite": "sprites/eldrad.png",
     "col": "#4af0ff",
     "taunts": [
       "Your spells shattered against my shield like waves on stone. Try again.",
@@ -67,7 +67,7 @@
   "mal": {
     "name": "MALACHAR",
     "title": "The Relentless",
-    "sprite": "sprites/mage-dark.png",
+    "sprite": "sprites/mal.png",
     "col": "#ff4a6e",
     "taunts": [
       "Pain is just power you haven't claimed yet. I claimed yours.",
@@ -136,7 +136,7 @@
   "sylvara": {
     "name": "SYLVARA",
     "title": "The Verdant",
-    "sprite": "sprites/mage-green.png",
+    "sprite": "sprites/sylvara.png",
     "col": "#44cc88",
     "taunts": [
       "The forest reclaims the fallen. But even fallen seeds can bloom again.",
@@ -210,7 +210,7 @@
   "aurelia": {
     "name": "AURELIA",
     "title": "The Radiant",
-    "sprite": "sprites/mage-yellow.png",
+    "sprite": "sprites/aurelia.png",
     "col": "#ffcc44",
     "taunts": [
       "I saw your defeat three moves before it happened. I always do.",
@@ -1266,7 +1266,7 @@
   "fizzwick": {
     "name": "FIZZWICK",
     "title": "The Concoctor",
-    "sprite": "sprites/mage-dark.png",
+    "sprite": "sprites/fizzwick.png",
     "col": "#99cc44",
     "taunts": [
       "Careful — I haven't tested that last batch on a live subject yet. You'll do nicely.",

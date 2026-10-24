@@ -111,6 +111,7 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 - `SPELL_VFX[spellId]` is each signature spell's own look. `self` plays when cast on yourself, `hit` when it lands on the target, and `delivery` handles lunges and volleys.
 - `ELEM_IMPACT_VFX` holds the plain element strikes; `TICK_VFX` / `MINION_VFX` the round-end ticks; `VFX` the shared reactions (ward block/shatter, dodge, dispel, retaliation, …).
 - Primitives: `spawnBeam`, `lunge`, `spawnManaBurnFire`, `vfxRing` / `vfxFountain` / `vfxDrift` / `vfxDrip`. `drawWiz` draws status auras from `wizVisuals()`.
+- Battle sprites: each character's `sprite` in `characters.json`. Either an old 192×320 spritesheet (`mage-*.png`, 48×64 frames, facing left) or a single full-body still named after the character key (`sprites/<key>.png`, 512×768, facing right). `drawSprite` handles both.
 - `js/legacy/` holds code the game doesn't load: the original Classic spell code (`classic_spells.js`, with every effect in context) and the old puzzle minigames.
 
 ---
