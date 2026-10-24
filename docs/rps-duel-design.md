@@ -18,11 +18,12 @@ Code: `PLAYERS`, `gs.pending`, `beginPickPhase` → `promptNextPicker` → `comm
 `showReveal` → `resolveSimRound` → `endSimRound` → `runRoundTicks` → `tickRound` in `js/game.js`.
 Win checks inside a simultaneous window go through `deferWinCheck` / `settleWin`, so a double KO is a draw.
 
-## Core rules (Phase 3 — implemented, as Elemental rules)
+## Core rules (Phase 3 — implemented)
 
-There is a Rules switch on the title screen: **Elemental** (default) or **Classic** (the old character
-spell kits and Channel). Elemental applies to every mode: 2 Player, Arcade and Practice.
-All the numbers below are constants at the top of the `ELEMENTAL DUEL` section of `js/game.js`.
+These are now the only rules: the old Classic rules (per-character spell bars, Channel, free basic
+attacks, the shared Inferno/Lightning/Frost Nova/Arcane Surge/Mana Burn spells) were removed, along
+with the Classic-only matchup analyzer. All the numbers below are constants at the top of the
+`ELEMENTAL DUEL` section of `js/game.js`.
 
 What was built, including choices made while building:
 - **Picking:** three buttons (⚔️ Damage, 🛡 Protection, ✦ Dispel), then the strength wheel: 6 element
@@ -80,8 +81,8 @@ Starting numbers (to be tuned):
 
 ## Characters (Phase 4 — implemented) — option B + C
 
-Every character's three signature spells are back under Elemental rules. Each one has an `el` block
-in `characters.json` (Classic rules ignore it), so each spell's numbers can be tuned there.
+Every character's three signature spells are back. Each one has an `el` block in `characters.json`,
+so each spell's numbers can be tuned there.
 
 - **Wheel sectors:** a signature spell takes over its element's sector on its category's wheel (gold
   outline, ★ name), with all three rings. Its `el` numbers are for the middle ring; the inner ring costs
@@ -111,10 +112,9 @@ in `characters.json` (Classic rules ignore it), so each spell's numbers can be t
 - **AI:** treats signature sectors like any other sector, preferring them (30–45%) when they'd do
   something useful: it won't recast an active buff, heals only when hurt, cleanses when cursed, and
   dispels your buffs when you have no ward.
-- **Tutorial and character select** follow the Rules switch. The Elemental tutorial has its own topics,
-  and its character guides describe effects and wheel sectors without exact numbers. Elemental character
-  stats are generated from the `el` blocks, so they stay correct after tuning. Classic text, with free
-  attacks and Channel, is unchanged because those still exist under Classic rules.
+- **Tutorial and character select** describe these rules. The character guides describe effects and
+  wheel sectors without exact numbers, and character stats are generated from the `el` blocks, so both
+  stay correct after tuning.
 - **Balance pass:** still to do once all phases are in.
 
 | Character | Spell | Wheel | Sector | Kind | Mana (inner / middle / outer) | Effect (middle ring) |

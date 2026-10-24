@@ -1,7 +1,7 @@
 # WizardsDuel — Notes for Claude
 
 ## What this is
-A browser-based 1v1 wizard duel game. Two players pick spells and cast them via minigames. Built with vanilla JS/Canvas, no framework. Main logic lives in `js/game.js` (~4000 lines). Spell definitions are in `characters.json`.
+A browser-based 1v1 wizard duel game. Each round both wizards secretly pick a Damage, Protection or Dispel spell (rock-paper-scissors), cast it via a short glyph minigame, then the picks are revealed and play out together. Built with vanilla JS/Canvas, no framework. Main logic lives in `js/game.js` (~5400 lines). Character stats and each character's three signature spells are in `characters.json`.
 
 ---
 
@@ -102,7 +102,7 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 ---
 
 ## Round flow & RPS redesign
-Every round goes: secret picks → simultaneous reveal → resolution → round-end ticks. Under Elemental rules (`elementalMode`, the default, in the "ELEMENTAL DUEL" section) resolution runs in stages: every Protection, then every Dispel, then every Damage. Classic rules keep the character spell kits; under Elemental rules each character spell's `el` block in `characters.json` defines its Elemental version (category, element sector it takes over on that wheel, kind, middle-ring cost and effect — `sigAtTier` scales the other rings). Keep one signature spell per category + element per character. That flow is the "ROUND FLOW" section of `js/game.js`. Loop over `PLAYERS` and `gs.pending`; don't hard-code p1/p2 in new round logic. The agreed Damage / Protection / Dispel design, and the phases still to build, are in `docs/rps-duel-design.md`.
+Every round goes: secret picks → simultaneous reveal → resolution → round-end ticks. Resolution runs in stages (the "ELEMENTAL DUEL" section): every Protection, then every Dispel, then every Damage. Each character spell's `el` block in `characters.json` defines it (category, element sector it takes over on that wheel, kind, middle-ring cost and effect — `sigAtTier` scales the other rings). Keep one signature spell per category + element per character. (The old "Classic" rules — per-character spell bars, Channel, free basic attacks — were removed.) That flow is the "ROUND FLOW" section of `js/game.js`. Loop over `PLAYERS` and `gs.pending`; don't hard-code p1/p2 in new round logic. The agreed Damage / Protection / Dispel design, and the phases still to build, are in `docs/rps-duel-design.md`.
 
 ---
 
@@ -110,15 +110,20 @@ Every round goes: secret picks → simultaneous reveal → resolution → round-
 
 | Thing | File | Approx. lines |
 |-------|------|---------------|
-| All game logic | `js/game.js` | ~4000 |
-| Inferno minigame | `js/game.js` | ~3317 |
-| Lightning minigame | `js/game.js` | ~3597 |
-| Ice minigame | `js/game.js` | ~3944 |
-| Arcane minigame | `js/game.js` | ~4249 |
-| Dispel minigame | `js/game.js` | ~4541 |
-| Spell definitions | `characters.json` | whole file |
-| Puzzle screen HTML | `index.html` | ~174–193 |
-| Canvas styling | `css/style.css` | ~374–423 |
+| All game logic | `js/game.js` | ~5400 |
+| Round flow (pick → reveal → resolve) | `js/game.js` | ~1500 |
+| Elemental rules, wheel, AI | `js/game.js` | ~1670 |
+| Tile-match (wards / buffs) minigame | `js/game.js` | ~2550 |
+| Inferno minigame (Fire, Physical) | `js/game.js` | ~2810 |
+| Lightning minigame | `js/game.js` | ~3090 |
+| Mana Burn minigame (Dark) | `js/game.js` | ~3430 |
+| Ice minigame | `js/game.js` | ~3740 |
+| Arcane minigame | `js/game.js` | ~4045 |
+| Dispel minigame | `js/game.js` | ~4340 |
+| Tutorial text | `js/game.js` | ~4870 |
+| Characters and signature spells | `characters.json` | whole file |
+| Puzzle screen HTML | `index.html` | ~242 |
+| Canvas styling | `css/style.css` | ~530–560 |
 
 ---
 

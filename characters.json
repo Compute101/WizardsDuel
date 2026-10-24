@@ -10,30 +10,13 @@
       "The stalwart does not fall. Will you prove the same?"
     ],
     "hp": 90,
-    "startMana": 5,
-    "channelAmt": 5,
     "dmgMult": 1.2,
-    "shieldMaxHp": 60,
-    "shieldDuration": 10,
-    "counterDmg": 20,
     "shieldCostMod": -2,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Magic Missile",
-        "icon": "✨",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "effectLabel": "Deal ~8 magic damage"
-      },
       {
         "id": "shield",
         "name": "Shield",
         "icon": "🛡",
-        "cost": 5,
-        "costLabel": "5 Mana",
-        "effectLabel": "60 HP barrier for 10 turns",
         "el": {
           "cat": "protect",
           "kind": "ward",
@@ -48,9 +31,6 @@
         "id": "counter",
         "name": "Counter",
         "icon": "⚡",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "Reflect 20 dmg when struck",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -69,9 +49,6 @@
         "id": "ward",
         "name": "Ward",
         "icon": "🔰",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "Block the next status effect for 3 turns",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -98,29 +75,12 @@
       "Relentless. That's the only lesson worth learning. Come back."
     ],
     "hp": 80,
-    "startMana": 7,
-    "channelAmt": 5,
     "dmgMult": 1.1,
-    "empowerMult": 1.5,
-    "bpCost": 22,
-    "bpGain": 15,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Magic Missile",
-        "icon": "✨",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "effectLabel": "Deal ~8 magic damage"
-      },
       {
         "id": "empower",
         "name": "Empower",
         "icon": "💪",
-        "cost": 0,
-        "costLabel": "Free",
-        "effectLabel": "Next spell deals +50% damage",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -139,10 +99,6 @@
         "id": "bloodpact",
         "name": "Blood Pact",
         "icon": "🩸",
-        "cost": 0,
-        "costLabel": "Free",
-        "effectLabel": "Sacrifice 22 HP for 15 Mana",
-        "aiHint": "mana_restore",
         "el": {
           "cat": "protect",
           "kind": "instant",
@@ -161,10 +117,6 @@
         "id": "drain",
         "name": "Drain",
         "icon": "💀",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "Deal ~20 dmg; heal 45% of damage dealt",
-        "aiHint": "drain",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -189,27 +141,12 @@
       "My roots run deeper than your courage. Try growing some."
     ],
     "hp": 92,
-    "startMana": 6,
-    "channelAmt": 5,
     "dmgMult": 1.0,
-    "healAmt": 40,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Magic Missile",
-        "icon": "✨",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "effectLabel": "Deal ~8 magic damage"
-      },
       {
         "id": "heal",
         "name": "Regen",
         "icon": "💚",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "Regenerate 40 HP over 10 turns",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -228,9 +165,6 @@
         "id": "entangle",
         "name": "Entangle",
         "icon": "🌿",
-        "cost": 1,
-        "costLabel": "1 Mana",
-        "effectLabel": "75% chance to freeze enemy for 1–3 turns",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -250,9 +184,6 @@
         "id": "vinewhip",
         "name": "Vine Whip",
         "icon": "🌱",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "Vine strikes for 7 dmg/turn × 3 turns; blocked by shields",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -280,27 +211,12 @@
       "You're as predictable as sunrise. Surprise me next time."
     ],
     "hp": 90,
-    "startMana": 6,
-    "channelAmt": 5,
     "dmgMult": 1.05,
-    "timeDrainTurns": 5,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Magic Missile",
-        "icon": "✨",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "effectLabel": "Deal ~8 magic damage"
-      },
       {
         "id": "foresight",
         "name": "Foresight",
         "icon": "🔮",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "Immune to free attacks; absorbs the next paid spell",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -318,9 +234,6 @@
         "id": "timedrain",
         "name": "Time Drain",
         "icon": "⏳",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "Slow enemy channel to +2 Mana for 5 turns",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -339,9 +252,6 @@
         "id": "haste",
         "name": "Haste",
         "icon": "💨",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "25% dodge for 3 turns; acts faster",
         "el": {
           "cat": "protect",
           "kind": "ward",
@@ -368,31 +278,12 @@
       "Little mage runs away? Gnash will wait. Gnash ALWAYS waits."
     ],
     "hp": 105,
-    "startMana": 5,
-    "channelAmt": 4,
     "dmgMult": 1.15,
-    "frenzyHpCost": 15,
-    "chargeDmg": 32,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Feral Strike",
-        "icon": "👊",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 9,
-        "physical": true,
-        "piercesDischarge": true,
-        "lungeAmt": 0.07,
-        "effectLabel": "Deal ~9 phys dmg, pierces Counter & Discharge"
-      },
       {
         "id": "warpaint",
         "name": "War Paint",
         "icon": "🩸",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "33% dmg resistance for 5 turns; Charge & Frenzy self-cost reduced to 10 HP",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -411,9 +302,6 @@
         "id": "charge",
         "name": "Savage Charge",
         "icon": "⚔️",
-        "cost": 0,
-        "costLabel": "15 HP",
-        "effectLabel": "32 phys dmg, pierces Counter",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -429,10 +317,6 @@
         "id": "frenzy",
         "name": "Frenzy",
         "icon": "💢",
-        "cost": 0,
-        "costLabel": "15 HP",
-        "effectLabel": "3 rapid strikes (~9 phys dmg each)",
-        "aiHint": "frenzy",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -461,26 +345,12 @@
       "Still smouldering. Still standing. Come back when you're ready to burn."
     ],
     "hp": 83,
-    "startMana": 7,
-    "channelAmt": 5,
     "dmgMult": 1.15,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Ember",
-        "icon": "🔥",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 9,
-        "effectLabel": "Deal ~9 fire damage"
-      },
       {
         "id": "fireball",
         "name": "Fireball",
         "icon": "🎱",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "18–28 random fire damage",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -499,9 +369,6 @@
         "id": "flameshield",
         "name": "Flame Shield",
         "icon": "🛡️",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "5 turns: attacker takes 16 fire damage",
         "el": {
           "cat": "protect",
           "kind": "ward",
@@ -517,9 +384,6 @@
         "id": "candle",
         "name": "Candle",
         "icon": "🕯️",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "3 turns: opponent catches fire each time they channel",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -547,31 +411,12 @@
       "The permafrost claims all things eventually. Even stubborn wizards."
     ],
     "hp": 88,
-    "startMana": 6,
-    "channelAmt": 5,
     "dmgMult": 1.0,
-    "iceLanceDmg": 28,
-    "iceLanceFreeze": 0.25,
-    "frostArmorDur": 5,
-    "frostArmorRetaliationDmg": 4,
-    "blizzardDur": 5,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Frost Bolt",
-        "icon": "❄️",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "effectLabel": "Deal ~8 ice damage"
-      },
       {
         "id": "icelance",
         "name": "Ice Lance",
         "icon": "🧊",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "28 damage; 25% chance to freeze 1 turn",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -586,9 +431,6 @@
         "id": "frostarmor",
         "name": "Frost Armor",
         "icon": "🛡️",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "30% dmg reduction for 5 turns; attacker takes 4 damage",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -608,9 +450,6 @@
         "id": "blizzard",
         "name": "Blizzard",
         "icon": "🌨️",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "5 dmg/turn × 5T + drains 2 mana/turn + 15% freeze chance",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -639,35 +478,12 @@
       "The storm obeys me. Did you truly believe you wouldn't?"
     ],
     "hp": 92,
-    "startMana": 7,
-    "channelAmt": 6,
     "dmgMult": 1.1,
-    "galvanizeManaCoast": 4,
-    "galvanizeChargeGain": 16,
-    "chainLightningChargeCost": 8,
-    "chainLightningDmg": 24,
-    "chainArcChance": 0.35,
-    "chainArcDmg": 10,
-    "conductivityDur": 3,
-    "conductivityMult": 1.35,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Spark",
-        "icon": "⚡",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 9,
-        "effectLabel": "Deal ~9 lightning damage"
-      },
       {
         "id": "galvanize",
         "name": "Galvanize",
         "icon": "🔋",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "Gain 16 charge; physical hits discharge it as damage",
-        "aiHint": "charge_build",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -687,10 +503,6 @@
         "id": "chainlightning",
         "name": "Chain Lightning",
         "icon": "🌩️",
-        "cost": 0,
-        "costLabel": "8 Charge",
-        "effectLabel": "24 damage; 35% chance to arc for 10 more",
-        "aiHint": "chain_attack",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -709,9 +521,6 @@
         "id": "conductivity",
         "name": "Conductivity",
         "icon": "💡",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "Target takes +35% damage for 3 turns",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -739,29 +548,12 @@
       "Kneel before the radiance, or be consumed by it. There is no third option."
     ],
     "hp": 88,
-    "startMana": 6,
-    "channelAmt": 5,
     "dmgMult": 1.0,
-    "healAmt": 40,
-    "radiantDmg": 15,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Smite",
-        "icon": "🌟",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "lungeAmt": 0.07,
-        "effectLabel": "Deal ~8 radiant damage (staff tap channels holy power)"
-      },
       {
         "id": "divineheal",
         "name": "Heal",
         "icon": "💛",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "Instantly restore 40 HP",
         "el": {
           "cat": "protect",
           "kind": "instant",
@@ -779,9 +571,6 @@
         "id": "purge",
         "name": "Purge",
         "icon": "✨",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "Remove all active debuffs from yourself",
         "el": {
           "cat": "dispel",
           "kind": "instant",
@@ -799,9 +588,6 @@
         "id": "radiant",
         "name": "Radiant",
         "icon": "☀️",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "Deal 15 holy damage; bypasses shields & resistance",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -826,30 +612,12 @@
       "Kneel before the dark, or be consumed by it. There is no third option."
     ],
     "hp": 82,
-    "startMana": 6,
-    "channelAmt": 5,
     "dmgMult": 1.0,
-    "agonyDur": 5,
-    "agonyDmg": 12,
-    "silenceDur": 5,
-    "corruptionDur": 3,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Dark Bolt",
-        "icon": "🌑",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "effectLabel": "Deal ~8 dark damage"
-      },
       {
         "id": "agony",
         "name": "Agony",
         "icon": "💀",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "Any non-channel action deals 12 dmg to target for 5 turns",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -868,9 +636,6 @@
         "id": "silence",
         "name": "Silence",
         "icon": "🔇",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "45% spell failure for 5 turns",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -889,9 +654,6 @@
         "id": "corruption",
         "name": "Corruption",
         "icon": "☠️",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "Target gains 2 less mana per channel for 3 turns",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -919,26 +681,12 @@
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
     "hp": 85,
-    "startMana": 5,
-    "channelAmt": 5,
     "dmgMult": 1.0,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Magic Missile",
-        "icon": "✨",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "effectLabel": "Deal ~8 magic damage"
-      },
       {
         "id": "vanish",
         "name": "Vanish",
         "icon": "👻",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "Invisible 3 turns; attacks break it",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -956,10 +704,6 @@
         "id": "manasiphon",
         "name": "Mana Siphon",
         "icon": "🌀",
-        "cost": 0,
-        "costLabel": "Free",
-        "effectLabel": "Steal 4 mana (only while invisible; blocked by shield/foresight)",
-        "aiHint": "mana_steal",
         "el": {
           "cat": "dispel",
           "kind": "instant",
@@ -977,9 +721,6 @@
         "id": "blink",
         "name": "Blink",
         "icon": "💫",
-        "cost": 1,
-        "costLabel": "1 Mana",
-        "effectLabel": "50% dodge chance for 3 turns",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -1007,32 +748,12 @@
       "The mountain endures all things. So too shall I."
     ],
     "hp": 110,
-    "startMana": 0,
-    "channelAmt": 4,
     "dmgMult": 1.0,
-    "stoneskinAbsorb": 10,
-    "stoneskinHpMax": 30,
-    "stoneskinDuration": 10,
-    "stonesoulDuration": 5,
-    "rockfallDmg": 9,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Boulder",
-        "icon": "🪨",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 9,
-        "physical": true,
-        "effectLabel": "Deal ~9 phys damage"
-      },
       {
         "id": "stoneskin",
         "name": "Stoneskin",
         "icon": "🧱",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "Absorb 10 per hit; 30 HP total, 10 turns",
         "el": {
           "cat": "protect",
           "kind": "ward",
@@ -1047,9 +768,6 @@
         "id": "stonesoul",
         "name": "Stonesoul",
         "icon": "💎",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "40% magical damage reduction for 5 turns",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -1069,10 +787,6 @@
         "id": "rockfall",
         "name": "Rockfall",
         "icon": "⛰️",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "3 rocks × ~9 phys dmg each",
-        "aiHint": "burst",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -1096,31 +810,12 @@
       "The patient sword outlasts the hasty one. Always."
     ],
     "hp": 90,
-    "startMana": 6,
-    "channelAmt": 5,
     "dmgMult": 1.0,
-    "maxBlades": 3,
-    "bladeDmgPerTurn": 4,
-    "bladestormDmg": 12,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Steel Whisper",
-        "icon": "⚔️",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 9,
-        "physical": true,
-        "piercesDischarge": true,
-        "effectLabel": "Deal ~9 phys damage"
-      },
       {
         "id": "conjureblade",
         "name": "Conjure Blade",
         "icon": "🗡️",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "Summon 1 orbiting blade (max 3); each deals 4 phys dmg/turn",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -1142,10 +837,6 @@
         "id": "bladestorm",
         "name": "Bladestorm",
         "icon": "💫",
-        "cost": 0,
-        "costLabel": "All Blades",
-        "effectLabel": "Launch all blades — each deals 12 phys damage; costs no mana",
-        "aiHint": "burst",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -1162,9 +853,6 @@
         "id": "ironpatience",
         "name": "Iron Patience",
         "icon": "🧘",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "30% damage reduction for 3 turns",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -1192,33 +880,12 @@
       "The swamp takes all things. Even stubborn little wizards."
     ],
     "hp": 85,
-    "startMana": 5,
-    "channelAmt": 5,
     "dmgMult": 1.0,
-    "plagueDoTDmg": 6,
-    "plagueDoTDur": 5,
-    "plagueSpellDmg": 8,
-    "maggotCloudDrain": 3,
-    "maggotCloudDur": 3,
-    "boneTotemRegen": 5,
-    "boneTotemDur": 4,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Hex Bolt",
-        "icon": "🌑",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "effectLabel": "Deal ~8 dark damage"
-      },
       {
         "id": "plague",
         "name": "Plague",
         "icon": "☠️",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "6 dmg/turn × 5T; casting any spell while plagued deals +8 dmg",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -1237,9 +904,6 @@
         "id": "maggotcloud",
         "name": "Maggot Cloud",
         "icon": "🪲",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "Drain 3 mana now + reduce enemy channel by 3 for 3 turns",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -1259,10 +923,6 @@
         "id": "bonetotem",
         "name": "Bone Totem",
         "icon": "💀",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "Regen 5 HP/turn × 4T; blocks enemy Purge while active",
-        "aiHint": "regen",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -1290,34 +950,13 @@
       "Kneel before the undying, or be consumed by it. There is no third option."
     ],
     "hp": 82,
-    "startMana": 8,
-    "channelAmt": 6,
     "dmgMult": 1.0,
     "deathlessCost": 6,
-    "skelMaxHp": 25,
-    "skelDmgPerTurn": 7,
-    "skelHealOnDeath": 8,
-    "skelReinforceAmt": 15,
-    "necroticDrainDmg": 18,
-    "necroticDrainHeal": 8,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Death Bolt",
-        "icon": "🌑",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 9,
-        "effectLabel": "Deal ~9 necrotic damage"
-      },
       {
         "id": "raisedead",
         "name": "Raise Dead",
         "icon": "💀",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "Summon skeleton (max 2): 25 HP shield, 7 phys dmg/turn, heals 8 HP on death",
-        "aiHint": "summon",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -1340,10 +979,6 @@
         "id": "necroticdrain",
         "name": "Necrotic Drain",
         "icon": "🩸",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "Deal ~18 damage; heal 8 HP",
-        "aiHint": "drain",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -1359,9 +994,6 @@
         "id": "reinforce",
         "name": "Reinforce",
         "icon": "🔧",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "Restore 15 HP to weakest active skeleton",
         "el": {
           "cat": "protect",
           "kind": "ward",
@@ -1386,30 +1018,12 @@
       "Deception is not dishonesty. It is simply a more elegant form of truth."
     ],
     "hp": 85,
-    "startMana": 5,
-    "channelAmt": 5,
     "dmgMult": 1.0,
-    "simulacrumMaxHp": 20,
-    "simulacrumStartMana": 6,
-    "simulacrumChannelAmt": 5,
-    "feintDmg": 15,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Phantom Bolt",
-        "icon": "👁",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "effectLabel": "Deal ~8 magic damage"
-      },
       {
         "id": "simulacrum",
         "name": "Simulacrum",
         "icon": "🪞",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "Summon autonomous copy (max 2): 20 HP, casts any spell, 50% redirect chance",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -1431,9 +1045,6 @@
         "id": "bewitch",
         "name": "Bewitch",
         "icon": "🪄",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "Enemy's next active spell reflects back onto themselves",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -1451,9 +1062,6 @@
         "id": "feint",
         "name": "Feint",
         "icon": "🗡️",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "~15 damage; bypasses all shields and defensive buffs",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -1478,31 +1086,12 @@
       "Every spell you cast was mine to exploit. You were generous."
     ],
     "hp": 88,
-    "startMana": 6,
-    "channelAmt": 5,
     "dmgMult": 1.0,
-    "arcaneWeaveDmgBonus": 6,
-    "arcaneWeaveManaDrain": 2,
-    "arcaneWeaveAttacks": 3,
-    "spellbindExtraCost": 3,
-    "spellbindDur": 5,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Gilded Bolt",
-        "icon": "✨",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 9,
-        "effectLabel": "Deal ~9 magic damage"
-      },
       {
         "id": "enthral",
         "name": "Enthral",
         "icon": "🌀",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "Enemy forced to channel on their next turn",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -1521,9 +1110,6 @@
         "id": "arcaneweave",
         "name": "Arcane Weave",
         "icon": "🌟",
-        "cost": 2,
-        "costLabel": "2 Mana",
-        "effectLabel": "Next 3 basic attacks deal +6 dmg and drain 2 mana from enemy",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -1544,9 +1130,6 @@
         "id": "spellbind",
         "name": "Spellbind",
         "icon": "🔒",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "One enemy spell costs +3 mana for 5 turns",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -1574,30 +1157,12 @@
       "I have one wrath left in me. You have already wasted my patience earning it."
     ],
     "hp": 95,
-    "startMana": 6,
-    "channelAmt": 5,
     "dmgMult": 1.05,
-    "dragonScalesDur": 5,
-    "dragonScalesRetaliationDmg": 5,
-    "wyrmfireDmg": 16,
-    "ancientWrathDmg": 35,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Drake Fang",
-        "icon": "🦷",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 9,
-        "effectLabel": "Deal ~9 fire damage"
-      },
       {
         "id": "dragonscales",
         "name": "Dragon Scales",
         "icon": "🐉",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "33% dmg reduction for 5 turns; attacker takes 5 fire damage",
         "el": {
           "cat": "protect",
           "kind": "buff",
@@ -1617,9 +1182,6 @@
         "id": "wyrmfirebreath",
         "name": "Wyrmfire Breath",
         "icon": "🌋",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "16 direct fire damage; sets ablaze for 5 dmg/turn over 2 turns",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -1638,10 +1200,6 @@
         "id": "ancientwrath",
         "name": "Ancient Wrath",
         "icon": "💥",
-        "cost": 6,
-        "costLabel": "6 Mana",
-        "effectLabel": "35 fire damage. Once per duel.",
-        "aiHint": "burst",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -1666,32 +1224,12 @@
       "Don't worry about the smell. That's normal. Probably."
     ],
     "hp": 80,
-    "startMana": 7,
-    "channelAmt": 5,
     "dmgMult": 1.0,
-    "causticBombDmg": 10,
-    "volatileTonicHeal": 20,
-    "unstableConcoctionDmgRange": [
-      10,
-      30
-    ],
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Junk Shiv",
-        "icon": "🗡️",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "effectLabel": "Deal ~8 damage"
-      },
       {
         "id": "causticbomb",
         "name": "Caustic Bomb",
         "icon": "🧪",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "10 direct damage; poisons for 5 dmg/turn over 3 turns",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -1710,9 +1248,6 @@
         "id": "volatiletonic",
         "name": "Volatile Tonic",
         "icon": "⚗️",
-        "cost": 3,
-        "costLabel": "3 Mana",
-        "effectLabel": "50% chance: heal 20 HP. 50% chance: Empowered (next hit +50% dmg)",
         "el": {
           "cat": "protect",
           "kind": "instant",
@@ -1731,10 +1266,6 @@
         "id": "unstableconcoction",
         "name": "Unstable Concoction",
         "icon": "🧫",
-        "cost": 5,
-        "costLabel": "5 Mana",
-        "effectLabel": "Random 10-30 damage",
-        "aiHint": "burst",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -1762,31 +1293,12 @@
       "Don't struggle. The void doesn't hate you. It just... empties."
     ],
     "hp": 78,
-    "startMana": 6,
-    "channelAmt": 5,
     "dmgMult": 1.0,
-    "gravityWellPct": 0.25,
-    "gravityWellMin": 5,
-    "eventHorizonPct": 0.4,
-    "eventHorizonMin": 10,
-    "eventHorizonRecoil": 6,
     "spells": [
-      {
-        "id": "basicattack",
-        "name": "Void Lash",
-        "icon": "🖤",
-        "cost": 0,
-        "costLabel": "Free",
-        "dmg": 8,
-        "effectLabel": "Deal ~8 void damage"
-      },
       {
         "id": "singularity",
         "name": "Singularity",
         "icon": "🌀",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "Opens a collapsing rift: 4/8/12 dmg over 3 turns (24 total)",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -1809,9 +1321,6 @@
         "id": "gravitywell",
         "name": "Gravity Well",
         "icon": "🌑",
-        "cost": 4,
-        "costLabel": "4 Mana",
-        "effectLabel": "Deals 25% of target's current HP (min 5)",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -1827,10 +1336,6 @@
         "id": "eventhorizon",
         "name": "Event Horizon",
         "icon": "🕳️",
-        "cost": 10,
-        "costLabel": "10 Mana",
-        "effectLabel": "Deals 40% of target's current HP (min 10); 6 recoil damage to self",
-        "aiHint": "burst",
         "el": {
           "cat": "damage",
           "kind": "strike",

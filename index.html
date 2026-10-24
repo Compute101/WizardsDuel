@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wizard's Duel</title>
-<link rel="stylesheet" href="css/style.css?v=0.18">
+<link rel="stylesheet" href="css/style.css?v=0.19">
 </head>
 <body>
 <div id="app">
@@ -21,11 +21,6 @@
       <button class="diff-btn active" data-diff="normal">Normal</button>
       <button class="diff-btn" data-diff="hard">Hard</button>
     </div>
-    <div class="diff-label">Rules</div>
-    <div class="diff-selector">
-      <button class="rules-btn active" data-rules="elemental">Elemental</button>
-      <button class="rules-btn" data-rules="classic">Classic</button>
-    </div>
     <div class="diff-label">Opponent AI</div>
     <div class="diff-selector">
       <button class="ai-btn" data-ai="easy">Easy</button>
@@ -34,7 +29,7 @@
     <button class="btn btn-duel-main" id="btn-duel">⚔ Duel</button>
     <button class="btn" id="btn-practice">🎯 Practice Mode</button>
     <button class="btn" id="btn-tutorial">📜 Tutorial</button>
-    <div class="hint">CAST SPELLS · RAISE SHIELDS · SOLVE MAZES<br>DEFEAT YOUR RIVAL WIZARD</div>
+    <div class="hint">STRIKE · WARD · DISPEL<br>OUTGUESS YOUR RIVAL WIZARD</div>
     <div style="position:absolute;bottom:12px;right:16px;font-size:10px;color:rgba(201,168,76,0.4);letter-spacing:1px;">v0.9</div>
   </div>
 
@@ -236,25 +231,12 @@
     <div id="statusbar"></div>
     <div id="bstage"><canvas id="bcanvas"></canvas></div>
     <div id="actionbar">
-      <div class="abar-row abar-row-abilities" id="spell-buttons"></div>
-      <div class="abar-row abar-row-elem" id="elem-buttons" style="display:none">
+      <div class="abar-row abar-row-elem" id="elem-buttons">
         <button class="abtn abtn-ability abtn-elem" id="bel-damage" data-cat="damage"><span class="abtn-ico">⚔️</span><span class="abtn-name">Damage</span><span class="cost" id="bel-damage-cost"></span></button>
         <button class="abtn abtn-ability abtn-elem" id="bel-protect" data-cat="protect"><span class="abtn-ico">🛡</span><span class="abtn-name">Protection</span><span class="cost" id="bel-protect-cost"></span></button>
         <button class="abtn abtn-ability abtn-elem" id="bel-dispel" data-cat="dispel"><span class="abtn-ico">✦</span><span class="abtn-name">Dispel</span><span class="cost" id="bel-dispel-cost"></span></button>
       </div>
-      <div class="abar-row abar-row-main">
-        <button class="abtn abtn-channel" id="bchannel">✨ Channel<span class="cost" id="channel-cost-label">+4 Mana</span></button>
-        <button class="abtn abtn-castspell" id="bcastspell">⚔️ Cast Spell</button>
-      </div>
     </div>
-  </div>
-
-  <!-- SPELL PICKER -->
-  <div id="spell-screen" class="screen">
-    <div class="sp-header">Choose Your Spell</div>
-    <div class="sp-subhead">Each element unlocks a different challenge</div>
-    <div class="sp-grid" id="sp-grid"></div>
-    <button class="btn sp-cancel-btn" id="sp-cancel">✕ Cancel</button>
   </div>
 
   <!-- PUZZLE -->
@@ -368,17 +350,6 @@
 
 </div>
 
-<!-- DISPEL TARGET SELECT -->
-<div id="dispel-target-overlay">
-  <div id="dispel-target-box">
-    <div class="dt-title">🌸 Dispel</div>
-    <div class="dt-sub">Choose your target</div>
-    <button class="dt-btn" id="dt-self">✨ Cleanse Self<small>Remove 1 own debuff</small></button>
-    <button class="dt-btn" id="dt-opp">⚔️ Strip Opponent<small>70% chance — remove 1 opp buff</small></button>
-  </div>
-</div>
-
-<script src="js/resolver.js"></script>
-<script src="js/game.js?v=0.22"></script>
+<script src="js/game.js?v=0.23"></script>
 </body>
 </html>
