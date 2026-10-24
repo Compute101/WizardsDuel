@@ -37,6 +37,11 @@ What was built, including choices made while building:
   Dispel minigame. A failed minigame fizzles and costs 1 mana.
 - **Mana:** everyone starts with 6 and gains +4 at the end of every round. There's no Channel, and the
   cheapest spell costs 1, so you can always cast something.
+- **Paying:** every seat pays for its pick as the round begins, before anything resolves (`payForAction`).
+  The picks were simultaneous, so a mana burn or drain this round can't stop a spell that was already
+  paid for, whatever the seat order. A failed ritual costs 1 mana instead. **Quick** spells (`quick` on
+  the spell; only Ponder's Mana Siphon) are paid first and steal at once, so their target pays from
+  what's left — if they can no longer afford their pick, it fails.
 - **Wards:** raising one replaces any existing ward. A ward stops damage in the same round it's raised.
   A ward **resists every element but its own**: other elements wear it down at 75%, while a strike in
   its own element **unravels** it at 150% (`ELEM_WARD_TAKE`). A dispel of its element does double.
@@ -161,7 +166,7 @@ so each spell's numbers can be tuned there.
 | Mordant | 🔇 Silence | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | 3 rounds: foe's spells fail 50% |
 | Mordant | ☠️ Corruption | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Foe gains 3 less mana a round × 3 |
 | Ponder | 👻 Vanish | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 3 / 5 | The next strike within 2 rounds misses |
-| Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Steal 4 mana |
+| Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant (quick) | 1 / 2 / 3 | Steal 3 mana as the round begins, before they pay |
 | Ponder | 💫 Blink | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 45% dodge × 3 rounds |
 | Durin | 🧱 Stoneskin | 🛡 Protection | 👊 Physical | Ward | 4 / 6 / 10 | Physical ward of 40 |
 | Durin | 💎 Stonesoul | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | −35% damage × 3 |
@@ -263,6 +268,12 @@ Stoneskin 35 → 40; Stonesoul −40% non-Physical → −35% all damage; Nyxara
 After damage over time started hitting wards — Normal AI (100 games per matchup): **43.6–56.6%**, no
 matchup under 25%. Easy: 40.9–61.7%. Nyxara fell most (50 → 44), as Singularity's ramp now meets wards, so Singularity
 went from 4 / 8 / 12 to 5 / 9 / 13: Normal **45.8–56.4%**, no matchup under 25%; Easy 40.2–60.5%.
+
+Paying up front removed a seat-order advantage (player 2 still had its mana when player 1's blow
+landed, so Deathless saved Valdris 3× as often from that seat). It also took away Ponder's accidental
+edge — Mana Siphon used to land before the foe paid only when the order allowed — so he fell to 34%.
+Making Siphon **quick** on purpose, stealing 3 instead of 4: Normal **44.8–55.2%**, no matchup under
+25%; Easy 38.4–59.0%.
 
 **Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
 opponent may play better in human hands. Re-run the tool after any number change, and playtest.

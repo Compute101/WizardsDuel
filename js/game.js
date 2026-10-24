@@ -1848,6 +1848,10 @@ function resolveSimRound(){
   gs.pending={};
   gs.myTurn=false; gs.busy=true;
   PLAYERS.forEach(w=>{ gs[w].hpAtRoundStart=gs[w].hp; });
+  // Quick spells (Mana Siphon) are paid and steal first, so their target pays from what's left
+  const isQuick=w=>{ const a=acts[w], sp=a.sig&&sigById(w,a.sig); return !!(sp&&sp.el.quick); };
+  PLAYERS.filter(isQuick).forEach(w=>{ payForAction(w,acts[w]); if(acts[w].outcome==='cast') quickSteal(w,acts[w]); });
+  PLAYERS.filter(w=>!isQuick(w)).forEach(w=>payForAction(w,acts[w]));
 
   const tiers=[];
   PLAYERS.forEach(who=>{
@@ -2216,28 +2220,37 @@ function elemHeal(who,n,icon){
   if(st.hp>before) addFloat(seatX(who),bH*.42,'+'+(st.hp-before)+' '+(icon||'💚'),'#44ee88',12);
 }
 
+// Every seat pays for its pick as the round begins, before anything resolves: the picks were
+// simultaneous, so nobody's mana can be burned or drained before they pay. Sets action.outcome.
+function payForAction(who,action){
+  const st=gs[who];
+  if(action.cat==='pass') return;
+  const sp=action.sig?sigById(who,action.sig):null;
+  const cost=sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
+  const silence=effectsOf(st,'silence')[0];
+  if(!action.ok){ st.mana=Math.max(0,st.mana-1); action.outcome='fizzle'; }
+  else if(silence&&_rng()<silence.pct) action.outcome='silenced';
+  else if(cost>st.mana) action.outcome='nomana';
+  else { st.mana-=cost; action.outcome='cast'; }
+}
+function quickSteal(who,action){
+  const a=sigAtTier(sigById(who,action.sig),action.tier).action, ts=gs[action.target], st=gs[who];
+  if(!a||a.type!=='siphon') return;
+  const n=Math.min(ts.mana,a.amt);
+  ts.mana-=n; st.mana=Math.min(MAX_MANA,st.mana+n);
+  action.stolen=n;
+}
 function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
   const sp=action.sig?sigById(who,action.sig):null;
-  const cost=sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
 
   const agony=effectsOf(st,'agony')[0];
   if(agony){ elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); }
-  if(!action.ok){
-    addFloat(x,bH*.33,'Fizzled!','#ff8844',13);
-    st.mana=Math.max(0,st.mana-1);
-    combatTimeout(cb,700);
-    return;
-  }
-  const silence=effectsOf(st,'silence')[0];
-  if(silence&&_rng()<silence.pct){
-    showSilenceBlock(x,bH*.33);
-    combatTimeout(cb,900);
-    return;
-  }
-  if(cost>st.mana){ addFloat(x,bH*.33,'Out of mana!','#ff8844',13); combatTimeout(cb,700); return; }
-  st.mana-=cost;
+  // Paid (or not) when the round began — see payForAction
+  if(action.outcome==='fizzle'){ addFloat(x,bH*.33,'Fizzled!','#ff8844',13); combatTimeout(cb,700); return; }
+  if(action.outcome==='silenced'){ showSilenceBlock(x,bH*.33); combatTimeout(cb,900); return; }
+  if(action.outcome==='nomana'){ addFloat(x,bH*.33,'Out of mana!','#ff8844',13); combatTimeout(cb,700); return; }
   anim(who,'cast',600);
   st.lastCat=action.cat;   // what Spellbind targets
   if(sp){
@@ -2361,8 +2374,9 @@ function executeSignature(who,sp,action,cb){
   else if(a.type==='cleanse'){ elemCleanse(who); if(a.heal) elemHeal(who,a.heal); }
   else if(a.type==='rewind'){ elemHeal(who,Math.min(a.max,st.lastRoundLoss||0),'⏪'); if(!st.lastRoundLoss) addFloat(x,bH*.3,'⏪ Nothing to undo','#cccccc',12); }
   else if(a.type==='siphon'){
-    const n=Math.min(ts.mana,a.amt);
-    ts.mana-=n; st.mana=Math.min(MAX_MANA,st.mana+n);
+    // A quick siphon already stole as the round began (quickSteal); this only shows it
+    const n=action.stolen!=null?action.stolen:Math.min(ts.mana,a.amt);
+    if(action.stolen==null){ ts.mana-=n; st.mana=Math.min(MAX_MANA,st.mana+n); }
     addFloat(tx,bH*.42,'🌀 −'+n+' Mana','#88aaff',12); addFloat(x,bH*.42,'+'+n+' Mana','#88aaff',12);
   }
   else if(a.type==='tonic'){
@@ -5378,7 +5392,7 @@ const TUTORIAL_CONVOS={
   ponder:[
     {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
     {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes the next strike miss me entirely. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds."},
-    {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. I steal mana from my rival — they lose it AND I gain it!"},
+    {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. It's quick: I steal mana as the round begins, before my rival pays for their spell — if they can't afford it any more, it fails!"},
     {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
   ],
   durin:[
