@@ -10,8 +10,8 @@
       "The stalwart does not fall. Will you prove the same?"
     ],
     "hp": 90,
-    "dmgMult": 1.2,
-    "shieldCostMod": -2,
+    "dmgMult": 1.1,
+    "shieldCostMod": -1,
     "spells": [
       {
         "id": "shield",
@@ -22,9 +22,9 @@
           "kind": "ward",
           "elem": "arcane",
           "cost": 9,
-          "power": 60,
+          "power": 45,
           "tier": 3,
-          "desc": "Arcane ward of 60"
+          "desc": "Arcane ward of 45"
         }
       },
       {
@@ -155,10 +155,10 @@
           "tier": 2,
           "effect": {
             "type": "regen",
-            "perRound": 6,
-            "rounds": 5
+            "perRound": 5,
+            "rounds": 4
           },
-          "desc": "Heal 6 a round for 5 rounds"
+          "desc": "Heal 5 a round for 4 rounds"
         }
       },
       {
@@ -176,8 +176,8 @@
             "cat": "damage",
             "rounds": 2
           },
-          "desc": "75%: foe can't pick Damage next round",
-          "chance": 0.75
+          "desc": "65%: foe can't pick Damage next round",
+          "chance": 0.65
         }
       },
       {
@@ -191,9 +191,9 @@
           "cost": 4,
           "power": 10,
           "tier": 2,
-          "desc": "10 physical + vines 5 a round × 3",
+          "desc": "10 physical + vines 4 a round × 3",
           "dot": {
-            "dmg": 5,
+            "dmg": 4,
             "rounds": 3
           }
         }
@@ -221,7 +221,7 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "lightning",
-          "cost": 4,
+          "cost": 3,
           "tier": 2,
           "effect": {
             "type": "absorbNext",
@@ -278,7 +278,7 @@
       "Little mage runs away? Gnash will wait. Gnash ALWAYS waits."
     ],
     "hp": 105,
-    "dmgMult": 1.15,
+    "dmgMult": 1.05,
     "spells": [
       {
         "id": "warpaint",
@@ -307,9 +307,9 @@
           "kind": "strike",
           "elem": "physical",
           "cost": 5,
-          "power": 18,
+          "power": 16,
           "tier": 2,
-          "desc": "18 physical; burns 2 mana",
+          "desc": "16 physical; burns 2 mana",
           "manaburn": 2
         }
       },
@@ -488,7 +488,7 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "lightning",
-          "cost": 3,
+          "cost": 2,
           "tier": 2,
           "effect": {
             "type": "empower",
@@ -558,13 +558,13 @@
           "cat": "protect",
           "kind": "instant",
           "elem": "arcane",
-          "cost": 5,
+          "cost": 6,
           "tier": 1,
           "action": {
             "type": "heal",
-            "amt": 25
+            "amt": 22
           },
-          "desc": "Heal 25 now"
+          "desc": "Heal 22 now"
         }
       },
       {
@@ -611,7 +611,7 @@
       "The hexes were already written. Your fate merely confirmed them.",
       "Kneel before the dark, or be consumed by it. There is no third option."
     ],
-    "hp": 82,
+    "hp": 88,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -626,10 +626,10 @@
           "tier": 2,
           "effect": {
             "type": "agony",
-            "dmg": 6,
-            "rounds": 3
+            "dmg": 8,
+            "rounds": 4
           },
-          "desc": "3 rounds: foe takes 6 whenever they cast"
+          "desc": "4 rounds: foe takes 8 whenever they cast"
         }
       },
       {
@@ -644,10 +644,10 @@
           "tier": 2,
           "effect": {
             "type": "silence",
-            "pct": 0.4,
-            "rounds": 2
+            "pct": 0.5,
+            "rounds": 3
           },
-          "desc": "2 rounds: foe's spells fail 40%"
+          "desc": "3 rounds: foe's spells fail 50%"
         }
       },
       {
@@ -662,10 +662,10 @@
           "tier": 2,
           "effect": {
             "type": "incomeDrain",
-            "n": 2,
+            "n": 3,
             "rounds": 3
           },
-          "desc": "Foe gains 2 less mana a round × 3"
+          "desc": "Foe gains 3 less mana a round × 3"
         }
       }
     ]
@@ -712,9 +712,9 @@
           "tier": 1,
           "action": {
             "type": "siphon",
-            "amt": 3
+            "amt": 4
           },
-          "desc": "Steal 3 mana"
+          "desc": "Steal 4 mana"
         }
       },
       {
@@ -729,10 +729,10 @@
           "tier": 2,
           "effect": {
             "type": "dodge",
-            "pct": 0.4,
+            "pct": 0.45,
             "rounds": 3
           },
-          "desc": "40% dodge × 3 rounds"
+          "desc": "45% dodge × 3 rounds"
         }
       }
     ]
@@ -792,9 +792,9 @@
           "kind": "strike",
           "elem": "physical",
           "cost": 6,
-          "power": 20,
+          "power": 22,
           "tier": 3,
-          "desc": "20 physical"
+          "desc": "22 physical"
         }
       }
     ]
@@ -894,10 +894,10 @@
           "tier": 2,
           "effect": {
             "type": "dot",
-            "dmg": 5,
+            "dmg": 4,
             "rounds": 4
           },
-          "desc": "5 a round × 4"
+          "desc": "4 a round × 4"
         }
       },
       {
@@ -927,14 +927,14 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "dark",
-          "cost": 3,
+          "cost": 4,
           "tier": 2,
           "effect": {
             "type": "regen",
-            "perRound": 5,
+            "perRound": 4,
             "rounds": 4
           },
-          "desc": "Heal 5 a round × 4"
+          "desc": "Heal 4 a round × 4"
         }
       }
     ]
@@ -951,7 +951,7 @@
     ],
     "hp": 82,
     "dmgMult": 1.0,
-    "deathlessCost": 6,
+    "deathlessCost": 8,
     "spells": [
       {
         "id": "raisedead",
@@ -966,13 +966,13 @@
           "effect": {
             "type": "minion",
             "minion": "skeleton",
-            "dmg": 6,
+            "dmg": 5,
             "elem": "dark",
             "max": 2,
             "healOnRemove": 8,
-            "rounds": null
+            "rounds": 4
           },
-          "desc": "Skeleton (max 2): 6 a round; heals 8 when destroyed"
+          "desc": "Skeleton (max 2) for 4 rounds: 5 a round; heals 8 if destroyed"
         }
       },
       {
@@ -1033,12 +1033,12 @@
           "effect": {
             "type": "minion",
             "minion": "simulacrum",
-            "dmg": 6,
+            "dmg": 4,
             "elem": "arcane",
             "max": 2,
-            "rounds": null
+            "rounds": 4
           },
-          "desc": "Simulacrum (max 2): 6 a round"
+          "desc": "Simulacrum (max 2) for 4 rounds: 4 a round"
         }
       },
       {
@@ -1066,7 +1066,7 @@
           "cat": "damage",
           "kind": "strike",
           "elem": "arcane",
-          "cost": 4,
+          "cost": 5,
           "power": 12,
           "tier": 2,
           "desc": "12 arcane; burns 2 mana",
@@ -1085,7 +1085,7 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 88,
+    "hp": 92,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1096,7 +1096,7 @@
           "cat": "dispel",
           "kind": "curse",
           "elem": "arcane",
-          "cost": 3,
+          "cost": 2,
           "tier": 2,
           "effect": {
             "type": "lock",
@@ -1114,16 +1114,16 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "arcane",
-          "cost": 3,
+          "cost": 2,
           "tier": 2,
           "effect": {
             "type": "weave",
-            "bonus": 5,
-            "burn": 2,
+            "bonus": 8,
+            "burn": 3,
             "charges": 3,
             "rounds": null
           },
-          "desc": "Next 3 strikes +5 and burn 2 mana"
+          "desc": "Next 3 strikes +8 and burn 3 mana"
         }
       },
       {
@@ -1138,10 +1138,10 @@
           "tier": 2,
           "effect": {
             "type": "spellbind",
-            "extra": 3,
-            "rounds": 3
+            "extra": 4,
+            "rounds": 4
           },
-          "desc": "Foe's last category costs +3 × 3"
+          "desc": "Foe's last category costs +4 × 4"
         }
       }
     ]
@@ -1171,11 +1171,11 @@
           "tier": 2,
           "effect": {
             "type": "resist",
-            "pct": 0.33,
-            "retaliate": 5,
+            "pct": 0.25,
+            "retaliate": 4,
             "rounds": 3
           },
-          "desc": "3 rounds: −33% damage, strikers take 5"
+          "desc": "3 rounds: −25% damage, strikers take 4"
         }
       },
       {
@@ -1292,7 +1292,7 @@
       "You cling to your strength as if it makes you safe. The bigger they are, the more there is to take.",
       "Don't struggle. The void doesn't hate you. It just... empties."
     ],
-    "hp": 78,
+    "hp": 86,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1328,8 +1328,8 @@
           "cost": 5,
           "power": 10,
           "tier": 2,
-          "desc": "25% of foe's HP (min 10)",
-          "pctHp": 0.25
+          "desc": "30% of foe's HP (min 10)",
+          "pctHp": 0.3
         }
       },
       {

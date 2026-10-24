@@ -41,13 +41,11 @@ What was built, including choices made while building:
 - **Lightning** burns 1 / 2 / 3 mana, even when it hits a ward.
 - **Ice:** a middle- or outer-ring hit that reaches HP **chills** the target. A chilled player can't
   pick Damage next round. This replaces Freeze.
-- **Character stats:** each character's HP and damage multiplier still apply. Eldrin's wards cost 2
-  less (`shieldCostMod` in `characters.json`). Character spell kits are hidden under Elemental rules
-  until Phase 4.
+- **Character stats:** each character's HP and damage multiplier apply. Eldrin's wards cost 1 less
+  (`shieldCostMod` in `characters.json`). Character spells: see Phase 4.
 - **AI:** a weighted mixed strategy. It dispels when you have a ward, and on Normal it matches your
   ward's element. It wards more when you can afford a strong hit or its HP is low. On Normal it avoids
   striking into your ward's element. Its minigame success rate is 90% on Normal and 78% on Easy.
-  Phase 5 replaces this with a better AI.
 
 Original spec:
 
@@ -79,7 +77,7 @@ Starting numbers (to be tuned):
 
 - 5 s to watch the glyphs, then 5 s to enter them. This applies to all seven minigames, including the tile-match, which used to have no time limit.
 - The minigame decides success or fizzle. The strength ring sets its difficulty: inner is 2 glyphs, outer is 4.
-  The wheel will set `spell.tier` (1–3) on the spell passed to the launcher. Until then every cast is tier 2.
+  The wheel sets `spell.tier` (1–3) on the spell passed to the launcher.
 - The Arcana alphabet and the canonical words in CLAUDE.md still apply.
 
 ## Characters (Phase 4 — implemented) — option B + C
@@ -118,24 +116,24 @@ so each spell's numbers can be tuned there.
 - **Tutorial and character select** describe these rules. The character guides describe effects and
   wheel sectors without exact numbers, and character stats are generated from the `el` blocks, so both
   stay correct after tuning.
-- **Balance pass:** still to do once all phases are in.
+- **Balance pass:** done; see below.
 
 | Character | Spell | Wheel | Sector | Kind | Mana (inner / middle / outer) | Effect (middle ring) |
 |---|---|---|---|---|---|---|
-| Eldrin | 🛡 Shield | 🛡 Protection | 🌀 Arcane | Ward | 5 / 9 / 14 | Arcane ward of 60 |
+| Eldrin | 🛡 Shield | 🛡 Protection | 🌀 Arcane | Ward | 5 / 9 / 14 | Arcane ward of 45 |
 | Eldrin | ⚡ Counter | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 3 rounds: strikers take 10 |
 | Eldrin | 🔰 Ward | 🛡 Protection | ❄️ Ice | Enchantment (self) | 1 / 2 / 3 | 3 rounds: immune to curses |
 | Malachar | 💪 Empower | 🛡 Protection | 🔥 Fire | Enchantment (self) | 1 / 2 / 3 | Next strike +50% |
 | Malachar | 🩸 Blood Pact | 🛡 Protection | 💀 Dark | Instant | 0 | Lose 15 HP, gain 8 mana |
 | Malachar | 💀 Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 45% of HP damage |
-| Sylvara | 💚 Regen | 🛡 Protection | 👊 Physical | Enchantment (self) | 2 / 4 / 6 | Heal 6 a round for 5 rounds |
-| Sylvara | 🌿 Entangle | ✦ Dispel | 👊 Physical | Curse (foe) | 1 / 2 / 3 | 75%: foe can't pick Damage next round |
-| Sylvara | 🌱 Vine Whip | ⚔️ Damage | 👊 Physical | Strike | 2 / 4 / 6 | 10 physical + vines 5 a round × 3 |
-| Aurelia | 🔮 Foresight | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 4 / 6 | The next strike within 3 rounds does nothing |
+| Sylvara | 💚 Regen | 🛡 Protection | 👊 Physical | Enchantment (self) | 2 / 4 / 6 | Heal 5 a round for 4 rounds |
+| Sylvara | 🌿 Entangle | ✦ Dispel | 👊 Physical | Curse (foe) | 1 / 2 / 3 | 65%: foe can't pick Damage next round |
+| Sylvara | 🌱 Vine Whip | ⚔️ Damage | 👊 Physical | Strike | 2 / 4 / 6 | 10 physical + vines 4 a round × 3 |
+| Aurelia | 🔮 Foresight | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | The next strike within 3 rounds does nothing |
 | Aurelia | ⏳ Time Drain | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | Foe gains 2 less mana a round × 3 |
 | Aurelia | ⏪ Rewind | 🛡 Protection | 🌀 Arcane | Ward | 4 / 7 / 11 | Arcane ward of 25 + heal what you lost last round (max 20) |
 | Gnash | 🩸 War Paint | 🛡 Protection | 👊 Physical | Enchantment (self) | 2 / 3 / 5 | Take 33% less damage × 3 rounds |
-| Gnash | ⚔️ Savage Charge | ⚔️ Damage | 👊 Physical | Strike | 3 / 5 / 8 | 18 physical; burns 2 mana |
+| Gnash | ⚔️ Savage Charge | ⚔️ Damage | 👊 Physical | Strike | 3 / 5 / 8 | 16 physical; burns 2 mana |
 | Gnash | 💢 Frenzy | 🛡 Protection | 🔥 Fire | Enchantment (self) | 1 / 2 / 3 | 2 rounds: strikes +40%, each costs 4 HP |
 | Cinder | 🎱 Fireball | ⚔️ Damage | 🔥 Fire | Strike | 3 / 5 / 8 | 12–24 random fire |
 | Cinder | 🛡️ Flame Shield | 🛡 Protection | 🔥 Fire | Ward | 4 / 7 / 11 | Fire ward of 30; strikers take 8 |
@@ -143,45 +141,90 @@ so each spell's numbers can be tuned there.
 | Skadi | 🧊 Ice Lance | ⚔️ Damage | ❄️ Ice | Strike | 4 / 6 / 10 | 18 ice; chills |
 | Skadi | 🛡️ Frost Armor | 🛡 Protection | ❄️ Ice | Enchantment (self) | 2 / 4 / 6 | 3 rounds: −30% damage, strikers take 4 |
 | Skadi | 🌨️ Blizzard | ✦ Dispel | ❄️ Ice | Curse (foe) | 2 / 4 / 6 | 4 a round + 1 mana drain × 4 |
-| Zacharius | 🔋 Galvanize | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | Next Lightning strike +60% |
+| Zacharius | 🔋 Galvanize | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 1 / 2 / 3 | Next Lightning strike +60% |
 | Zacharius | 🌩️ Chain Lightning | ⚔️ Damage | ⚡ Lightning | Strike | 3 / 5 / 8 | 14 lightning; 35% to arc for 8 more |
 | Zacharius | 💡 Conductivity | ✦ Dispel | ⚡ Lightning | Curse (foe) | 2 / 3 / 5 | Foe takes +35% damage × 3 rounds |
-| Mary | 💛 Heal | 🛡 Protection | 🌀 Arcane | Instant | 3 / 5 / 8 | Heal 25 now |
+| Mary | 💛 Heal | 🛡 Protection | 🌀 Arcane | Instant | 4 / 6 / 10 | Heal 22 now |
 | Mary | ✨ Purge | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Remove your curses and heal 8 |
 | Mary | ☀️ Radiant | ⚔️ Damage | 🌀 Arcane | Strike | 2 / 4 / 6 | 12 holy; burns 2 mana |
-| Mordant | 💀 Agony | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 3 rounds: foe takes 6 whenever they cast |
-| Mordant | 🔇 Silence | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | 2 rounds: foe's spells fail 40% |
-| Mordant | ☠️ Corruption | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Foe gains 2 less mana a round × 3 |
+| Mordant | 💀 Agony | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: foe takes 8 whenever they cast |
+| Mordant | 🔇 Silence | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | 3 rounds: foe's spells fail 50% |
+| Mordant | ☠️ Corruption | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Foe gains 3 less mana a round × 3 |
 | Ponder | 👻 Vanish | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 3 / 5 | The next strike within 2 rounds misses |
-| Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Steal 3 mana |
-| Ponder | 💫 Blink | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 40% dodge × 3 rounds |
+| Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Steal 4 mana |
+| Ponder | 💫 Blink | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 45% dodge × 3 rounds |
 | Durin | 🧱 Stoneskin | 🛡 Protection | 👊 Physical | Ward | 4 / 6 / 10 | Physical ward of 35 |
 | Durin | 💎 Stonesoul | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | −40% non-physical damage × 3 |
-| Durin | ⛰️ Rockfall | ⚔️ Damage | 👊 Physical | Strike | 4 / 6 / 10 | 20 physical |
+| Durin | ⛰️ Rockfall | ⚔️ Damage | 👊 Physical | Strike | 4 / 6 / 10 | 22 physical |
 | Weizan | 🗡️ Conjure Blade | 🛡 Protection | 👊 Physical | Enchantment (self) | 1 / 2 / 3 | Blade (max 3): 4 a round |
 | Weizan | 💫 Bladestorm | ⚔️ Damage | 👊 Physical | Strike | 1 / 2 / 3 | Launch all blades: 10 each |
 | Weizan | 🧘 Iron Patience | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 1 / 2 / 3 | Take 30% less damage × 3 |
-| Gretch | ☠️ Plague | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 5 a round × 4 |
+| Gretch | ☠️ Plague | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 a round × 4 |
 | Gretch | 🪲 Maggot Cloud | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Drain 3 mana; −3 income × 2 |
-| Gretch | 💀 Bone Totem | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 3 / 5 | Heal 5 a round × 4 |
-| Valdris | 💀 Raise Dead | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 4 / 6 | Skeleton (max 2): 6 a round; heals 8 when destroyed |
+| Gretch | 💀 Bone Totem | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 4 / 6 | Heal 4 a round × 4 |
+| Valdris | 💀 Raise Dead | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 4 / 6 | Skeleton (max 2) for 4 rounds: 5 a round; heals 8 if destroyed |
 | Valdris | 🩸 Necrotic Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 40% of HP damage |
 | Valdris | 🔧 Reinforce | 🛡 Protection | 👊 Physical | Ward | 3 / 5 / 8 | Dark ward of 20 +12 per skeleton |
-| Mirel | 🪞 Simulacrum | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | Simulacrum (max 2): 6 a round |
+| Mirel | 🪞 Simulacrum | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | Simulacrum (max 2) for 4 rounds: 4 a round |
 | Mirel | 🪄 Bewitch | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | Foe's next strike within 2 rounds hits themselves |
-| Mirel | 🗡️ Feint | ⚔️ Damage | 🌀 Arcane | Strike | 2 / 4 / 6 | 12 arcane; burns 2 mana |
-| Thessaly | 🌀 Enthral | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | Foe can't pick Protection next round |
-| Thessaly | 🌟 Arcane Weave | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 3 / 5 | Next 3 strikes +5 and burn 2 mana |
-| Thessaly | 🔒 Spellbind | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | Foe's last category costs +3 × 3 |
-| Korvath | 🐉 Dragon Scales | 🛡 Protection | 🔥 Fire | Enchantment (self) | 2 / 4 / 6 | 3 rounds: −33% damage, strikers take 5 |
+| Mirel | 🗡️ Feint | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 12 arcane; burns 2 mana |
+| Thessaly | 🌀 Enthral | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Foe can't pick Protection next round |
+| Thessaly | 🌟 Arcane Weave | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 1 / 2 / 3 | Next 3 strikes +8 and burn 3 mana |
+| Thessaly | 🔒 Spellbind | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | Foe's last category costs +4 × 4 |
+| Korvath | 🐉 Dragon Scales | 🛡 Protection | 🔥 Fire | Enchantment (self) | 2 / 4 / 6 | 3 rounds: −25% damage, strikers take 4 |
 | Korvath | 🌋 Wyrmfire Breath | ⚔️ Damage | 🔥 Fire | Strike | 3 / 5 / 8 | 13 fire + burn 5 a round × 2 |
 | Korvath | 💥 Ancient Wrath | ⚔️ Damage | 👊 Physical | Strike | 5 / 9 / 14 | 35 fire — once per duel |
 | Fizzwick | 🧪 Caustic Bomb | ⚔️ Damage | 💀 Dark | Strike | 2 / 4 / 6 | 8 + poison 5 a round × 3 |
 | Fizzwick | ⚗️ Volatile Tonic | 🛡 Protection | 👊 Physical | Instant | 2 / 3 / 5 | 50%: heal 20 · 50%: next strike +50% |
 | Fizzwick | 🧫 Unstable Concoction | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 6–30 random arcane |
 | Nyxara | 🌀 Singularity | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 4 / 6 | Rift: 4, 8, 12 over 3 rounds |
-| Nyxara | 🌑 Gravity Well | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 25% of foe's HP (min 10) |
+| Nyxara | 🌑 Gravity Well | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 30% of foe's HP (min 10) |
 | Nyxara | 🕳️ Event Horizon | ⚔️ Damage | 🌀 Arcane | Strike | 5 / 9 / 14 | 40% of foe's HP (min 16); 6 recoil |
+
+## Balance pass (done)
+
+**Tool:** `tools/balance.html` (serve the repo over http and open it). It loads the real game in a hidden
+iframe and plays AI-vs-AI duels for every pair of characters on both sides (`simMatch` in `js/game.js`
+resolves a duel instantly). It shows each character's overall win rate with outliers flagged, a matchup
+grid, and what the AI picks for each character. About 19,000 duels take around 20 seconds.
+
+**Target:** every character within ±8% of 50% overall with the Normal AI. Individual lopsided matchups
+are fine as long as no character is bad overall.
+
+**Result:** 42–58% with the Normal AI (from 24–85% before tuning), 42–61% with the Easy AI. Only three
+matchups are worse than 25/75 (the worst is Malachar vs Gnash, 22%).
+
+**Rule and AI fixes the sim exposed:**
+- **Minions never expired.** Simulacra and skeletons now last 4 rounds (blades stay until launched).
+- **Deathless was near-permanent:** any mana at all saved Valdris. It now needs enough mana to pay,
+  and costs 8.
+- **The AI wasted strike boosts.** It now strikes right after Empower / Galvanize / Frenzy / Arcane
+  Weave, in Galvanize's element.
+- **The AI hardly ever cast curses,** because it only opened the Dispel wheel to break wards.
+  Curse-casters now use it for their hexes.
+
+**Number changes** (all in `characters.json`):
+
+| Character | Change |
+|---|---|
+| Eldrin | damage ×1.2 → ×1.1 · wards −2 → −1 mana · Shield 60 → 45 |
+| Gnash | damage ×1.15 → ×1.05 · Savage Charge 18 → 16 |
+| Mirel | Simulacrum 6 a round forever → 4 a round for 4 rounds · Feint 4 → 5 mana |
+| Valdris | Raise Dead 6 a round forever → 5 a round for 4 rounds · Deathless (above) |
+| Sylvara | Regen 6 × 5 → 5 × 4 · Vine Whip vines 5 → 4 · Entangle 75% → 65% |
+| Gretch | Bone Totem 5 a round for 3 mana → 4 a round for 4 · Plague 5 → 4 a round |
+| Mary | Divine Heal 25 for 5 mana → 22 for 6 |
+| Korvath | Dragon Scales −33% / 5 back → −25% / 4 back |
+| Mordant | HP 82 → 88 · Agony 6 × 3 → 8 × 4 rounds · Silence 40% × 2 → 50% × 3 · Corruption −2 → −3 income |
+| Thessaly | HP 88 → 92 · Enthral 3 → 2 mana · Arcane Weave 3 → 2 mana, +5 / burn 2 → +8 / burn 3 · Spellbind +3 × 3 → +4 × 4 |
+| Nyxara | HP 78 → 86 · Gravity Well 25% → 30% of HP |
+| Aurelia | Foresight 4 → 3 mana |
+| Ponder | Mana Siphon 3 → 4 · Blink 40% → 45% |
+| Zacharius | Galvanize 3 → 2 mana |
+| Durin | Rockfall 20 → 22 |
+
+**Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
+opponent may play better in human hands. Re-run the tool after any number change, and playtest.
 
 ## Multiplayer (Phase 6)
 

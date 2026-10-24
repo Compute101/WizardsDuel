@@ -102,7 +102,7 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 ---
 
 ## Round flow & RPS redesign
-Every round goes: secret picks → simultaneous reveal → resolution → round-end ticks. Resolution runs in stages (the "ELEMENTAL DUEL" section): every Protection, then every Dispel, then every Damage. Each character spell's `el` block in `characters.json` defines it (category, element sector it takes over on that wheel, kind, middle-ring cost and effect — `sigAtTier` scales the other rings). Keep one signature spell per category + element per character. (The old "Classic" rules — per-character spell bars, Channel, free basic attacks — were removed.) That flow is the "ROUND FLOW" section of `js/game.js`. Loop over `PLAYERS` and `gs.pending`; don't hard-code p1/p2 in new round logic. The agreed Damage / Protection / Dispel design, and the phases still to build, are in `docs/rps-duel-design.md`.
+Every round goes: secret picks → simultaneous reveal → resolution → round-end ticks. Resolution runs in stages (the "ELEMENTAL DUEL" section): every Protection, then every Dispel, then every Damage. Each character spell's `el` block in `characters.json` defines it (category, element sector it takes over on that wheel, kind, middle-ring cost and effect — `sigAtTier` scales the other rings). Keep one signature spell per category + element per character. After changing any numbers, re-run `tools/balance.html` and keep every character within ±8% of 50% with the Normal AI. (The old "Classic" rules — per-character spell bars, Channel, free basic attacks — were removed.) That flow is the "ROUND FLOW" section of `js/game.js`. Loop over `PLAYERS` and `gs.pending`; don't hard-code p1/p2 in new round logic. The agreed Damage / Protection / Dispel design, and the phases still to build, are in `docs/rps-duel-design.md`.
 
 ---
 
@@ -133,6 +133,7 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 | Tutorial text | `js/game.js` | ~5160 |
 | Characters and signature spells | `characters.json` | whole file |
 | Archived Classic spell code (not loaded) | `js/legacy/classic_spells.js` | whole file |
+| Balance simulator (AI-vs-AI win rates) | `tools/balance.html`, `simMatch` in `js/game.js` | whole file |
 | Puzzle screen HTML | `index.html` | ~242 |
 | Canvas styling | `css/style.css` | ~530–560 |
 

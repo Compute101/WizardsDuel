@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WizardsDuel — Balance Simulator</title>
+<style>
+:root {
+  --bg: #0e0e1a; --panel: #15152a; --line: #2a2a40; --text: #ddd; --muted: #888;
+  --gold: #c9a84c; --op: #e0455a; --up: #4a9be0; --ok: #3fae6a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font: 13px/1.45 'Segoe UI', system-ui, sans-serif; padding: 16px; }
+h1 { color: var(--gold); font-size: 20px; letter-spacing: 1px; }
+.sub { color: var(--muted); margin: 2px 0 14px; max-width: 900px; }
+.bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; }
+.bar label { color: var(--muted); }
+.bar input, .bar select { background: #1d1d35; color: var(--text); border: 1px solid #3a3a55; border-radius: 4px; padding: 4px 6px; width: 64px; }
+.bar select { width: auto; }
+button { background: #2a2060; color: var(--gold); border: 1px solid var(--gold); border-radius: 4px; padding: 6px 16px; cursor: pointer; font-size: 13px; }
+button:disabled { opacity: .5; cursor: default; }
+#progress { color: var(--muted); }
+h2 { color: var(--gold); font-size: 15px; margin: 18px 0 8px; }
+.note { color: var(--muted); font-size: 12px; margin-bottom: 8px; max-width: 900px; }
+table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { border: 1px solid var(--line); padding: 4px 8px; text-align: right; }
+th { background: #18182e; color: var(--muted); font-weight: 600; }
+td.name, th.name { text-align: left; white-space: nowrap; }
+tr.op td.wr { color: var(--op); font-weight: 700; }
+tr.up td.wr { color: var(--up); font-weight: 700; }
+.flag { font-size: 11px; font-weight: 700; }
+.flag.op { color: var(--op); } .flag.up { color: var(--up); } .flag.ok { color: var(--ok); }
+.scroll { overflow-x: auto; max-width: 100%; }
+#matrix td { width: 38px; min-width: 38px; text-align: center; font-size: 11px; padding: 3px 2px; }
+#matrix th.col { writing-mode: vertical-rl; transform: rotate(180deg); padding: 6px 2px; font-size: 11px; }
+#matrix td.self { background: #111; color: #333; }
+.pick { display: inline-block; margin: 1px 6px 1px 0; white-space: nowrap; }
+.pick b { color: var(--gold); font-weight: 600; }
+#gameframe { width: 1px; height: 1px; border: 0; position: absolute; left: -9999px; }
+</style>
+</head>
+<body>
+<h1>⚖ Balance Simulator</h1>
+<p class="sub">Plays AI-vs-AI duels on the real game rules (loaded from the game itself) for every pair of
+characters, on both sides of the board. Characters far from 50% overall are flagged. An individual bad
+matchup is expected; a bad <em>character</em> is not. Results reflect how the AI plays them, not a skilled human.</p>
+
+<div class="bar">
+  <label>Games per matchup <input id="games" type="number" value="40" min="2" step="2"></label>
+  <label>AI <select id="ai"><option value="normal">Normal</option><option value="easy">Easy</option></select></label>
+  <label>Flag outside <input id="band" type="number" value="8" min="1" max="40">% of 50%</label>
+  <button id="run" disabled>Loading game…</button>
+  <button id="copy" disabled>Copy results</button>
+  <span id="progress"></span>
+</div>
+
+<div id="results"></div>
+
+<iframe id="gameframe" src="../index.html"></iframe>
+
+<script>
+const frame=document.getElementById('gameframe');
+let G=null;   // the game's window
+let CHARS={}; // its character definitions
+let last=null;
+
+frame.addEventListener('load',()=>{
+  const wait=()=>{
+    const w=frame.contentWindow;
+    if(w.simInfo&&Object.keys(w.simInfo().chars).length){ G=w; CHARS=w.simInfo().chars; ready(); }
+    else setTimeout(wait,100);
+  };
+  wait();
+});
+function ready(){
+  const btn=document.getElementById('run');
+  btn.disabled=false; btn.textContent='▶ Run';
+  btn.onclick=run;
+  document.getElementById('copy').onclick=()=>navigator.clipboard.writeText(resultsText());
+}
+
+function run(){
+  const games=Math.max(2,+document.getElementById('games').value|0);
+  const ai=document.getElementById('ai').value;
+  const keys=Object.keys(CHARS);
+  // Every ordered pair, so each character plays both seats
+  const jobs=[];
+  keys.forEach(a=>keys.forEach(b=>{ if(a!==b) jobs.push([a,b]); }));
+  const per=games/2;
+  const stats={};
+  keys.forEach(k=>stats[k]={w:0,l:0,d:0,t:0,rounds:0,games:0,picks:{},vs:{}});
+  const btn=document.getElementById('run'); btn.disabled=true;
+  document.getElementById('copy').disabled=true;
+  const t0=performance.now();
+  let j=0;
+  const step=()=>{
+    const until=performance.now()+40;
+    while(j<jobs.length&&performance.now()<until){
+      const [a,b]=jobs[j++];
+      for(let g=0;g<per;g++){
+        const r=G.simMatch(a,b,ai);
+        record(stats[a],b,r,'p1');
+        record(stats[b],a,r,'p2');
+      }
+    }
+    document.getElementById('progress').textContent=`${j} / ${jobs.length} matchups`;
+    if(j<jobs.length) setTimeout(step,0);
+    else {
+      btn.disabled=false; document.getElementById('copy').disabled=false;
+      document.getElementById('progress').textContent=
+        `Done: ${jobs.length*per} duels in ${((performance.now()-t0)/1000).toFixed(1)} s`;
+      last={stats,keys,games,ai,band:+document.getElementById('band').value};
+      render(last);
+    }
+  };
+  step();
+}
+function record(s,opp,r,seat){
+  const other=seat==='p1'?'p2':'p1';
+  s.games++; s.rounds+=r.rounds;
+  const vs=s.vs[opp]||(s.vs[opp]={w:0,n:0});
+  vs.n++;
+  if(r.winner===seat){ s.w++; vs.w++; }
+  else if(r.winner===other) s.l++;
+  else { if(r.winner==='draw') s.d++; else s.t++; vs.w+=0.5; }
+  Object.entries(r.picks[seat]).forEach(([k,n])=>{ s.picks[k]=(s.picks[k]||0)+n; });
+}
+const winRate=s=>(s.w+0.5*(s.d+s.t))/s.games;
+
+function render({stats,keys,games,ai,band}){
+  const name=k=>CHARS[k].name;
+  const sorted=keys.slice().sort((a,b)=>winRate(stats[b])-winRate(stats[a]));
+  const lim=band/100;
+  let html=`<h2>Overall win rate</h2><p class="note">${games} games per matchup (half on each side), AI ${ai}.
+    Draws and ${G.simInfo().maxRounds}-round timeouts count as half a win. Flagged when more than ${band}% from 50%.</p>
+    <table><tr><th class="name">Character</th><th>Win %</th><th></th><th>W</th><th>L</th><th>Draw</th><th>Timeout</th>
+    <th>Avg rounds</th><th>HP</th><th>Worst matchup</th><th>Best matchup</th></tr>`;
+  sorted.forEach(k=>{
+    const s=stats[k], wr=winRate(s);
+    const cls=wr>0.5+lim?'op':wr<0.5-lim?'up':'';
+    const vs=Object.entries(s.vs).map(([o,v])=>[o,v.w/v.n]).sort((a,b)=>a[1]-b[1]);
+    const flag=cls==='op'?'<span class="flag op">TOO STRONG</span>':cls==='up'?'<span class="flag up">TOO WEAK</span>':'<span class="flag ok">ok</span>';
+    html+=`<tr class="${cls}"><td class="name">${name(k)}</td><td class="wr">${(wr*100).toFixed(1)}</td><td>${flag}</td>
+      <td>${s.w}</td><td>${s.l}</td><td>${s.d}</td><td>${s.t}</td><td>${(s.rounds/s.games).toFixed(1)}</td>
+      <td>${CHARS[k].hp}</td>
+      <td class="name">${name(vs[0][0])} ${(vs[0][1]*100).toFixed(0)}%</td>
+      <td class="name">${name(vs[vs.length-1][0])} ${(vs[vs.length-1][1]*100).toFixed(0)}%</td></tr>`;
+  });
+  html+='</table>';
+
+  html+=`<h2>Matchups</h2><p class="note">Row character's win % against the column character.</p><div class="scroll"><table id="matrix"><tr><th class="name"></th>`;
+  sorted.forEach(k=>html+=`<th class="col">${name(k)}</th>`);
+  html+='</tr>';
+  sorted.forEach(r=>{
+    html+=`<tr><td class="name">${name(r)}</td>`;
+    sorted.forEach(c=>{
+      if(r===c){ html+='<td class="self">—</td>'; return; }
+      const v=stats[r].vs[c], p=v.w/v.n;
+      // red = row wins, blue = row loses
+      const hue=p>=0.5?'224,69,90':'74,155,224', a=Math.min(1,Math.abs(p-0.5)*2.2);
+      html+=`<td style="background:rgba(${hue},${a.toFixed(2)})">${Math.round(p*100)}</td>`;
+    });
+    html+='</tr>';
+  });
+  html+='</table></div>';
+
+  html+=`<h2>What the AI picks</h2><p class="note">Share of each character's picks. A signature spell that's never picked
+    may be too weak or too situational for the AI to see value in.</p><table><tr><th class="name">Character</th><th class="name">Picks</th></tr>`;
+  sorted.forEach(k=>{
+    const p=stats[k].picks, total=Object.values(p).reduce((a,b)=>a+b,0);
+    const sigName=id=>{ const sp=CHARS[k].spells.find(s=>s.id===id); return sp?(sp.el.name||sp.name):({damage:'⚔ Damage',protect:'🛡 Protection',dispel:'✦ Dispel',cleanse:'Cleanse',pass:'Wait'}[id]||id); };
+    const sigIds=CHARS[k].spells.map(s=>s.id);
+    const entries=Object.entries(p).sort((a,b)=>b[1]-a[1]);
+    sigIds.forEach(id=>{ if(!p[id]) entries.push([id,0]); });
+    html+=`<tr><td class="name">${name(k)}</td><td class="name">${entries.map(([id,n])=>
+      `<span class="pick">${sigIds.includes(id)?'★ ':''}${sigName(id)} <b>${(n/total*100).toFixed(0)}%</b></span>`).join('')}</td></tr>`;
+  });
+  html+='</table>';
+  document.getElementById('results').innerHTML=html;
+}
+
+function resultsText(){
+  if(!last) return '';
+  const {stats,keys}=last;
+  return keys.slice().sort((a,b)=>winRate(stats[b])-winRate(stats[a]))
+    .map(k=>`${CHARS[k].name}\t${(winRate(stats[k])*100).toFixed(1)}%\tavg ${(stats[k].rounds/stats[k].games).toFixed(1)} rounds`).join('\n');
+}
+// Headless use (e.g. from a test script): run synchronously and return the stats
+window.runBalance=(games,ai)=>{
+  const keys=Object.keys(CHARS), stats={};
+  keys.forEach(k=>stats[k]={w:0,l:0,d:0,t:0,rounds:0,games:0,picks:{},vs:{}});
+  keys.forEach(a=>keys.forEach(b=>{ if(a===b) return;
+    for(let g=0;g<games/2;g++){ const r=G.simMatch(a,b,ai||'normal'); record(stats[a],b,r,'p1'); record(stats[b],a,r,'p2'); } }));
+  last={stats,keys,games,ai:ai||'normal',band:+document.getElementById('band').value};
+  render(last);
+  return keys.map(k=>({key:k,name:CHARS[k].name,winRate:winRate(stats[k]),rounds:stats[k].rounds/stats[k].games,
+    draws:stats[k].d,timeouts:stats[k].t,picks:stats[k].picks,
+    vs:Object.fromEntries(Object.entries(stats[k].vs).map(([o,v])=>[o,v.w/v.n]))}));
+};
+</script>
+</body>
+</html>
