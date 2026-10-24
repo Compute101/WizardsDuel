@@ -1,7 +1,7 @@
 # WizardsDuel — Notes for Claude
 
 ## What this is
-A browser-based 1v1 wizard duel game. Two players pick spells and cast them via minigames. Built with vanilla JS/Canvas, no framework. Main logic lives in `js/game.js` (~4000 lines). Spell definitions are in `characters.json`.
+A browser-based 1v1 wizard duel game. Each round both wizards secretly pick a Damage, Protection or Dispel spell (rock-paper-scissors), cast it via a short glyph minigame, then the picks are revealed and play out together. Built with vanilla JS/Canvas, no framework. Main logic lives in `js/game.js` (~5700 lines). Character stats and each character's three signature spells are in `characters.json`.
 
 ---
 
@@ -102,7 +102,16 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 ---
 
 ## Round flow & RPS redesign
-Every round goes: secret picks → simultaneous reveal → resolution → round-end ticks. Under Elemental rules (`elementalMode`, the default, in the "ELEMENTAL DUEL" section) resolution runs in stages: every Protection, then every Dispel, then every Damage. Classic rules keep the character spell kits. That flow is the "ROUND FLOW" section of `js/game.js`. Loop over `PLAYERS` and `gs.pending`; don't hard-code p1/p2 in new round logic. The agreed Damage / Protection / Dispel design, and the phases still to build, are in `docs/rps-duel-design.md`.
+Every round goes: secret picks → simultaneous reveal → resolution → round-end ticks. Resolution runs in stages (the "ELEMENTAL DUEL" section): every Protection, then every Dispel, then every Damage. Each character spell's `el` block in `characters.json` defines it (category, element sector it takes over on that wheel, kind, middle-ring cost and effect — `sigAtTier` scales the other rings). Keep one signature spell per category + element per character. (The old "Classic" rules — per-character spell bars, Channel, free basic attacks — were removed.) That flow is the "ROUND FLOW" section of `js/game.js`. Loop over `PLAYERS` and `gs.pending`; don't hard-code p1/p2 in new round logic. The agreed Damage / Protection / Dispel design, and the phases still to build, are in `docs/rps-duel-design.md`.
+
+---
+
+## Visual effects
+Keep VFX: when changing or removing a spell, keep its look. Every spell's visual is in the "VFX LIBRARY" section of `js/game.js`:
+- `SPELL_VFX[spellId]` is each signature spell's own look. `self` plays when cast on yourself, `hit` when it lands on the target, and `delivery` handles lunges and volleys.
+- `ELEM_IMPACT_VFX` holds the plain element strikes; `TICK_VFX` / `MINION_VFX` the round-end ticks; `VFX` the shared reactions (ward block/shatter, dodge, dispel, retaliation, …).
+- Primitives: `spawnBeam`, `lunge`, `spawnManaBurnFire`, `vfxRing` / `vfxFountain` / `vfxDrift` / `vfxDrip`. `drawWiz` draws status auras from `wizVisuals()`.
+- `js/legacy/` holds code the game doesn't load: the original Classic spell code (`classic_spells.js`, with every effect in context) and the old puzzle minigames.
 
 ---
 
@@ -110,15 +119,22 @@ Every round goes: secret picks → simultaneous reveal → resolution → round-
 
 | Thing | File | Approx. lines |
 |-------|------|---------------|
-| All game logic | `js/game.js` | ~4000 |
-| Inferno minigame | `js/game.js` | ~3317 |
-| Lightning minigame | `js/game.js` | ~3597 |
-| Ice minigame | `js/game.js` | ~3944 |
-| Arcane minigame | `js/game.js` | ~4249 |
-| Dispel minigame | `js/game.js` | ~4541 |
-| Spell definitions | `characters.json` | whole file |
-| Puzzle screen HTML | `index.html` | ~174–193 |
-| Canvas styling | `css/style.css` | ~374–423 |
+| All game logic | `js/game.js` | ~5700 |
+| VFX library | `js/game.js` | ~1500 |
+| Round flow (pick → reveal → resolve) | `js/game.js` | ~1740 |
+| Elemental rules, wheel, AI | `js/game.js` | ~1915 |
+| Tile-match (wards / buffs) minigame | `js/game.js` | ~2840 |
+| Inferno minigame (Fire, Physical) | `js/game.js` | ~3100 |
+| Lightning minigame | `js/game.js` | ~3380 |
+| Mana Burn minigame (Dark) | `js/game.js` | ~3725 |
+| Ice minigame | `js/game.js` | ~4035 |
+| Arcane minigame | `js/game.js` | ~4335 |
+| Dispel minigame | `js/game.js` | ~4630 |
+| Tutorial text | `js/game.js` | ~5160 |
+| Characters and signature spells | `characters.json` | whole file |
+| Archived Classic spell code (not loaded) | `js/legacy/classic_spells.js` | whole file |
+| Puzzle screen HTML | `index.html` | ~242 |
+| Canvas styling | `css/style.css` | ~530–560 |
 
 ---
 

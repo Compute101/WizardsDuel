@@ -1,20 +1,5 @@
 // ── CONSTANTS ──────────────────────────────────────────────
-const MAX_MANA=20, SHIELD_COST=3, BURN_DMG=5, BURN_ROUNDS=2, POISON_DMG=5, POISON_ROUNDS=3, VOID_COLLAPSE_DMG_STEP=4, VOID_COLLAPSE_ROUNDS=3;
-
-const SPELLS=[
-  {name:'Inferno',        element:'fire',      icon:'🔥', dmg:38, cost:12, col:'#ff6622',
-   effectLabel:'Burns 5 dmg × 2 rounds', area:true},
-  {name:'Lightning Bolt', element:'lightning', icon:'⚡', dmg:30, cost:9,  col:'#ffee44',
-   effectLabel:'Pierces shields fully'},
-  {name:'Frost Nova',     element:'ice',       icon:'❄️',  dmg:18, cost:6,  col:'#88ddff',
-   effectLabel:'Freezes — skip next turn'},
-  {name:'Arcane Surge',   element:'arcane',    icon:'🌀', dmg:0,  cost:9,  col:'#cc88ff',
-   effectLabel:'Wild: 15–55 damage'},
-  {name:'Dispel',         element:'dispel',    icon:'🌸', dmg:0,  cost:5,  col:'#ffaaff',
-   effectLabel:'Choose: cleanse 1 own debuff, or 70% strip one opp buff'},
-  {name:'Mana Burn',      element:'manaburn',  icon:'🔮', dmg:0,  cost:8,  col:'#cc44ff',
-   effectLabel:'Deal 2× opp mana as dmg; drain 4 mana (pierces shields)'},
-];
+const MAX_MANA=20;
 
 // ── BUFF TILE-MATCH GLYPH SETS ──────────────────────────────
 // 4 glyphs (indices into ALPHABET) per buff spell — thematic choices
@@ -32,87 +17,28 @@ let CHAR_DEFS={};
 let p1Key='eldrad', p2Key='mal';
 let p1Cfg, p2Cfg;
 
-const CHAR_DISPLAY={
-  eldrad:{
-    stats:[['❤ HP','115'],['🛡 Shield','60 HP / 10T'],['⚡ Counter','20 reflect / 2M'],['🔰 Ward','Block next status / 3T']],
-    flavour:'Outlast your foe with arcane endurance.'
-  },
-  mal:{
-    stats:[['❤ HP','80'],['💪 Empower','+50% / Free'],['🩸 Blood Pact','−22/+15 mana'],['💀 Drain','~20 dmg, heal 45%']],
-    flavour:'Strike hard. Strike first. No mercy.'
-  },
-  sylvara:{
-    stats:[['❤ HP','92'],['💚 Regen','+40 HP/10T'],['🌿 Entangle','75% freeze 1-3T'],['🌱 Vine Whip','~10 dmg/turn × 3T']],
-    flavour:"Sustain and control with nature's power."
-  },
-  aurelia:{
-    stats:[['❤ HP','90'],['🔮 Foresight','Block next spell'],['⏳ Time Drain','to +2 ch / 5T'],['💨 Haste','25% dodge / 3T']],
-    flavour:'Bend time — foresee attacks and drain your foe.'
-  },
-  gnash:{
-    stats:[['❤ HP','105'],['🩸 War Paint','3 mana → 33% resist + reduces self-harm / 5T'],['⚔️ Charge','15 HP (10 w/ War Paint) → 32 pierce all'],['💢 Frenzy','15 HP (10 w/ War Paint) → 3× rapid strikes']],
-    flavour:'Blood and bone. No magic — just fury.'
-  },
-  cinder:{
-    stats:[['❤ HP','83'],['🎱 Fireball','18–28 random fire dmg'],['🛡️ Flame Shield','16 fire retaliate / 5T'],['🕯️ Candle','Channel → catch fire / 4T']],
-    flavour:'Roll the dice. Fan the flames. Win big or burn together.'
-  },
-  skadi:{
-    stats:[['❤ HP','88'],['🧊 Ice Lance','28 dmg / 35% freeze'],['🛡️ Frost Armor','30% resist + 8 retaliate / 4T'],['🌨️ Blizzard','5 dmg + 3 mana drain / turn × 5T']],
-    flavour:'Glacial patience. Frozen fury. Every strike against her has a price.'
-  },
-  zacharius:{
-    stats:[['❤ HP','86'],['🔋 Galvanize','4 mana → 8 charge; discharge on phys hit'],['🌩️ Chain Lightning','24 dmg + 35% arc 10 more (costs 8 charge)'],['💡 Conductivity','+35% dmg taken / 3T']],
-    flavour:'Store the storm. Spend it wisely. Let them come to you.'
-  },
-  mary:{
-    stats:[['❤ HP','88'],['💛 Heal','4 mana → instantly restore 40 HP'],['✨ Purge','2 mana → remove all active debuffs'],['☀️ Radiant','3 mana → 12 holy damage']],
-    flavour:'Faith is the only shield that never breaks.'
-  },
-  mordant:{
-    stats:[['❤ HP','82'],['💀 Agony','3 mana → 12 dmg on any non-channel action / 5T'],['🔇 Silence','2 mana → 45% spell failure / 5T'],['☠️ Corruption','3 mana → −2 mana per channel / 3T']],
-    flavour:'The hex is already written. You just haven\'t felt it yet.'
-  },
-  ponder:{
-    stats:[['❤ HP','85'],['👻 Vanish','Invisible 3T'],['🌀 Siphon','Steal 4 mana'],['💫 Blink','Next hit auto-misses']],
-    flavour:"Young but fierce — vanish from sight and plunder your foe's magic."
-  },
-  durin:{
-    stats:[['❤ HP','110'],['🧱 Stoneskin','10 absorb/hit, 30 HP total, 10T'],['💎 Stonesoul','40% magic reduction / 5T'],['⛰️ Rockfall','3×9 phys dmg']],
-    flavour:'The mountain endures. Outlast every spell — stone by stone.'
-  },
-  weizan:{
-    stats:[['❤ HP','90'],['🗡️ Conjure Blade','2M → +1 blade (max 3); each deals 4 phys dmg/turn'],['💫 Bladestorm','Free (costs all blades) → 12 phys dmg per blade'],['🧘 Iron Patience','2M → 30% dmg reduction / 3T']],
-    flavour:'Build blades slowly. Release all at once. Dispel kills your investment — protect it.'
-  },
-  gretch:{
-    stats:[['❤ HP','85'],['☠️ Plague','3M → 6 dmg/turn×5T; casting while plagued = +8 dmg'],['🪲 Maggot Cloud','2M → drain 3 mana + −3 channel/turn for 3T'],['💀 Bone Totem','3M → 5 HP regen/turn×4T; active totem blocks enemy Purge']],
-    flavour:'Infect and drain. The totem heals you — but Dispelling it skips Purge. Choose wisely.'
-  },
-  valdris:{
-    stats:[['❤ HP','82'],['💀 Raise Dead','4M → skeleton: 25 HP shield, 7 phys dmg/turn, heals 8 on death'],['🩸 Necrotic Drain','3M → ~18 dmg + heal 8 HP'],['🔧 Reinforce','2M → restore 15 HP to weakest skeleton']],
-    flavour:'Deathless: cannot die while mana > 0 (costs 6 mana). Drain his mana to kill him. Dispel his skeletons — but each dying skeleton heals him.'
-  },
-  mirel:{
-    stats:[['❤ HP','85'],['🪞 Simulacrum','3M → autonomous copy (max 2): 20 HP, 6 mana, casts any spell, 50% redirect'],['🪄 Bewitch','3M → enemy\'s next active spell reflects back on them'],['🗡️ Feint','2M → 15 dmg bypassing all shields and defences']],
-    flavour:'Simulacra start with mana and act every turn — destroy them fast or they Dispel your buffs. Bewitch punishes any spell cast while active.'
-  },
-  thessaly:{
-    stats:[['❤ HP','88'],['🌀 Enthral','3M → enemy forced to channel next turn'],['🌟 Arcane Weave','2M → next 3 basic attacks: +6 dmg, drain 2 mana each'],['🔒 Spellbind','3M → one enemy spell costs +3 mana for 5 turns']],
-    flavour:'Enthral wastes their turn. Spellbind targets their most expensive spell. Weave turns basic attacks into mana denial.'
-  },
-  korvath:{
-    stats:[['❤ HP','95'],['🐉 Dragon Scales','4M → 33% dmg reduction / 5T; attacker takes 5 fire dmg'],['🌋 Wyrmfire Breath','4M → 16 fire dmg + 5 dmg/turn × 2T burn'],['💥 Ancient Wrath','6M → 35 fire damage. Once per duel.']],
-    flavour:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.'
-  },
-  fizzwick:{
-    stats:[['❤ HP','80'],['🧪 Caustic Bomb','4M → 10 dmg + poison 5 dmg/turn × 3T'],['⚗️ Volatile Tonic','3M → 50% heal 20 HP, 50% Empowered'],['🧫 Unstable Concoction','5M → random 10-30 dmg']],
-    flavour:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.'
-  },
-  nyxara:{
-    stats:[['❤ HP','78'],['🌀 Singularity','4M → collapsing rift: 4/8/12 dmg over 3T (24 total)'],['🌑 Gravity Well','4M → 25% of target\'s current HP (min 5)'],['🕳️ Event Horizon','10M → 40% of target\'s current HP (min 10); 6 recoil dmg to self']],
-    flavour:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.'
-  }
+// One-line pitch on the character detail screen (stats come from characters.json)
+const CHAR_FLAVOUR={
+  eldrad:'Outlast your foe with arcane endurance.',
+  mal:'Strike hard. Strike first. No mercy.',
+  sylvara:"Sustain and control with nature's power.",
+  aurelia:'Bend time — foresee attacks and drain your foe.',
+  gnash:'Blood and bone. No magic — just fury.',
+  cinder:'Roll the dice. Fan the flames. Win big or burn together.',
+  skadi:'Glacial patience. Frozen fury. Every strike against her has a price.',
+  zacharius:'Store the storm. Spend it wisely. Let them come to you.',
+  mary:'Faith is the only shield that never breaks.',
+  mordant:'The hex is already written. You just haven\'t felt it yet.',
+  ponder:"Young but fierce — vanish from sight and plunder your foe's magic.",
+  durin:'The mountain endures. Outlast every spell — stone by stone.',
+  weizan:'Build blades slowly. Release all at once. Dispel kills your investment — protect it.',
+  gretch:'Infect and drain. The totem heals you — guard it with a ward, or a Dispel will strip it.',
+  valdris:'Deathless: cannot die while mana > 0 (costs 6 mana). Drain his mana to kill him. Dispel his skeletons — but each dying skeleton heals him.',
+  mirel:'Simulacra strike every round until dispelled. Bewitch turns the next strike against its caster.',
+  thessaly:'Enthral blocks their wards. Spellbind taxes their favourite move. Weave turns strikes into mana denial.',
+  korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
+  fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
+  nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
 };
 
 // ── DIFFICULTY ─────────────────────────────────────────────
@@ -125,9 +51,8 @@ let tournamentQueue=[];   // ordered opponent keys
 let tournamentIndex=0;    // index of current opponent in queue
 
 // ── STATE ──────────────────────────────────────────────────
-let gs={}, puzzleCB=null, aiTid=null;
+let gs={}, aiTid=null;
 let bW=0, bH=0;
-let dispelSelf=false;
 let mazeRAF=null, mazeTid=null;
 let retryCountdownId=null;
 
@@ -138,7 +63,6 @@ let matchRound=0;
 let p1MatchWins=0, p2MatchWins=0;
 
 // ── SIMULTANEOUS TURNS ────────────────────────────────────
-let simCallback=null;       // intercepted by endMyTurn/finishAI during resolution
 // Seats in pick order. Everything round-based (picking, reveal, ticks, resolution)
 // iterates this list so 3–4 player duels only need more seats here.
 const PLAYERS=['p1','p2'];
@@ -151,32 +75,20 @@ let trainingMode=false;
 let trainingAI=true;
 let trainingPickPhase=null; // 'p1' or 'p2' — which side is being chosen
 
+function newSeat(cfg){
+  return {hp:cfg.hp, maxHp:cfg.hp, mana:ELEM_START_MANA,
+    shield:0, shieldHp:0, shieldType:null, wardRetaliate:0, wardSig:null,   // ward (shield = rounds left)
+    effects:[], usedSig:{}, lastElem:null, lastCat:null, lastLockedRound:null, lastRoundLoss:0,
+    blades:0, skeletons:[], simulacra:[]};   // minion counts mirrored for drawWiz
+}
 function newState(){
   gs={
-    p1:{hp:p1Cfg.hp, maxHp:p1Cfg.hp, mana:elementalMode?ELEM_START_MANA:p1Cfg.startMana, shieldType:null, chill:0, lastElem:null,
-        shield:0, shieldHp:0, burn:0, poison:0, voidCollapse:0, voidCollapseTick:0, frozen:0, regen:null,
-        counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0, dragonScales:0,
-        stoneskin:0, stoneskinHp:0, stonesoul:0,
-        blades:0,
-        plague:0, plagueSpellDmg:0, maggotCloud:0, boneTotem:0,
-        skeletons:[],
-        bewitched:false, simulacra:[],
-        enthralled:0, arcaneWeave:0, spellbound:null, usedSpells:{}},
-    p2:{hp:p2Cfg.hp, maxHp:p2Cfg.hp, mana:elementalMode?ELEM_START_MANA:p2Cfg.startMana, shieldType:null, chill:0, lastElem:null,
-        shield:0, shieldHp:0, burn:0, poison:0, voidCollapse:0, voidCollapseTick:0, frozen:0, regen:null,
-        counter:false, empowered:false, foresight:false, timeDrain:0, resist:0, invisible:0,
-        ward:0, vineWhip:0, haste:0, frenzied:0, blink:0, frostArmor:0, blizzard:0, flameShield:0, candle:0, charge:0, conductivity:0, agony:0, agonyDmg:0, silence:0, corruption:0, dragonScales:0,
-        stoneskin:0, stoneskinHp:0, stonesoul:0,
-        blades:0,
-        plague:0, plagueSpellDmg:0, maggotCloud:0, boneTotem:0,
-        skeletons:[],
-        bewitched:false, simulacra:[],
-        enthralled:0, arcaneWeave:0, spellbound:null, usedSpells:{}},
+    p1:newSeat(p1Cfg),
+    p2:newSeat(p2Cfg),
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
     parts:[], floats:[], projs:[], beams:[], manaBurnFires:[],
-    pending:{},   // who → committed action {type,ok,dispelSelf,perfect,...}, hidden until reveal
+    pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
 }
@@ -1158,7 +1070,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.shadowColor='#8822cc'; bx.shadowBlur=8;
     bx.beginPath(); bx.arc(x,wy,sz*.76,0,Math.PI*2); bx.stroke();
     bx.shadowBlur=0;
-    const spells=state.spellbound.spellId?state.spellbound.spellId:'';
     bx.globalAlpha=0.55+0.2*Math.sin(t/300); bx.fillStyle='#aa44ff';
     bx.font=`${Math.round(sz*.15)}px serif`; bx.textAlign='center';
     bx.fillText('⛓', x, wy-sz*.58);
@@ -1190,20 +1101,12 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   // Skeletons (Valdris): small bone-coloured circles beside wizard
   const minionDir=flip?1:-1;
   if(state&&state.skeletons&&state.skeletons.length>0){
-    const maxSkelHp=state.skeletons[0]?25:25;
     state.skeletons.forEach((skel,i)=>{
       const sx=x+minionDir*(i===0?sz*1.3:sz*2.1), sy=wy;
       bx.globalAlpha=0.85; bx.fillStyle='#ccccbb'; bx.shadowColor='#aaaaaa'; bx.shadowBlur=4;
       bx.beginPath(); bx.arc(sx,sy,sz*.18,0,Math.PI*2); bx.fill();
       bx.fillStyle='#333'; bx.font=`${Math.round(sz*.14)}px serif`;
       bx.textAlign='center'; bx.fillText('💀',sx,sy+sz*.06);
-      // HP bar
-      const barW=sz*.38, barH=sz*.05;
-      const hpFrac=Math.max(0,skel.hp/25);
-      bx.fillStyle='#330000'; bx.fillRect(sx-barW/2,sy+sz*.22,barW,barH);
-      bx.fillStyle=hpFrac>0.5?'#44cc44':'#cc4444';
-      bx.fillRect(sx-barW/2,sy+sz*.22,barW*hpFrac,barH);
-      bx.strokeStyle='#666'; bx.lineWidth=0.5; bx.strokeRect(sx-barW/2,sy+sz*.22,barW,barH);
       bx.globalAlpha=1; bx.shadowBlur=0;
     });
   }
@@ -1239,15 +1142,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
         bx.shadowBlur=0;
       }
       bx.restore();
-      // HP/mana bars above the clone's head
-      const barW=sz*.42, barY=y-simSz-sz*.08;
-      const hpFrac=Math.max(0,sim.hp/20);
-      bx.globalAlpha=0.8;
-      bx.fillStyle='#330000'; bx.fillRect(sx-barW/2,barY,barW,sz*.045);
-      bx.fillStyle='#44cc44'; bx.fillRect(sx-barW/2,barY,barW*hpFrac,sz*.045);
-      const mFrac=Math.min(1,sim.mana/12);
-      bx.fillStyle='#001133'; bx.fillRect(sx-barW/2,barY+sz*.05,barW,sz*.04);
-      bx.fillStyle='#4488ff'; bx.fillRect(sx-barW/2,barY+sz*.05,barW*mFrac,sz*.04);
       bx.globalAlpha=1;
     });
   }
@@ -1443,102 +1337,30 @@ function tickProjs(){
   });
 }
 
-// ── BEAM FLASH EFFECTS ─────────────────────────────────────
-function spawnBeam(x1,y1,x2,y2,col){
-  gs.beams.push({x1,y1,x2,y2,col,ttl:8});
-}
-
-function tickBeams(){
-  gs.beams=gs.beams.filter(b=>b.ttl>0);
-  gs.beams.forEach(b=>{
-    b.ttl--;
-    bx.globalAlpha=b.ttl/8;
-    bx.strokeStyle=b.col; bx.lineWidth=2.5;
-    bx.shadowColor=b.col; bx.shadowBlur=12;
-    bx.beginPath(); bx.moveTo(b.x1,b.y1); bx.lineTo(b.x2,b.y2); bx.stroke();
-    bx.shadowBlur=0; bx.globalAlpha=1;
-  });
-}
-
 // ── STATUS BAR ─────────────────────────────────────────────
 function refreshStatusBar(){
-  const el=document.getElementById('statusbar');
-  const tags=elementalMode?elemStatusTags():[];
-  if(gs.p1.resist>0)      tags.push(`<span class="status-tag resist">🩸 ${p1Cfg.name} RESIST (${gs.p1.resist})</span>`);
-  if(gs.p1.burn>0)        tags.push(`<span class="status-tag burn">🔥 ${p1Cfg.name} BURNING (${gs.p1.burn})</span>`);
-  if(gs.p1.poison>0)      tags.push(`<span class="status-tag poison">🧪 ${p1Cfg.name} POISONED (${gs.p1.poison})</span>`);
-  if(gs.p1.voidCollapse>0) tags.push(`<span class="status-tag voidcollapse">🌀 ${p1Cfg.name} SINGULARITY (${gs.p1.voidCollapse})</span>`);
-  if(gs.p1.frozen>0)      tags.push(`<span class="status-tag freeze">❄️ ${p1Cfg.name} FROZEN (${gs.p1.frozen})</span>`);
-  if(gs.p1.empowered)     tags.push(`<span class="status-tag empower">💪 ${p1Cfg.name} EMPOWERED</span>`);
-  if(gs.p1.foresight)     tags.push(`<span class="status-tag foresight">🔮 ${p1Cfg.name} FORESIGHT</span>`);
-  if(gs.p1.regen)         tags.push(`<span class="status-tag regen">💚 ${p1Cfg.name} REGEN (${gs.p1.regen.turns}t)</span>`);
-  if(gs.p1.timeDrain>0)   tags.push(`<span class="status-tag timedrain">⏳ ${p1Cfg.name} DRAINED (${gs.p1.timeDrain})</span>`);
-  if(gs.p1.ward>0)        tags.push(`<span class="status-tag ward">🔰 ${p1Cfg.name} WARDED (${gs.p1.ward})</span>`);
-  if(gs.p1.vineWhip>0)   tags.push(`<span class="status-tag burn">🌱 ${p1Cfg.name} VINE WHIP (${gs.p1.vineWhip})</span>`);
-  if(gs.p1.haste>0)      tags.push(`<span class="status-tag foresight">💨 ${p1Cfg.name} HASTE (${gs.p1.haste})</span>`);
-  if(gs.p1.frenzied>0)   tags.push(`<span class="status-tag resist">💢 ${p1Cfg.name} FRENZIED (${gs.p1.frenzied})</span>`);
-  if(gs.p1.blink>0)      tags.push(`<span class="status-tag blink">💫 ${p1Cfg.name} BLINK (${gs.p1.blink})</span>`);
-  if(gs.p1.weakened)     tags.push(`<span class="status-tag weakened">🌀 ${p1Cfg.name} WEAKENED</span>`);
-  if(gs.p1.invisible>0)  tags.push(`<span class="status-tag invisible">👻 ${p1Cfg.name} INVISIBLE (${gs.p1.invisible})</span>`);
-  if(gs.p1.frostArmor>0)  tags.push(`<span class="status-tag freeze">🛡️ ${p1Cfg.name} FROST ARMOR (${gs.p1.frostArmor})</span>`);
-  if(gs.p1.blizzard>0)    tags.push(`<span class="status-tag freeze">🌨️ ${p1Cfg.name} BLIZZARD (${gs.p1.blizzard})</span>`);
-  if(gs.p1.flameShield>0) tags.push(`<span class="status-tag burn">🛡️ ${p1Cfg.name} FLAME SHIELD (${gs.p1.flameShield})</span>`);
-  if(gs.p1.candle>0)        tags.push(`<span class="status-tag burn">🕯️ ${p1Cfg.name} CANDLE (${gs.p1.candle})</span>`);
-  if(gs.p1.charge>0)        tags.push(`<span class="status-tag foresight">⚡ ${p1Cfg.name} CHARGED (${gs.p1.charge})</span>`);
-  if(gs.p1.conductivity>0)  tags.push(`<span class="status-tag burn">💡 ${p1Cfg.name} CONDUCTIVE (${gs.p1.conductivity})</span>`);
-  if(gs.p1.agony>0)         tags.push(`<span class="status-tag burn">💀 ${p1Cfg.name} AGONY (${gs.p1.agony})</span>`);
-  if(gs.p1.silence>0)       tags.push(`<span class="status-tag timedrain">🔇 ${p1Cfg.name} SILENCED (${gs.p1.silence})</span>`);
-  if(gs.p1.corruption>0)    tags.push(`<span class="status-tag burn">☠️ ${p1Cfg.name} CORRUPTED (${gs.p1.corruption})</span>`);
-  if(gs.p1.plague>0)        tags.push(`<span class="status-tag burn">🦠 ${p1Cfg.name} PLAGUED (${gs.p1.plague})</span>`);
-  if(gs.p1.maggotCloud>0)   tags.push(`<span class="status-tag burn">🪲 ${p1Cfg.name} MAGGOT CLOUD (${gs.p1.maggotCloud})</span>`);
-  if(gs.p1.boneTotem>0)     tags.push(`<span class="status-tag regen">💀 ${p1Cfg.name} BONE TOTEM (${gs.p1.boneTotem})</span>`);
-  if(gs.p1.enthralled>0)    tags.push(`<span class="status-tag timedrain">🌀 ${p1Cfg.name} ENTHRALLED (${gs.p1.enthralled})</span>`);
-  if(gs.p1.arcaneWeave>0)   tags.push(`<span class="status-tag foresight">✨ ${p1Cfg.name} ARCANE WEAVE (${gs.p1.arcaneWeave})</span>`);
-  if(gs.p1.spellbound)      tags.push(`<span class="status-tag timedrain">⛓ ${p1Cfg.name} SPELLBOUND (${gs.p1.spellbound.turns})</span>`);
-  if(gs.p1.bewitched)       tags.push(`<span class="status-tag burn">🪞 ${p1Cfg.name} BEWITCHED</span>`);
-  if(gs.p1.blades>0)        tags.push(`<span class="status-tag foresight">🗡️ ${p1Cfg.name} BLADES (${gs.p1.blades})</span>`);
-  if(gs.p1.skeletons&&gs.p1.skeletons.length>0) tags.push(`<span class="status-tag regen">💀 ${p1Cfg.name} SKELETONS (${gs.p1.skeletons.length})</span>`);
-  if(gs.p1.simulacra&&gs.p1.simulacra.length>0) tags.push(`<span class="status-tag foresight">👤 ${p1Cfg.name} SIMULACRA (${gs.p1.simulacra.length})</span>`);
-  if(gs.p1.dragonScales>0)  tags.push(`<span class="status-tag freeze">🐉 ${p1Cfg.name} DRAGON SCALES (${gs.p1.dragonScales})</span>`);
-  if(p2Cfg){
-    if(gs.p2.resist>0)    tags.push(`<span class="status-tag resist">🩸 ${p2Cfg.name} RESIST (${gs.p2.resist})</span>`);
-    if(gs.p2.burn>0)      tags.push(`<span class="status-tag burn">🔥 ${p2Cfg.name} BURNING (${gs.p2.burn})</span>`);
-    if(gs.p2.poison>0)    tags.push(`<span class="status-tag poison">🧪 ${p2Cfg.name} POISONED (${gs.p2.poison})</span>`);
-    if(gs.p2.voidCollapse>0) tags.push(`<span class="status-tag voidcollapse">🌀 ${p2Cfg.name} SINGULARITY (${gs.p2.voidCollapse})</span>`);
-    if(gs.p2.frozen>0)    tags.push(`<span class="status-tag freeze">❄️ ${p2Cfg.name} FROZEN (${gs.p2.frozen})</span>`);
-    if(gs.p2.empowered)   tags.push(`<span class="status-tag empower">💪 ${p2Cfg.name} EMPOWERED</span>`);
-    if(gs.p2.foresight)   tags.push(`<span class="status-tag foresight">🔮 ${p2Cfg.name} FORESIGHT</span>`);
-    if(gs.p2.regen)       tags.push(`<span class="status-tag regen">💚 ${p2Cfg.name} REGEN (${gs.p2.regen.turns}t)</span>`);
-    if(gs.p2.timeDrain>0) tags.push(`<span class="status-tag timedrain">⏳ ${p2Cfg.name} DRAINED (${gs.p2.timeDrain})</span>`);
-    if(gs.p2.ward>0)      tags.push(`<span class="status-tag ward">🔰 ${p2Cfg.name} WARDED (${gs.p2.ward})</span>`);
-    if(gs.p2.vineWhip>0)  tags.push(`<span class="status-tag burn">🌱 ${p2Cfg.name} VINE WHIP (${gs.p2.vineWhip})</span>`);
-    if(gs.p2.haste>0)     tags.push(`<span class="status-tag foresight">💨 ${p2Cfg.name} HASTE (${gs.p2.haste})</span>`);
-    if(gs.p2.frenzied>0)  tags.push(`<span class="status-tag resist">💢 ${p2Cfg.name} FRENZIED (${gs.p2.frenzied})</span>`);
-    if(gs.p2.blink>0)     tags.push(`<span class="status-tag blink">💫 ${p2Cfg.name} BLINK (${gs.p2.blink})</span>`);
-    if(gs.p2.weakened)    tags.push(`<span class="status-tag weakened">🌀 ${p2Cfg.name} WEAKENED</span>`);
-    if(gs.p2.invisible>0) tags.push(`<span class="status-tag invisible">👻 ${p2Cfg.name} INVISIBLE (${gs.p2.invisible})</span>`);
-    if(gs.p2.frostArmor>0)  tags.push(`<span class="status-tag freeze">🛡️ ${p2Cfg.name} FROST ARMOR (${gs.p2.frostArmor})</span>`);
-    if(gs.p2.blizzard>0)    tags.push(`<span class="status-tag freeze">🌨️ ${p2Cfg.name} BLIZZARD (${gs.p2.blizzard})</span>`);
-    if(gs.p2.flameShield>0) tags.push(`<span class="status-tag burn">🛡️ ${p2Cfg.name} FLAME SHIELD (${gs.p2.flameShield})</span>`);
-    if(gs.p2.candle>0)        tags.push(`<span class="status-tag burn">🕯️ ${p2Cfg.name} CANDLE (${gs.p2.candle})</span>`);
-    if(gs.p2.charge>0)        tags.push(`<span class="status-tag foresight">⚡ ${p2Cfg.name} CHARGED (${gs.p2.charge})</span>`);
-    if(gs.p2.conductivity>0)  tags.push(`<span class="status-tag burn">💡 ${p2Cfg.name} CONDUCTIVE (${gs.p2.conductivity})</span>`);
-    if(gs.p2.agony>0)         tags.push(`<span class="status-tag burn">💀 ${p2Cfg.name} AGONY (${gs.p2.agony})</span>`);
-    if(gs.p2.silence>0)       tags.push(`<span class="status-tag timedrain">🔇 ${p2Cfg.name} SILENCED (${gs.p2.silence})</span>`);
-    if(gs.p2.corruption>0)    tags.push(`<span class="status-tag burn">☠️ ${p2Cfg.name} CORRUPTED (${gs.p2.corruption})</span>`);
-    if(gs.p2.plague>0)        tags.push(`<span class="status-tag burn">🦠 ${p2Cfg.name} PLAGUED (${gs.p2.plague})</span>`);
-    if(gs.p2.maggotCloud>0)   tags.push(`<span class="status-tag burn">🪲 ${p2Cfg.name} MAGGOT CLOUD (${gs.p2.maggotCloud})</span>`);
-    if(gs.p2.boneTotem>0)     tags.push(`<span class="status-tag regen">💀 ${p2Cfg.name} BONE TOTEM (${gs.p2.boneTotem})</span>`);
-    if(gs.p2.enthralled>0)    tags.push(`<span class="status-tag timedrain">🌀 ${p2Cfg.name} ENTHRALLED (${gs.p2.enthralled})</span>`);
-    if(gs.p2.arcaneWeave>0)   tags.push(`<span class="status-tag foresight">✨ ${p2Cfg.name} ARCANE WEAVE (${gs.p2.arcaneWeave})</span>`);
-    if(gs.p2.spellbound)      tags.push(`<span class="status-tag timedrain">⛓ ${p2Cfg.name} SPELLBOUND (${gs.p2.spellbound.turns})</span>`);
-    if(gs.p2.bewitched)       tags.push(`<span class="status-tag burn">🪞 ${p2Cfg.name} BEWITCHED</span>`);
-    if(gs.p2.blades>0)        tags.push(`<span class="status-tag foresight">🗡️ ${p2Cfg.name} BLADES (${gs.p2.blades})</span>`);
-    if(gs.p2.skeletons&&gs.p2.skeletons.length>0) tags.push(`<span class="status-tag regen">💀 ${p2Cfg.name} SKELETONS (${gs.p2.skeletons.length})</span>`);
-    if(gs.p2.simulacra&&gs.p2.simulacra.length>0) tags.push(`<span class="status-tag foresight">👤 ${p2Cfg.name} SIMULACRA (${gs.p2.simulacra.length})</span>`);
-    if(gs.p2.dragonScales>0)  tags.push(`<span class="status-tag freeze">🐉 ${p2Cfg.name} DRAGON SCALES (${gs.p2.dragonScales})</span>`);
-  }
-  el.innerHTML=tags.join('');
+  document.getElementById('statusbar').innerHTML=elemStatusTags().join('');
+}
+
+// drawWiz draws status visuals from these field names (originally per-spell state); map each
+// enchantment, by the spell id that cast it, onto the visual that fits it
+const WIZ_VISUAL_BY_ID={timedrain:'timeDrain', counter:'counter', candle:'candle', blizzard:'blizzard',
+  singularity:'voidCollapse', frostarmor:'frostArmor', dragonscales:'dragonScales', stonesoul:'stonesoul',
+  galvanize:'charge', conductivity:'conductivity', agony:'agony', silence:'silence', corruption:'corruption',
+  vanish:'invisible', blink:'blink', plague:'plague', maggotcloud:'maggotCloud', bonetotem:'boneTotem',
+  enthral:'enthralled', arcaneweave:'arcaneWeave', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen',
+  warpaint:'resist', ironpatience:'resist', heal:'regen'};
+function wizVisuals(st){
+  const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra};
+  st.effects.forEach(e=>{
+    const k=WIZ_VISUAL_BY_ID[e.id];
+    if(k) v[k]=e.rounds||1;
+    if(e.type==='empower') v.empowered=true;
+    if(e.type==='dot'&&e.id.startsWith('dot-')) v[e.elem==='fire'?'burn':'poison']=1;   // strike riders
+  });
+  if(st.wardSig==='flameshield') v.flameShield=1;
+  if(st.wardSig==='stoneskin'){ v.stoneskin=1; v.stoneskinHp=st.shieldHp; }
+  return v;
 }
 
 // ── BATTLE LOOP ────────────────────────────────────────────
@@ -1556,8 +1378,11 @@ function battleLoop(ts){
   fillSceneBands();
   bx.setTransform(1,0,0,1,0,bOffY);   // everything else draws in scene coordinates
   const gy=bH*.74, wsz=bH*.3;
-  drawWiz(bW*.22+(gs.p1xOff||0),gy,wsz,p1Cfg.col,true, gs.p1anim,gs.p1.shield,gs.p1.ward,'p1',gs.p1.foresight,gs.p1);
-  drawWiz(bW*.78+(gs.p2xOff||0),gy,wsz,p2Cfg.col,false,gs.p2anim,gs.p2.shield,gs.p2.ward,'p2',gs.p2.foresight,gs.p2);
+  PLAYERS.forEach(w=>{
+    const st=gs[w], hasFx=id=>st.effects.some(e=>e.id===id);
+    drawWiz(seatX(w)+(gs[w+'xOff']||0),gy,wsz,seatCfg(w).col,w==='p1',gs[w+'anim'],
+      hasWard(st),hasFx('ward'),w,hasFx('foresight'),wizVisuals(st));
+  });
   tickProjs(); tickBeams(); tickManaBurnFire(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!twoPlayerMode){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
@@ -1578,11 +1403,11 @@ function battleLoop(ts){
 function refreshHUD(){
   document.getElementById('p1hpf').style.height=Math.max(0,gs.p1.hp/gs.p1.maxHp*100)+'%';
   document.getElementById('p2hpf').style.height=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
-  document.getElementById('sh1').style.opacity=gs.p1.shield>0||gs.p1.ward>0?'1':'0.18';
-  document.getElementById('sh2').style.opacity=gs.p2.shield>0||gs.p2.ward>0?'1':'0.18';
-  const fs2=document.getElementById('fs2'); if(fs2) fs2.style.opacity=gs.p2.foresight?'1':'0';
-  const ct1=document.getElementById('ct1'); if(ct1) ct1.classList.toggle('active',!!gs.p1.counter);
-  const ct2=document.getElementById('ct2'); if(ct2) ct2.classList.toggle('active',!!gs.p2.counter);
+  document.getElementById('sh1').style.opacity=hasWard(gs.p1)?'1':'0.18';
+  document.getElementById('sh2').style.opacity=hasWard(gs.p2)?'1':'0.18';
+  const fs2=document.getElementById('fs2'); if(fs2) fs2.style.opacity=effectsOf(gs.p2,'absorbNext').length?'1':'0';
+  const ct1=document.getElementById('ct1'); if(ct1) ct1.classList.toggle('active',effectsOf(gs.p1,'counter').length>0);
+  const ct2=document.getElementById('ct2'); if(ct2) ct2.classList.toggle('active',effectsOf(gs.p2,'counter').length>0);
   document.getElementById('roundlbl').textContent='Round '+gs.round;
   if(twoPlayerMode){
     const fightLbl=document.getElementById('fightlbl');
@@ -1603,2092 +1428,24 @@ function refreshMana(fillId,valId,val){
 }
 
 function refreshActionBar(){
-  if(elementalMode){
-    const who=gs.turnPlayer||'p1';
-    const busy=!gs.myTurn||gs.busy;
-    Object.keys(ELEM_CATS).forEach(cat=>{
-      const btn=document.getElementById('bel-'+cat);
-      if(btn) btn.classList.toggle('off',busy||!elemCanPick(who,cat));
-    });
-    return;
-  }
-  const who=twoPlayerMode?gs.turnPlayer:'p1';
-  const whoCfg=who==='p1'?p1Cfg:p2Cfg;
-  const whoState=gs[who];
-  const oppState=who==='p1'?gs.p2:gs.p1;
+  const who=gs.turnPlayer||'p1';
   const busy=!gs.myTurn||gs.busy;
-  const frenzied=whoState.frenzied>0;
-  document.getElementById('bchannel').classList.toggle('off',busy||frenzied);
-  document.getElementById('bcastspell').classList.toggle('off',busy||frenzied);
-  (whoCfg.spells||[]).forEach(spell=>{
-    const btn=document.getElementById('bspell-'+spell.id);
-    if(!btn) return;
-    const blocked=charSpellBlocked(spell.id,whoState,whoCfg,oppState);
-    btn.classList.toggle('off',busy||whoState.mana<spell.cost||blocked);
+  Object.keys(ELEM_CATS).forEach(cat=>{
+    const btn=document.getElementById('bel-'+cat);
+    if(btn) btn.classList.toggle('off',busy||!elemCanPick(who,cat));
   });
 }
 
-function charSpellBlocked(spellId,casterState,casterCfg,targetState){
-  if(casterState.frenzied>0&&spellId!=='basicattack') return true;
-  if(spellId==='shield')     return casterState.shield>0;
-  if(spellId==='counter')    return !casterState.shield || casterState.counter;
-  if(spellId==='empower')    return casterState.empowered;
-  if(spellId==='bloodpact')  return casterState.hp<=(casterCfg.bpCost||0);
-  if(spellId==='heal')       return casterState.regen!==null||casterState.hp>=casterState.maxHp;
-  if(spellId==='entangle')   return targetState.frozen>0;
-  if(spellId==='foresight')  return casterState.foresight;
-  if(spellId==='timedrain')  return targetState.timeDrain>0;
-  if(spellId==='warpaint')   return casterState.resist>0;
-  if(spellId==='charge'){
-    const cost=casterState.resist>0?Math.round((casterCfg.frenzyHpCost||15)*0.67):(casterCfg.frenzyHpCost||15);
-    return casterState.hp<=cost;
-  }
-  if(spellId==='vanish')     return casterState.invisible>0;
-  if(spellId==='manasiphon') return !casterState.invisible||targetState.mana<=0;
-  if(spellId==='ward')       return casterState.ward>0;
-  if(spellId==='drain')      return false;
-  if(spellId==='vinewhip')   return targetState.vineWhip>0;
-  if(spellId==='haste')      return casterState.haste>0;
-  if(spellId==='frenzy'){
-    const cost=casterState.resist>0?Math.round((casterCfg.frenzyHpCost||15)*0.67):(casterCfg.frenzyHpCost||15);
-    return casterState.hp<=cost;
-  }
-  if(spellId==='blink')      return casterState.blink>0;
-  if(spellId==='icelance')    return false;
-  if(spellId==='frostarmor')  return casterState.frostArmor>0;
-  if(spellId==='blizzard')    return targetState.blizzard>0;
-  if(spellId==='fireball')    return false;
-  if(spellId==='flameshield')    return casterState.flameShield>0;
-  if(spellId==='candle')         return targetState.candle>0;
-  if(spellId==='galvanize')      return false;
-  if(spellId==='chainlightning') return casterState.charge<(casterCfg.chainLightningChargeCost||8);
-  if(spellId==='conductivity')   return targetState.conductivity>0;
-  if(spellId==='divineheal')     return casterState.hp>=casterState.maxHp;
-  if(spellId==='purge')          return !(casterState.burn>0||casterState.poison>0||casterState.voidCollapse>0||casterState.frozen>0||casterState.blizzard>0||casterState.vineWhip>0||casterState.timeDrain>0||casterState.conductivity>0||casterState.candle>0||casterState.agony>0||casterState.corruption>0||casterState.silence>0||casterState.plague>0||casterState.maggotCloud>0);
-  if(spellId==='agony')          return targetState.agony>0;
-  if(spellId==='silence')        return targetState.silence>0;
-  if(spellId==='corruption')     return targetState.corruption>0;
-  if(spellId==='stoneskin')      return casterState.stoneskin>0;
-  if(spellId==='stonesoul')      return casterState.stonesoul>0;
-  if(spellId==='rockfall')       return false;
-  if(spellId==='conjureblade')   return casterState.blades>=(casterCfg.maxBlades||3);
-  if(spellId==='bladestorm')     return casterState.blades<=0;
-  if(spellId==='ironpatience')   return casterState.resist>0;
-  if(spellId==='plague')         return targetState.plague>0;
-  if(spellId==='maggotcloud')    return targetState.maggotCloud>0;
-  if(spellId==='bonetotem')      return casterState.boneTotem>0;
-  if(spellId==='raisedead')      return casterState.skeletons&&casterState.skeletons.length>=2;
-  if(spellId==='necroticdrain')  return false;
-  if(spellId==='reinforce')      return !casterState.skeletons||casterState.skeletons.length===0;
-  if(spellId==='simulacrum')     return casterState.simulacra&&casterState.simulacra.length>=2;
-  if(spellId==='bewitch')        return targetState.bewitched;
-  if(spellId==='feint')          return false;
-  if(spellId==='enthral')        return targetState.enthralled>0;
-  if(spellId==='arcaneweave')    return casterState.arcaneWeave>0;
-  if(spellId==='spellbind')      return false;
-  if(spellId==='dragonscales')   return casterState.resist>0;
-  if(spellId==='wyrmfirebreath') return false;
-  if(spellId==='ancientwrath')   return casterState.usedSpells&&casterState.usedSpells.ancientwrath;
-  if(spellId==='causticbomb')    return false;
-  if(spellId==='volatiletonic')  return false;
-  if(spellId==='unstableconcoction') return false;
-  if(spellId==='singularity')    return targetState.voidCollapse>0;
-  if(spellId==='gravitywell')    return false;
-  if(spellId==='eventhorizon')   return false;
-  return false;
-}
 
-// ── PLAYER ACTIONS ─────────────────────────────────────────
-function act(type){
-  if(!gs.myTurn||gs.busy) return;
-  resizeBC();
 
-  const who=twoPlayerMode?gs.turnPlayer:'p1';
-  const whoCfg=who==='p1'?p1Cfg:p2Cfg;
-  const whoState=gs[who];
-  const oppState=who==='p1'?gs.p2:gs.p1;
-  const cx=who==='p1'?bW*.22:bW*.78;
-  const tx=who==='p1'?bW*.78:bW*.22;
 
-  // Commit the action face-down; nothing resolves until every seat has picked.
-  const commitAction=action=>commitPick(who,action);
 
-  if(type==='channel'){
-    commitAction({type:'channel', channelGain:whoState.timeDrain>0?2:whoCfg.channelAmt});
-    return;
-  }
 
-  // Enthralled: forced to channel
-  if(whoState.enthralled>0){
-    addFloat(cx,bH*.33,'🌀 Enthralled!','#cc88ff',13);
-    commitAction({type:'channel', channelGain:whoState.timeDrain>0?2:whoCfg.channelAmt});
-    return;
-  }
 
-  // Universal spell (with puzzle minigame)
-  const spell=SPELLS.find(s=>s.element===type);
-  if(spell){
-    if(whoState.mana<spell.cost) return;
-    if(whoState.frenzied>0) return;
-    if(whoState.silence>0&&_rng()<0.45){
-      commitAction({type, ok:false, silenced:true});
-      return;
-    }
-    const launchers={
-      fire:      launchPatternEcho,
-      lightning: launchLightningPattern,
-      ice:       launchIcePattern,
-      arcane:    launchArcanePattern,
-      dispel:    launchDispelPattern,
-      manaburn:  launchManaBurnPattern,
-    };
-    const doLaunch=()=>{
-      gs.busy=true;
-      launchers[type](spell, ok=>{
-        commitAction({type, ok, dispelSelf});
-      });
-    };
-    if(type==='dispel'){
-      gs.busy=true;
-      showDispelTarget(selfTarget=>{ gs.busy=false; dispelSelf=selfTarget; doLaunch(); });
-    } else {
-      doLaunch();
-    }
-    return;
-  }
 
-  // Character spell
-  const charSpell=whoCfg.spells&&whoCfg.spells.find(s=>s.id===type);
-  if(charSpell){
-    if(whoState.mana<charSpell.cost) return;
-    if(charSpellBlocked(type,whoState,whoCfg,oppState)) return;
-    if(charSpell.cost>0&&whoState.silence>0&&_rng()<0.45){
-      commitAction({type, ok:false, silenced:true});
-      return;
-    }
-    if(BUFF_TILE_GLYPHS[type]){
-      gs.busy=true;
-      launchBuffTileMatch(charSpell,type,who,(ok,perfect)=>{
-        commitAction({type, ok, perfect, isCharSpell:true});
-      });
-      return;
-    }
-    commitAction({type, ok:true, isCharSpell:true});
-  }
-}
 
-// ── CHARACTER SPELLS (instant) ─────────────────────────────
-function resolveCharSpell(spellId,caster,perfect=false){
-  const casterState=caster==='p1'?gs.p1:gs.p2;
-  const casterCfg  =caster==='p1'?p1Cfg:p2Cfg;
-  const targetState=caster==='p1'?gs.p2:gs.p1;
-  const targetCfg  =caster==='p1'?p2Cfg:p1Cfg;
-  const cx=caster==='p1'?bW*.22:bW*.78;
-  const tx=caster==='p1'?bW*.78:bW*.22;
 
-  const spell=casterCfg.spells.find(s=>s.id===spellId);
-  // Apply spellbound extra cost
-  if(casterState.spellbound&&casterState.spellbound.spellId===spellId&&casterState.spellbound.turns>0){
-    casterState.mana=Math.max(0,casterState.mana-(spell.cost+casterState.spellbound.extraCost));
-  } else {
-    casterState.mana=Math.max(0,casterState.mana-spell.cost);
-  }
 
-  // Plague punish: casting any spell while plagued deals extra damage to caster
-  if(casterState.plague>0){
-    const pDmg=casterState.plagueSpellDmg||8;
-    casterState.hp=Math.max(0,casterState.hp-pDmg);
-    addFloat(cx,bH*.33,'☠️ Plague Punish! −'+pDmg,'#55aa33',12);
-    spawnParts(cx,bH*.38,'#55aa33',10);
-    checkWin(); if(!battleRunning) return;
-  }
-
-  // Bewitch: reflect active spells (non-basic) back on caster
-  if(casterState.bewitched&&spellId!=='basicattack'){
-    casterState.bewitched=false;
-    addFloat(cx,bH*.33,'🪄 Bewitched! Reflected!','#b86ef4',14);
-    spawnParts(cx,bH*.38,'#b86ef4',20); spawnParts(cx,bH*.38,'#ffffff',8);
-    flash('#b86ef4');
-    // Refund mana and cancel spell
-    casterState.mana=Math.min(MAX_MANA,casterState.mana+spell.cost);
-    // Deal a portion of the spell cost as reflected damage (approx)
-    const reflectDmg=10+spell.cost*3;
-    casterState.hp=Math.max(0,casterState.hp-reflectDmg);
-    addFloat(cx,bH*.38,'−'+reflectDmg+' (Reflected!)','#b86ef4',14);
-    if(caster==='p1'){anim('p1','hit',800);} else {anim('p2','hit',800);}
-    refreshHUD(); checkWin(); if(!battleRunning) return;
-    return; // spell does not resolve normally
-  }
-
-  if(spellId==='shield'){
-    casterState.shield=casterCfg.shieldDuration||10;
-    casterState.shieldHp=(casterCfg.shieldMaxHp||60)+(perfect?5:0);
-    addFloat(cx,bH*.33,'🛡 Shielded! ('+casterState.shieldHp+' HP)','#4af0ff',12);
-    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +5 HP','#ffff88',11);
-    anim(caster,'shield',700);
-  } else if(spellId==='counter'){
-    casterState.counter=true;
-    addFloat(cx,bH*.33,'⚡ Counter Ready!','#4af0ff',16);
-    spawnParts(cx,bH*.38,'#4af0ff',16); spawnParts(cx,bH*.38,'#ffffff',6);
-    anim(caster,'shield',700);
-  } else if(spellId==='empower'){
-    casterState.empowered=true;
-    addFloat(cx,bH*.33,'💪 Empowered!',casterCfg.col,12);
-    spawnParts(cx,bH*.38,casterCfg.col,10);
-    anim(caster,'cast',700);
-  } else if(spellId==='bloodpact'){
-    casterState.hp=Math.max(1,casterState.hp-casterCfg.bpCost);
-    casterState.mana=Math.min(MAX_MANA,casterState.mana+casterCfg.bpGain);
-    addFloat(cx,bH*.33,'🩸 -'+casterCfg.bpCost+'HP +'+casterCfg.bpGain+' Mana',casterCfg.col,11);
-    for(let i=0;i<8;i++)
-      gs.parts.push({x:cx+(_rng()-.5)*bH*.05,y:bH*.38,col:'#cc1111',
-        vx:(_rng()-.5),vy:1.5+_rng()*3,sz:2+_rng()*2,life:1,dec:.02});
-    for(let i=0;i<10;i++){
-      const a=-Math.PI/2+(-0.6+_rng()*1.2), sp=1.5+_rng()*2.5;
-      gs.parts.push({x:cx+(_rng()-.5)*bH*.04,y:bH*.38,col:'#8844ff',
-        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+_rng()*2,life:1,dec:.02,noGrav:true});
-    }
-    anim(caster,'cast',700); refreshHUD();
-  } else if(spellId==='heal'){
-    casterState.regen={remaining:casterCfg.healAmt,turns:10};
-    addFloat(cx,bH*.33,'💚 Regenerating!','#44cc88',14);
-    for(let i=0;i<14;i++){
-      const a=-Math.PI/2+(-0.8+_rng()*1.6), sp=1+_rng()*2.5;
-      gs.parts.push({x:cx+(_rng()-.5)*bH*.05,y:bH*.38,col:i%2?'#44ee88':'#88ffcc',
-        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+_rng()*3,life:1,dec:.014,noGrav:true});
-    }
-    anim(caster,'cast',700);
-  } else if(spellId==='entangle'){
-    if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13);
-      spawnParts(tx,bH*.38,'#ffcc44',14);
-      anim(caster,'cast',600);
-    } else {
-      if(_rng()<0.75){
-        targetState.frozen=Math.floor(_rng()*3)+1;
-        for(let i=0;i<10;i++){
-          const a=i/10*Math.PI*2;
-          gs.parts.push({x:tx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#44cc88',
-            vx:Math.cos(a+Math.PI)*.9,vy:Math.sin(a+Math.PI)*.9,sz:2+_rng()*2,life:1,dec:.02});
-        }
-        spawnParts(tx,bH*.38,'#44cc88',8);
-        addFloat(tx,bH*.33,'🌿 Entangled!','#44cc88',13);
-      } else {
-        for(let i=0;i<8;i++)
-          gs.parts.push({x:tx+(_rng()-.5)*bH*.06,y:bH*.38-bH*.04,col:'#665522',
-            vx:(_rng()-.5)*1.5,vy:_rng()*2,sz:2,life:1,dec:.025});
-        addFloat(tx,bH*.33,'🌿 Resisted!','#888866',11);
-      }
-      anim(caster,'cast',800);
-    }
-  } else if(spellId==='foresight'){
-    casterState.foresight=true;
-    addFloat(cx,bH*.33,'🔮 Foresight Active!',casterCfg.col,12);
-    spawnParts(cx,bH*.38,casterCfg.col,14);
-    spawnParts(cx,bH*.38,'#ffffff',6);
-    anim(caster,'shield',700);
-  } else if(spellId==='timedrain'){
-    if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13);
-      spawnParts(tx,bH*.38,'#ffcc44',14);
-      anim(caster,'cast',600);
-    } else {
-      targetState.timeDrain=casterCfg.timeDrainTurns;
-      addFloat(tx,bH*.33,'⏳ Time Drain!',casterCfg.col,12);
-      spawnParts(tx,bH*.38,'#cc88ff',12);
-      spawnParts(tx,bH*.38,casterCfg.col,6);
-      anim(caster,'cast',700);
-    }
-  } else if(spellId==='vanish'){
-    casterState.invisible=3;
-    addFloat(cx,bH*.33,'👻 Vanished! (3T)','#b8a0e8',12);
-    spawnParts(cx,bH*.38,'#b8a0e8',14);
-    spawnParts(cx,bH*.38,'#ffffff',6);
-    anim(caster,'shield',700);
-  } else if(spellId==='manasiphon'){
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Absorbed!','#ffcc44',13);
-      spawnParts(tx,bH*.38,'#ffcc44',14);
-      spawnParts(cx,bH*.38,'#b8a0e8',6);
-      anim(caster,'cast',600);
-    } else if(targetState.shield>0){
-      addFloat(tx,bH*.33,'🛡 Shielded!','#4af0ff',12);
-      spawnParts(tx,bH*.38,'#4af0ff',10);
-      anim(caster,'cast',600);
-    } else {
-      const steal=Math.min(4,targetState.mana);
-      targetState.mana=Math.max(0,targetState.mana-steal);
-      casterState.mana=Math.min(MAX_MANA,casterState.mana+steal);
-      addFloat(cx,bH*.33,'🌀 +'+steal+' Mana Stolen!','#b8a0e8',13);
-      addFloat(tx,bH*.33,'−'+steal+' Mana','#b8a0e8',11);
-      spawnParts(tx,bH*.38,'#b8a0e8',14);
-      spawnParts(cx,bH*.38,'#b8a0e8',8);
-      anim(caster,'cast',700);
-      refreshHUD();
-    }
-  } else if(spellId==='warpaint'){
-    casterState.resist=5+(perfect?1:0);
-    addFloat(cx,bH*.33,'🩸 War Paint! -33% dmg',casterCfg.col,12);
-    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
-    for(let i=0;i<8;i++)
-      gs.parts.push({x:cx+(_rng()-.5)*bH*.05,y:bH*.35,col:'#cc1111',
-        vx:(_rng()-.5)*1.5,vy:1+_rng()*2.5,sz:2+_rng()*2,life:1,dec:.025});
-    spawnParts(cx,bH*.38,casterCfg.col,10);
-    anim(caster,'shield',700);
-    refreshHUD();
-  } else if(spellId==='charge'){
-    const chargeSelfCost=casterState.resist>0?Math.round(casterCfg.frenzyHpCost*0.67):casterCfg.frenzyHpCost;
-    casterState.hp=Math.max(1,casterState.hp-chargeSelfCost);
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    let dmg=Math.round(casterCfg.chargeDmg*casterCfg.dmgMult);
-    gs.busy=true;
-    lunge(caster,()=>{
-      if(!battleRunning) return;
-      if(targetState.foresight){
-        addFloat(tx,bH*.38-20,'🔮 Foreseen!','#ffcc44',15);
-        targetState.foresight=false;
-        spawnParts(tx,bH*.38,'#ffcc44',18);
-        spawnParts(tx,bH*.38,casterCfg.col,10);
-        spawnParts(tx,bH*.38,'#ffffff',6);
-      } else if(targetState.invisible>0){
-        addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
-        spawnParts(tx,bH*.38,'#b8a0e8',12);
-      } else if(targetState.haste>0&&_rng()<0.25){
-        addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
-        spawnParts(tx,bH*.38,'#ffcc44',12);
-      } else if(targetState.blink>0&&_rng()<0.5){
-        addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
-        spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        flash('#9988cc');
-      } else {
-        if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-        if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-        const [chDmg,chSkin]=applyTargetSkins(targetState,dmg,true);
-        dmg=chDmg;
-        if(chSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+chSkin+' Skin','#b08040',10);
-        if(targetState.shield>0){
-          const absorbed=Math.min(dmg,targetState.shieldHp);
-          targetState.shieldHp-=absorbed;
-          dmg-=absorbed;
-          if(targetState.shieldHp<=0){
-            targetState.shield=0; targetState.counter=false;
-            addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-            spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-          } else {
-            addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-            spawnParts(tx,bH*.38,'#4af0ff',8); spawnParts(tx,bH*.38,'#ffffff',4);
-          }
-        }
-        targetState.hp=Math.max(0,targetState.hp-dmg);
-        if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-        if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-        if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-        if(targetState.charge>0){
-          applyDischarge(targetState,casterState,cx,tx);
-          checkWin(); if(!battleRunning) return;
-        }
-        spawnParts(tx,bH*.38,casterCfg.col,22);
-        addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,22);
-        flash(casterCfg.col);
-        if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-        else             {anim('p2','cast',800); anim('p1','hit',800);}
-      }
-      refreshHUD(); checkWin(); if(!battleRunning) return;
-      if(caster==='p1'||twoPlayerMode){ endMyTurn(); }
-      else { if(!simCallback) tickStatuses(casterState); combatTimeout(finishAI,900); }
-    });
-    return;
-  } else if(spellId==='ward'){
-    casterState.ward=3;
-    addFloat(cx,bH*.33,'🔰 Warded! (3T)',casterCfg.col,13);
-    spawnParts(cx,bH*.38,'#ffcc44',14);
-    spawnParts(cx,bH*.38,'#ffffff',6);
-    anim(caster,'shield',700);
-  } else if(spellId==='drain'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',14);
-      anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else {
-      let dmg=Math.round(18*casterCfg.dmgMult);
-      if(casterState.empowered){
-        dmg=Math.round(dmg*(casterCfg.empowerMult||1.5));
-        casterState.empowered=false;
-        addFloat(tx,bH*.33-20,'💪 Empowered!',casterCfg.col,10);
-      }
-      if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
-      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      const [drainDmg2,drainSkin]=applyTargetSkins(targetState,dmg,false);
-      dmg=drainDmg2;
-      if(drainSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+drainSkin+' Skin','#b08040',10);
-      let drainBase=dmg;
-      if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed; dmg-=absorbed; drainBase-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0; targetState.counter=false;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8);
-        }
-      }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      const healAmt=Math.max(0,Math.round(drainBase*0.45));
-      casterState.hp=Math.min(casterState.maxHp,casterState.hp+healAmt);
-      spawnBeam(cx,bH*.38,tx,bH*.38,'#cc1111');
-      spawnParts(tx,bH*.38,'#cc1111',18);
-      for(let i=0;i<10;i++){
-        const a=-Math.PI/2+(-0.6+_rng()*1.2),sp=1.5+_rng()*2.5;
-        gs.parts.push({x:cx+(_rng()-.5)*bH*.04,y:bH*.38,col:'#cc1111',
-          vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+_rng()*2,life:1,dec:.018,noGrav:true});
-      }
-      addFloat(tx,bH*.38,'-'+dmg,'#cc1111',20);
-      addFloat(cx,bH*.33,'+'+healAmt+' 🩸',casterCfg.col,14);
-      flash('#cc1111');
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-      refreshHUD(); checkWin();
-    }
-  } else if(spellId==='vinewhip'){
-    if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else {
-      targetState.vineWhip=3;
-      for(let i=0;i<12;i++){
-        const a=i/12*Math.PI*2;
-        gs.parts.push({x:tx+Math.cos(a)*bH*.07,y:bH*.38+Math.sin(a)*bH*.04,col:'#44cc88',
-          vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2,sz:2+_rng()*2,life:1,dec:.02});
-      }
-      spawnParts(tx,bH*.38,'#44cc88',10);
-      addFloat(tx,bH*.33,'🌱 Vine Whip! (3T)','#44cc88',13);
-      anim(caster,'cast',800);
-    }
-  } else if(spellId==='haste'){
-    casterState.haste=3;
-    addFloat(cx,bH*.33,'💨 Haste! (3T)',casterCfg.col,13);
-    for(let i=0;i<14;i++){
-      const a=-Math.PI/2+(-1.0+_rng()*2.0),sp=1.5+_rng()*3;
-      gs.parts.push({x:cx,y:bH*.38,col:i%2?casterCfg.col:'#ffffff',
-        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+_rng()*2.5,life:1,dec:.016,noGrav:true});
-    }
-    anim(caster,'cast',700);
-  } else if(spellId==='frenzy'){
-    const frenzySelfCost=casterState.resist>0?Math.round(casterCfg.frenzyHpCost*0.67):casterCfg.frenzyHpCost;
-    casterState.hp=Math.max(1,casterState.hp-frenzySelfCost);
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    gs.busy=true;
-    addFloat(cx,bH*.28,'💢 FRENZY!',casterCfg.col,16);
-    spawnParts(cx,bH*.38,casterCfg.col,18);
-    let frenzyHitsDone=0;
-    function doFrenzyStrike(){
-      if(!battleRunning) return;
-      lunge(caster,0.12,()=>{
-        if(!battleRunning) return;
-        doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
-        refreshHUD(); checkWin(); if(!battleRunning) return;
-        frenzyHitsDone++;
-        if(frenzyHitsDone<3){
-          combatTimeout(doFrenzyStrike,300);
-        } else {
-          if(caster==='p1'||twoPlayerMode){
-            endMyTurn();
-          } else {
-            if(!simCallback) tickStatuses(casterState);
-            combatTimeout(finishAI,900);
-          }
-        }
-      });
-    }
-    doFrenzyStrike();
-    return;
-  } else if(spellId==='blink'){
-    casterState.blink=3;
-    addFloat(cx,bH*.33,'💫 Blink! (3T)',casterCfg.col,17);
-    spawnParts(cx,bH*.38,'#9988cc',22); spawnParts(cx,bH*.38,'#ffffff',8);
-    anim(caster,'shield',700);
-  } else if(spellId==='fireball'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    const baseRoll=16+Math.floor(_rng()*9);
-    let dmg=Math.round(baseRoll*casterCfg.dmgMult);
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#ff6600',6);
-      anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink>0&&_rng()<0.5){
-      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc'); anim(caster,'cast',600);
-    } else {
-      if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
-      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      const [fbDmg,fbSkin]=applyTargetSkins(targetState,dmg,false);
-      dmg=fbDmg;
-      if(fbSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+fbSkin+' Skin','#b08040',10);
-      if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed; dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0; targetState.counter=false;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8);
-        }
-      }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-      for(let i=0;i<18;i++){
-        const a=i/18*Math.PI*2;
-        gs.parts.push({x:tx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#ff6600':'#ffaa00',
-          vx:Math.cos(a+Math.PI)*1.4,vy:Math.sin(a+Math.PI)*1.4-0.5,sz:2+_rng()*3,life:1,dec:.02});
-      }
-      spawnParts(tx,bH*.38,'#ff6600',20);
-      addFloat(tx,bH*.38,'-'+dmg,'#ff6600',20);
-      flash('#ff6600');
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-      refreshHUD(); checkWin();
-    }
-  } else if(spellId==='flameshield'){
-    casterState.flameShield=5+(perfect?1:0);
-    addFloat(cx,bH*.33,'🔥 Flame Shield! ('+casterState.flameShield+'T)',casterCfg.col,13);
-    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
-    for(let i=0;i<14;i++){
-      const a=i/14*Math.PI*2;
-      gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#ff6600':'#ffaa00',
-        vx:Math.cos(a)*1.0,vy:Math.sin(a)*1.0-0.5,sz:2+_rng()*2.5,life:1,dec:.018,noGrav:true});
-    }
-    spawnParts(cx,bH*.38,'#ff6600',8); spawnParts(cx,bH*.38,'#ffaa00',4);
-    anim(caster,'shield',700);
-  } else if(spellId==='candle'){
-    if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13);
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#ff6600',6);
-      anim(caster,'cast',600);
-    } else {
-      targetState.candle=3;
-      for(let i=0;i<12;i++){
-        const a=_rng()*Math.PI*2;
-        gs.parts.push({x:tx+(_rng()-.5)*bH*.05,y:bH*.38,col:i%2?'#ff6600':'#ffaa00',
-          vx:Math.cos(a)*0.7,vy:Math.sin(a)*0.7-1.5,sz:1.5+_rng()*2,life:1,dec:.018,noGrav:true});
-      }
-      spawnParts(tx,bH*.38,'#ff6600',10);
-      addFloat(tx,bH*.33,'🕯️ Candle! (4T)',casterCfg.col,13);
-      anim(caster,'cast',800);
-    }
-  } else if(spellId==='icelance'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    let dmg=Math.round((casterCfg.iceLanceDmg||28)*casterCfg.dmgMult);
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#88ddff',6);
-      anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink>0&&_rng()<0.5){
-      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc');
-      anim(caster,'cast',600);
-    } else {
-      if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
-      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      const [ilDmg,ilSkin]=applyTargetSkins(targetState,dmg,false);
-      dmg=ilDmg;
-      if(ilSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+ilSkin+' Skin','#b08040',10);
-      if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed; dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0; targetState.counter=false;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8);
-        }
-      }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      for(let i=0;i<16;i++){
-        const a=i/16*Math.PI*2;
-        gs.parts.push({x:tx+Math.cos(a)*bH*.05,y:bH*.38+Math.sin(a)*bH*.03,col:'#88ddff',
-          vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2,sz:2+_rng()*2.5,life:1,dec:.02});
-      }
-      spawnParts(tx,bH*.38,'#88ddff',18);
-      addFloat(tx,bH*.38,'-'+dmg,'#88ddff',20);
-      flash('#88ddff');
-      if(_rng()<(casterCfg.iceLanceFreeze||0.35)&&targetState.frozen<=0){
-        if(targetState.ward>0){
-          targetState.ward=0;
-          addFloat(tx,bH*.33+20,'🔰 Warded!','#ffcc44',11);
-        } else {
-          targetState.frozen=1;
-          addFloat(tx,bH*.33+20,'❄️ Frozen!','#88ddff',12);
-        }
-      }
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-      refreshHUD(); checkWin();
-    }
-  } else if(spellId==='frostarmor'){
-    casterState.frostArmor=(casterCfg.frostArmorDur||4)+(perfect?1:0);
-    addFloat(cx,bH*.33,'❄️ Frost Armor! ('+casterState.frostArmor+'T)','#88ddff',13);
-    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
-    for(let i=0;i<16;i++){
-      const a=i/16*Math.PI*2;
-      gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#88ddff',
-        vx:Math.cos(a)*0.8,vy:Math.sin(a)*0.8-0.5,sz:2+_rng()*2.5,life:1,dec:.016,noGrav:true});
-    }
-    spawnParts(cx,bH*.38,'#aaeeff',8); spawnParts(cx,bH*.38,'#ffffff',4);
-    anim(caster,'shield',700);
-  } else if(spellId==='blizzard'){
-    if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13);
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#88ddff',6);
-      anim(caster,'cast',600);
-    } else {
-      targetState.blizzard=casterCfg.blizzardDur||5;
-      for(let i=0;i<20;i++){
-        const a=_rng()*Math.PI*2, r=bH*(0.05+_rng()*0.08);
-        gs.parts.push({x:tx+Math.cos(a)*r,y:bH*.38+Math.sin(a)*r*0.5,col:'#88ddff',
-          vx:Math.cos(a)*0.6+(_rng()-.5)*0.8,vy:Math.sin(a)*0.6-1-_rng()*2,
-          sz:1.5+_rng()*2.5,life:1,dec:.012,noGrav:true});
-      }
-      spawnParts(tx,bH*.38,'#88ddff',12); spawnParts(tx,bH*.38,'#aaeeff',6);
-      addFloat(tx,bH*.33,'🌨️ Blizzard! ('+targetState.blizzard+'T)','#88ddff',13);
-      anim(caster,'cast',800);
-    }
-  } else if(spellId==='galvanize'){
-    const gain=casterCfg.galvanizeChargeGain||8;
-    casterState.charge=(casterState.charge||0)+gain;
-    addFloat(cx,bH*.33,'🔋 +'+gain+' Charge!',casterCfg.col,13);
-    for(let i=0;i<12;i++){
-      const a=i/12*Math.PI*2;
-      gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:i%2?'#aaff44':'#88ffcc',
-        vx:Math.cos(a)*0.9,vy:Math.sin(a)*0.9-0.5,sz:2+_rng()*2.5,life:1,dec:.018,noGrav:true});
-    }
-    spawnParts(cx,bH*.38,'#aaff44',8); spawnParts(cx,bH*.38,'#ffffff',4);
-    anim(caster,'shield',700);
-  } else if(spellId==='chainlightning'){
-    if(casterState.invisible>0){ casterState.invisible=0; addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11); }
-    const chargeCost=casterCfg.chainLightningChargeCost||8;
-    casterState.charge=Math.max(0,casterState.charge-chargeCost);
-    let dmg=Math.round((casterCfg.chainLightningDmg||24)*casterCfg.dmgMult);
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,casterCfg.col,6);
-      anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink>0&&_rng()<0.5){
-      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc'); anim(caster,'cast',600);
-    } else {
-      if(targetState.resist>0)       dmg=Math.round(dmg*0.67);
-      if(targetState.frostArmor>0)   dmg=Math.round(dmg*0.70);
-      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      const [clDmg,clSkin]=applyTargetSkins(targetState,dmg,false);
-      dmg=clDmg;
-      if(clSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+clSkin+' Skin','#b08040',10);
-      if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed; dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0; targetState.counter=false;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8);
-        }
-      }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-      // Lightning arc visual
-      for(let i=0;i<14;i++){
-        const a=i/14*Math.PI*2;
-        gs.parts.push({x:tx+Math.cos(a)*bH*.05,y:bH*.38+Math.sin(a)*bH*.03,col:i%2?'#aaff44':'#ffffff',
-          vx:Math.cos(a+Math.PI)*1.5,vy:Math.sin(a+Math.PI)*1.5,sz:2+_rng()*2,life:1,dec:.022});
-      }
-      spawnBeam(cx,bH*.38,tx,bH*.38,casterCfg.col);
-      spawnParts(tx,bH*.38,casterCfg.col,18);
-      addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,20);
-      flash(casterCfg.col);
-      // Arc chance
-      if(_rng()<(casterCfg.chainArcChance||0.35)){
-        const arcDmg=casterCfg.chainArcDmg||10;
-        if(targetState.hp>0){
-          targetState.hp=Math.max(0,targetState.hp-arcDmg);
-          addFloat(tx,bH*.33+20,'⚡ Arc! −'+arcDmg,casterCfg.col,13);
-          spawnParts(tx,bH*.38,casterCfg.col,8);
-        }
-      }
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-      refreshHUD(); checkWin();
-    }
-  } else if(spellId==='conductivity'){
-    if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13);
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,casterCfg.col,6);
-      anim(caster,'cast',600);
-    } else {
-      targetState.conductivity=casterCfg.conductivityDur||3;
-      for(let i=0;i<14;i++){
-        const a=_rng()*Math.PI*2;
-        gs.parts.push({x:tx+(_rng()-.5)*bH*.06,y:bH*.38,col:i%2?'#aaff44':'#88ffcc',
-          vx:Math.cos(a)*0.8,vy:Math.sin(a)*0.8-1.2,sz:1.5+_rng()*2,life:1,dec:.016,noGrav:true});
-      }
-      spawnParts(tx,bH*.38,casterCfg.col,10);
-      addFloat(tx,bH*.33,'💡 Conductive! ('+targetState.conductivity+'T)',casterCfg.col,13);
-      anim(caster,'cast',800);
-    }
-  } else if(spellId==='agony'||spellId==='silence'||spellId==='corruption'){
-    if(casterState.invisible>0){ casterState.invisible=0; addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11); }
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false; spawnParts(tx,bH*.38,'#ffcc44',14); anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12); anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15); spawnParts(tx,bH*.38,'#ffcc44',12); anim(caster,'cast',600);
-    } else if(targetState.ward>0){
-      targetState.ward--;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14); anim(caster,'cast',600);
-    } else {
-      if(spellId==='agony'){
-        targetState.agony=casterCfg.agonyDur||4; targetState.agonyDmg=casterCfg.agonyDmg||12;
-        addFloat(tx,bH*.33,'💀 Agony! ('+targetState.agony+'T)',casterCfg.col,14);
-      } else if(spellId==='silence'){
-        targetState.silence=casterCfg.silenceDur||4;
-        addFloat(tx,bH*.33,'🔇 Silenced! ('+targetState.silence+'T)',casterCfg.col,14);
-      } else {
-        targetState.corruption=casterCfg.corruptionDur||3;
-        addFloat(tx,bH*.33,'☠️ Corrupted! ('+targetState.corruption+'T)',casterCfg.col,14);
-      }
-      spawnParts(tx,bH*.38,casterCfg.col,18); spawnParts(tx,bH*.38,'#110011',8);
-      spawnBeam(cx,bH*.38,tx,bH*.38,casterCfg.col); flash(casterCfg.col);
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-    }
-    refreshHUD();
-  } else if(spellId==='divineheal'){
-    const healAmt=casterCfg.healAmt||40;
-    const actual=Math.min(healAmt, casterState.maxHp-casterState.hp);
-    casterState.hp=Math.min(casterState.maxHp, casterState.hp+healAmt);
-    addFloat(cx,bH*.33,'💛 +'+actual+' Healed!',casterCfg.col,14);
-    for(let i=0;i<16;i++){
-      const a=-Math.PI/2+(-0.9+_rng()*1.8), sp=1+_rng()*2.5;
-      gs.parts.push({x:cx+(_rng()-.5)*bH*.05,y:bH*.38,col:i%2?'#ffe090':'#fff8c0',
-        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+_rng()*3,life:1,dec:.014,noGrav:true});
-    }
-    flash(casterCfg.col);
-    anim(caster,'cast',700); refreshHUD();
-  } else if(spellId==='purge'){
-    const cleared=[];
-    if(casterState.burn>0)        {casterState.burn=0;         cleared.push('🔥');}
-    if(casterState.poison>0)      {casterState.poison=0;       cleared.push('🧪');}
-    if(casterState.voidCollapse>0){casterState.voidCollapse=0; casterState.voidCollapseTick=0; cleared.push('🌀');}
-    if(casterState.frozen>0)      {casterState.frozen=0;       cleared.push('❄️');}
-    if(casterState.blizzard>0)    {casterState.blizzard=0;     cleared.push('🌨️');}
-    if(casterState.vineWhip>0)    {casterState.vineWhip=0;     cleared.push('🌿');}
-    if(casterState.timeDrain>0)   {casterState.timeDrain=0;    cleared.push('⏳');}
-    if(casterState.conductivity>0){casterState.conductivity=0; cleared.push('💡');}
-    if(casterState.candle>0)      {casterState.candle=0;       cleared.push('🕯️');}
-    if(casterState.agony>0)       {casterState.agony=0;        cleared.push('💀');}
-    if(casterState.corruption>0)  {casterState.corruption=0;   cleared.push('☠️');}
-    if(casterState.silence>0)     {casterState.silence=0;      cleared.push('🔇');}
-    if(casterState.plague>0)      {casterState.plague=0;       cleared.push('🦠');}
-    if(casterState.maggotCloud>0) {casterState.maggotCloud=0;  cleared.push('🪲');}
-    addFloat(cx,bH*.33,'✨ Purged! '+cleared.join(''),casterCfg.col,13);
-    spawnParts(cx,bH*.38,'#fffde0',18); spawnParts(cx,bH*.38,'#ffffff',8);
-    flash('#fffff0');
-    anim(caster,'shield',700);
-    refreshHUD();
-  } else if(spellId==='radiant'){
-    if(casterState.invisible>0){ casterState.invisible=0; addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11); }
-    let dmg=Math.round((casterCfg.radiantDmg||12)*casterCfg.dmgMult);
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',14);
-      anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink>0&&_rng()<0.5){
-      addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc'); anim(caster,'cast',600);
-    } else {
-      const counterTriggered=targetState.counter&&targetState.shield>0;
-      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      if(targetState.shield>0){
-        addFloat(tx,bH*.38-20,'☀️ Bypassed!',casterCfg.col,15);
-        spawnParts(tx,bH*.38,casterCfg.col,12); spawnParts(tx,bH*.38,'#ffffff',6);
-      }
-      if(counterTriggered){
-        casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
-        targetState.counter=false;
-        addFloat(cx,bH*.33,'⚡ Counter! −'+targetCfg.counterDmg,'#4af0ff',14);
-        spawnParts(cx,bH*.38,'#4af0ff',16);
-        spawnBeam(tx,bH*.38,cx,bH*.38,'#4af0ff');
-        checkWin(); if(!battleRunning) return;
-      }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-      spawnParts(tx,bH*.38,casterCfg.col,16);
-      spawnBeam(cx,bH*.38,tx,bH*.38,casterCfg.col);
-      addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
-      flash(casterCfg.col);
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-    }
-    refreshHUD(); checkWin();
-  } else if(spellId==='stoneskin'){
-    casterState.stoneskin=casterCfg.stoneskinDuration||10;
-    casterState.stoneskinHp=(casterCfg.stoneskinHpMax||30)+(perfect?5:0);
-    addFloat(cx,bH*.33,'🧱 Stoneskin! ('+casterState.stoneskin+'T / '+casterState.stoneskinHp+' HP)',casterCfg.col,12);
-    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +5 HP','#ffff88',11);
-    // Three waves of rocks fly inward and "coat" the caster
-    [0,220,440].forEach((delay,wave)=>{
-      setTimeout(()=>{
-        if(!battleRunning) return;
-        const angle=wave/3*Math.PI*2+Math.PI/6;
-        const srcDist=bH*0.22;
-        for(let j=0;j<4;j++){
-          const a=angle+j/4*Math.PI*2;
-          const srcX=cx+Math.cos(a)*srcDist, srcY=bH*.38+Math.sin(a)*srcDist*0.55;
-          const speed=0.06+_rng()*0.04;
-          gs.parts.push({x:srcX,y:srcY,col:j%2?'#8b7355':'#a08060',
-            vx:(cx-srcX)*speed,vy:(bH*.38-srcY)*speed,
-            sz:3+_rng()*3,life:1,dec:.028,noGrav:true});
-        }
-        spawnParts(cx,bH*.38,casterCfg.col,4);
-      },delay);
-    });
-    anim(caster,'shield',900);
-  } else if(spellId==='stonesoul'){
-    casterState.stonesoul=casterCfg.stonesoulDuration||4;
-    addFloat(cx,bH*.33,'💎 Stonesoul! ('+casterState.stonesoul+'T)',casterCfg.col,12);
-    for(let i=0;i<14;i++){
-      const a=i/14*Math.PI*2;
-      gs.parts.push({x:cx+Math.cos(a)*bH*.07,y:bH*.38+Math.sin(a)*bH*.05,
-        col:i%3===0?'#b08040':i%3===1?'#8b6914':'#c8a060',
-        vx:Math.cos(a)*0.7,vy:Math.sin(a)*0.7-0.3,
-        sz:1.5+_rng()*2.5,life:1,dec:.015,noGrav:true});
-    }
-    spawnParts(cx,bH*.38,'#c8a060',8); spawnParts(cx,bH*.38,'#ffffff',4);
-    anim(caster,'shield',700);
-  // ── WEIZAN ──────────────────────────────────────────────────
-  } else if(spellId==='conjureblade'){
-    casterState.blades++;
-    addFloat(cx,bH*.33,'🗡️ Blade Conjured! ('+casterState.blades+')','#66aa88',12);
-    spawnParts(cx,bH*.38,'#aaaadd',14); spawnParts(cx,bH*.38,'#ffffff',5);
-    anim(caster,'cast',700);
-  } else if(spellId==='bladestorm'){
-    if(casterState.invisible>0){ casterState.invisible=0; addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11); }
-    gs.busy=true;
-    const numBlades=casterState.blades;
-    casterState.blades=0;
-    addFloat(cx,bH*.28,'💫 BLADESTORM! ('+numBlades+'×)','#66aa88',16);
-    spawnParts(cx,bH*.38,'#aaaadd',16);
-    anim(caster,'cast',900);
-    let bladesDone=0;
-    function fireBlade(){
-      if(!battleRunning) return;
-      const yOff=bH*(bladesDone===0?-0.04:bladesDone===1?0:0.04);
-      spawnProj(cx,bH*.38+yOff,tx,bH*.38+yOff,'physical','#aaaadd',()=>{
-        if(!battleRunning) return;
-        let bDmg=casterCfg.bladestormDmg||12;
-        if(targetState.resist>0) bDmg=Math.round(bDmg*0.67);
-        if(targetState.conductivity>0) bDmg=Math.round(bDmg*1.35);
-        const targetWho=caster==='p1'?'p2':'p1';
-        dealDmgToPlayer(targetWho,bDmg,tx,bH*.38+yOff,false,false);
-        if(targetState.frostArmor>0&&bDmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-        addFloat(tx,bH*.38+yOff,'🗡️ −'+bDmg,casterCfg.col,14);
-        spawnParts(tx,bH*.38+yOff,casterCfg.col,10);
-        refreshHUD(); checkWin(); if(!battleRunning) return;
-        bladesDone++;
-        if(bladesDone<numBlades){ combatTimeout(fireBlade,320); }
-        else {
-          flash(casterCfg.col);
-          if(caster==='p1'||twoPlayerMode){ endMyTurn(); }
-          else { if(!simCallback) tickStatuses(casterState); combatTimeout(finishAI,900); }
-        }
-      });
-    }
-    fireBlade();
-    return;
-  } else if(spellId==='ironpatience'){
-    casterState.resist=3;
-    addFloat(cx,bH*.33,'🧘 Iron Patience! −30% dmg','#66aa88',12);
-    spawnParts(cx,bH*.38,'#888899',12); spawnParts(cx,bH*.38,'#ffffff',4);
-    anim(caster,'shield',700);
-
-  // ── GRETCH ──────────────────────────────────────────────────
-  } else if(spellId==='plague'){
-    if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14);
-      anim(caster,'cast',600);
-    } else {
-      targetState.plague=casterCfg.plagueDoTDur||5;
-      targetState.plagueDoTDmg=casterCfg.plagueDoTDmg||6;
-      targetState.plagueSpellDmg=casterCfg.plagueSpellDmg||8;
-      addFloat(tx,bH*.33,'☠️ Plagued! ('+targetState.plague+'T)','#55aa33',13);
-      spawnParts(tx,bH*.38,'#55aa33',16); spawnParts(tx,bH*.38,'#aaddaa',5);
-      anim(caster,'cast',800);
-    }
-  } else if(spellId==='maggotcloud'){
-    if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14);
-      anim(caster,'cast',600);
-    } else {
-      const drained=Math.min(casterCfg.maggotCloudDrain||3,targetState.mana);
-      targetState.mana=Math.max(0,targetState.mana-drained);
-      targetState.maggotCloud=casterCfg.maggotCloudDur||3;
-      addFloat(tx,bH*.33,'🪲 Maggot Cloud!','#55aa33',12);
-      if(drained>0) addFloat(tx,bH*.38+22,'−'+drained+' Mana','#55aa33',11);
-      spawnParts(tx,bH*.38,'#55aa33',14); spawnParts(tx,bH*.38,'#aaddaa',5);
-      anim(caster,'cast',800);
-    }
-  } else if(spellId==='bonetotem'){
-    casterState.boneTotem=casterCfg.boneTotemDur||4;
-    addFloat(cx,bH*.33,'💀 Bone Totem Raised!','#55aa33',13);
-    spawnParts(cx,bH*.38,'#55aa33',14); spawnParts(cx,bH*.38,'#aaddaa',6);
-    anim(caster,'shield',700);
-
-  // ── VALDRIS ─────────────────────────────────────────────────
-  } else if(spellId==='raisedead'){
-    casterState.skeletons.push({hp:casterCfg.skelMaxHp||25, maxHp:casterCfg.skelMaxHp||25});
-    addFloat(cx,bH*.33,'💀 Skeleton Raised! ('+casterState.skeletons.length+')','#8844cc',12);
-    spawnParts(cx,bH*.38,'#8844cc',14); spawnParts(cx,bH*.38,'#ffffff',5);
-    anim(caster,'cast',800);
-  } else if(spellId==='necroticdrain'){
-    if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15); spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink>0&&_rng()<0.5){
-      addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc'); anim(caster,'cast',600);
-    } else {
-      const counterTriggered=targetState.counter&&targetState.shield>0;
-      let drainDmg=Math.round((casterCfg.necroticDrainDmg||18)*casterCfg.dmgMult);
-      if(targetState.resist>0) drainDmg=Math.round(drainDmg*0.67);
-      if(targetState.frostArmor>0) drainDmg=Math.round(drainDmg*0.70);
-      if(targetState.conductivity>0) drainDmg=Math.round(drainDmg*1.35);
-      if(counterTriggered){
-        casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
-        targetState.counter=false;
-        addFloat(cx,bH*.33,'⚡ Counter! −'+targetCfg.counterDmg,'#4af0ff',14);
-        spawnParts(cx,bH*.38,'#4af0ff',16);
-        spawnBeam(tx,bH*.38,cx,bH*.38,'#4af0ff');
-        checkWin(); if(!battleRunning) return;
-      }
-      const targetWho=caster==='p1'?'p2':'p1';
-      dealDmgToPlayer(targetWho,drainDmg,tx,bH*.38,false,false);
-      if(targetState.frostArmor>0&&drainDmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      if(targetState.flameShield>0&&drainDmg>0) applyFlameShieldRetaliation(casterState,cx);
-      if(targetState.dragonScales>0&&drainDmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-      const healAmt=casterCfg.necroticDrainHeal||8;
-      casterState.hp=Math.min(casterState.maxHp,casterState.hp+healAmt);
-      addFloat(tx,bH*.33,'🩸 Drain! −'+drainDmg,casterCfg.col,16);
-      addFloat(cx,bH*.38,'+'+healAmt+' HP','#8844cc',13);
-      spawnParts(tx,bH*.38,'#8844cc',16);
-      spawnBeam(cx,bH*.38,tx,bH*.38,'#8844cc');
-      flash('#8844cc');
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-      refreshHUD(); checkWin(); if(!battleRunning) return;
-    }
-  } else if(spellId==='reinforce'){
-    const reinAmt=casterCfg.skelReinforceAmt||15;
-    const weakest=casterState.skeletons.reduce((a,b)=>b.hp<a.hp?b:a);
-    weakest.hp=Math.min(weakest.maxHp,weakest.hp+reinAmt);
-    addFloat(cx,bH*.33,'🔧 Reinforced! +'+reinAmt+' HP','#8844cc',12);
-    spawnParts(cx,bH*.38,'#8844cc',10);
-    anim(caster,'cast',700);
-
-  // ── MIREL ───────────────────────────────────────────────────
-  } else if(spellId==='simulacrum'){
-    casterState.simulacra.push({hp:casterCfg.simulacrumMaxHp||20, maxHp:casterCfg.simulacrumMaxHp||20, mana:casterCfg.simulacrumStartMana||6});
-    addFloat(cx,bH*.33,'👁 Simulacrum! ('+casterState.simulacra.length+')','#b86ef4',13);
-    spawnParts(cx,bH*.38,'#b86ef4',16); spawnParts(cx,bH*.38,'#ffffff',6);
-    anim(caster,'shield',800);
-  } else if(spellId==='bewitch'){
-    if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14);
-      anim(caster,'cast',600);
-    } else {
-      targetState.bewitched=true;
-      addFloat(tx,bH*.33,'🪄 Bewitched!',casterCfg.col,14);
-      spawnParts(tx,bH*.38,casterCfg.col,18); spawnParts(tx,bH*.38,'#ffffff',6);
-      anim(caster,'cast',800);
-    }
-  } else if(spellId==='feint'){
-    if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15); spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else {
-      let feintDmg=casterCfg.feintDmg||15;
-      if(casterState.empowered){ feintDmg=Math.round(feintDmg*(casterCfg.empowerMult||1.5)); casterState.empowered=false; addFloat(tx,bH*.33,'💪 Empowered!',casterCfg.col,10); }
-      if(targetState.conductivity>0) feintDmg=Math.round(feintDmg*1.35);
-      // Feint bypasses shield, foresight, ward, stoneskin, skeletons, simulacra — pure deception
-      const targetWho=caster==='p1'?'p2':'p1';
-      dealDmgToPlayer(targetWho,feintDmg,tx,bH*.38,true,true);
-      if(targetState.flameShield>0) applyFlameShieldRetaliation(casterState,cx);
-      if(targetState.dragonScales>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-      addFloat(tx,bH*.33,'🗡️ Feint! −'+feintDmg,casterCfg.col,16);
-      spawnParts(tx,bH*.38,casterCfg.col,18);
-      flash(casterCfg.col);
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-      refreshHUD(); checkWin(); if(!battleRunning) return;
-    }
-
-  // ── THESSALY ─────────────────────────────────────────────────
-  } else if(spellId==='enthral'){
-    if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14);
-      anim(caster,'cast',600);
-    } else {
-      targetState.enthralled=1;
-      addFloat(tx,bH*.33,'🌀 Enthralled!',casterCfg.col,14);
-      spawnParts(tx,bH*.38,casterCfg.col,18); spawnParts(tx,bH*.38,'#ffffff',6);
-      anim(caster,'cast',800);
-    }
-  } else if(spellId==='arcaneweave'){
-    casterState.arcaneWeave=casterCfg.arcaneWeaveAttacks||3;
-    addFloat(cx,bH*.33,'🌟 Arcane Weave! ('+casterState.arcaneWeave+'× atk)',casterCfg.col,12);
-    spawnParts(cx,bH*.38,casterCfg.col,14); spawnParts(cx,bH*.38,'#ffdd88',5);
-    anim(caster,'cast',700);
-  } else if(spellId==='spellbind'){
-    if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15); spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13); spawnParts(tx,bH*.38,'#ffcc44',14);
-      anim(caster,'cast',600);
-    } else {
-      const bindableCfg=caster==='p1'?p2Cfg:p1Cfg;
-      const bindable=(bindableCfg.spells||[]).filter(s=>s.cost>0&&(!targetState.spellbound||targetState.spellbound.spellId!==s.id));
-      if(bindable.length>0){
-        const tgt=bindable.reduce((a,b)=>b.cost>a.cost?b:a);
-        targetState.spellbound={spellId:tgt.id, extraCost:casterCfg.spellbindExtraCost||3, turns:casterCfg.spellbindDur||5};
-        addFloat(tx,bH*.33,'🔒 '+tgt.name+' Bound! (+'+targetState.spellbound.extraCost+' cost)',casterCfg.col,13);
-        spawnParts(tx,bH*.38,casterCfg.col,16); spawnParts(tx,bH*.38,'#ffdd88',5);
-        anim(caster,'cast',800);
-      } else {
-        addFloat(tx,bH*.33,'🔒 Nothing to Bind!','#888888',11);
-        anim(caster,'cast',400);
-        casterState.mana=Math.min(MAX_MANA,casterState.mana+spell.cost); // refund
-      }
-    }
-  } else if(spellId==='rockfall'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    gs.busy=true;
-    addFloat(cx,bH*.28,'⛰️ ROCKFALL!',casterCfg.col,16);
-    spawnParts(cx,bH*.38,casterCfg.col,12);
-    anim(caster,'cast',900);
-    let rocksDone=0;
-    function fireRock(){
-      if(!battleRunning) return;
-      const yOff=bH*(rocksDone===0?-0.04:rocksDone===1?0:0.04);
-      spawnProj(cx,bH*.38+yOff,tx,bH*.38+yOff,'physical',casterCfg.col,()=>{
-        if(!battleRunning) return;
-        doRockfallHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx);
-        refreshHUD(); checkWin(); if(!battleRunning) return;
-        rocksDone++;
-        if(rocksDone<3){
-          combatTimeout(fireRock,350);
-        } else {
-          if(caster==='p1'||twoPlayerMode){
-            endMyTurn();
-          } else {
-            if(!simCallback) tickStatuses(casterState);
-            combatTimeout(finishAI,900);
-          }
-        }
-      });
-    }
-    fireRock();
-    return;
-  // ── KORVATH ──────────────────────────────────────────────────
-  } else if(spellId==='dragonscales'){
-    casterState.resist=(casterCfg.dragonScalesDur||5)+(perfect?1:0);
-    casterState.dragonScales=casterState.resist;
-    addFloat(cx,bH*.33,'🐉 Dragon Scales! ('+casterState.resist+'T)',casterCfg.col,13);
-    if(perfect) addFloat(cx,bH*.26,'✨ Flawless! +1 Turn','#ffff88',11);
-    for(let i=0;i<16;i++){
-      const a=i/16*Math.PI*2;
-      gs.parts.push({x:cx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#cc6622',
-        vx:Math.cos(a)*0.8,vy:Math.sin(a)*0.8-0.5,sz:2+_rng()*2.5,life:1,dec:.016,noGrav:true});
-    }
-    spawnParts(cx,bH*.38,'#dd8844',8); spawnParts(cx,bH*.38,'#ffcc88',4);
-    anim(caster,'shield',700);
-  } else if(spellId==='wyrmfirebreath'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    let dmg=Math.round((casterCfg.wyrmfireDmg||16)*casterCfg.dmgMult);
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#ff6622',6);
-      anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink>0&&_rng()<0.5){
-      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc');
-      anim(caster,'cast',600);
-    } else {
-      if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
-      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      const [wfDmg,wfSkin]=applyTargetSkins(targetState,dmg,false);
-      dmg=wfDmg;
-      if(wfSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+wfSkin+' Skin','#b08040',10);
-      if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed; dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0; targetState.counter=false;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8);
-        }
-      }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-      spawnParts(tx,bH*.38,'#ff6622',18); spawnParts(tx,bH*.38,'#ffaa44',8);
-      addFloat(tx,bH*.38,'-'+dmg,'#ff6622',20);
-      flash('#ff6622');
-      if(targetState.ward>0){
-        targetState.ward=0;
-        addFloat(tx,bH*.33+20,'🔰 Warded!','#ffcc44',11);
-      } else if(dmg>0){
-        targetState.burn=BURN_ROUNDS;
-        addFloat(tx,bH*.33+20,'🔥 Ablaze! ('+BURN_ROUNDS+'T)','#ff6622',12);
-      }
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-    }
-  } else if(spellId==='ancientwrath'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    casterState.usedSpells=casterState.usedSpells||{};
-    casterState.usedSpells.ancientwrath=true;
-    let dmg=Math.round((casterCfg.ancientWrathDmg||35)*casterCfg.dmgMult);
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#ff4400',6);
-      anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink>0&&_rng()<0.5){
-      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc');
-      anim(caster,'cast',600);
-    } else {
-      if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
-      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      const [awDmg,awSkin]=applyTargetSkins(targetState,dmg,false);
-      dmg=awDmg;
-      if(awSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+awSkin+' Skin','#b08040',10);
-      if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed; dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0; targetState.counter=false;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8);
-        }
-      }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-      addFloat(cx,bH*.26,'💥 ANCIENT WRATH!',casterCfg.col,16);
-      spawnParts(tx,bH*.38,'#ff4400',24); spawnParts(tx,bH*.38,'#ffaa00',10);
-      addFloat(tx,bH*.38,'-'+dmg,'#ff4400',24);
-      flash('#ff4400');
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-    }
-  // ── FIZZWICK ─────────────────────────────────────────────────
-  } else if(spellId==='causticbomb'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    let dmg=Math.round((casterCfg.causticBombDmg||10)*casterCfg.dmgMult);
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#88dd44',6);
-      anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink>0&&_rng()<0.5){
-      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc');
-      anim(caster,'cast',600);
-    } else {
-      if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
-      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      const [cbDmg,cbSkin]=applyTargetSkins(targetState,dmg,false);
-      dmg=cbDmg;
-      if(cbSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+cbSkin+' Skin','#b08040',10);
-      if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed; dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0; targetState.counter=false;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8);
-        }
-      }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-      spawnParts(tx,bH*.38,'#88dd44',18); spawnParts(tx,bH*.38,'#55aa33',8);
-      addFloat(tx,bH*.38,'-'+dmg,'#88dd44',20);
-      flash('#88dd44');
-      if(targetState.ward>0){
-        targetState.ward=0;
-        addFloat(tx,bH*.33+20,'🔰 Warded!','#ffcc44',11);
-      } else if(dmg>0){
-        targetState.poison=POISON_ROUNDS;
-        addFloat(tx,bH*.33+20,'🧪 Poisoned! ('+POISON_ROUNDS+'T)','#88dd44',12);
-      }
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-    }
-  } else if(spellId==='volatiletonic'){
-    if(_rng()<0.5){
-      const healAmt=casterCfg.volatileTonicHeal||20;
-      casterState.hp=Math.min(casterState.maxHp,casterState.hp+healAmt);
-      addFloat(cx,bH*.33,'💚 +'+healAmt+' HP!','#44cc88',16);
-      for(let i=0;i<14;i++){
-        const a=-Math.PI/2+(-0.8+_rng()*1.6), sp=1+_rng()*2.5;
-        gs.parts.push({x:cx+(_rng()-.5)*bH*.05,y:bH*.38,col:i%2?'#44ee88':'#88ffcc',
-          vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+_rng()*3,life:1,dec:.014,noGrav:true});
-      }
-    } else {
-      casterState.empowered=true;
-      addFloat(cx,bH*.33,'💪 Empowered!','#88dd44',16);
-      spawnParts(cx,bH*.38,'#88dd44',10); spawnParts(cx,bH*.38,'#55aa33',6);
-    }
-    addFloat(cx,bH*.26,'🧪 Volatile Tonic!',casterCfg.col,12);
-    anim(caster,'cast',700);
-  } else if(spellId==='unstableconcoction'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    const [lo,hi]=casterCfg.unstableConcoctionDmgRange||[10,30];
-    let dmg=Math.round((lo+_rng()*(hi-lo))*casterCfg.dmgMult);
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#cc66ff',6);
-      anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink>0&&_rng()<0.5){
-      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc');
-      anim(caster,'cast',600);
-    } else {
-      if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
-      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      const [ucDmg,ucSkin]=applyTargetSkins(targetState,dmg,false);
-      dmg=ucDmg;
-      if(ucSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+ucSkin+' Skin','#b08040',10);
-      if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed; dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0; targetState.counter=false;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8);
-        }
-      }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-      addFloat(cx,bH*.26,'⚗️ UNSTABLE CONCOCTION!',casterCfg.col,14);
-      spawnParts(tx,bH*.38,'#cc66ff',22); spawnParts(tx,bH*.38,'#88dd44',8);
-      addFloat(tx,bH*.38,'-'+dmg,'#cc66ff',22);
-      flash('#cc66ff');
-      if(targetState.ward>0){
-        targetState.ward=0;
-        addFloat(tx,bH*.33+20,'🔰 Warded!','#ffcc44',11);
-      }
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-    }
-  // ── NYXARA ───────────────────────────────────────────────────
-  } else if(spellId==='singularity'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#aa66ff',6);
-      anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink>0&&_rng()<0.5){
-      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc');
-      anim(caster,'cast',600);
-    } else if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,bH*.33,'🔰 Warded!','#ffcc44',13);
-      spawnParts(tx,bH*.38,'#ffcc44',14);
-      anim(caster,'cast',600);
-    } else {
-      targetState.voidCollapse=VOID_COLLAPSE_ROUNDS;
-      targetState.voidCollapseTick=0;
-      addFloat(tx,bH*.33,'🌀 Singularity! ('+VOID_COLLAPSE_ROUNDS+'T)','#aa66ff',13);
-      for(let i=0;i<16;i++){
-        const a=i/16*Math.PI*2;
-        gs.parts.push({x:tx+Math.cos(a)*bH*.06,y:bH*.38+Math.sin(a)*bH*.04,col:'#6633aa',
-          vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2,sz:2+_rng()*2.5,life:1,dec:.018});
-      }
-      spawnParts(tx,bH*.38,'#aa66ff',10); spawnParts(tx,bH*.38,'#330055',6);
-      anim(caster,'cast',800);
-    }
-  } else if(spellId==='gravitywell'||spellId==='eventhorizon'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    const pct=spellId==='gravitywell'?(casterCfg.gravityWellPct||0.25):(casterCfg.eventHorizonPct||0.40);
-    const minDmg=spellId==='gravitywell'?(casterCfg.gravityWellMin||5):(casterCfg.eventHorizonMin||10);
-    let dmg=Math.max(minDmg,Math.round(targetState.hp*pct));
-    if(targetState.foresight){
-      addFloat(tx,bH*.33,'🔮 Foreseen!','#ffcc44',13);
-      targetState.foresight=false;
-      spawnParts(tx,bH*.38,'#ffcc44',14); spawnParts(cx,bH*.38,'#aa66ff',6);
-      anim(caster,'cast',600);
-    } else if(targetState.invisible>0){
-      addFloat(tx,bH*.33,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,bH*.38,'#b8a0e8',12);
-      anim(caster,'cast',600);
-    } else if(targetState.haste>0&&_rng()<0.25){
-      addFloat(tx,bH*.33,'💨 Dodged!','#ffcc44',15);
-      spawnParts(tx,bH*.38,'#ffcc44',12);
-      anim(caster,'cast',600);
-    } else if(targetState.blink>0&&_rng()<0.5){
-      addFloat(tx,bH*.33,'💫 Blinked!','#cc99ff',18);
-      spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-      flash('#9988cc');
-      anim(caster,'cast',600);
-    } else {
-      if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
-      if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-      if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-      const [gwDmg,gwSkin]=applyTargetSkins(targetState,dmg,false);
-      dmg=gwDmg;
-      if(gwSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+gwSkin+' Skin','#b08040',10);
-      if(targetState.shield>0){
-        const absorbed=Math.min(dmg,targetState.shieldHp);
-        targetState.shieldHp-=absorbed; dmg-=absorbed;
-        if(targetState.shieldHp<=0){
-          targetState.shield=0; targetState.counter=false;
-          addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-          spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        } else {
-          addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-          spawnParts(tx,bH*.38,'#4af0ff',8);
-        }
-      }
-      targetState.hp=Math.max(0,targetState.hp-dmg);
-      if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-      if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-      if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-      if(spellId==='eventhorizon'){
-        const recoil=casterCfg.eventHorizonRecoil||6;
-        casterState.hp=Math.max(0,casterState.hp-recoil);
-        addFloat(cx,bH*.26,'🕳 EVENT HORIZON!',casterCfg.col,16);
-        addFloat(cx,bH*.33,'-'+recoil+' Recoil','#aa66ff',12);
-        spawnParts(cx,bH*.38,'#6633aa',12);
-      } else {
-        addFloat(cx,bH*.26,'🌑 GRAVITY WELL!',casterCfg.col,14);
-      }
-      spawnParts(tx,bH*.38,'#aa66ff',22); spawnParts(tx,bH*.38,'#6633aa',8);
-      addFloat(tx,bH*.38,'-'+dmg,'#aa66ff',22);
-      flash('#6633aa');
-      if(targetState.ward>0){
-        targetState.ward=0;
-        addFloat(tx,bH*.33+20,'🔰 Warded!','#ffcc44',11);
-      }
-      if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-      else             {anim('p2','cast',800); anim('p1','hit',800);}
-    }
-  } else if(spellId==='basicattack'){
-    if(casterState.invisible>0){
-      casterState.invisible=0;
-      addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11);
-    }
-    const basicSpell=casterCfg.spells.find(s=>s.id==='basicattack');
-    let dmg=Math.round((basicSpell.dmg||8)*casterCfg.dmgMult);
-    const isPhysical=!!basicSpell.physical;
-    // Arcane Weave bonus
-    let arcaneWeaveBonusDmg=0, arcaneWeaveManaDrain=0;
-    if(casterState.arcaneWeave>0){ arcaneWeaveBonusDmg=casterCfg.arcaneWeaveDmgBonus||6; arcaneWeaveManaDrain=casterCfg.arcaneWeaveManaDrain||2; casterState.arcaneWeave--; }
-    if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
-    if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-    if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-    function resolveBasicAttack(){
-      if(targetState.foresight){
-        addFloat(tx,bH*.38-20,'🔮 Absorbed!','#ffcc44',15);
-        spawnParts(tx,bH*.38,'#ffcc44',18);
-        spawnParts(tx,bH*.38,casterCfg.col,10);
-        spawnParts(tx,bH*.38,'#ffffff',6);
-        if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-      } else if(targetState.invisible>0){
-        addFloat(tx,bH*.38-20,'👻 Missed!','#b8a0e8',15);
-        spawnParts(tx,bH*.38,'#b8a0e8',12);
-        if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-      } else if(targetState.haste>0&&_rng()<0.25){
-        addFloat(tx,bH*.38-20,'💨 Dodged!','#ffcc44',15);
-        spawnParts(tx,bH*.38,'#ffcc44',12);
-        if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-      } else if(targetState.blink>0&&_rng()<0.5){
-        addFloat(tx,bH*.38-20,'💫 Blinked!','#cc99ff',18);
-        spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-        flash('#9988cc');
-        if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-      } else {
-        const [baDmg,baSkin]=applyTargetSkins(targetState,dmg,isPhysical);
-        dmg=baDmg;
-        if(baSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+baSkin+' Skin','#b08040',10);
-        const counterTriggered=!isPhysical&&targetState.counter&&targetState.shield>0;
-        if(targetState.shield>0){
-          const absorbed=Math.min(dmg,targetState.shieldHp);
-          targetState.shieldHp-=absorbed;
-          dmg-=absorbed;
-          if(targetState.shieldHp<=0){
-            targetState.shield=0; targetState.counter=false;
-            addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-            spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-          } else {
-            addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-            spawnParts(tx,bH*.38,'#4af0ff',8); spawnParts(tx,bH*.38,'#ffffff',4);
-          }
-        }
-        if(counterTriggered){
-          const casterX=cx;
-          casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
-          targetState.counter=false;
-          addFloat(casterX,bH*.33,'⚡ Counter! −'+targetCfg.counterDmg,'#4af0ff',14);
-          spawnParts(casterX,bH*.38,'#4af0ff',16);
-          spawnBeam(tx,bH*.38,casterX,bH*.38,'#4af0ff');
-          checkWin(); if(!battleRunning) return;
-        }
-        // Arcane Weave: bonus damage + mana drain
-        if(arcaneWeaveBonusDmg>0){ dmg+=arcaneWeaveBonusDmg; const md=Math.min(arcaneWeaveManaDrain,targetState.mana); targetState.mana=Math.max(0,targetState.mana-md); addFloat(cx,bH*.38-20,'🌟 Weave +'+arcaneWeaveBonusDmg+', −'+md+' Mana','#ddaa22',10); }
-        const targetWhoBA=caster==='p1'?'p2':'p1';
-        dealDmgToPlayer(targetWhoBA,dmg,tx,bH*.38,false,false);
-        if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-        if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-        if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-        if(isPhysical&&!basicSpell.piercesDischarge&&targetState.charge>0){
-          applyDischarge(targetState,casterState,cx,tx);
-          checkWin(); if(!battleRunning) return;
-        }
-        spawnParts(tx,bH*.38,casterCfg.col,14);
-        addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
-        flash(casterCfg.col);
-        if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-        else             {anim('p2','cast',800); anim('p1','hit',800);}
-      }
-      refreshHUD();
-      checkWin();
-      if(!battleRunning) return;
-      if(basicSpell.lungeAmt){
-        if(caster==='p1'||twoPlayerMode){ endMyTurn(); }
-        else { if(!simCallback) tickStatuses(casterState); combatTimeout(finishAI,900); }
-      }
-    }
-    if(basicSpell.lungeAmt){
-      gs.busy=true;
-      lunge(caster,basicSpell.lungeAmt,resolveBasicAttack);
-      return;
-    } else {
-      resolveBasicAttack();
-    }
-  }
-
-  if(caster==='p1'||twoPlayerMode){
-    endMyTurn(spellId==='counter');
-  } else {
-    if(!simCallback){
-      if(spellId!=='counter' && casterState.shield>0){
-        casterState.shield--;
-        if(casterState.shield<=0){ casterState.shieldHp=0; casterState.counter=false; }
-      }
-      tickStatuses(casterState);
-    }
-    combatTimeout(finishAI,900);
-  }
-}
-
-// ── CAST SPELL ─────────────────────────────────────────────
-function castSpell(spell,target,tx,ty,caster){
-  const casterCfg=caster==='p1'?p1Cfg:p2Cfg;
-  const casterState=caster==='p1'?gs.p1:gs.p2;
-  const targetState=target; // gs.p1 or gs.p2 passed directly
-
-  const targetCfg=target===gs.p1?p1Cfg:p2Cfg;
-  const oppCfg   =caster==='p1'?p2Cfg:p1Cfg;
-
-  // Dispel: player chose to cleanse self OR strip one opp buff (dispelSelf flag set at targeting)
-  if(spell.element==='dispel'){
-    const casterX=caster==='p1'?bW*.22:bW*.78;
-    flash('#ffaaff');
-    if(dispelSelf){
-      const DEBUFF_NAMES={agony:'Agony',corruption:'Corruption',silence:'Silence',burn:'Burn',poison:'Poison',voidCollapse:'Singularity',
-        frozen:'Freeze',blizzard:'Blizzard',vineWhip:'Vine Whip',timeDrain:'Time Drain',
-        conductivity:'Conductivity',candle:'Candle',plague:'Plague',maggotCloud:'Maggot Cloud'};
-      const activeDebuffs=[];
-      ['agony','corruption','silence','burn','poison','voidCollapse','frozen','blizzard','vineWhip','timeDrain','conductivity','candle','plague','maggotCloud'].forEach(s=>{
-        if(casterState[s]) activeDebuffs.push(s);
-      });
-      spawnParts(casterX,bH*.38,'#ffaaff',30);
-      for(let i=0;i<32;i++){
-        const a=-Math.PI/2+(-0.55+_rng()*1.1), sp=0.6+_rng()*1.8;
-        gs.parts.push({x:casterX+(_rng()-.5)*bH*.08,y:bH*.38+(_rng()-.5)*bH*.05,
-          col:i%4===0?'#ffddee':'#ffffff',
-          vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+_rng()*3,life:1,dec:.010+_rng()*.009,noGrav:true});
-      }
-      if(activeDebuffs.length>0){
-        const cleansed=activeDebuffs[Math.floor(_rng()*activeDebuffs.length)];
-        casterState[cleansed]=0;
-        if(cleansed==='voidCollapse') casterState.voidCollapseTick=0;
-        addFloat(casterX,bH*.38,'🌸 '+DEBUFF_NAMES[cleansed]+' Cleansed!','#ffaaff',18);
-      } else {
-        addFloat(casterX,bH*.38,'🌸 Nothing to Cleanse!','#cc88aa',18);
-      }
-    } else {
-      const dispelTargetX=caster==='p1'?bW*.78:bW*.22;
-      const BUFF_NAMES={shield:'Shield',foresight:'Foresight',regen:'Regen',resist:'Resist',
-        frostArmor:'Frost Armor',flameShield:'Flame Shield',empowered:'Empower',
-        ward:'Ward',haste:'Haste',blink:'Blink',invisible:'Vanish',counter:'Counter',
-        stoneskin:'Stoneskin',stonesoul:'Stonesoul',blades:'Blades',boneTotem:'Bone Totem',
-        skeletons:'Skeletons',simulacra:'Simulacra',bewitched:'Bewitch',
-        arcaneWeave:'Arcane Weave',spellbound:'Spellbound',dragonScales:'Dragon Scales'};
-      const oppBuffs=[];
-      if(targetState.shield>0)      oppBuffs.push('shield');
-      if(targetState.foresight)     oppBuffs.push('foresight');
-      if(targetState.regen)         oppBuffs.push('regen');
-      if(targetState.resist>0)      oppBuffs.push('resist');
-      if(targetState.frostArmor>0)  oppBuffs.push('frostArmor');
-      if(targetState.flameShield>0) oppBuffs.push('flameShield');
-      if(targetState.empowered)     oppBuffs.push('empowered');
-      if(targetState.ward>0)        oppBuffs.push('ward');
-      if(targetState.haste>0)       oppBuffs.push('haste');
-      if(targetState.blink>0)       oppBuffs.push('blink');
-      if(targetState.invisible>0)   oppBuffs.push('invisible');
-      if(targetState.counter)       oppBuffs.push('counter');
-      if(targetState.stoneskin>0)   oppBuffs.push('stoneskin');
-      if(targetState.stonesoul>0)   oppBuffs.push('stonesoul');
-      if(targetState.blades>0)      oppBuffs.push('blades');
-      if(targetState.boneTotem>0)   oppBuffs.push('boneTotem');
-      if(targetState.skeletons&&targetState.skeletons.length>0) oppBuffs.push('skeletons');
-      if(targetState.simulacra&&targetState.simulacra.length>0) oppBuffs.push('simulacra');
-      if(targetState.bewitched)     oppBuffs.push('bewitched');
-      if(targetState.arcaneWeave>0) oppBuffs.push('arcaneWeave');
-      if(targetState.spellbound)    oppBuffs.push('spellbound');
-      if(targetState.dragonScales>0) oppBuffs.push('dragonScales');
-      spawnParts(dispelTargetX,ty,'#ffaaff',20);
-      if(oppBuffs.length>0){
-        if(_rng()<0.70){
-          const stripped=oppBuffs[Math.floor(_rng()*oppBuffs.length)];
-          if(stripped==='shield'){targetState.shield=0; targetState.shieldHp=0; targetState.counter=false;}
-          else if(stripped==='foresight') targetState.foresight=false;
-          else if(stripped==='regen')     targetState.regen=null;
-          else if(stripped==='empowered') targetState.empowered=false;
-          else if(stripped==='counter')   targetState.counter=false;
-          else if(stripped==='skeletons') targetState.skeletons=[];
-          else if(stripped==='simulacra') targetState.simulacra=[];
-          else if(stripped==='bewitched') targetState.bewitched=false;
-          else if(stripped==='spellbound') targetState.spellbound=null;
-          else if(stripped==='dragonScales'){targetState.dragonScales=0; targetState.resist=0;}
-          else targetState[stripped]=0;
-          for(let i=0;i<28;i++){
-            const a=-Math.PI/2+(-0.55+_rng()*1.1), sp=0.7+_rng()*1.8;
-            gs.parts.push({x:dispelTargetX+(_rng()-.5)*bH*.08,y:ty+(_rng()-.5)*bH*.05,
-              col:i%4===0?'#ffddee':'#ffffff',
-              vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:1.5+_rng()*3,life:1,dec:.010+_rng()*.009,noGrav:true});
-          }
-          addFloat(dispelTargetX,ty,'🌸 '+BUFF_NAMES[stripped]+' Stripped!','#ffaaff',14);
-        } else {
-          addFloat(dispelTargetX,ty,'🌸 Resisted!','#cc88aa',13);
-        }
-      } else {
-        addFloat(dispelTargetX,ty,'🌸 No Buffs to Strip!','#cc88aa',13);
-      }
-    }
-    if(caster==='p1'){anim('p1','cast',800);}else{anim('p2','cast',800);}
-    return;
-  }
-
-  let dmg=Math.round(spell.dmg*casterCfg.dmgMult);
-  if(spell.element==='arcane') dmg=Math.round((15+Math.floor(_rng()*41))*casterCfg.dmgMult);
-
-  let impactCount=22;
-
-  // Caster: Empower
-  if(casterState.empowered){
-    const pct=Math.round((casterCfg.empowerMult-1)*100);
-    dmg=Math.round(dmg*casterCfg.empowerMult);
-    casterState.empowered=false;
-    addFloat(tx,ty-36,'💪 +'+pct+'% Empowered!',casterCfg.col,10);
-    impactCount=38;
-  }
-
-  // Target: Damage Resistance
-  if(targetState.resist>0){
-    dmg=Math.round(dmg*0.67);
-    addFloat(tx,ty-36,'🩸 -33% Resist!',targetCfg.col,10);
-  }
-  if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-  if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-
-  // Target: Foresight — fully blocks the incoming spell
-  if(targetState.foresight){
-    addFloat(tx,ty-20,'🔮 Foreseen!','#ffcc44',15);
-    targetState.foresight=false;
-    spawnParts(tx,ty,'#ffcc44',18);
-    spawnParts(tx,ty,spell.col,12);
-    spawnParts(tx,ty,'#ffffff',6);
-    if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    return;
-  }
-
-  // Mana Burn: psychic drain — bypasses invisibility, haste, shields; blocked by foresight
-  if(spell.element==='manaburn'){
-    let burnDmg=Math.round(targetState.mana*2*casterCfg.dmgMult);
-    if(casterState.empowered){
-      burnDmg=Math.round(burnDmg*(casterCfg.empowerMult||1.5));
-      casterState.empowered=false;
-      addFloat(tx,ty-36,'💪 Empowered!',casterCfg.col,10);
-    }
-    if(targetState.conductivity>0) burnDmg=Math.round(burnDmg*1.35);
-    const drained=Math.min(4,targetState.mana);
-    targetState.mana=Math.max(0,targetState.mana-drained);
-    targetState.hp=Math.max(0,targetState.hp-burnDmg);
-    spawnParts(tx,ty,'#cc44ff',22); spawnParts(tx,ty,'#ff88ff',10);
-    const mbFireX=caster==='p1'?bW*.78:bW*.22;
-    gs.manaBurnFires.push({x:mbFireX, y:ty, end:Date.now()+2800});
-    addFloat(tx,ty,'-'+burnDmg,'#cc44ff',22);
-    if(drained>0) addFloat(tx,ty+28,'🔮 −'+drained+' Mana','#cc44ff',14);
-    flash('#cc44ff');
-    if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-    else             {anim('p2','cast',800); anim('p1','hit',800);}
-    checkWin();
-    return;
-  }
-
-  // Target: Invisible — area spells hit anyway, others miss
-  if(targetState.invisible>0){
-    if(spell.area){
-      addFloat(tx,ty-20,'🔥 Area!','#ff6622',13);
-    } else {
-      addFloat(tx,ty,'👻 Missed!','#b8a0e8',15);
-      spawnParts(tx,ty,'#b8a0e8',12);
-      if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-      return;
-    }
-  }
-
-  // Target: Haste — 25% dodge
-  if(targetState.haste>0&&_rng()<0.25){
-    addFloat(tx,ty,'💨 Dodged!','#ffcc44',15);
-    spawnParts(tx,ty,'#ffcc44',12);
-    if(caster==='p1'){anim('p1','cast',600);} else {anim('p2','cast',600);}
-    return;
-  }
-
-  // Stonesoul (50% magic reduction) + Stoneskin (10 per-hit absorption)
-  const [csDmg,csSkin]=applyTargetSkins(targetState,dmg,false); // universal spells are magical
-  dmg=csDmg;
-  if(csSkin>0) addFloat(tx,ty-20,'🧱 -'+csSkin+' Skin','#b08040',10);
-
-  // Target: Counter (check BEFORE shield breaks)
-  const counterTriggered=targetState.counter&&targetState.shield>0;
-
-  // Target: Shield
-  if(targetState.shield>0){
-    if(spell.element==='lightning'){
-      targetState.shield=0; targetState.counter=false;
-      targetState.shieldHp=0;
-      addFloat(tx,ty-20,'⚡ Pierced!','#ffee44',15);
-      spawnParts(tx,ty,'#ffee44',18); spawnParts(tx,ty,'#4af0ff',12); spawnParts(tx,ty,'#ffffff',8);
-    } else {
-      const absorbed=Math.min(dmg,targetState.shieldHp);
-      targetState.shieldHp-=absorbed;
-      dmg-=absorbed;
-      if(targetState.shieldHp<=0){
-        targetState.shield=0; targetState.counter=false;
-        addFloat(tx,ty-20,'🛡 SHATTERED!','#88ffff',22);
-        spawnParts(tx,ty,'#4af0ff',24); spawnParts(tx,ty,'#ffffff',10);
-      } else {
-        addFloat(tx,ty-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-        spawnParts(tx,ty,'#4af0ff',8); spawnParts(tx,ty,'#ffffff',4);
-      }
-    }
-  }
-
-  // Counter reflect
-  if(counterTriggered){
-    const casterX=caster==='p1'?bW*.22:bW*.78;
-    casterState.hp=Math.max(0,casterState.hp-targetCfg.counterDmg);
-    targetState.counter=false;
-    addFloat(casterX,bH*.33,'⚡ Counter! −'+targetCfg.counterDmg,'#4af0ff',14);
-    spawnParts(casterX,bH*.38,'#4af0ff',16);
-    spawnBeam(tx,bH*.38,casterX,bH*.38,'#4af0ff');
-    checkWin(); if(!battleRunning) return;
-  }
-
-  targetState.hp=Math.max(0,targetState.hp-dmg);
-  const rx=caster==='p1'?bW*.22:bW*.78;
-  if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,rx);
-  if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,rx);
-  if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,rx);
-  spawnParts(tx,ty,spell.col,impactCount);
-  addFloat(tx,ty,'-'+dmg,spell.col,22);
-  flash(spell.col);
-
-  if(spell.element==='fire'){
-    if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,ty+28,'🔰 Warded!','#ffcc44',10);
-    } else {
-      targetState.burn=BURN_ROUNDS;
-      addFloat(tx,ty+28,'🔥 Burning!','#ff6622',10);
-    }
-  }
-  if(spell.element==='ice'){
-    if(targetState.ward>0){
-      targetState.ward=0;
-      addFloat(tx,ty+28,'🔰 Warded!','#ffcc44',10);
-    } else {
-      targetState.frozen=Math.max(targetState.frozen,1);
-      addFloat(tx,ty+28,'❄️ Frozen!','#88ddff',10);
-    }
-  }
-
-  if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-  else             {anim('p2','cast',800); anim('p1','hit',800);}
-  checkWin();
-}
-
-function processBurn(target,tx,ty){
-  if(target.burn<=0) return;
-  target.hp=Math.max(0,target.hp-BURN_DMG);
-  target.burn--;
-  for(let i=0;i<14;i++){
-    const a=-Math.PI/2+(-0.75+_rng()*1.5);
-    const sp=2+_rng()*3.5;
-    gs.parts.push({x:tx+(_rng()-.5)*bH*.05,y:ty,col:i%3?'#ff4400':'#ff9900',
-      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+_rng()*3,life:1,dec:.026+_rng()*.02});
-  }
-  addFloat(tx,ty,'🔥 -'+BURN_DMG,'#ff6622',13);
-}
-
-function processPoison(target,tx,ty){
-  if(target.poison<=0) return;
-  target.hp=Math.max(0,target.hp-POISON_DMG);
-  target.poison--;
-  for(let i=0;i<14;i++){
-    const a=-Math.PI/2+(-0.75+_rng()*1.5);
-    const sp=2+_rng()*3.5;
-    gs.parts.push({x:tx+(_rng()-.5)*bH*.05,y:ty,col:i%3?'#55aa33':'#88dd44',
-      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+_rng()*3,life:1,dec:.026+_rng()*.02});
-  }
-  addFloat(tx,ty,'🧪 -'+POISON_DMG,'#88dd44',13);
-}
-
-function processVoidCollapse(target,tx,ty){
-  if(target.voidCollapse<=0) return;
-  target.voidCollapseTick++;
-  const dmg=target.voidCollapseTick*VOID_COLLAPSE_DMG_STEP;
-  target.hp=Math.max(0,target.hp-dmg);
-  target.voidCollapse--;
-  if(target.voidCollapse<=0) target.voidCollapseTick=0;
-  for(let i=0;i<14;i++){
-    const a=-Math.PI/2+(-0.75+_rng()*1.5);
-    const sp=2+_rng()*3.5;
-    gs.parts.push({x:tx+(_rng()-.5)*bH*.05,y:ty,col:i%3?'#6633aa':'#aa66ff',
-      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2+_rng()*3,life:1,dec:.026+_rng()*.02});
-  }
-  addFloat(tx,ty,'🌀 -'+dmg,'#aa66ff',13);
-}
-
-function processRegen(target,tx,ty){
-  if(!target.regen) return;
-  const healThis=Math.ceil(target.regen.remaining/target.regen.turns);
-  target.regen.remaining-=healThis;
-  target.regen.turns--;
-  if(target.regen.turns<=0) target.regen=null;
-  target.hp=Math.min(target.maxHp,target.hp+healThis);
-  for(let i=0;i<10;i++){
-    const a=-Math.PI/2+(-0.55+_rng()*1.1), sp=0.8+_rng()*1.8;
-    gs.parts.push({x:tx+(_rng()-.5)*bH*.06,y:ty,col:i%2?'#44ee88':'#88ffcc',
-      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-0.5,sz:1.5+_rng()*2.5,life:1,dec:.011+_rng()*.01,noGrav:true});
-  }
-  addFloat(tx,ty,'+'+healThis+' 💚','#44cc88',12);
-}
-
-function processVineWhip(target,tx,ty){
-  if(!target.vineWhip||target.vineWhip<=0) return;
-  let dmg=7;
-  target.vineWhip--;
-  if(target.shield>0){
-    const absorbed=Math.min(dmg,target.shieldHp);
-    target.shieldHp-=absorbed; dmg-=absorbed;
-    if(target.shieldHp<=0){
-      target.shield=0; target.counter=false;
-      addFloat(tx,ty-20,'🛡 SHATTERED!','#88ffff',18);
-      spawnParts(tx,ty,'#4af0ff',16);
-    } else {
-      addFloat(tx,ty-20,'🛡 −'+absorbed+' ('+target.shieldHp+' left)','#4af0ff',10);
-      spawnParts(tx,ty,'#4af0ff',6);
-    }
-  }
-  if(dmg>0){
-    target.hp=Math.max(0,target.hp-dmg);
-    for(let i=0;i<10;i++){
-      const a=_rng()*Math.PI*2;
-      gs.parts.push({x:tx+(_rng()-.5)*bH*.06,y:ty,col:i%2?'#44cc88':'#22aa66',
-        vx:Math.cos(a)*1.2,vy:Math.sin(a)*1.2-0.5,sz:2+_rng()*2.5,life:1,dec:.02});
-    }
-    addFloat(tx,ty,'🌱 -'+dmg,'#44cc88',13);
-  }
-}
-
-function processBlizzard(target,tx,ty){
-  if(!target.blizzard||target.blizzard<=0) return;
-  target.hp=Math.max(0,target.hp-5);
-  const drained=Math.min(2,target.mana);
-  target.mana=Math.max(0,target.mana-drained);
-  target.blizzard--;
-  for(let i=0;i<10;i++){
-    const a=_rng()*Math.PI*2;
-    gs.parts.push({x:tx+(_rng()-.5)*bH*.06,y:ty,col:'#88ddff',
-      vx:Math.cos(a)*0.6,vy:Math.sin(a)*0.6-1.8,sz:1.5+_rng()*2,life:1,dec:.016,noGrav:true});
-  }
-  addFloat(tx,ty,'❄️ -5','#88ddff',13);
-  if(drained>0) addFloat(tx,ty+22,'−'+drained+' Mana','#88ddff',11);
-  if(_rng()<0.15&&target.frozen<=0) target.frozen=1;
-}
-
-const STATUS_TIMERS=['chill','timeDrain','resist','ward','haste','frenzied','frostArmor','flameShield','candle','conductivity','agony','silence','corruption','blink','stonesoul','stoneskin','plague','maggotCloud','boneTotem','enthralled','dragonScales'];
-function tickStatuses(state){
-  STATUS_TIMERS.forEach(k=>{ if(state[k]>0) state[k]--; });
-  if(state.stoneskin<=0) state.stoneskinHp=0;
-  if(state.spellbound&&state.spellbound.turns>0){ state.spellbound.turns--; if(state.spellbound.turns<=0) state.spellbound=null; }
-}
 
 // ── DEATHLESS (Valdris passive) ────────────────────────────
 function checkDeathless(who,x,y){
@@ -3705,358 +1462,27 @@ function checkDeathless(who,x,y){
   }
 }
 
-// ── SKELETON ABSORPTION (Valdris) ─────────────────────────
-function absorbWithSkeletons(who,dmg,x,y){
-  const state=gs[who];
-  if(!state.skeletons||state.skeletons.length===0) return dmg;
-  const cfg=who==='p1'?p1Cfg:p2Cfg;
-  const healAmt=cfg.skelHealOnDeath||8;
-  while(state.skeletons.length>0&&dmg>0){
-    const skel=state.skeletons[0];
-    if(skel.hp>=dmg){
-      skel.hp-=dmg;
-      addFloat(x,y-20,'💀 −'+dmg+' (Skeleton '+(skel.hp)+' HP)','#8844cc',10);
-      if(skel.hp<=0){
-        state.skeletons.shift();
-        state.hp=Math.min(state.maxHp,state.hp+healAmt);
-        addFloat(x,y-35,'💀 Skeleton Slain! +'+healAmt+' HP','#8844cc',12);
-        spawnParts(x,y,'#8844cc',10);
-      }
-      return 0;
-    } else {
-      dmg-=skel.hp;
-      state.skeletons.shift();
-      state.hp=Math.min(state.maxHp,state.hp+healAmt);
-      addFloat(x,y-35,'💀 Skeleton Slain! +'+healAmt+' HP','#8844cc',12);
-      spawnParts(x,y,'#8844cc',10);
-    }
-  }
-  return dmg;
-}
 
-// ── SIMULACRUM REDIRECT (Mirel) ───────────────────────────
-function trySimulacrumRedirect(who,dmg,x,y){
-  const state=gs[who];
-  const key=who==='p1'?p1Key:p2Key;
-  if(key!=='mirel'||!state.simulacra||state.simulacra.length===0) return dmg;
-  for(let i=0;i<state.simulacra.length;i++){
-    if(_rng()<0.5){
-      const sim=state.simulacra[i];
-      sim.hp-=dmg;
-      addFloat(x,y-20,'👁 −'+dmg+' (Simulacrum)','#b86ef4',12);
-      if(sim.hp<=0){
-        state.simulacra.splice(i,1);
-        addFloat(x,y-36,'👁 Simulacrum Shattered!','#b86ef4',14);
-        spawnParts(x,y,'#b86ef4',14);
-      }
-      return 0;
-    }
-  }
-  return dmg;
-}
 
 // Unified damage-to-player helper: routes through simulacra redirect then skeletons then Deathless
-function dealDmgToPlayer(who,dmg,x,y,bypassRedirect,bypassSkeletons){
+function dealDmgToPlayer(who,dmg,x,y){
   if(dmg<=0) return;
-  const state=gs[who];
-  if(!bypassRedirect){ dmg=trySimulacrumRedirect(who,dmg,x,y); if(dmg<=0) return; }
-  if(!bypassSkeletons){ dmg=absorbWithSkeletons(who,dmg,x,y); if(dmg<=0){ checkDeathless(who,x,y); return; } }
-  state.hp=Math.max(0,state.hp-dmg);
+  gs[who].hp=Math.max(0,gs[who].hp-dmg);
   checkDeathless(who,x,y);
 }
 
-// ── PER-TURN: PLAGUE DoT ──────────────────────────────────
-function processPlagueDoT(target,tx,ty){
-  if(!target.plague||target.plague<=0) return;
-  const dmg=target.plagueDoTDmg||6;
-  target.hp=Math.max(0,target.hp-dmg);
-  for(let i=0;i<8;i++){
-    const a=_rng()*Math.PI*2;
-    gs.parts.push({x:tx+(_rng()-.5)*bH*.05,y:ty,col:'#44bb22',
-      vx:Math.cos(a)*0.8,vy:Math.sin(a)*0.8-1,sz:1.5+_rng()*2,life:1,dec:.02,noGrav:true});
-  }
-  addFloat(tx,ty,'☠️ −'+dmg+' Plague','#55aa33',12);
-}
 
-// ── PER-TURN: BONE TOTEM REGEN ────────────────────────────
-function processBoneTotem(target,tx,ty){
-  if(!target.boneTotem||target.boneTotem<=0) return;
-  const healAmt=5;
-  target.hp=Math.min(target.maxHp,target.hp+healAmt);
-  for(let i=0;i<6;i++){
-    const a=-Math.PI/2+(_rng()-.5)*1.2;
-    gs.parts.push({x:tx+(_rng()-.5)*bH*.04,y:ty,col:'#55aa33',
-      vx:Math.cos(a)*0.7,vy:Math.sin(a)*0.7-0.3,sz:1.5+_rng()*2,life:1,dec:.016,noGrav:true});
-  }
-  addFloat(tx,ty,'+'+healAmt+' 💀','#55aa33',11);
-}
 
-// ── PER-TURN: BLADE STRIKES (Weizan) ─────────────────────
-function processBlades(casterWho,targetState,tx,ty){
-  const casterState=gs[casterWho];
-  if(!casterState.blades||casterState.blades<=0) return;
-  const cfg=casterWho==='p1'?p1Cfg:p2Cfg;
-  const dmgPer=cfg.bladeDmgPerTurn||4;
-  const total=dmgPer*casterState.blades;
-  const targetWho=casterWho==='p1'?'p2':'p1';
-  dealDmgToPlayer(targetWho,total,tx,ty,false,false);
-  for(let i=0;i<casterState.blades*4;i++){
-    const a=_rng()*Math.PI*2;
-    gs.parts.push({x:tx+(_rng()-.5)*bH*.05,y:ty,col:'#aaaadd',
-      vx:Math.cos(a)*1.2,vy:Math.sin(a)*1.2-0.5,sz:1.5+_rng()*2,life:1,dec:.022});
-  }
-  addFloat(tx,ty,'🗡️ −'+total+' ('+casterState.blades+'× blade)','#66aa88',12);
-}
 
-// ── PER-TURN: SKELETON STRIKES (Valdris) ──────────────────
-function processSkeletonStrikes(casterWho,targetState,tx,ty){
-  const casterState=gs[casterWho];
-  if(!casterState.skeletons||casterState.skeletons.length===0) return;
-  const cfg=casterWho==='p1'?p1Cfg:p2Cfg;
-  const dmgPer=cfg.skelDmgPerTurn||7;
-  const targetWho=casterWho==='p1'?'p2':'p1';
-  casterState.skeletons.forEach((_skel,i)=>{
-    const yOff=bH*(i===0?0:0.05);
-    const skDmg=dmgPer;
-    dealDmgToPlayer(targetWho,skDmg,tx,ty+yOff,false,false);
-    for(let j=0;j<6;j++){
-      const a=_rng()*Math.PI*2;
-      gs.parts.push({x:tx+(_rng()-.5)*bH*.04,y:ty+yOff,col:'#9966cc',
-        vx:Math.cos(a)*1,vy:Math.sin(a)*1-0.5,sz:1.5+_rng()*2,life:1,dec:.022});
-    }
-    addFloat(tx,ty+yOff-16,'💀 −'+skDmg,'#8844cc',11);
-  });
-}
 
-// ── PER-TURN: SIMULACRA ACTIONS (Mirel) ───────────────────
-function processSimulacra(ownerWho,targetState,tx,ty){
-  const ownerState=gs[ownerWho];
-  if(!ownerState.simulacra||ownerState.simulacra.length===0) return;
-  const targetWho=ownerWho==='p1'?'p2':'p1';
-  const ownerCfg=ownerWho==='p1'?p1Cfg:p2Cfg;
-  ownerState.simulacra.forEach((sim,idx)=>{
-    const simY=ty-bH*0.07*idx;
-    if(sim.mana>=3&&_rng()<0.55){
-      // Try to cast: prefer Dispel if opponent has buffs, else random global or Feint
-      const tState=gs[targetWho];
-      const hasOppBuff=tState.shield>0||tState.foresight||tState.regen||tState.resist>0||tState.ward>0||tState.stoneskin>0||tState.stonesoul>0||tState.boneTotem>0;
-      let action=null;
-      if(hasOppBuff&&_rng()<0.6){ action='dispel'; }
-      else if(_rng()<0.4){ action='feint'; }
-      else {
-        const pool=['fire','ice','lightning','arcane'];
-        action=pool[Math.floor(_rng()*pool.length)];
-      }
-      if(action==='feint'&&sim.mana>=2){
-        sim.mana-=2;
-        const fDmg=ownerCfg.feintDmg||15;
-        dealDmgToPlayer(targetWho,fDmg,tx,simY,true,true);
-        addFloat(tx,simY,'👁 Feint! −'+fDmg,'#b86ef4',13);
-        spawnParts(tx,simY,'#b86ef4',10);
-      } else if(action==='dispel'&&sim.mana>=3){
-        sim.mana-=3;
-        // Strip a random buff
-        const BUFF_KEYS=['shield','foresight','regen','resist','frostArmor','flameShield','empowered','ward','haste','blink','invisible','counter','stoneskin','stonesoul','boneTotem','blades'];
-        const active=BUFF_KEYS.filter(k=>tState[k]&&tState[k]!==false&&tState[k]!==null&&tState[k]!==0&&!(Array.isArray(tState[k])&&tState[k].length===0));
-        if(active.length>0&&_rng()<0.7){
-          const stripped=active[Math.floor(_rng()*active.length)];
-          if(stripped==='shield'){tState.shield=0;tState.shieldHp=0;tState.counter=false;}
-          else if(stripped==='foresight') tState.foresight=false;
-          else if(stripped==='regen') tState.regen=null;
-          else if(stripped==='empowered') tState.empowered=false;
-          else if(stripped==='blades') tState.blades=0;
-          else tState[stripped]=0;
-          addFloat(tx,simY,'👁 '+stripped+' Stripped!','#b86ef4',12);
-          spawnParts(tx,simY,'#b86ef4',10);
-        }
-      } else {
-        // Global spell — simplified direct damage
-        const dmgMap={fire:14,ice:12,lightning:18,arcane:Math.round(15+_rng()*20)};
-        const glDmg=dmgMap[action]||12;
-        sim.mana-=3;
-        dealDmgToPlayer(targetWho,glDmg,tx,simY,false,false);
-        const cols={fire:'#ff6622',ice:'#88ddff',lightning:'#aaff44',arcane:'#9944cc'};
-        spawnParts(tx,simY,cols[action]||'#b86ef4',14);
-        addFloat(tx,simY,'👁 −'+glDmg+' ('+action+')','#b86ef4',12);
-      }
-    } else {
-      // Channel
-      sim.mana=Math.min(20,sim.mana+(ownerCfg.simulacrumChannelAmt||5));
-      addFloat(tx,simY,'👁 Sim +mana','#b86ef4',9);
-    }
-  });
-}
 
-function triggerCandleBurn(state,cx){
-  state.burn=BURN_ROUNDS;
-  addFloat(cx,bH*.38,'🕯️ Candle!','#ff6622',12);
-  for(let i=0;i<8;i++){
-    const a=-Math.PI/2+(-0.7+_rng()*1.4),sp=1.5+_rng()*2.5;
-    gs.parts.push({x:cx+(_rng()-.5)*bH*.04,y:bH*.38,
-      col:i%2?'#ff6622':'#ff9900',vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
-      sz:1.5+_rng()*2.5,life:1,dec:.02,noGrav:true});
-  }
-}
 
-function applyFrostArmorRetaliation(casterState,targetCfg,cx){
-  const retDmg=targetCfg.frostArmorRetaliationDmg||8;
-  casterState.hp=Math.max(0,casterState.hp-retDmg);
-  addFloat(cx,bH*.33,'❄️ Frost! −'+retDmg,'#88ddff',12);
-  spawnParts(cx,bH*.38,'#88ddff',8);
-}
 
-function applyDischarge(targetState,casterState,casterX,targetX){
-  const dischargeDmg=targetState.charge;
-  targetState.charge=Math.floor(targetState.charge/2);
-  casterState.hp=Math.max(0,casterState.hp-dischargeDmg);
-  addFloat(casterX,bH*.33,'⚡ Discharge! −'+dischargeDmg,'#aaff44',14);
-  spawnParts(casterX,bH*.38,'#aaff44',14);
-  spawnBeam(targetX,bH*.38,casterX,bH*.38,'#aaff44');
-  flash('#aaff44');
-}
 
-function applyFlameShieldRetaliation(casterState,cx){
-  const fireDmg=16;
-  casterState.hp=Math.max(0,casterState.hp-fireDmg);
-  addFloat(cx,bH*.33,'🔥 Flame! −'+fireDmg,'#ff6622',12);
-  spawnParts(cx,bH*.38,'#ff6600',8);
-}
 
-function applyDragonScalesRetaliation(casterState,targetCfg,cx){
-  const fireDmg=targetCfg.dragonScalesRetaliationDmg||5;
-  casterState.hp=Math.max(0,casterState.hp-fireDmg);
-  addFloat(cx,bH*.33,'🐉 Scales! −'+fireDmg,'#cc6622',12);
-  spawnParts(cx,bH*.38,'#cc6622',8);
-}
 
-function applyTargetSkins(targetState,dmg,isPhysical){
-  if(!isPhysical&&targetState.stonesoul>0) dmg=Math.round(dmg*0.6);
-  let skinAbsorbed=0;
-  if(targetState.stoneskin>0&&targetState.stoneskinHp>0){
-    skinAbsorbed=Math.min(10,Math.min(targetState.stoneskinHp,dmg));
-    targetState.stoneskinHp=Math.max(0,targetState.stoneskinHp-skinAbsorbed);
-    dmg=Math.max(0,dmg-skinAbsorbed);
-    if(targetState.stoneskinHp<=0) targetState.stoneskin=0;
-  }
-  return [dmg,skinAbsorbed];
-}
 
-function doFrenzyHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
-  const basicSpell=casterCfg.spells.find(s=>s.id==='basicattack');
-  let dmg=Math.round((basicSpell.dmg||9)*casterCfg.dmgMult);
-  if(targetState.resist>0)     dmg=Math.round(dmg*0.67);
-  if(targetState.frostArmor>0) dmg=Math.round(dmg*0.70);
-  if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-  if(targetState.foresight){
-    addFloat(tx,bH*.38-20,'🔮 Absorbed!','#ffcc44',15);
-    spawnParts(tx,bH*.38,'#ffcc44',14);
-    if(caster==='p1') anim('p1','cast',600); else anim('p2','cast',600);
-    return;
-  }
-  if(targetState.invisible>0){
-    addFloat(tx,bH*.38,'👻 Missed!','#b8a0e8',15);
-    spawnParts(tx,bH*.38,'#b8a0e8',10);
-    return;
-  }
-  if(targetState.haste>0&&_rng()<0.25){
-    addFloat(tx,bH*.38,'💨 Dodged!','#ffcc44',15);
-    spawnParts(tx,bH*.38,'#ffcc44',10);
-    return;
-  }
-  if(targetState.blink>0&&_rng()<0.5){
-    addFloat(tx,bH*.38,'💫 Blinked!','#cc99ff',18);
-    spawnParts(tx,bH*.38,'#9988cc',22); spawnParts(tx,bH*.38,'#ffffff',8);
-    flash('#9988cc');
-    return;
-  }
-  const [fDmg,fSkin]=applyTargetSkins(targetState,dmg,!!basicSpell.physical);
-  dmg=fDmg;
-  if(fSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+fSkin+' Skin','#b08040',10);
-  if(targetState.shield>0){
-    const absorbed=Math.min(dmg,targetState.shieldHp);
-    targetState.shieldHp-=absorbed; dmg-=absorbed;
-    if(targetState.shieldHp<=0){
-      targetState.shield=0; targetState.counter=false;
-      addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',22);
-      spawnParts(tx,bH*.38,'#4af0ff',22); spawnParts(tx,bH*.38,'#ffffff',8);
-    } else {
-      addFloat(tx,bH*.38-20,'🛡 −'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',11);
-      spawnParts(tx,bH*.38,'#4af0ff',8);
-    }
-  }
-  targetState.hp=Math.max(0,targetState.hp-dmg);
-  if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-  if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-  if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-  if(basicSpell.physical&&!basicSpell.piercesDischarge&&targetState.charge>0){
-    applyDischarge(targetState,casterState,cx,tx);
-  }
-  spawnParts(tx,bH*.38,casterCfg.col,14);
-  addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,18);
-  flash(casterCfg.col);
-  if(caster==='p1'){anim('p1','cast',800); anim('p2','hit',800);}
-  else             {anim('p2','cast',800); anim('p1','hit',800);}
-}
 
-function doRockfallHit(caster,casterState,casterCfg,targetState,targetCfg,cx,tx){
-  let dmg=Math.round((casterCfg.rockfallDmg||9)*casterCfg.dmgMult);
-  if(targetState.resist>0)       dmg=Math.round(dmg*0.67);
-  if(targetState.frostArmor>0)   dmg=Math.round(dmg*0.70);
-  if(targetState.conductivity>0) dmg=Math.round(dmg*1.35);
-  if(targetState.foresight){
-    targetState.foresight=false;
-    addFloat(tx,bH*.38,'🔮 Absorbed!','#ffcc44',13);
-    spawnParts(tx,bH*.38,'#ffcc44',10);
-    return;
-  }
-  if(targetState.invisible>0){
-    addFloat(tx,bH*.38,'👻 Missed!','#b8a0e8',13);
-    spawnParts(tx,bH*.38,'#b8a0e8',8);
-    return;
-  }
-  if(targetState.haste>0&&_rng()<0.25){
-    addFloat(tx,bH*.38,'💨 Dodged!','#ffcc44',13);
-    spawnParts(tx,bH*.38,'#ffcc44',8);
-    return;
-  }
-  if(targetState.blink>0&&_rng()<0.5){
-    addFloat(tx,bH*.38,'💫 Blinked!','#cc99ff',15);
-    spawnParts(tx,bH*.38,'#9988cc',14); spawnParts(tx,bH*.38,'#ffffff',5);
-    flash('#9988cc');
-    return;
-  }
-  const [rDmg,rSkin]=applyTargetSkins(targetState,dmg,true); // physical
-  dmg=rDmg;
-  if(rSkin>0) addFloat(tx,bH*.38-20,'🧱 -'+rSkin+' Skin','#b08040',10);
-  if(targetState.shield>0){
-    const absorbed=Math.min(dmg,targetState.shieldHp);
-    targetState.shieldHp-=absorbed; dmg-=absorbed;
-    if(targetState.shieldHp<=0){
-      targetState.shield=0; targetState.counter=false;
-      addFloat(tx,bH*.38-20,'🛡 SHATTERED!','#88ffff',18);
-      spawnParts(tx,bH*.38,'#4af0ff',18); spawnParts(tx,bH*.38,'#ffffff',6);
-    } else {
-      addFloat(tx,bH*.38-20,'🛡 -'+absorbed+' ('+targetState.shieldHp+' left)','#4af0ff',9);
-      spawnParts(tx,bH*.38,'#4af0ff',5);
-    }
-  }
-  targetState.hp=Math.max(0,targetState.hp-dmg);
-  if(targetState.frostArmor>0&&dmg>0) applyFrostArmorRetaliation(casterState,targetCfg,cx);
-  if(targetState.flameShield>0&&dmg>0) applyFlameShieldRetaliation(casterState,cx);
-  if(targetState.dragonScales>0&&dmg>0) applyDragonScalesRetaliation(casterState,casterCfg,cx);
-  if(targetState.charge>0) applyDischarge(targetState,casterState,cx,tx);
-  for(let i=0;i<10;i++){
-    const a=i/10*Math.PI*2;
-    gs.parts.push({x:tx+Math.cos(a)*bH*.04,y:bH*.38+Math.sin(a)*bH*.03,
-      col:i%2?'#b08040':'#8b6914',vx:Math.cos(a+Math.PI)*1.2,vy:Math.sin(a+Math.PI)*1.2-0.3,
-      sz:2+_rng()*3,life:1,dec:.022});
-  }
-  spawnParts(tx,bH*.38,casterCfg.col,10);
-  addFloat(tx,bH*.38,'-'+dmg,casterCfg.col,16);
-  flash(casterCfg.col);
-  if(caster==='p1'){anim('p1','cast',600); anim('p2','hit',600);}
-  else             {anim('p2','cast',600); anim('p1','hit',600);}
-}
 
 function anim(who,state,ms){
   gs[who+'anim']=state;
@@ -4064,106 +1490,249 @@ function anim(who,state,ms){
   setTimeout(()=>{if(gs[who+'anim']!=='death') gs[who+'anim']='idle';},ms);
 }
 
-function lunge(who,amt,cb){
-  // Normalize: charge spell passes callback as 2nd arg with no lungeAmt
-  const lungeAmt=typeof amt==='function'?0.12:amt;
-  const callback=typeof amt==='function'?amt:cb;
-  const dir=who==='p1'?1:-1;
-  gs[who+'xOff']=dir*bW*lungeAmt;
-  anim(who,'cast',300);
-  setTimeout(()=>{ gs[who+'xOff']=0; if(callback) callback(); },180);
-}
 
 function combatTimeout(fn,delay){ setTimeout(fn,delay); }
 
-// ── SIMULTANEOUS RESOLUTION ────────────────────────────────
 
-// Execute a pre-committed action for `who`. Calls cb() when done (via simCallback or directly).
-function executeQueuedSpell(who, action, cb){
-  const whoCfg=who==='p1'?p1Cfg:p2Cfg;
-  const whoState=gs[who];
-  const oppState=who==='p1'?gs.p2:gs.p1;
-  const cx=who==='p1'?bW*.22:bW*.78;
-  const tx=who==='p1'?bW*.78:bW*.22;
+// ── VFX LIBRARY ────────────────────────────────────────────
+// Every effect from the original per-spell code, kept as reusable pieces. The full original
+// spell code (with these effects in context) is archived in js/legacy/classic_spells.js.
 
-  if(action.type==='el'){ executeElemental(who,action,cb); return; }
+// Beam flash between two points (Drain, Radiant, curses, Counter, Chain Lightning)
+function spawnBeam(x1,y1,x2,y2,col){
+  gs.beams.push({x1,y1,x2,y2,col,ttl:8});
+}
+function tickBeams(){
+  gs.beams=gs.beams.filter(b=>b.ttl>0);
+  gs.beams.forEach(b=>{
+    b.ttl--;
+    bx.globalAlpha=b.ttl/8;
+    bx.strokeStyle=b.col; bx.lineWidth=2.5;
+    bx.shadowColor=b.col; bx.shadowBlur=12;
+    bx.beginPath(); bx.moveTo(b.x1,b.y1); bx.lineTo(b.x2,b.y2); bx.stroke();
+    bx.shadowBlur=0; bx.globalAlpha=1;
+  });
+}
+// Step toward the foe and back (melee strikes)
+function lunge(who,amt,cb){
+  const dir=who==='p1'?1:-1;
+  gs[who+'xOff']=dir*bW*amt;
+  anim(who,'cast',300);
+  setTimeout(()=>{ gs[who+'xOff']=0; if(cb) cb(); },180);
+}
+// Column of blue mana-fire on a target (drawn by tickManaBurnFire)
+function spawnManaBurnFire(x,y){ gs.manaBurnFires.push({x,y,end:Date.now()+2800}); }
 
-  if(action.type==='__frozen__'){
-    addFloat(cx,bH*.38,'❄️ Frozen — turn skipped!','#88ddff',13);
-    combatTimeout(cb,1200);
-    return;
+// Particles on an ellipse around (x,y). o.out flies outward (auras), otherwise inward (impacts).
+function vfxRing(x,y,cols,n,o={}){
+  const r=bH*(o.r||.06), ry=bH*(o.ry||.04), spd=o.spd||1.2, dir=o.out?0:Math.PI;
+  for(let i=0;i<n;i++){
+    const a=i/n*Math.PI*2;
+    gs.parts.push({x:x+Math.cos(a)*r,y:y+Math.sin(a)*ry,col:cols[i%cols.length],
+      vx:Math.cos(a+dir)*spd,vy:Math.sin(a+dir)*spd+(o.lift||0),sz:2+_rng()*(o.sz||2.5),
+      life:1,dec:o.dec||.02,noGrav:!!o.noGrav});
   }
-
-  // Agony: damage for any non-channel action
-  if(action.type!=='channel'&&whoState.agony>0){
-    const agonDmg=whoState.agonyDmg||12;
-    whoState.hp=Math.max(0,whoState.hp-agonDmg);
-    addFloat(cx,bH*.38,'💀 Agony! −'+agonDmg,'#9944cc',14);
-    spawnParts(cx,bH*.38,'#9944cc',12); flash('#330033');
-    checkWin(); if(!battleRunning) return;
+}
+// Upward spray (heals, drain siphon, tick bursts)
+function vfxFountain(x,y,cols,n,o={}){
+  const spread=o.spread||0.8;
+  for(let i=0;i<n;i++){
+    const a=-Math.PI/2+(-spread+_rng()*spread*2), sp=(o.min||1)+_rng()*(o.var||2.5);
+    gs.parts.push({x:x+(_rng()-.5)*bH*(o.w||.05),y:y+(o.h?(_rng()-.5)*bH*o.h:0),col:cols[i%cols.length],
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp+(o.lift||0),sz:1.5+_rng()*(o.sz||3),
+      life:1,dec:(o.dec||.014)+_rng()*(o.decVar||0),noGrav:!o.grav});
   }
-
-  if(action.type==='channel'){
-    let channelGain=action.channelGain!=null?action.channelGain:(whoState.timeDrain>0?2:whoCfg.channelAmt);
-    if(whoState.corruption>0){ const d=Math.min(channelGain,2); channelGain=Math.max(0,channelGain-2); addFloat(cx,bH*.5,'☠️ −'+d+' Corrupted!','#9944cc',12); }
-    if(whoState.maggotCloud>0){ const drain=Math.min(3,channelGain); channelGain=Math.max(0,channelGain-drain); addFloat(cx,bH*.5,'🪲 −'+drain+' Drained!','#55aa33',12); }
-    whoState.mana=Math.min(MAX_MANA,whoState.mana+channelGain);
-    addFloat(cx,bH*.38,'+'+(channelGain)+' Mana','#88aaff',13);
-    if(whoState.candle>0) triggerCandleBurn(whoState,cx);
-    anim(who,'cast',700);
-    combatTimeout(cb,800);
-    return;
+}
+// Slow drift in random directions with a lift (curse clouds, embers, sparks)
+function vfxDrift(x,y,cols,n,o={}){
+  for(let i=0;i<n;i++){
+    const a=_rng()*Math.PI*2, spd=o.spd||0.8;
+    gs.parts.push({x:x+(_rng()-.5)*bH*(o.w||.06),y,col:cols[i%cols.length],
+      vx:Math.cos(a)*spd,vy:Math.sin(a)*spd+(o.lift||-1),sz:1.5+_rng()*(o.sz||2),
+      life:1,dec:o.dec||.016,noGrav:o.grav?false:true});
   }
+}
+// Falling drops (blood)
+function vfxDrip(x,y,col,n,o={}){
+  for(let i=0;i<n;i++)
+    gs.parts.push({x:x+(_rng()-.5)*bH*.05,y,col,vx:(_rng()-.5)*(o.vx||1),vy:(o.vy||1.5)+_rng()*(o.vyVar||3),
+      sz:2+_rng()*2,life:1,dec:o.dec||.02});
+}
+function vfxStrikeAnim(who,tgt,ms=800){ anim(who,'cast',ms); if(tgt&&tgt!==who) anim(tgt,'hit',ms); }
 
-  // Universal spell
-  const spell=SPELLS.find(s=>s.element===action.type);
-  if(spell){
-    if(!action.ok){
-      addFloat(cx,bH*.33,'Fizzled!','#ff8844',13);
-      whoState.mana=Math.max(0,whoState.mana-1);
-      combatTimeout(cb,600);
-      return;
-    }
-    if(action.silenced){
-      showSilenceBlock(cx,bH*.33); anim(who,'cast',600);
-      combatTimeout(cb,1200);
-      return;
-    }
-    whoState.mana-=spell.cost;
-    if(whoState.invisible>0){ whoState.invisible=0; addFloat(cx,bH*.33,'👻 Revealed!','#b8a0e8',11); }
-    if(action.type==='dispel'&&action.dispelSelf){
-      castSpell(spell,whoState,cx,bH*.38,who);
-      combatTimeout(cb,500);
-    } else {
-      spawnProj(cx,bH*.38,tx,bH*.38,spell.element,spell.col,()=>{
-        castSpell(spell,oppState,tx,bH*.38,who);
-        combatTimeout(cb,500);
-      });
-    }
-    return;
-  }
+// ── Reactions shared by every spell ──
+const VFX={
+  wardRaise:(x,col)=>{ spawnParts(x,bH*.38,col,18); spawnParts(x,bH*.38,'#ffffff',6); },
+  wardBlock:x=>{ spawnParts(x,bH*.38,'#4af0ff',8); spawnParts(x,bH*.38,'#ffffff',4); },
+  wardShatter:x=>{ spawnParts(x,bH*.38,'#4af0ff',22); spawnParts(x,bH*.38,'#ffffff',8); },
+  absorbed:(x,col)=>{ spawnParts(x,bH*.38,'#ffcc44',18); spawnParts(x,bH*.38,col,10); spawnParts(x,bH*.38,'#ffffff',6); },
+  vanished:x=>spawnParts(x,bH*.38,'#b8a0e8',12),
+  dodged:x=>{ spawnParts(x,bH*.38,'#9988cc',22); spawnParts(x,bH*.38,'#ffffff',8); flash('#9988cc'); },
+  curseWarded:x=>spawnParts(x,bH*.38,'#ffcc44',14),
+  resisted:x=>vfxDrip(x,bH*.34,'#665522',8,{vx:1.5,vy:0,vyVar:2,dec:.025}),
+  bewitched:who=>{ const x=seatX(who); spawnParts(x,bH*.38,'#b86ef4',20); spawnParts(x,bH*.38,'#ffffff',8); flash('#b86ef4'); anim(who,'hit',800); },
+  agony:x=>{ spawnParts(x,bH*.38,'#9944cc',12); flash('#330033'); },
+  candle:x=>vfxFountain(x,bH*.38,['#ff6622','#ff9900'],8,{spread:.7,min:1.5,var:2.5,w:.04,sz:2.5,dec:.02}),
+  // Dispel: pink burst at the target; stripped buffs float away in a white spray
+  dispelHit:x=>{ flash('#ffaaff'); spawnParts(x,bH*.38,'#ffaaff',20); },
+  stripped:x=>vfxFountain(x,bH*.38,['#ffddee','#ffffff','#ffffff','#ffffff'],28,{spread:.55,min:.7,var:1.8,w:.08,h:.05,dec:.010,decVar:.009}),
+  cleanse:x=>{ spawnParts(x,bH*.38,'#ffaaff',30);
+    vfxFountain(x,bH*.38,['#ffddee','#ffffff','#ffffff','#ffffff'],32,{spread:.55,min:.6,var:1.8,w:.08,h:.05,dec:.010,decVar:.009}); },
+  arc:(x,col)=>spawnParts(x,bH*.38,col,8),
+  lifesteal:(x)=>vfxFountain(x,bH*.38,['#cc1111'],10,{spread:.6,min:1.5,var:2.5,w:.04,sz:2,dec:.018}),
+  // Retaliation, by the enchantment or ward that hit back
+  retaliate:{
+    counter:(fromX,toX)=>{ spawnParts(toX,bH*.38,'#4af0ff',16); spawnBeam(fromX,bH*.38,toX,bH*.38,'#4af0ff'); },
+    flameshield:(fromX,toX)=>spawnParts(toX,bH*.38,'#ff6600',8),
+    frostarmor:(fromX,toX)=>spawnParts(toX,bH*.38,'#88ddff',8),
+    dragonscales:(fromX,toX)=>spawnParts(toX,bH*.38,'#cc6622',8),
+  },
+};
 
-  // Character spell
-  const charSpell=whoCfg.spells&&whoCfg.spells.find(s=>s.id===action.type);
-  if(charSpell){
-    if(!action.ok){
-      addFloat(cx,bH*.33,'Ritual Failed!','#ff8844',13);
-      whoState.mana=Math.max(0,whoState.mana-1);
-      combatTimeout(cb,600);
-      return;
-    }
-    if(action.silenced){
-      showSilenceBlock(cx,bH*.33); anim(who,'cast',600);
-      combatTimeout(cb,1200);
-      return;
-    }
-    // resolveCharSpell ends by calling endMyTurn/finishAI — intercept with simCallback
-    simCallback=cb;
-    resolveCharSpell(action.type,who,action.perfect||false);
-    return;
-  }
+// Plain element strikes off the wheel (the original Inferno / Lightning Bolt / Frost Nova /
+// Arcane Surge impacts; Dark uses Mana Burn's, Physical the melee sparks). An empowered hit bursts bigger.
+const ELEM_IMPACT_VFX={
+  fire:     (c,n)=>{ spawnParts(c.tx,c.y,'#ff6622',n); flash('#ff6622'); },
+  ice:      (c,n)=>{ spawnParts(c.tx,c.y,'#88ddff',n); flash('#88ddff'); },
+  lightning:(c,n)=>{ spawnParts(c.tx,c.y,'#ffee44',n); spawnParts(c.tx,c.y,'#ffffff',8); flash('#ffee44'); },
+  arcane:   (c,n)=>{ spawnParts(c.tx,c.y,'#cc88ff',n); flash('#cc88ff'); },
+  physical: (c,n)=>{ spawnParts(c.tx,c.y,'#d0a060',n); flash('#d0a060'); },
+  dark:     (c,n)=>{ spawnParts(c.tx,c.y,'#cc44ff',n); spawnParts(c.tx,c.y,'#ff88ff',10); spawnManaBurnFire(c.tx,c.y); flash('#cc44ff'); },
+};
 
-  combatTimeout(cb,200);
+// Damage-over-time ticks, by the effect that deals them (fallback: by element)
+const TICK_VFX={
+  singularity:(x,y)=>vfxFountain(x,y,['#aa66ff','#6633aa','#6633aa'],14,{spread:.75,min:2,var:3.5,sz:3,dec:.026,decVar:.02,grav:true}),
+  plague:     (x,y)=>vfxDrift(x,y,['#44bb22'],8,{w:.05,lift:-1,dec:.02}),
+  blizzard:   (x,y)=>vfxDrift(x,y,['#88ddff'],10,{spd:.6,lift:-1.8,dec:.016}),
+  fire:       (x,y)=>vfxFountain(x,y,['#ff9900','#ff4400','#ff4400'],14,{spread:.75,min:2,var:3.5,sz:3,dec:.026,decVar:.02,grav:true}),
+  dark:       (x,y)=>vfxFountain(x,y,['#88dd44','#55aa33','#55aa33'],14,{spread:.75,min:2,var:3.5,sz:3,dec:.026,decVar:.02,grav:true}),
+  physical:   (x,y)=>vfxDrift(x,y,['#22aa66','#44cc88'],10,{spd:1.2,lift:-.5,sz:2.5,dec:.02,grav:true}),
+  regen:      (x,y)=>vfxFountain(x,y,['#88ffcc','#44ee88'],10,{spread:.55,min:.8,var:1.8,w:.06,lift:-.5,sz:2.5,dec:.011,decVar:.01}),
+  bonetotem:  (x,y)=>vfxFountain(x,y,['#55aa33'],6,{spread:.6,min:.7,var:0,w:.04,lift:-.3,sz:2,dec:.016}),
+};
+const MINION_VFX={
+  blade:(x,y)=>vfxDrift(x,y,['#aaaadd'],4,{spd:1.2,lift:-.5,dec:.022,grav:true}),
+  skeleton:(x,y)=>vfxDrift(x,y,['#9966cc'],6,{spd:1,lift:-.5,dec:.022,grav:true}),
+  simulacrum:(x,y)=>spawnParts(x,y,'#b86ef4',10),
+};
+
+// Each signature spell's own look, ported from its original effect.
+//   self(c): cast on yourself (wards, buffs, instants)  ·  hit(c): lands on the target (strikes, curses)
+//   delivery: how a strike travels — 'lunge' (melee) or {volley:n|'blades', gap} (several projectiles)
+// c = {who, tgt, cx, tx, y, col (caster colour), healed (Volatile Tonic outcome)}
+const SPELL_VFX={
+  // Eldrin
+  shield:   {self:c=>anim(c.who,'shield',700)},
+  counter:  {self:c=>{ spawnParts(c.cx,c.y,'#4af0ff',16); spawnParts(c.cx,c.y,'#ffffff',6); anim(c.who,'shield',700); }},
+  ward:     {self:c=>{ spawnParts(c.cx,c.y,'#ffcc44',14); spawnParts(c.cx,c.y,'#ffffff',6); anim(c.who,'shield',700); }},
+  // Malachar
+  empower:  {self:c=>{ spawnParts(c.cx,c.y,c.col,10); anim(c.who,'cast',700); }},
+  bloodpact:{self:c=>{ vfxDrip(c.cx,c.y,'#cc1111',8); vfxFountain(c.cx,c.y,['#8844ff'],10,{spread:.6,min:1.5,var:2.5,w:.04,sz:2,dec:.02}); anim(c.who,'cast',700); }},
+  drain:    {hit:c=>{ spawnBeam(c.cx,c.y,c.tx,c.y,'#cc1111'); spawnParts(c.tx,c.y,'#cc1111',18); flash('#cc1111'); vfxStrikeAnim(c.who,c.tgt); }},
+  // Sylvara
+  heal:     {self:c=>{ vfxFountain(c.cx,c.y,['#88ffcc','#44ee88'],14); anim(c.who,'cast',700); }},
+  entangle: {hit:c=>{ vfxRing(c.tx,c.y,['#44cc88'],10,{spd:.9,sz:2}); spawnParts(c.tx,c.y,'#44cc88',8); anim(c.who,'cast',800); }},
+  vinewhip: {hit:c=>{ vfxRing(c.tx,c.y,['#44cc88'],12,{r:.07,sz:2}); spawnParts(c.tx,c.y,'#44cc88',10); vfxStrikeAnim(c.who,c.tgt); }},
+  // Aurelia
+  foresight:{self:c=>{ spawnParts(c.cx,c.y,c.col,14); spawnParts(c.cx,c.y,'#ffffff',6); anim(c.who,'shield',700); }},
+  timedrain:{hit:c=>{ spawnParts(c.tx,c.y,'#cc88ff',12); spawnParts(c.tx,c.y,c.col,6); anim(c.who,'cast',700); }},
+  haste:    {self:c=>{ vfxFountain(c.cx,c.y,[c.col,'#ffffff'],14,{spread:1,min:1.5,var:3,w:0,sz:2.5,dec:.016}); anim(c.who,'shield',700); }},   // Rewind
+  // Gnash
+  warpaint: {self:c=>{ vfxDrip(c.cx,bH*.35,'#cc1111',8,{vx:1.5,vy:1,vyVar:2.5,dec:.025}); spawnParts(c.cx,c.y,c.col,10); anim(c.who,'shield',700); }},
+  charge:   {delivery:'lunge', hit:c=>{ spawnParts(c.tx,c.y,c.col,22); flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
+  frenzy:   {self:c=>{ spawnParts(c.cx,c.y,c.col,18); vfxDrip(c.cx,bH*.35,'#cc1111',6,{vx:1.5,vy:1,vyVar:2.5,dec:.025}); anim(c.who,'cast',700); }},
+  // Cinder
+  fireball: {hit:c=>{ vfxRing(c.tx,c.y,['#ffaa00','#ff6600'],18,{spd:1.4,lift:-.5,sz:3}); spawnParts(c.tx,c.y,'#ff6600',20); flash('#ff6600'); vfxStrikeAnim(c.who,c.tgt); }},
+  flameshield:{self:c=>{ vfxRing(c.cx,c.y,['#ffaa00','#ff6600'],14,{out:true,spd:1,lift:-.5,dec:.018,noGrav:true}); spawnParts(c.cx,c.y,'#ff6600',8); spawnParts(c.cx,c.y,'#ffaa00',4); anim(c.who,'shield',700); }},
+  candle:   {hit:c=>{ vfxDrift(c.tx,c.y,['#ffaa00','#ff6600'],12,{w:.05,spd:.7,lift:-1.5,dec:.018}); spawnParts(c.tx,c.y,'#ff6600',10); anim(c.who,'cast',800); }},
+  // Skadi
+  icelance: {hit:c=>{ vfxRing(c.tx,c.y,['#88ddff'],16,{r:.05,ry:.03}); spawnParts(c.tx,c.y,'#88ddff',18); flash('#88ddff'); vfxStrikeAnim(c.who,c.tgt); }},
+  frostarmor:{self:c=>{ vfxRing(c.cx,c.y,['#88ddff'],16,{out:true,spd:.8,lift:-.5,dec:.016,noGrav:true}); spawnParts(c.cx,c.y,'#aaeeff',8); spawnParts(c.cx,c.y,'#ffffff',4); anim(c.who,'shield',700); }},
+  blizzard: {hit:c=>{
+    for(let i=0;i<20;i++){
+      const a=_rng()*Math.PI*2, r=bH*(0.05+_rng()*0.08);
+      gs.parts.push({x:c.tx+Math.cos(a)*r,y:c.y+Math.sin(a)*r*0.5,col:'#88ddff',
+        vx:Math.cos(a)*0.6+(_rng()-.5)*0.8,vy:Math.sin(a)*0.6-1-_rng()*2,sz:1.5+_rng()*2.5,life:1,dec:.012,noGrav:true});
+    }
+    spawnParts(c.tx,c.y,'#88ddff',12); spawnParts(c.tx,c.y,'#aaeeff',6); anim(c.who,'cast',800); }},
+  // Zacharius
+  galvanize:{self:c=>{ vfxRing(c.cx,c.y,['#88ffcc','#aaff44'],12,{out:true,spd:.9,lift:-.5,dec:.018,noGrav:true}); spawnParts(c.cx,c.y,'#aaff44',8); spawnParts(c.cx,c.y,'#ffffff',4); anim(c.who,'shield',700); }},
+  chainlightning:{hit:c=>{ vfxRing(c.tx,c.y,['#ffffff','#aaff44'],14,{r:.05,ry:.03,spd:1.5,sz:2,dec:.022}); spawnBeam(c.cx,c.y,c.tx,c.y,c.col); spawnParts(c.tx,c.y,c.col,18); flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
+  conductivity:{hit:c=>{ vfxDrift(c.tx,c.y,['#88ffcc','#aaff44'],14,{w:.06,lift:-1.2}); spawnParts(c.tx,c.y,c.col,10); anim(c.who,'cast',800); }},
+  // Mary
+  divineheal:{self:c=>{ vfxFountain(c.cx,c.y,['#fff8c0','#ffe090'],16,{spread:.9}); flash(c.col); anim(c.who,'cast',700); }},
+  purge:    {self:c=>{ spawnParts(c.cx,c.y,'#fffde0',18); spawnParts(c.cx,c.y,'#ffffff',8); flash('#fffff0'); anim(c.who,'shield',700); }},
+  radiant:  {hit:c=>{ spawnParts(c.tx,c.y,c.col,16); spawnBeam(c.cx,c.y,c.tx,c.y,c.col); flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
+  // Mordant (the three hexes share one look)
+  agony:     {hit:c=>SPELL_VFX._hex(c)},
+  silence:   {hit:c=>SPELL_VFX._hex(c)},
+  corruption:{hit:c=>SPELL_VFX._hex(c)},
+  _hex:c=>{ spawnParts(c.tx,c.y,c.col,18); spawnParts(c.tx,c.y,'#110011',8); spawnBeam(c.cx,c.y,c.tx,c.y,c.col); flash(c.col); vfxStrikeAnim(c.who,c.tgt); },
+  // Ponder
+  vanish:   {self:c=>{ spawnParts(c.cx,c.y,'#b8a0e8',14); spawnParts(c.cx,c.y,'#ffffff',6); anim(c.who,'shield',700); }},
+  manasiphon:{self:c=>{ spawnParts(c.tx,c.y,'#b8a0e8',14); spawnParts(c.cx,c.y,'#b8a0e8',8); anim(c.who,'cast',700); }},
+  blink:    {self:c=>{ spawnParts(c.cx,c.y,'#9988cc',22); spawnParts(c.cx,c.y,'#ffffff',8); anim(c.who,'shield',700); }},
+  // Durin
+  stoneskin:{self:c=>{
+    // Three waves of rocks fly in and coat the caster
+    [0,220,440].forEach((delay,wave)=>setTimeout(()=>{
+      if(!battleRunning) return;
+      const angle=wave/3*Math.PI*2+Math.PI/6, srcDist=bH*0.22;
+      for(let j=0;j<4;j++){
+        const a=angle+j/4*Math.PI*2;
+        const srcX=c.cx+Math.cos(a)*srcDist, srcY=c.y+Math.sin(a)*srcDist*0.55, speed=0.06+_rng()*0.04;
+        gs.parts.push({x:srcX,y:srcY,col:j%2?'#8b7355':'#a08060',vx:(c.cx-srcX)*speed,vy:(c.y-srcY)*speed,
+          sz:3+_rng()*3,life:1,dec:.028,noGrav:true});
+      }
+      spawnParts(c.cx,c.y,c.col,4);
+    },delay));
+    anim(c.who,'shield',900); }},
+  stonesoul:{self:c=>{ vfxRing(c.cx,c.y,['#b08040','#8b6914','#c8a060'],14,{out:true,r:.07,ry:.05,spd:.7,lift:-.3,dec:.015,noGrav:true}); spawnParts(c.cx,c.y,'#c8a060',8); spawnParts(c.cx,c.y,'#ffffff',4); anim(c.who,'shield',700); }},
+  rockfall: {delivery:{volley:3,gap:350},
+    pre:c=>{ spawnParts(c.cx,c.y,c.col,12); anim(c.who,'cast',900); },
+    each:c=>{ vfxRing(c.tx,c.y,['#8b6914','#b08040'],10,{r:.04,ry:.03,lift:-.3,sz:3,dec:.022}); spawnParts(c.tx,c.y,c.col,10); flash(c.col); vfxStrikeAnim(c.who,c.tgt,600); }},
+  // Weizan
+  conjureblade:{self:c=>{ spawnParts(c.cx,c.y,'#aaaadd',14); spawnParts(c.cx,c.y,'#ffffff',5); anim(c.who,'cast',700); }},
+  bladestorm:{delivery:{volley:'blades',gap:320,proj:'physical',col:'#aaaadd'},
+    pre:c=>{ spawnParts(c.cx,c.y,'#aaaadd',16); anim(c.who,'cast',900); },
+    each:c=>spawnParts(c.tx,c.y,c.col,10),
+    hit:c=>{ flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
+  ironpatience:{self:c=>{ spawnParts(c.cx,c.y,'#888899',12); spawnParts(c.cx,c.y,'#ffffff',4); anim(c.who,'shield',700); }},
+  // Gretch
+  plague:     {hit:c=>{ spawnParts(c.tx,c.y,'#55aa33',16); spawnParts(c.tx,c.y,'#aaddaa',5); anim(c.who,'cast',800); }},
+  maggotcloud:{hit:c=>{ spawnParts(c.tx,c.y,'#55aa33',14); spawnParts(c.tx,c.y,'#aaddaa',5); anim(c.who,'cast',800); }},
+  bonetotem:  {self:c=>{ spawnParts(c.cx,c.y,'#55aa33',14); spawnParts(c.cx,c.y,'#aaddaa',6); anim(c.who,'shield',700); }},
+  // Valdris
+  raisedead:    {self:c=>{ spawnParts(c.cx,c.y,'#8844cc',14); spawnParts(c.cx,c.y,'#ffffff',5); anim(c.who,'cast',800); }},
+  necroticdrain:{hit:c=>{ spawnParts(c.tx,c.y,'#8844cc',16); spawnBeam(c.cx,c.y,c.tx,c.y,'#8844cc'); flash('#8844cc'); vfxStrikeAnim(c.who,c.tgt); }},
+  reinforce:    {self:c=>{ spawnParts(c.cx,c.y,'#8844cc',10); anim(c.who,'cast',700); }},
+  // Mirel
+  simulacrum:{self:c=>{ spawnParts(c.cx,c.y,'#b86ef4',16); spawnParts(c.cx,c.y,'#ffffff',6); anim(c.who,'shield',800); }},
+  bewitch:   {hit:c=>{ spawnParts(c.tx,c.y,c.col,18); spawnParts(c.tx,c.y,'#ffffff',6); anim(c.who,'cast',800); }},
+  feint:     {hit:c=>{ spawnParts(c.tx,c.y,c.col,18); flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
+  // Thessaly
+  enthral:    {hit:c=>{ spawnParts(c.tx,c.y,c.col,18); spawnParts(c.tx,c.y,'#ffffff',6); anim(c.who,'cast',800); }},
+  arcaneweave:{self:c=>{ spawnParts(c.cx,c.y,c.col,14); spawnParts(c.cx,c.y,'#ffdd88',5); anim(c.who,'cast',700); }},
+  spellbind:  {hit:c=>{ spawnParts(c.tx,c.y,c.col,16); spawnParts(c.tx,c.y,'#ffdd88',5); anim(c.who,'cast',800); }},
+  // Korvath
+  dragonscales:  {self:c=>{ vfxRing(c.cx,c.y,['#cc6622'],16,{out:true,spd:.8,lift:-.5,dec:.016,noGrav:true}); spawnParts(c.cx,c.y,'#dd8844',8); spawnParts(c.cx,c.y,'#ffcc88',4); anim(c.who,'shield',700); }},
+  wyrmfirebreath:{hit:c=>{ spawnParts(c.tx,c.y,'#ff6622',18); spawnParts(c.tx,c.y,'#ffaa44',8); flash('#ff6622'); vfxStrikeAnim(c.who,c.tgt); }},
+  ancientwrath:  {hit:c=>{ spawnParts(c.tx,c.y,'#ff4400',24); spawnParts(c.tx,c.y,'#ffaa00',10); flash('#ff4400'); vfxStrikeAnim(c.who,c.tgt); }},
+  // Fizzwick
+  causticbomb:       {hit:c=>{ spawnParts(c.tx,c.y,'#88dd44',18); spawnParts(c.tx,c.y,'#55aa33',8); flash('#88dd44'); vfxStrikeAnim(c.who,c.tgt); }},
+  volatiletonic:     {self:c=>{
+    if(c.healed) vfxFountain(c.cx,c.y,['#88ffcc','#44ee88'],14);
+    else { spawnParts(c.cx,c.y,'#88dd44',10); spawnParts(c.cx,c.y,'#55aa33',6); }
+    anim(c.who,'cast',700); }},
+  unstableconcoction:{hit:c=>{ spawnParts(c.tx,c.y,'#cc66ff',22); spawnParts(c.tx,c.y,'#88dd44',8); flash('#cc66ff'); vfxStrikeAnim(c.who,c.tgt); }},
+  // Nyxara
+  singularity: {hit:c=>{ vfxRing(c.tx,c.y,['#6633aa'],16,{dec:.018}); spawnParts(c.tx,c.y,'#aa66ff',10); spawnParts(c.tx,c.y,'#330055',6); anim(c.who,'cast',800); }},
+  gravitywell: {hit:c=>{ spawnParts(c.tx,c.y,'#aa66ff',22); spawnParts(c.tx,c.y,'#6633aa',8); flash('#6633aa'); vfxStrikeAnim(c.who,c.tgt); }},
+  eventhorizon:{hit:c=>{ spawnParts(c.cx,c.y,'#6633aa',12); spawnParts(c.tx,c.y,'#aa66ff',22); spawnParts(c.tx,c.y,'#6633aa',8); flash('#6633aa'); vfxStrikeAnim(c.who,c.tgt); }},
+};
+function vfxCtx(who,tgt,extra){
+  return Object.assign({who,tgt,cx:seatX(who),tx:seatX(tgt||who),y:bH*.38,col:seatCfg(who).col},extra);
 }
 
 // ── ROUND FLOW ─────────────────────────────────────────────
@@ -4186,12 +1755,6 @@ function promptNextPicker(){
   if(!battleRunning||gameEnded) return;
   const who=PLAYERS.find(w=>!gs.pending[w]);
   if(!who){ showReveal(); return; }
-  if(gs[who].frozen>0){
-    gs[who].frozen--;
-    gs.pending[who]={type:'__frozen__'};
-    promptNextPicker();
-    return;
-  }
   if(!isHumanSeat(who)){
     gs.pending[who]=aiChooseSync(who);
     promptNextPicker();
@@ -4216,16 +1779,7 @@ function commitPick(who,action){
   setTimeout(promptNextPicker,twoPlayerMode?500:0);
 }
 
-function describeAction(who,action){
-  if(action.type==='el') return describeElemAction(action);
-  if(action.type==='__frozen__') return {icon:'❄️',name:'Frozen'};
-  if(action.type==='channel')    return {icon:'✨',name:'Channel'};
-  const spell=SPELLS.find(s=>s.element===action.type);
-  if(spell) return {icon:spell.icon,name:spell.name+(action.type==='dispel'&&action.dispelSelf?' (Self)':'')};
-  const charSpell=(seatCfg(who).spells||[]).find(s=>s.id===action.type);
-  if(charSpell) return {icon:charSpell.icon,name:charSpell.name};
-  return {icon:'❔',name:action.type};
-}
+function describeAction(who,action){ return describeElemAction(action,who); }
 
 const REVEAL_TO_FIGHT_MS=1200;   // pause on the battlefield between the reveal closing and the first action
 
@@ -4285,6 +1839,7 @@ function resolveSimRound(){
   const acts=gs.pending;
   gs.pending={};
   gs.myTurn=false; gs.busy=true;
+  PLAYERS.forEach(w=>{ gs[w].hpAtRoundStart=gs[w].hp; });
 
   const tiers=[];
   PLAYERS.forEach(who=>{
@@ -4295,20 +1850,13 @@ function resolveSimRound(){
   });
   tiers.sort((a,b)=>a.pri-b.pri);
 
-  if(!elementalMode&&tiers.length>1) tiers[0].seats.forEach(who=>{
-    if(acts[who].type!=='__frozen__') addFloat(seatX(who),bH*.20,'⚡ Goes first!',seatCfg(who).col,11);
-  });
-
-  const frozenBefore={};
-  PLAYERS.forEach(w=>{ frozenBefore[w]=gs[w].frozen; });
 
   let ti=0;
   const runTier=()=>{
     if(!battleRunning||gameEnded) return;
     if(ti>=tiers.length){ endSimRound(); return; }
     const tier=tiers[ti++], seats=tier.seats;
-    const laterTier=ti>1;
-    if(elementalMode&&ELEM_STAGE_BANNERS[tier.pri]) addFloat(bW*.5,bH*.14,ELEM_STAGE_BANNERS[tier.pri],'#f0cc6a',15);
+    if(ELEM_STAGE_BANNERS[tier.pri]) addFloat(bW*.5,bH*.14,ELEM_STAGE_BANNERS[tier.pri],'#f0cc6a',15);
     let si=0;
     deferWinCheck=true;
     const next=()=>{
@@ -4319,43 +1867,24 @@ function resolveSimRound(){
         return;
       }
       const who=seats[si++];
-      // Frozen by an earlier tier this round → loses this round's action
-      if(laterTier&&gs[who].frozen>frozenBefore[who]&&acts[who].type!=='__frozen__'){
-        addFloat(seatX(who),bH*.24,'💨 Interrupted!','#ff6644',15);
-        combatTimeout(next,1200);
-        return;
-      }
-      executeQueuedSpell(who,acts[who],next);
+      executeElemental(who,acts[who],next);
     };
     next();
   };
   runTier();
 }
 
-// Per-round effects landing on `who`: DoTs, regen, enemy summons, passive mana.
+// Round-end effects on `who`: DoTs, regen, the foe's minions, durations, then mana income.
 // Callers defer win checks so simultaneous tick deaths resolve as a draw.
 function tickRound(who){
-  const st=gs[who], x=seatX(who), y=bH*.38;
-  processVineWhip(st,x,y);
-  processBlizzard(st,x,y);
-  processBurn(st,x,y);
-  processPoison(st,x,y);
-  processVoidCollapse(st,x,y);
-  if(st.hp>0) processRegen(st,x,y);
-  processPlagueDoT(st,x,y);
-  if(st.hp>0) processBoneTotem(st,x,y);
-  PLAYERS.filter(w=>w!==who).forEach(enemy=>{
-    processBlades(enemy,st,x,y);
-    processSkeletonStrikes(enemy,st,x,y);
-    processSimulacra(enemy,st,x,y);
-  });
-  st.mana=Math.min(MAX_MANA,st.mana+(elementalMode?ELEM_INCOME:1));
+  elemTickEffects(who);
+  gs[who].mana=Math.min(MAX_MANA,gs[who].mana+elemIncome(who));
 }
 
 function runRoundTicks(){
-  PLAYERS.forEach(w=>{ if(gs[w].invisible>0) gs[w].invisible--; });
   deferWinCheck=true;
   PLAYERS.forEach(tickRound);
+  PLAYERS.forEach(w=>{ const st=gs[w]; st.lastRoundLoss=Math.max(0,(st.hpAtRoundStart??st.hp)-st.hp); });
   settleWin();
 }
 
@@ -4365,9 +1894,8 @@ function endSimRound(){
   gs.myTurn=false; gs.busy=true;
   PLAYERS.forEach(w=>{
     const st=gs[w];
-    if(st.shield>0){ st.shield--; if(st.shield<=0){ st.shieldHp=0; st.counter=false; st.shieldType=null; } }
-    if(elementalMode&&st.shield>0) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
-    tickStatuses(st);
+    if(st.shield>0){ st.shield--; if(st.shield<=0){ st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null; } }
+    if(st.shield>0) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
   });
   gs.round++;
 
@@ -4383,28 +1911,20 @@ function endSimRound(){
   },delay);
 }
 
-// resolveCharSpell ends by calling endMyTurn (p1 / 2P) or finishAI (AI p2);
-// during resolution simCallback carries control back to the round sequencer.
-function endMyTurn(){
-  gs.myTurn=false;
-  if(simCallback){ const cb=simCallback; simCallback=null; cb(); }
-}
-function finishAI(){
-  if(simCallback){ const cb=simCallback; simCallback=null; cb(); }
-}
 
 // ── ELEMENTAL DUEL (Damage / Protection / Dispel) ──────────
 // Protection beats Damage, Dispel beats Protection, Damage beats Dispel.
-// Rounds resolve in stages — every ward, then every dispel, then every strike —
+// Rounds resolve in stages — every Protection pick, then every Dispel, then every Damage —
 // so a ward raised this round already stops this round's damage. See docs/rps-duel-design.md.
-let elementalMode=true;   // false = Classic rules (character spell kits + Channel)
-
 const ELEM_START_MANA=6;
 const ELEM_INCOME=4;            // mana every seat gains at the end of each round
 const ELEM_WARD_ROUNDS=3;       // a ward lasts the round it is raised + 2 more
 const ELEM_WARD_DECAY=0.75;     // ward HP kept at each round end
 const ELEM_CHILL_MIN_TIER=2;    // Ice of this strength or more chills when it reaches HP
 const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or not
+const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
+const ELEM_DISPEL_ALL_TIER=3;
+const ELEM_CURSE_DISPEL=0.5;    // curses also hit the foe's ward with this share of a dispel's power   // a Greater dispel on an unwarded foe strips every buff, not just the newest
 
 const ELEMENTS=[
   {id:'fire',      name:'Fire',      icon:'🔥', col:'#ff6622'},
@@ -4431,29 +1951,144 @@ const ELEM_WARD_THEME={fire:'flameshield', ice:'frostarmor', lightning:'shield',
   arcane:'foresight', physical:'stoneskin', dark:'warpaint'};
 const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane', physical:'physical', dark:'manaburn'};
 
-function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS[0]; }
+function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS[3]; }
+function hasWard(st){ return st.shield>0&&st.shieldHp>0; }
+
+// ── Signature spells: each character spell with an `el` block in characters.json ──
+// el.cat (damage/protect/dispel) sets the wheel it is listed under, its resolution stage, and
+// which locks/spellbinds affect it. el.kind: strike | ward | buff (enchantment on self) |
+// curse (enchantment on the foe) | instant.
+function sigSpells(who,cat){ return (seatCfg(who).spells||[]).filter(s=>s.el&&(!cat||s.el.cat===cat)); }
+function sigById(who,id){ return (seatCfg(who).spells||[]).find(s=>s.id===id&&s.el); }
+function sigName(sp){ return sp.el.name||sp.name; }
+function sigIcon(sp){ return sp.el.icon||sp.icon; }
+
+// ── Enchantments: st.effects = [{id,type,kind:'buff'|'curse',name,icon,rounds|null,...params}] ──
+function effectsOf(st,type){ return (st&&st.effects||[]).filter(e=>e.type===type); }
+function takeEffect(st,type,pred){
+  const i=(st.effects||[]).findIndex(e=>e.type===type&&(!pred||pred(e)));
+  if(i<0) return null;
+  return st.effects.splice(i,1)[0];
+}
+function countMinions(st,minion){ return effectsOf(st,'minion').filter(e=>e.minion===minion).length; }
+function syncMinionVisuals(st){
+  // drawWiz draws blades / skeletons / simulacra from these fields
+  st.blades=countMinions(st,'blade');
+  st.skeletons=effectsOf(st,'minion').filter(e=>e.minion==='skeleton').map(()=>({hp:25}));
+  st.simulacra=effectsOf(st,'minion').filter(e=>e.minion==='simulacrum').map(()=>({}));
+}
+function addEffect(who,eff,fromWho){
+  const st=gs[who], x=seatX(who);
+  if(eff.kind==='curse'&&effectsOf(st,'warding').length){
+    addFloat(x,bH*.3,'🔰 '+eff.name+' resisted!','#88ccff',12);
+    VFX.curseWarded(x);
+    return false;
+  }
+  if(eff.type==='lock'){
+    if(catLocked(who,eff.cat)) return false;
+    // No back-to-back locks: the round this would block must not follow a locked round
+    if(st.lastLockedRound!=null&&gs.round+1-st.lastLockedRound<2){
+      addFloat(x,bH*.3,'💪 Breaks free!','#cccccc',12);
+      return false;
+    }
+    st.lastLockedRound=gs.round+1;   // the round the lock actually blocks
+  }
+  // Same enchantment again refreshes it; minions stack instead
+  if(eff.type!=='minion') st.effects=st.effects.filter(e=>e.id!==eff.id);
+  st.effects.push(Object.assign({from:fromWho},eff));
+  if(eff.type==='minion') syncMinionVisuals(st);
+  addFloat(x,bH*.26,eff.icon+' '+eff.name+'!',eff.kind==='curse'?'#cc88ff':'#88ffcc',13);
+  return true;
+}
+function removeEffects(who,list,reason){
+  const st=gs[who], x=seatX(who);
+  list.forEach(e=>{
+    st.effects=st.effects.filter(f=>f!==e);
+    if(e.type==='minion'&&e.healOnRemove){
+      st.hp=Math.min(st.maxHp,st.hp+e.healOnRemove);
+      addFloat(x,bH*.42,'+'+e.healOnRemove+' 💀','#88ffcc',11);
+    }
+  });
+  if(list.length){
+    addFloat(x,bH*.3,reason+': '+list.map(e=>e.icon).join(' '),'#ffaaff',12);
+    if(reason==='✦ Dispelled') VFX.stripped(x);
+  }
+  syncMinionVisuals(st);
+}
+function buffsOf(st){ return (st.effects||[]).filter(e=>e.kind==='buff'); }
+function cursesOf(st){ return (st.effects||[]).filter(e=>e.kind==='curse'); }
+
+function catLocked(who,cat){ return effectsOf(gs[who],'lock').some(e=>e.cat===cat); }
+function spellbindExtra(who,cat){
+  return effectsOf(gs[who],'spellbind').filter(e=>e.cat===cat).reduce((a,e)=>a+e.extra,0);
+}
 function elemCost(who,cat,tier){
   const mod=cat==='protect'?(seatCfg(who).shieldCostMod||0):0;
-  return Math.max(1,ELEM_CATS[cat].cost[tier-1]+mod);
+  return Math.max(1,ELEM_CATS[cat].cost[tier-1]+mod)+spellbindExtra(who,cat);
+}
+// A signature spell's numbers are written for the middle ring; the inner and outer rings scale them
+const SIG_COST_SCALE=[0.6,1,1.6], SIG_POWER_SCALE=[0.6,1,1.5];
+function sigAtTier(sp,tier){
+  const s=SIG_POWER_SCALE[tier-1], el=JSON.parse(JSON.stringify(sp.el));
+  const n=v=>Math.max(1,Math.round(v*s));
+  const pct=(v,cap)=>Math.min(cap,Math.round(v*s*100)/100);
+  const mult=v=>Math.round((1+(v-1)*s)*100)/100;
+  el.tier=tier;
+  if(el.cost>0) el.cost=Math.max(1,Math.round(el.cost*SIG_COST_SCALE[tier-1]));
+  ['power','retaliate','perSkeleton','perBlade','rewind','manaburn','drainNow','hpCost'].forEach(k=>{ if(el[k]) el[k]=n(el[k]); });
+  if(el.variance) el.variance=el.variance.map(n);
+  if(el.pctHp) el.pctHp=pct(el.pctHp,0.6);
+  if(el.dot) el.dot.dmg=n(el.dot.dmg);
+  if(el.arc) el.arc.dmg=n(el.arc.dmg);
+  if(el.chance!=null) el.chance=pct(el.chance,1);
+  const e=el.effect;
+  if(e){
+    ['perRound','retaliate','dmg','n','bonus','burn','extra'].forEach(k=>{ if(e[k]) e[k]=n(e[k]); });
+    if(e.ramp) e.ramp=e.ramp.map(n);
+    if(e.pct) e.pct=pct(e.pct,0.7);
+    if(e.mult) e.mult=mult(e.mult);
+    if(['absorbNext','warding','bewitch'].includes(e.type)) e.rounds=Math.max(1,e.rounds+tier-2);
+  }
+  const a=el.action;
+  if(a){ ['amt','mana','heal'].forEach(k=>{ if(a[k]) a[k]=n(a[k]); }); if(a.mult) a.mult=mult(a.mult); }
+  return el;
+}
+// The character's signature spell occupying this sector of the category's wheel, if any
+function sigAt(who,cat,elem){ return sigSpells(who,cat).find(sp=>sp.el.elem===elem)||null; }
+function sigCost(who,sp,tier){ return Math.max(0,sigAtTier(sp,tier).cost+spellbindExtra(who,sp.el.cat)); }
+function sectorOk(who,cat,elem,tier){
+  const sp=sigAt(who,cat,elem);
+  return sp?!sigBlocked(who,sp,tier):elemCost(who,cat,tier)<=gs[who].mana;
+}
+// Why a signature spell can't be cast at this ring right now ('' = it can)
+function sigBlocked(who,sp,tier){
+  const st=gs[who], el=sigAtTier(sp,tier);
+  if(sigCost(who,sp,tier)>st.mana) return 'Not enough mana';
+  if(el.oncePerDuel&&st.usedSig[sp.id]) return 'Once per duel';
+  if(el.requires==='blades'&&countMinions(st,'blade')===0) return 'Needs a blade';
+  if(el.kind==='buff'&&el.effect.type==='minion'&&countMinions(st,el.effect.minion)>=el.effect.max) return 'Maximum reached';
+  if(el.hpCost&&st.hp<=el.hpCost) return 'Not enough HP';
+  return '';
 }
 function elemCanPick(who,cat){
-  const st=gs[who];
-  if(cat==='damage'&&st.chill>0) return false;
-  return elemCost(who,cat,1)<=st.mana;
+  if(catLocked(who,cat)) return false;
+  if(cat==='dispel'&&elemCost(who,cat,1)<=gs[who].mana) return true;   // Cleanse Self
+  return ELEMENTS.some(e=>sectorOk(who,cat,e.id,1));
 }
-function hasWard(st){ return st.shield>0&&st.shieldHp>0; }
-function actionPriority(action){
-  if(action.type==='el') return ELEM_CATS[action.cat]?ELEM_CATS[action.cat].stage:4;
-  return ACTION_PRIORITY[action.type]||4;
-}
-function describeElemAction(action){
+function actionPriority(action){ return ELEM_CATS[action.cat]?ELEM_CATS[action.cat].stage:4; }
+function describeElemAction(action,who){
   if(action.cat==='pass') return {icon:'…',name:'Waits'};
+  const cat=ELEM_CATS[action.cat];
+  if(action.sig){
+    const sp=sigById(who,action.sig);
+    return {icon:cat.icon+(sp?sigIcon(sp):'★'),name:ELEM_TIER_NAMES[(action.tier||2)-1]+(sp?sigName(sp):action.sig)};
+  }
   if(action.self) return {icon:'✦',name:'Cleanse Self'};
-  const el=elemById(action.elem), cat=ELEM_CATS[action.cat];
+  const el=elemById(action.elem);
   return {icon:cat.icon+el.icon,name:ELEM_TIER_NAMES[action.tier-1]+el.name+' '+cat.verb};
 }
 
-// ── Pick UI: three category buttons → strength wheel → minigame ──
+// ── Pick UI: three category buttons → strength wheel (+ signature spells) → minigame ──
 let wheelCat=null;
 function openElemWheel(cat){
   if(!gs.myTurn||gs.busy) return;
@@ -4468,14 +2103,25 @@ function openElemWheel(cat){
   selfBtn.textContent='✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
   const ruleText={
     damage:'Lightning also burns mana · Ice (middle ring or stronger) chills: no Damage next round',
-    protect:'Lasts 3 rounds, fading each round · the chosen element only does half damage to it',
-    dispel:'Breaks wards · double effect on a ward of the same element',
+    protect:'Wards last 3 rounds, fading each round · the chosen element only does half damage to it',
+    dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
   document.getElementById('wheel-rule').textContent=ruleText;
   document.getElementById('wheel-legend').innerHTML=[0,1,2].map(t=>{
     const cost=elemCost(who,cat,t+1), off=cost>st.mana;
     return `<div class="wl-row${off?' off':''}"><span>${['Inner','Middle','Outer'][t]}</span><span>${cost} Mana</span><span>${c.power[t]} ${c.unit}</span></div>`;
   }).join('');
+  // Signature spells replace their element's sector; list what each one does
+  const sigs=sigSpells(who,cat);
+  document.getElementById('wheel-sig').innerHTML=sigs.length?
+    `<div class="wsig-label">★ ${seatCfg(who).name}'s spells on this wheel</div>`+sigs.map(sp=>{
+      const e=elemById(sp.el.elem), why=sigBlocked(who,sp,1);
+      const costs=[1,2,3].map(t=>sigCost(who,sp,t)).join(' / ');
+      return `<div class="wsig-row${why?' off':''}"><span class="wsig-ico">${sigIcon(sp)}</span>`+
+        `<span class="wsig-name">${sigName(sp)} <small>${e.icon} ${e.name}</small></span>`+
+        `<span class="wsig-cost">${costs} Mana</span>`+
+        `<span class="wsig-desc">${why&&why!=='Not enough mana'?why:sp.el.desc||''} <small>(middle ring)</small></span></div>`;
+    }).join(''):'';
   buildWheelSvg(who,cat);
   document.getElementById('wheel-overlay').classList.add('active');
 }
@@ -4487,20 +2133,21 @@ function closeElemWheel(){
 const WHEEL_RINGS=[[38,82],[82,124],[124,166]];
 function buildWheelSvg(who,cat){
   const svg=document.getElementById('wheel-svg');
-  const st=gs[who];
   const pt=(r,a)=>(r*Math.cos(a)).toFixed(1)+' '+(r*Math.sin(a)).toFixed(1);
   const step=Math.PI*2/ELEMENTS.length;
   let html='';
   ELEMENTS.forEach((el,i)=>{
     const a0=-Math.PI/2-step/2+i*step, a1=a0+step, am=(a0+a1)/2;
+    const sp=sigAt(who,cat,el.id);
     WHEEL_RINGS.forEach(([r0,r1],t)=>{
-      const off=elemCost(who,cat,t+1)>st.mana;
+      const off=!sectorOk(who,cat,el.id,t+1);
       const d=`M${pt(r0,a0)} L${pt(r1,a0)} A${r1} ${r1} 0 0 1 ${pt(r1,a1)} L${pt(r0,a1)} A${r0} ${r0} 0 0 0 ${pt(r0,a0)} Z`;
-      html+=`<path class="wseg${off?' off':''}" d="${d}" data-elem="${el.id}" data-tier="${t+1}" `+
+      html+=`<path class="wseg${off?' off':''}${sp?' sig':''}" d="${d}" data-elem="${el.id}" data-tier="${t+1}" `+
         `style="fill:${off?'#2a2a33':el.col};fill-opacity:${off?0.5:[0.22,0.42,0.68][t]}"/>`;
     });
-    html+=`<text class="wicon" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${el.icon}</text>`;
-    html+=`<text class="wname" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${el.name}</text>`;
+    const label=sp?'★'+sigName(sp).split(' ')[0]:el.name;
+    html+=`<text class="wicon" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${sp?sigIcon(sp):el.icon}</text>`;
+    html+=`<text class="wname${sp?' wname-sig':''}" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${label}</text>`;
   });
   html+=`<circle class="wcentre" r="36"/><text class="wcentre-ico" y="2">${ELEM_CATS[cat].icon}</text>`;
   svg.innerHTML=html;
@@ -4512,10 +2159,11 @@ function onWheelTap(e){
   closeElemWheel();
   castElemental(cat,seg.dataset.elem,+seg.dataset.tier,false);
 }
-
 function castElemental(cat,elemId,tier,self){
   const who=gs.turnPlayer;
-  if(elemCost(who,cat,tier)>gs[who].mana) return;
+  const sp=self?null:sigAt(who,cat,elemId);
+  if(sp){ castSignature(sp.id,tier); return; }
+  if(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)) return;
   const el=elemById(elemId);
   const target=self?who:PLAYERS.find(w=>w!==who);   // 3–4 seats: target picker goes here
   const spell={name:describeElemAction({cat,elem:elemId,tier,self}).name, icon:el.icon,
@@ -4527,54 +2175,210 @@ function castElemental(cat,elemId,tier,self){
   else ELEM_MINIGAME[elemId](spell,commit);
 }
 
+function castSignature(id,tier){
+  const who=gs.turnPlayer, sp=sigById(who,id);
+  if(!sp||sigBlocked(who,sp,tier)||catLocked(who,sp.el.cat)) return;
+  const el=sp.el, elemId=el.elem||'arcane', e=elemById(elemId);
+  const spell={name:ELEM_TIER_NAMES[tier-1]+sigName(sp), icon:sigIcon(sp), element:elemId, col:e.col, tier,
+    glyphs:el.kind==='strike'?ELEM_GLYPHS[elemId]:undefined};
+  const commit=ok=>commitPick(who,{type:'el',cat:el.cat,elem:elemId,tier,sig:id,target:PLAYERS.find(w=>w!==who),ok});
+  gs.busy=true;
+  if(el.cat==='dispel') launchDispelPattern(spell,commit);
+  else if(el.kind==='strike') ELEM_MINIGAME[elemId](spell,commit);
+  else launchBuffTileMatch(spell,ELEM_WARD_THEME[elemId],who,ok=>commit(ok));
+}
+
 // ── Resolution ──
+function elemFloatDmg(who,n,icon,col){
+  if(n<=0) return;
+  dealDmgToPlayer(who,n,seatX(who),bH*.38);
+  addFloat(seatX(who),bH*.36,icon+' −'+n,col,13);
+}
+function elemHeal(who,n,icon){
+  const st=gs[who], before=st.hp;
+  st.hp=Math.min(st.maxHp,st.hp+n);
+  if(st.hp>before) addFloat(seatX(who),bH*.42,'+'+(st.hp-before)+' '+(icon||'💚'),'#44ee88',12);
+}
+
 function executeElemental(who,action,cb){
-  const st=gs[who], x=seatX(who), y=bH*.38;
+  const st=gs[who], x=seatX(who);
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
+  const sp=action.sig?sigById(who,action.sig):null;
+  const cost=sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
+
+  const agony=effectsOf(st,'agony')[0];
+  if(agony){ elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); }
   if(!action.ok){
     addFloat(x,bH*.33,'Fizzled!','#ff8844',13);
     st.mana=Math.max(0,st.mana-1);
     combatTimeout(cb,700);
     return;
   }
-  const cat=ELEM_CATS[action.cat], el=elemById(action.elem);
-  st.mana=Math.max(0,st.mana-elemCost(who,action.cat,action.tier));
+  const silence=effectsOf(st,'silence')[0];
+  if(silence&&_rng()<silence.pct){
+    showSilenceBlock(x,bH*.33);
+    combatTimeout(cb,900);
+    return;
+  }
+  if(cost>st.mana){ addFloat(x,bH*.33,'Out of mana!','#ff8844',13); combatTimeout(cb,700); return; }
+  st.mana-=cost;
   anim(who,'cast',600);
-  const power=cat.power[action.tier-1];
+  st.lastCat=action.cat;   // what Spellbind targets
+  if(sp){
+    st.usedSig[sp.id]=true;
+    const hpCost=sigAtTier(sp,action.tier).hpCost;
+    if(hpCost) elemFloatDmg(who,hpCost,'🩸','#ff4444');
+  }
 
+  const isWard=sp?sp.el.kind==='ward':(action.cat==='protect');
+  const candle=effectsOf(st,'candle')[0];
+  if(isWard&&candle){ elemFloatDmg(who,candle.dmg,'🕯️','#ff6622'); VFX.candle(x); }
+
+  if(sp) executeSignature(who,sp,action,cb);
+  else executeWheel(who,action,cb);
+}
+
+function executeWheel(who,action,cb){
+  const st=gs[who], x=seatX(who), y=bH*.38;
+  const cat=ELEM_CATS[action.cat], el=elemById(action.elem);
+  const power=cat.power[action.tier-1];
   if(action.cat==='protect'){
-    st.shield=ELEM_WARD_ROUNDS; st.shieldHp=power; st.shieldType=action.elem;
-    addFloat(x,bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
-    spawnParts(x,y,el.col,18);
+    raiseWard(who,action.elem,power,0);
+    anim(who,'shield',700);
     combatTimeout(cb,900);
     return;
   }
   if(action.self){
-    const had=st.chill>0;
-    st.chill=0;
-    addFloat(x,bH*.28,had?'✦ Cleansed!':'✦ Nothing to cleanse','#ffaaff',13);
-    spawnParts(x,y,'#ffaaff',10);
+    elemCleanse(who);
     combatTimeout(cb,800);
     return;
   }
   const tgt=action.target, tx=seatX(tgt);
   if(action.cat==='damage') st.lastElem=action.elem;
   spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,()=>{
-    if(action.cat==='dispel') elemDispelHit(tgt,action.elem,power);
-    else elemDamageHit(who,tgt,action.elem,action.tier,power);
+    if(action.cat==='dispel') elemDispelHit(tgt,action.elem,power,action.tier);
+    else elemStrike(who,tgt,{elem:action.elem,tier:action.tier,power});
     combatTimeout(cb,600);
   });
 }
 
-function breakWard(st,x){
-  st.shield=0; st.shieldHp=0; st.shieldType=null;
-  addFloat(x,bH*.24,'🛡 SHATTERED!','#88ffff',18);
-  spawnParts(x,bH*.38,'#4af0ff',18);
+function executeSignature(who,sp,action,cb){
+  const st=gs[who], x=seatX(who), y=bH*.38, el=sigAtTier(sp,action.tier);
+  const tgt=action.target, ts=gs[tgt], tx=seatX(tgt);
+  const e=elemById(el.elem||'arcane');
+  const fx=SPELL_VFX[sp.id]||{}, ctx=vfxCtx(who,tgt);
+  const effect=(overrides)=>Object.assign({id:sp.id,name:sigName(sp),icon:sigIcon(sp)},el.effect,overrides);
+  if(el.kind==='strike'){
+    st.lastElem=el.elem;
+    let power=el.power||0;
+    if(el.variance) power=el.variance[0]+Math.round(_rng()*(el.variance[1]-el.variance[0]));
+    if(el.pctHp) power=Math.max(power,Math.round(ts.hp*el.pctHp));
+    const blades=countMinions(st,'blade');
+    if(el.perBlade){
+      power=el.perBlade*blades;
+      removeEffects(who,effectsOf(st,'minion').filter(m=>m.minion==='blade'),'Launched');
+    }
+    const d=fx.delivery;
+    // A volley's own per-projectile effects stand in for the default impact burst
+    const vfx=fx.hit||(d&&d.volley?()=>{}:null);
+    const land=()=>{
+      elemStrike(who,tgt,Object.assign({},el,{power,name:sigName(sp),vfx}));
+      combatTimeout(cb,600);
+    };
+    if(d==='lunge'){ lunge(who,0.12,land); return; }
+    if(d&&d.volley){
+      const n=Math.max(1,d.volley==='blades'?blades:d.volley);
+      if(fx.pre) fx.pre(ctx);
+      let i=0;
+      const fire=()=>{
+        const yOff=bH*[-0.04,0,0.04][i%3];
+        spawnProj(x,y+yOff,tx,y+yOff,d.proj||ELEM_PROJ[el.elem],d.col||e.col,()=>{
+          if(fx.each) fx.each(Object.assign({},ctx,{y:y+yOff}));
+          if(++i<n) combatTimeout(fire,d.gap); else land();
+        });
+      };
+      fire();
+      return;
+    }
+    spawnProj(x,y,tx,y,ELEM_PROJ[el.elem],e.col,land);
+    return;
+  }
+  if(el.kind==='ward'){
+    let power=el.power;
+    if(el.perSkeleton) power+=el.perSkeleton*countMinions(st,'skeleton');
+    raiseWard(who,el.elem,power,el.retaliate||0);
+    st.wardSig=sp.id;
+    if(fx.self) fx.self(ctx); else anim(who,'shield',700);
+    if(el.rewind){
+      const back=Math.min(el.rewind,st.lastRoundLoss||0);
+      if(back>0) elemHeal(who,back,'⏪');
+    }
+    combatTimeout(cb,900);
+    return;
+  }
+  if(el.kind==='buff'){
+    addEffect(who,effect({kind:'buff'}),who);
+    if(fx.self) fx.self(ctx); else { spawnParts(x,y,e.col,14); anim(who,'shield',700); }
+    combatTimeout(cb,900);
+    return;
+  }
+  if(el.kind==='curse'){
+    spawnProj(x,y,tx,y,ELEM_PROJ[el.elem||'arcane'],e.col,()=>{
+      if(el.chance!=null&&_rng()>el.chance){ addFloat(tx,bH*.3,sigIcon(sp)+' Resisted','#cccccc',12); VFX.resisted(tx); }
+      else {
+        const eff=effect({kind:'curse'});
+        if(eff.type==='spellbind') eff.cat=ts.lastCat||'damage';
+        if(addEffect(tgt,eff,who)){ if(fx.hit) fx.hit(ctx); else spawnParts(tx,y,e.col,16); }
+      }
+      if(el.drainNow){ const d=Math.min(ts.mana,el.drainNow); ts.mana-=d; if(d) addFloat(tx,bH*.42,'−'+d+' Mana','#88aaff',12); }
+      // A curse is a weak dispel too: it wears at the foe's ward (never strips buffs)
+      if(hasWard(ts)) elemWardDispel(tgt,el.elem,Math.round(ELEM_CATS.dispel.power[action.tier-1]*ELEM_CURSE_DISPEL));
+      combatTimeout(cb,700);
+    });
+    return;
+  }
+  // Instants
+  const a=el.action;
+  if(a.type==='heal') elemHeal(who,a.amt);
+  else if(a.type==='bloodpact'){ st.mana=Math.min(MAX_MANA,st.mana+a.mana); addFloat(x,bH*.3,'+'+a.mana+' Mana','#88aaff',13); }
+  else if(a.type==='cleanse'){ elemCleanse(who); if(a.heal) elemHeal(who,a.heal); }
+  else if(a.type==='rewind'){ elemHeal(who,Math.min(a.max,st.lastRoundLoss||0),'⏪'); if(!st.lastRoundLoss) addFloat(x,bH*.3,'⏪ Nothing to undo','#cccccc',12); }
+  else if(a.type==='siphon'){
+    const n=Math.min(ts.mana,a.amt);
+    ts.mana-=n; st.mana=Math.min(MAX_MANA,st.mana+n);
+    addFloat(tx,bH*.42,'🌀 −'+n+' Mana','#88aaff',12); addFloat(x,bH*.42,'+'+n+' Mana','#88aaff',12);
+  }
+  else if(a.type==='tonic'){
+    ctx.healed=_rng()<0.5;
+    if(ctx.healed) elemHeal(who,a.heal,'⚗️');
+    else addEffect(who,{id:sp.id,type:'empower',kind:'buff',name:'Empowered',icon:'💪',mult:a.mult,rounds:null},who);
+  }
+  if(fx.self) fx.self(ctx); else { spawnParts(x,y,e.col,12); anim(who,'cast',700); }
+  combatTimeout(cb,900);
 }
 
-function elemDispelHit(tgt,elem,power){
+function raiseWard(who,elem,power,retaliate){
+  const st=gs[who], el=elemById(elem);
+  st.shield=ELEM_WARD_ROUNDS; st.shieldHp=power; st.shieldType=elem; st.wardRetaliate=retaliate; st.wardSig=null;
+  addFloat(seatX(who),bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
+  VFX.wardRaise(seatX(who),el.col);
+}
+function breakWard(st,x){
+  st.shield=0; st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null;
+  addFloat(x,bH*.24,'🛡 SHATTERED!','#88ffff',18);
+  VFX.wardShatter(x);
+}
+function elemCleanse(who){
+  const st=gs[who], curses=cursesOf(st);
+  if(curses.length) removeEffects(who,curses,'✦ Cleansed');
+  else addFloat(seatX(who),bH*.28,'✦ Nothing to cleanse','#ffaaff',13);
+  VFX.cleanse(seatX(who));
+  anim(who,'shield',700);
+}
+
+// A ward takes the hit first; strip enchantments only when there's no ward to protect them
+function elemWardDispel(tgt,elem,power){
   const ts=gs[tgt], tx=seatX(tgt);
-  if(!hasWard(ts)){ addFloat(tx,bH*.3,'✦ Nothing to dispel','#ffaaff',12); return; }
   const match=ts.shieldType===elem;
   const dmg=power*(match?2:1);
   ts.shieldHp-=dmg;
@@ -4582,44 +2386,163 @@ function elemDispelHit(tgt,elem,power){
   spawnParts(tx,bH*.38,'#ffaaff',12);
   if(ts.shieldHp<=0) breakWard(ts,tx);
 }
+function elemDispelHit(tgt,elem,power,tier){
+  const ts=gs[tgt], tx=seatX(tgt);
+  VFX.dispelHit(tx);
+  if(hasWard(ts)){ elemWardDispel(tgt,elem,power); return; }
+  const buffs=buffsOf(ts);
+  if(!buffs.length){ addFloat(tx,bH*.3,'✦ Nothing to dispel','#ffaaff',12); return; }
+  removeEffects(tgt,tier>=ELEM_DISPEL_ALL_TIER?buffs:[buffs[buffs.length-1]],'✦ Dispelled');
+}
 
-function elemDamageHit(who,tgt,elem,tier,power){
-  const ts=gs[tgt], tx=seatX(tgt), el=elemById(elem);
-  let dmg=Math.round(power*(seatCfg(who).dmgMult||1));
-  if(hasWard(ts)){
+// Damage that meets the target's ward first. Returns {hp, warded}.
+function elemIncoming(tgt,dmg,elem,icon,col,quiet){
+  const ts=gs[tgt], tx=seatX(tgt);
+  let warded=false;
+  if(hasWard(ts)&&dmg>0){
     // A ward of the same element only takes half damage, so it stops twice as much
     const match=ts.shieldType===elem;
     const blocked=Math.min(dmg,match?ts.shieldHp*2:ts.shieldHp);
     ts.shieldHp-=match?Math.ceil(blocked/2):blocked;
-    dmg-=blocked;
+    dmg-=blocked; warded=true;
     addFloat(tx,bH*.24,'🛡 −'+blocked+(match?' resisted':' blocked'),'#4af0ff',12);
-    spawnParts(tx,bH*.38,'#4af0ff',8);
+    VFX.wardBlock(tx);
     if(ts.shieldHp<=0) breakWard(ts,tx);
   }
   if(dmg>0){
-    dealDmgToPlayer(tgt,dmg,tx,bH*.38,true,true);
-    addFloat(tx,bH*.33,el.icon+' −'+dmg,el.col,16);
-    spawnParts(tx,bH*.38,el.col,16);
-    flash('#220000');
+    dealDmgToPlayer(tgt,dmg,tx,bH*.38);
+    addFloat(tx,bH*.33,icon+' −'+dmg,col,16);
+    if(!quiet) spawnParts(tx,bH*.38,col,16);
   }
-  if(elem==='lightning'){
-    const burn=Math.min(ts.mana,ELEM_LIGHTNING_BURN[tier-1]);
-    if(burn>0){ ts.mana-=burn; addFloat(tx,bH*.42,'⚡ −'+burn+' Mana','#ffee44',12); }
+  return {hp:Math.max(0,dmg),warded};
+}
+
+// o: {elem,tier,power, lifesteal, dot, manaburn, recoil, arc, name, vfx (signature impact)}
+function elemStrike(who,tgt,o){
+  const st=gs[who];
+  if(takeEffect(st,'bewitch')){
+    addFloat(seatX(who),bH*.24,'🪞 Bewitched — it rebounds!','#cc88ff',13);
+    VFX.bewitched(who);
+    tgt=who;
   }
-  if(elem==='ice'&&dmg>0&&tier>=ELEM_CHILL_MIN_TIER){
-    ts.chill=2;   // ticks to 1 at this round's end → blocks Damage for the next pick
-    addFloat(tx,bH*.42,'❄️ Chilled!','#88ddff',13);
+  const ts=gs[tgt], tx=seatX(tgt), el=elemById(o.elem);
+  let dmg=o.power*(seatCfg(who).dmgMult||1);
+  const emp=takeEffect(st,'empower',e=>!e.elem||e.elem===o.elem);
+  if(emp){ dmg*=emp.mult; addFloat(seatX(who),bH*.24,'💪 Empowered!','#ffcc44',11); }
+  const frenzy=effectsOf(st,'frenzy')[0];
+  if(frenzy){ dmg*=frenzy.mult; elemFloatDmg(who,frenzy.selfDmg,'💢','#dd8822'); }
+  const weave=effectsOf(st,'weave')[0];
+  let burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+(o.manaburn||0);
+  if(weave){
+    dmg+=weave.bonus; burn+=weave.burn;
+    if(--weave.charges<=0) st.effects=st.effects.filter(e=>e!==weave);
   }
+
+  if(tgt!==who){
+    const absorb=takeEffect(ts,'absorbNext');
+    if(absorb){
+      addFloat(tx,bH*.28,absorb.id==='vanish'?'👻 Missed!':'🔮 Absorbed!','#ffcc44',15);
+      if(absorb.id==='vanish') VFX.vanished(tx); else VFX.absorbed(tx,el.col);
+      anim(who,'cast',600);
+      return;
+    }
+    const dodge=effectsOf(ts,'dodge')[0];
+    if(dodge&&_rng()<dodge.pct){ addFloat(tx,bH*.28,'💫 Dodged!','#b8a0e8',15); VFX.dodged(tx); anim(who,'cast',600); return; }
+  }
+  effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
+  const resist=effectsOf(ts,'resist').filter(e=>!(e.magicOnly&&o.elem==='physical'))
+    .reduce((m,e)=>Math.max(m,e.pct),0);
+  dmg=Math.round(dmg*(1-resist));
+
+  const hit=elemIncoming(tgt,dmg,o.elem,el.icon,el.col,true);
+  const ctx=vfxCtx(who,tgt);
+  if(o.vfx) o.vfx(ctx);
+  else { ELEM_IMPACT_VFX[o.elem](ctx,emp?38:22); vfxStrikeAnim(who,tgt); }
+  if(hit.hp>0){
+    if(o.lifesteal){ elemHeal(who,Math.round(hit.hp*o.lifesteal),'🩸'); VFX.lifesteal(seatX(who)); }
+    if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',elem:o.elem,name:o.name||el.name,icon:el.icon},o.dot),who);
+    if(o.elem==='ice'&&(o.tier||2)>=ELEM_CHILL_MIN_TIER)
+      addEffect(tgt,{id:'chill',type:'lock',cat:'damage',kind:'curse',name:'Chilled',icon:'❄️',rounds:ELEM_LOCK_ROUNDS},who);
+  }
+  if(burn>0){
+    const n=Math.min(ts.mana,burn);
+    if(n>0){ ts.mana-=n; addFloat(tx,bH*.42,'⚡ −'+n+' Mana','#ffee44',12); }
+  }
+  if(o.arc&&_rng()<o.arc.chance){
+    addFloat(tx,bH*.2,'⚡ Arcs!','#ffee44',13);
+    elemIncoming(tgt,o.arc.dmg,o.elem,el.icon,el.col,true);
+    VFX.arc(tx,seatCfg(who).col);
+  }
+  if(tgt!==who){
+    // Retaliation from the target's ward and enchantments, each with its own look
+    const sources=[];
+    if(hit.warded&&ts.wardRetaliate) sources.push({id:ts.wardSig,n:ts.wardRetaliate});
+    effectsOf(ts,'resist').concat(effectsOf(ts,'counter')).forEach(e=>{ if(e.retaliate) sources.push({id:e.id,n:e.retaliate}); });
+    let back=0;
+    sources.forEach(r=>{ back+=r.n; const f=VFX.retaliate[r.id]; if(f) f(tx,seatX(who)); });
+    if(back>0) elemFloatDmg(who,back,'↩️','#ff8844');
+  }
+  if(o.recoil) elemFloatDmg(who,o.recoil,'💥','#ff6644');
+}
+
+// Round-end effects on `who` (Elemental rules): DoTs, regen, the foe's minions, then durations tick down
+function elemTickEffects(who){
+  const st=gs[who], x=seatX(who);
+  effectsOf(st,'dot').forEach(e=>{
+    e.tick=(e.tick||0)+1;
+    const dmg=e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg;
+    elemFloatDmg(who,dmg,e.icon,'#cc88ff');
+    const tick=TICK_VFX[e.id]||TICK_VFX[e.elem];
+    if(tick) tick(x,bH*.38);
+    if(e.manaDrain){ const d=Math.min(st.mana,e.manaDrain); st.mana-=d; if(d) addFloat(x,bH*.46,'−'+d+' Mana','#88aaff',11); }
+  });
+  effectsOf(st,'regen').forEach(e=>{
+    if(st.hp<=0) return;
+    elemHeal(who,e.perRound,e.icon);
+    (TICK_VFX[e.id]||TICK_VFX.regen)(x,bH*.38);
+  });
+  PLAYERS.filter(w=>w!==who).forEach(owner=>{
+    effectsOf(gs[owner],'minion').forEach(m=>{
+      const el=elemById(m.elem||'physical');
+      elemIncoming(who,m.dmg,m.elem||'physical',m.icon,el.col,true);
+      if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,bH*.38);
+    });
+  });
+  const expired=[];
+  st.effects.forEach(e=>{ if(e.rounds!=null&&--e.rounds<=0) expired.push(e); });
+  if(expired.length){ st.effects=st.effects.filter(e=>!expired.includes(e)); syncMinionVisuals(st); }
+}
+function elemIncome(who){
+  const drain=effectsOf(gs[who],'incomeDrain').reduce((a,e)=>a+e.n,0);
+  return Math.max(0,ELEM_INCOME-drain);
 }
 
 // ── Elemental AI: a weighted mixed strategy so it can't be read every round ──
+// Would casting this signature spell do anything useful right now?
+function aiSigSensible(who,sp){
+  const st=gs[who], tgt=PLAYERS.find(w=>w!==who), ts=gs[tgt], el=sp.el;
+  const active=(s,id)=>(s.effects||[]).some(e=>e.id===id);
+  if(el.kind==='buff') return el.effect.type==='minion'||!active(st,sp.id);
+  if(el.kind==='curse') return !active(ts,sp.id)&&!(el.effect.type==='lock'&&catLocked(tgt,el.effect.cat));
+  if(el.kind==='instant'){
+    const a=el.action;
+    if(a.type==='heal'||a.type==='tonic') return st.hp<st.maxHp*0.7;
+    if(a.type==='bloodpact') return st.mana<6&&st.hp>40;
+    if(a.type==='rewind') return (st.lastRoundLoss||0)>=10;
+    if(a.type==='cleanse') return cursesOf(st).length>0;
+    if(a.type==='siphon') return ts.mana>=3;
+  }
+  return true;
+}
 function elemAIChoose(who){
   const me=gs[who], tgt=PLAYERS.find(w=>w!==who), opp=gs[tgt];
   const smart=aiDifficulty==='normal';
-  const oppWard=hasWard(opp);
+  const oppWard=hasWard(opp), oppBuffs=buffsOf(opp).length, myCurses=cursesOf(me).length;
   const w={damage:1.0, protect:0.55, dispel:0.08};
   if(oppWard){ w.dispel=smart?1.7:1.0; w.damage=0.5; }
-  if(hasWard(me)&&me.shieldHp>=15) w.protect=0.08;
+  else if(oppBuffs) w.dispel+=smart?0.9:0.4;
+  if(myCurses) w.dispel+=0.5;
+  if(hasWard(me)&&me.shieldHp>=15) w.protect=0.2;
   else {
     if(opp.mana>=elemCost(tgt,'damage',2)) w.protect+=0.35;
     if(me.hp<me.maxHp*0.35) w.protect+=0.35;
@@ -4628,19 +2551,33 @@ function elemAIChoose(who){
   if(!cats.length) return {type:'el',cat:'pass',ok:true};
   let r=_rng()*cats.reduce((sum,c)=>sum+w[c],0), cat=cats[0];
   for(const c of cats){ r-=w[c]; if(r<=0){ cat=c; break; } }
+  const ok=_rng()<(smart?0.9:0.78);
+
+  // Each sector of the wheel is a plain element or one of this character's signature spells
+  const sectors=ELEMENTS.map(e=>({elem:e.id,sp:sigAt(who,cat,e.id)})).filter(x=>sectorOk(who,cat,x.elem,1));
+  const plain=sectors.filter(x=>!x.sp);
+  const sigs=sectors.filter(x=>x.sp&&aiSigSensible(who,x.sp));
+  const cleanseOk=cat==='dispel'&&myCurses&&elemCost(who,'dispel',1)<=me.mana;
+  if(cleanseOk&&!oppWard&&!oppBuffs&&_rng()<0.7)
+    return {type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok};
+  let choice=null;
+  if(sigs.length&&(!plain.length||_rng()<(smart?0.45:0.3))) choice=sigs[Math.floor(_rng()*sigs.length)];
+  else if(plain.length){
+    const pickFrom=list=>list[Math.floor(_rng()*list.length)];
+    const has=id=>plain.find(x=>x.elem===id);
+    choice=pickFrom(plain);
+    if(cat==='dispel'&&oppWard&&has(opp.shieldType)&&_rng()<(smart?0.8:0.4)) choice=has(opp.shieldType);
+    if(cat==='damage'&&oppWard&&smart){ const off=plain.filter(x=>x.elem!==opp.shieldType); if(off.length) choice=pickFrom(off); }
+    if(cat==='protect'&&opp.lastElem&&has(opp.lastElem)&&_rng()<(smart?0.6:0.3)) choice=has(opp.lastElem);
+  }
+  else if(sectors.length) choice=sectors[Math.floor(_rng()*sectors.length)];   // anything beats waiting
+  if(!choice) return cleanseOk?{type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok}:{type:'el',cat:'pass',ok:true};
 
   let tier=3;
-  while(tier>1&&elemCost(who,cat,tier)>me.mana) tier--;
+  while(tier>1&&!sectorOk(who,cat,choice.elem,tier)) tier--;
   if(tier>1&&_rng()<0.4) tier--;   // sometimes hold mana back
-
-  const others=id=>ELEMENTS.filter(e=>e.id!==id);
-  const pickFrom=list=>list[Math.floor(_rng()*list.length)].id;
-  let elem=pickFrom(ELEMENTS);
-  if(cat==='dispel'&&oppWard&&_rng()<(smart?0.8:0.4)) elem=opp.shieldType;
-  if(cat==='damage'&&oppWard&&smart) elem=pickFrom(others(opp.shieldType));
-  if(cat==='protect'&&opp.lastElem&&_rng()<(smart?0.6:0.3)) elem=opp.lastElem;
-
-  const ok=_rng()<(smart?0.9:0.78);
+  const elem=choice.elem;
+  if(choice.sp) return {type:'el',cat,elem,tier,sig:choice.sp.id,target:tgt,ok};
   return {type:'el',cat,elem,tier,self:false,target:tgt,ok};
 }
 
@@ -4652,397 +2589,21 @@ function elemStatusTags(){
       const el=elemById(st.shieldType);
       tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${st.shieldHp} (${st.shield})</span>`);
     }
-    if(st.chill>0) tags.push(`<span class="status-tag freeze">❄️ ${name} CHILLED — NO DAMAGE</span>`);
+    (st.effects||[]).filter(e=>e.type!=='minion').forEach(e=>{
+      tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.rounds!=null?' ('+e.rounds+')':''}</span>`);
+    });
+    const minions=effectsOf(st,'minion');
+    if(minions.length) tags.push(`<span class="status-tag foresight">${minions.map(m=>m.icon).join('')} ${name} ×${minions.length}</span>`);
   });
   return tags;
 }
 
-// ── AI DECISION LOGIC (shared by aiChooseSync) ──
-function aiDecideEasy(who){
-  const opp=who==='p2'?'p1':'p2';
-  const aiCfg=who==='p2'?p2Cfg:p1Cfg;
-  const aiKey=who==='p2'?p2Key:p1Key;
-  const ai=gs[who];
-  const allSpells=[...SPELLS,...(aiCfg.spells||[])];
-  const available=allSpells.filter(s=>{
-    if(ai.mana<s.cost) return false;
-    if(s.id&&charSpellBlocked(s.id,ai,aiCfg,gs[opp])) return false;
-    if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
-    if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
-    if(s.aiHint==='drain'&&ai.hp>ai.maxHp*0.75) return false;
-    if(ai.frenzied>0&&s.element) return false;
-    if(gs[opp].invisible>0&&(s.element&&!s.area&&s.element!=='dispel'&&s.element!=='manaburn'||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption'||s.id==='rockfall')) return false;
-    return true;
-  });
-  const charSpells=available.filter(s=>s.id);
-  const universalSpells=available.filter(s=>s.element);
-  let chosen=null, aiDispelSelf=false;
-  if(ai.enthralled>0) return {chosen:null, aiDispelSelf:false, forceChannel:true};
-  if(aiKey==='mordant'&&ai.agony>0) chosen=null;
-  else if(aiKey==='mordant'){
-    const hexSpells=charSpells.filter(s=>['agony','silence','corruption'].includes(s.id));
-    if(hexSpells.length>0&&_rng()<0.65) chosen=hexSpells[Math.floor(_rng()*hexSpells.length)];
-  }
-  if(aiKey==='mary'){
-    const hasDebuff=ai.burn>0||ai.poison>0||ai.voidCollapse>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
-    const canPurge=charSpells.find(s=>s.id==='purge');
-    const canHeal=charSpells.find(s=>s.id==='divineheal');
-    if(hasDebuff&&canPurge) chosen=canPurge;
-    else if(ai.hp<ai.maxHp*0.60&&canHeal) chosen=canHeal;
-  }
-  if(aiKey==='zacharius'){
-    const chainReady=charSpells.find(s=>s.id==='chainlightning');
-    const canGalvanize=charSpells.find(s=>s.id==='galvanize');
-    const canConductivity=charSpells.find(s=>s.id==='conductivity');
-    if(chainReady&&ai.charge>=(aiCfg.chainLightningChargeCost||8)) chosen=chainReady;
-    else if(canConductivity&&!gs[opp].conductivity&&ai.mana>=canConductivity.cost) chosen=canConductivity;
-    else if(canGalvanize) chosen=canGalvanize;
-  }
-  if(aiKey==='durin'){
-    const canStoneskin=charSpells.find(s=>s.id==='stoneskin');
-    const canStonesoul=charSpells.find(s=>s.id==='stonesoul');
-    const canRockfall=charSpells.find(s=>s.id==='rockfall');
-    if(ai.stoneskin<=0&&canStoneskin&&ai.hp<ai.maxHp*0.85) chosen=canStoneskin;
-    else if(ai.stonesoul<=0&&canStonesoul&&ai.hp<ai.maxHp*0.70) chosen=canStonesoul;
-    else if(canRockfall&&_rng()<0.55) chosen=canRockfall;
-  }
-  if(aiKey==='weizan'){
-    const canConjure=charSpells.find(s=>s.id==='conjureblade');
-    const canBladestorm=charSpells.find(s=>s.id==='bladestorm');
-    const canPatience=charSpells.find(s=>s.id==='ironpatience');
-    if(canBladestorm&&ai.blades>=(aiCfg.maxBlades||3)) chosen=canBladestorm;
-    else if(canPatience&&ai.hp<ai.maxHp*0.60&&!ai.resist) chosen=canPatience;
-    else if(canConjure&&ai.blades<(aiCfg.maxBlades||3)) chosen=canConjure;
-  }
-  if(aiKey==='gretch'){
-    const canPlague=charSpells.find(s=>s.id==='plague');
-    const canMaggot=charSpells.find(s=>s.id==='maggotcloud');
-    const canTotem=charSpells.find(s=>s.id==='bonetotem');
-    if(canPlague&&!gs[opp].plague) chosen=canPlague;
-    else if(canTotem&&!ai.boneTotem&&ai.hp<ai.maxHp*0.75) chosen=canTotem;
-    else if(canMaggot&&!gs[opp].maggotCloud) chosen=canMaggot;
-  }
-  if(aiKey==='valdris'){
-    const canRaise=charSpells.find(s=>s.id==='raisedead');
-    const canDrain=charSpells.find(s=>s.id==='necroticdrain');
-    const canReinforce=charSpells.find(s=>s.id==='reinforce');
-    const skelCount=ai.skeletons?ai.skeletons.length:0;
-    const skelHpLow=ai.skeletons&&ai.skeletons.some(s=>s.hp<(aiCfg.skelMaxHp||25)*0.5);
-    if(canReinforce&&skelHpLow) chosen=canReinforce;
-    else if(canRaise&&skelCount<2) chosen=canRaise;
-    else if(canDrain&&ai.hp<ai.maxHp*0.65) chosen=canDrain;
-  }
-  if(aiKey==='mirel'){
-    const canSim=charSpells.find(s=>s.id==='simulacrum');
-    const canBewitch=charSpells.find(s=>s.id==='bewitch');
-    const canFeint=charSpells.find(s=>s.id==='feint');
-    const simCount=ai.simulacra?ai.simulacra.length:0;
-    if(canSim&&simCount<2) chosen=canSim;
-    else if(canBewitch&&!gs[opp].bewitched&&_rng()<0.55) chosen=canBewitch;
-    else if(canFeint&&ai.hp<ai.maxHp*0.65) chosen=canFeint;
-  }
-  if(aiKey==='thessaly'){
-    const canEnthral=charSpells.find(s=>s.id==='enthral');
-    const canWeave=charSpells.find(s=>s.id==='arcaneweave');
-    const canSpellbind=charSpells.find(s=>s.id==='spellbind');
-    if(canSpellbind&&!gs[opp].spellbound&&_rng()<0.60) chosen=canSpellbind;
-    else if(canWeave&&!ai.arcaneWeave) chosen=canWeave;
-    else if(canEnthral&&!gs[opp].enthralled&&_rng()<0.50) chosen=canEnthral;
-  }
-  if(aiKey==='korvath'){
-    const canScales=charSpells.find(s=>s.id==='dragonscales');
-    const canWyrmfire=charSpells.find(s=>s.id==='wyrmfirebreath');
-    const canWrath=charSpells.find(s=>s.id==='ancientwrath');
-    if(canWrath&&gs[opp].hp<=(aiCfg.ancientWrathDmg||35)) chosen=canWrath;
-    else if(canScales&&ai.resist<=0&&ai.hp<ai.maxHp*0.75) chosen=canScales;
-    else if(canWyrmfire&&gs[opp].burn<=0) chosen=canWyrmfire;
-  }
-  if(aiKey==='fizzwick'){
-    const canBomb=charSpells.find(s=>s.id==='causticbomb');
-    const canTonic=charSpells.find(s=>s.id==='volatiletonic');
-    const canConcoction=charSpells.find(s=>s.id==='unstableconcoction');
-    if(canTonic&&ai.hp<ai.maxHp*0.5&&!ai.empowered) chosen=canTonic;
-    else if(canBomb&&gs[opp].poison<=0) chosen=canBomb;
-    else if(canConcoction) chosen=canConcoction;
-  }
-  if(aiKey==='nyxara'){
-    const canSingularity=charSpells.find(s=>s.id==='singularity');
-    const canGravityWell=charSpells.find(s=>s.id==='gravitywell');
-    const canEventHorizon=charSpells.find(s=>s.id==='eventhorizon');
-    if(canEventHorizon&&ai.mana>=canEventHorizon.cost) chosen=canEventHorizon;
-    else if(canGravityWell) chosen=canGravityWell;
-    else if(canSingularity&&gs[opp].voidCollapse<=0) chosen=canSingularity;
-  }
-  if(!chosen){
-    const dispelSpell=universalSpells.find(s=>s.element==='dispel');
-    if(dispelSpell){
-      const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
-      const oppHasKeyBuff=gs[opp].shield>0||gs[opp].foresight||gs[opp].resist>1||gs[opp].invisible>1||gs[opp].stoneskin>0||gs[opp].stonesoul>0||gs[opp].ward>0||gs[opp].counter;
-      if(needsCleanse||(oppHasKeyBuff&&_rng()<0.35)){ chosen=dispelSpell; aiDispelSelf=needsCleanse; }
-    }
-  }
-  if(!chosen){
-    const manaBurnSpell=universalSpells.find(s=>s.element==='manaburn');
-    if(manaBurnSpell&&gs[opp].mana>=8) chosen=manaBurnSpell;
-  }
-  if(!chosen&&available.length>0){
-    if(charSpells.length>0&&_rng()<0.40){
-      chosen=charSpells[Math.floor(_rng()*charSpells.length)];
-    } else if(universalSpells.length>0){
-      if(gs[opp].shield>0&&universalSpells.find(s=>s.element==='lightning')) chosen=universalSpells.find(s=>s.element==='lightning');
-      else if(!gs[opp].shield&&universalSpells.find(s=>s.element==='fire')) chosen=universalSpells.find(s=>s.element==='fire');
-      else if(gs[opp].mana>=3&&universalSpells.find(s=>s.element==='ice')) chosen=universalSpells.find(s=>s.element==='ice');
-      else { const randPool=universalSpells.filter(s=>s.element!=='dispel'); if(randPool.length>0) chosen=randPool[Math.floor(_rng()*randPool.length)]; }
-    } else { chosen=charSpells[Math.floor(_rng()*charSpells.length)]; }
-  }
-  return {chosen, aiDispelSelf};
-}
 
-function aiDecideNormal(who){
-  const opp=who==='p2'?'p1':'p2';
-  const aiCfg=who==='p2'?p2Cfg:p1Cfg;
-  const aiKey=who==='p2'?p2Key:p1Key;
-  const ai=gs[who];
-  const p1=gs[opp];
-  const allSpells=[...SPELLS,...(aiCfg.spells||[])];
-  const available=allSpells.filter(s=>{
-    if(ai.mana<s.cost) return false;
-    if(s.id&&charSpellBlocked(s.id,ai,aiCfg,p1)) return false;
-    if(s.aiHint==='mana_restore'&&ai.mana>=10) return false;
-    if(s.aiHint==='mana_steal'&&!ai.invisible) return false;
-    if(s.aiHint==='drain'&&aiKey!=='mal'&&ai.hp>ai.maxHp*0.75) return false;
-    if(ai.frenzied>0&&s.element) return false;
-    if(p1.invisible>0&&(s.element&&!s.area&&s.element!=='dispel'&&s.element!=='manaburn'||s.id==='basicattack'||s.id==='charge'||s.id==='entangle'||s.id==='timedrain'||s.id==='drain'||s.id==='vinewhip'||s.id==='agony'||s.id==='silence'||s.id==='corruption'||s.id==='rockfall')) return false;
-    return true;
-  });
-  const charSpells=available.filter(s=>s.id);
-  const universalSpells=available.filter(s=>s.element);
-  let chosen=null, aiDispelSelf=false, forceChannel=false;
-  if(ai.enthralled>0) return {chosen:null, aiDispelSelf:false, forceChannel:true};
-  if(aiKey==='eldrad'&&!chosen){
-    const canShield=charSpells.find(s=>s.id==='shield');
-    const canCounter=charSpells.find(s=>s.id==='counter');
-    const canWard=charSpells.find(s=>s.id==='ward');
-    if(canShield) chosen=canShield;
-    else if(canCounter) chosen=canCounter;
-    else if(canWard) chosen=canWard;
-    else if(!ai.shieldHp&&ai.mana<3&&ai.hp>ai.maxHp*0.50&&_rng()<0.60) forceChannel=true;
-  }
-  if(aiKey==='mal'&&!chosen){
-    const canBloodPact=charSpells.find(s=>s.id==='bloodpact');
-    const canEmpower=charSpells.find(s=>s.id==='empower');
-    const canDrain=charSpells.find(s=>s.id==='drain');
-    if(ai.empowered&&canDrain) chosen=canDrain;
-    else if(!ai.empowered&&canEmpower) chosen=canEmpower;
-    else if(canBloodPact&&ai.mana<5&&ai.hp>(aiCfg.bpCost||22)+15) chosen=canBloodPact;
-    else if(canDrain) chosen=canDrain;
-    else if(ai.empowered&&ai.mana<3&&ai.hp>ai.maxHp*0.45&&_rng()<0.60) forceChannel=true;
-  }
-  if(aiKey==='sylvara'&&!chosen){
-    const canEntangle=charSpells.find(s=>s.id==='entangle');
-    const canVineWhip=charSpells.find(s=>s.id==='vinewhip');
-    const canRegen=charSpells.find(s=>s.id==='heal');
-    if(ai.hp<ai.maxHp*0.50&&canRegen) chosen=canRegen;
-    else if(canEntangle) chosen=canEntangle;
-    else if(canVineWhip&&!p1.shield) chosen=canVineWhip;
-    else if(!ai.regen&&canRegen&&ai.hp<ai.maxHp*0.80) chosen=canRegen;
-    else if(!ai.regen&&ai.hp<ai.maxHp*0.65&&ai.mana<4&&_rng()<0.55) forceChannel=true;
-  }
-  if(aiKey==='aurelia'&&!chosen){
-    const canForesight=charSpells.find(s=>s.id==='foresight');
-    const canTimeDrain=charSpells.find(s=>s.id==='timedrain');
-    const canHaste=charSpells.find(s=>s.id==='haste');
-    if(canForesight) chosen=canForesight;
-    else if(canTimeDrain) chosen=canTimeDrain;
-    else if(canHaste) chosen=canHaste;
-    else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&_rng()<0.60) forceChannel=true;
-  }
-  if(aiKey==='gnash'&&!chosen){
-    const canWarpaint=charSpells.find(s=>s.id==='warpaint');
-    const canFrenzy=charSpells.find(s=>s.id==='frenzy');
-    const canCharge=charSpells.find(s=>s.id==='charge');
-    if(canWarpaint) chosen=canWarpaint;
-    else if(ai.resist>0){ if(canFrenzy) chosen=canFrenzy; else if(canCharge) chosen=canCharge; }
-    else if(ai.mana<3&&ai.hp>ai.maxHp*0.50&&_rng()<0.55) forceChannel=true;
-    else { if(canFrenzy) chosen=canFrenzy; else if(canCharge) chosen=canCharge; }
-  }
-  if(aiKey==='cinder'&&!chosen){
-    const canCandle=charSpells.find(s=>s.id==='candle');
-    const canFlameShield=charSpells.find(s=>s.id==='flameshield');
-    const canFireball=charSpells.find(s=>s.id==='fireball');
-    if(canCandle) chosen=canCandle;
-    else if(canFlameShield) chosen=canFlameShield;
-    else if(canFireball) chosen=canFireball;
-    else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&_rng()<0.55) forceChannel=true;
-  }
-  if(aiKey==='skadi'&&!chosen){
-    const canBlizzard=charSpells.find(s=>s.id==='blizzard');
-    const canFrostArmor=charSpells.find(s=>s.id==='frostarmor');
-    const canIceLance=charSpells.find(s=>s.id==='icelance');
-    if(canBlizzard) chosen=canBlizzard;
-    else if(canFrostArmor) chosen=canFrostArmor;
-    else if(canIceLance) chosen=canIceLance;
-    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&_rng()<0.65) forceChannel=true;
-  }
-  if(aiKey==='zacharius'&&!chosen){
-    const chainReady=charSpells.find(s=>s.id==='chainlightning');
-    const canGalvanize=charSpells.find(s=>s.id==='galvanize');
-    const canConductivity=charSpells.find(s=>s.id==='conductivity');
-    if(chainReady&&ai.charge>=(aiCfg.chainLightningChargeCost||8)) chosen=chainReady;
-    else if(canConductivity&&(!p1.conductivity||p1.conductivity<=1)) chosen=canConductivity;
-    else if(canGalvanize) chosen=canGalvanize;
-    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&_rng()<0.55) forceChannel=true;
-  }
-  if(aiKey==='mary'&&!chosen){
-    const canRadiant=charSpells.find(s=>s.id==='radiant');
-    const canHeal=charSpells.find(s=>s.id==='divineheal');
-    const canPurge=charSpells.find(s=>s.id==='purge');
-    const hasDebuff=ai.burn>0||ai.poison>0||ai.voidCollapse>0||ai.frozen>0||ai.blizzard>0||ai.vineWhip>0||ai.timeDrain>0||ai.conductivity>0||ai.candle>0||ai.agony>0||ai.corruption>0||ai.silence>0;
-    if(hasDebuff&&canPurge) chosen=canPurge;
-    else if(ai.hp<ai.maxHp*0.55&&canHeal) chosen=canHeal;
-    else if(canRadiant&&(p1.shield>0||p1.resist>0||p1.frostArmor>0)) chosen=canRadiant;
-    else if(canRadiant&&_rng()<0.55) chosen=canRadiant;
-    else if(ai.mana<3&&ai.hp>ai.maxHp*0.50&&_rng()<0.55) forceChannel=true;
-  }
-  if(aiKey==='mordant'&&!chosen){
-    const canCorruption=charSpells.find(s=>s.id==='corruption');
-    const canAgony=charSpells.find(s=>s.id==='agony');
-    const canSilence=charSpells.find(s=>s.id==='silence');
-    if(!ai.agony){
-      if(canCorruption) chosen=canCorruption;
-      else if(canAgony) chosen=canAgony;
-      else if(canSilence) chosen=canSilence;
-      else if(ai.mana<2&&ai.hp>ai.maxHp*0.45&&_rng()<0.60) forceChannel=true;
-    }
-  }
-  if(aiKey==='ponder'&&!chosen){
-    const canVanish=charSpells.find(s=>s.id==='vanish');
-    const canManaSiphon=charSpells.find(s=>s.id==='manasiphon');
-    const canBlink=charSpells.find(s=>s.id==='blink');
-    if(ai.invisible>0){ if(canManaSiphon) chosen=canManaSiphon; }
-    else { if(canVanish) chosen=canVanish; else if(canBlink) chosen=canBlink; else if(ai.mana<2&&ai.hp>ai.maxHp*0.45&&_rng()<0.55) forceChannel=true; }
-  }
-  if(aiKey==='durin'&&!chosen){
-    const canStoneskin=charSpells.find(s=>s.id==='stoneskin');
-    const canStonesoul=charSpells.find(s=>s.id==='stonesoul');
-    const canRockfall=charSpells.find(s=>s.id==='rockfall');
-    if(canStoneskin) chosen=canStoneskin;
-    else if(canStonesoul) chosen=canStonesoul;
-    else if(canRockfall&&_rng()<0.70) chosen=canRockfall;
-    else if(ai.mana<3&&ai.hp>ai.maxHp*0.40&&_rng()<0.65) forceChannel=true;
-  }
-  if(aiKey==='weizan'&&!chosen){
-    const canConjure=charSpells.find(s=>s.id==='conjureblade');
-    const canBladestorm=charSpells.find(s=>s.id==='bladestorm');
-    const canPatience=charSpells.find(s=>s.id==='ironpatience');
-    if(canBladestorm&&ai.blades>=(aiCfg.maxBlades||3)) chosen=canBladestorm;
-    else if(canPatience&&ai.hp<ai.maxHp*0.55&&!ai.resist) chosen=canPatience;
-    else if(canConjure&&ai.blades<(aiCfg.maxBlades||3)) chosen=canConjure;
-    else if(ai.mana<2&&ai.hp>ai.maxHp*0.40&&_rng()<0.55) forceChannel=true;
-  }
-  if(aiKey==='gretch'&&!chosen){
-    const canPlague=charSpells.find(s=>s.id==='plague');
-    const canMaggot=charSpells.find(s=>s.id==='maggotcloud');
-    const canTotem=charSpells.find(s=>s.id==='bonetotem');
-    if(canPlague&&!p1.plague) chosen=canPlague;
-    else if(canTotem&&!ai.boneTotem&&ai.hp<ai.maxHp*0.70) chosen=canTotem;
-    else if(canMaggot&&!p1.maggotCloud) chosen=canMaggot;
-    else if(ai.mana<2&&ai.hp>ai.maxHp*0.40&&_rng()<0.55) forceChannel=true;
-  }
-  if(aiKey==='valdris'&&!chosen){
-    const canRaise=charSpells.find(s=>s.id==='raisedead');
-    const canDrain=charSpells.find(s=>s.id==='necroticdrain');
-    const canReinforce=charSpells.find(s=>s.id==='reinforce');
-    const skelCount=ai.skeletons?ai.skeletons.length:0;
-    const skelHpLow=ai.skeletons&&ai.skeletons.some(s=>s.hp<(aiCfg.skelMaxHp||25)*0.5);
-    if(canReinforce&&skelHpLow) chosen=canReinforce;
-    else if(canRaise&&skelCount<2) chosen=canRaise;
-    else if(canDrain&&ai.hp<ai.maxHp*0.60) chosen=canDrain;
-    else if(ai.mana<3&&ai.hp>ai.maxHp*0.40&&_rng()<0.55) forceChannel=true;
-  }
-  if(aiKey==='mirel'&&!chosen){
-    const canSim=charSpells.find(s=>s.id==='simulacrum');
-    const canBewitch=charSpells.find(s=>s.id==='bewitch');
-    const canFeint=charSpells.find(s=>s.id==='feint');
-    const simCount=ai.simulacra?ai.simulacra.length:0;
-    if(canSim&&simCount<2) chosen=canSim;
-    else if(canBewitch&&!p1.bewitched&&_rng()<0.60) chosen=canBewitch;
-    else if(canFeint&&ai.hp<ai.maxHp*0.60) chosen=canFeint;
-    else if(ai.mana<2&&ai.hp>ai.maxHp*0.40&&_rng()<0.50) forceChannel=true;
-  }
-  if(aiKey==='thessaly'&&!chosen){
-    const canEnthral=charSpells.find(s=>s.id==='enthral');
-    const canWeave=charSpells.find(s=>s.id==='arcaneweave');
-    const canSpellbind=charSpells.find(s=>s.id==='spellbind');
-    if(canSpellbind&&!p1.spellbound&&_rng()<0.65) chosen=canSpellbind;
-    else if(canWeave&&!ai.arcaneWeave) chosen=canWeave;
-    else if(canEnthral&&!p1.enthralled&&_rng()<0.55) chosen=canEnthral;
-    else if(ai.mana<3&&ai.hp>ai.maxHp*0.45&&_rng()<0.55) forceChannel=true;
-  }
-  if(aiKey==='korvath'&&!chosen){
-    const canScales=charSpells.find(s=>s.id==='dragonscales');
-    const canWyrmfire=charSpells.find(s=>s.id==='wyrmfirebreath');
-    const canWrath=charSpells.find(s=>s.id==='ancientwrath');
-    if(canWrath&&p1.hp<=(aiCfg.ancientWrathDmg||35)) chosen=canWrath;
-    else if(canScales&&ai.resist<=0&&ai.hp<ai.maxHp*0.75) chosen=canScales;
-    else if(canWyrmfire&&p1.burn<=0) chosen=canWyrmfire;
-    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&_rng()<0.45) forceChannel=true;
-  }
-  if(aiKey==='nyxara'&&!chosen){
-    const canSingularity=charSpells.find(s=>s.id==='singularity');
-    const canGravityWell=charSpells.find(s=>s.id==='gravitywell');
-    const canEventHorizon=charSpells.find(s=>s.id==='eventhorizon');
-    if(canEventHorizon&&ai.mana>=canEventHorizon.cost) chosen=canEventHorizon;
-    else if(canGravityWell&&ai.mana>=canGravityWell.cost) chosen=canGravityWell;
-    else if(canSingularity&&p1.voidCollapse<=0&&ai.mana>=canSingularity.cost) chosen=canSingularity;
-    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&_rng()<0.45) forceChannel=true;
-  }
-  if(aiKey==='fizzwick'&&!chosen){
-    const canBomb=charSpells.find(s=>s.id==='causticbomb');
-    const canTonic=charSpells.find(s=>s.id==='volatiletonic');
-    const canConcoction=charSpells.find(s=>s.id==='unstableconcoction');
-    if(canTonic&&ai.hp<ai.maxHp*0.5&&!ai.empowered) chosen=canTonic;
-    else if(canBomb&&p1.poison<=0&&ai.mana>=canBomb.cost) chosen=canBomb;
-    else if(canConcoction&&ai.mana>=canConcoction.cost&&_rng()<0.55) chosen=canConcoction;
-    else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&_rng()<0.45) forceChannel=true;
-  }
-  if(!chosen){
-    const dispelSpell=universalSpells.find(s=>s.element==='dispel');
-    if(dispelSpell){
-      const needsCleanse=ai.agony>0||ai.corruption>0||ai.silence>2||ai.blizzard>1||ai.vineWhip>1||ai.candle>1;
-      const oppHasKeyBuff=p1.shield>0||p1.foresight||p1.resist>1||p1.invisible>1||p1.stoneskin>0||p1.stonesoul>0||p1.ward>0||p1.counter;
-      if(needsCleanse){ chosen=dispelSpell; aiDispelSelf=true; forceChannel=false; }
-      else if(!forceChannel&&oppHasKeyBuff&&_rng()<0.45){ chosen=dispelSpell; aiDispelSelf=false; }
-    }
-  }
-  if(!chosen&&!forceChannel){
-    const manaBurnSpell=universalSpells.find(s=>s.element==='manaburn');
-    if(manaBurnSpell&&p1.mana>=7) chosen=manaBurnSpell;
-  }
-  if(!chosen&&!forceChannel&&available.length>0){
-    if(charSpells.length>0&&_rng()<0.50){
-      chosen=charSpells[Math.floor(_rng()*charSpells.length)];
-    } else if(universalSpells.length>0){
-      if(p1.shield>0&&universalSpells.find(s=>s.element==='lightning')) chosen=universalSpells.find(s=>s.element==='lightning');
-      else if(!p1.shield&&universalSpells.find(s=>s.element==='fire')) chosen=universalSpells.find(s=>s.element==='fire');
-      else if(p1.mana>=3&&universalSpells.find(s=>s.element==='ice')) chosen=universalSpells.find(s=>s.element==='ice');
-      else { const randPool=universalSpells.filter(s=>s.element!=='dispel'); if(randPool.length>0) chosen=randPool[Math.floor(_rng()*randPool.length)]; }
-    } else { chosen=charSpells[Math.floor(_rng()*charSpells.length)]; }
-  }
-  return {chosen, aiDispelSelf, forceChannel};
-}
 
 // Returns committed action object for AI without executing — used by simultaneous resolution
 function aiChooseSync(who){
-  const ai=gs[who];
-  if(ai.frozen>0) return {type:'__frozen__', ok:true};
-  if(trainingMode&&!trainingAI) return elementalMode?{type:'el',cat:'pass',ok:true}:{type:'channel', ok:true};
-  if(elementalMode) return elemAIChoose(who);
-  const decide=aiDifficulty==='normal'?aiDecideNormal:aiDecideEasy;
-  const {chosen, aiDispelSelf, forceChannel}=decide(who);
-  if(!chosen||forceChannel) return {type:'channel', ok:true};
-  if(chosen.id) return {type:chosen.id, ok:true, isCharSpell:true};
-  return {type:chosen.element, ok:true, dispelSelf:!!aiDispelSelf};
+  if(trainingMode&&!trainingAI) return {type:'el',cat:'pass',ok:true};
+  return elemAIChoose(who);
 }
 
 // ── RETRY SCREEN ───────────────────────────────────────────
@@ -5156,18 +2717,8 @@ function resetTrainingRound(knockedOut){
 
   setTimeout(()=>{
     if(!battleRunning) return;
-    function resetPlayer(st,cfg){
-      st.hp=cfg.hp; st.maxHp=cfg.hp; st.mana=elementalMode?ELEM_START_MANA:cfg.startMana;
-      st.shieldType=null; st.chill=0; st.lastElem=null;
-      st.shield=0; st.shieldHp=0; st.burn=0; st.poison=0; st.voidCollapse=0; st.voidCollapseTick=0; st.frozen=0; st.regen=null;
-      st.counter=false; st.empowered=false; st.foresight=false; st.timeDrain=0;
-      st.resist=0; st.invisible=0; st.ward=0; st.vineWhip=0; st.haste=0;
-      st.frenzied=0; st.blink=0; st.frostArmor=0; st.blizzard=0; st.flameShield=0;
-      st.candle=0; st.charge=0; st.conductivity=0; st.agony=0; st.agonyDmg=0;
-      st.silence=0; st.corruption=0; st.stoneskin=0; st.stoneskinHp=0; st.stonesoul=0;
-    }
-    resetPlayer(gs.p1,p1Cfg);
-    resetPlayer(gs.p2,p2Cfg);
+    gs.p1=newSeat(p1Cfg);
+    gs.p2=newSeat(p2Cfg);
     gs.p1anim='idle'; gs.p2anim='idle';
     gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[];
     gs.pending={};
@@ -7417,71 +4968,21 @@ function showSilenceBlock(cx,y){
   flash('#1a0033');
 }
 
-// ── DISPEL TARGET SELECTION ────────────────────────────────
-function showDispelTarget(cb){
-  const overlay=document.getElementById('dispel-target-overlay');
-  overlay.classList.add('active');
-  document.getElementById('dt-self').addEventListener('click',()=>{
-    overlay.classList.remove('active'); cb(true);
-  },{once:true});
-  document.getElementById('dt-opp').addEventListener('click',()=>{
-    overlay.classList.remove('active'); cb(false);
-  },{once:true});
-}
 
 // ── ACTION BAR SETUP ───────────────────────────────────────
 function updateActionBar(cfg){
-  document.getElementById('elem-buttons').style.display=elementalMode?'':'none';
-  document.getElementById('spell-buttons').style.display=elementalMode?'none':'';
-  document.querySelector('.abar-row-main').style.display=elementalMode?'none':'';
-  if(elementalMode){
-    const who=gs&&gs.turnPlayer||'p1';
-    Object.keys(ELEM_CATS).forEach(cat=>{
-      const btn=document.getElementById('bel-'+cat);
-      btn.style.borderColor=cfg.col; btn.style.color=cfg.col;
-      document.getElementById('bel-'+cat+'-cost').textContent=
-        elemCost(who,cat,1)+'–'+elemCost(who,cat,3)+' Mana';
-    });
-  }
-  document.getElementById('channel-cost-label').textContent='+'+cfg.channelAmt+' Mana';
-
-  // Character-specific abilities row
-  const container=document.getElementById('spell-buttons');
-  container.innerHTML='';
-  (cfg.spells||[]).forEach(spell=>{
-    const btn=document.createElement('button');
-    btn.className='abtn abtn-ability';
-    btn.id='bspell-'+spell.id;
-    btn.innerHTML=`<span class="abtn-ico">${spell.icon}</span><span class="abtn-name">${spell.name}</span><span class="cost">${spell.costLabel||spell.cost}</span>`;
-    btn.style.borderColor=cfg.col;
-    btn.style.color=cfg.col;
-    btn.title=spell.effectLabel||'';
-    btn.addEventListener('click',()=>act(spell.id));
-    container.appendChild(btn);
-  });
-
-  // Populate spell picker overlay cards
-  const grid=document.getElementById('sp-grid');
-  grid.innerHTML='';
-  SPELLS.forEach(spell=>{
-    const card=document.createElement('div');
-    card.className='sp-card';
-    card.dataset.el=spell.element;
-    card.id='spcard-'+spell.element;
-    card.innerHTML=`<span class="sp-card-icon">${spell.icon}</span><span class="sp-card-name">${spell.name}</span><span class="sp-card-cost">${spell.cost} Mana</span><span class="sp-card-effect">${spell.effectLabel}</span>`;
-    card.addEventListener('click',()=>{
-      if(card.classList.contains('disabled')) return;
-      showScreen('battle-screen');
-      act(spell.element);
-    });
-    grid.appendChild(card);
+  const who=gs&&gs.turnPlayer||'p1';
+  Object.keys(ELEM_CATS).forEach(cat=>{
+    const btn=document.getElementById('bel-'+cat);
+    btn.style.borderColor=cfg.col; btn.style.color=cfg.col;
+    document.getElementById('bel-'+cat+'-cost').textContent=
+      elemCost(who,cat,1)+'–'+elemCost(who,cat,3)+' Mana';
   });
 }
 
 // ── BUTTON WIRING ──────────────────────────────────────────
 function showWizardDetail(key){
   const cfg=CHAR_DEFS[key]||{};
-  const disp=CHAR_DISPLAY[key];
   const col=cfg.col||'#f0cc6a';
   const portrait=document.getElementById('wd-portrait');
   portrait.style.display='';
@@ -7490,10 +4991,10 @@ function showWizardDetail(key){
   nameEl.textContent=cfg.name||key.toUpperCase();
   nameEl.style.color=col;
   document.getElementById('wd-epithet').textContent=cfg.title||'';
-  document.getElementById('wd-stats').innerHTML=disp.stats
+  document.getElementById('wd-stats').innerHTML=elemCharStats(cfg)
     .map(([l,r])=>`<div class="cstat"><span class="cstat-l">${l}</span><span class="cstat-r">${r}</span></div>`)
     .join('');
-  document.getElementById('wd-flavour').textContent=disp.flavour;
+  document.getElementById('wd-flavour').textContent=CHAR_FLAVOUR[key]||'';
   const chooseBtn=document.getElementById('wd-choose');
   chooseBtn.style.borderColor=col;
   chooseBtn.style.color=col;
@@ -7670,209 +5171,205 @@ const CHAR_NAMES_TUT={
 };
 const CHAR_KEYS_TUT=['eldrad','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara'];
 
+// Character guides describe each spell's effect and wheel sector rather than exact numbers,
+// which live in characters.json and are shown on the wheel itself.
 const TUTORIAL_TOPICS=[
   {id:'welcome',     label:'Welcome'},
   {id:'health-mana', label:'Health & Mana'},
-  {id:'channeling',  label:'Channeling'},
-  {id:'casting',     label:'Casting Spells'},
-  {id:'spells',      label:'Arcane Spells'},
+  {id:'triangle',    label:'Strike · Ward · Dispel'},
+  {id:'wheel',       label:'The Wheel'},
+  {id:'enchant',     label:'Buffs & Curses'},
   {id:'alphabet',    label:'The Alphabet'},
-  {id:'watching',    label:'Watch Games'},
+  {id:'watching',    label:'Casting Rituals'},
   {id:'difficulty',  label:'Difficulty'},
 ];
 
 const TUTORIAL_CONVOS={
   welcome:[
-    {key:'eldrad', text:"Greetings, young mage. Welcome to the arena of wizards — a place where arcane knowledge and quick thinking decide everything."},
-    {key:'sylvara',text:"Don't be intimidated! Every duel starts with the same foundation. Use the topics above to explore each part of how the game works."},
-    {key:'ponder', text:"You can also tap any character portrait below to hear that wizard explain their own abilities. I'm Ponder — I'd love to tell you about mine when you're ready!"},
-    {key:'eldrad', text:"Browse the mechanics guides, then seek out each wizard's own words. We are all here to help."},
+    {key:'eldrad', text:"Greetings, young mage. Welcome to the arena of wizards — a place where reading your rival matters as much as raw power."},
+    {key:'sylvara',text:"Every round, each wizard chooses a spell in secret. When everyone has chosen, the spells are revealed together — like turning over cards — and then they all play out."},
+    {key:'ponder', text:"Use the topics above to learn how it works, then tap any portrait below to hear that wizard explain their own spells. I'm Ponder — come find me!"},
+    {key:'eldrad', text:"Learn the rules, then learn your rivals. We are all here to help."},
   ],
   'health-mana':[
-    {key:'eldrad', text:"Every wizard enters the duel with two vital resources: Health Points and Mana. When your HP reaches zero, the duel is over."},
-    {key:'sylvara',text:"Mana is your casting energy. You need it to use abilities and spells. Each wizard starts with a different amount — I begin with 6, while Malachar starts with 7."},
-    {key:'eldrad', text:"HP totals vary too. I stand at 90 HP. Gnash, being a warrior, has a hearty 105. Meanwhile Malachar trades resilience for aggression at just 80 HP."},
-    {key:'sylvara',text:"Keep an eye on the HP and Mana bars at the top of the screen during battle. They tell you the entire story of the duel at a glance."},
+    {key:'eldrad', text:"Every wizard has Health and Mana. When your HP reaches zero, the duel is over. HP differs between wizards — Gnash and Durin are hardy, Malachar and Nyxara are fragile."},
+    {key:'sylvara',text:"Everyone starts with the same mana and gains more at the end of every round. There's no channelling and no free attacks — every spell costs something."},
+    {key:'ponder', text:"Even the cheapest spell costs only a little, so you can always do something. The question is whether to spend big now or save for a stronger cast next round."},
+    {key:'sylvara',text:"Watch your rival's mana bar! If they can't afford a big ward, they won't cast one. Reading their mana is half the game."},
   ],
-  channeling:[
-    {key:'ponder', text:"Channeling is the most important action you'll take! When you channel, you restore mana — and without mana, you can't cast spells or use most abilities."},
-    {key:'sylvara',text:"By default, channeling restores 5 mana. Some wizards have abilities that change this — and some opponents can make your channeling painful or costly."},
-    {key:'ponder', text:"Here's the catch: channeling skips your attack for that turn. You can't channel AND strike. So it's always a trade-off between power now and power later."},
-    {key:'sylvara',text:"Timing your channels is everything. Channel too little and you'll run dry. Channel too often and you leave yourself open to free attacks!"},
+  triangle:[
+    {key:'eldrad', text:"There are three kinds of spell: ⚔️ Damage, 🛡 Protection and ✦ Dispel. They work like rock, paper, scissors."},
+    {key:'eldrad', text:"Protection beats Damage: a ward soaks up strikes, and it's raised before any damage lands — even in the same round. Strike into a ward and you've wasted your mana."},
+    {key:'ponder', text:"Dispel beats Protection: dispels are cheap and tear through wards. Your rival spends a lot of mana on a ward, you break it for a little."},
+    {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the only way to win."},
+    {key:'eldrad', text:"Each round resolves in that order — every Protection first, then every Dispel, then every Damage. So the trick is guessing what your rival will choose."},
   ],
-  casting:[
-    {key:'eldrad', text:"Every wizard has four unique personal abilities listed on the action bar during battle. Each has a mana cost — when you can afford it, tap 'Cast Spell' to use one."},
-    {key:'ponder', text:"Beyond personal abilities, every wizard can cast five great elemental spells: Inferno, Lightning Bolt, Frost Nova, Arcane Surge, and Dispel. Shared by all!"},
-    {key:'eldrad', text:"Elemental spells require a casting ritual — a minigame where you must prove your arcane focus. Choose your spell, perform the ritual, and unleash it."},
-    {key:'ponder', text:"Each wizard also has a free basic attack that costs nothing. Useful when you're conserving mana between big plays!"},
+  wheel:[
+    {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
+    {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too."},
+    {key:'skadi',  text:"The element matters. A ward takes only half damage from its own element — so ward against the element you expect. And a dispel does double damage to a ward of its element."},
+    {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward. A strong Ice strike that reaches them chills them, so they can't pick Damage next round."},
+    {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one."},
+    {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],
-  spells:[
-    {key:'aurelia',text:"The five elemental spells are available to every wizard. Each demands a casting ritual, but the power they offer is well worth it."},
-    {key:'aurelia',text:"🔥 Inferno (12 mana). Deals 38 direct fire damage and sets your foe ablaze — an additional 5 damage per round over 2 rounds. The highest raw damage of any elemental spell, plus a lingering burn."},
-    {key:'aurelia',text:"⚡ Lightning Bolt (9 mana). Thirty direct damage, and it pierces shields entirely. The definitive answer to anyone relying on magical barriers."},
-    {key:'aurelia',text:"❄️ Frost Nova (6 mana). Deals 18 damage and freezes your opponent — they skip their next turn entirely. Control is its own kind of power."},
-    {key:'aurelia',text:"🌀 Arcane Surge (9 mana). The wild spell. Somewhere between 15 and 55 damage — you never know exactly. The ceiling is enormous, but so is the risk."},
-    {key:'aurelia',text:"🌸 Dispel (5 mana). Choose: cleanse one of your own debuffs, or attempt a 70% strip of one of your opponent's active buffs. Exceptional utility."},
+  enchant:[
+    {key:'mary',   text:"Some wizards cast enchantments. Buffs — like Regen, War Paint or a skeleton servant — sit on the Protection wheel and last a while."},
+    {key:'mordant',text:"Curses — like Silence, Plague or Agony — sit on the Dispel wheel. As well as their hex, every curse wears at the target's ward a little, like a weak dispel."},
+    {key:'ponder', text:"A Dispel against a rival with no ward strips their newest buff — or all of them, from the outer ring. If they have a ward, the dispel hits the ward instead. Wards protect your buffs!"},
+    {key:'mary',   text:"Cursed? Open the Dispel wheel and tap Cleanse Self. It removes every curse on you for very little mana."},
+    {key:'sylvara',text:"Locks — like Ice's chill, my Entangle or Thessaly's Enthral — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
   ],
   alphabet:[
     {key:'sylvara',text:"Every casting ritual uses symbols from the Arcane Alphabet — twelve sacred glyphs that form the language of magic itself."},
-    {key:'ponder', text:"The twelve glyphs are: ϟ Δ ∇ Ψ Ω ∞ ☽ ✸ ⊕ ⊗ θ Φ. Each spell's ritual draws upon four of these in its sequence."},
-    {key:'sylvara',text:"Each spell has its own assigned glyphs: Inferno uses ϟ Δ ⊕ Ω, Lightning uses Ψ ∇ ⊗ ✸, Ice uses θ Φ ☽ ∞. The symbols have meaning — they are not random."},
-    {key:'ponder', text:"Arcane Surge is special — it shares one glyph with every other element, because Arcane is the underlying force of all magic. That makes it the hardest set to memorise!"},
-    {key:'sylvara',text:"Dispel also draws one glyph from each element: ∞ from Ice, ⊕ from Inferno, ∇ from Lightning, θ from Arcane. A universal spell built from universal symbols."},
+    {key:'ponder', text:"The twelve glyphs are: ϟ Δ ∇ Ψ Ω ∞ ☽ ✸ ⊕ ⊗ θ Φ. Each element's ritual draws upon four of them."},
+    {key:'sylvara',text:"Fire uses ϟ Δ ⊕ Ω, Lightning uses Ψ ∇ ⊗ ✸, Ice uses θ Φ ☽ ∞, Physical uses Δ ∇ Ψ ⊕, and Dark uses ☽ ⊗ ∇ Ω. The symbols have meaning — they are not random."},
+    {key:'ponder', text:"Arcane is special — it shares a glyph with the other elements, because Arcane is the force beneath all magic. That makes it the hardest set to memorise!"},
+    {key:'sylvara',text:"Dispel also draws one glyph from each element: ∞, ⊕, ∇ and θ. A universal unbinding built from universal symbols."},
   ],
   watching:[
-    {key:'ponder', text:"When you cast an elemental spell, a ritual begins. First: the Watch Phase. Glyphs rise from the ground — red ones are noise, ignore them. White glowing ones are your sequence."},
-    {key:'sylvara',text:"Each white glyph has a coloured glow and a small number badge showing its position. Watch carefully — they appear one by one, staggered three seconds apart."},
-    {key:'ponder', text:"After the last glyph appears, you have four seconds before the Input Phase begins. A 3×4 keyboard of all twelve glyphs appears — tap them in the order you saw them."},
-    {key:'sylvara',text:"Get the sequence right and the spell fires! Make a mistake and the ritual fails. Casting under pressure is a true test of arcane focus — you'll improve with practice."},
-    {key:'ponder', text:"Tip: on Easy mode each spell uses the same fixed sequence every time, so you can memorise it. On Normal and Hard the sequence is randomised each cast."},
+    {key:'ponder', text:"Every spell needs a casting ritual. You get five seconds to watch the glyphs appear, then five seconds to tap them back in the same order."},
+    {key:'sylvara',text:"Ignore the faint noise glyphs. Your sequence glows brightly, with a small number showing its order."},
+    {key:'ponder', text:"The ring you chose sets the length: two glyphs on the inner ring, three on the middle, four on the outer. Bigger magic, harder ritual."},
+    {key:'eldrad', text:"Wards use a different ritual: match the pairs of tiles after studying them face-up. Get the ritual wrong and the spell fizzles, costing you a little mana."},
+    {key:'sylvara',text:"Your rival can't see your ritual — only the spell you chose, when the cards are revealed."},
   ],
   difficulty:[
-    {key:'ponder',text:"The difficulty setting changes how the casting ritual works. Easy mode uses a fixed 4-glyph sequence for each spell — the same every time, fully memorisable."},
-    {key:'ponder',text:"On Easy, the keyboard also greys out glyphs that don't belong to that spell. You only see the four relevant symbols. Much more manageable for learning!"},
-    {key:'ponder',text:"Normal mode uses a random 5-glyph sequence built from the spell's four symbols. The keyboard still greys out irrelevant glyphs, but you must watch each cast carefully."},
-    {key:'ponder',text:"Hard mode is intense. A 7-glyph sequence. ALL twelve glyphs are active on the keyboard — nothing is greyed out. You are relying entirely on memory and focus. Good luck."},
+    {key:'ponder',text:"Difficulty changes how the rituals behave. On Easy, each element always uses the same glyphs in the same order, so you can learn them by heart."},
+    {key:'ponder',text:"On Easy and Normal, glyphs that don't belong to the spell are greyed out on the keyboard. On Normal the order is random every cast."},
+    {key:'ponder',text:"On Hard, all twelve glyphs are active and a single wrong tap breaks the ritual. You are relying entirely on memory and focus. Good luck!"},
   ],
   eldrad:[
-    {key:'eldrad',text:"I am Eldrin — the Stalwart. My philosophy is endurance. 90 HP, 5 starting mana. My abilities focus entirely on surviving long enough to outlast my foe."},
-    {key:'eldrad',text:"Magic Missile is my free attack — about 8 damage per cast, no mana required. Useful for chipping away while I conserve resources for when it truly matters."},
-    {key:'eldrad',text:"Shield creates a 60 HP barrier for 10 turns — it costs 5 mana, my entire starting pool, but I can cast it on the very first round. It absorbs damage in my place. Combined with my base HP, I can weather tremendous punishment."},
-    {key:'eldrad',text:"Counter costs 2 mana and reflects 20 damage back to whoever strikes me — pair it with Shield and let my opponent injure themselves. Note: if the Shield is lost, Counter is lost with it. Ward protects me from the next status effect for 3 turns."},
-    {key:'eldrad',text:"My strength is that I never go down easily. The fight is always on my terms. I wait, I endure, and eventually even the most aggressive foe runs out of mana."},
+    {key:'eldrad',text:"I am Eldrin — the Stalwart. My wards cost less than anyone else's. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
+    {key:'eldrad',text:"My Shield takes the Arcane sector of my Protection wheel — a far larger ward than most wizards can raise."},
+    {key:'eldrad',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds. Ward, in the Ice sector, makes me immune to curses."},
+    {key:'eldrad',text:"Dispels are my weakness. Keep a ward between your buffs and their unbinding, and I am very hard to wear down."},
   ],
   mal:[
-    {key:'mal',text:"Pain is power. I start with 7 mana and I intend to spend every drop. Empower is free — cast it before any ability for 50% more damage. No mana cost. No excuse not to use it."},
-    {key:'mal',text:"Blood Pact is my centrepiece. I sacrifice 22 HP for 15 mana instantly. Reckless? No. Efficient. Health is just mana you haven't spent yet."},
-    {key:'mal',text:"Drain hits for about 20 damage and heals me for 45% of it back. Pair it with Empower for a devastating, self-sustaining burst. I take their health and keep my own."},
-    {key:'mal',text:"My weakness is raw HP — just 80. I cannot afford to trade hits carelessly. I strike first, I strike hard, and I never let up. The relentless always win."},
+    {key:'mal',text:"Pain is power. Empower, in the Fire sector of my Protection wheel, makes my next strike hit far harder. Cast it, then make them pay."},
+    {key:'mal',text:"Blood Pact, in the Dark sector, costs no mana — only my blood. I trade health for mana instantly. Reckless? No. Efficient."},
+    {key:'mal',text:"Drain is my Dark strike. It heals me for part of the damage that gets through. Empower it and I take their health to keep my own."},
+    {key:'mal',text:"I have little HP, so I cannot trade hits carelessly. Strike first, strike hard, and never let up."},
   ],
   sylvara:[
-    {key:'sylvara',text:"Hello! I'm Sylvara, and I believe in working with nature rather than against it. 92 HP and 6 starting mana. I prefer patience and control over brute force."},
-    {key:'sylvara',text:"Regen is my lifeline — 4 mana restores 40 HP over 10 turns. Combined with my high base HP, I can survive punishment that would flatten most opponents."},
-    {key:'sylvara',text:"Entangle has a 75% chance to freeze my foe for 1 to 3 turns. On a lucky cast, that's three free attacks without them being able to respond. Very powerful."},
-    {key:'sylvara',text:"Vine Whip deals damage over time for 3 turns, and it's blocked by shields — so it pairs well with Entangle while they're frozen and unable to set up defences."},
-    {key:'sylvara',text:"I'm not the hardest hitter in the arena. But I'm still standing when they're not. The forest always reclaims what it's owed."},
+    {key:'sylvara',text:"Hello! I'm Sylvara. I prefer patience and control over brute force — nature always wins in the end."},
+    {key:'sylvara',text:"Regen, in the Physical sector of my Protection wheel, heals me a little every round for several rounds. It's a buff, so keep a ward up to stop it being dispelled."},
+    {key:'sylvara',text:"Entangle sits on my Dispel wheel. It's a curse with a good chance to stop my rival choosing Damage next round — and like every curse, it wears at their ward too."},
+    {key:'sylvara',text:"Vine Whip is my Physical strike. If it gets through, the vines keep hurting them for a few rounds afterwards."},
   ],
   aurelia:[
-    {key:'aurelia',text:"I see three moves ahead. Always. Foresight makes me immune to free attacks and absorbs the next paid spell entirely — at 4 mana, the most efficient defence in the game."},
-    {key:'aurelia',text:"Time Drain is subtle but decisive. For 3 mana, my opponent's channels are reduced to 2 mana for 5 turns. That is stolen resources, compounding every single round — and it affects them regardless of how much they normally channel."},
-    {key:'aurelia',text:"Haste gives me a 25% dodge chance for 3 turns — and I act with greater speed. Combine it with Foresight and I become remarkably difficult to land a hit on."},
-    {key:'aurelia',text:"Magic Missile is my free attack. 90 HP, 6 starting mana. I win by denying my opponent the resources and opportunities they need to finish the job."},
+    {key:'aurelia',text:"I see three moves ahead. Foresight, in the Lightning sector of my Protection wheel, makes the next strike against me do nothing at all."},
+    {key:'aurelia',text:"Time Drain is an Arcane curse on my Dispel wheel. My rival gains less mana each round for a while. Stolen resources compound."},
+    {key:'aurelia',text:"Rewind takes my Arcane ward sector. It raises a ward and also gives back the HP I lost last round — the past undone, and the future guarded."},
     {key:'aurelia',text:"I have already foreseen how this duel ends. I need only wait for you to arrive at the conclusion I have prepared."},
   ],
   gnash:[
-    {key:'gnash',text:"GNASH NOT WIZARD. Gnash warrior-mage! Gnash hits. HARD. No fancy shields, no status tricks — Gnash has 105 HP and two very effective fists."},
-    {key:'gnash',text:"Feral Strike — free, costs nothing, hits 9 damage. Pierces Counter AND Discharge. Magic reflect tricks? HAH. Gnash hit anyway! No exception for Gnash."},
-    {key:'gnash',text:"War Paint — 3 mana, Gnash takes 33% less damage for 5 turns. Then Savage Charge — costs 15 HP, NOT mana — smashes for 32 damage and pierces everything."},
-    {key:'gnash',text:"Frenzy — also costs 15 HP. Three rapid strikes, fast fast fast! Gnash also only channel 4 mana — less than most wizards! Fine. Gnash still has HP to spend. HP IS mana to Gnash!"},
-    {key:'gnash',text:"Little mage thinks Gnash simple? Gnash simple but Gnash EFFECTIVE. You run out of spells. Gnash never runs out of fists."},
+    {key:'gnash',text:"GNASH NOT WIZARD. Gnash warrior-mage! Gnash has lots of HP and very effective fists."},
+    {key:'gnash',text:"War Paint, Physical sector of Protection wheel — Gnash takes less damage for a few rounds. Frenzy, Fire sector — Gnash hits much harder for two rounds, but it hurts Gnash too."},
+    {key:'gnash',text:"Savage Charge is Gnash's Physical strike. Big smash, and it burns their mana. Magic tricks? HAH."},
+    {key:'gnash',text:"Little mage thinks Gnash simple? Gnash simple but Gnash EFFECTIVE."},
   ],
   cinder:[
-    {key:'cinder',text:"You thought the heat would break me? I am the heat. 83 HP, 7 starting mana. I hit hard, I hit fast, and if the fire takes us both — well, I was born in it."},
-    {key:'cinder',text:"Fireball rolls 18 to 28 damage. Sometimes barely a singe, sometimes the arena goes up. Roll the dice, fan the flames, and never bet against fire."},
-    {key:'cinder',text:"Flame Shield is 3 mana — for 5 turns, anyone who strikes me takes 16 fire damage back. You want to throw punches at me? Go ahead. I want you to."},
-    {key:'cinder',text:"Candle is 2 mana. For 3 turns, my opponent catches fire every time they channel. Suddenly the safe move isn't safe anymore. That's when the fun starts."},
-    {key:'cinder',text:"Ember is my free attack — about 9 damage. Nothing flashy. I save the spectacle for when it counts. Still smouldering. Still standing."},
+    {key:'cinder',text:"You thought the heat would break me? I am the heat. I hit hard and I hit fast."},
+    {key:'cinder',text:"Fireball is my Fire strike — the damage is random. Sometimes barely a singe, sometimes the arena goes up. Never bet against fire."},
+    {key:'cinder',text:"Flame Shield is my Fire ward. Anyone who strikes it gets burned. You want to throw punches at me? Go ahead."},
+    {key:'cinder',text:"Candle is a Fire curse on my Dispel wheel. While it burns, my rival takes fire damage whenever they raise a ward. Suddenly the safe move isn't safe."},
   ],
   skadi:[
-    {key:'skadi',text:"Patience. That is the first lesson. The cold does not rush. I have 88 HP and 6 mana, and I am content to let the fight come to me."},
-    {key:'skadi',text:"Frost Bolt is my free attack — 8 ice damage per cast. Ice Lance costs 4 mana for 28 damage with a 25% freeze chance. Straightforward. Results matter, not spectacle."},
-    {key:'skadi',text:"Frost Armor is where I truly shine. 4 mana — 30% damage reduction for 5 turns, and anyone who strikes me takes 4 damage in return. Costlier to attack and harder to hurt."},
-    {key:'skadi',text:"Blizzard. 4 mana. Five turns of 5 damage, 2 mana drain per turn, and a 15% freeze chance per turn. It compounds. It accumulates. By turn five, they have no mana and no hope."},
-    {key:'skadi',text:"The permafrost claims all things eventually. Even stubborn wizards."},
+    {key:'skadi',text:"Patience. The cold does not rush. I let the fight come to me."},
+    {key:'skadi',text:"Ice Lance is my Ice strike — strong enough to chill whoever it reaches, so they can't strike back next round."},
+    {key:'skadi',text:"Frost Armor, in the Ice sector of my Protection wheel, cuts the damage I take and hurts anyone who strikes me."},
+    {key:'skadi',text:"Blizzard is my Ice curse. Damage every round and a steady drain on their mana. By the end they have no mana and no hope."},
   ],
   zacharius:[
-    {key:'zacharius',text:"I had already won before you cast your first spell. You simply hadn't realised it yet. That is what it means to play the long game. 92 HP, 7 starting mana — and I channel 6 mana per turn, above the usual 5. Every advantage compounds."},
-    {key:'zacharius',text:"Galvanize costs 4 mana and stores 16 charge — electrical energy held in reserve. Every joule of energy you waste attacking me, I absorb, shape, and return against you."},
-    {key:'zacharius',text:"Chain Lightning costs 8 charge — not mana. After Galvanizing I strike for 24 damage with a 35% chance to arc for 10 more. The storm obeys me. Did you truly believe you wouldn't?"},
-    {key:'zacharius',text:"Conductivity costs 2 mana — my opponent takes 35% extra damage from all sources for 3 turns. Stack it with a Lightning Bolt and the mathematics are no longer in your favour."},
-    {key:'zacharius',text:"Spark is my free attack. 9 lightning damage. Think of it as priming the field. The outcome was never in doubt."},
+    {key:'zacharius',text:"I had already won before you cast your first spell. You simply hadn't realised it yet."},
+    {key:'zacharius',text:"Galvanize, in the Lightning sector of my Protection wheel, charges my next Lightning strike with far more power."},
+    {key:'zacharius',text:"Chain Lightning is my Lightning strike. It burns mana like all lightning, and it may arc for extra damage."},
+    {key:'zacharius',text:"Conductivity is my Lightning curse — my rival takes extra damage from every strike for a few rounds. Then the mathematics are no longer in your favour."},
   ],
   mary:[
-    {key:'mary',text:"I am a healer first, a combatant second. 88 HP and 6 mana. My purpose is to endure and outlast through faith and restoration."},
-    {key:'mary',text:"Heal instantly restores 40 HP for 4 mana. Simple and powerful. Combined with my base HP, I can absorb tremendous punishment and keep standing."},
-    {key:'mary',text:"Purge removes ALL active debuffs from me for just 2 mana. Silence, Agony, Corruption, Entangle — gone. Every last one. A complete reset."},
-    {key:'mary',text:"Radiant is unique — 3 mana for 15 holy damage that bypasses shields and resistances entirely. Against a fortified opponent, it is often the only direct damage I can reliably land."},
-    {key:'mary',text:"The light does not yield. Neither do I."},
+    {key:'mary',text:"I am a healer first, a combatant second. I endure and outlast through faith and restoration."},
+    {key:'mary',text:"Divine Heal, in the Arcane sector of my Protection wheel, restores HP at once."},
+    {key:'mary',text:"Purge takes the Arcane sector of my Dispel wheel. It removes every curse on me and heals me a little. Hex me all you like."},
+    {key:'mary',text:"Radiant is my Arcane strike. It burns my rival's mana as the light strikes them."},
   ],
   mordant:[
-    {key:'mordant',text:"Do not think of me as aggressive. I am patient. Agony costs 3 mana and places a hex — 12 damage every time my foe takes any non-channel action for 5 turns."},
-    {key:'mordant',text:"Silence is 2 mana — 45% spell failure for 5 turns. Combined with Agony, my opponent cannot act freely in any direction. Cast a spell? Maybe it fails. Take any action? Take damage."},
-    {key:'mordant',text:"Corruption is the slow kill. 3 mana — they gain 2 less mana per channel for 3 turns. Starve them of resources. Let them watch their options narrow to nothing."},
-    {key:'mordant',text:"Dark Bolt is my free attack — 8 dark damage. 82 HP, 6 mana. I am not here for a fair fight. The hex is already written. You just haven't felt it yet."},
+    {key:'mordant',text:"Do not think of me as aggressive. I am patient. My whole Dispel wheel is curses — and every one of them wears at your ward too."},
+    {key:'mordant',text:"Agony is Dark: whenever you cast anything, you suffer. Silence is Arcane: your spells may simply fail."},
+    {key:'mordant',text:"Corruption is Physical: the rot slows the mana you gain each round. Starve them, and watch their options narrow to nothing."},
+    {key:'mordant',text:"Cleanse Self is the answer to me. Make them spend their rounds cleansing instead of striking. The hex is already written."},
   ],
   ponder:[
-    {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. But don't underestimate me! My entire kit is about misdirection and resource theft. I'm far harder to catch than I look."},
-    {key:'ponder',text:"Vanish makes me invisible for 3 turns. While invisible, attacks cannot reach me. And more importantly — while invisible, I can use Mana Siphon."},
-    {key:'ponder',text:"Mana Siphon is only available while invisible. It steals 4 mana from my opponent — they lose it AND I gain it. That is an 8-point swing in a single action!"},
-    {key:'ponder',text:"Blink gives me a 50% dodge chance for 3 turns. Half their attacks just... miss. Combined with Vanish and Siphon, I become very difficult to fight effectively."},
-    {key:'ponder',text:"85 HP, 5 mana. Not the strongest. But by the time they catch me, I've already drained half their mana and they don't have enough left to finish the job. Surprise!"},
+    {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
+    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes the next strike miss me entirely. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds."},
+    {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. I steal mana from my rival — they lose it AND I gain it!"},
+    {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
   ],
   durin:[
-    {key:'durin',text:"I am Durin. I have 110 HP. I start with no mana and channel only 4 mana per turn — below the usual 5. Before you worry — I channel frequently. What matters is that when spells come, they barely scratch me."},
-    {key:'durin',text:"Stoneskin absorbs 10 damage per hit for up to 30 total HP, lasting 10 turns — all for 3 mana. Against basic attacks, I become nearly impervious."},
-    {key:'durin',text:"Stonesoul reduces magical damage by 40% for 5 turns. A Lightning Bolt that would kill a lesser wizard? A minor inconvenience to Durin."},
-    {key:'durin',text:"Rockfall drops three boulders — about 9 damage each, all physical. It pierces magical shields and resistances entirely. 4 mana for a powerful, unavoidable attack."},
-    {key:'durin',text:"I am slow. I am deliberate. I channel while others waste mana on panicked shields. And when I am ready... the mountain falls."},
+    {key:'durin',text:"I am Durin. I have more HP than anyone in the arena. When spells come, they barely scratch me."},
+    {key:'durin',text:"Stoneskin is my Physical ward — a sturdy one. Stonesoul, in the Arcane sector, cuts all non-physical damage I take for a few rounds."},
+    {key:'durin',text:"Rockfall is my Physical strike — a heavy one, with a long ritual."},
+    {key:'durin',text:"I am slow. I am deliberate. And when I am ready... the mountain falls."},
   ],
   weizan:[
-    {key:'weizan',text:"I am Weizan. My fighting style requires patience — I build up blades one by one, then release them all in a single devastating storm. 90 HP, 6 mana."},
-    {key:'weizan',text:"Conjure Blade costs 2 mana and summons a phantom blade that orbits me. Up to three blades can orbit at once. Each one deals 4 damage to my opponent every turn automatically."},
-    {key:'weizan',text:"Bladestorm releases all orbiting blades at once — about 12 damage each, all physical. It costs nothing when you have blades to spend. Wait until you have two or three for maximum impact."},
-    {key:'weizan',text:"Iron Patience costs 2 mana and grants 30% damage resistance for 3 turns. When I am building blades and need to survive long enough to unleash them, this buys me the time I need."},
-    {key:'weizan',text:"My blades are physical — they bypass magical shields and cannot be silenced. But they can be Dispelled. A smart opponent will strip them before I can unleash the storm. Do not give them the chance."},
+    {key:'weizan',text:"I am Weizan. I build up blades one by one, then release them all at once."},
+    {key:'weizan',text:"Conjure Blade, in the Physical sector of my Protection wheel, summons a blade that strikes my rival every round. Up to three can orbit me."},
+    {key:'weizan',text:"Bladestorm is my Physical strike. It launches every blade at once — the more I have, the harder it hits. Iron Patience, in the Arcane sector, cuts the damage I take while I build."},
+    {key:'weizan',text:"My blades are buffs, so a Dispel can strip them. Keep a ward up while you build the storm."},
   ],
   gretch:[
-    {key:'gretch',text:"Heh. Come closer. Gretch won't bite. Much. 85 HP, 5 mana. My kit is about poison and drain — I infect you, starve you, and keep myself alive while you rot."},
-    {key:'gretch',text:"Plague is 3 mana — it infects my foe for 6 damage every round over 5 turns. That's 30 damage if left untreated. And here's the cruel part: any spell they cast while plagued deals 8 extra damage to themselves."},
-    {key:'gretch',text:"Maggot Cloud is 2 mana. A swarm of flies reduces my opponent's mana per channel by 3 for 3 turns. They can barely afford anything while the cloud buzzes around them."},
-    {key:'gretch',text:"Bone Totem is 3 mana — a carved skull that heals me for 5 HP each turn for 4 turns. That's 20 total recovery. Keep me alive while the plague does its work. It can be Dispelled, so protect it when you can."},
-    {key:'gretch',text:"Hex Bolt is my free attack. Eight dark damage. Not elegant. Not subtle. Just results. Plague them, drain them, totem up, and let time finish the job."},
+    {key:'gretch',text:"Heh. Come closer. My kit is about poison and drain — I infect you, starve you, and keep myself alive while you rot."},
+    {key:'gretch',text:"Plague is a Dark curse — damage every round for a while. Maggot Cloud is a Physical curse — it drains mana now and slows your mana for a couple of rounds."},
+    {key:'gretch',text:"Bone Totem, in the Dark sector of my Protection wheel, heals me every round. Protect it with a ward or a Dispel will strip it."},
+    {key:'gretch',text:"Not elegant. Not subtle. Just results. Plague them, drain them, totem up, and let time finish the job."},
   ],
   valdris:[
-    {key:'valdris',text:"I am Valdris. The Deathless. I do not fear mortality — I have already negotiated terms with it. 82 HP, 8 mana. My skeletons are my body and my shield."},
-    {key:'valdris',text:"Raise Dead costs 4 mana and summons a skeleton with 25 HP. It attacks for 7 damage per turn and absorbs all damage meant for me first. Up to two skeletons at once. My enemies must kill my servants before they can touch me."},
-    {key:'valdris',text:"Necrotic Drain costs 3 mana — deals 18 dark damage and heals me for 8 HP. When my skeletons can't save me fast enough, I take their life force directly."},
-    {key:'valdris',text:"Reinforce costs 2 mana and heals my most damaged skeleton for 15 HP. A skeleton on the brink becomes a fresh barrier. Keep rotating and the wall never fully falls."},
-    {key:'valdris',text:"The Deathless passive: if a blow would kill me while I have mana, I survive — spending 6 mana to endure the hit. Channel wisely. While mana flows, death cannot claim me. When it runs dry... even the Deathless must fall."},
+    {key:'valdris',text:"I am Valdris. The Deathless. While I have mana, a killing blow drains my mana instead of ending me."},
+    {key:'valdris',text:"Raise Dead, in the Dark sector of my Protection wheel, summons a skeleton that strikes every round. I can have two. If they are dispelled, their death heals me."},
+    {key:'valdris',text:"Necrotic Drain is my Dark strike — it heals me for part of the damage dealt. Reinforce is my Physical ward, and it grows stronger for every skeleton at my side."},
+    {key:'valdris',text:"Burn my mana and the Deathless can fall. Fail, and I will outlast you."},
   ],
   mirel:[
-    {key:'mirel',text:"Nothing you see is real. I am Mirel. 85 HP, 5 mana. I create copies of myself — simulacra — that fight on my behalf and intercept attacks. What do you do when you cannot tell which wizard to strike?"},
-    {key:'mirel',text:"Simulacrum costs 3 mana and creates a copy with 20 HP and 6 mana. It acts on my behalf every turn — channelling or casting spells from its own mana pool. Up to two simulacra at once. Each one has a 50% chance to intercept attacks aimed at me."},
-    {key:'mirel',text:"Bewitch costs 3 mana. The next non-basic spell my opponent casts is reflected back at them. They don't know which cast will betray them — so it poisons every decision they make."},
-    {key:'mirel',text:"Feint costs 2 mana and deals 15 damage directly — no minigame, no ritual, no warning. When they're focused on managing my simulacra, Feint catches them completely off guard."},
-    {key:'mirel',text:"My simulacra can be Dispelled. That is the counterplay. But while they live, every attack on me is a coin flip — and I win when my opponent runs out of dispels and patience."},
+    {key:'mirel',text:"Nothing you see is real. I am Mirel. Simulacrum, in the Arcane sector of my Protection wheel, creates a copy of me that strikes my rival every round. I can have two."},
+    {key:'mirel',text:"Bewitch is my Arcane curse. The next strike my rival makes rebounds onto themselves. Every attack becomes a gamble."},
+    {key:'mirel',text:"Feint is my Arcane strike. It burns my rival's mana as it lands."},
+    {key:'mirel',text:"My simulacra can be dispelled — that is the counterplay. So I keep a ward up, and let my copies do the work."},
   ],
   thessaly:[
-    {key:'thessaly',text:"I don't fight you. I rearrange the battlefield until you can no longer fight me effectively. 88 HP, 6 mana. I control what spells cost, when they fire, and whether they work at all."},
-    {key:'thessaly',text:"Enthral costs 3 mana — my opponent is mesmerised for 1 turn and can only channel. A free action for me while they lose tempo. Simple, but the timing is everything."},
-    {key:'thessaly',text:"Arcane Weave costs 2 mana — for my next 3 basic attacks, each one deals 6 extra damage and drains 2 mana from my opponent. Every free strike suddenly becomes a resource battle."},
-    {key:'thessaly',text:"Spellbind costs 3 mana — I choose one of my opponent's spells and make it cost 3 extra mana for 5 turns. Pick their key ability. Suddenly their signature move is barely affordable."},
-    {key:'thessaly',text:"She doesn't fight you. She engineers a position where you cannot win. By the time you understand what I've done, you've already run out of answers."},
+    {key:'thessaly',text:"I don't fight you. I rearrange the battlefield until you can no longer fight me effectively."},
+    {key:'thessaly',text:"Enthral is my Arcane curse — you can't raise Protection next round. Spellbind is my Dark curse — whatever category you used last costs more for a while."},
+    {key:'thessaly',text:"Arcane Weave, in the Arcane sector of my Protection wheel, empowers my next few strikes and makes each one burn your mana."},
+    {key:'thessaly',text:"By the time you understand what I've done, you've already run out of answers."},
   ],
   korvath:[
-    {key:'korvath',text:"My ancestors bonded with dragons before your kingdom had a name. 95 HP, 6 mana. I am built to outlast you — and to end you, once, when it matters most."},
-    {key:'korvath',text:"Dragon Scales costs 4 mana — 33% damage reduction for 5 turns, and anyone who strikes me takes 5 fire damage in return. Hit me while it's up and you're paying for the privilege."},
-    {key:'korvath',text:"Wyrmfire Breath costs 4 mana — 16 direct fire damage, then 5 more damage per turn for 2 turns. Patient damage that adds up while you're busy defending."},
-    {key:'korvath',text:"Ancient Wrath costs 6 mana and deals 35 fire damage — but I can only call on it once per duel. When my dragon's spirit answers, make it count."},
-    {key:'korvath',text:"Outlast me, and you'll think you've won. Then I unleash Ancient Wrath — and you'll wish you'd ended this before I got the chance."},
+    {key:'korvath',text:"My ancestors bonded with dragons before your kingdom had a name. I am built to outlast you — and to end you, once, when it matters most."},
+    {key:'korvath',text:"Dragon Scales, in the Fire sector of my Protection wheel, cuts the damage I take and burns anyone who strikes me."},
+    {key:'korvath',text:"Wyrmfire Breath is my Fire strike — it leaves my rival burning for a couple of rounds."},
+    {key:'korvath',text:"Ancient Wrath takes my Physical strike sector — an enormous blow I can only call on once per duel. Make it count."},
   ],
   fizzwick:[
-    {key:'fizzwick',text:"Heh, 80 HP, 7 mana — and a satchel full of things that probably shouldn't mix. Half my spells help me, half hurt you. Sometimes I'm not sure which is which until it's too late."},
-    {key:'fizzwick',text:"Caustic Bomb costs 4 mana — 10 direct damage, plus it poisons for 5 more damage per turn over 3 turns. Throw it and walk away. The bomb does the rest."},
-    {key:'fizzwick',text:"Volatile Tonic costs 3 mana — 50/50 chance. Either I heal 20 HP, or I get Empowered for +50% damage on my next hit. Either way, something good happens to me."},
-    {key:'fizzwick',text:"Unstable Concoction costs 5 mana — anywhere from 10 to 30 damage, completely random. Could be a dud. Could end the fight. That's chemistry for you."},
-    {key:'fizzwick',text:"Most duelists plan for consistency. I bring chaos in a bottle. Sometimes that's all it takes to win."},
+    {key:'fizzwick',text:"Heh — a satchel full of things that probably shouldn't mix. Sometimes I'm not sure what they'll do until it's too late."},
+    {key:'fizzwick',text:"Caustic Bomb is my Dark strike — and it leaves them poisoned for a few rounds. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
+    {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, either heals me or empowers my next strike. Either way, something good happens to me."},
+    {key:'fizzwick',text:"Most duellists plan for consistency. I bring chaos in a bottle."},
   ],
   nyxara:[
-    {key:'nyxara',text:"78 HP, 6 mana, and a hunger that doesn't fill. My magic doesn't care how strong you are — only how much of you is left."},
-    {key:'nyxara',text:"Singularity costs 4 mana — it opens a rift on you that collapses over 3 turns, dealing 4, then 8, then 12 damage. 24 in total, if you let it run."},
-    {key:'nyxara',text:"Gravity Well costs 4 mana — it tears away a quarter of your current HP, minimum 5. The fuller you are, the more it takes."},
-    {key:'nyxara',text:"Event Horizon costs 10 mana — 40% of your current HP, minimum 10. It costs me 6 HP in recoil to open it, but against someone at full health, that's a trade I'll make every time."},
-    {key:'nyxara',text:"You'll notice my strongest spells get weaker the lower you fall. So don't fall low. Don't fall at all. Either way, I win."},
+    {key:'nyxara',text:"My magic doesn't care how strong you are — only how much of you is left."},
+    {key:'nyxara',text:"Singularity is my Dark curse — a rift that collapses over three rounds, hurting more each time."},
+    {key:'nyxara',text:"Gravity Well is my Dark strike, and Event Horizon is my Arcane strike. Both tear away a share of your current HP — the fuller you are, the more they take. Event Horizon hurts me too."},
+    {key:'nyxara',text:"So don't stay healthy for long. Either way, I win."},
   ],
 };
+
+// Character select stats, from each spell's `el` block
+function elemCharStats(cfg){
+  const rows=[['❤ HP',String(cfg.hp)]];
+  (cfg.spells||[]).filter(s=>s.el).forEach(s=>{
+    const el=s.el, e=elemById(el.elem), cat=ELEM_CATS[el.cat];
+    rows.push([(el.icon||s.icon)+' '+(el.name||s.name),cat.icon+' '+e.name+' · '+el.desc]);
+  });
+  return rows;
+}
+
 
 let activeTutTopic='welcome';
 
@@ -7962,13 +5459,6 @@ function renderTutConvo(){
 
 window.addEventListener('DOMContentLoaded', ()=>{
   // Wire up all buttons immediately — independent of the fetch below
-  document.querySelectorAll('.rules-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      document.querySelectorAll('.rules-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      elementalMode=btn.dataset.rules==='elemental';
-    });
-  });
   document.querySelectorAll('.abtn-elem').forEach(btn=>{
     btn.addEventListener('click',()=>openElemWheel(btn.dataset.cat));
   });
@@ -8070,7 +5560,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     trainingAI=false;
     document.getElementById('tai-on').classList.remove('active');
     document.getElementById('tai-off').classList.add('active');
-    document.getElementById('training-ai-hint').textContent='Opponent only channels';
+    document.getElementById('training-ai-hint').textContent='Opponent only waits';
   });
   document.getElementById('btn-begin-training').addEventListener('click',()=>{
     if(!CHAR_DEFS[p1Key]||!CHAR_DEFS[p2Key]) return;
@@ -8139,22 +5629,6 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
   document.getElementById('btn-closetutorial').addEventListener('click',()=>{
     document.getElementById('tutorial-modal').classList.remove('active');
-  });
-
-  document.getElementById('bchannel').addEventListener('click',()=>act('channel'));
-
-  document.getElementById('bcastspell').addEventListener('click',()=>{
-    if(!gs.myTurn||gs.busy) return;
-    const activeState=twoPlayerMode?gs[gs.turnPlayer]:gs.p1;
-    SPELLS.forEach(spell=>{
-      const card=document.getElementById('spcard-'+spell.element);
-      if(card) card.classList.toggle('disabled', activeState.mana<spell.cost);
-    });
-    showScreen('spell-screen');
-  });
-
-  document.getElementById('sp-cancel').addEventListener('click',()=>{
-    showScreen('battle-screen');
   });
 
   document.getElementById('btn-continue').addEventListener('click',()=>{

@@ -1,7 +1,7 @@
 // ── LEGACY PUZZLES ─────────────────────────────────────────
 // Original puzzle implementations for Lightning Bolt, Frost Nova, and Arcane
-// Surge. Not loaded by the game. To re-enable one, import this file in
-// index.html and swap the relevant entry in the launchers map in game.js.
+// Surge. Not loaded by the game. To re-enable one, load this file in
+// index.html and point the element's entry in ELEM_MINIGAME (js/game.js) at it.
 
 // ── PUZZLE: MAZE (Lightning) ───────────────────────────────
 const CELL=24, COLS=15, ROWS=15;
