@@ -1249,6 +1249,7 @@ function addFloat(x,y,t,col,sz=17){ gs.floats.push({x,y,t,col,sz,life:1}); }
 
 // ── SPELL PROJECTILES ──────────────────────────────────────
 function spawnProj(x1,y1,x2,y2,element,col,cb){
+  if(simMode){ if(cb) cb(); return; }
   const speeds={fire:0.055,lightning:0.3,ice:0.065,arcane:0.06,physical:0.09,dispel:0.07,manaburn:0.08};
   gs.projs.push({x1,y1,x2,y2,progress:0,speed:speeds[element]||0.065,element,col,cb,done:false});
 }
@@ -1452,8 +1453,8 @@ function checkDeathless(who,x,y){
   const state=gs[who];
   const key=who==='p1'?p1Key:p2Key;
   if(key!=='valdris') return;
-  if(state.hp<=0&&state.mana>0){
-    const cost=(who==='p1'?p1Cfg:p2Cfg).deathlessCost||6;
+  const cost=(who==='p1'?p1Cfg:p2Cfg).deathlessCost||6;
+  if(state.hp<=0&&state.mana>=cost){
     state.mana=Math.max(0,state.mana-cost);
     state.hp=1;
     addFloat(x,y-30,'💀 DEATHLESS! −'+cost+' Mana','#8844cc',16);
@@ -1485,13 +1486,17 @@ function dealDmgToPlayer(who,dmg,x,y){
 
 
 function anim(who,state,ms){
+  if(simMode) return;
   gs[who+'anim']=state;
   gs.lastAnimEnd=Math.max(gs.lastAnimEnd||0, Date.now()+ms);
   setTimeout(()=>{if(gs[who+'anim']!=='death') gs[who+'anim']='idle';},ms);
 }
 
 
-function combatTimeout(fn,delay){ setTimeout(fn,delay); }
+// Balance simulator (tools/balance.html): when true, rounds resolve instantly with no animation or UI
+let simMode=false, simOutcome=null;
+
+function combatTimeout(fn,delay){ if(simMode) fn(); else setTimeout(fn,delay); }
 
 
 // ── VFX LIBRARY ────────────────────────────────────────────
@@ -1515,6 +1520,7 @@ function tickBeams(){
 }
 // Step toward the foe and back (melee strikes)
 function lunge(who,amt,cb){
+  if(simMode){ if(cb) cb(); return; }
   const dir=who==='p1'?1:-1;
   gs[who+'xOff']=dir*bW*amt;
   anim(who,'cast',300);
@@ -1898,6 +1904,7 @@ function endSimRound(){
     if(st.shield>0) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
   });
   gs.round++;
+  if(simMode){ runRoundTicks(); return; }
 
   const delay=Math.max(0,(gs.lastAnimEnd||0)-Date.now())+600;
   if(aiTid) clearTimeout(aiTid);
@@ -2542,6 +2549,12 @@ function elemAIChoose(who){
   if(oppWard){ w.dispel=smart?1.7:1.0; w.damage=0.5; }
   else if(oppBuffs) w.dispel+=smart?0.9:0.4;
   if(myCurses) w.dispel+=0.5;
+  // Cash in a pending strike boost (Empower, Galvanize, Frenzy, Arcane Weave)
+  const boost=me.effects.find(e=>e.type==='empower'||e.type==='frenzy'||e.type==='weave');
+  if(boost) w.damage+=0.9;
+  // Curse-casters open the Dispel wheel for their hexes, not only to break wards
+  const hexes=sigSpells(who,'dispel').filter(sp=>sp.el.kind==='curse'&&!sigBlocked(who,sp,1)&&aiSigSensible(who,sp)).length;
+  if(hexes) w.dispel+=(smart?0.35:0.2)*hexes;
   if(hasWard(me)&&me.shieldHp>=15) w.protect=0.2;
   else {
     if(opp.mana>=elemCost(tgt,'damage',2)) w.protect+=0.35;
@@ -2571,6 +2584,7 @@ function elemAIChoose(who){
     if(cat==='protect'&&opp.lastElem&&has(opp.lastElem)&&_rng()<(smart?0.6:0.3)) choice=has(opp.lastElem);
   }
   else if(sectors.length) choice=sectors[Math.floor(_rng()*sectors.length)];   // anything beats waiting
+  if(cat==='damage'&&boost&&boost.elem){ const s=sectors.find(x=>x.elem===boost.elem); if(s) choice=s; }
   if(!choice) return cleanseOk?{type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok}:{type:'el',cat:'pass',ok:true};
 
   let tier=3;
@@ -2696,6 +2710,7 @@ function settleWin(){
 }
 
 function declareKO(p1Dead,p2Dead){
+  if(simMode){ gameEnded=true; simOutcome=p1Dead&&p2Dead?'draw':p1Dead?'p2':'p1'; return; }
   if(p1Dead&&p2Dead){
     endGame('draw'); return;
   }
@@ -4954,6 +4969,7 @@ function launchDispelPattern(spell,cb){
 
 // ── FLASH ──────────────────────────────────────────────────
 function flash(col){
+  if(simMode) return;
   const el=document.getElementById('flash');
   el.style.background=col; el.classList.add('on');
   setTimeout(()=>el.classList.remove('on'),120);
@@ -5152,6 +5168,37 @@ function startTrainingBattle(){
   resizeBC();
   showScreen('battle-screen');
   requestAnimationFrame(battleLoop);
+}
+
+// ── BALANCE SIMULATOR ──────────────────────────────────────
+// Used by tools/balance.html: AI vs AI duels on the real rules, resolved instantly.
+// Returns {winner:'p1'|'p2'|'draw'|'timeout', rounds, hp:{p1,p2}, picks:{p1:{key:count},p2:{…}}}
+// where pick keys are a signature spell id, or 'damage' / 'protect' / 'dispel' / 'cleanse' / 'pass'.
+const SIM_MAX_ROUNDS=60;
+// The tool page reads the game through an iframe, where only function declarations are visible
+function simInfo(){ return {chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS}; }
+function simMatch(k1,k2,ai){
+  simMode=true; simOutcome=null;
+  twoPlayerMode=false; trainingMode=false;
+  aiDifficulty=ai||'normal';
+  p1Key=k1; p1Cfg=CHAR_DEFS[k1]; p2Key=k2; p2Cfg=CHAR_DEFS[k2];
+  newState();
+  if(!bW){ bW=400; bH=300; }
+  battleRunning=true; gameEnded=false;
+  const picks={p1:{},p2:{}};
+  while(!gameEnded&&gs.round<=SIM_MAX_ROUNDS){
+    PLAYERS.forEach(w=>{
+      const a=elemAIChoose(w);
+      gs.pending[w]=a;
+      const key=a.sig||(a.self?'cleanse':a.cat);
+      picks[w][key]=(picks[w][key]||0)+1;
+    });
+    resolveSimRound();
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[];
+  }
+  const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
+  battleRunning=false; simMode=false;
+  return out;
 }
 
 // ── TUTORIAL ─────────────────────────────────────────────────────────────────
