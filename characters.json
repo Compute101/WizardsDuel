@@ -142,6 +142,7 @@
     ],
     "hp": 92,
     "dmgMult": 1.0,
+    "forbidden": ["fire", "lightning", "dark"],
     "spells": [
       {
         "id": "heal",
@@ -479,6 +480,7 @@
     ],
     "hp": 92,
     "dmgMult": 1.1,
+    "forbidden": ["physical", "ice"],
     "spells": [
       {
         "id": "galvanize",
@@ -549,6 +551,7 @@
     ],
     "hp": 88,
     "dmgMult": 1.0,
+    "forbidden": ["dark", "lightning", "fire"],
     "spells": [
       {
         "id": "divineheal",
@@ -881,6 +884,7 @@
     ],
     "hp": 85,
     "dmgMult": 1.0,
+    "forbidden": ["fire", "arcane", "lightning"],
     "spells": [
       {
         "id": "plague",
@@ -1019,6 +1023,7 @@
     ],
     "hp": 85,
     "dmgMult": 1.0,
+    "forbidden": ["physical", "ice", "fire"],
     "spells": [
       {
         "id": "simulacrum",
@@ -1158,6 +1163,7 @@
     ],
     "hp": 95,
     "dmgMult": 1.05,
+    "forbidden": ["ice", "arcane"],
     "spells": [
       {
         "id": "dragonscales",

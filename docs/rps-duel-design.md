@@ -38,14 +38,21 @@ What was built, including choices made while building:
 - **Mana:** everyone starts with 6 and gains +4 at the end of every round. There's no Channel, and the
   cheapest spell costs 1, so you can always cast something.
 - **Wards:** raising one replaces any existing ward. A ward stops damage in the same round it's raised.
+  A ward **resists every element but its own**: other elements wear it down at 75%, while a strike in
+  its own element **unravels** it at 150% (`ELEM_WARD_TAKE`). A dispel of its element does double.
+- **Forbidden elements:** some characters can't cast certain elements (`forbidden` in
+  `characters.json`). Those sectors are greyed out with ⛔ on their wheel and the character sheet.
+  A ward in an element your rival can't cast can never be unravelled or matched, so it naturally lasts
+  longer. That rewards knowing the roster.
 - **Lightning** burns 1 / 2 / 3 mana, even when it hits a ward.
 - **Ice:** a middle- or outer-ring hit that reaches HP **chills** the target. A chilled player can't
   pick Damage next round. This replaces Freeze.
 - **Character stats:** each character's HP and damage multiplier apply. Eldrin's wards cost 1 less
   (`shieldCostMod` in `characters.json`). Character spells: see Phase 4.
 - **AI:** a weighted mixed strategy. It dispels when you have a ward, and on Normal it matches your
-  ward's element. It wards more when you can afford a strong hit or its HP is low. On Normal it avoids
-  striking into your ward's element. Its minigame success rate is 90% on Normal and 78% on Easy.
+  ward's element. It wards more when you can afford a strong hit or its HP is low. On Normal it strikes
+  with your ward's own element when it can. It prefers wards in elements you can't cast (70% Normal,
+  25% Easy), and otherwise avoids warding in the element you last used. Its minigame success rate is 90% on Normal and 78% on Easy.
 
 Original spec:
 
@@ -222,6 +229,27 @@ matchups are worse than 25/75 (the worst is Malachar vs Gnash, 22%).
 | Ponder | Mana Siphon 3 → 4 · Blink 40% → 45% |
 | Zacharius | Galvanize 3 → 2 mana |
 | Durin | Rockfall 20 → 22 |
+
+### Forbidden elements as a balancing lever
+
+The strongest characters are barred from elements; the rest are unrestricted. Signature elements are
+never forbidden.
+
+| Character | Forbidden |
+|---|---|
+| Sylvara | Fire, Lightning, Dark |
+| Mary | Dark, Lightning, Fire |
+| Mirel | Physical, Ice, Fire |
+| Gretch | Fire, Arcane, Lightning |
+| Zacharius | Physical, Ice |
+| Korvath | Ice, Arcane |
+
+Tested with 80 games per matchup:
+- The first ward rule tried (own element resisted 50%, others in full) made restrictions almost
+  free, because the strongest characters cast mostly one element. Restrictions only bite once a
+  ward's own element unravels it.
+- With the 150% / 75% rule the Normal AI spread went from 42.5–57.7% (sd 4.0) to **44.9–56.3%
+  (sd 2.9)**, with no matchup under 25%. Easy: 40.8–58.7%, the same spread it had before.
 
 **Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
 opponent may play better in human hands. Re-run the tool after any number change, and playtest.

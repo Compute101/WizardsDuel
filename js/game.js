@@ -1932,7 +1932,8 @@ const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or
 const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
 const ELEM_DISPEL_ALL_TIER=3;
 const ELEM_CURSE_DISPEL=0.5;
-const ELEM_WARD_UNCASTABLE_BONUS=1;   // extra rounds for a ward in an element no foe can cast    // curses also hit the foe's ward with this share of a dispel's power   // a Greater dispel on an unwarded foe strips every buff, not just the newest
+// Share of a strike's damage a ward loses: match = a strike in the ward's own element, off = any other element
+const ELEM_WARD_TAKE={match:1.5, off:0.75};   // wards resist other elements; their own unravels them
 
 const ELEMENTS=[
   {id:'fire',      name:'Fire',      icon:'🔥', col:'#ff6622'},
@@ -2115,8 +2116,8 @@ function openElemWheel(cat){
   selfBtn.style.display=cat==='dispel'?'':'none';
   selfBtn.textContent='✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
   const ruleText={
-    damage:'Lightning also burns mana · Ice (middle ring or stronger) chills: no Damage next round',
-    protect:'Wards last 3 rounds, fading each round · the chosen element only does half damage to it',
+    damage:'A ward\'s own element unravels it · Lightning also burns mana · Ice (middle ring or stronger) chills: no Damage next round',
+    protect:'Wards last 3 rounds, fading each round · they resist other elements, but their own element unravels them',
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
   document.getElementById('wheel-rule').textContent=ruleText;
@@ -2372,12 +2373,9 @@ function executeSignature(who,sp,action,cb){
 
 function raiseWard(who,elem,power,retaliate){
   const st=gs[who], el=elemById(elem);
-  // A ward in an element no foe can cast can't be matched by their strikes or dispels — and lasts longer
-  const uncastable=foesCantCast(who,elem);
-  st.shield=ELEM_WARD_ROUNDS+(uncastable?ELEM_WARD_UNCASTABLE_BONUS:0);
+  st.shield=ELEM_WARD_ROUNDS;
   st.shieldHp=power; st.shieldType=elem; st.wardRetaliate=retaliate; st.wardSig=null;
   addFloat(seatX(who),bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
-  if(uncastable) addFloat(seatX(who),bH*.21,'⛔ Foe can\'t cast '+el.name+' — lasts longer','#f0cc6a',11);
   VFX.wardRaise(seatX(who),el.col);
 }
 function breakWard(st,x){
@@ -2417,12 +2415,12 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet){
   const ts=gs[tgt], tx=seatX(tgt);
   let warded=false;
   if(hasWard(ts)&&dmg>0){
-    // A ward of the same element only takes half damage, so it stops twice as much
-    const match=ts.shieldType===elem;
-    const blocked=Math.min(dmg,match?ts.shieldHp*2:ts.shieldHp);
-    ts.shieldHp-=match?Math.ceil(blocked/2):blocked;
+    // The ward loses only its take share of what it stops, so a resistant ward stops more
+    const take=ELEM_WARD_TAKE[ts.shieldType===elem?'match':'off'];
+    const blocked=Math.min(dmg,Math.floor(ts.shieldHp/take));
+    ts.shieldHp-=Math.max(1,Math.ceil(blocked*take));
     dmg-=blocked; warded=true;
-    addFloat(tx,bH*.24,'🛡 −'+blocked+(match?' resisted':' blocked'),'#4af0ff',12);
+    addFloat(tx,bH*.24,'🛡 −'+blocked+(take<1?' resisted':take>1?' unravels':' blocked'),'#4af0ff',12);
     VFX.wardBlock(tx);
     if(ts.shieldHp<=0) breakWard(ts,tx);
   }
@@ -2590,11 +2588,20 @@ function elemAIChoose(who){
     const has=id=>plain.find(x=>x.elem===id);
     choice=pickFrom(plain);
     if(cat==='dispel'&&oppWard&&has(opp.shieldType)&&_rng()<(smart?0.8:0.4)) choice=has(opp.shieldType);
-    if(cat==='damage'&&oppWard&&smart){ const off=plain.filter(x=>x.elem!==opp.shieldType); if(off.length) choice=pickFrom(off); }
+    // Strike with whichever element the foe's ward takes more from
+    const matchHurts=ELEM_WARD_TAKE.match>ELEM_WARD_TAKE.off;
+    if(cat==='damage'&&oppWard&&smart){
+      const best=matchHurts?plain.filter(x=>x.elem===opp.shieldType):plain.filter(x=>x.elem!==opp.shieldType);
+      if(best.length) choice=pickFrom(best);
+    }
     if(cat==='protect'){
-      // Ward in an element the foe can't cast (lasts longer, can't be matched), or in the one they strike with
-      const safe=plain.filter(x=>foesCantCast(who,x.elem)), roll=_rng();
-      if(safe.length&&roll<(smart?0.5:0.15)) choice=pickFrom(safe);
+      const roll=_rng();
+      if(matchHurts||ELEM_WARD_TAKE.match===ELEM_WARD_TAKE.off){
+        // A ward in an element the foe can't cast can't be unravelled or matched by their dispels
+        const safe=plain.filter(x=>foesCantCast(who,x.elem));
+        if(safe.length&&roll<(smart?0.7:0.25)) choice=pickFrom(safe);
+        else if(opp.lastElem&&roll<(smart?0.8:0.4)){ const off=plain.filter(x=>x.elem!==opp.lastElem); if(off.length) choice=pickFrom(off); }
+      }
       else if(opp.lastElem&&has(opp.lastElem)&&!elemForbidden(tgt,opp.lastElem)&&roll<(smart?0.8:0.4)) choice=has(opp.lastElem);
     }
   }
@@ -5191,7 +5198,7 @@ function startTrainingBattle(){
 // where pick keys are a signature spell id, or 'damage' / 'protect' / 'dispel' / 'cleanse' / 'pass'.
 const SIM_MAX_ROUNDS=60;
 // The tool page reads the game through an iframe, where only function declarations are visible
-function simInfo(){ return {chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS}; }
+function simInfo(){ return {chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE}; }
 function simMatch(k1,k2,ai){
   simMode=true; simOutcome=null;
   twoPlayerMode=false; trainingMode=false;
@@ -5269,7 +5276,7 @@ const TUTORIAL_CONVOS={
   wheel:[
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
     {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too."},
-    {key:'skadi',  text:"The element matters. A ward takes only half damage from its own element — so ward against the element you expect. And a dispel does double damage to a ward of its element."},
+    {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
     {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward. A strong Ice strike that reaches them chills them, so they can't pick Damage next round."},
     {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
