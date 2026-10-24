@@ -22,8 +22,11 @@ Win checks inside a simultaneous window go through `deferWinCheck` / `settleWin`
 
 These are now the only rules: the old Classic rules (per-character spell bars, Channel, free basic
 attacks, the shared Inferno/Lightning/Frost Nova/Arcane Surge/Mana Burn spells) were removed, along
-with the Classic-only matchup analyzer. All the numbers below are constants at the top of the
-`ELEMENTAL DUEL` section of `js/game.js`.
+with the Classic-only matchup analyzer. Their visual effects were kept: each signature spell plays
+its original look (`SPELL_VFX` in the VFX LIBRARY section of `js/game.js`), plain element strikes use
+the old Inferno / Lightning Bolt / Frost Nova / Arcane Surge / Mana Burn impacts, and the original
+Classic spell code is archived, unloaded, in `js/legacy/classic_spells.js`. All the numbers below are
+constants at the top of the `ELEMENTAL DUEL` section of `js/game.js`.
 
 What was built, including choices made while building:
 - **Picking:** three buttons (⚔️ Damage, 🛡 Protection, ✦ Dispel), then the strength wheel: 6 element

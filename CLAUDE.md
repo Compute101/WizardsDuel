@@ -1,7 +1,7 @@
 # WizardsDuel — Notes for Claude
 
 ## What this is
-A browser-based 1v1 wizard duel game. Each round both wizards secretly pick a Damage, Protection or Dispel spell (rock-paper-scissors), cast it via a short glyph minigame, then the picks are revealed and play out together. Built with vanilla JS/Canvas, no framework. Main logic lives in `js/game.js` (~5400 lines). Character stats and each character's three signature spells are in `characters.json`.
+A browser-based 1v1 wizard duel game. Each round both wizards secretly pick a Damage, Protection or Dispel spell (rock-paper-scissors), cast it via a short glyph minigame, then the picks are revealed and play out together. Built with vanilla JS/Canvas, no framework. Main logic lives in `js/game.js` (~5700 lines). Character stats and each character's three signature spells are in `characters.json`.
 
 ---
 
@@ -106,22 +106,33 @@ Every round goes: secret picks → simultaneous reveal → resolution → round-
 
 ---
 
+## Visual effects
+Keep VFX: when changing or removing a spell, keep its look. Every spell's visual is in the "VFX LIBRARY" section of `js/game.js`:
+- `SPELL_VFX[spellId]` is each signature spell's own look. `self` plays when cast on yourself, `hit` when it lands on the target, and `delivery` handles lunges and volleys.
+- `ELEM_IMPACT_VFX` holds the plain element strikes; `TICK_VFX` / `MINION_VFX` the round-end ticks; `VFX` the shared reactions (ward block/shatter, dodge, dispel, retaliation, …).
+- Primitives: `spawnBeam`, `lunge`, `spawnManaBurnFire`, `vfxRing` / `vfxFountain` / `vfxDrift` / `vfxDrip`. `drawWiz` draws status auras from `wizVisuals()`.
+- `js/legacy/` holds code the game doesn't load: the original Classic spell code (`classic_spells.js`, with every effect in context) and the old puzzle minigames.
+
+---
+
 ## Key file locations
 
 | Thing | File | Approx. lines |
 |-------|------|---------------|
-| All game logic | `js/game.js` | ~5400 |
-| Round flow (pick → reveal → resolve) | `js/game.js` | ~1500 |
-| Elemental rules, wheel, AI | `js/game.js` | ~1670 |
-| Tile-match (wards / buffs) minigame | `js/game.js` | ~2550 |
-| Inferno minigame (Fire, Physical) | `js/game.js` | ~2810 |
-| Lightning minigame | `js/game.js` | ~3090 |
-| Mana Burn minigame (Dark) | `js/game.js` | ~3430 |
-| Ice minigame | `js/game.js` | ~3740 |
-| Arcane minigame | `js/game.js` | ~4045 |
-| Dispel minigame | `js/game.js` | ~4340 |
-| Tutorial text | `js/game.js` | ~4870 |
+| All game logic | `js/game.js` | ~5700 |
+| VFX library | `js/game.js` | ~1500 |
+| Round flow (pick → reveal → resolve) | `js/game.js` | ~1740 |
+| Elemental rules, wheel, AI | `js/game.js` | ~1915 |
+| Tile-match (wards / buffs) minigame | `js/game.js` | ~2840 |
+| Inferno minigame (Fire, Physical) | `js/game.js` | ~3100 |
+| Lightning minigame | `js/game.js` | ~3380 |
+| Mana Burn minigame (Dark) | `js/game.js` | ~3725 |
+| Ice minigame | `js/game.js` | ~4035 |
+| Arcane minigame | `js/game.js` | ~4335 |
+| Dispel minigame | `js/game.js` | ~4630 |
+| Tutorial text | `js/game.js` | ~5160 |
 | Characters and signature spells | `characters.json` | whole file |
+| Archived Classic spell code (not loaded) | `js/legacy/classic_spells.js` | whole file |
 | Puzzle screen HTML | `index.html` | ~242 |
 | Canvas styling | `css/style.css` | ~530–560 |
 
