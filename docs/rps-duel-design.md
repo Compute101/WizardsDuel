@@ -137,7 +137,7 @@ so each spell's numbers can be tuned there.
 | Malachar | 🩸 Blood Pact | 🛡 Protection | 💀 Dark | Instant | 0 | Lose 15 HP, gain 8 mana |
 | Malachar | 💀 Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 45% of HP damage |
 | Sylvara | 💚 Regen | 🛡 Protection | 👊 Physical | Enchantment (self) | 2 / 4 / 6 | Heal 5 a round for 4 rounds |
-| Sylvara | 🌿 Entangle | ✦ Dispel | 👊 Physical | Curse (foe) | 1 / 2 / 3 | 65%: foe can't pick Damage next round |
+| Sylvara | 🌿 Entangle | ✦ Dispel | 👊 Physical | Curse (foe) | 1 / 2 / 3 | 55%: foe can't pick Damage next round |
 | Sylvara | 🌱 Vine Whip | ⚔️ Damage | 👊 Physical | Strike | 2 / 4 / 6 | 10 physical + vines 4 a round × 3 |
 | Aurelia | 🔮 Foresight | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | The next strike within 3 rounds does nothing |
 | Aurelia | ⏳ Time Drain | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | Foe gains 2 less mana a round × 3 |
@@ -148,13 +148,13 @@ so each spell's numbers can be tuned there.
 | Cinder | 🎱 Fireball | ⚔️ Damage | 🔥 Fire | Strike | 3 / 5 / 8 | 12–24 random fire |
 | Cinder | 🛡️ Flame Shield | 🛡 Protection | 🔥 Fire | Ward | 4 / 7 / 11 | Fire ward of 30; strikers take 8 |
 | Cinder | 🕯️ Candle | ✦ Dispel | 🔥 Fire | Curse (foe) | 1 / 2 / 3 | 3 rounds: foe burns for 8 when they ward |
-| Skadi | 🧊 Ice Lance | ⚔️ Damage | ❄️ Ice | Strike | 4 / 6 / 10 | 18 ice; chills |
+| Skadi | 🧊 Ice Lance | ⚔️ Damage | ❄️ Ice | Strike | 4 / 6 / 10 | 18 ice; chills (middle ring and up) |
 | Skadi | 🛡️ Frost Armor | 🛡 Protection | ❄️ Ice | Enchantment (self) | 2 / 4 / 6 | 3 rounds: −30% damage, strikers take 4 |
 | Skadi | 🌨️ Blizzard | ✦ Dispel | ❄️ Ice | Curse (foe) | 2 / 4 / 6 | 4 a round + 1 mana drain × 4 |
 | Zacharius | 🔋 Galvanize | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 1 / 2 / 3 | Next Lightning strike +60% |
 | Zacharius | 🌩️ Chain Lightning | ⚔️ Damage | ⚡ Lightning | Strike | 3 / 5 / 8 | 14 lightning; 35% to arc for 8 more |
 | Zacharius | 💡 Conductivity | ✦ Dispel | ⚡ Lightning | Curse (foe) | 2 / 3 / 5 | Foe takes +35% damage × 3 rounds |
-| Mary | 💛 Heal | 🛡 Protection | 🌀 Arcane | Instant | 4 / 6 / 10 | Heal 22 now |
+| Mary | 💛 Heal | 🛡 Protection | 🌀 Arcane | Instant | 4 / 6 / 10 | Heal 19 now |
 | Mary | ✨ Purge | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Remove your curses and heal 8 |
 | Mary | ☀️ Radiant | ⚔️ Damage | 🌀 Arcane | Strike | 2 / 4 / 6 | 12 holy; burns 2 mana |
 | Mordant | 💀 Agony | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: foe takes 8 whenever they cast |
@@ -163,7 +163,7 @@ so each spell's numbers can be tuned there.
 | Ponder | 👻 Vanish | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 3 / 5 | The next strike within 2 rounds misses |
 | Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Steal 4 mana |
 | Ponder | 💫 Blink | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 45% dodge × 3 rounds |
-| Durin | 🧱 Stoneskin | 🛡 Protection | 👊 Physical | Ward | 4 / 6 / 10 | Physical ward of 35 |
+| Durin | 🧱 Stoneskin | 🛡 Protection | 👊 Physical | Ward | 4 / 6 / 10 | Physical ward of 40 |
 | Durin | 💎 Stonesoul | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | −35% damage × 3 |
 | Durin | ⛰️ Rockfall | ⚔️ Damage | 👊 Physical | Strike | 4 / 6 / 10 | 22 physical |
 | Weizan | 🗡️ Conjure Blade | 🛡 Protection | 👊 Physical | Enchantment (self) | 1 / 2 / 3 | Blade (max 3): 4 a round |
@@ -174,17 +174,17 @@ so each spell's numbers can be tuned there.
 | Gretch | 💀 Bone Totem | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 4 / 6 | Heal 4 a round × 4 |
 | Valdris | 💀 Raise Dead | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 4 / 6 | Skeleton (max 2) for 4 rounds: 5 a round; heals 8 if destroyed |
 | Valdris | 🩸 Necrotic Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 40% of HP damage |
-| Valdris | 🔧 Reinforce | 🛡 Protection | 👊 Physical | Ward | 3 / 5 / 8 | Dark ward of 20 +12 per skeleton |
+| Valdris | 🔧 Reinforce | 🛡 Protection | 👊 Physical | Ward | 3 / 5 / 8 | Physical ward of 20 +12 per skeleton |
 | Mirel | 🪞 Simulacrum | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | Simulacrum (max 2) for 4 rounds: 4 a round |
 | Mirel | 🪄 Bewitch | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | Foe's next strike within 2 rounds hits themselves |
-| Mirel | 🗡️ Feint | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 12 arcane; burns 2 mana |
+| Mirel | 🗡️ Feint | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 11 arcane; burns 2 mana |
 | Thessaly | 🌀 Enthral | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Foe can't pick Protection next round |
 | Thessaly | 🌟 Arcane Weave | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 1 / 2 / 3 | Next 3 strikes +8 and burn 3 mana |
 | Thessaly | 🔒 Spellbind | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | Foe's last category costs +4 × 4 |
 | Korvath | 🐉 Dragon Scales | 🛡 Protection | 🔥 Fire | Enchantment (self) | 2 / 4 / 6 | 3 rounds: −25% damage, strikers take 4 |
 | Korvath | 🌋 Wyrmfire Breath | ⚔️ Damage | 🔥 Fire | Strike | 3 / 5 / 8 | 13 fire + burn 5 a round × 2 |
-| Korvath | 💥 Ancient Wrath | ⚔️ Damage | 👊 Physical | Strike | 5 / 9 / 14 | 35 fire — once per duel |
-| Fizzwick | 🧪 Caustic Bomb | ⚔️ Damage | 💀 Dark | Strike | 2 / 4 / 6 | 8 + poison 5 a round × 3 |
+| Korvath | 💥 Ancient Wrath | ⚔️ Damage | 👊 Physical | Strike | 5 / 9 / 14 | 35 physical — once per duel |
+| Fizzwick | 🧪 Caustic Bomb | ⚔️ Damage | 💀 Dark | Strike | 2 / 4 / 6 | 8 + poison 5 a round × 3 — if it reaches HP, the poison seeps past wards |
 | Fizzwick | ⚗️ Volatile Tonic | 🛡 Protection | 👊 Physical | Instant | 2 / 3 / 5 | 50%: heal 20 · 50%: next strike +50% |
 | Fizzwick | 🧫 Unstable Concoction | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 6–30 random arcane |
 | Nyxara | 🌀 Singularity | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 4 / 6 | Rift: 5, 9, 13 over 3 rounds |

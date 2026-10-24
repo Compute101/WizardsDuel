@@ -33,7 +33,7 @@ const CHAR_FLAVOUR={
   durin:'The mountain endures. Outlast every spell — stone by stone.',
   weizan:'Build blades slowly. Release all at once. Dispel kills your investment — protect it.',
   gretch:'Infect and drain. The totem heals you — guard it with a ward, or a Dispel will strip it.',
-  valdris:'Deathless: cannot die while mana > 0 (costs 6 mana). Drain his mana to kill him. Dispel his skeletons — but each dying skeleton heals him.',
+  valdris:'Deathless: a killing blow costs him 8 mana instead, while he has it. Drain his mana to kill him. Dispel his skeletons — but each dying skeleton heals him.',
   mirel:'Simulacra strike every round until dispelled. Bewitch turns the next strike against its caster.',
   thessaly:'Enthral blocks their wards. Spellbind taxes their favourite move. Weave turns strikes into mana denial.',
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
@@ -5267,7 +5267,7 @@ const TUTORIAL_CONVOS={
     {key:'eldrad', text:"Learn the rules, then learn your rivals. We are all here to help."},
   ],
   'health-mana':[
-    {key:'eldrad', text:"Every wizard has Health and Mana. When your HP reaches zero, the duel is over. HP differs between wizards — Gnash and Durin are hardy, Malachar and Nyxara are fragile."},
+    {key:'eldrad', text:"Every wizard has Health and Mana. When your HP reaches zero, the duel is over. HP differs between wizards — Gnash and Durin are hardy, Malachar and Fizzwick are fragile."},
     {key:'sylvara',text:"Everyone starts with the same mana and gains more at the end of every round. There's no channelling and no free attacks — every spell costs something."},
     {key:'ponder', text:"Even the cheapest spell costs only a little, so you can always do something. The question is whether to spend big now or save for a stronger cast next round."},
     {key:'sylvara',text:"Watch your rival's mana bar! If they can't afford a big ward, they won't cast one. Reading their mana is half the game."},
@@ -5276,7 +5276,7 @@ const TUTORIAL_CONVOS={
     {key:'eldrad', text:"There are three kinds of spell: ⚔️ Damage, 🛡 Protection and ✦ Dispel. They work like rock, paper, scissors."},
     {key:'eldrad', text:"Protection beats Damage: a ward soaks up strikes, and it's raised before any damage lands — even in the same round. Strike into a ward and you've wasted your mana."},
     {key:'ponder', text:"Dispel beats Protection: dispels are cheap and tear through wards. Your rival spends a lot of mana on a ward, you break it for a little."},
-    {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the only way to win."},
+    {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the surest way to win."},
     {key:'eldrad', text:"Each round resolves in that order — every Protection first, then every Dispel, then every Damage. So the trick is guessing what your rival will choose."},
   ],
   wheel:[
@@ -5363,12 +5363,12 @@ const TUTORIAL_CONVOS={
   ],
   mary:[
     {key:'mary',text:"I am a healer first, a combatant second. I endure and outlast through faith and restoration."},
-    {key:'mary',text:"Divine Heal, in the Arcane sector of my Protection wheel, restores HP at once."},
+    {key:'mary',text:"Heal, in the Arcane sector of my Protection wheel, restores HP at once."},
     {key:'mary',text:"Purge takes the Arcane sector of my Dispel wheel. It removes every curse on me and heals me a little. Hex me all you like."},
     {key:'mary',text:"Radiant is my Arcane strike. It burns my rival's mana as the light strikes them."},
   ],
   mordant:[
-    {key:'mordant',text:"Do not think of me as aggressive. I am patient. My whole Dispel wheel is curses — and every one of them wears at your ward too."},
+    {key:'mordant',text:"Do not think of me as aggressive. I am patient. Half my Dispel wheel is curses — and every one of them wears at your ward too."},
     {key:'mordant',text:"Agony is Dark: whenever you cast anything, you suffer. Silence is Arcane: your spells may simply fail."},
     {key:'mordant',text:"Corruption is Physical: the rot slows the mana you gain each round. Starve them, and watch their options narrow to nothing."},
     {key:'mordant',text:"Cleanse Self is the answer to me. Make them spend their rounds cleansing instead of striking. The hex is already written."},
@@ -5398,7 +5398,7 @@ const TUTORIAL_CONVOS={
     {key:'gretch',text:"Not elegant. Not subtle. Just results. Plague them, drain them, totem up, and let time finish the job."},
   ],
   valdris:[
-    {key:'valdris',text:"I am Valdris. The Deathless. While I have mana, a killing blow drains my mana instead of ending me."},
+    {key:'valdris',text:"I am Valdris. The Deathless. While I have 8 mana or more, a killing blow takes 8 mana instead of ending me."},
     {key:'valdris',text:"Raise Dead, in the Dark sector of my Protection wheel, summons a skeleton that strikes every round. I can have two. If they are dispelled, their death heals me."},
     {key:'valdris',text:"Necrotic Drain is my Dark strike — it heals me for part of the damage dealt. Reinforce is my Physical ward, and it grows stronger for every skeleton at my side."},
     {key:'valdris',text:"Burn my mana and the Deathless can fall. Fail, and I will outlast you."},

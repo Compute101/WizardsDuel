@@ -257,7 +257,7 @@
       },
       {
         "id": "haste",
-        "name": "Haste",
+        "name": "Rewind",
         "icon": "💨",
         "el": {
           "cat": "protect",
@@ -441,7 +441,7 @@
           "cost": 6,
           "power": 18,
           "tier": 2,
-          "desc": "18 ice; chills"
+          "desc": "18 ice; chills (middle ring and up)"
         }
       },
       {
@@ -1044,7 +1044,7 @@
           "cost": 5,
           "power": 20,
           "tier": 2,
-          "desc": "Dark ward of 20 +12 per skeleton",
+          "desc": "Physical ward of 20 +12 per skeleton",
           "perSkeleton": 12
         }
       }
@@ -1257,7 +1257,7 @@
           "cost": 9,
           "power": 35,
           "tier": 3,
-          "desc": "35 fire — once per duel",
+          "desc": "35 physical — once per duel",
           "oncePerDuel": true
         }
       }
