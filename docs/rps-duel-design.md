@@ -40,6 +40,9 @@ What was built, including choices made while building:
 - **Wards:** raising one replaces any existing ward. A ward stops damage in the same round it's raised.
   A ward **resists every element but its own**: other elements wear it down at 75%, while a strike in
   its own element **unravels** it at 150% (`ELEM_WARD_TAKE`). A dispel of its element does double.
+- **Damage over time** (poison, burns, vines, Plague, Singularity, Blizzard) hits a ward first at each
+  tick, using the ward's element rules, just as minions do. The one exception is Fizzwick's Caustic Bomb:
+  if the bomb itself reaches HP, its poison seeps past wards (`bypassWard` on the spell's `dot`).
 - **Forbidden elements:** some characters can't cast certain elements (`forbidden` in
   `characters.json`). Those sectors are greyed out with ⛔ on their wheel and the character sheet.
   A ward in an element your rival can't cast can never be unravelled or matched, so it naturally lasts
@@ -257,8 +260,8 @@ Signature elements are never forbidden. Fire is the most common ban, so a Fire w
 
 Number changes made alongside: Mary's Heal 22 → 19 and HP 88 → 85; Entangle 65% → 55%; Feint 12 → 11;
 Stoneskin 35 → 40; Stonesoul −40% non-Physical → −35% all damage; Nyxara HP 86 → 90; Thessaly HP 92 → 95.
-Normal AI (100 games per matchup): **44.8–57.9%**. Matchups under 25%: Thessaly vs Mirel (24) and
-Mary vs Valdris (20). Easy: 37.8–60.9%.
+After damage over time started hitting wards — Normal AI (100 games per matchup): **43.6–56.6%**, no
+matchup under 25%. Easy: 40.9–61.7%. Nyxara fell most (50 → 44), as Singularity's ramp now meets wards.
 
 **Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
 opponent may play better in human hands. Re-run the tool after any number change, and playtest.

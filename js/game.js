@@ -2341,6 +2341,7 @@ function executeSignature(who,sp,action,cb){
       if(el.chance!=null&&_rng()>el.chance){ addFloat(tx,bH*.3,sigIcon(sp)+' Resisted','#cccccc',12); VFX.resisted(tx); }
       else {
         const eff=effect({kind:'curse'});
+        if(!eff.elem) eff.elem=el.elem;   // a curse's ticks meet wards as its element
         if(eff.type==='spellbind') eff.cat=ts.lastCat||'damage';
         if(addEffect(tgt,eff,who)){ if(fx.hit) fx.hit(ctx); else spawnParts(tx,y,e.col,16); }
       }
@@ -2506,7 +2507,12 @@ function elemTickEffects(who){
   effectsOf(st,'dot').forEach(e=>{
     e.tick=(e.tick||0)+1;
     const dmg=e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg;
-    elemFloatDmg(who,dmg,e.icon,'#cc88ff');
+    // Ticks hit a ward first, like any damage — unless the effect seeps past wards (Caustic Bomb's poison)
+    if(e.bypassWard||!hasWard(st)){
+      if(e.bypassWard&&hasWard(st)) addFloat(x,bH*.3,e.icon+' Seeps past the ward!','#99dd55',11);
+      elemFloatDmg(who,dmg,e.icon,'#cc88ff');
+    }
+    else elemIncoming(who,dmg,e.elem||'arcane',e.icon,'#cc88ff',true);
     const tick=TICK_VFX[e.id]||TICK_VFX[e.elem];
     if(tick) tick(x,bH*.38);
     if(e.manaDrain){ const d=Math.min(st.mana,e.manaDrain); st.mana-=d; if(d) addFloat(x,bH*.46,'−'+d+' Mana','#88aaff',11); }
@@ -5278,7 +5284,7 @@ const TUTORIAL_CONVOS={
     {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too."},
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
     {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward. A strong Ice strike that reaches them chills them, so they can't pick Damage next round."},
-    {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one."},
+    {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],
   enchant:[
@@ -5417,7 +5423,7 @@ const TUTORIAL_CONVOS={
   ],
   fizzwick:[
     {key:'fizzwick',text:"Heh — a satchel full of things that probably shouldn't mix. Sometimes I'm not sure what they'll do until it's too late."},
-    {key:'fizzwick',text:"Caustic Bomb is my Dark strike — and it leaves them poisoned for a few rounds. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
+    {key:'fizzwick',text:"Caustic Bomb is my Dark strike. If it gets through to them, the poison is in their blood — it seeps straight past any ward they raise after. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
     {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, either heals me or empowers my next strike. Either way, something good happens to me."},
     {key:'fizzwick',text:"Most duellists plan for consistency. I bring chaos in a bottle."},
   ],
