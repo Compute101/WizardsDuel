@@ -275,6 +275,18 @@ edge — Mana Siphon used to land before the foe paid only when the order allowe
 Making Siphon **quick** on purpose, stealing 3 instead of 4: Normal **44.8–55.2%**, no matchup under
 25%; Easy 38.4–59.0%.
 
+### Thessaly vs Mirel (fixed)
+
+Thessaly won only 24% against Mirel. 21% of the damage Thessaly took was her own strikes bouncing back
+off **Bewitch**, and her Arcane Weave made each rebound worse (+8 damage and a 3-mana burn on herself).
+Two causes:
+- The AI ignored being Bewitched and kept striking. It now holds its strikes and cleanses instead, as a
+  person would. Bewitch still works within the same round — it's Mirel's sucker punch. Making it wait a
+  round (or rebound only half) was tried, but then it barely ever landed and Mirel fell to 28%.
+- With the AI playing around it, Mirel dropped to ~44%, so **Bewitch costs 2 instead of 3**.
+Thessaly vs Mirel is now 39%. With draws as the default, Sylvara rose to 58%, so **Vine Whip's vines
+went 4 → 3**. Normal AI: **44.4–55.4%** (sd 2.8), no matchup under 29%.
+
 **Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
 opponent may play better in human hands. Re-run the tool after any number change, and playtest.
 
@@ -320,7 +332,13 @@ Heal or Volatile Tonic) asks "Protect who?" after the ritual, listing you and yo
 card shows who it's for. Minion buffs, Blood Pact and Purge stay with the caster. The AI shields a
 team-mate who's worse off (lower HP, unwarded, or the one the foes went for).
 
-**Done — sudden death** (`SUDDEN_DEATH`): from round **30** in a duel, round **20** with 3–4 wizards,
+**Options** (⚙ on the title screen, `GAME_OPTIONS`, kept in the browser's local storage): **Long duels** —
+*Draw* (default) ends a duel still going at the **round limit** (30 / 40 / **50**) as a draw ("⌛ Time's Up");
+*Sudden death* uses the ramp below instead. Draw rates measured with the AI: at round 50, 1v1 7%, 3 seats 8%,
+4 seats 10% (at 40 it's 9% / 20% / 24%, at 30 18% / 43% / 47%, so 50 is the default). An Arcade draw no
+longer counts as a win: it goes to the retry screen.
+
+**Done — sudden death** (`SUDDEN_DEATH`, an option): from round **30** in a duel, round **20** with 3–4 wizards,
 each round adds +15% to every strike, tick and minion hit and +1 mana income (up to +5). Wards and heals
 don't grow, so the end comes quickly. A "⚡ SUDDEN DEATH ⚡" banner opens it and a status tag shows the
 current level. Simulated: no more 60-round timeouts (1v1 was 5 in 800, 4 seats 18 in 500); 4-seat games

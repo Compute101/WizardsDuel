@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wizard's Duel</title>
-<link rel="stylesheet" href="css/style.css?v=0.23">
+<link rel="stylesheet" href="css/style.css?v=0.24">
 </head>
 <body>
 <div id="app">
@@ -29,6 +29,7 @@
     <button class="btn btn-duel-main" id="btn-duel">⚔ Duel</button>
     <button class="btn" id="btn-practice">🎯 Practice Mode</button>
     <button class="btn" id="btn-tutorial">📜 Tutorial</button>
+    <button class="btn" id="btn-options">⚙ Options</button>
     <div class="hint">STRIKE · WARD · DISPEL<br>OUTGUESS YOUR RIVAL WIZARD</div>
     <div style="position:absolute;bottom:12px;right:16px;font-size:10px;color:rgba(201,168,76,0.4);letter-spacing:1px;">v0.9</div>
   </div>
@@ -289,6 +290,31 @@
     </div>
   </div>
 
+  <!-- OPTIONS -->
+  <div id="options-overlay">
+    <div class="mo-box">
+      <div class="mo-title">Options</div>
+      <div class="mo-sub">★ Saved on this device ★</div>
+      <div class="op-group">
+        <div class="op-name">Long duels</div>
+        <div class="mo-row">
+          <button class="mo-opt" data-long="draw">Draw</button>
+          <button class="mo-opt" data-long="sudden">Sudden death</button>
+        </div>
+        <div class="op-help" id="op-long-help"></div>
+      </div>
+      <div class="op-group" id="op-limit-group">
+        <div class="op-name">Round limit</div>
+        <div class="mo-row">
+          <button class="mo-opt" data-limit="30">30</button>
+          <button class="mo-opt" data-limit="40">40</button>
+          <button class="mo-opt" data-limit="50">50</button>
+        </div>
+      </div>
+      <button class="btn" id="btn-options-done">Done</button>
+    </div>
+  </div>
+
   <!-- 3–4 WIZARD SETUP -->
   <div id="multi-overlay">
     <div class="mo-box">
@@ -368,6 +394,6 @@
 
 </div>
 
-<script src="js/game.js?v=0.39"></script>
+<script src="js/game.js?v=0.40"></script>
 </body>
 </html>

@@ -2031,6 +2031,7 @@ function endSimRound(){
     if(st.shield>0) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
   });
   gs.round++;
+  if(GAME_OPTIONS.longDuels==='draw'&&gs.round>GAME_OPTIONS.roundLimit){ timeUp(); return; }
   if(suddenDeathLevel()===1&&!simMode){ addFloat(bW*.5,bH*.22,'⚡ SUDDEN DEATH ⚡','#ff5566',22); flash('#ff3344'); }
   if(simMode){ runRoundTicks(); return; }
 
@@ -2782,11 +2783,17 @@ function elemTickEffects(who){
   st.effects.forEach(e=>{ if(e.rounds!=null&&--e.rounds<=0) expired.push(e); });
   if(expired.length){ st.effects=st.effects.filter(e=>!expired.includes(e)); syncMinionVisuals(st); }
 }
+// ── OPTIONS (⚙ on the title screen; kept in this browser) ──
+// longDuels: 'draw' ends a duel that reaches roundLimit as a draw; 'sudden' starts sudden death instead
+const GAME_OPTIONS={longDuels:'draw', roundLimit:50};
+try{ Object.assign(GAME_OPTIONS,JSON.parse(localStorage.getItem('wd-options')||'{}')); }catch(e){}
+function saveOptions(){ try{ localStorage.setItem('wd-options',JSON.stringify(GAME_OPTIONS)); }catch(e){} }
+
 // Sudden death: from a set round, every round ramps up — more mana, and every hit and tick lands harder
 // (wards don't grow) — so long duels come to an end
 const SUDDEN_DEATH={round:{duel:30, multi:20}, manaPerRound:1, maxMana:5, dmgPerRound:0.15};
 function suddenDeathLevel(){
-  if(!gs||!gs.round) return 0;
+  if(!gs||!gs.round||GAME_OPTIONS.longDuels!=='sudden') return 0;
   return Math.max(0,gs.round-SUDDEN_DEATH.round[PLAYERS.length>2?'multi':'duel']+1);
 }
 function suddenDeathMult(){ return 1+SUDDEN_DEATH.dmgPerRound*suddenDeathLevel(); }
@@ -2857,6 +2864,8 @@ function elemAIChoose(who){
   if(ganged){ w.protect+=hasWard(me)&&me.shieldHp>=25?0.4:1.2; w.damage*=0.8; }
   const free=hasFreeSpell(who);
   if(free) w.damage+=1.2;   // a free spell: make it a big strike
+  // Bewitched: my next strike would hit me, so don't strike — cleanse it, or play around it
+  if(effectsOf(me,'bewitch').length){ w.damage*=smart?0.15:0.6; w.dispel+=smart?0.8:0.3; }
   const cats=Object.keys(w).filter(c=>elemCanPick(who,c)&&w[c]>0);
   if(!cats.length) return {type:'el',cat:'pass',ok:true};
   let r=_rng()*cats.reduce((sum,c)=>sum+w[c],0), cat=cats[0];
@@ -2878,7 +2887,7 @@ function elemAIChoose(who){
   const plain=sectors.filter(x=>!x.sp);
   const sigs=sectors.filter(x=>x.sp&&aiSigSensible(who,x.sp,tgt));
   const cleanseOk=cat==='dispel'&&myCurses&&elemCost(who,'dispel',1)<=me.mana;
-  if(cleanseOk&&!oppWard&&!oppBuffs&&_rng()<0.7)
+  if(cleanseOk&&((smart&&effectsOf(me,'bewitch').length)||(!oppWard&&!oppBuffs))&&_rng()<0.7)
     return {type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok};
   let choice=null;
   if(sigs.length&&(!plain.length||_rng()<(smart?0.45:0.3))) choice=sigs[Math.floor(_rng()*sigs.length)];
@@ -3020,6 +3029,13 @@ function onRetryExpired(overlay){
   },900);
 }
 
+// The round limit is reached (long duels set to Draw): nobody wins
+function timeUp(){
+  gs.timeUp=true;
+  if(simMode){ gameEnded=true; simOutcome='draw'; return; }
+  if(PLAYERS.length>2) showMultiEnd(null);
+  else endGame('draw');
+}
 // 3–4 seats: whoever lands a knock-out claims a bounty, so allies race each other for the kill
 const ELEM_KO_BOUNTY={hp:20, mana:5};
 // 3–4 seats: knock out every seat at 0 HP; the duel ends when one team (or nobody) is left
@@ -3059,12 +3075,13 @@ function showMultiEnd(team){
   const out=(gs.outOrder||[]).slice().reverse().filter(o=>!winners.includes(o.who));
   const places=[];
   if(winners.length) places.push(names(winners));
+  else if(gs.timeUp) places.push(names(activeSeats()));   // everyone still standing shares first
   out.forEach((o,i)=>{ if(i&&o.round===out[i-1].round) places[places.length-1]+=' & '+seatCfg(o.who).name; else places.push(seatCfg(o.who).name); });
   setTimeout(()=>{
     battleRunning=false;
     document.getElementById('ovico').textContent=winners.length?'🏆':'⚡';
     const title=document.getElementById('ovtitle');
-    title.textContent=!winners.length?'Everyone Fell — A Draw!':
+    title.textContent=!winners.length?(gs.timeUp?'⌛ Time\'s Up — A Draw!':'Everyone Fell — A Draw!'):
       team.length===1?'Team '+team+' Wins!':names(winners)+(winners.length>1?' Win!':' Wins!');
     title.style.color=winners.length?seatCfg(winners[0]).col:'#ff8844';
     document.getElementById('ovdesc').textContent=places.map((n,i)=>['1st','2nd','3rd','4th'][i]+' '+n).join('  ·  ');
@@ -3198,7 +3215,7 @@ function endGame(won){
       const continueBtn=document.getElementById('btn-continue');
       document.getElementById('ovico').textContent=isMatchOver?'🏆':'⚔️';
       if(isDraw){
-        document.getElementById('ovtitle').textContent='⚡ Double Knock-Out!';
+        document.getElementById('ovtitle').textContent=gs.timeUp?'⌛ Time\'s Up — A Draw!':'⚡ Double Knock-Out!';
         document.getElementById('ovtitle').style.color='#ff8844';
       } else {
         document.getElementById('ovtitle').textContent=
@@ -3216,12 +3233,18 @@ function endGame(won){
     const inTournament=tournamentQueue.length>0;
     const isLastFight=tournamentIndex>=tournamentQueue.length-1;
     const continueBtn=document.getElementById('btn-continue');
-    if(!won&&inTournament){
+    if((!won||isDraw)&&inTournament){   // a draw doesn't advance the Arcade: fight again
       showRetryScreen();
       return;
     }
     battleRunning=false;
-    if(!won){
+    if(isDraw){
+      document.getElementById('ovico').textContent=gs.timeUp?'⌛':'⚡';
+      document.getElementById('ovtitle').textContent=gs.timeUp?'Time\'s Up — A Draw!':'Double Knock-Out!';
+      document.getElementById('ovtitle').style.color='#ff8844';
+      document.getElementById('ovdesc').textContent='Neither wizard could finish the other.';
+      continueBtn.textContent='Back to Title';
+    } else if(!won){
       document.getElementById('ovico').textContent='💀';
       document.getElementById('ovtitle').textContent='Defeated!';
       document.getElementById('ovtitle').style.color='#ff4a6e';
@@ -5620,7 +5643,7 @@ function startTrainingBattle(){
 // where pick keys are a signature spell id, or 'damage' / 'protect' / 'dispel' / 'cleanse' / 'pass'.
 const SIM_MAX_ROUNDS=60;
 // The tool page reads the game through an iframe, where only function declarations are visible
-function simInfo(){ return {suddenDeath:SUDDEN_DEATH, chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE, bounty:ELEM_KO_BOUNTY, phase:PHASE,
+function simInfo(){ return {options:GAME_OPTIONS, suddenDeath:SUDDEN_DEATH, chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE, bounty:ELEM_KO_BOUNTY, phase:PHASE,
   setGangAware:v=>{ GANG_AWARE_AI=v; }}; }
 function simMatch(k1,k2,ai){
   simMode=true; simOutcome=null;
@@ -5721,7 +5744,7 @@ const TUTORIAL_CONVOS={
     {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the surest way to win."},
     {key:'eldrad', text:"Each round resolves in that order — every Protection first, then every Dispel, then every Damage. So the trick is guessing what your rival will choose."},
     {key:'mal',    text:"With three or four of us, whoever deals the most damage to a wizard in the round they fall claims a bounty: HP and mana. Gang up on someone if you like — but your ally wants that kill as much as you do."},
-    {key:'gnash',  text:"Duel drag on too long? SUDDEN DEATH! From round 30 — round 20 with three or four of us — every round hits harder and brings more mana. Wards don't grow. Somebody falls soon."},
+    {key:'gnash',  text:"Duel drag on too long? Normally it ends in a draw at the round limit. Pick SUDDEN DEATH in Options instead: from round 30 — round 20 with three or four of us — every round hits harder and brings more mana. Wards don't grow. Somebody falls soon."},
     {key:'ponder', text:"Think they're all coming for you? Tap 🌀 Phase. Everything aimed at you that round misses, and you soak up the mana they spent on it. Catch two or more spells and your next spell is free — any ring! Guess wrong and you've lost your turn and 4 mana."},
   ],
   wheel:[
@@ -6035,6 +6058,25 @@ window.addEventListener('DOMContentLoaded', ()=>{
     trainingMode=false; twoPlayerMode=false; twoPlayerPhase=1;
     document.getElementById('char-player-label').style.display='none';
     showScreen('char-screen');
+  });
+  const optOv=document.getElementById('options-overlay');
+  const renderOptions=()=>{
+    optOv.querySelectorAll('[data-long]').forEach(b=>b.classList.toggle('on',b.dataset.long===GAME_OPTIONS.longDuels));
+    optOv.querySelectorAll('[data-limit]').forEach(b=>b.classList.toggle('on',+b.dataset.limit===GAME_OPTIONS.roundLimit));
+    document.getElementById('op-limit-group').style.display=GAME_OPTIONS.longDuels==='draw'?'':'none';
+    document.getElementById('op-long-help').textContent=GAME_OPTIONS.longDuels==='draw'
+      ?'A duel still going after round '+GAME_OPTIONS.roundLimit+' ends in a draw.'
+      :'From round '+SUDDEN_DEATH.round.duel+' (round '+SUDDEN_DEATH.round.multi+' with 3–4 wizards) every round hits harder and brings more mana, until someone falls.';
+  };
+  document.getElementById('btn-options').addEventListener('click',()=>{ renderOptions(); optOv.classList.add('show'); });
+  document.getElementById('btn-options-done').addEventListener('click',()=>optOv.classList.remove('show'));
+  optOv.addEventListener('click',e=>{
+    const b=e.target.closest('button');
+    if(!b) return;
+    if(b.dataset.long) GAME_OPTIONS.longDuels=b.dataset.long;
+    else if(b.dataset.limit) GAME_OPTIONS.roundLimit=+b.dataset.limit;
+    else return;
+    saveOptions(); renderOptions();
   });
   document.getElementById('btn-duel-multi').addEventListener('click',()=>{
     duelOverlay.style.display='none';

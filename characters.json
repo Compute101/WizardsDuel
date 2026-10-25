@@ -198,9 +198,9 @@
           "cost": 4,
           "power": 10,
           "tier": 2,
-          "desc": "10 physical + vines 4 a round × 3",
+          "desc": "10 physical + vines 3 a round × 3",
           "dot": {
-            "dmg": 4,
+            "dmg": 3,
             "rounds": 3
           }
         }
@@ -1097,7 +1097,7 @@
           "cat": "dispel",
           "kind": "curse",
           "elem": "arcane",
-          "cost": 3,
+          "cost": 2,
           "tier": 2,
           "effect": {
             "type": "bewitch",
