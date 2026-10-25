@@ -278,12 +278,29 @@ Making Siphon **quick** on purpose, stealing 3 instead of 4: Normal **44.8–55.
 **Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
 opponent may play better in human hands. Re-run the tool after any number change, and playtest.
 
-## Multiplayer (Phase 6)
+## Multiplayer (Phase 6) — in progress
 
-3–4 seats use the same pick → reveal → resolve flow. Still to do:
-- target selection for Damage and Dispel
-- seat layout
-- N-player win conditions
+Free-for-all first; teams (2v2) are supported by the same code. Seats with the same `team` are allies.
+
+**Done — seats and targeting:**
+- `setupSeats([{key,team}])` makes a 3–4 seat duel (`p1`…`p4`); `setupSeats(null)` goes back to the two
+  picked seats. Each seat carries its own character and team.
+- `foesOf` / `alliesOf` / `activeSeats` replace "the other seat". A knocked-out seat is `out`: it no
+  longer picks, acts, is targeted, or keeps its enchantments and minions.
+- **Targeting:** after the ritual, a pick that aims at a foe (strike, dispel, curse, Mana Siphon) opens
+  a target picker when there's more than one foe. It shows each foe's HP, ward and banned elements.
+  Wards, buffs and heals don't ask. The reveal cards say who each spell is aimed at.
+- If a target is knocked out earlier in the round, the spell goes to the weakest remaining foe.
+- **Minions** attack whoever their owner last aimed at, else the weakest foe.
+- **AI** aims at the weakest-looking foe (HP plus ward, with some noise), and wards when any foe can
+  afford a strong hit.
+- **Ending:** the duel ends when one team is left (or nobody: a draw). `simMatchN(seats, ai)` runs
+  3–4 seat AI games. Wins by seat over 1,500 four-player games: 343–379 each, so no seat is favoured.
+
+**Still to do:**
+- seat layout on the battle screen (3–4 wizards, HP bars, end screens, the character select)
+- win screens and rules beyond "last team standing" (what a knocked-out player sees, placings)
+- protection aimed at an ally in team games
 - kingmaking counter-play
 
-Foundations already in place: `PLAYERS`, per-seat `gs.pending`, `tickRound(who)`, and tiered resolution.
+Also in place from earlier: per-seat `gs.pending`, `tickRound(who)`, tiered resolution, and paying up front.

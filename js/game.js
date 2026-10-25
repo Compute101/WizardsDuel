@@ -66,6 +66,14 @@ let p1MatchWins=0, p2MatchWins=0;
 // Seats in pick order. Everything round-based (picking, reveal, ticks, resolution)
 // iterates this list so 3–4 player duels only need more seats here.
 const PLAYERS=['p1','p2'];
+// A 3–4 seat duel: [{who,key,team}]. null = the usual two seats from the p1 / p2 picks.
+// Seats sharing a team are allies; with no team every seat fights alone (free-for-all).
+let seatSetup=null;
+function setupSeats(list){
+  seatSetup=list?list.map((st,i)=>Object.assign({who:'p'+(i+1)},st)):null;
+  PLAYERS.length=0;
+  (seatSetup||[{who:'p1'},{who:'p2'}]).forEach(st=>PLAYERS.push(st.who));
+}
 let _rng=Math.random;       // replaceable RNG for deterministic replay
 let deferWinCheck=false;    // suppress checkWin during double-KO resolution
 let pendingWin=null;        // {won} accumulated during deferred win check
@@ -83,14 +91,18 @@ function newSeat(cfg,key){
 }
 function newState(){
   gs={
-    p1:newSeat(p1Cfg,p1Key),
-    p2:newSeat(p2Cfg,p2Key),
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
     parts:[], floats:[], projs:[], beams:[], manaBurnFires:[],
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
+  const seats=seatSetup||[{who:'p1',cfg:p1Cfg,key:p1Key},{who:'p2',cfg:p2Cfg,key:p2Key}];
+  seats.forEach(st=>{
+    gs[st.who]=newSeat(st.cfg||CHAR_DEFS[st.key],st.key);
+    gs[st.who].team=st.team||st.who;
+    if(gs[st.who+'anim']==null){ gs[st.who+'anim']='idle'; gs[st.who+'xOff']=0; }
+  });
 }
 
 // ── SCREENS ────────────────────────────────────────────────
@@ -1749,7 +1761,34 @@ function vfxCtx(who,tgt,extra){
 // A seat carries its own character once the duel starts; before that, fall back to the picks
 function seatCfg(who){ return (gs&&gs[who]&&gs[who].cfg)||(who==='p1'?p1Cfg:p2Cfg); }
 function seatKey(who){ return (gs&&gs[who]&&gs[who].key)||(who==='p1'?p1Key:p2Key); }
-function seatX(who){ return who==='p1'?bW*.22:bW*.78; }
+function seatX(who){
+  if(PLAYERS.length<=2) return who==='p1'?bW*.22:bW*.78;
+  return bW*(0.12+0.76*PLAYERS.indexOf(who)/(PLAYERS.length-1));   // placeholder until the 3–4 seat layout
+}
+// Teams and targets. A seat knocked out of a 3–4 seat duel is `out` and takes no further part.
+function seatTeam(who){ return (gs[who]&&gs[who].team)||who; }
+function activeSeats(){ return PLAYERS.filter(w=>gs[w]&&!gs[w].out); }
+function foesOf(who){ return activeSeats().filter(w=>seatTeam(w)!==seatTeam(who)); }
+function alliesOf(who){ return activeSeats().filter(w=>w!==who&&seatTeam(w)===seatTeam(who)); }
+// Does this pick aim at a foe? Strikes, dispels, curses and Mana Siphon do; wards, buffs and heals don't.
+function needsTarget(who,action){
+  if(action.self||action.cat==='pass') return false;
+  const sp=action.sig&&sigById(who,action.sig);
+  if(!sp) return action.cat==='damage'||action.cat==='dispel';
+  return sp.el.kind==='strike'||sp.el.kind==='curse'||!!(sp.el.action&&sp.el.action.type==='siphon');
+}
+// The foe with the least HP (ties go to a random one, so no seat is everyone's default)
+function weakestFoe(who){
+  const foes=foesOf(who);
+  if(foes.length<=1) return foes[0];
+  const low=Math.min(...foes.map(w=>gs[w].hp)), tied=foes.filter(w=>gs[w].hp===low);
+  return tied[Math.floor(_rng()*tied.length)];
+}
+// Minions attack whoever their owner last aimed at, else the weakest foe
+function minionTarget(owner){
+  const last=gs[owner].lastTarget;
+  return foesOf(owner).includes(last)?last:weakestFoe(owner);
+}
 function isHumanSeat(who){ return twoPlayerMode||who==='p1'; }
 
 function beginPickPhase(){
@@ -1761,7 +1800,7 @@ function beginPickPhase(){
 // Hand over to the next seat that hasn't picked; reveal once everyone has.
 function promptNextPicker(){
   if(!battleRunning||gameEnded) return;
-  const who=PLAYERS.find(w=>!gs.pending[w]);
+  const who=activeSeats().find(w=>!gs.pending[w]);
   if(!who){ showReveal(); return; }
   if(!isHumanSeat(who)){
     gs.pending[who]=aiChooseSync(who);
@@ -1797,12 +1836,14 @@ function showReveal(){
   const overlay=document.getElementById('reveal-overlay');
   const cards=document.getElementById('rv-cards');
   const btn=document.getElementById('rv-btn');
-  cards.innerHTML=PLAYERS.map((who,i)=>{
-    const cfg=seatCfg(who), d=describeAction(who,gs.pending[who]);
-    const label=twoPlayerMode?'Player '+(i+1):cfg.name;
+  cards.innerHTML=activeSeats().map(who=>{
+    const cfg=seatCfg(who), act=gs.pending[who], d=describeAction(who,act);
+    const label=twoPlayerMode?'Player '+(PLAYERS.indexOf(who)+1):cfg.name;
+    // With more than one foe, say who each spell is aimed at
+    const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${seatCfg(act.target).name}</span>`:'';
     return `<div class="rv-card" style="--rv-col:${cfg.col}"><div class="rv-inner">`+
       `<div class="rv-face rv-back"><img class="rv-portrait" src="portraits/${seatKey(who)}.png" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
-      `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span><span class="rv-name">${label}</span></div>`+
+      `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}<span class="rv-name">${label}</span></div>`+
       `</div></div>`;
   }).join('');
   overlay.classList.toggle('rv-quick',!twoPlayerMode);
@@ -1843,18 +1884,19 @@ function showReveal(){
 // (lower acts first); actions within a tier are simultaneous, so win checks wait
 // until the whole tier has acted (double KO → draw).
 function resolveSimRound(){
-  if(PLAYERS.some(w=>!gs.pending[w])) return;
+  if(activeSeats().some(w=>!gs.pending[w])) return;
   const acts=gs.pending;
   gs.pending={};
   gs.myTurn=false; gs.busy=true;
-  PLAYERS.forEach(w=>{ gs[w].hpAtRoundStart=gs[w].hp; });
+  const seatsIn=activeSeats();
+  seatsIn.forEach(w=>{ gs[w].hpAtRoundStart=gs[w].hp; });
   // Quick spells (Mana Siphon) are paid and steal first, so their target pays from what's left
   const isQuick=w=>{ const a=acts[w], sp=a.sig&&sigById(w,a.sig); return !!(sp&&sp.el.quick); };
-  PLAYERS.filter(isQuick).forEach(w=>{ payForAction(w,acts[w]); if(acts[w].outcome==='cast') quickSteal(w,acts[w]); });
-  PLAYERS.filter(w=>!isQuick(w)).forEach(w=>payForAction(w,acts[w]));
+  seatsIn.filter(isQuick).forEach(w=>{ payForAction(w,acts[w]); if(acts[w].outcome==='cast') quickSteal(w,acts[w]); });
+  seatsIn.filter(w=>!isQuick(w)).forEach(w=>payForAction(w,acts[w]));
 
   const tiers=[];
-  PLAYERS.forEach(who=>{
+  seatsIn.forEach(who=>{
     const pri=actionPriority(acts[who]);
     let tier=tiers.find(t=>t.pri===pri);
     if(!tier){ tier={pri,seats:[]}; tiers.push(tier); }
@@ -1879,6 +1921,7 @@ function resolveSimRound(){
         return;
       }
       const who=seats[si++];
+      if(gs[who].out){ next(); return; }   // knocked out earlier this round
       executeElemental(who,acts[who],next);
     };
     next();
@@ -1895,8 +1938,8 @@ function tickRound(who){
 
 function runRoundTicks(){
   deferWinCheck=true;
-  PLAYERS.forEach(tickRound);
-  PLAYERS.forEach(w=>{ const st=gs[w]; st.lastRoundLoss=Math.max(0,(st.hpAtRoundStart??st.hp)-st.hp); });
+  activeSeats().forEach(tickRound);
+  activeSeats().forEach(w=>{ const st=gs[w]; st.lastRoundLoss=Math.max(0,(st.hpAtRoundStart??st.hp)-st.hp); });
   settleWin();
 }
 
@@ -1969,7 +2012,7 @@ const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane',
 // Elements a character can't cast at all (characters.json "forbidden"): their sectors are locked
 // on every wheel. Never one of the character's own signature sectors.
 function elemForbidden(who,elem){ return (seatCfg(who).forbidden||[]).includes(elem); }
-function foesCantCast(who,elem){ return PLAYERS.filter(w=>w!==who).every(w=>elemForbidden(w,elem)); }
+function foesCantCast(who,elem){ return foesOf(who).every(w=>elemForbidden(w,elem)); }
 function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS[3]; }
 function hasWard(st){ return st.shield>0&&st.shieldHp>0; }
 
@@ -2185,14 +2228,41 @@ function castElemental(cat,elemId,tier,self){
   if(sp){ castSignature(sp.id,tier); return; }
   if(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)||(!self&&elemForbidden(who,elemId))) return;
   const el=elemById(elemId);
-  const target=self?who:PLAYERS.find(w=>w!==who);   // 3–4 seats: target picker goes here
   const spell={name:describeElemAction({cat,elem:elemId,tier,self}).name, icon:el.icon,
     element:elemId, col:el.col, tier, glyphs:cat==='damage'?ELEM_GLYPHS[elemId]:undefined};
-  const commit=ok=>commitPick(who,{type:'el',cat,elem:elemId,tier,self,target,ok});
+  const commit=ok=>chooseTarget(who,{type:'el',cat,elem:elemId,tier,self,ok});
   gs.busy=true;
   if(cat==='protect') launchBuffTileMatch(spell,ELEM_WARD_THEME[elemId],who,ok=>commit(ok));
   else if(cat==='dispel') launchDispelPattern(spell,commit);
   else ELEM_MINIGAME[elemId](spell,commit);
+}
+
+// After the ritual: with more than one foe, the picker taps who the spell is aimed at
+function chooseTarget(who,action){
+  const foes=foesOf(who);
+  const done=t=>{ action.target=t; commitPick(who,action); };
+  if(action.self) done(who);
+  else if(!action.ok||!needsTarget(who,action)||foes.length<=1) done(foes[0]);
+  else showTargetPicker(who,foes,done);
+}
+function showTargetPicker(who,foes,cb){
+  let ov=document.getElementById('target-overlay');
+  if(!ov){
+    ov=document.createElement('div'); ov.id='target-overlay';
+    ov.innerHTML='<div class="tg-box"><div class="tg-title">Choose a target</div><div class="tg-list"></div></div>';
+    document.body.appendChild(ov);
+  }
+  ov.querySelector('.tg-list').innerHTML=foes.map(w=>{
+    const st=gs[w], cfg=seatCfg(w), el=st.shieldType&&elemById(st.shieldType);
+    const ward=hasWard(st)?`<span class="tg-ward">🛡 ${el.icon} ${st.shieldHp}</span>`:'';
+    const ban=(cfg.forbidden||[]).map(id=>elemById(id).icon).join('');
+    return `<button class="tg-foe" data-who="${w}" style="--tg-col:${cfg.col}">`+
+      `<img src="portraits/${seatKey(w)}.png" alt=""><span class="tg-name">${cfg.name}</span>`+
+      `<span class="tg-hp">❤ ${st.hp} / ${st.maxHp}</span>${ward}`+
+      (ban?`<span class="tg-ban">⛔ ${ban}</span>`:'')+`</button>`;
+  }).join('');
+  ov.querySelectorAll('.tg-foe').forEach(b=>b.onclick=()=>{ ov.classList.remove('show'); cb(b.dataset.who); });
+  ov.classList.add('show');
 }
 
 function castSignature(id,tier){
@@ -2201,7 +2271,7 @@ function castSignature(id,tier){
   const el=sp.el, elemId=el.elem||'arcane', e=elemById(elemId);
   const spell={name:ELEM_TIER_NAMES[tier-1]+sigName(sp), icon:sigIcon(sp), element:elemId, col:e.col, tier,
     glyphs:el.kind==='strike'?ELEM_GLYPHS[elemId]:undefined};
-  const commit=ok=>commitPick(who,{type:'el',cat:el.cat,elem:elemId,tier,sig:id,target:PLAYERS.find(w=>w!==who),ok});
+  const commit=ok=>chooseTarget(who,{type:'el',cat:el.cat,elem:elemId,tier,sig:id,ok});
   gs.busy=true;
   if(el.cat==='dispel') launchDispelPattern(spell,commit);
   else if(el.kind==='strike') ELEM_MINIGAME[elemId](spell,commit);
@@ -2244,6 +2314,12 @@ function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
   const sp=action.sig?sigById(who,action.sig):null;
+  // A foe knocked out earlier in the round: the spell goes to another foe instead
+  if(action.target&&action.target!==who&&gs[action.target].out){
+    const t=weakestFoe(who);
+    if(t) action.target=t;
+  }
+  if(action.target&&action.target!==who&&needsTarget(who,action)) st.lastTarget=action.target;
 
   const agony=effectsOf(st,'agony')[0];
   if(agony){ elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); }
@@ -2538,7 +2614,7 @@ function elemTickEffects(who){
     elemHeal(who,e.perRound,e.icon);
     (TICK_VFX[e.id]||TICK_VFX.regen)(x,bH*.38);
   });
-  PLAYERS.filter(w=>w!==who).forEach(owner=>{
+  activeSeats().filter(o=>o!==who&&minionTarget(o)===who).forEach(owner=>{
     effectsOf(gs[owner],'minion').forEach(m=>{
       const el=elemById(m.elem||'physical');
       elemIncoming(who,m.dmg,m.elem||'physical',m.icon,el.col,true);
@@ -2556,8 +2632,16 @@ function elemIncome(who){
 
 // ── Elemental AI: a weighted mixed strategy so it can't be read every round ──
 // Would casting this signature spell do anything useful right now?
-function aiSigSensible(who,sp){
-  const st=gs[who], tgt=PLAYERS.find(w=>w!==who), ts=gs[tgt], el=sp.el;
+// Which foe to aim at: the weakest-looking (HP plus ward), with some noise so it can't be read
+function aiPickTarget(who){
+  const foes=foesOf(who);
+  if(foes.length<=1) return foes[0];
+  const noise=aiDifficulty==='normal'?10:40;
+  const score=Object.fromEntries(foes.map(w=>[w,gs[w].hp+(hasWard(gs[w])?gs[w].shieldHp:0)+_rng()*noise]));
+  return foes.reduce((a,b)=>score[a]<=score[b]?a:b);
+}
+function aiSigSensible(who,sp,tgt=weakestFoe(who)){
+  const st=gs[who], ts=gs[tgt], el=sp.el;
   const active=(s,id)=>(s.effects||[]).some(e=>e.id===id);
   if(el.kind==='buff') return el.effect.type==='minion'||!active(st,sp.id);
   if(el.kind==='curse') return !active(ts,sp.id)&&!(el.effect.type==='lock'&&catLocked(tgt,el.effect.cat));
@@ -2572,7 +2656,7 @@ function aiSigSensible(who,sp){
   return true;
 }
 function elemAIChoose(who){
-  const me=gs[who], tgt=PLAYERS.find(w=>w!==who), opp=gs[tgt];
+  const me=gs[who], tgt=aiPickTarget(who), opp=gs[tgt];
   const smart=aiDifficulty==='normal';
   const oppWard=hasWard(opp), oppBuffs=buffsOf(opp).length, myCurses=cursesOf(me).length;
   const w={damage:1.0, protect:0.55, dispel:0.08};
@@ -2583,11 +2667,11 @@ function elemAIChoose(who){
   const boost=me.effects.find(e=>e.type==='empower'||e.type==='frenzy'||e.type==='weave');
   if(boost) w.damage+=0.9;
   // Curse-casters open the Dispel wheel for their hexes, not only to break wards
-  const hexes=sigSpells(who,'dispel').filter(sp=>sp.el.kind==='curse'&&!sigBlocked(who,sp,1)&&aiSigSensible(who,sp)).length;
+  const hexes=sigSpells(who,'dispel').filter(sp=>sp.el.kind==='curse'&&!sigBlocked(who,sp,1)&&aiSigSensible(who,sp,tgt)).length;
   if(hexes) w.dispel+=(smart?0.35:0.2)*hexes;
   if(hasWard(me)&&me.shieldHp>=15) w.protect=0.2;
   else {
-    if(opp.mana>=elemCost(tgt,'damage',2)) w.protect+=0.35;
+    if(foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',2))) w.protect+=0.35;
     if(me.hp<me.maxHp*0.35) w.protect+=0.35;
   }
   const cats=Object.keys(w).filter(c=>elemCanPick(who,c)&&w[c]>0);
@@ -2599,7 +2683,7 @@ function elemAIChoose(who){
   // Each sector of the wheel is a plain element or one of this character's signature spells
   const sectors=ELEMENTS.map(e=>({elem:e.id,sp:sigAt(who,cat,e.id)})).filter(x=>sectorOk(who,cat,x.elem,1));
   const plain=sectors.filter(x=>!x.sp);
-  const sigs=sectors.filter(x=>x.sp&&aiSigSensible(who,x.sp));
+  const sigs=sectors.filter(x=>x.sp&&aiSigSensible(who,x.sp,tgt));
   const cleanseOk=cat==='dispel'&&myCurses&&elemCost(who,'dispel',1)<=me.mana;
   if(cleanseOk&&!oppWard&&!oppBuffs&&_rng()<0.7)
     return {type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok};
@@ -2734,7 +2818,21 @@ function onRetryExpired(overlay){
   },900);
 }
 
+// 3–4 seats: knock out every seat at 0 HP; the duel ends when one team (or nobody) is left
+function eliminateSeats(){
+  activeSeats().filter(w=>gs[w].hp<=0).forEach(w=>{
+    const st=gs[w];
+    st.out=true; st.effects=[]; st.shield=0; st.shieldHp=0; st.shieldType=null;
+    syncMinionVisuals(st);
+    addFloat(seatX(w),bH*.2,'☠ '+seatCfg(w).name+' is out!','#ff6677',15);
+  });
+  const teams=[...new Set(activeSeats().map(seatTeam))];
+  if(teams.length>1) return;
+  if(simMode){ gameEnded=true; simOutcome=teams.length?teams[0]:'draw'; return; }
+  endGame(teams.length?teams[0]===seatTeam('p1'):'draw');
+}
 function checkWin(){
+  if(PLAYERS.length>2){ if(!deferWinCheck) eliminateSeats(); return; }
   const p1Dead=gs.p1.hp<=0, p2Dead=gs.p2.hp<=0;
   if(!p1Dead&&!p2Dead) return;
   // Deferred: remember every KO seen until settleWin (a later heal doesn't undo it)
@@ -2748,6 +2846,7 @@ function checkWin(){
 // End a deferred-win window (simultaneous tier or round ticks) and apply any KOs.
 function settleWin(){
   deferWinCheck=false;
+  if(PLAYERS.length>2){ eliminateSeats(); return; }
   const pw=pendingWin; pendingWin=null;
   if(pw) declareKO(pw.p1Dead||gs.p1.hp<=0, pw.p2Dead||gs.p2.hp<=0);
   else checkWin();
@@ -5243,6 +5342,31 @@ function simMatch(k1,k2,ai){
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
   return out;
+}
+
+// 3–4 seat version: seats [{key,team?}]. Returns the winning team ('p1'… for free-for-all), 'draw' or 'timeout'.
+function simMatchN(seats,ai){
+  simMode=true; simOutcome=null;
+  twoPlayerMode=false; trainingMode=false;
+  aiDifficulty=ai||'normal';
+  setupSeats(seats);
+  try{
+    newState();
+    if(!bW){ bW=400; bH=300; }
+    battleRunning=true; gameEnded=false;
+    const outRound={};
+    while(!gameEnded&&gs.round<=SIM_MAX_ROUNDS){
+      activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
+      resolveSimRound();
+      PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[];
+    }
+    return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,
+      hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
+  } finally {
+    battleRunning=false; simMode=false;
+    setupSeats(null);
+  }
 }
 
 // ── TUTORIAL ─────────────────────────────────────────────────────────────────
