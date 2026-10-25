@@ -1152,6 +1152,80 @@ body {
   letter-spacing: 1px;
 }
 
+/* ── 3–4 WIZARD HUD ── */
+#mhud { display: none; }
+#hud.multi { display: none; }
+#battle-screen.multi #mhud {
+  display: flex;
+  width: 100%;
+  align-self: stretch;
+  gap: 6px;
+  padding: 12px 8px 8px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  background: rgba(0,0,0,0.55);
+  border-bottom: 1px solid rgba(201,168,76,0.18);
+  flex-shrink: 0;
+}
+.mh-card {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 4px;
+  border: 1px solid var(--mh-col, #c9a84c);
+  border-radius: 8px;
+  background: rgba(20, 10, 40, 0.8);
+  position: relative;
+}
+.mh-card.turn { box-shadow: 0 0 10px var(--mh-col, #c9a84c); }
+.mh-card.out { opacity: .35; }
+.mh-card.out::after {
+  content: 'OUT';
+  position: absolute; top: 34%; left: 0; right: 0; text-align: center;
+  font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: 2px; color: #ff6677;
+}
+.mh-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: center 25%; border: 2px solid var(--mh-col, #c9a84c); }
+.mh-name { font-size: 9px; letter-spacing: 1px; color: var(--mh-col, #c9a84c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.mh-team { font-size: 8px; color: #aaa; letter-spacing: 1px; }
+.mh-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+.mh-fill { height: 100%; }
+.mh-hp .mh-fill { background: linear-gradient(90deg, #22aa44, #66ee66); }
+.mh-mana .mh-fill { background: linear-gradient(90deg, #3355cc, #66aaff); }
+.mh-nums { font-size: 9px; color: #ddd; display: flex; flex-wrap: wrap; justify-content: center; gap: 0 5px; align-items: center; white-space: nowrap; }
+.mh-ward { color: #88ffff; }
+
+/* ── 3–4 WIZARD SETUP ── */
+#multi-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 300;
+  align-items: center; justify-content: center;
+  padding: 16px;
+}
+#multi-overlay.show { display: flex; }
+.mo-box { width: 100%; max-width: 360px; text-align: center; }
+.mo-title { font-family: 'Cinzel Decorative', serif; font-size: 20px; color: #f0cc6a; text-shadow: 0 0 18px #c9a84c; }
+.mo-sub { font-size: 10px; letter-spacing: 3px; color: rgba(201,168,76,0.5); text-transform: uppercase; margin: 4px 0 18px; }
+.mo-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+.mo-lbl { width: 92px; text-align: left; font-size: 12px; letter-spacing: 1px; color: #ccc; text-transform: uppercase; }
+.mo-opt {
+  flex: 1;
+  padding: 9px 6px;
+  font: 700 13px 'Cinzel', serif;
+  color: #c9a84c;
+  background: rgba(40, 20, 70, 0.8);
+  border: 1px solid rgba(201,168,76,0.4);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.mo-opt.on { background: linear-gradient(135deg, #5a1a8a, #8a3aaa); color: #f0cc6a; border-color: #c9a84c; }
+.mo-opt:disabled { opacity: .3; cursor: default; }
+#mo-seats { margin: 14px 0 10px; }
+.mo-seat-team { font-size: 10px; color: #aaa; width: 46px; }
+
 /* ── TARGET PICKER (3–4 seat duels) ── */
 #target-overlay {
   display: none;

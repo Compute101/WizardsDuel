@@ -302,10 +302,22 @@ Free-for-all first; teams (2v2) are supported by the same code. Seats with the s
 - **Ending:** the duel ends when one team is left (or nobody: a draw). `simMatchN(seats, ai)` runs
   3–4 seat AI games. Wins by seat over 1,500 four-player games: 343–379 each, so no seat is favoured.
 
+**Done — playing it:** Duel → **👥 3–4 Wizards**.
+- Setup screen: 3 or 4 wizards, Free-for-all or 2 v 2 (4 only; wizards 1–2 are Team A, 3–4 Team B),
+  and Player or AI for each seat (wizard 1 is always a player). Then each seat picks on the character
+  screen in turn.
+- With more than one player the phone is passed between picks, like the 2-player mode; with one, the
+  AIs pick straight away.
+- Battle screen: a row of HUD cards (portrait, HP, mana, ward; "OUT" when knocked out) replaces the
+  two big HUDs. The wizards stand in a row across the arena at a smaller size, team-mates side by side,
+  each with a name tag; the left half faces right and the right half faces left.
+- End screen: the winner (or "Team A Wins!"), then placings by when each wizard was knocked out
+  (same round = same place).
+
 **Still to do:**
-- seat layout on the battle screen (3–4 wizards, HP bars, end screens, the character select)
-- win screens and rules beyond "last team standing" (what a knocked-out player sees, placings)
+- what a knocked-out player sees for the rest of the game (today they just watch)
 - protection aimed at an ally in team games
-- kingmaking counter-play
+- kingmaking counter-play (Greater strikes hitting every foe already make ganging up harder)
+- no balance passes for 3–4 players: too many variables
 
 Also in place from earlier: per-seat `gs.pending`, `tickRound(who)`, tiered resolution, and paying up front.

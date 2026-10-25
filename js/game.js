@@ -58,6 +58,9 @@ let retryCountdownId=null;
 
 // ── 2 PLAYER MODE ─────────────────────────────────────────
 let twoPlayerMode=false;
+// 3–4 wizard duels on one device: multiSetup is chosen on the setup screen, multiPicks on the character screen
+let multiMode=false, multiPicks=[];
+const multiSetup={n:4, format:'ffa', human:[true,true,false,false]};
 let twoPlayerPhase=1; // 1=p1 picking, 2=p2 picking
 let matchRound=0;
 let p1MatchWins=0, p2MatchWins=0;
@@ -259,8 +262,7 @@ function drawBG_moonlight(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(138,58,170,0.38)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_hellfire(){
@@ -285,8 +287,7 @@ function drawBG_hellfire(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(200,50,20,0.5)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_forest(){
@@ -316,8 +317,7 @@ function drawBG_forest(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(44,120,60,0.4)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_dawn(){
@@ -347,8 +347,7 @@ function drawBG_dawn(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(200,120,30,0.5)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_storm(){
@@ -379,8 +378,7 @@ function drawBG_storm(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(150,130,80,0.4)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_astral(){
@@ -412,8 +410,7 @@ function drawBG_astral(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(120,60,200,0.45)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 const BG_EMBER_X=[40,100,170,240,320,390,450,70,200,420,130,310];
@@ -441,8 +438,7 @@ function drawBG_embers(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(200,80,20,0.5)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_winter(){
@@ -472,8 +468,7 @@ function drawBG_winter(){
       bx.lineTo(bW*cx2+Math.cos(a)*bW*cr,bH*cy2+Math.sin(a)*bH*cr*0.6); bx.stroke();
     }
   });
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_arc(){
@@ -522,8 +517,7 @@ function drawBG_arc(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle=`rgba(170,255,68,${0.25+0.1*Math.sin(t/400)})`; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_abyss(){
@@ -557,8 +551,7 @@ function drawBG_abyss(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.68,bW,bH*.32);
   bx.strokeStyle=`rgba(153,68,204,${0.22+0.1*Math.sin(t/700)})`; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.68); bx.lineTo(bW,bH*.68); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_holy(){
@@ -602,8 +595,7 @@ function drawBG_holy(){
   // Ground horizon line
   bx.strokeStyle=`rgba(240,210,120,${0.2+0.08*Math.sin(t/1800)})`; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.65); bx.lineTo(bW,bH*.65); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_stone(){
@@ -637,8 +629,7 @@ function drawBG_stone(){
   // Horizon line
   bx.strokeStyle=`rgba(176,128,64,${0.18+0.06*Math.sin(t/2200)})`; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.68); bx.lineTo(bW,bH*.68); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 // ── SPRITESHEET CONFIG ─────────────────────────────────────
@@ -673,20 +664,25 @@ const sprites={p1:null,p2:null};
 const spriteStatus={p1:'loading',p2:'loading'};
 
 function loadSprites(){
-  sprites.p1=null; sprites.p2=null;
-  spriteStatus.p1='loading'; spriteStatus.p2='loading';
-  const img1=new Image();
-  img1.onload =()=>{sprites.p1=img1; spriteStatus.p1='ready';};
-  img1.onerror=()=>{spriteStatus.p1='failed';};
-  img1.src=p1Cfg.sprite;
-  if(p2Cfg){
-    const img2=new Image();
-    img2.onload =()=>{sprites.p2=img2; spriteStatus.p2='ready';};
-    img2.onerror=()=>{spriteStatus.p2='failed';};
-    img2.src=p2Cfg.sprite;
-  } else {
-    spriteStatus.p2='failed';
+  const seats=seatSetup?seatSetup.map(st=>[st.who,CHAR_DEFS[st.key]]):[['p1',p1Cfg],['p2',p2Cfg]];
+  ['p1','p2','p3','p4'].forEach(w=>{ sprites[w]=null; spriteStatus[w]='failed'; });
+  seats.forEach(([w,cfg])=>{
+    if(!cfg) return;
+    spriteStatus[w]='loading';
+    const img=new Image();
+    img.onload =()=>{sprites[w]=img; spriteStatus[w]='ready';};
+    img.onerror=()=>{spriteStatus[w]='failed';};
+    img.src=cfg.sprite;
+  });
+}
+// Each seat's rune circle on the arena floor
+function seatRunes(){
+  if(PLAYERS.length<=2||!gs[PLAYERS[0]]){
+    runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
+    if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+    return;
   }
+  PLAYERS.forEach(w=>runeRing(seatX(w),bH*.83,20,`rgba(${hexToRgb(seatCfg(w).col)},0.13)`));
 }
 
 const animState={p1:{frame:0,timer:0},p2:{frame:0,timer:0}};
@@ -694,7 +690,7 @@ const FRAME_MS=180;
 const ANIM_FRAMES={idle:3,cast:4,hit:2,shield:2,death:4};
 
 function tickAnimFrame(who,dt){
-  const a=animState[who];
+  const a=animState[who]||(animState[who]={frame:0,timer:0});
   a.timer+=dt;
   if(a.timer>=FRAME_MS){
     a.timer-=FRAME_MS;
@@ -1385,27 +1381,32 @@ function battleLoop(ts){
   requestAnimationFrame(battleLoop);
   const dt=lastFrameTime?Math.min(ts-lastFrameTime,100):16;
   lastFrameTime=ts;
-  tickAnimFrame('p1',dt);
-  tickAnimFrame('p2',dt);
+  PLAYERS.forEach(w=>tickAnimFrame(w,dt));
   resizeBC();
   bx.setTransform(1,0,0,1,0,0);
   bx.save(); bx.translate(0,bOffY); drawBG(); bx.restore();
   fillSceneBands();
   bx.setTransform(1,0,0,1,0,bOffY);   // everything else draws in scene coordinates
-  const gy=bH*.74, wsz=bH*.3;
+  const many=PLAYERS.length>2, gy=bH*.74, wsz=bH*.3*(many?.68:1);
   PLAYERS.forEach(w=>{
     const st=gs[w], hasFx=id=>st.effects.some(e=>e.id===id);
-    drawWiz(seatX(w)+(gs[w+'xOff']||0),gy,wsz,seatCfg(w).col,w==='p1',gs[w+'anim'],
+    drawWiz(seatX(w)+(gs[w+'xOff']||0),gy,wsz,seatCfg(w).col,seatFacesRight(w),gs[w+'anim'],
       hasWard(st),hasFx('ward'),w,hasFx('foresight'),wizVisuals(st));
+    if(many){   // name tags, so everyone can tell the wizards apart
+      bx.globalAlpha=st.out?.35:.9; bx.fillStyle=seatCfg(w).col;
+      bx.font='bold 9px Cinzel,serif'; bx.textAlign='center';
+      bx.fillText(seatCfg(w).name,seatX(w),gy+bH*.05);
+      bx.globalAlpha=1;
+    }
   });
   tickProjs(); tickBeams(); tickManaBurnFire(); tickParts(); tickFloats();
-  if(!gs.myTurn&&!gs.busy&&!twoPlayerMode){
+  if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
-    bx.textAlign='center'; bx.fillText(p2Cfg.name+' IS CASTING…',bW*.5,bH*.56);
+    bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.56);
   }
-  if(twoPlayerMode&&gs.myTurn){
-    const twoCfg=gs.turnPlayer==='p1'?p1Cfg:p2Cfg;
-    const twoNum=gs.turnPlayer==='p1'?1:2;
+  if(passPhone()&&gs.myTurn){
+    const twoCfg=seatCfg(gs.turnPlayer);
+    const twoNum=PLAYERS.indexOf(gs.turnPlayer)+1;
     bx.fillStyle=`rgba(${hexToRgb(twoCfg.col)},0.75)`;
     bx.font='bold 9px Cinzel,serif'; bx.textAlign='center';
     bx.fillText('PLAYER '+twoNum+' — YOUR TURN',bW*.5,bH*.57);
@@ -1416,6 +1417,7 @@ function battleLoop(ts){
 
 // ── HUD ────────────────────────────────────────────────────
 function refreshHUD(){
+  if(PLAYERS.length>2){ refreshMultiHUD(); refreshActionBar(); return; }
   document.getElementById('p1hpf').style.height=Math.max(0,gs.p1.hp/gs.p1.maxHp*100)+'%';
   document.getElementById('p2hpf').style.height=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
   document.getElementById('sh1').style.opacity=hasWard(gs.p1)?'1':'0.18';
@@ -1435,6 +1437,31 @@ function refreshHUD(){
   refreshMana('mfill1','mval1',gs.p1.mana);
   refreshMana('mfill2','mval2',gs.p2.mana);
   refreshActionBar();
+}
+
+// 3–4 wizards: one compact card per seat (built by buildMultiHUD when the duel starts)
+function buildMultiHUD(){
+  document.getElementById('mhud').innerHTML=PLAYERS.map(w=>{
+    const cfg=seatCfg(w), team=seatSetup&&seatSetup.find(st=>st.who===w).team;
+    return `<div class="mh-card" id="mh-${w}" style="--mh-col:${cfg.col}">`+
+      `<img class="mh-img" src="portraits/${seatKey(w)}.png" alt=""><span class="mh-name">${cfg.name}</span>`+
+      (team?`<span class="mh-team">Team ${team}</span>`:'')+
+      `<div class="mh-bar mh-hp"><div class="mh-fill"></div></div><div class="mh-bar mh-mana"><div class="mh-fill"></div></div>`+
+      `<div class="mh-nums"><span class="mh-hpn"></span><span class="mh-mn"></span><span class="mh-ward"></span></div></div>`;
+  }).join('');
+}
+function refreshMultiHUD(){
+  PLAYERS.forEach(w=>{
+    const card=document.getElementById('mh-'+w), st=gs[w];
+    if(!card) return;
+    card.classList.toggle('out',!!st.out);
+    card.classList.toggle('turn',gs.myTurn&&gs.turnPlayer===w);
+    card.querySelector('.mh-hp .mh-fill').style.width=Math.max(0,st.hp/st.maxHp*100)+'%';
+    card.querySelector('.mh-mana .mh-fill').style.width=(st.mana/MAX_MANA*100)+'%';
+    card.querySelector('.mh-hpn').textContent='❤'+st.hp;
+    card.querySelector('.mh-mn').textContent='✦'+st.mana;
+    card.querySelector('.mh-ward').textContent=hasWard(st)?'🛡'+st.shieldHp:'';
+  });
 }
 
 function refreshMana(fillId,valId,val){
@@ -1534,8 +1561,8 @@ function tickBeams(){
 // Step toward the foe and back (melee strikes)
 function lunge(who,amt,cb){
   if(simMode){ if(cb) cb(); return; }
-  const dir=who==='p1'?1:-1;
-  gs[who+'xOff']=dir*bW*amt;
+  const dir=seatFacesRight(who)?1:-1;
+  gs[who+'xOff']=dir*bW*amt*(PLAYERS.length>2?.5:1);
   anim(who,'cast',300);
   setTimeout(()=>{ gs[who+'xOff']=0; if(cb) cb(); },180);
 }
@@ -1761,10 +1788,13 @@ function vfxCtx(who,tgt,extra){
 // A seat carries its own character once the duel starts; before that, fall back to the picks
 function seatCfg(who){ return (gs&&gs[who]&&gs[who].cfg)||(who==='p1'?p1Cfg:p2Cfg); }
 function seatKey(who){ return (gs&&gs[who]&&gs[who].key)||(who==='p1'?p1Key:p2Key); }
+// 3–4 seats stand in a row across the arena, team-mates side by side
 function seatX(who){
   if(PLAYERS.length<=2) return who==='p1'?bW*.22:bW*.78;
-  return bW*(0.12+0.76*PLAYERS.indexOf(who)/(PLAYERS.length-1));   // placeholder until the 3–4 seat layout
+  const order=PLAYERS.slice().sort((a,b)=>String(seatTeam(a)).localeCompare(String(seatTeam(b)))||PLAYERS.indexOf(a)-PLAYERS.indexOf(b));
+  return bW*(0.13+0.74*order.indexOf(who)/(PLAYERS.length-1));
 }
+function seatFacesRight(who){ return PLAYERS.length<=2?who==='p1':seatX(who)<bW*.5; }
 // Teams and targets. A seat knocked out of a 3–4 seat duel is `out` and takes no further part.
 function seatTeam(who){ return (gs[who]&&gs[who].team)||who; }
 function activeSeats(){ return PLAYERS.filter(w=>gs[w]&&!gs[w].out); }
@@ -1789,7 +1819,12 @@ function minionTarget(owner){
   const last=gs[owner].lastTarget;
   return foesOf(owner).includes(last)?last:weakestFoe(owner);
 }
-function isHumanSeat(who){ return twoPlayerMode||who==='p1'; }
+function isHumanSeat(who){
+  if(seatSetup&&multiMode) return !!seatSetup.find(st=>st.who===who).human;
+  return twoPlayerMode||who==='p1';
+}
+// Several people share the device: picks are handed over and kept secret
+function passPhone(){ return twoPlayerMode||(multiMode&&!!seatSetup&&seatSetup.filter(st=>st.human).length>1); }
 
 function beginPickPhase(){
   if(!battleRunning||gameEnded) return;
@@ -1805,7 +1840,7 @@ function promptNextPicker(){
   if(!isHumanSeat(who)){
     gs.pending[who]=aiChooseSync(who);
     promptNextPicker();
-  } else if(twoPlayerMode){
+  } else if(passPhone()){
     showHandoffOverlay(who,()=>startPlayerTurn(who));
   } else {
     startPlayerTurn(who);
@@ -1823,7 +1858,7 @@ function commitPick(who,action){
   gs.pending[who]=action;
   gs.myTurn=false; gs.busy=true;
   // Short beat so the picker sees their choice register before the handoff covers it
-  setTimeout(promptNextPicker,twoPlayerMode?500:0);
+  setTimeout(promptNextPicker,passPhone()?500:0);
 }
 
 function describeAction(who,action){ return describeElemAction(action,who); }
@@ -1838,7 +1873,7 @@ function showReveal(){
   const btn=document.getElementById('rv-btn');
   cards.innerHTML=activeSeats().map(who=>{
     const cfg=seatCfg(who), act=gs.pending[who], d=describeAction(who,act);
-    const label=twoPlayerMode?'Player '+(PLAYERS.indexOf(who)+1):cfg.name;
+    const label=!passPhone()?cfg.name:isHumanSeat(who)?'Player '+(PLAYERS.indexOf(who)+1):cfg.name+' (AI)';
     // With more than one foe, say who each spell is aimed at
     const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${hitsAllFoes(who,act)?'All foes':seatCfg(act.target).name}</span>`:'';
     return `<div class="rv-card" style="--rv-col:${cfg.col}"><div class="rv-inner">`+
@@ -1846,7 +1881,7 @@ function showReveal(){
       `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}<span class="rv-name">${label}</span></div>`+
       `</div></div>`;
   }).join('');
-  overlay.classList.toggle('rv-quick',!twoPlayerMode);
+  overlay.classList.toggle('rv-quick',!passPhone());
   overlay.classList.add('active');
 
   let fightTid=null, started=false;
@@ -1864,10 +1899,10 @@ function showReveal(){
     btn.textContent='⚔ Fight!';
     btn.onclick=fight;
     overlay.onclick=fight;
-    fightTid=setTimeout(fight,twoPlayerMode?3500:1800);
+    fightTid=setTimeout(fight,passPhone()?3500:1800);
   };
   overlay.onclick=null;
-  if(twoPlayerMode){
+  if(passPhone()){
     document.getElementById('rv-title').textContent='All Spells Chosen';
     document.getElementById('rv-sub').textContent='Place the phone where every wizard can see';
     btn.textContent='✨ Reveal!';
@@ -2850,16 +2885,93 @@ function onRetryExpired(overlay){
 
 // 3–4 seats: knock out every seat at 0 HP; the duel ends when one team (or nobody) is left
 function eliminateSeats(){
-  activeSeats().filter(w=>gs[w].hp<=0).forEach(w=>{
+  activeSeats().filter(w=>gs[w].hp<=0).forEach((w,i)=>{
     const st=gs[w];
     st.out=true; st.effects=[]; st.shield=0; st.shieldHp=0; st.shieldType=null;
     syncMinionVisuals(st);
-    addFloat(seatX(w),bH*.2,'☠ '+seatCfg(w).name+' is out!','#ff6677',15);
+    gs[w+'anim']='death';
+    (gs.outOrder||(gs.outOrder=[])).push({who:w,round:gs.round});
+    addFloat(seatX(w),bH*(.2+.06*i),'☠ '+seatCfg(w).name+' is out!','#ff6677',15);
   });
   const teams=[...new Set(activeSeats().map(seatTeam))];
   if(teams.length>1) return;
   if(simMode){ gameEnded=true; simOutcome=teams.length?teams[0]:'draw'; return; }
-  endGame(teams.length?teams[0]===seatTeam('p1'):'draw');
+  if(multiMode) showMultiEnd(teams[0]||null);
+  else endGame(teams.length?teams[0]===seatTeam('p1'):'draw');
+}
+// Results of a 3–4 wizard duel: the winner(s), then everyone else by when they were knocked out
+function showMultiEnd(team){
+  if(gameEnded) return;
+  gameEnded=true;
+  gs.myTurn=false; gs.busy=true;
+  const winners=team?PLAYERS.filter(w=>seatTeam(w)===team):[];
+  const names=ws=>ws.map(w=>seatCfg(w).name).join(' & ');
+  const out=(gs.outOrder||[]).slice().reverse().filter(o=>!winners.includes(o.who));
+  const places=[];
+  if(winners.length) places.push(names(winners));
+  out.forEach((o,i)=>{ if(i&&o.round===out[i-1].round) places[places.length-1]+=' & '+seatCfg(o.who).name; else places.push(seatCfg(o.who).name); });
+  setTimeout(()=>{
+    battleRunning=false;
+    document.getElementById('ovico').textContent=winners.length?'🏆':'⚡';
+    const title=document.getElementById('ovtitle');
+    title.textContent=!winners.length?'Everyone Fell — A Draw!':
+      team.length===1?'Team '+team+' Wins!':names(winners)+(winners.length>1?' Win!':' Wins!');
+    title.style.color=winners.length?seatCfg(winners[0]).col:'#ff8844';
+    document.getElementById('ovdesc').textContent=places.map((n,i)=>['1st','2nd','3rd','4th'][i]+' '+n).join('  ·  ');
+    document.getElementById('btn-continue').textContent='Back to Title';
+    document.getElementById('overlay').classList.add('active');
+  },1800);
+}
+function endMultiMode(){
+  multiMode=false; multiPicks=[];
+  setupSeats(null);
+  document.getElementById('battle-screen').classList.remove('multi');
+  document.getElementById('hud').classList.remove('multi');
+  document.getElementById('btn-continue').textContent='Continue';
+}
+function startMultiBattle(){
+  const seats=multiPicks.map((key,i)=>({key,human:multiSetup.human[i],
+    team:multiSetup.format==='2v2'?(i<2?'A':'B'):undefined}));
+  setupSeats(seats);
+  p1Key=seats[0].key; p1Cfg=CHAR_DEFS[p1Key]; p2Key=seats[1].key; p2Cfg=CHAR_DEFS[p2Key];
+  tournamentQueue=[]; twoPlayerMode=false; trainingMode=false;
+  document.getElementById('btn-training-menu').style.display='none';
+  document.getElementById('battle-screen').classList.add('multi');
+  document.getElementById('hud').classList.add('multi');
+  loadSprites();
+  newState();
+  buildMultiHUD();
+  updateActionBar(seatCfg('p1'));
+  gs.myTurn=false; gs.busy=true;
+  gameEnded=false; battleRunning=true; lastFrameTime=0;
+  resizeBC();
+  showScreen('battle-screen');
+  requestAnimationFrame(battleLoop);
+  setTimeout(beginPickPhase,200);
+}
+// Setup screen: how many wizards, the format, and who is played by a person
+function renderMultiSetup(){
+  const ov=document.getElementById('multi-overlay');
+  if(multiSetup.n<4) multiSetup.format='ffa';
+  ov.querySelectorAll('[data-n]').forEach(b=>b.classList.toggle('on',+b.dataset.n===multiSetup.n));
+  ov.querySelectorAll('[data-format]').forEach(b=>{
+    b.classList.toggle('on',b.dataset.format===multiSetup.format);
+    b.disabled=b.dataset.format==='2v2'&&multiSetup.n<4;
+  });
+  let html='';
+  for(let i=0;i<multiSetup.n;i++){
+    const team=multiSetup.format==='2v2'?(i<2?'Team A':'Team B'):'';
+    html+=`<div class="mo-row"><span class="mo-lbl">Wizard ${i+1}</span><span class="mo-seat-team">${team}</span>`+
+      `<button class="mo-opt${multiSetup.human[i]?' on':''}" data-seat="${i}" data-human="1">Player</button>`+
+      `<button class="mo-opt${multiSetup.human[i]?'':' on'}" data-seat="${i}" data-human="0"${i===0?' disabled':''}>AI</button></div>`;
+  }
+  document.getElementById('mo-seats').innerHTML=html;
+}
+function labelMultiPick(){
+  const i=multiPicks.length, lbl=document.getElementById('char-player-label');
+  const team=multiSetup.format==='2v2'?' · Team '+(i<2?'A':'B'):'';
+  lbl.textContent='Wizard '+(i+1)+(multiSetup.human[i]?'':' (AI)')+team+': Choose';
+  lbl.style.display='';
 }
 function checkWin(){
   if(PLAYERS.length>2){ if(!deferWinCheck) eliminateSeats(); return; }
@@ -5207,6 +5319,13 @@ function pickCharacter(key){
     showScreen('training-screen');
     return;
   }
+  if(multiMode){
+    multiPicks.push(key);
+    if(multiPicks.length<multiSetup.n){ labelMultiPick(); return; }
+    document.getElementById('char-player-label').style.display='none';
+    startMultiBattle();
+    return;
+  }
   if(twoPlayerMode){
     if(twoPlayerPhase===1){
       p1Key=key; p1Cfg=CHAR_DEFS[key];
@@ -5275,17 +5394,19 @@ function startTwoPlayerBattle(){
 }
 
 function showHandoffOverlay(toPlayer, callback){
-  const cfg=toPlayer==='p1'?p1Cfg:p2Cfg;
-  const num=toPlayer==='p1'?1:2;
+  const cfg=seatCfg(toPlayer);
+  const num=PLAYERS.indexOf(toPlayer)+1;
   document.getElementById('handoff-player-num').textContent='Player '+num;
   document.getElementById('handoff-char-name').textContent=cfg.name.toUpperCase();
   const portrait=document.getElementById('handoff-portrait');
-  portrait.src='portraits/'+(toPlayer==='p1'?p1Key:p2Key)+'.png';
+  portrait.src='portraits/'+seatKey(toPlayer)+'.png';
   portrait.style.borderColor=cfg.col;
   const p1s='★'.repeat(Math.min(2,p1MatchWins))+'☆'.repeat(Math.max(0,2-p1MatchWins));
   const p2s='★'.repeat(Math.min(2,p2MatchWins))+'☆'.repeat(Math.max(0,2-p2MatchWins));
-  document.getElementById('handoff-match-info').textContent=
-    'Match Round '+matchRound+' of 3  ·  P1 '+p1s+'  vs  P2 '+p2s;
+  const team=multiMode&&seatSetup&&seatSetup.find(st=>st.who===toPlayer).team;
+  document.getElementById('handoff-match-info').textContent=multiMode
+    ?'Round '+gs.round+(team?'  ·  Team '+team:'')
+    :'Match Round '+matchRound+' of 3  ·  P1 '+p1s+'  vs  P2 '+p2s;
   const overlay=document.getElementById('handoff-overlay');
   const btn=document.getElementById('handoff-btn');
   btn.onclick=null;
@@ -5753,6 +5874,30 @@ window.addEventListener('DOMContentLoaded', ()=>{
     document.getElementById('char-player-label').style.display='none';
     showScreen('char-screen');
   });
+  document.getElementById('btn-duel-multi').addEventListener('click',()=>{
+    duelOverlay.style.display='none';
+    renderMultiSetup();
+    document.getElementById('multi-overlay').classList.add('show');
+  });
+  document.getElementById('multi-overlay').addEventListener('click',e=>{
+    const b=e.target.closest('button');
+    if(!b||b.disabled) return;
+    if(b.dataset.n) multiSetup.n=+b.dataset.n;
+    else if(b.dataset.format) multiSetup.format=b.dataset.format;
+    else if(b.dataset.seat) multiSetup.human[+b.dataset.seat]=b.dataset.human==='1';
+    else return;
+    renderMultiSetup();
+  });
+  document.getElementById('btn-multi-back').addEventListener('click',()=>{
+    document.getElementById('multi-overlay').classList.remove('show');
+    duelOverlay.style.display='flex';
+  });
+  document.getElementById('btn-multi-go').addEventListener('click',()=>{
+    document.getElementById('multi-overlay').classList.remove('show');
+    trainingMode=false; twoPlayerMode=false; multiMode=true; multiPicks=[];
+    labelMultiPick();
+    showScreen('char-screen');
+  });
   document.getElementById('btn-duel-2player').addEventListener('click',()=>{
     duelOverlay.style.display='none';
     trainingMode=false; twoPlayerMode=true; twoPlayerPhase=1;
@@ -5825,6 +5970,14 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btn-training-menu').addEventListener('click', exitTrainingToMenu);
   document.getElementById('btn-pz-exit').addEventListener('click', exitTrainingToMenu);
   document.getElementById('btn-back').addEventListener('click',()=>{
+    if(multiMode){
+      if(multiPicks.length){ multiPicks.pop(); labelMultiPick(); return; }
+      multiMode=false;
+      document.getElementById('char-player-label').style.display='none';
+      showScreen('title-screen');
+      document.getElementById('multi-overlay').classList.add('show');
+      return;
+    }
     if(trainingMode){
       trainingPickPhase=null;
       document.getElementById('char-player-label').style.display='none';
@@ -5880,6 +6033,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
 
   document.getElementById('btn-continue').addEventListener('click',()=>{
     document.getElementById('overlay').classList.remove('active');
+    if(multiMode){ battleRunning=false; gameEnded=false; endMultiMode(); showScreen('title-screen'); return; }
     if(twoPlayerMode){
       const isMatchOver=p1MatchWins>=2||p2MatchWins>=2||matchRound>=3;
       if(isMatchOver){
