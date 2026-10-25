@@ -1506,8 +1506,12 @@ function checkDeathless(who,x,y){
 
 
 // Unified damage-to-player helper: routes through simulacra redirect then skeletons then Deathless
+// Who is dealing the damage right now, so a knock-out can pay its bounty to the right wizard
+let dmgSource=null;
 function dealDmgToPlayer(who,dmg,x,y){
   if(dmg<=0) return;
+  // Damage in a round is simultaneous, so a knock-out is credited to whoever hurt them most this round
+  if(dmgSource&&dmgSource!==who){ const d=gs.roundDmg||(gs.roundDmg={}), m=d[who]||(d[who]={}); m[dmgSource]=(m[dmgSource]||0)+dmg; }
   gs[who].hp=Math.max(0,gs[who].hp-dmg);
   checkDeathless(who,x,y);
 }
@@ -1924,6 +1928,9 @@ function resolveSimRound(){
   gs.pending={};
   gs.myTurn=false; gs.busy=true;
   const seatsIn=activeSeats();
+  // Who aims at whom this round (a Greater strike at every foe isn't focusing on anyone); the AI reads it next round
+  gs.focus={}; gs.roundDmg={};
+  seatsIn.forEach(w=>{ const a=acts[w]; if(needsTarget(w,a)&&a.target&&a.target!==w&&!hitsAllFoes(w,a)) (gs.focus[a.target]=gs.focus[a.target]||[]).push(w); });
   seatsIn.forEach(w=>{ gs[w].hpAtRoundStart=gs[w].hp; });
   // Quick spells (Mana Siphon) are paid and steal first, so their target pays from what's left
   const isQuick=w=>{ const a=acts[w], sp=a.sig&&sigById(w,a.sig); return !!(sp&&sp.el.quick); };
@@ -2375,7 +2382,8 @@ function executeElemental(who,action,cb){
   if(action.target&&action.target!==who&&needsTarget(who,action)) st.lastTarget=action.target;
 
   const agony=effectsOf(st,'agony')[0];
-  if(agony){ elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); }
+  if(agony){ dmgSource=agony.from; elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); }
+  dmgSource=who;
   // Paid (or not) when the round began — see payForAction
   if(action.outcome==='fizzle'){ addFloat(x,bH*.33,'Fizzled!','#ff8844',13); combatTimeout(cb,700); return; }
   if(action.outcome==='silenced'){ showSilenceBlock(x,bH*.33); combatTimeout(cb,900); return; }
@@ -2390,7 +2398,7 @@ function executeElemental(who,action,cb){
 
   const isWard=sp?sp.el.kind==='ward':(action.cat==='protect');
   const candle=effectsOf(st,'candle')[0];
-  if(isWard&&candle){ elemFloatDmg(who,candle.dmg,'🕯️','#ff6622'); VFX.candle(x); }
+  if(isWard&&candle){ dmgSource=candle.from; elemFloatDmg(who,candle.dmg,'🕯️','#ff6622'); VFX.candle(x); dmgSource=who; }
 
   if(sp) executeSignature(who,sp,action,cb);
   else executeWheel(who,action,cb);
@@ -2654,7 +2662,7 @@ function strikeOne(who,tgt,o,b){
     effectsOf(ts,'resist').concat(effectsOf(ts,'counter')).forEach(e=>{ if(e.retaliate) sources.push({id:e.id,n:e.retaliate}); });
     let back=0;
     sources.forEach(r=>{ back+=r.n; const f=VFX.retaliate[r.id]; if(f) f(tx,seatX(who)); });
-    if(back>0) elemFloatDmg(who,back,'↩️','#ff8844');
+    if(back>0){ const src=dmgSource; dmgSource=tgt; elemFloatDmg(who,back,'↩️','#ff8844'); dmgSource=src; }
   }
 }
 
@@ -2662,6 +2670,7 @@ function strikeOne(who,tgt,o,b){
 function elemTickEffects(who){
   const st=gs[who], x=seatX(who);
   effectsOf(st,'dot').forEach(e=>{
+    dmgSource=e.from;
     e.tick=(e.tick||0)+1;
     const dmg=e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg;
     // Ticks hit a ward first, like any damage — unless the effect seeps past wards (Caustic Bomb's poison)
@@ -2682,6 +2691,7 @@ function elemTickEffects(who){
   activeSeats().filter(o=>o!==who&&minionTarget(o)===who).forEach(owner=>{
     effectsOf(gs[owner],'minion').forEach(m=>{
       const el=elemById(m.elem||'physical');
+      dmgSource=owner;
       elemIncoming(who,m.dmg,m.elem||'physical',m.icon,el.col,true);
       if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,bH*.38);
     });
@@ -2698,6 +2708,7 @@ function elemIncome(who){
 // ── Elemental AI: a weighted mixed strategy so it can't be read every round ──
 // Would casting this signature spell do anything useful right now?
 // Which foe to aim at: the weakest-looking (HP plus ward), with some noise so it can't be read
+let GANG_AWARE_AI=true;   // the simulator switches it off to compare
 function aiPickTarget(who){
   const foes=foesOf(who);
   if(foes.length<=1) return foes[0];
@@ -2721,7 +2732,10 @@ function aiSigSensible(who,sp,tgt=weakestFoe(who)){
   return true;
 }
 function elemAIChoose(who){
-  const me=gs[who], tgt=aiPickTarget(who), opp=gs[tgt];
+  // Several foes aimed at me last round: hit back at the weakest of them, and turtle
+  const gangedBy=(gs.focus&&gs.focus[who]||[]).filter(f=>foesOf(who).includes(f));
+  const ganged=GANG_AWARE_AI&&gangedBy.length>=2;
+  const me=gs[who], tgt=ganged?gangedBy.reduce((a,b)=>gs[a].hp<=gs[b].hp?a:b):aiPickTarget(who), opp=gs[tgt];
   const smart=aiDifficulty==='normal';
   const oppWard=hasWard(opp), oppBuffs=buffsOf(opp).length, myCurses=cursesOf(me).length;
   const w={damage:1.0, protect:0.55, dispel:0.08};
@@ -2739,6 +2753,7 @@ function elemAIChoose(who){
     if(foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',2))) w.protect+=0.35;
     if(me.hp<me.maxHp*0.35) w.protect+=0.35;
   }
+  if(ganged){ w.protect+=hasWard(me)&&me.shieldHp>=25?0.4:1.2; w.damage*=0.8; }
   const cats=Object.keys(w).filter(c=>elemCanPick(who,c)&&w[c]>0);
   if(!cats.length) return {type:'el',cat:'pass',ok:true};
   let r=_rng()*cats.reduce((sum,c)=>sum+w[c],0), cat=cats[0];
@@ -2782,7 +2797,8 @@ function elemAIChoose(who){
 
   let tier=3;
   while(tier>1&&!sectorOk(who,cat,choice.elem,tier)) tier--;
-  if(tier>1&&_rng()<0.4) tier--;   // sometimes hold mana back
+  // Sometimes hold mana back — but not when ganged up on: big wards, and Greater strikes that hit them all
+  if(tier>1&&!(ganged&&cat!=='dispel')&&_rng()<0.4) tier--;
   const elem=choice.elem;
   if(choice.sp) return {type:'el',cat,elem,tier,sig:choice.sp.id,target:tgt,ok};
   return {type:'el',cat,elem,tier,self:false,target:tgt,ok};
@@ -2883,15 +2899,28 @@ function onRetryExpired(overlay){
   },900);
 }
 
+// 3–4 seats: whoever lands a knock-out claims a bounty, so allies race each other for the kill
+const ELEM_KO_BOUNTY={hp:20, mana:5};
 // 3–4 seats: knock out every seat at 0 HP; the duel ends when one team (or nobody) is left
 function eliminateSeats(){
-  activeSeats().filter(w=>gs[w].hp<=0).forEach((w,i)=>{
+  dmgSource=null;
+  const down=activeSeats().filter(w=>gs[w].hp<=0);
+  down.forEach((w,i)=>{
     const st=gs[w];
     st.out=true; st.effects=[]; st.shield=0; st.shieldHp=0; st.shieldType=null;
     syncMinionVisuals(st);
     gs[w+'anim']='death';
     (gs.outOrder||(gs.outOrder=[])).push({who:w,round:gs.round});
     addFloat(seatX(w),bH*(.2+.06*i),'☠ '+seatCfg(w).name+' is out!','#ff6677',15);
+  });
+  down.forEach(w=>{
+    const by=(gs.roundDmg||{})[w]||{}, most=Math.max(0,...Object.values(by));
+    const top=Object.keys(by).filter(src=>by[src]===most&&most>0&&gs[src]&&!gs[src].out);
+    const k=top.length?top[Math.floor(_rng()*top.length)]:null, ks=k&&gs[k];
+    if(!ks||ks.out||ks.hp<=0||!ELEM_KO_BOUNTY.hp&&!ELEM_KO_BOUNTY.mana) return;
+    ks.hp=Math.min(ks.maxHp,ks.hp+ELEM_KO_BOUNTY.hp); ks.mana=Math.min(MAX_MANA,ks.mana+ELEM_KO_BOUNTY.mana);
+    (gs.koBy||(gs.koBy={}))[w]=k;
+    addFloat(seatX(k),bH*.26,'🏆 Bounty +'+ELEM_KO_BOUNTY.hp+' HP +'+ELEM_KO_BOUNTY.mana+' Mana','#f0cc6a',12);
   });
   const teams=[...new Set(activeSeats().map(seatTeam))];
   if(teams.length>1) return;
@@ -5470,7 +5499,8 @@ function startTrainingBattle(){
 // where pick keys are a signature spell id, or 'damage' / 'protect' / 'dispel' / 'cleanse' / 'pass'.
 const SIM_MAX_ROUNDS=60;
 // The tool page reads the game through an iframe, where only function declarations are visible
-function simInfo(){ return {chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE}; }
+function simInfo(){ return {chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE, bounty:ELEM_KO_BOUNTY,
+  setGangAware:v=>{ GANG_AWARE_AI=v; }}; }
 function simMatch(k1,k2,ai){
   simMode=true; simOutcome=null;
   twoPlayerMode=false; trainingMode=false;
@@ -5512,7 +5542,7 @@ function simMatchN(seats,ai){
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
       gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[];
     }
-    return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,
+    return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
   } finally {
     battleRunning=false; simMode=false;
@@ -5569,6 +5599,7 @@ const TUTORIAL_CONVOS={
     {key:'ponder', text:"Dispel beats Protection: dispels are cheap and tear through wards. Your rival spends a lot of mana on a ward, you break it for a little."},
     {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the surest way to win."},
     {key:'eldrad', text:"Each round resolves in that order — every Protection first, then every Dispel, then every Damage. So the trick is guessing what your rival will choose."},
+    {key:'mal',    text:"With three or four of us, whoever deals the most damage to a wizard in the round they fall claims a bounty: HP and mana. Gang up on someone if you like — but your ally wants that kill as much as you do."},
   ],
   wheel:[
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},

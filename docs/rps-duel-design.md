@@ -302,6 +302,19 @@ Free-for-all first; teams (2v2) are supported by the same code. Seats with the s
 - **Ending:** the duel ends when one team is left (or nobody: a draw). `simMatchN(seats, ai)` runs
   3–4 seat AI games. Wins by seat over 1,500 four-player games: 343–379 each, so no seat is favoured.
 
+**Done — ganging up** (tested with AIs that always aim at one wizard; 800–1,500 games each):
+- Ganging up wins: the focused wizard wins ~0% and lasts 6–10 rounds (16 when nobody gangs). Greater
+  strikes hitting every foe, damage falloff on a focused wizard and extra mana for the focused wizard
+  were all tried; none moved that, so only the first was kept. Two wizards simply beat one.
+- In 4 seats ganging barely pays: two allies go from 25% to ~29% each while the wizard left out gets ~38%.
+- **Knock-out bounty** (`ELEM_KO_BOUNTY`, +20 HP +5 mana): whoever dealt the most damage to a wizard in
+  the round they fell (damage in a round is simultaneous, so not whoever hit last) claims it. In a 3-seat
+  alliance the ally who lands the kill then wins the final duel 71% of the time, so allies race each
+  other for it. Credit by "last hit" gave the last seat in resolution order a big edge, hence "most".
+- **The AI notices being ganged up on**: when two or more foes aimed at it last round (`gs.focus`) it
+  turtles (more and bigger wards), hits back at the weakest of them, and casts Greater strikes. Against
+  a committed gang this only buys about half a round — a ward can't stop a dispel and a strike together.
+
 **Done — playing it:** Duel → **👥 3–4 Wizards**.
 - Setup screen: 3 or 4 wizards, Free-for-all or 2 v 2 (4 only; wizards 1–2 are Team A, 3–4 Team B),
   and Player or AI for each seat (wizard 1 is always a player). Then each seat picks on the character
