@@ -1834,7 +1834,9 @@ function isHumanSeat(who){
   return twoPlayerMode||who==='p1';
 }
 // Several people share the device: picks are handed over and kept secret
-function passPhone(){ return twoPlayerMode||(multiMode&&!!seatSetup&&seatSetup.filter(st=>st.human).length>1); }
+// Several people still in the duel share the device: picks are handed over and kept secret.
+// A knocked-out player is out — their go is skipped — so this counts only players still standing.
+function passPhone(){ return twoPlayerMode||(multiMode&&!!seatSetup&&activeSeats().filter(isHumanSeat).length>1); }
 
 function beginPickPhase(){
   if(!battleRunning||gameEnded) return;

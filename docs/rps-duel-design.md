@@ -339,11 +339,12 @@ Free-for-all first; teams (2v2) are supported by the same code. Seats with the s
 - Battle screen: a row of HUD cards (portrait, HP, mana, ward; "OUT" when knocked out) replaces the
   two big HUDs. The wizards stand in a row across the arena at a smaller size, team-mates side by side,
   each with a name tag; the left half faces right and the right half faces left.
+- A knocked-out player is out: their go is skipped (no hand-off, no reveal card) and they watch. Once
+  only one player is left standing among the people at the table, the phone stops being handed over.
 - End screen: the winner (or "Team A Wins!"), then placings by when each wizard was knocked out
   (same round = same place).
 
 **Still to do:**
-- what a knocked-out player sees for the rest of the game (today they just watch)
 - protection aimed at an ally in team games
 - kingmaking counter-play (Greater strikes hitting every foe already make ganging up harder)
 - no balance passes for 3–4 players: too many variables
