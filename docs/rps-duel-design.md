@@ -143,7 +143,7 @@ so each spell's numbers can be tuned there.
 | Malachar | 💀 Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 45% of HP damage |
 | Sylvara | 💚 Regen | 🛡 Protection | 👊 Physical | Enchantment (self) | 2 / 4 / 6 | Heal 5 a round for 4 rounds |
 | Sylvara | 🌿 Entangle | ✦ Dispel | 👊 Physical | Curse (foe) | 1 / 2 / 3 | 55%: foe can't pick Damage next round |
-| Sylvara | 🌱 Vine Whip | ⚔️ Damage | 👊 Physical | Strike | 2 / 4 / 6 | 10 physical + vines 4 a round × 3 |
+| Sylvara | 🌱 Vine Whip | ⚔️ Damage | 👊 Physical | Strike | 2 / 4 / 6 | 10 physical + vines 3 a round × 3 |
 | Aurelia | 🔮 Foresight | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | The next strike within 3 rounds does nothing |
 | Aurelia | ⏳ Time Drain | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | Foe gains 2 less mana a round × 3 |
 | Aurelia | ⏪ Rewind | 🛡 Protection | 🌀 Arcane | Ward | 4 / 7 / 11 | Arcane ward of 25 + heal what you lost last round (max 20) |
@@ -159,7 +159,7 @@ so each spell's numbers can be tuned there.
 | Zacharius | 🔋 Galvanize | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 1 / 2 / 3 | Next Lightning strike +60% |
 | Zacharius | 🌩️ Chain Lightning | ⚔️ Damage | ⚡ Lightning | Strike | 3 / 5 / 8 | 14 lightning; 35% to arc for 8 more |
 | Zacharius | 💡 Conductivity | ✦ Dispel | ⚡ Lightning | Curse (foe) | 2 / 3 / 5 | Foe takes +35% damage × 3 rounds |
-| Mary | 💛 Heal | 🛡 Protection | 🌀 Arcane | Instant | 4 / 6 / 10 | Heal 19 now |
+| Mary | 💛 Heal | 🛡 Protection | 🌀 Arcane | Instant | 4 / 6 / 10 | Heal 21 now |
 | Mary | ✨ Purge | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Remove your curses and heal 8 |
 | Mary | ☀️ Radiant | ⚔️ Damage | 🌀 Arcane | Strike | 2 / 4 / 6 | 12 holy; burns 2 mana |
 | Mordant | 💀 Agony | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: foe takes 8 whenever they cast |
@@ -181,7 +181,7 @@ so each spell's numbers can be tuned there.
 | Valdris | 🩸 Necrotic Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 40% of HP damage |
 | Valdris | 🔧 Reinforce | 🛡 Protection | 👊 Physical | Ward | 3 / 5 / 8 | Physical ward of 20 +12 per skeleton |
 | Mirel | 🪞 Simulacrum | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | Simulacrum (max 2) for 4 rounds: 4 a round |
-| Mirel | 🪄 Bewitch | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | Foe's next strike within 2 rounds hits themselves |
+| Mirel | 🪄 Bewitch | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Foe's next strike within 2 rounds hits themselves |
 | Mirel | 🗡️ Feint | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 11 arcane; burns 2 mana |
 | Thessaly | 🌀 Enthral | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Foe can't pick Protection next round |
 | Thessaly | 🌟 Arcane Weave | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 1 / 2 / 3 | Next 3 strikes +8 and burn 3 mana |
