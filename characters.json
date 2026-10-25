@@ -743,9 +743,10 @@
           "tier": 1,
           "action": {
             "type": "siphon",
-            "amt": 4
+            "amt": 3
           },
-          "desc": "Steal 4 mana"
+          "desc": "Steal 3 mana as the round begins, before they pay",
+          "quick": true
         }
       },
       {

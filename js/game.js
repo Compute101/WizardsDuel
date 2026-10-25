@@ -58,6 +58,9 @@ let retryCountdownId=null;
 
 // ── 2 PLAYER MODE ─────────────────────────────────────────
 let twoPlayerMode=false;
+// 3–4 wizard duels on one device: multiSetup is chosen on the setup screen, multiPicks on the character screen
+let multiMode=false, multiPicks=[];
+const multiSetup={n:4, format:'ffa', human:[true,true,false,false]};
 let twoPlayerPhase=1; // 1=p1 picking, 2=p2 picking
 let matchRound=0;
 let p1MatchWins=0, p2MatchWins=0;
@@ -66,6 +69,14 @@ let p1MatchWins=0, p2MatchWins=0;
 // Seats in pick order. Everything round-based (picking, reveal, ticks, resolution)
 // iterates this list so 3–4 player duels only need more seats here.
 const PLAYERS=['p1','p2'];
+// A 3–4 seat duel: [{who,key,team}]. null = the usual two seats from the p1 / p2 picks.
+// Seats sharing a team are allies; with no team every seat fights alone (free-for-all).
+let seatSetup=null;
+function setupSeats(list){
+  seatSetup=list?list.map((st,i)=>Object.assign({who:'p'+(i+1)},st)):null;
+  PLAYERS.length=0;
+  (seatSetup||[{who:'p1'},{who:'p2'}]).forEach(st=>PLAYERS.push(st.who));
+}
 let _rng=Math.random;       // replaceable RNG for deterministic replay
 let deferWinCheck=false;    // suppress checkWin during double-KO resolution
 let pendingWin=null;        // {won} accumulated during deferred win check
@@ -75,22 +86,26 @@ let trainingMode=false;
 let trainingAI=true;
 let trainingPickPhase=null; // 'p1' or 'p2' — which side is being chosen
 
-function newSeat(cfg){
-  return {hp:cfg.hp, maxHp:cfg.hp, mana:ELEM_START_MANA,
+function newSeat(cfg,key){
+  return {key, cfg, hp:cfg.hp, maxHp:cfg.hp, mana:ELEM_START_MANA,
     shield:0, shieldHp:0, shieldType:null, wardRetaliate:0, wardSig:null,   // ward (shield = rounds left)
     effects:[], usedSig:{}, lastElem:null, lastCat:null, lastLockedRound:null, lastRoundLoss:0,
     blades:0, skeletons:[], simulacra:[]};   // minion counts mirrored for drawWiz
 }
 function newState(){
   gs={
-    p1:newSeat(p1Cfg),
-    p2:newSeat(p2Cfg),
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
     parts:[], floats:[], projs:[], beams:[], manaBurnFires:[],
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
+  const seats=seatSetup||[{who:'p1',cfg:p1Cfg,key:p1Key},{who:'p2',cfg:p2Cfg,key:p2Key}];
+  seats.forEach(st=>{
+    gs[st.who]=newSeat(st.cfg||CHAR_DEFS[st.key],st.key);
+    gs[st.who].team=st.team||st.who;
+    if(gs[st.who+'anim']==null){ gs[st.who+'anim']='idle'; gs[st.who+'xOff']=0; }
+  });
 }
 
 // ── SCREENS ────────────────────────────────────────────────
@@ -247,8 +262,7 @@ function drawBG_moonlight(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(138,58,170,0.38)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_hellfire(){
@@ -273,8 +287,7 @@ function drawBG_hellfire(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(200,50,20,0.5)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_forest(){
@@ -304,8 +317,7 @@ function drawBG_forest(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(44,120,60,0.4)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_dawn(){
@@ -335,8 +347,7 @@ function drawBG_dawn(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(200,120,30,0.5)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_storm(){
@@ -367,8 +378,7 @@ function drawBG_storm(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(150,130,80,0.4)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_astral(){
@@ -400,8 +410,7 @@ function drawBG_astral(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(120,60,200,0.45)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 const BG_EMBER_X=[40,100,170,240,320,390,450,70,200,420,130,310];
@@ -429,8 +438,7 @@ function drawBG_embers(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle='rgba(200,80,20,0.5)'; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_winter(){
@@ -460,8 +468,7 @@ function drawBG_winter(){
       bx.lineTo(bW*cx2+Math.cos(a)*bW*cr,bH*cy2+Math.sin(a)*bH*cr*0.6); bx.stroke();
     }
   });
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_arc(){
@@ -510,8 +517,7 @@ function drawBG_arc(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.72,bW,bH*.28);
   bx.strokeStyle=`rgba(170,255,68,${0.25+0.1*Math.sin(t/400)})`; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.72); bx.lineTo(bW,bH*.72); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_abyss(){
@@ -545,8 +551,7 @@ function drawBG_abyss(){
   bx.fillStyle=gg; bx.fillRect(0,bH*.68,bW,bH*.32);
   bx.strokeStyle=`rgba(153,68,204,${0.22+0.1*Math.sin(t/700)})`; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.68); bx.lineTo(bW,bH*.68); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_holy(){
@@ -590,8 +595,7 @@ function drawBG_holy(){
   // Ground horizon line
   bx.strokeStyle=`rgba(240,210,120,${0.2+0.08*Math.sin(t/1800)})`; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.65); bx.lineTo(bW,bH*.65); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 function drawBG_stone(){
@@ -625,8 +629,7 @@ function drawBG_stone(){
   // Horizon line
   bx.strokeStyle=`rgba(176,128,64,${0.18+0.06*Math.sin(t/2200)})`; bx.lineWidth=1;
   bx.beginPath(); bx.moveTo(0,bH*.68); bx.lineTo(bW,bH*.68); bx.stroke();
-  runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-  if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+  seatRunes();
 }
 
 // ── SPRITESHEET CONFIG ─────────────────────────────────────
@@ -661,20 +664,25 @@ const sprites={p1:null,p2:null};
 const spriteStatus={p1:'loading',p2:'loading'};
 
 function loadSprites(){
-  sprites.p1=null; sprites.p2=null;
-  spriteStatus.p1='loading'; spriteStatus.p2='loading';
-  const img1=new Image();
-  img1.onload =()=>{sprites.p1=img1; spriteStatus.p1='ready';};
-  img1.onerror=()=>{spriteStatus.p1='failed';};
-  img1.src=p1Cfg.sprite;
-  if(p2Cfg){
-    const img2=new Image();
-    img2.onload =()=>{sprites.p2=img2; spriteStatus.p2='ready';};
-    img2.onerror=()=>{spriteStatus.p2='failed';};
-    img2.src=p2Cfg.sprite;
-  } else {
-    spriteStatus.p2='failed';
+  const seats=seatSetup?seatSetup.map(st=>[st.who,CHAR_DEFS[st.key]]):[['p1',p1Cfg],['p2',p2Cfg]];
+  ['p1','p2','p3','p4'].forEach(w=>{ sprites[w]=null; spriteStatus[w]='failed'; });
+  seats.forEach(([w,cfg])=>{
+    if(!cfg) return;
+    spriteStatus[w]='loading';
+    const img=new Image();
+    img.onload =()=>{sprites[w]=img; spriteStatus[w]='ready';};
+    img.onerror=()=>{spriteStatus[w]='failed';};
+    img.src=cfg.sprite;
+  });
+}
+// Each seat's rune circle on the arena floor
+function seatRunes(){
+  if(PLAYERS.length<=2||!gs[PLAYERS[0]]){
+    runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
+    if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+    return;
   }
+  PLAYERS.forEach(w=>runeRing(seatX(w),bH*.83,20,`rgba(${hexToRgb(seatCfg(w).col)},0.13)`));
 }
 
 const animState={p1:{frame:0,timer:0},p2:{frame:0,timer:0}};
@@ -682,7 +690,7 @@ const FRAME_MS=180;
 const ANIM_FRAMES={idle:3,cast:4,hit:2,shield:2,death:4};
 
 function tickAnimFrame(who,dt){
-  const a=animState[who];
+  const a=animState[who]||(animState[who]={frame:0,timer:0});
   a.timer+=dt;
   if(a.timer>=FRAME_MS){
     a.timer-=FRAME_MS;
@@ -1373,27 +1381,32 @@ function battleLoop(ts){
   requestAnimationFrame(battleLoop);
   const dt=lastFrameTime?Math.min(ts-lastFrameTime,100):16;
   lastFrameTime=ts;
-  tickAnimFrame('p1',dt);
-  tickAnimFrame('p2',dt);
+  PLAYERS.forEach(w=>tickAnimFrame(w,dt));
   resizeBC();
   bx.setTransform(1,0,0,1,0,0);
   bx.save(); bx.translate(0,bOffY); drawBG(); bx.restore();
   fillSceneBands();
   bx.setTransform(1,0,0,1,0,bOffY);   // everything else draws in scene coordinates
-  const gy=bH*.74, wsz=bH*.3;
+  const many=PLAYERS.length>2, gy=bH*.74, wsz=bH*.3*(many?.68:1);
   PLAYERS.forEach(w=>{
     const st=gs[w], hasFx=id=>st.effects.some(e=>e.id===id);
-    drawWiz(seatX(w)+(gs[w+'xOff']||0),gy,wsz,seatCfg(w).col,w==='p1',gs[w+'anim'],
+    drawWiz(seatX(w)+(gs[w+'xOff']||0),gy,wsz,seatCfg(w).col,seatFacesRight(w),gs[w+'anim'],
       hasWard(st),hasFx('ward'),w,hasFx('foresight'),wizVisuals(st));
+    if(many){   // name tags, so everyone can tell the wizards apart
+      bx.globalAlpha=st.out?.35:.9; bx.fillStyle=seatCfg(w).col;
+      bx.font='bold 9px Cinzel,serif'; bx.textAlign='center';
+      bx.fillText(seatCfg(w).name,seatX(w),gy+bH*.05);
+      bx.globalAlpha=1;
+    }
   });
   tickProjs(); tickBeams(); tickManaBurnFire(); tickParts(); tickFloats();
-  if(!gs.myTurn&&!gs.busy&&!twoPlayerMode){
+  if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
-    bx.textAlign='center'; bx.fillText(p2Cfg.name+' IS CASTING…',bW*.5,bH*.56);
+    bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.56);
   }
-  if(twoPlayerMode&&gs.myTurn){
-    const twoCfg=gs.turnPlayer==='p1'?p1Cfg:p2Cfg;
-    const twoNum=gs.turnPlayer==='p1'?1:2;
+  if(passPhone()&&gs.myTurn){
+    const twoCfg=seatCfg(gs.turnPlayer);
+    const twoNum=PLAYERS.indexOf(gs.turnPlayer)+1;
     bx.fillStyle=`rgba(${hexToRgb(twoCfg.col)},0.75)`;
     bx.font='bold 9px Cinzel,serif'; bx.textAlign='center';
     bx.fillText('PLAYER '+twoNum+' — YOUR TURN',bW*.5,bH*.57);
@@ -1404,6 +1417,7 @@ function battleLoop(ts){
 
 // ── HUD ────────────────────────────────────────────────────
 function refreshHUD(){
+  if(PLAYERS.length>2){ refreshMultiHUD(); refreshActionBar(); return; }
   document.getElementById('p1hpf').style.height=Math.max(0,gs.p1.hp/gs.p1.maxHp*100)+'%';
   document.getElementById('p2hpf').style.height=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
   document.getElementById('sh1').style.opacity=hasWard(gs.p1)?'1':'0.18';
@@ -1423,6 +1437,31 @@ function refreshHUD(){
   refreshMana('mfill1','mval1',gs.p1.mana);
   refreshMana('mfill2','mval2',gs.p2.mana);
   refreshActionBar();
+}
+
+// 3–4 wizards: one compact card per seat (built by buildMultiHUD when the duel starts)
+function buildMultiHUD(){
+  document.getElementById('mhud').innerHTML=PLAYERS.map(w=>{
+    const cfg=seatCfg(w), team=seatSetup&&seatSetup.find(st=>st.who===w).team;
+    return `<div class="mh-card" id="mh-${w}" style="--mh-col:${cfg.col}">`+
+      `<img class="mh-img" src="portraits/${seatKey(w)}.png" alt=""><span class="mh-name">${cfg.name}</span>`+
+      (team?`<span class="mh-team">Team ${team}</span>`:'')+
+      `<div class="mh-bar mh-hp"><div class="mh-fill"></div></div><div class="mh-bar mh-mana"><div class="mh-fill"></div></div>`+
+      `<div class="mh-nums"><span class="mh-hpn"></span><span class="mh-mn"></span><span class="mh-ward"></span></div></div>`;
+  }).join('');
+}
+function refreshMultiHUD(){
+  PLAYERS.forEach(w=>{
+    const card=document.getElementById('mh-'+w), st=gs[w];
+    if(!card) return;
+    card.classList.toggle('out',!!st.out);
+    card.classList.toggle('turn',gs.myTurn&&gs.turnPlayer===w);
+    card.querySelector('.mh-hp .mh-fill').style.width=Math.max(0,st.hp/st.maxHp*100)+'%';
+    card.querySelector('.mh-mana .mh-fill').style.width=(st.mana/MAX_MANA*100)+'%';
+    card.querySelector('.mh-hpn').textContent='❤'+st.hp;
+    card.querySelector('.mh-mn').textContent='✦'+st.mana;
+    card.querySelector('.mh-ward').textContent=hasWard(st)?'🛡'+st.shieldHp:'';
+  });
 }
 
 function refreshMana(fillId,valId,val){
@@ -1451,11 +1490,10 @@ function refreshActionBar(){
 
 
 // ── DEATHLESS (Valdris passive) ────────────────────────────
+// Any seat whose character has a deathlessCost survives a killing blow by paying that much mana
 function checkDeathless(who,x,y){
-  const state=gs[who];
-  const key=who==='p1'?p1Key:p2Key;
-  if(key!=='valdris') return;
-  const cost=(who==='p1'?p1Cfg:p2Cfg).deathlessCost||6;
+  const state=gs[who], cost=seatCfg(who).deathlessCost;
+  if(!cost) return;
   if(state.hp<=0&&state.mana>=cost){
     state.mana=Math.max(0,state.mana-cost);
     state.hp=1;
@@ -1523,8 +1561,8 @@ function tickBeams(){
 // Step toward the foe and back (melee strikes)
 function lunge(who,amt,cb){
   if(simMode){ if(cb) cb(); return; }
-  const dir=who==='p1'?1:-1;
-  gs[who+'xOff']=dir*bW*amt;
+  const dir=seatFacesRight(who)?1:-1;
+  gs[who+'xOff']=dir*bW*amt*(PLAYERS.length>2?.5:1);
   anim(who,'cast',300);
   setTimeout(()=>{ gs[who+'xOff']=0; if(cb) cb(); },180);
 }
@@ -1747,10 +1785,46 @@ function vfxCtx(who,tgt,extra){
 // Every round: each seat picks in secret → all picks are revealed together →
 // the round resolves on the shared screen → round-end ticks → next pick phase.
 
-function seatCfg(who){ return who==='p1'?p1Cfg:p2Cfg; }
-function seatKey(who){ return who==='p1'?p1Key:p2Key; }
-function seatX(who){ return who==='p1'?bW*.22:bW*.78; }
-function isHumanSeat(who){ return twoPlayerMode||who==='p1'; }
+// A seat carries its own character once the duel starts; before that, fall back to the picks
+function seatCfg(who){ return (gs&&gs[who]&&gs[who].cfg)||(who==='p1'?p1Cfg:p2Cfg); }
+function seatKey(who){ return (gs&&gs[who]&&gs[who].key)||(who==='p1'?p1Key:p2Key); }
+// 3–4 seats stand in a row across the arena, team-mates side by side
+function seatX(who){
+  if(PLAYERS.length<=2) return who==='p1'?bW*.22:bW*.78;
+  const order=PLAYERS.slice().sort((a,b)=>String(seatTeam(a)).localeCompare(String(seatTeam(b)))||PLAYERS.indexOf(a)-PLAYERS.indexOf(b));
+  return bW*(0.13+0.74*order.indexOf(who)/(PLAYERS.length-1));
+}
+function seatFacesRight(who){ return PLAYERS.length<=2?who==='p1':seatX(who)<bW*.5; }
+// Teams and targets. A seat knocked out of a 3–4 seat duel is `out` and takes no further part.
+function seatTeam(who){ return (gs[who]&&gs[who].team)||who; }
+function activeSeats(){ return PLAYERS.filter(w=>gs[w]&&!gs[w].out); }
+function foesOf(who){ return activeSeats().filter(w=>seatTeam(w)!==seatTeam(who)); }
+function alliesOf(who){ return activeSeats().filter(w=>w!==who&&seatTeam(w)===seatTeam(who)); }
+// Does this pick aim at a foe? Strikes, dispels, curses and Mana Siphon do; wards, buffs and heals don't.
+function needsTarget(who,action){
+  if(action.self||action.cat==='pass') return false;
+  const sp=action.sig&&sigById(who,action.sig);
+  if(!sp) return action.cat==='damage'||action.cat==='dispel';
+  return sp.el.kind==='strike'||sp.el.kind==='curse'||!!(sp.el.action&&sp.el.action.type==='siphon');
+}
+// The foe with the least HP (ties go to a random one, so no seat is everyone's default)
+function weakestFoe(who){
+  const foes=foesOf(who);
+  if(foes.length<=1) return foes[0];
+  const low=Math.min(...foes.map(w=>gs[w].hp)), tied=foes.filter(w=>gs[w].hp===low);
+  return tied[Math.floor(_rng()*tied.length)];
+}
+// Minions attack whoever their owner last aimed at, else the weakest foe
+function minionTarget(owner){
+  const last=gs[owner].lastTarget;
+  return foesOf(owner).includes(last)?last:weakestFoe(owner);
+}
+function isHumanSeat(who){
+  if(seatSetup&&multiMode) return !!seatSetup.find(st=>st.who===who).human;
+  return twoPlayerMode||who==='p1';
+}
+// Several people share the device: picks are handed over and kept secret
+function passPhone(){ return twoPlayerMode||(multiMode&&!!seatSetup&&seatSetup.filter(st=>st.human).length>1); }
 
 function beginPickPhase(){
   if(!battleRunning||gameEnded) return;
@@ -1761,12 +1835,12 @@ function beginPickPhase(){
 // Hand over to the next seat that hasn't picked; reveal once everyone has.
 function promptNextPicker(){
   if(!battleRunning||gameEnded) return;
-  const who=PLAYERS.find(w=>!gs.pending[w]);
+  const who=activeSeats().find(w=>!gs.pending[w]);
   if(!who){ showReveal(); return; }
   if(!isHumanSeat(who)){
     gs.pending[who]=aiChooseSync(who);
     promptNextPicker();
-  } else if(twoPlayerMode){
+  } else if(passPhone()){
     showHandoffOverlay(who,()=>startPlayerTurn(who));
   } else {
     startPlayerTurn(who);
@@ -1784,7 +1858,7 @@ function commitPick(who,action){
   gs.pending[who]=action;
   gs.myTurn=false; gs.busy=true;
   // Short beat so the picker sees their choice register before the handoff covers it
-  setTimeout(promptNextPicker,twoPlayerMode?500:0);
+  setTimeout(promptNextPicker,passPhone()?500:0);
 }
 
 function describeAction(who,action){ return describeElemAction(action,who); }
@@ -1797,15 +1871,17 @@ function showReveal(){
   const overlay=document.getElementById('reveal-overlay');
   const cards=document.getElementById('rv-cards');
   const btn=document.getElementById('rv-btn');
-  cards.innerHTML=PLAYERS.map((who,i)=>{
-    const cfg=seatCfg(who), d=describeAction(who,gs.pending[who]);
-    const label=twoPlayerMode?'Player '+(i+1):cfg.name;
+  cards.innerHTML=activeSeats().map(who=>{
+    const cfg=seatCfg(who), act=gs.pending[who], d=describeAction(who,act);
+    const label=!passPhone()?cfg.name:isHumanSeat(who)?'Player '+(PLAYERS.indexOf(who)+1):cfg.name+' (AI)';
+    // With more than one foe, say who each spell is aimed at
+    const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${hitsAllFoes(who,act)?'All foes':seatCfg(act.target).name}</span>`:'';
     return `<div class="rv-card" style="--rv-col:${cfg.col}"><div class="rv-inner">`+
       `<div class="rv-face rv-back"><img class="rv-portrait" src="portraits/${seatKey(who)}.png" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
-      `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span><span class="rv-name">${label}</span></div>`+
+      `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}<span class="rv-name">${label}</span></div>`+
       `</div></div>`;
   }).join('');
-  overlay.classList.toggle('rv-quick',!twoPlayerMode);
+  overlay.classList.toggle('rv-quick',!passPhone());
   overlay.classList.add('active');
 
   let fightTid=null, started=false;
@@ -1823,10 +1899,10 @@ function showReveal(){
     btn.textContent='⚔ Fight!';
     btn.onclick=fight;
     overlay.onclick=fight;
-    fightTid=setTimeout(fight,twoPlayerMode?3500:1800);
+    fightTid=setTimeout(fight,passPhone()?3500:1800);
   };
   overlay.onclick=null;
-  if(twoPlayerMode){
+  if(passPhone()){
     document.getElementById('rv-title').textContent='All Spells Chosen';
     document.getElementById('rv-sub').textContent='Place the phone where every wizard can see';
     btn.textContent='✨ Reveal!';
@@ -1843,14 +1919,19 @@ function showReveal(){
 // (lower acts first); actions within a tier are simultaneous, so win checks wait
 // until the whole tier has acted (double KO → draw).
 function resolveSimRound(){
-  if(PLAYERS.some(w=>!gs.pending[w])) return;
+  if(activeSeats().some(w=>!gs.pending[w])) return;
   const acts=gs.pending;
   gs.pending={};
   gs.myTurn=false; gs.busy=true;
-  PLAYERS.forEach(w=>{ gs[w].hpAtRoundStart=gs[w].hp; });
+  const seatsIn=activeSeats();
+  seatsIn.forEach(w=>{ gs[w].hpAtRoundStart=gs[w].hp; });
+  // Quick spells (Mana Siphon) are paid and steal first, so their target pays from what's left
+  const isQuick=w=>{ const a=acts[w], sp=a.sig&&sigById(w,a.sig); return !!(sp&&sp.el.quick); };
+  seatsIn.filter(isQuick).forEach(w=>{ payForAction(w,acts[w]); if(acts[w].outcome==='cast') quickSteal(w,acts[w]); });
+  seatsIn.filter(w=>!isQuick(w)).forEach(w=>payForAction(w,acts[w]));
 
   const tiers=[];
-  PLAYERS.forEach(who=>{
+  seatsIn.forEach(who=>{
     const pri=actionPriority(acts[who]);
     let tier=tiers.find(t=>t.pri===pri);
     if(!tier){ tier={pri,seats:[]}; tiers.push(tier); }
@@ -1875,6 +1956,7 @@ function resolveSimRound(){
         return;
       }
       const who=seats[si++];
+      if(gs[who].out){ next(); return; }   // knocked out earlier this round
       executeElemental(who,acts[who],next);
     };
     next();
@@ -1891,8 +1973,8 @@ function tickRound(who){
 
 function runRoundTicks(){
   deferWinCheck=true;
-  PLAYERS.forEach(tickRound);
-  PLAYERS.forEach(w=>{ const st=gs[w]; st.lastRoundLoss=Math.max(0,(st.hpAtRoundStart??st.hp)-st.hp); });
+  activeSeats().forEach(tickRound);
+  activeSeats().forEach(w=>{ const st=gs[w]; st.lastRoundLoss=Math.max(0,(st.hpAtRoundStart??st.hp)-st.hp); });
   settleWin();
 }
 
@@ -1965,7 +2047,7 @@ const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane',
 // Elements a character can't cast at all (characters.json "forbidden"): their sectors are locked
 // on every wheel. Never one of the character's own signature sectors.
 function elemForbidden(who,elem){ return (seatCfg(who).forbidden||[]).includes(elem); }
-function foesCantCast(who,elem){ return PLAYERS.filter(w=>w!==who).every(w=>elemForbidden(w,elem)); }
+function foesCantCast(who,elem){ return foesOf(who).every(w=>elemForbidden(w,elem)); }
 function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS[3]; }
 function hasWard(st){ return st.shield>0&&st.shieldHp>0; }
 
@@ -2181,14 +2263,59 @@ function castElemental(cat,elemId,tier,self){
   if(sp){ castSignature(sp.id,tier); return; }
   if(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)||(!self&&elemForbidden(who,elemId))) return;
   const el=elemById(elemId);
-  const target=self?who:PLAYERS.find(w=>w!==who);   // 3–4 seats: target picker goes here
   const spell={name:describeElemAction({cat,elem:elemId,tier,self}).name, icon:el.icon,
     element:elemId, col:el.col, tier, glyphs:cat==='damage'?ELEM_GLYPHS[elemId]:undefined};
-  const commit=ok=>commitPick(who,{type:'el',cat,elem:elemId,tier,self,target,ok});
+  const commit=ok=>chooseTarget(who,{type:'el',cat,elem:elemId,tier,self,ok});
   gs.busy=true;
   if(cat==='protect') launchBuffTileMatch(spell,ELEM_WARD_THEME[elemId],who,ok=>commit(ok));
   else if(cat==='dispel') launchDispelPattern(spell,commit);
   else ELEM_MINIGAME[elemId](spell,commit);
+}
+
+// A Greater (outer ring) strike hits every foe once there's more than one
+const ELEM_GREATER_HITS_ALL_TIER=3;
+function hitsAllFoes(who,action){
+  return action.cat==='damage'&&needsTarget(who,action)&&action.tier>=ELEM_GREATER_HITS_ALL_TIER&&foesOf(who).length>1;
+}
+// Who a strike lands on: its target, then (for a Greater strike) every other foe
+function strikeTargets(who,action){
+  const foes=foesOf(who);
+  if(!hitsAllFoes(who,action)||!foes.includes(action.target)) return [action.target];
+  return [action.target].concat(foes.filter(w=>w!==action.target));
+}
+// Extra projectiles, for show, toward every target after the first
+function fanOut(who,tgts,proj,col){
+  const x=seatX(who), y=bH*.38;
+  tgts.slice(1).forEach(t=>spawnProj(x,y,seatX(t),y,proj,col,()=>{}));
+}
+
+// After the ritual: with more than one foe, the picker taps who the spell is aimed at
+function chooseTarget(who,action){
+  const foes=foesOf(who);
+  const done=t=>{ action.target=t; commitPick(who,action); };
+  if(action.self) done(who);
+  else if(!action.ok||!needsTarget(who,action)||foes.length<=1) done(foes[0]);
+  else if(hitsAllFoes(who,action)) done(weakestFoe(who));   // no need to choose: it hits them all
+  else showTargetPicker(who,foes,done);
+}
+function showTargetPicker(who,foes,cb){
+  let ov=document.getElementById('target-overlay');
+  if(!ov){
+    ov=document.createElement('div'); ov.id='target-overlay';
+    ov.innerHTML='<div class="tg-box"><div class="tg-title">Choose a target</div><div class="tg-list"></div></div>';
+    document.body.appendChild(ov);
+  }
+  ov.querySelector('.tg-list').innerHTML=foes.map(w=>{
+    const st=gs[w], cfg=seatCfg(w), el=st.shieldType&&elemById(st.shieldType);
+    const ward=hasWard(st)?`<span class="tg-ward">🛡 ${el.icon} ${st.shieldHp}</span>`:'';
+    const ban=(cfg.forbidden||[]).map(id=>elemById(id).icon).join('');
+    return `<button class="tg-foe" data-who="${w}" style="--tg-col:${cfg.col}">`+
+      `<img src="portraits/${seatKey(w)}.png" alt=""><span class="tg-name">${cfg.name}</span>`+
+      `<span class="tg-hp">❤ ${st.hp} / ${st.maxHp}</span>${ward}`+
+      (ban?`<span class="tg-ban">⛔ ${ban}</span>`:'')+`</button>`;
+  }).join('');
+  ov.querySelectorAll('.tg-foe').forEach(b=>b.onclick=()=>{ ov.classList.remove('show'); cb(b.dataset.who); });
+  ov.classList.add('show');
 }
 
 function castSignature(id,tier){
@@ -2197,7 +2324,7 @@ function castSignature(id,tier){
   const el=sp.el, elemId=el.elem||'arcane', e=elemById(elemId);
   const spell={name:ELEM_TIER_NAMES[tier-1]+sigName(sp), icon:sigIcon(sp), element:elemId, col:e.col, tier,
     glyphs:el.kind==='strike'?ELEM_GLYPHS[elemId]:undefined};
-  const commit=ok=>commitPick(who,{type:'el',cat:el.cat,elem:elemId,tier,sig:id,target:PLAYERS.find(w=>w!==who),ok});
+  const commit=ok=>chooseTarget(who,{type:'el',cat:el.cat,elem:elemId,tier,sig:id,ok});
   gs.busy=true;
   if(el.cat==='dispel') launchDispelPattern(spell,commit);
   else if(el.kind==='strike') ELEM_MINIGAME[elemId](spell,commit);
@@ -2216,28 +2343,43 @@ function elemHeal(who,n,icon){
   if(st.hp>before) addFloat(seatX(who),bH*.42,'+'+(st.hp-before)+' '+(icon||'💚'),'#44ee88',12);
 }
 
+// Every seat pays for its pick as the round begins, before anything resolves: the picks were
+// simultaneous, so nobody's mana can be burned or drained before they pay. Sets action.outcome.
+function payForAction(who,action){
+  const st=gs[who];
+  if(action.cat==='pass') return;
+  const sp=action.sig?sigById(who,action.sig):null;
+  const cost=sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
+  const silence=effectsOf(st,'silence')[0];
+  if(!action.ok){ st.mana=Math.max(0,st.mana-1); action.outcome='fizzle'; }
+  else if(silence&&_rng()<silence.pct) action.outcome='silenced';
+  else if(cost>st.mana) action.outcome='nomana';
+  else { st.mana-=cost; action.outcome='cast'; }
+}
+function quickSteal(who,action){
+  const a=sigAtTier(sigById(who,action.sig),action.tier).action, ts=gs[action.target], st=gs[who];
+  if(!a||a.type!=='siphon') return;
+  const n=Math.min(ts.mana,a.amt);
+  ts.mana-=n; st.mana=Math.min(MAX_MANA,st.mana+n);
+  action.stolen=n;
+}
 function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
   const sp=action.sig?sigById(who,action.sig):null;
-  const cost=sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
+  // A foe knocked out earlier in the round: the spell goes to another foe instead
+  if(action.target&&action.target!==who&&gs[action.target].out){
+    const t=weakestFoe(who);
+    if(t) action.target=t;
+  }
+  if(action.target&&action.target!==who&&needsTarget(who,action)) st.lastTarget=action.target;
 
   const agony=effectsOf(st,'agony')[0];
   if(agony){ elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); }
-  if(!action.ok){
-    addFloat(x,bH*.33,'Fizzled!','#ff8844',13);
-    st.mana=Math.max(0,st.mana-1);
-    combatTimeout(cb,700);
-    return;
-  }
-  const silence=effectsOf(st,'silence')[0];
-  if(silence&&_rng()<silence.pct){
-    showSilenceBlock(x,bH*.33);
-    combatTimeout(cb,900);
-    return;
-  }
-  if(cost>st.mana){ addFloat(x,bH*.33,'Out of mana!','#ff8844',13); combatTimeout(cb,700); return; }
-  st.mana-=cost;
+  // Paid (or not) when the round began — see payForAction
+  if(action.outcome==='fizzle'){ addFloat(x,bH*.33,'Fizzled!','#ff8844',13); combatTimeout(cb,700); return; }
+  if(action.outcome==='silenced'){ showSilenceBlock(x,bH*.33); combatTimeout(cb,900); return; }
+  if(action.outcome==='nomana'){ addFloat(x,bH*.33,'Out of mana!','#ff8844',13); combatTimeout(cb,700); return; }
   anim(who,'cast',600);
   st.lastCat=action.cat;   // what Spellbind targets
   if(sp){
@@ -2271,9 +2413,11 @@ function executeWheel(who,action,cb){
   }
   const tgt=action.target, tx=seatX(tgt);
   if(action.cat==='damage') st.lastElem=action.elem;
+  const tgts=action.cat==='damage'?strikeTargets(who,action):[tgt];
+  fanOut(who,tgts,ELEM_PROJ[action.elem],el.col);
   spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,()=>{
     if(action.cat==='dispel') elemDispelHit(tgt,action.elem,power,action.tier);
-    else elemStrike(who,tgt,{elem:action.elem,tier:action.tier,power});
+    else elemStrike(who,tgts,{elem:action.elem,tier:action.tier,power});
     combatTimeout(cb,600);
   });
 }
@@ -2288,17 +2432,18 @@ function executeSignature(who,sp,action,cb){
     st.lastElem=el.elem;
     let power=el.power||0;
     if(el.variance) power=el.variance[0]+Math.round(_rng()*(el.variance[1]-el.variance[0]));
-    if(el.pctHp) power=Math.max(power,Math.round(ts.hp*el.pctHp));
+    const tgts=strikeTargets(who,action);
     const blades=countMinions(st,'blade');
     if(el.perBlade){
       power=el.perBlade*blades;
       removeEffects(who,effectsOf(st,'minion').filter(m=>m.minion==='blade'),'Launched');
     }
+    fanOut(who,tgts,ELEM_PROJ[el.elem],e.col);
     const d=fx.delivery;
     // A volley's own per-projectile effects stand in for the default impact burst
     const vfx=fx.hit||(d&&d.volley?()=>{}:null);
     const land=()=>{
-      elemStrike(who,tgt,Object.assign({},el,{power,name:sigName(sp),vfx}));
+      elemStrike(who,tgts,Object.assign({},el,{power,name:sigName(sp),vfx}));
       combatTimeout(cb,600);
     };
     if(d==='lunge'){ lunge(who,0.12,land); return; }
@@ -2361,8 +2506,9 @@ function executeSignature(who,sp,action,cb){
   else if(a.type==='cleanse'){ elemCleanse(who); if(a.heal) elemHeal(who,a.heal); }
   else if(a.type==='rewind'){ elemHeal(who,Math.min(a.max,st.lastRoundLoss||0),'⏪'); if(!st.lastRoundLoss) addFloat(x,bH*.3,'⏪ Nothing to undo','#cccccc',12); }
   else if(a.type==='siphon'){
-    const n=Math.min(ts.mana,a.amt);
-    ts.mana-=n; st.mana=Math.min(MAX_MANA,st.mana+n);
+    // A quick siphon already stole as the round began (quickSteal); this only shows it
+    const n=action.stolen!=null?action.stolen:Math.min(ts.mana,a.amt);
+    if(action.stolen==null){ ts.mana-=n; st.mana=Math.min(MAX_MANA,st.mana+n); }
     addFloat(tx,bH*.42,'🌀 −'+n+' Mana','#88aaff',12); addFloat(x,bH*.42,'+'+n+' Mana','#88aaff',12);
   }
   else if(a.type==='tonic'){
@@ -2436,25 +2582,35 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet){
 }
 
 // o: {elem,tier,power, lifesteal, dot, manaburn, recoil, arc, name, vfx (signature impact)}
-function elemStrike(who,tgt,o){
+// tgts: one seat, or several — a Greater strike in a 3–4 seat duel hits every foe (strikeTargets).
+// Bewitch, the caster's boosts (Empower, Frenzy, Weave) and recoil apply once for the whole cast.
+function elemStrike(who,tgts,o){
   const st=gs[who];
+  tgts=[].concat(tgts);
   if(takeEffect(st,'bewitch')){
     addFloat(seatX(who),bH*.24,'🪞 Bewitched — it rebounds!','#cc88ff',13);
     VFX.bewitched(who);
-    tgt=who;
+    tgts=[who];
   }
-  const ts=gs[tgt], tx=seatX(tgt), el=elemById(o.elem);
-  let dmg=o.power*(seatCfg(who).dmgMult||1);
+  const b={mult:seatCfg(who).dmgMult||1, bonus:0, burn:o.manaburn||0, emp:false};
   const emp=takeEffect(st,'empower',e=>!e.elem||e.elem===o.elem);
-  if(emp){ dmg*=emp.mult; addFloat(seatX(who),bH*.24,'💪 Empowered!','#ffcc44',11); }
+  if(emp){ b.mult*=emp.mult; b.emp=true; addFloat(seatX(who),bH*.24,'💪 Empowered!','#ffcc44',11); }
   const frenzy=effectsOf(st,'frenzy')[0];
-  if(frenzy){ dmg*=frenzy.mult; elemFloatDmg(who,frenzy.selfDmg,'💢','#dd8822'); }
+  if(frenzy){ b.mult*=frenzy.mult; elemFloatDmg(who,frenzy.selfDmg,'💢','#dd8822'); }
   const weave=effectsOf(st,'weave')[0];
-  let burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+(o.manaburn||0);
   if(weave){
-    dmg+=weave.bonus; burn+=weave.burn;
+    b.bonus+=weave.bonus; b.burn+=weave.burn;
     if(--weave.charges<=0) st.effects=st.effects.filter(e=>e!==weave);
   }
+  tgts.forEach(t=>strikeOne(who,t,o,b));
+  if(o.recoil) elemFloatDmg(who,o.recoil,'💥','#ff6644');
+}
+function strikeOne(who,tgt,o,b){
+  const ts=gs[tgt], tx=seatX(tgt), el=elemById(o.elem);
+  let base=o.power;
+  if(o.pctHp) base=Math.max(base,Math.round(ts.hp*o.pctHp));   // Nyxara: a share of this target's HP
+  let dmg=base*b.mult+b.bonus;
+  const burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+b.burn;
 
   if(tgt!==who){
     const absorb=takeEffect(ts,'absorbNext');
@@ -2475,7 +2631,7 @@ function elemStrike(who,tgt,o){
   const hit=elemIncoming(tgt,dmg,o.elem,el.icon,el.col,true);
   const ctx=vfxCtx(who,tgt);
   if(o.vfx) o.vfx(ctx);
-  else { ELEM_IMPACT_VFX[o.elem](ctx,emp?38:22); vfxStrikeAnim(who,tgt); }
+  else { ELEM_IMPACT_VFX[o.elem](ctx,b.emp?38:22); vfxStrikeAnim(who,tgt); }
   if(hit.hp>0){
     if(o.lifesteal){ elemHeal(who,Math.round(hit.hp*o.lifesteal),'🩸'); VFX.lifesteal(seatX(who)); }
     if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',elem:o.elem,name:o.name||el.name,icon:el.icon},o.dot),who);
@@ -2500,7 +2656,6 @@ function elemStrike(who,tgt,o){
     sources.forEach(r=>{ back+=r.n; const f=VFX.retaliate[r.id]; if(f) f(tx,seatX(who)); });
     if(back>0) elemFloatDmg(who,back,'↩️','#ff8844');
   }
-  if(o.recoil) elemFloatDmg(who,o.recoil,'💥','#ff6644');
 }
 
 // Round-end effects on `who` (Elemental rules): DoTs, regen, the foe's minions, then durations tick down
@@ -2524,7 +2679,7 @@ function elemTickEffects(who){
     elemHeal(who,e.perRound,e.icon);
     (TICK_VFX[e.id]||TICK_VFX.regen)(x,bH*.38);
   });
-  PLAYERS.filter(w=>w!==who).forEach(owner=>{
+  activeSeats().filter(o=>o!==who&&minionTarget(o)===who).forEach(owner=>{
     effectsOf(gs[owner],'minion').forEach(m=>{
       const el=elemById(m.elem||'physical');
       elemIncoming(who,m.dmg,m.elem||'physical',m.icon,el.col,true);
@@ -2542,8 +2697,16 @@ function elemIncome(who){
 
 // ── Elemental AI: a weighted mixed strategy so it can't be read every round ──
 // Would casting this signature spell do anything useful right now?
-function aiSigSensible(who,sp){
-  const st=gs[who], tgt=PLAYERS.find(w=>w!==who), ts=gs[tgt], el=sp.el;
+// Which foe to aim at: the weakest-looking (HP plus ward), with some noise so it can't be read
+function aiPickTarget(who){
+  const foes=foesOf(who);
+  if(foes.length<=1) return foes[0];
+  const noise=aiDifficulty==='normal'?10:40;
+  const score=Object.fromEntries(foes.map(w=>[w,gs[w].hp+(hasWard(gs[w])?gs[w].shieldHp:0)+_rng()*noise]));
+  return foes.reduce((a,b)=>score[a]<=score[b]?a:b);
+}
+function aiSigSensible(who,sp,tgt=weakestFoe(who)){
+  const st=gs[who], ts=gs[tgt], el=sp.el;
   const active=(s,id)=>(s.effects||[]).some(e=>e.id===id);
   if(el.kind==='buff') return el.effect.type==='minion'||!active(st,sp.id);
   if(el.kind==='curse') return !active(ts,sp.id)&&!(el.effect.type==='lock'&&catLocked(tgt,el.effect.cat));
@@ -2558,7 +2721,7 @@ function aiSigSensible(who,sp){
   return true;
 }
 function elemAIChoose(who){
-  const me=gs[who], tgt=PLAYERS.find(w=>w!==who), opp=gs[tgt];
+  const me=gs[who], tgt=aiPickTarget(who), opp=gs[tgt];
   const smart=aiDifficulty==='normal';
   const oppWard=hasWard(opp), oppBuffs=buffsOf(opp).length, myCurses=cursesOf(me).length;
   const w={damage:1.0, protect:0.55, dispel:0.08};
@@ -2569,11 +2732,11 @@ function elemAIChoose(who){
   const boost=me.effects.find(e=>e.type==='empower'||e.type==='frenzy'||e.type==='weave');
   if(boost) w.damage+=0.9;
   // Curse-casters open the Dispel wheel for their hexes, not only to break wards
-  const hexes=sigSpells(who,'dispel').filter(sp=>sp.el.kind==='curse'&&!sigBlocked(who,sp,1)&&aiSigSensible(who,sp)).length;
+  const hexes=sigSpells(who,'dispel').filter(sp=>sp.el.kind==='curse'&&!sigBlocked(who,sp,1)&&aiSigSensible(who,sp,tgt)).length;
   if(hexes) w.dispel+=(smart?0.35:0.2)*hexes;
   if(hasWard(me)&&me.shieldHp>=15) w.protect=0.2;
   else {
-    if(opp.mana>=elemCost(tgt,'damage',2)) w.protect+=0.35;
+    if(foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',2))) w.protect+=0.35;
     if(me.hp<me.maxHp*0.35) w.protect+=0.35;
   }
   const cats=Object.keys(w).filter(c=>elemCanPick(who,c)&&w[c]>0);
@@ -2585,7 +2748,7 @@ function elemAIChoose(who){
   // Each sector of the wheel is a plain element or one of this character's signature spells
   const sectors=ELEMENTS.map(e=>({elem:e.id,sp:sigAt(who,cat,e.id)})).filter(x=>sectorOk(who,cat,x.elem,1));
   const plain=sectors.filter(x=>!x.sp);
-  const sigs=sectors.filter(x=>x.sp&&aiSigSensible(who,x.sp));
+  const sigs=sectors.filter(x=>x.sp&&aiSigSensible(who,x.sp,tgt));
   const cleanseOk=cat==='dispel'&&myCurses&&elemCost(who,'dispel',1)<=me.mana;
   if(cleanseOk&&!oppWard&&!oppBuffs&&_rng()<0.7)
     return {type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok};
@@ -2720,7 +2883,98 @@ function onRetryExpired(overlay){
   },900);
 }
 
+// 3–4 seats: knock out every seat at 0 HP; the duel ends when one team (or nobody) is left
+function eliminateSeats(){
+  activeSeats().filter(w=>gs[w].hp<=0).forEach((w,i)=>{
+    const st=gs[w];
+    st.out=true; st.effects=[]; st.shield=0; st.shieldHp=0; st.shieldType=null;
+    syncMinionVisuals(st);
+    gs[w+'anim']='death';
+    (gs.outOrder||(gs.outOrder=[])).push({who:w,round:gs.round});
+    addFloat(seatX(w),bH*(.2+.06*i),'☠ '+seatCfg(w).name+' is out!','#ff6677',15);
+  });
+  const teams=[...new Set(activeSeats().map(seatTeam))];
+  if(teams.length>1) return;
+  if(simMode){ gameEnded=true; simOutcome=teams.length?teams[0]:'draw'; return; }
+  if(multiMode) showMultiEnd(teams[0]||null);
+  else endGame(teams.length?teams[0]===seatTeam('p1'):'draw');
+}
+// Results of a 3–4 wizard duel: the winner(s), then everyone else by when they were knocked out
+function showMultiEnd(team){
+  if(gameEnded) return;
+  gameEnded=true;
+  gs.myTurn=false; gs.busy=true;
+  const winners=team?PLAYERS.filter(w=>seatTeam(w)===team):[];
+  const names=ws=>ws.map(w=>seatCfg(w).name).join(' & ');
+  const out=(gs.outOrder||[]).slice().reverse().filter(o=>!winners.includes(o.who));
+  const places=[];
+  if(winners.length) places.push(names(winners));
+  out.forEach((o,i)=>{ if(i&&o.round===out[i-1].round) places[places.length-1]+=' & '+seatCfg(o.who).name; else places.push(seatCfg(o.who).name); });
+  setTimeout(()=>{
+    battleRunning=false;
+    document.getElementById('ovico').textContent=winners.length?'🏆':'⚡';
+    const title=document.getElementById('ovtitle');
+    title.textContent=!winners.length?'Everyone Fell — A Draw!':
+      team.length===1?'Team '+team+' Wins!':names(winners)+(winners.length>1?' Win!':' Wins!');
+    title.style.color=winners.length?seatCfg(winners[0]).col:'#ff8844';
+    document.getElementById('ovdesc').textContent=places.map((n,i)=>['1st','2nd','3rd','4th'][i]+' '+n).join('  ·  ');
+    document.getElementById('btn-continue').textContent='Back to Title';
+    document.getElementById('overlay').classList.add('active');
+  },1800);
+}
+function endMultiMode(){
+  multiMode=false; multiPicks=[];
+  setupSeats(null);
+  document.getElementById('battle-screen').classList.remove('multi');
+  document.getElementById('hud').classList.remove('multi');
+  document.getElementById('btn-continue').textContent='Continue';
+}
+function startMultiBattle(){
+  const seats=multiPicks.map((key,i)=>({key,human:multiSetup.human[i],
+    team:multiSetup.format==='2v2'?(i<2?'A':'B'):undefined}));
+  setupSeats(seats);
+  p1Key=seats[0].key; p1Cfg=CHAR_DEFS[p1Key]; p2Key=seats[1].key; p2Cfg=CHAR_DEFS[p2Key];
+  tournamentQueue=[]; twoPlayerMode=false; trainingMode=false;
+  document.getElementById('btn-training-menu').style.display='none';
+  document.getElementById('battle-screen').classList.add('multi');
+  document.getElementById('hud').classList.add('multi');
+  loadSprites();
+  newState();
+  buildMultiHUD();
+  updateActionBar(seatCfg('p1'));
+  gs.myTurn=false; gs.busy=true;
+  gameEnded=false; battleRunning=true; lastFrameTime=0;
+  resizeBC();
+  showScreen('battle-screen');
+  requestAnimationFrame(battleLoop);
+  setTimeout(beginPickPhase,200);
+}
+// Setup screen: how many wizards, the format, and who is played by a person
+function renderMultiSetup(){
+  const ov=document.getElementById('multi-overlay');
+  if(multiSetup.n<4) multiSetup.format='ffa';
+  ov.querySelectorAll('[data-n]').forEach(b=>b.classList.toggle('on',+b.dataset.n===multiSetup.n));
+  ov.querySelectorAll('[data-format]').forEach(b=>{
+    b.classList.toggle('on',b.dataset.format===multiSetup.format);
+    b.disabled=b.dataset.format==='2v2'&&multiSetup.n<4;
+  });
+  let html='';
+  for(let i=0;i<multiSetup.n;i++){
+    const team=multiSetup.format==='2v2'?(i<2?'Team A':'Team B'):'';
+    html+=`<div class="mo-row"><span class="mo-lbl">Wizard ${i+1}</span><span class="mo-seat-team">${team}</span>`+
+      `<button class="mo-opt${multiSetup.human[i]?' on':''}" data-seat="${i}" data-human="1">Player</button>`+
+      `<button class="mo-opt${multiSetup.human[i]?'':' on'}" data-seat="${i}" data-human="0"${i===0?' disabled':''}>AI</button></div>`;
+  }
+  document.getElementById('mo-seats').innerHTML=html;
+}
+function labelMultiPick(){
+  const i=multiPicks.length, lbl=document.getElementById('char-player-label');
+  const team=multiSetup.format==='2v2'?' · Team '+(i<2?'A':'B'):'';
+  lbl.textContent='Wizard '+(i+1)+(multiSetup.human[i]?'':' (AI)')+team+': Choose';
+  lbl.style.display='';
+}
 function checkWin(){
+  if(PLAYERS.length>2){ if(!deferWinCheck) eliminateSeats(); return; }
   const p1Dead=gs.p1.hp<=0, p2Dead=gs.p2.hp<=0;
   if(!p1Dead&&!p2Dead) return;
   // Deferred: remember every KO seen until settleWin (a later heal doesn't undo it)
@@ -2734,6 +2988,7 @@ function checkWin(){
 // End a deferred-win window (simultaneous tier or round ticks) and apply any KOs.
 function settleWin(){
   deferWinCheck=false;
+  if(PLAYERS.length>2){ eliminateSeats(); return; }
   const pw=pendingWin; pendingWin=null;
   if(pw) declareKO(pw.p1Dead||gs.p1.hp<=0, pw.p2Dead||gs.p2.hp<=0);
   else checkWin();
@@ -2762,8 +3017,8 @@ function resetTrainingRound(knockedOut){
 
   setTimeout(()=>{
     if(!battleRunning) return;
-    gs.p1=newSeat(p1Cfg);
-    gs.p2=newSeat(p2Cfg);
+    gs.p1=newSeat(p1Cfg,p1Key);
+    gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
     gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[];
     gs.pending={};
@@ -5064,6 +5319,13 @@ function pickCharacter(key){
     showScreen('training-screen');
     return;
   }
+  if(multiMode){
+    multiPicks.push(key);
+    if(multiPicks.length<multiSetup.n){ labelMultiPick(); return; }
+    document.getElementById('char-player-label').style.display='none';
+    startMultiBattle();
+    return;
+  }
   if(twoPlayerMode){
     if(twoPlayerPhase===1){
       p1Key=key; p1Cfg=CHAR_DEFS[key];
@@ -5132,17 +5394,19 @@ function startTwoPlayerBattle(){
 }
 
 function showHandoffOverlay(toPlayer, callback){
-  const cfg=toPlayer==='p1'?p1Cfg:p2Cfg;
-  const num=toPlayer==='p1'?1:2;
+  const cfg=seatCfg(toPlayer);
+  const num=PLAYERS.indexOf(toPlayer)+1;
   document.getElementById('handoff-player-num').textContent='Player '+num;
   document.getElementById('handoff-char-name').textContent=cfg.name.toUpperCase();
   const portrait=document.getElementById('handoff-portrait');
-  portrait.src='portraits/'+(toPlayer==='p1'?p1Key:p2Key)+'.png';
+  portrait.src='portraits/'+seatKey(toPlayer)+'.png';
   portrait.style.borderColor=cfg.col;
   const p1s='★'.repeat(Math.min(2,p1MatchWins))+'☆'.repeat(Math.max(0,2-p1MatchWins));
   const p2s='★'.repeat(Math.min(2,p2MatchWins))+'☆'.repeat(Math.max(0,2-p2MatchWins));
-  document.getElementById('handoff-match-info').textContent=
-    'Match Round '+matchRound+' of 3  ·  P1 '+p1s+'  vs  P2 '+p2s;
+  const team=multiMode&&seatSetup&&seatSetup.find(st=>st.who===toPlayer).team;
+  document.getElementById('handoff-match-info').textContent=multiMode
+    ?'Round '+gs.round+(team?'  ·  Team '+team:'')
+    :'Match Round '+matchRound+' of 3  ·  P1 '+p1s+'  vs  P2 '+p2s;
   const overlay=document.getElementById('handoff-overlay');
   const btn=document.getElementById('handoff-btn');
   btn.onclick=null;
@@ -5231,6 +5495,31 @@ function simMatch(k1,k2,ai){
   return out;
 }
 
+// 3–4 seat version: seats [{key,team?}]. Returns the winning team ('p1'… for free-for-all), 'draw' or 'timeout'.
+function simMatchN(seats,ai){
+  simMode=true; simOutcome=null;
+  twoPlayerMode=false; trainingMode=false;
+  aiDifficulty=ai||'normal';
+  setupSeats(seats);
+  try{
+    newState();
+    if(!bW){ bW=400; bH=300; }
+    battleRunning=true; gameEnded=false;
+    const outRound={};
+    while(!gameEnded&&gs.round<=SIM_MAX_ROUNDS){
+      activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
+      resolveSimRound();
+      PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[];
+    }
+    return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,
+      hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
+  } finally {
+    battleRunning=false; simMode=false;
+    setupSeats(null);
+  }
+}
+
 // ── TUTORIAL ─────────────────────────────────────────────────────────────────
 const CHAR_COLORS_TUT={
   eldrad:'#4af0ff',mal:'#ff4a6e',sylvara:'#44cc88',aurelia:'#ffcc44',
@@ -5283,7 +5572,7 @@ const TUTORIAL_CONVOS={
   ],
   wheel:[
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
-    {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too."},
+    {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too. With more than one rival, an outer-ring strike hits every one of them."},
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
     {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward. A strong Ice strike that reaches them chills them, so they can't pick Damage next round."},
     {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
@@ -5378,7 +5667,7 @@ const TUTORIAL_CONVOS={
   ponder:[
     {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
     {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes the next strike miss me entirely. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds."},
-    {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. I steal mana from my rival — they lose it AND I gain it!"},
+    {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. It's quick: I steal mana as the round begins, before my rival pays for their spell — if they can't afford it any more, it fails!"},
     {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
   ],
   durin:[
@@ -5585,6 +5874,30 @@ window.addEventListener('DOMContentLoaded', ()=>{
     document.getElementById('char-player-label').style.display='none';
     showScreen('char-screen');
   });
+  document.getElementById('btn-duel-multi').addEventListener('click',()=>{
+    duelOverlay.style.display='none';
+    renderMultiSetup();
+    document.getElementById('multi-overlay').classList.add('show');
+  });
+  document.getElementById('multi-overlay').addEventListener('click',e=>{
+    const b=e.target.closest('button');
+    if(!b||b.disabled) return;
+    if(b.dataset.n) multiSetup.n=+b.dataset.n;
+    else if(b.dataset.format) multiSetup.format=b.dataset.format;
+    else if(b.dataset.seat) multiSetup.human[+b.dataset.seat]=b.dataset.human==='1';
+    else return;
+    renderMultiSetup();
+  });
+  document.getElementById('btn-multi-back').addEventListener('click',()=>{
+    document.getElementById('multi-overlay').classList.remove('show');
+    duelOverlay.style.display='flex';
+  });
+  document.getElementById('btn-multi-go').addEventListener('click',()=>{
+    document.getElementById('multi-overlay').classList.remove('show');
+    trainingMode=false; twoPlayerMode=false; multiMode=true; multiPicks=[];
+    labelMultiPick();
+    showScreen('char-screen');
+  });
   document.getElementById('btn-duel-2player').addEventListener('click',()=>{
     duelOverlay.style.display='none';
     trainingMode=false; twoPlayerMode=true; twoPlayerPhase=1;
@@ -5657,6 +5970,14 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btn-training-menu').addEventListener('click', exitTrainingToMenu);
   document.getElementById('btn-pz-exit').addEventListener('click', exitTrainingToMenu);
   document.getElementById('btn-back').addEventListener('click',()=>{
+    if(multiMode){
+      if(multiPicks.length){ multiPicks.pop(); labelMultiPick(); return; }
+      multiMode=false;
+      document.getElementById('char-player-label').style.display='none';
+      showScreen('title-screen');
+      document.getElementById('multi-overlay').classList.add('show');
+      return;
+    }
     if(trainingMode){
       trainingPickPhase=null;
       document.getElementById('char-player-label').style.display='none';
@@ -5712,6 +6033,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
 
   document.getElementById('btn-continue').addEventListener('click',()=>{
     document.getElementById('overlay').classList.remove('active');
+    if(multiMode){ battleRunning=false; gameEnded=false; endMultiMode(); showScreen('title-screen'); return; }
     if(twoPlayerMode){
       const isMatchOver=p1MatchWins>=2||p2MatchWins>=2||matchRound>=3;
       if(isMatchOver){

@@ -37,6 +37,11 @@ What was built, including choices made while building:
   Dispel minigame. A failed minigame fizzles and costs 1 mana.
 - **Mana:** everyone starts with 6 and gains +4 at the end of every round. There's no Channel, and the
   cheapest spell costs 1, so you can always cast something.
+- **Paying:** every seat pays for its pick as the round begins, before anything resolves (`payForAction`).
+  The picks were simultaneous, so a mana burn or drain this round can't stop a spell that was already
+  paid for, whatever the seat order. A failed ritual costs 1 mana instead. **Quick** spells (`quick` on
+  the spell; only Ponder's Mana Siphon) are paid first and steal at once, so their target pays from
+  what's left — if they can no longer afford their pick, it fails.
 - **Wards:** raising one replaces any existing ward. A ward stops damage in the same round it's raised.
   A ward **resists every element but its own**: other elements wear it down at 75%, while a strike in
   its own element **unravels** it at 150% (`ELEM_WARD_TAKE`). A dispel of its element does double.
@@ -161,7 +166,7 @@ so each spell's numbers can be tuned there.
 | Mordant | 🔇 Silence | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | 3 rounds: foe's spells fail 50% |
 | Mordant | ☠️ Corruption | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Foe gains 3 less mana a round × 3 |
 | Ponder | 👻 Vanish | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 3 / 5 | The next strike within 2 rounds misses |
-| Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Steal 4 mana |
+| Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant (quick) | 1 / 2 / 3 | Steal 3 mana as the round begins, before they pay |
 | Ponder | 💫 Blink | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 45% dodge × 3 rounds |
 | Durin | 🧱 Stoneskin | 🛡 Protection | 👊 Physical | Ward | 4 / 6 / 10 | Physical ward of 40 |
 | Durin | 💎 Stonesoul | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | −35% damage × 3 |
@@ -264,15 +269,55 @@ After damage over time started hitting wards — Normal AI (100 games per matchu
 matchup under 25%. Easy: 40.9–61.7%. Nyxara fell most (50 → 44), as Singularity's ramp now meets wards, so Singularity
 went from 4 / 8 / 12 to 5 / 9 / 13: Normal **45.8–56.4%**, no matchup under 25%; Easy 40.2–60.5%.
 
+Paying up front removed a seat-order advantage (player 2 still had its mana when player 1's blow
+landed, so Deathless saved Valdris 3× as often from that seat). It also took away Ponder's accidental
+edge — Mana Siphon used to land before the foe paid only when the order allowed — so he fell to 34%.
+Making Siphon **quick** on purpose, stealing 3 instead of 4: Normal **44.8–55.2%**, no matchup under
+25%; Easy 38.4–59.0%.
+
 **Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
 opponent may play better in human hands. Re-run the tool after any number change, and playtest.
 
-## Multiplayer (Phase 6)
+## Multiplayer (Phase 6) — in progress
 
-3–4 seats use the same pick → reveal → resolve flow. Still to do:
-- target selection for Damage and Dispel
-- seat layout
-- N-player win conditions
-- kingmaking counter-play
+Free-for-all first; teams (2v2) are supported by the same code. Seats with the same `team` are allies.
 
-Foundations already in place: `PLAYERS`, per-seat `gs.pending`, `tickRound(who)`, and tiered resolution.
+**Done — seats and targeting:**
+- `setupSeats([{key,team}])` makes a 3–4 seat duel (`p1`…`p4`); `setupSeats(null)` goes back to the two
+  picked seats. Each seat carries its own character and team.
+- `foesOf` / `alliesOf` / `activeSeats` replace "the other seat". A knocked-out seat is `out`: it no
+  longer picks, acts, is targeted, or keeps its enchantments and minions.
+- **Targeting:** after the ritual, a pick that aims at a foe (strike, dispel, curse, Mana Siphon) opens
+  a target picker when there's more than one foe. It shows each foe's HP, ward and banned elements.
+  Wards, buffs and heals don't ask. The reveal cards say who each spell is aimed at.
+- **Greater strikes hit every foe:** with more than one foe, an outer-ring Damage pick (plain or
+  signature) hits all of them in full, so it skips the target picker and the reveal says "→ All foes".
+  Allies are spared. The caster's Empower / Frenzy / Weave, Bewitch and recoil count once for the cast;
+  Nyxara's share-of-HP strikes use each target's own HP. Dispels still hit one foe. Games got shorter:
+  4-player free-for-all 30 → 26 rounds on average.
+- If a target is knocked out earlier in the round, the spell goes to the weakest remaining foe.
+- **Minions** attack whoever their owner last aimed at, else the weakest foe.
+- **AI** aims at the weakest-looking foe (HP plus ward, with some noise), and wards when any foe can
+  afford a strong hit.
+- **Ending:** the duel ends when one team is left (or nobody: a draw). `simMatchN(seats, ai)` runs
+  3–4 seat AI games. Wins by seat over 1,500 four-player games: 343–379 each, so no seat is favoured.
+
+**Done — playing it:** Duel → **👥 3–4 Wizards**.
+- Setup screen: 3 or 4 wizards, Free-for-all or 2 v 2 (4 only; wizards 1–2 are Team A, 3–4 Team B),
+  and Player or AI for each seat (wizard 1 is always a player). Then each seat picks on the character
+  screen in turn.
+- With more than one player the phone is passed between picks, like the 2-player mode; with one, the
+  AIs pick straight away.
+- Battle screen: a row of HUD cards (portrait, HP, mana, ward; "OUT" when knocked out) replaces the
+  two big HUDs. The wizards stand in a row across the arena at a smaller size, team-mates side by side,
+  each with a name tag; the left half faces right and the right half faces left.
+- End screen: the winner (or "Team A Wins!"), then placings by when each wizard was knocked out
+  (same round = same place).
+
+**Still to do:**
+- what a knocked-out player sees for the rest of the game (today they just watch)
+- protection aimed at an ally in team games
+- kingmaking counter-play (Greater strikes hitting every foe already make ganging up harder)
+- no balance passes for 3–4 players: too many variables
+
+Also in place from earlier: per-seat `gs.pending`, `tickRound(who)`, tiered resolution, and paying up front.

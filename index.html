@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wizard's Duel</title>
-<link rel="stylesheet" href="css/style.css?v=0.19">
+<link rel="stylesheet" href="css/style.css?v=0.21">
 </head>
 <body>
 <div id="app">
@@ -228,6 +228,7 @@
         </div>
       </div>
     </div>
+    <div id="mhud"></div>
     <div id="statusbar"></div>
     <div id="bstage"><canvas id="bcanvas"></canvas></div>
     <div id="actionbar">
@@ -282,7 +283,23 @@
       <div style="font-size:10px;letter-spacing:3px;color:rgba(201,168,76,0.4);text-transform:uppercase;margin-bottom:28px;">★ Select Your Battle ★</div>
       <button class="btn" id="btn-duel-arcade">🏆 Arcade</button>
       <button class="btn btn-2p" id="btn-duel-2player">⚔ 2 Player (Same Device)</button>
+      <button class="btn btn-2p" id="btn-duel-multi">👥 3–4 Wizards</button>
       <button class="btn btn-training-back-btn" id="btn-duel-back" style="margin-top:12px;">← Back</button>
+    </div>
+  </div>
+
+  <!-- 3–4 WIZARD SETUP -->
+  <div id="multi-overlay">
+    <div class="mo-box">
+      <div class="mo-title">3–4 Wizards</div>
+      <div class="mo-sub">★ Same device · pass the phone ★</div>
+      <div class="mo-row"><span class="mo-lbl">Wizards</span>
+        <button class="mo-opt" data-n="3">3</button><button class="mo-opt" data-n="4">4</button></div>
+      <div class="mo-row"><span class="mo-lbl">Format</span>
+        <button class="mo-opt" data-format="ffa">Free-for-all</button><button class="mo-opt" data-format="2v2">2 v 2</button></div>
+      <div id="mo-seats"></div>
+      <button class="btn" id="btn-multi-go">Choose Wizards →</button>
+      <button class="btn btn-training-back-btn" id="btn-multi-back">← Back</button>
     </div>
   </div>
 
@@ -350,6 +367,6 @@
 
 </div>
 
-<script src="js/game.js?v=0.30"></script>
+<script src="js/game.js?v=0.35"></script>
 </body>
 </html>
