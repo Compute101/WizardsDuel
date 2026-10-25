@@ -2785,8 +2785,10 @@ function elemTickEffects(who){
 }
 // ── OPTIONS (⚙ on the title screen; kept in this browser) ──
 // longDuels: 'draw' ends a duel that reaches roundLimit as a draw; 'sudden' starts sudden death instead
-const GAME_OPTIONS={longDuels:'draw', roundLimit:50};
+// diff / ai: ritual difficulty (diffName) and opponent AI (aiDifficulty)
+const GAME_OPTIONS={longDuels:'draw', roundLimit:50, diff:'normal', ai:'normal'};
 try{ Object.assign(GAME_OPTIONS,JSON.parse(localStorage.getItem('wd-options')||'{}')); }catch(e){}
+diffName=GAME_OPTIONS.diff; aiDifficulty=GAME_OPTIONS.ai;
 function saveOptions(){ try{ localStorage.setItem('wd-options',JSON.stringify(GAME_OPTIONS)); }catch(e){} }
 
 // Sudden death: from a set round, every round ramps up — more mana, and every hit and tick lands harder
@@ -6025,26 +6027,31 @@ window.addEventListener('DOMContentLoaded', ()=>{
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      diffName=btn.dataset.diff;
+      diffName=GAME_OPTIONS.diff=btn.dataset.diff;
       if(diffName==='normal'||diffName==='hard'){
-        aiDifficulty='normal';
+        aiDifficulty=GAME_OPTIONS.ai='normal';
         document.querySelectorAll('.ai-btn').forEach(b=>{
           b.classList.toggle('active', b.dataset.ai==='normal');
         });
         const hint=document.getElementById('training-ai-hint');
         if(hint&&trainingAI) hint.textContent='Opponent plays smart combos';
       }
+      saveOptions();
     });
   });
   document.querySelectorAll('.ai-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.ai-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      aiDifficulty=btn.dataset.ai;
+      aiDifficulty=GAME_OPTIONS.ai=btn.dataset.ai;
       const hint=document.getElementById('training-ai-hint');
       if(hint&&trainingAI) hint.textContent=aiDifficulty==='normal'?'Opponent plays smart combos':'Opponent plays normally';
+      saveOptions();
     });
   });
+  // Show the saved choices
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.toggle('active',b.dataset.diff===diffName));
+  document.querySelectorAll('.ai-btn').forEach(b=>b.classList.toggle('active',b.dataset.ai===aiDifficulty));
 
   const duelOverlay=document.getElementById('duel-overlay');
   document.getElementById('btn-duel').addEventListener('click',()=>{

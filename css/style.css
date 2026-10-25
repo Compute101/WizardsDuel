@@ -1211,6 +1211,9 @@ body {
 .op-group { text-align: left; margin: 14px 0; }
 .op-name { font: 700 13px 'Cinzel', serif; letter-spacing: 2px; text-transform: uppercase; color: #f0cc6a; }
 .op-help { font-size: 12px; color: #aaa; line-height: 1.4; min-height: 34px; }
+#options-overlay .diff-selector { width: 100%; margin: 6px 0 4px; }
+#options-overlay .diff-btn, #options-overlay .ai-btn { padding: 9px 0; font-size: 12px; }
+#options-overlay .op-help:not(#op-long-help) { min-height: 0; }
 
 /* ── 3–4 WIZARD SETUP ── */
 #multi-overlay {

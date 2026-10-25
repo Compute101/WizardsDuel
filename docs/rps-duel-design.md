@@ -332,7 +332,8 @@ Heal or Volatile Tonic) asks "Protect who?" after the ritual, listing you and yo
 card shows who it's for. Minion buffs, Blood Pact and Purge stay with the caster. The AI shields a
 team-mate who's worse off (lower HP, unwarded, or the one the foes went for).
 
-**Options** (⚙ on the title screen, `GAME_OPTIONS`, kept in the browser's local storage): **Long duels** —
+**Options** (⚙ on the title screen, `GAME_OPTIONS`, kept in the browser's local storage): **Difficulty** (the
+rituals: Easy / Normal / Hard), **Opponent AI** (Easy / Normal), and **Long duels** —
 *Draw* (default) ends a duel still going at the **round limit** (30 / 40 / **50**) as a draw ("⌛ Time's Up");
 *Sudden death* uses the ramp below instead. Draw rates measured with the AI: at round 50, 1v1 7%, 3 seats 8%,
 4 seats 10% (at 40 it's 9% / 20% / 24%, at 30 18% / 43% / 47%, so 50 is the default). An Arcade draw no
