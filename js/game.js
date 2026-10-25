@@ -1476,6 +1476,12 @@ function refreshActionBar(){
     const btn=document.getElementById('bel-'+cat);
     if(btn) btn.classList.toggle('off',busy||!elemCanPick(who,cat));
   });
+  const ph=document.getElementById('bel-phase');
+  if(ph){
+    ph.style.display=PHASE.enabled&&PLAYERS.length>2?'':'none';
+    document.getElementById('bel-phase-cost').textContent=PHASE.cost+' Mana';
+    ph.classList.toggle('off',busy||!phaseReady(who)||hasFreeSpell(who));
+  }
 }
 
 
@@ -1928,10 +1934,20 @@ function resolveSimRound(){
   gs.pending={};
   gs.myTurn=false; gs.busy=true;
   const seatsIn=activeSeats();
-  // Who aims at whom this round (a Greater strike at every foe isn't focusing on anyone); the AI reads it next round
-  gs.focus={}; gs.roundDmg={};
-  seatsIn.forEach(w=>{ const a=acts[w]; if(needsTarget(w,a)&&a.target&&a.target!==w&&!hitsAllFoes(w,a)) (gs.focus[a.target]=gs.focus[a.target]||[]).push(w); });
+  gs.roundDmg={};
   seatsIn.forEach(w=>{ gs[w].hpAtRoundStart=gs[w].hp; });
+  // What each seat could see before this round: was it ganged, could it phase, did it?
+  seatsIn.forEach(w=>{
+    const st=gs[w];
+    if(phaseReady(w)){ st.phaseChances=(st.phaseChances||0)+1; if(acts[w].cat==='phase') st.phaseUses=(st.phaseUses||0)+1; }
+  });
+  // Phasing seats step out of the round before anything, even a quick spell, can reach them
+  seatsIn.forEach(w=>{ if(acts[w].cat==='phase'){ gs[w].phasedRound=gs.round; gs[w].phasedCount=0; } });
+  // Who aims at whom this round (a Greater strike at every foe isn't focusing on anyone); the AI reads it next round
+  gs.focus={};
+  seatsIn.forEach(w=>{ const a=acts[w]; if(needsTarget(w,a)&&a.target&&a.target!==w&&!hitsAllFoes(w,a)) (gs.focus[a.target]=gs.focus[a.target]||[]).push(w); });
+  // How many aimed at each seat, round by round — what a wizard can read before betting on Phase Shift
+  seatsIn.forEach(w=>{ (gs[w].aimHistory||(gs[w].aimHistory=[])).push((gs.focus[w]||[]).length); });
   // Quick spells (Mana Siphon) are paid and steal first, so their target pays from what's left
   const isQuick=w=>{ const a=acts[w], sp=a.sig&&sigById(w,a.sig); return !!(sp&&sp.el.quick); };
   seatsIn.filter(isQuick).forEach(w=>{ payForAction(w,acts[w]); if(acts[w].outcome==='cast') quickSteal(w,acts[w]); });
@@ -2126,7 +2142,10 @@ function catLocked(who,cat){ return effectsOf(gs[who],'lock').some(e=>e.cat===ca
 function spellbindExtra(who,cat){
   return effectsOf(gs[who],'spellbind').filter(e=>e.cat===cat).reduce((a,e)=>a+e.extra,0);
 }
+// A Phase Shift that caught two or more spells makes the phaser's next pick free, at any ring
+function hasFreeSpell(who){ return !!(gs&&gs[who]&&gs[who].freeSpellRound===gs.round); }
 function elemCost(who,cat,tier){
+  if(hasFreeSpell(who)) return 0;
   const mod=cat==='protect'?(seatCfg(who).shieldCostMod||0):0;
   return Math.max(1,ELEM_CATS[cat].cost[tier-1]+mod)+spellbindExtra(who,cat);
 }
@@ -2159,7 +2178,7 @@ function sigAtTier(sp,tier){
 }
 // The character's signature spell occupying this sector of the category's wheel, if any
 function sigAt(who,cat,elem){ return sigSpells(who,cat).find(sp=>sp.el.elem===elem)||null; }
-function sigCost(who,sp,tier){ return Math.max(0,sigAtTier(sp,tier).cost+spellbindExtra(who,sp.el.cat)); }
+function sigCost(who,sp,tier){ return hasFreeSpell(who)?0:Math.max(0,sigAtTier(sp,tier).cost+spellbindExtra(who,sp.el.cat)); }
 function sectorOk(who,cat,elem,tier){
   if(elemForbidden(who,elem)) return false;
   const sp=sigAt(who,cat,elem);
@@ -2180,9 +2199,29 @@ function elemCanPick(who,cat){
   if(cat==='dispel'&&elemCost(who,cat,1)<=gs[who].mana) return true;   // Cleanse Self
   return ELEMENTS.some(e=>sectorOk(who,cat,e.id,1));
 }
-function actionPriority(action){ return ELEM_CATS[action.cat]?ELEM_CATS[action.cat].stage:4; }
+// Phase Shift (3–4 seats): a bet that you're about to be targeted. Everything aimed at you this round misses,
+// and you gain the mana each caster spent on it. Priced near the cost of a typical aimed spell, so one
+// attacker is roughly break-even, nobody is a loss (mana and your turn), and a gang pays you.
+const PHASE={enabled:true, cost:4, smartAI:true, freeAt:2};
+function phaseReady(who){ return PHASE.enabled&&PLAYERS.length>2&&gs[who].mana>=PHASE.cost; }
+function phaseCaught(who){
+  const st=gs[who];
+  if(++st.phasedCount===PHASE.freeAt&&PHASE.freeAt){
+    st.freeSpellRound=gs.round+1;
+    addFloat(seatX(who),bH*.18,'✨ Free spell next round!','#f0cc6a',13);
+  }
+}
+function phaseGain(who,n){
+  if(n<=0) return;
+  const st=gs[who]; n=Math.min(n,MAX_MANA-st.mana);
+  st.mana+=n; st.phaseGained=(st.phaseGained||0)+n;
+  if(n>0) addFloat(seatX(who),bH*.44,'🌀 +'+n+' Mana','#b8a0e8',12);
+}
+function isPhased(who){ return gs[who]&&gs[who].phasedRound===gs.round; }
+function actionPriority(action){ return action.cat==='phase'?0:ELEM_CATS[action.cat]?ELEM_CATS[action.cat].stage:4; }
 function describeElemAction(action,who){
   if(action.cat==='pass') return {icon:'…',name:'Waits'};
+  if(action.cat==='phase') return {icon:'🌀',name:'Phase Shift'};
   const cat=ELEM_CATS[action.cat];
   if(action.sig){
     const sp=sigById(who,action.sig);
@@ -2288,7 +2327,7 @@ function hitsAllFoes(who,action){
 function strikeTargets(who,action){
   const foes=foesOf(who);
   if(!hitsAllFoes(who,action)||!foes.includes(action.target)) return [action.target];
-  return [action.target].concat(foes.filter(w=>w!==action.target));
+  return [action.target].concat(foes.filter(w=>w!==action.target)).filter(w=>!isPhased(w));
 }
 // Extra projectiles, for show, toward every target after the first
 function fanOut(who,tgts,proj,col){
@@ -2356,16 +2395,16 @@ function payForAction(who,action){
   const st=gs[who];
   if(action.cat==='pass') return;
   const sp=action.sig?sigById(who,action.sig):null;
-  const cost=sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
+  const cost=action.cat==='phase'?PHASE.cost:sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
   const silence=effectsOf(st,'silence')[0];
   if(!action.ok){ st.mana=Math.max(0,st.mana-1); action.outcome='fizzle'; }
   else if(silence&&_rng()<silence.pct) action.outcome='silenced';
   else if(cost>st.mana) action.outcome='nomana';
-  else { st.mana-=cost; action.outcome='cast'; }
+  else { st.mana-=cost; action.outcome='cast'; action.paid=cost; }
 }
 function quickSteal(who,action){
   const a=sigAtTier(sigById(who,action.sig),action.tier).action, ts=gs[action.target], st=gs[who];
-  if(!a||a.type!=='siphon') return;
+  if(!a||a.type!=='siphon'||isPhased(action.target)) return;
   const n=Math.min(ts.mana,a.amt);
   ts.mana-=n; st.mana=Math.min(MAX_MANA,st.mana+n);
   action.stolen=n;
@@ -2380,6 +2419,22 @@ function executeElemental(who,action,cb){
     if(t) action.target=t;
   }
   if(action.target&&action.target!==who&&needsTarget(who,action)) st.lastTarget=action.target;
+  if(action.cat==='phase'){
+    addFloat(x,bH*.3,'🌀 Phase Shift','#b8a0e8',15); VFX.vanished(x);
+    combatTimeout(cb,700); return;
+  }
+  // Aimed at a wizard who phased out: it misses and they gain what it cost. A Greater strike still hits
+  // everyone else, and each phased foe gains their share of its cost.
+  if(action.outcome==='cast'&&needsTarget(who,action)&&action.target!==who){
+    if(hitsAllFoes(who,action)){
+      const all=foesOf(who), ph=all.filter(isPhased);
+      ph.forEach(p=>{ addFloat(seatX(p),bH*.3,'💨 Phased!','#b8a0e8',14); phaseGain(p,Math.round((action.paid||0)/all.length)); phaseCaught(p); });
+      if(ph.length===all.length){ anim(who,'cast',600); combatTimeout(cb,700); return; }
+    } else if(isPhased(action.target)){
+      addFloat(seatX(action.target),bH*.3,'💨 Phased!','#b8a0e8',14); phaseGain(action.target,action.paid||0); phaseCaught(action.target);
+      anim(who,'cast',600); combatTimeout(cb,700); return;
+    }
+  }
 
   const agony=effectsOf(st,'agony')[0];
   if(agony){ dmgSource=agony.from; elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); }
@@ -2735,6 +2790,16 @@ function elemAIChoose(who){
   // Several foes aimed at me last round: hit back at the weakest of them, and turtle
   const gangedBy=(gs.focus&&gs.focus[who]||[]).filter(f=>foesOf(who).includes(f));
   const ganged=GANG_AWARE_AI&&gangedBy.length>=2;
+  // Phase Shift: bet on it when you expect two or more spells your way — read from how many aimed at you
+  // lately, capped by how many foes can afford to — and more readily when hurt
+  if(phaseReady(who)&&!hasFreeSpell(who)){
+    const st=gs[who], h=(st.aimHistory||[]).slice(-3);
+    const armed=foesOf(who).filter(f=>gs[f].mana>=elemCost(f,'dispel',1)).length;
+    const expected=Math.min(armed,h.length?h.reduce((a,b)=>a+b,0)/h.length:0);
+    const hurt=1.3-0.6*st.hp/st.maxHp;
+    const p=PHASE.smartAI?Math.min(0.8,Math.max(0,(expected-1)*0.9*hurt)):0.15;
+    if(_rng()<p) return {type:'el',cat:'phase',ok:true,target:who};
+  }
   const me=gs[who], tgt=ganged?gangedBy.reduce((a,b)=>gs[a].hp<=gs[b].hp?a:b):aiPickTarget(who), opp=gs[tgt];
   const smart=aiDifficulty==='normal';
   const oppWard=hasWard(opp), oppBuffs=buffsOf(opp).length, myCurses=cursesOf(me).length;
@@ -2754,11 +2819,23 @@ function elemAIChoose(who){
     if(me.hp<me.maxHp*0.35) w.protect+=0.35;
   }
   if(ganged){ w.protect+=hasWard(me)&&me.shieldHp>=25?0.4:1.2; w.damage*=0.8; }
+  const free=hasFreeSpell(who);
+  if(free) w.damage+=1.2;   // a free spell: make it a big strike
   const cats=Object.keys(w).filter(c=>elemCanPick(who,c)&&w[c]>0);
   if(!cats.length) return {type:'el',cat:'pass',ok:true};
   let r=_rng()*cats.reduce((sum,c)=>sum+w[c],0), cat=cats[0];
   for(const c of cats){ r-=w[c]; if(r<=0){ cat=c; break; } }
   const ok=_rng()<(smart?0.9:0.78);
+  // Aiming at a wizard who can phase: if they usually do, hold off — hit someone else, or ward up instead
+  let aimTgt=tgt;
+  if(PHASE.smartAI&&phaseReady(tgt)&&(cat==='damage'||cat==='dispel')){
+    const ts=gs[tgt], rate=((ts.phaseUses||0)+0.5)/((ts.phaseChances||0)+4);
+    if(_rng()<rate*(smart?1.5:0.7)){
+      const others=foesOf(who).filter(f=>f!==tgt&&!phaseReady(f));
+      if(others.length) aimTgt=others.reduce((a,b)=>gs[a].hp<=gs[b].hp?a:b);
+      else if(elemCanPick(who,'protect')) cat='protect';
+    }
+  }
 
   // Each sector of the wheel is a plain element or one of this character's signature spells
   const sectors=ELEMENTS.map(e=>({elem:e.id,sp:sigAt(who,cat,e.id)})).filter(x=>sectorOk(who,cat,x.elem,1));
@@ -2798,16 +2875,17 @@ function elemAIChoose(who){
   let tier=3;
   while(tier>1&&!sectorOk(who,cat,choice.elem,tier)) tier--;
   // Sometimes hold mana back — but not when ganged up on: big wards, and Greater strikes that hit them all
-  if(tier>1&&!(ganged&&cat!=='dispel')&&_rng()<0.4) tier--;
+  if(tier>1&&!free&&!(ganged&&cat!=='dispel')&&_rng()<0.4) tier--;
   const elem=choice.elem;
-  if(choice.sp) return {type:'el',cat,elem,tier,sig:choice.sp.id,target:tgt,ok};
-  return {type:'el',cat,elem,tier,self:false,target:tgt,ok};
+  if(choice.sp) return {type:'el',cat,elem,tier,sig:choice.sp.id,target:aimTgt,ok};
+  return {type:'el',cat,elem,tier,self:false,target:aimTgt,ok};
 }
 
 function elemStatusTags(){
   const tags=[];
   PLAYERS.forEach(w=>{
     const st=gs[w], name=seatCfg(w).name;
+    if(hasFreeSpell(w)) tags.push(`<span class="status-tag ward">✨ ${name} FREE SPELL</span>`);
     if(hasWard(st)){
       const el=elemById(st.shieldType);
       tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${st.shieldHp} (${st.shield})</span>`);
@@ -5306,7 +5384,7 @@ function updateActionBar(cfg){
     const btn=document.getElementById('bel-'+cat);
     btn.style.borderColor=cfg.col; btn.style.color=cfg.col;
     document.getElementById('bel-'+cat+'-cost').textContent=
-      elemCost(who,cat,1)+'–'+elemCost(who,cat,3)+' Mana';
+      hasFreeSpell(who)?'✨ Free!':elemCost(who,cat,1)+'–'+elemCost(who,cat,3)+' Mana';
   });
 }
 
@@ -5499,7 +5577,7 @@ function startTrainingBattle(){
 // where pick keys are a signature spell id, or 'damage' / 'protect' / 'dispel' / 'cleanse' / 'pass'.
 const SIM_MAX_ROUNDS=60;
 // The tool page reads the game through an iframe, where only function declarations are visible
-function simInfo(){ return {chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE, bounty:ELEM_KO_BOUNTY,
+function simInfo(){ return {chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE, bounty:ELEM_KO_BOUNTY, phase:PHASE,
   setGangAware:v=>{ GANG_AWARE_AI=v; }}; }
 function simMatch(k1,k2,ai){
   simMode=true; simOutcome=null;
@@ -5600,6 +5678,7 @@ const TUTORIAL_CONVOS={
     {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the surest way to win."},
     {key:'eldrad', text:"Each round resolves in that order — every Protection first, then every Dispel, then every Damage. So the trick is guessing what your rival will choose."},
     {key:'mal',    text:"With three or four of us, whoever deals the most damage to a wizard in the round they fall claims a bounty: HP and mana. Gang up on someone if you like — but your ally wants that kill as much as you do."},
+    {key:'ponder', text:"Think they're all coming for you? Tap 🌀 Phase. Everything aimed at you that round misses, and you soak up the mana they spent on it. Catch two or more spells and your next spell is free — any ring! Guess wrong and you've lost your turn and 4 mana."},
   ],
   wheel:[
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
@@ -5858,6 +5937,13 @@ function renderTutConvo(){
 
 window.addEventListener('DOMContentLoaded', ()=>{
   // Wire up all buttons immediately — independent of the fetch below
+  // Phase Shift needs no ritual: it's a bet on being targeted, committed straight away
+  document.getElementById('bel-phase').addEventListener('click',e=>{
+    const who=gs.turnPlayer;
+    if(e.currentTarget.classList.contains('off')||!gs.myTurn||gs.busy) return;
+    gs.busy=true;
+    commitPick(who,{type:'el',cat:'phase',ok:true,target:who});
+  });
   document.querySelectorAll('.abtn-elem').forEach(btn=>{
     btn.addEventListener('click',()=>openElemWheel(btn.dataset.cat));
   });

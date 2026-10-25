@@ -315,6 +315,21 @@ Free-for-all first; teams (2v2) are supported by the same code. Seats with the s
   turtles (more and bigger wards), hits back at the weakest of them, and casts Greater strikes. Against
   a committed gang this only buys about half a round — a ward can't stop a dispel and a strike together.
 
+**Done — Phase Shift** (🌀 Phase, the fourth button in 3–4 seat games; `PHASE` in `js/game.js`):
+- A bet that you're about to be targeted, for 4 mana, no ritual, no cooldown, any round. Everything
+  aimed at you that round misses and you gain the mana each caster spent on it (a Greater strike pays
+  your share). Catch **two or more** spells and your next pick is **free, at any ring**.
+- Priced near a typical aimed spell (about 4 mana): nobody aiming at you is a loss of mana and your
+  turn, one attacker is roughly break-even, a gang pays you.
+- AI: phases when it expects two or more spells its way (from how many aimed at it in the last 3
+  rounds, capped by how many foes can afford to), more readily when hurt, and spends a free spell on a
+  big strike. Attackers track how often each wizard phases and hold off on the ones who do.
+- Simulated (700 games each, AIs forced to gang up): the victim wins 0% → **4%** and lasts ~50% longer
+  (4 seats, 2 gang: 8 → 13 rounds); with nobody ganging every seat stays even. Games get longer
+  (4 seats 26 → 29 rounds). Variants tried and dropped: a cooldown, needing to have been ganged first,
+  reflecting the spells back, and an automatic riposte strike — the gang adapts before those pay out.
+  No rule tried lets one wizard reliably beat two; Phase makes ganging up a gamble instead of a sure thing.
+
 **Done — playing it:** Duel → **👥 3–4 Wizards**.
 - Setup screen: 3 or 4 wizards, Free-for-all or 2 v 2 (4 only; wizards 1–2 are Team A, 3–4 Team B),
   and Player or AI for each seat (wizard 1 is always a player). Then each seat picks on the character
