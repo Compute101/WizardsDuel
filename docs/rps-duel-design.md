@@ -143,7 +143,7 @@ so each spell's numbers can be tuned there.
 | Malachar | 💀 Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 45% of HP damage |
 | Sylvara | 💚 Regen | 🛡 Protection | 👊 Physical | Enchantment (self) | 2 / 4 / 6 | Heal 5 a round for 4 rounds |
 | Sylvara | 🌿 Entangle | ✦ Dispel | 👊 Physical | Curse (foe) | 1 / 2 / 3 | 55%: foe can't pick Damage next round |
-| Sylvara | 🌱 Vine Whip | ⚔️ Damage | 👊 Physical | Strike | 2 / 4 / 6 | 10 physical + vines 4 a round × 3 |
+| Sylvara | 🌱 Vine Whip | ⚔️ Damage | 👊 Physical | Strike | 2 / 4 / 6 | 10 physical + vines 3 a round × 3 |
 | Aurelia | 🔮 Foresight | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | The next strike within 3 rounds does nothing |
 | Aurelia | ⏳ Time Drain | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | Foe gains 2 less mana a round × 3 |
 | Aurelia | ⏪ Rewind | 🛡 Protection | 🌀 Arcane | Ward | 4 / 7 / 11 | Arcane ward of 25 + heal what you lost last round (max 20) |
@@ -159,7 +159,7 @@ so each spell's numbers can be tuned there.
 | Zacharius | 🔋 Galvanize | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 1 / 2 / 3 | Next Lightning strike +60% |
 | Zacharius | 🌩️ Chain Lightning | ⚔️ Damage | ⚡ Lightning | Strike | 3 / 5 / 8 | 14 lightning; 35% to arc for 8 more |
 | Zacharius | 💡 Conductivity | ✦ Dispel | ⚡ Lightning | Curse (foe) | 2 / 3 / 5 | Foe takes +35% damage × 3 rounds |
-| Mary | 💛 Heal | 🛡 Protection | 🌀 Arcane | Instant | 4 / 6 / 10 | Heal 19 now |
+| Mary | 💛 Heal | 🛡 Protection | 🌀 Arcane | Instant | 4 / 6 / 10 | Heal 21 now |
 | Mary | ✨ Purge | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Remove your curses and heal 8 |
 | Mary | ☀️ Radiant | ⚔️ Damage | 🌀 Arcane | Strike | 2 / 4 / 6 | 12 holy; burns 2 mana |
 | Mordant | 💀 Agony | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: foe takes 8 whenever they cast |
@@ -181,7 +181,7 @@ so each spell's numbers can be tuned there.
 | Valdris | 🩸 Necrotic Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 40% of HP damage |
 | Valdris | 🔧 Reinforce | 🛡 Protection | 👊 Physical | Ward | 3 / 5 / 8 | Physical ward of 20 +12 per skeleton |
 | Mirel | 🪞 Simulacrum | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | Simulacrum (max 2) for 4 rounds: 4 a round |
-| Mirel | 🪄 Bewitch | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | Foe's next strike within 2 rounds hits themselves |
+| Mirel | 🪄 Bewitch | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Foe's next strike within 2 rounds hits themselves |
 | Mirel | 🗡️ Feint | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 11 arcane; burns 2 mana |
 | Thessaly | 🌀 Enthral | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Foe can't pick Protection next round |
 | Thessaly | 🌟 Arcane Weave | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 1 / 2 / 3 | Next 3 strikes +8 and burn 3 mana |
@@ -275,6 +275,18 @@ edge — Mana Siphon used to land before the foe paid only when the order allowe
 Making Siphon **quick** on purpose, stealing 3 instead of 4: Normal **44.8–55.2%**, no matchup under
 25%; Easy 38.4–59.0%.
 
+### Thessaly vs Mirel (fixed)
+
+Thessaly won only 24% against Mirel. 21% of the damage Thessaly took was her own strikes bouncing back
+off **Bewitch**, and her Arcane Weave made each rebound worse (+8 damage and a 3-mana burn on herself).
+Two causes:
+- The AI ignored being Bewitched and kept striking. It now holds its strikes and cleanses instead, as a
+  person would. Bewitch still works within the same round — it's Mirel's sucker punch. Making it wait a
+  round (or rebound only half) was tried, but then it barely ever landed and Mirel fell to 28%.
+- With the AI playing around it, Mirel dropped to ~44%, so **Bewitch costs 2 instead of 3**.
+Thessaly vs Mirel is now 39%. With draws as the default, Sylvara rose to 58%, so **Vine Whip's vines
+went 4 → 3**. Normal AI: **44.4–55.4%** (sd 2.8), no matchup under 29%.
+
 **Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
 opponent may play better in human hands. Re-run the tool after any number change, and playtest.
 
@@ -302,6 +314,54 @@ Free-for-all first; teams (2v2) are supported by the same code. Seats with the s
 - **Ending:** the duel ends when one team is left (or nobody: a draw). `simMatchN(seats, ai)` runs
   3–4 seat AI games. Wins by seat over 1,500 four-player games: 343–379 each, so no seat is favoured.
 
+**Done — ganging up** (tested with AIs that always aim at one wizard; 800–1,500 games each):
+- Ganging up wins: the focused wizard wins ~0% and lasts 6–10 rounds (16 when nobody gangs). Greater
+  strikes hitting every foe, damage falloff on a focused wizard and extra mana for the focused wizard
+  were all tried; none moved that, so only the first was kept. Two wizards simply beat one.
+- In 4 seats ganging barely pays: two allies go from 25% to ~29% each while the wizard left out gets ~38%.
+- **Knock-out bounty** (`ELEM_KO_BOUNTY`, +20 HP +5 mana): whoever dealt the most damage to a wizard in
+  the round they fell (damage in a round is simultaneous, so not whoever hit last) claims it. In a 3-seat
+  alliance the ally who lands the kill then wins the final duel 71% of the time, so allies race each
+  other for it. Credit by "last hit" gave the last seat in resolution order a big edge, hence "most".
+- **The AI notices being ganged up on**: when two or more foes aimed at it last round (`gs.focus`) it
+  turtles (more and bigger wards), hits back at the weakest of them, and casts Greater strikes. Against
+  a committed gang this only buys about half a round — a ward can't stop a dispel and a strike together.
+
+**Done — protecting an ally:** in team games a Protection pick (plain ward, signature ward, buff,
+Heal or Volatile Tonic) asks "Protect who?" after the ritual, listing you and your team-mates; the reveal
+card shows who it's for. Minion buffs, Blood Pact and Purge stay with the caster. The AI shields a
+team-mate who's worse off (lower HP, unwarded, or the one the foes went for).
+
+**Options** (⚙ on the title screen, `GAME_OPTIONS`, kept in the browser's local storage): **Difficulty** (the
+rituals: Easy / Normal / Hard), **Opponent AI** (Easy / Normal), and **Long duels** —
+*Draw* (default) ends a duel still going at the **round limit** (30 / 40 / **50**) as a draw ("⌛ Time's Up");
+*Sudden death* uses the ramp below instead. Draw rates measured with the AI: at round 50, 1v1 7%, 3 seats 8%,
+4 seats 10% (at 40 it's 9% / 20% / 24%, at 30 18% / 43% / 47%, so 50 is the default). An Arcade draw no
+longer counts as a win: it goes to the retry screen.
+
+**Done — sudden death** (`SUDDEN_DEATH`, an option): from round **30** in a duel, round **20** with 3–4 wizards,
+each round adds +15% to every strike, tick and minion hit and +1 mana income (up to +5). Wards and heals
+don't grow, so the end comes quickly. A "⚡ SUDDEN DEATH ⚡" banner opens it and a status tag shows the
+current level. Simulated: no more 60-round timeouts (1v1 was 5 in 800, 4 seats 18 in 500); 4-seat games
+30 → 23 rounds on average, 3-seat 27 → 22; a typical duel is unchanged (median 19). Draws (double
+knock-outs) rise a little to 5–7% with 3–4 wizards. It cut short Mary's long healing games (46% → 41%),
+so Heal went back up 19 → 21: Normal AI **44.4–55.8%**, one matchup under 25% (Thessaly vs Mirel, 24).
+
+**Done — Phase Shift** (🌀 Phase, the fourth button in 3–4 seat games; `PHASE` in `js/game.js`):
+- A bet that you're about to be targeted, for 4 mana, no ritual, no cooldown, any round. Everything
+  aimed at you that round misses and you gain the mana each caster spent on it (a Greater strike pays
+  your share). Catch **two or more** spells and your next pick is **free, at any ring**.
+- Priced near a typical aimed spell (about 4 mana): nobody aiming at you is a loss of mana and your
+  turn, one attacker is roughly break-even, a gang pays you.
+- AI: phases when it expects two or more spells its way (from how many aimed at it in the last 3
+  rounds, capped by how many foes can afford to), more readily when hurt, and spends a free spell on a
+  big strike. Attackers track how often each wizard phases and hold off on the ones who do.
+- Simulated (700 games each, AIs forced to gang up): the victim wins 0% → **4%** and lasts ~50% longer
+  (4 seats, 2 gang: 8 → 13 rounds); with nobody ganging every seat stays even. Games get longer
+  (4 seats 26 → 29 rounds). Variants tried and dropped: a cooldown, needing to have been ganged first,
+  reflecting the spells back, and an automatic riposte strike — the gang adapts before those pay out.
+  No rule tried lets one wizard reliably beat two; Phase makes ganging up a gamble instead of a sure thing.
+
 **Done — playing it:** Duel → **👥 3–4 Wizards**.
 - Setup screen: 3 or 4 wizards, Free-for-all or 2 v 2 (4 only; wizards 1–2 are Team A, 3–4 Team B),
   and Player or AI for each seat (wizard 1 is always a player). Then each seat picks on the character
@@ -311,12 +371,12 @@ Free-for-all first; teams (2v2) are supported by the same code. Seats with the s
 - Battle screen: a row of HUD cards (portrait, HP, mana, ward; "OUT" when knocked out) replaces the
   two big HUDs. The wizards stand in a row across the arena at a smaller size, team-mates side by side,
   each with a name tag; the left half faces right and the right half faces left.
+- A knocked-out player is out: their go is skipped (no hand-off, no reveal card) and they watch. Once
+  only one player is left standing among the people at the table, the phone stops being handed over.
 - End screen: the winner (or "Team A Wins!"), then placings by when each wizard was knocked out
   (same round = same place).
 
 **Still to do:**
-- what a knocked-out player sees for the rest of the game (today they just watch)
-- protection aimed at an ally in team games
 - kingmaking counter-play (Greater strikes hitting every foe already make ganging up harder)
 - no balance passes for 3–4 players: too many variables
 

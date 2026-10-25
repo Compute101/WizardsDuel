@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wizard's Duel</title>
-<link rel="stylesheet" href="css/style.css?v=0.21">
+<link rel="stylesheet" href="css/style.css?v=0.25">
 </head>
 <body>
 <div id="app">
@@ -15,20 +15,10 @@
     <div class="rune-icon">🧙</div>
     <div class="title-text">Wizard's<br>Duel</div>
     <div class="title-sub">★ &nbsp;Master of Arcane Arts&nbsp; ★</div>
-    <div class="diff-label">Difficulty</div>
-    <div class="diff-selector">
-      <button class="diff-btn" data-diff="easy">Easy</button>
-      <button class="diff-btn active" data-diff="normal">Normal</button>
-      <button class="diff-btn" data-diff="hard">Hard</button>
-    </div>
-    <div class="diff-label">Opponent AI</div>
-    <div class="diff-selector">
-      <button class="ai-btn" data-ai="easy">Easy</button>
-      <button class="ai-btn active" data-ai="normal">Normal</button>
-    </div>
     <button class="btn btn-duel-main" id="btn-duel">⚔ Duel</button>
     <button class="btn" id="btn-practice">🎯 Practice Mode</button>
     <button class="btn" id="btn-tutorial">📜 Tutorial</button>
+    <button class="btn" id="btn-options">⚙ Options</button>
     <div class="hint">STRIKE · WARD · DISPEL<br>OUTGUESS YOUR RIVAL WIZARD</div>
     <div style="position:absolute;bottom:12px;right:16px;font-size:10px;color:rgba(201,168,76,0.4);letter-spacing:1px;">v0.9</div>
   </div>
@@ -236,6 +226,7 @@
         <button class="abtn abtn-ability abtn-elem" id="bel-damage" data-cat="damage"><span class="abtn-ico">⚔️</span><span class="abtn-name">Damage</span><span class="cost" id="bel-damage-cost"></span></button>
         <button class="abtn abtn-ability abtn-elem" id="bel-protect" data-cat="protect"><span class="abtn-ico">🛡</span><span class="abtn-name">Protection</span><span class="cost" id="bel-protect-cost"></span></button>
         <button class="abtn abtn-ability abtn-elem" id="bel-dispel" data-cat="dispel"><span class="abtn-ico">✦</span><span class="abtn-name">Dispel</span><span class="cost" id="bel-dispel-cost"></span></button>
+        <button class="abtn abtn-ability" id="bel-phase" style="display:none"><span class="abtn-ico">🌀</span><span class="abtn-name">Phase</span><span class="cost" id="bel-phase-cost"></span></button>
       </div>
     </div>
   </div>
@@ -285,6 +276,48 @@
       <button class="btn btn-2p" id="btn-duel-2player">⚔ 2 Player (Same Device)</button>
       <button class="btn btn-2p" id="btn-duel-multi">👥 3–4 Wizards</button>
       <button class="btn btn-training-back-btn" id="btn-duel-back" style="margin-top:12px;">← Back</button>
+    </div>
+  </div>
+
+  <!-- OPTIONS -->
+  <div id="options-overlay">
+    <div class="mo-box">
+      <div class="mo-title">Options</div>
+      <div class="mo-sub">★ Saved on this device ★</div>
+      <div class="op-group">
+        <div class="op-name">Difficulty</div>
+        <div class="diff-selector">
+          <button class="diff-btn" data-diff="easy">Easy</button>
+          <button class="diff-btn active" data-diff="normal">Normal</button>
+          <button class="diff-btn" data-diff="hard">Hard</button>
+        </div>
+        <div class="op-help">How hard the casting rituals are.</div>
+      </div>
+      <div class="op-group">
+        <div class="op-name">Opponent AI</div>
+        <div class="diff-selector">
+          <button class="ai-btn" data-ai="easy">Easy</button>
+          <button class="ai-btn active" data-ai="normal">Normal</button>
+        </div>
+        <div class="op-help">How well computer wizards play.</div>
+      </div>
+      <div class="op-group">
+        <div class="op-name">Long duels</div>
+        <div class="mo-row">
+          <button class="mo-opt" data-long="draw">Draw</button>
+          <button class="mo-opt" data-long="sudden">Sudden death</button>
+        </div>
+        <div class="op-help" id="op-long-help"></div>
+      </div>
+      <div class="op-group" id="op-limit-group">
+        <div class="op-name">Round limit</div>
+        <div class="mo-row">
+          <button class="mo-opt" data-limit="30">30</button>
+          <button class="mo-opt" data-limit="40">40</button>
+          <button class="mo-opt" data-limit="50">50</button>
+        </div>
+      </div>
+      <button class="btn" id="btn-options-done">Done</button>
     </div>
   </div>
 
@@ -367,6 +400,6 @@
 
 </div>
 
-<script src="js/game.js?v=0.35"></script>
+<script src="js/game.js?v=0.41"></script>
 </body>
 </html>

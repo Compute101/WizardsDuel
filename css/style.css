@@ -703,11 +703,13 @@ body {
 }
 .abtn-ico  { font-size:24px; line-height:1; }
 .abtn-name { font-size:9px; letter-spacing:0.5px; text-transform:uppercase; font-weight:700; }
+#bel-phase { border-color:#b8a0e8; color:#b8a0e8; }
 
 /* Status tag types for new specials */
 .status-tag.empower  { color:#ff9944; border:1px solid rgba(255,153,68,0.4); }
 .status-tag.counter  { color:#4af0ff; border:1px solid rgba(74,240,255,0.85); background:rgba(74,240,255,0.12); text-shadow:0 0 8px rgba(74,240,255,0.7); box-shadow:0 0 6px rgba(74,240,255,0.25); }
 .status-tag.ward     { color:#ffcc44; border:1px solid rgba(255,204,68,0.4); }
+.status-tag.sudden   { color:#ff6677; border:1px solid rgba(255,85,102,0.6); background:rgba(255,40,60,0.12); }
 .status-tag.weakened  { color:#cc88ff; border:1px solid rgba(204,136,255,0.4); }
 .status-tag.foresight { color:#ffcc44; border:1px solid rgba(255,204,68,0.5); animation:foresight-pulse 1.2s ease-in-out infinite; }
 .status-tag.resist    { color:#dd8822; border:1px solid rgba(221,136,34,0.4); }
@@ -1195,6 +1197,23 @@ body {
 .mh-mana .mh-fill { background: linear-gradient(90deg, #3355cc, #66aaff); }
 .mh-nums { font-size: 9px; color: #ddd; display: flex; flex-wrap: wrap; justify-content: center; gap: 0 5px; align-items: center; white-space: nowrap; }
 .mh-ward { color: #88ffff; }
+
+/* ── OPTIONS ── */
+#options-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 300;
+  align-items: center; justify-content: center;
+  padding: 16px;
+}
+#options-overlay.show { display: flex; }
+.op-group { text-align: left; margin: 14px 0; }
+.op-name { font: 700 13px 'Cinzel', serif; letter-spacing: 2px; text-transform: uppercase; color: #f0cc6a; }
+.op-help { font-size: 12px; color: #aaa; line-height: 1.4; min-height: 34px; }
+#options-overlay .diff-selector { width: 100%; margin: 6px 0 4px; }
+#options-overlay .diff-btn, #options-overlay .ai-btn { padding: 9px 0; font-size: 12px; }
+#options-overlay .op-help:not(#op-long-help) { min-height: 0; }
 
 /* ── 3–4 WIZARD SETUP ── */
 #multi-overlay {
