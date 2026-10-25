@@ -1840,7 +1840,7 @@ function showReveal(){
     const cfg=seatCfg(who), act=gs.pending[who], d=describeAction(who,act);
     const label=twoPlayerMode?'Player '+(PLAYERS.indexOf(who)+1):cfg.name;
     // With more than one foe, say who each spell is aimed at
-    const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${seatCfg(act.target).name}</span>`:'';
+    const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${hitsAllFoes(who,act)?'All foes':seatCfg(act.target).name}</span>`:'';
     return `<div class="rv-card" style="--rv-col:${cfg.col}"><div class="rv-inner">`+
       `<div class="rv-face rv-back"><img class="rv-portrait" src="portraits/${seatKey(who)}.png" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
       `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}<span class="rv-name">${label}</span></div>`+
@@ -2237,12 +2237,30 @@ function castElemental(cat,elemId,tier,self){
   else ELEM_MINIGAME[elemId](spell,commit);
 }
 
+// A Greater (outer ring) strike hits every foe once there's more than one
+const ELEM_GREATER_HITS_ALL_TIER=3;
+function hitsAllFoes(who,action){
+  return action.cat==='damage'&&needsTarget(who,action)&&action.tier>=ELEM_GREATER_HITS_ALL_TIER&&foesOf(who).length>1;
+}
+// Who a strike lands on: its target, then (for a Greater strike) every other foe
+function strikeTargets(who,action){
+  const foes=foesOf(who);
+  if(!hitsAllFoes(who,action)||!foes.includes(action.target)) return [action.target];
+  return [action.target].concat(foes.filter(w=>w!==action.target));
+}
+// Extra projectiles, for show, toward every target after the first
+function fanOut(who,tgts,proj,col){
+  const x=seatX(who), y=bH*.38;
+  tgts.slice(1).forEach(t=>spawnProj(x,y,seatX(t),y,proj,col,()=>{}));
+}
+
 // After the ritual: with more than one foe, the picker taps who the spell is aimed at
 function chooseTarget(who,action){
   const foes=foesOf(who);
   const done=t=>{ action.target=t; commitPick(who,action); };
   if(action.self) done(who);
   else if(!action.ok||!needsTarget(who,action)||foes.length<=1) done(foes[0]);
+  else if(hitsAllFoes(who,action)) done(weakestFoe(who));   // no need to choose: it hits them all
   else showTargetPicker(who,foes,done);
 }
 function showTargetPicker(who,foes,cb){
@@ -2360,9 +2378,11 @@ function executeWheel(who,action,cb){
   }
   const tgt=action.target, tx=seatX(tgt);
   if(action.cat==='damage') st.lastElem=action.elem;
+  const tgts=action.cat==='damage'?strikeTargets(who,action):[tgt];
+  fanOut(who,tgts,ELEM_PROJ[action.elem],el.col);
   spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,()=>{
     if(action.cat==='dispel') elemDispelHit(tgt,action.elem,power,action.tier);
-    else elemStrike(who,tgt,{elem:action.elem,tier:action.tier,power});
+    else elemStrike(who,tgts,{elem:action.elem,tier:action.tier,power});
     combatTimeout(cb,600);
   });
 }
@@ -2377,17 +2397,18 @@ function executeSignature(who,sp,action,cb){
     st.lastElem=el.elem;
     let power=el.power||0;
     if(el.variance) power=el.variance[0]+Math.round(_rng()*(el.variance[1]-el.variance[0]));
-    if(el.pctHp) power=Math.max(power,Math.round(ts.hp*el.pctHp));
+    const tgts=strikeTargets(who,action);
     const blades=countMinions(st,'blade');
     if(el.perBlade){
       power=el.perBlade*blades;
       removeEffects(who,effectsOf(st,'minion').filter(m=>m.minion==='blade'),'Launched');
     }
+    fanOut(who,tgts,ELEM_PROJ[el.elem],e.col);
     const d=fx.delivery;
     // A volley's own per-projectile effects stand in for the default impact burst
     const vfx=fx.hit||(d&&d.volley?()=>{}:null);
     const land=()=>{
-      elemStrike(who,tgt,Object.assign({},el,{power,name:sigName(sp),vfx}));
+      elemStrike(who,tgts,Object.assign({},el,{power,name:sigName(sp),vfx}));
       combatTimeout(cb,600);
     };
     if(d==='lunge'){ lunge(who,0.12,land); return; }
@@ -2526,25 +2547,35 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet){
 }
 
 // o: {elem,tier,power, lifesteal, dot, manaburn, recoil, arc, name, vfx (signature impact)}
-function elemStrike(who,tgt,o){
+// tgts: one seat, or several — a Greater strike in a 3–4 seat duel hits every foe (strikeTargets).
+// Bewitch, the caster's boosts (Empower, Frenzy, Weave) and recoil apply once for the whole cast.
+function elemStrike(who,tgts,o){
   const st=gs[who];
+  tgts=[].concat(tgts);
   if(takeEffect(st,'bewitch')){
     addFloat(seatX(who),bH*.24,'🪞 Bewitched — it rebounds!','#cc88ff',13);
     VFX.bewitched(who);
-    tgt=who;
+    tgts=[who];
   }
-  const ts=gs[tgt], tx=seatX(tgt), el=elemById(o.elem);
-  let dmg=o.power*(seatCfg(who).dmgMult||1);
+  const b={mult:seatCfg(who).dmgMult||1, bonus:0, burn:o.manaburn||0, emp:false};
   const emp=takeEffect(st,'empower',e=>!e.elem||e.elem===o.elem);
-  if(emp){ dmg*=emp.mult; addFloat(seatX(who),bH*.24,'💪 Empowered!','#ffcc44',11); }
+  if(emp){ b.mult*=emp.mult; b.emp=true; addFloat(seatX(who),bH*.24,'💪 Empowered!','#ffcc44',11); }
   const frenzy=effectsOf(st,'frenzy')[0];
-  if(frenzy){ dmg*=frenzy.mult; elemFloatDmg(who,frenzy.selfDmg,'💢','#dd8822'); }
+  if(frenzy){ b.mult*=frenzy.mult; elemFloatDmg(who,frenzy.selfDmg,'💢','#dd8822'); }
   const weave=effectsOf(st,'weave')[0];
-  let burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+(o.manaburn||0);
   if(weave){
-    dmg+=weave.bonus; burn+=weave.burn;
+    b.bonus+=weave.bonus; b.burn+=weave.burn;
     if(--weave.charges<=0) st.effects=st.effects.filter(e=>e!==weave);
   }
+  tgts.forEach(t=>strikeOne(who,t,o,b));
+  if(o.recoil) elemFloatDmg(who,o.recoil,'💥','#ff6644');
+}
+function strikeOne(who,tgt,o,b){
+  const ts=gs[tgt], tx=seatX(tgt), el=elemById(o.elem);
+  let base=o.power;
+  if(o.pctHp) base=Math.max(base,Math.round(ts.hp*o.pctHp));   // Nyxara: a share of this target's HP
+  let dmg=base*b.mult+b.bonus;
+  const burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+b.burn;
 
   if(tgt!==who){
     const absorb=takeEffect(ts,'absorbNext');
@@ -2565,7 +2596,7 @@ function elemStrike(who,tgt,o){
   const hit=elemIncoming(tgt,dmg,o.elem,el.icon,el.col,true);
   const ctx=vfxCtx(who,tgt);
   if(o.vfx) o.vfx(ctx);
-  else { ELEM_IMPACT_VFX[o.elem](ctx,emp?38:22); vfxStrikeAnim(who,tgt); }
+  else { ELEM_IMPACT_VFX[o.elem](ctx,b.emp?38:22); vfxStrikeAnim(who,tgt); }
   if(hit.hp>0){
     if(o.lifesteal){ elemHeal(who,Math.round(hit.hp*o.lifesteal),'🩸'); VFX.lifesteal(seatX(who)); }
     if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',elem:o.elem,name:o.name||el.name,icon:el.icon},o.dot),who);
@@ -2590,7 +2621,6 @@ function elemStrike(who,tgt,o){
     sources.forEach(r=>{ back+=r.n; const f=VFX.retaliate[r.id]; if(f) f(tx,seatX(who)); });
     if(back>0) elemFloatDmg(who,back,'↩️','#ff8844');
   }
-  if(o.recoil) elemFloatDmg(who,o.recoil,'💥','#ff6644');
 }
 
 // Round-end effects on `who` (Elemental rules): DoTs, regen, the foe's minions, then durations tick down
@@ -5421,7 +5451,7 @@ const TUTORIAL_CONVOS={
   ],
   wheel:[
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
-    {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too."},
+    {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too. With more than one rival, an outer-ring strike hits every one of them."},
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
     {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward. A strong Ice strike that reaches them chills them, so they can't pick Damage next round."},
     {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},

@@ -290,6 +290,11 @@ Free-for-all first; teams (2v2) are supported by the same code. Seats with the s
 - **Targeting:** after the ritual, a pick that aims at a foe (strike, dispel, curse, Mana Siphon) opens
   a target picker when there's more than one foe. It shows each foe's HP, ward and banned elements.
   Wards, buffs and heals don't ask. The reveal cards say who each spell is aimed at.
+- **Greater strikes hit every foe:** with more than one foe, an outer-ring Damage pick (plain or
+  signature) hits all of them in full, so it skips the target picker and the reveal says "→ All foes".
+  Allies are spared. The caster's Empower / Frenzy / Weave, Bewitch and recoil count once for the cast;
+  Nyxara's share-of-HP strikes use each target's own HP. Dispels still hit one foe. Games got shorter:
+  4-player free-for-all 30 → 26 rounds on average.
 - If a target is knocked out earlier in the round, the spell goes to the weakest remaining foe.
 - **Minions** attack whoever their owner last aimed at, else the weakest foe.
 - **AI** aims at the weakest-looking foe (HP plus ward, with some noise), and wards when any foe can
