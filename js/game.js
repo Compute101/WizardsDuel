@@ -1817,6 +1817,23 @@ function needsTarget(who,action){
   if(!sp) return action.cat==='damage'||action.cat==='dispel';
   return sp.el.kind==='strike'||sp.el.kind==='curse'||!!(sp.el.action&&sp.el.action.type==='siphon');
 }
+// Team games: a ward, buff or heal can go on an ally instead. Not minions (they serve their owner),
+// Blood Pact or Purge.
+function canShareProtection(who,action){
+  if(action.cat!=='protect'||action.self) return false;
+  const sp=action.sig&&sigById(who,action.sig);
+  if(!sp) return true;
+  const el=sp.el;
+  if(el.kind==='ward') return true;
+  if(el.kind==='buff') return el.effect.type!=='minion';
+  if(el.kind==='instant') return ['heal','tonic'].includes(el.action.type);
+  return false;
+}
+// Who a Protection pick lands on: the chosen ally while they're still standing, else the caster
+function protectTarget(who,action){
+  const a=action.ally;
+  return a&&a!==who&&gs[a]&&!gs[a].out?a:who;
+}
 // The foe with the least HP (ties go to a random one, so no seat is everyone's default)
 function weakestFoe(who){
   const foes=foesOf(who);
@@ -1887,7 +1904,8 @@ function showReveal(){
     const cfg=seatCfg(who), act=gs.pending[who], d=describeAction(who,act);
     const label=!passPhone()?cfg.name:isHumanSeat(who)?'Player '+(PLAYERS.indexOf(who)+1):cfg.name+' (AI)';
     // With more than one foe, say who each spell is aimed at
-    const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${hitsAllFoes(who,act)?'All foes':seatCfg(act.target).name}</span>`:'';
+    const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${hitsAllFoes(who,act)?'All foes':seatCfg(act.target).name}</span>`:
+      act.ally&&act.ally!==who?`<span class="rv-aim">→ ${seatCfg(act.ally).name}</span>`:'';
     return `<div class="rv-card" style="--rv-col:${cfg.col}"><div class="rv-inner">`+
       `<div class="rv-face rv-back"><img class="rv-portrait" src="portraits/${seatKey(who)}.png" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
       `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}<span class="rv-name">${label}</span></div>`+
@@ -2013,6 +2031,7 @@ function endSimRound(){
     if(st.shield>0) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
   });
   gs.round++;
+  if(suddenDeathLevel()===1&&!simMode){ addFloat(bW*.5,bH*.22,'⚡ SUDDEN DEATH ⚡','#ff5566',22); flash('#ff3344'); }
   if(simMode){ runRoundTicks(); return; }
 
   const delay=Math.max(0,(gs.lastAnimEnd||0)-Date.now())+600;
@@ -2342,23 +2361,26 @@ function chooseTarget(who,action){
   const foes=foesOf(who);
   const done=t=>{ action.target=t; commitPick(who,action); };
   if(action.self) done(who);
+  else if(action.ok&&canShareProtection(who,action)&&alliesOf(who).length)
+    showTargetPicker(who,[who].concat(alliesOf(who)),t=>{ action.ally=t; done(foes[0]); },'Protect who?');
   else if(!action.ok||!needsTarget(who,action)||foes.length<=1) done(foes[0]);
   else if(hitsAllFoes(who,action)) done(weakestFoe(who));   // no need to choose: it hits them all
   else showTargetPicker(who,foes,done);
 }
-function showTargetPicker(who,foes,cb){
+function showTargetPicker(who,foes,cb,title='Choose a target'){
   let ov=document.getElementById('target-overlay');
   if(!ov){
     ov=document.createElement('div'); ov.id='target-overlay';
     ov.innerHTML='<div class="tg-box"><div class="tg-title">Choose a target</div><div class="tg-list"></div></div>';
     document.body.appendChild(ov);
   }
+  ov.querySelector('.tg-title').textContent=title;
   ov.querySelector('.tg-list').innerHTML=foes.map(w=>{
     const st=gs[w], cfg=seatCfg(w), el=st.shieldType&&elemById(st.shieldType);
     const ward=hasWard(st)?`<span class="tg-ward">🛡 ${el.icon} ${st.shieldHp}</span>`:'';
     const ban=(cfg.forbidden||[]).map(id=>elemById(id).icon).join('');
     return `<button class="tg-foe" data-who="${w}" style="--tg-col:${cfg.col}">`+
-      `<img src="portraits/${seatKey(w)}.png" alt=""><span class="tg-name">${cfg.name}</span>`+
+      `<img src="portraits/${seatKey(w)}.png" alt=""><span class="tg-name">${cfg.name}${w===who?' (you)':''}</span>`+
       `<span class="tg-hp">❤ ${st.hp} / ${st.maxHp}</span>${ward}`+
       (ban?`<span class="tg-ban">⛔ ${ban}</span>`:'')+`</button>`;
   }).join('');
@@ -2466,8 +2488,9 @@ function executeWheel(who,action,cb){
   const cat=ELEM_CATS[action.cat], el=elemById(action.elem);
   const power=cat.power[action.tier-1];
   if(action.cat==='protect'){
-    raiseWard(who,action.elem,power,0);
-    anim(who,'shield',700);
+    const ally=protectTarget(who,action);
+    raiseWard(ally,action.elem,power,0);
+    anim(ally,'shield',700);
     combatTimeout(cb,900);
     return;
   }
@@ -2529,22 +2552,24 @@ function executeSignature(who,sp,action,cb){
     spawnProj(x,y,tx,y,ELEM_PROJ[el.elem],e.col,land);
     return;
   }
+  const ally=protectTarget(who,action), as=gs[ally], actx=ally===who?ctx:vfxCtx(ally,ally);
   if(el.kind==='ward'){
     let power=el.power;
     if(el.perSkeleton) power+=el.perSkeleton*countMinions(st,'skeleton');
-    raiseWard(who,el.elem,power,el.retaliate||0);
-    st.wardSig=sp.id;
-    if(fx.self) fx.self(ctx); else anim(who,'shield',700);
+    raiseWard(ally,el.elem,power,el.retaliate||0);
+    as.wardSig=sp.id;
+    if(fx.self) fx.self(actx); else anim(ally,'shield',700);
     if(el.rewind){
-      const back=Math.min(el.rewind,st.lastRoundLoss||0);
-      if(back>0) elemHeal(who,back,'⏪');
+      const back=Math.min(el.rewind,as.lastRoundLoss||0);
+      if(back>0) elemHeal(ally,back,'⏪');
     }
     combatTimeout(cb,900);
     return;
   }
   if(el.kind==='buff'){
-    addEffect(who,effect({kind:'buff'}),who);
-    if(fx.self) fx.self(ctx); else { spawnParts(x,y,e.col,14); anim(who,'shield',700); }
+    const mine=el.effect.type==='minion';   // minions always serve their owner
+    addEffect(mine?who:ally,effect({kind:'buff'}),who);
+    if(fx.self) fx.self(mine?ctx:actx); else { spawnParts(seatX(mine?who:ally),y,e.col,14); anim(mine?who:ally,'shield',700); }
     combatTimeout(cb,900);
     return;
   }
@@ -2566,7 +2591,7 @@ function executeSignature(who,sp,action,cb){
   }
   // Instants
   const a=el.action;
-  if(a.type==='heal') elemHeal(who,a.amt);
+  if(a.type==='heal') elemHeal(ally,a.amt);
   else if(a.type==='bloodpact'){ st.mana=Math.min(MAX_MANA,st.mana+a.mana); addFloat(x,bH*.3,'+'+a.mana+' Mana','#88aaff',13); }
   else if(a.type==='cleanse'){ elemCleanse(who); if(a.heal) elemHeal(who,a.heal); }
   else if(a.type==='rewind'){ elemHeal(who,Math.min(a.max,st.lastRoundLoss||0),'⏪'); if(!st.lastRoundLoss) addFloat(x,bH*.3,'⏪ Nothing to undo','#cccccc',12); }
@@ -2578,10 +2603,10 @@ function executeSignature(who,sp,action,cb){
   }
   else if(a.type==='tonic'){
     ctx.healed=_rng()<0.5;
-    if(ctx.healed) elemHeal(who,a.heal,'⚗️');
-    else addEffect(who,{id:sp.id,type:'empower',kind:'buff',name:'Empowered',icon:'💪',mult:a.mult,rounds:null},who);
+    if(ctx.healed) elemHeal(ally,a.heal,'⚗️');
+    else addEffect(ally,{id:sp.id,type:'empower',kind:'buff',name:'Empowered',icon:'💪',mult:a.mult,rounds:null},who);
   }
-  if(fx.self) fx.self(ctx); else { spawnParts(x,y,e.col,12); anim(who,'cast',700); }
+  if(fx.self) fx.self(['heal','tonic'].includes(a.type)?actx:ctx); else { spawnParts(x,y,e.col,12); anim(who,'cast',700); }
   combatTimeout(cb,900);
 }
 
@@ -2674,7 +2699,7 @@ function strikeOne(who,tgt,o,b){
   const ts=gs[tgt], tx=seatX(tgt), el=elemById(o.elem);
   let base=o.power;
   if(o.pctHp) base=Math.max(base,Math.round(ts.hp*o.pctHp));   // Nyxara: a share of this target's HP
-  let dmg=base*b.mult+b.bonus;
+  let dmg=(base*b.mult+b.bonus)*suddenDeathMult();
   const burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+b.burn;
 
   if(tgt!==who){
@@ -2729,7 +2754,7 @@ function elemTickEffects(who){
   effectsOf(st,'dot').forEach(e=>{
     dmgSource=e.from;
     e.tick=(e.tick||0)+1;
-    const dmg=e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg;
+    const dmg=Math.round((e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg)*suddenDeathMult());
     // Ticks hit a ward first, like any damage — unless the effect seeps past wards (Caustic Bomb's poison)
     if(e.bypassWard||!hasWard(st)){
       if(e.bypassWard&&hasWard(st)) addFloat(x,bH*.3,e.icon+' Seeps past the ward!','#99dd55',11);
@@ -2749,7 +2774,7 @@ function elemTickEffects(who){
     effectsOf(gs[owner],'minion').forEach(m=>{
       const el=elemById(m.elem||'physical');
       dmgSource=owner;
-      elemIncoming(who,m.dmg,m.elem||'physical',m.icon,el.col,true);
+      elemIncoming(who,Math.round(m.dmg*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
       if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,bH*.38);
     });
   });
@@ -2757,9 +2782,18 @@ function elemTickEffects(who){
   st.effects.forEach(e=>{ if(e.rounds!=null&&--e.rounds<=0) expired.push(e); });
   if(expired.length){ st.effects=st.effects.filter(e=>!expired.includes(e)); syncMinionVisuals(st); }
 }
+// Sudden death: from a set round, every round ramps up — more mana, and every hit and tick lands harder
+// (wards don't grow) — so long duels come to an end
+const SUDDEN_DEATH={round:{duel:30, multi:20}, manaPerRound:1, maxMana:5, dmgPerRound:0.15};
+function suddenDeathLevel(){
+  if(!gs||!gs.round) return 0;
+  return Math.max(0,gs.round-SUDDEN_DEATH.round[PLAYERS.length>2?'multi':'duel']+1);
+}
+function suddenDeathMult(){ return 1+SUDDEN_DEATH.dmgPerRound*suddenDeathLevel(); }
+function suddenDeathMana(){ return Math.min(SUDDEN_DEATH.maxMana,SUDDEN_DEATH.manaPerRound*suddenDeathLevel()); }
 function elemIncome(who){
   const drain=effectsOf(gs[who],'incomeDrain').reduce((a,e)=>a+e.n,0);
-  return Math.max(0,ELEM_INCOME-drain);
+  return Math.max(0,ELEM_INCOME-drain)+suddenDeathMana();
 }
 
 // ── Elemental AI: a weighted mixed strategy so it can't be read every round ──
@@ -2879,12 +2913,19 @@ function elemAIChoose(who){
   // Sometimes hold mana back — but not when ganged up on: big wards, and Greater strikes that hit them all
   if(tier>1&&!free&&!(ganged&&cat!=='dispel')&&_rng()<0.4) tier--;
   const elem=choice.elem;
-  if(choice.sp) return {type:'el',cat,elem,tier,sig:choice.sp.id,target:aimTgt,ok};
-  return {type:'el',cat,elem,tier,self:false,target:aimTgt,ok};
+  const pick=choice.sp?{type:'el',cat,elem,tier,sig:choice.sp.id,target:aimTgt,ok}:{type:'el',cat,elem,tier,self:false,target:aimTgt,ok};
+  // Team games: shield a team-mate who's worse off — lower on HP, unwarded, or the one the foes went for
+  if(cat==='protect'&&canShareProtection(who,pick)){
+    const need=w=>gs[w].hp/gs[w].maxHp-(hasWard(gs[w])?0.2:0)-((gs.focus&&gs.focus[w]||[]).length>=2?0.25:0);
+    const mate=alliesOf(who).filter(a=>need(a)<need(who)-0.15).sort((a,b)=>need(a)-need(b))[0];
+    if(mate&&_rng()<(smart?0.75:0.4)) pick.ally=mate;
+  }
+  return pick;
 }
 
 function elemStatusTags(){
   const tags=[];
+  if(suddenDeathLevel()) tags.push(`<span class="status-tag sudden">⚡ SUDDEN DEATH · damage ×${suddenDeathMult().toFixed(2)} · +${suddenDeathMana()} mana</span>`);
   PLAYERS.forEach(w=>{
     const st=gs[w], name=seatCfg(w).name;
     if(hasFreeSpell(w)) tags.push(`<span class="status-tag ward">✨ ${name} FREE SPELL</span>`);
@@ -5579,7 +5620,7 @@ function startTrainingBattle(){
 // where pick keys are a signature spell id, or 'damage' / 'protect' / 'dispel' / 'cleanse' / 'pass'.
 const SIM_MAX_ROUNDS=60;
 // The tool page reads the game through an iframe, where only function declarations are visible
-function simInfo(){ return {chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE, bounty:ELEM_KO_BOUNTY, phase:PHASE,
+function simInfo(){ return {suddenDeath:SUDDEN_DEATH, chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE, bounty:ELEM_KO_BOUNTY, phase:PHASE,
   setGangAware:v=>{ GANG_AWARE_AI=v; }}; }
 function simMatch(k1,k2,ai){
   simMode=true; simOutcome=null;
@@ -5680,6 +5721,7 @@ const TUTORIAL_CONVOS={
     {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the surest way to win."},
     {key:'eldrad', text:"Each round resolves in that order — every Protection first, then every Dispel, then every Damage. So the trick is guessing what your rival will choose."},
     {key:'mal',    text:"With three or four of us, whoever deals the most damage to a wizard in the round they fall claims a bounty: HP and mana. Gang up on someone if you like — but your ally wants that kill as much as you do."},
+    {key:'gnash',  text:"Duel drag on too long? SUDDEN DEATH! From round 30 — round 20 with three or four of us — every round hits harder and brings more mana. Wards don't grow. Somebody falls soon."},
     {key:'ponder', text:"Think they're all coming for you? Tap 🌀 Phase. Everything aimed at you that round misses, and you soak up the mana they spent on it. Catch two or more spells and your next spell is free — any ring! Guess wrong and you've lost your turn and 4 mana."},
   ],
   wheel:[
@@ -5688,6 +5730,7 @@ const TUTORIAL_CONVOS={
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
     {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward. A strong Ice strike that reaches them chills them, so they can't pick Damage next round."},
     {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
+    {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],
   enchant:[

@@ -586,9 +586,9 @@
           "tier": 1,
           "action": {
             "type": "heal",
-            "amt": 19
+            "amt": 21
           },
-          "desc": "Heal 19 now"
+          "desc": "Heal 21 now"
         }
       },
       {

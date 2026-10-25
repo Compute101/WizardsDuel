@@ -315,6 +315,19 @@ Free-for-all first; teams (2v2) are supported by the same code. Seats with the s
   turtles (more and bigger wards), hits back at the weakest of them, and casts Greater strikes. Against
   a committed gang this only buys about half a round — a ward can't stop a dispel and a strike together.
 
+**Done — protecting an ally:** in team games a Protection pick (plain ward, signature ward, buff,
+Heal or Volatile Tonic) asks "Protect who?" after the ritual, listing you and your team-mates; the reveal
+card shows who it's for. Minion buffs, Blood Pact and Purge stay with the caster. The AI shields a
+team-mate who's worse off (lower HP, unwarded, or the one the foes went for).
+
+**Done — sudden death** (`SUDDEN_DEATH`): from round **30** in a duel, round **20** with 3–4 wizards,
+each round adds +15% to every strike, tick and minion hit and +1 mana income (up to +5). Wards and heals
+don't grow, so the end comes quickly. A "⚡ SUDDEN DEATH ⚡" banner opens it and a status tag shows the
+current level. Simulated: no more 60-round timeouts (1v1 was 5 in 800, 4 seats 18 in 500); 4-seat games
+30 → 23 rounds on average, 3-seat 27 → 22; a typical duel is unchanged (median 19). Draws (double
+knock-outs) rise a little to 5–7% with 3–4 wizards. It cut short Mary's long healing games (46% → 41%),
+so Heal went back up 19 → 21: Normal AI **44.4–55.8%**, one matchup under 25% (Thessaly vs Mirel, 24).
+
 **Done — Phase Shift** (🌀 Phase, the fourth button in 3–4 seat games; `PHASE` in `js/game.js`):
 - A bet that you're about to be targeted, for 4 mana, no ritual, no cooldown, any round. Everything
   aimed at you that round misses and you gain the mana each caster spent on it (a Greater strike pays
@@ -345,7 +358,6 @@ Free-for-all first; teams (2v2) are supported by the same code. Seats with the s
   (same round = same place).
 
 **Still to do:**
-- protection aimed at an ally in team games
 - kingmaking counter-play (Greater strikes hitting every foe already make ganging up harder)
 - no balance passes for 3–4 players: too many variables
 
