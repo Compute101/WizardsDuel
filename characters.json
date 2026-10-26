@@ -277,7 +277,7 @@
   "gnash": {
     "name": "GNASH",
     "title": "The Feral",
-    "sprite": "sprites/mage-dark.png",
+    "sprite": "sprites/gnash.png",
     "col": "#dd8822",
     "taunts": [
       "Hah! You tickled Gnash. Come back and try harder!",
@@ -628,7 +628,7 @@
   "mordant": {
     "name": "MORDANT",
     "title": "The Defiler",
-    "sprite": "sprites/mage-dark.png",
+    "sprite": "sprites/mordant.png",
     "col": "#9944cc",
     "taunts": [
       "Every prayer you offered was silence. Every mercy, weakness.",
@@ -700,7 +700,7 @@
   "ponder": {
     "name": "PONDER",
     "title": "The Apprentice",
-    "sprite": "sprites/mage-light.png",
+    "sprite": "sprites/ponder.png",
     "col": "#9988cc",
     "taunts": [
       "I— I won? Oh! Well... don't think I'll go easy on you next time!",
