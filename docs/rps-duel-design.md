@@ -35,8 +35,13 @@ What was built, including choices made while building:
 - **Minigames:** Damage uses its element's minigame. Physical borrows Inferno's minigame and Dark
   borrows Mana Burn's, each with its own glyph set. Protection uses the tile-match and Dispel uses the
   Dispel minigame. A failed minigame fizzles and costs 1 mana.
-- **Mana:** everyone starts with 6 and gains +4 at the end of every round. There's no Channel, and the
-  cheapest spell costs 1, so you can always cast something.
+- **Mana:** everyone starts with 6 and gains +4 at the end of every round. The cheapest spell costs 1,
+  so you can always cast something.
+- **Meditate** (🧘 on the action bar) replaces the old Channel: skip your spell and gain +3 mana on top
+  of income (`MEDITATE` in `js/game.js`). It's a bet that the foe won't strike: you cast nothing, so
+  nothing stops their spell. It resolves after every Damage, so this round's mana burns can't touch the
+  gain. Not two rounds in a row, and not with a free spell pending. The AI meditates when short of mana,
+  more readily when its foe can't afford a strike or its ward, buffs and curses are working for it.
 - **Paying:** every seat pays for its pick as the round begins, before anything resolves (`payForAction`).
   The picks were simultaneous, so a mana burn or drain this round can't stop a spell that was already
   paid for, whatever the seat order. A failed ritual costs 1 mana instead. **Quick** spells (`quick` on
@@ -80,7 +85,7 @@ Starting numbers (to be tuned):
 - **Shields** take half damage from their chosen type, last **3 rounds**, and **decay** each round.
 - **Dispels** deal double to a shield of the matching type.
 - **Resolution stages** replace `ACTION_PRIORITY`: start-of-round → all Protection → all Dispel → all Damage → end-of-round.
-- **Mana**: fixed income every round (about +4). **Channel is removed**, and so are free (0-cost) spells.
+- **Mana**: fixed income every round (about +4). **Channel is removed** (Meditate later brought back a riskier version), and so are free (0-cost) spells.
 - **Piercing is removed** (Lightning, Radiant, Feint, Charge). Those spells get a mana-burn rider instead.
 - **Freeze** no longer skips a turn. Instead, next round you can't pick one category, and everyone can see which.
 - **Haste is removed.**
