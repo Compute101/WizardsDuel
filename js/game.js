@@ -1482,6 +1482,11 @@ function refreshActionBar(){
     document.getElementById('bel-phase-cost').textContent=PHASE.cost+' Mana';
     ph.classList.toggle('off',busy||!phaseReady(who)||hasFreeSpell(who));
   }
+  const med=document.getElementById('bel-meditate');
+  if(med){
+    document.getElementById('bel-meditate-cost').textContent=gs[who].meditatedRound===gs.round-1?'Rested':'+'+MEDITATE.gain+' Mana';
+    med.classList.toggle('off',busy||!canMeditate(who));
+  }
 }
 
 
@@ -1812,7 +1817,7 @@ function foesOf(who){ return activeSeats().filter(w=>seatTeam(w)!==seatTeam(who)
 function alliesOf(who){ return activeSeats().filter(w=>w!==who&&seatTeam(w)===seatTeam(who)); }
 // Does this pick aim at a foe? Strikes, dispels, curses and Mana Siphon do; wards, buffs and heals don't.
 function needsTarget(who,action){
-  if(action.self||action.cat==='pass') return false;
+  if(action.self||action.cat==='pass'||action.cat==='meditate') return false;
   const sp=action.sig&&sigById(who,action.sig);
   if(!sp) return action.cat==='damage'||action.cat==='dispel';
   return sp.el.kind==='strike'||sp.el.kind==='curse'||!!(sp.el.action&&sp.el.action.type==='siphon');
@@ -2240,9 +2245,17 @@ function phaseGain(who,n){
   if(n>0) addFloat(seatX(who),bH*.44,'🌀 +'+n+' Mana','#b8a0e8',12);
 }
 function isPhased(who){ return gs[who]&&gs[who].phasedRound===gs.round; }
+// Meditate: skip your spell to gain mana on top of income, a bet that the foe won't strike this round.
+// It resolves after every Damage, so this round's mana burns can't touch it. Not two rounds in a row.
+const MEDITATE={gain:3};
+function canMeditate(who){
+  const st=gs[who];
+  return st.meditatedRound!==gs.round-1&&st.mana<MAX_MANA&&!hasFreeSpell(who);
+}
 function actionPriority(action){ return action.cat==='phase'?0:ELEM_CATS[action.cat]?ELEM_CATS[action.cat].stage:4; }
 function describeElemAction(action,who){
   if(action.cat==='pass') return {icon:'…',name:'Waits'};
+  if(action.cat==='meditate') return {icon:'🧘',name:'Meditate'};
   if(action.cat==='phase') return {icon:'🌀',name:'Phase Shift'};
   const cat=ELEM_CATS[action.cat];
   if(action.sig){
@@ -2419,6 +2432,7 @@ function elemHeal(who,n,icon){
 function payForAction(who,action){
   const st=gs[who];
   if(action.cat==='pass') return;
+  if(action.cat==='meditate'){ st.meditatedRound=gs.round; return; }
   const sp=action.sig?sigById(who,action.sig):null;
   const cost=action.cat==='phase'?PHASE.cost:sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
   const silence=effectsOf(st,'silence')[0];
@@ -2437,6 +2451,14 @@ function quickSteal(who,action){
 function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
+  if(action.cat==='meditate'){
+    const n=Math.min(MEDITATE.gain,MAX_MANA-st.mana);
+    st.mana+=n;
+    anim(who,'cast',600);
+    vfxFountain(x,bH*.38,['#7fb2ff','#b8d4ff','#ffffff'],14,{spread:.35,min:.6,var:1.4,w:.08,lift:-.3,sz:2.5,dec:.01});
+    addFloat(x,bH*.33,'🧘 Meditates'+(n>0?' +'+n+' Mana':''),'#7fb2ff',13);
+    combatTimeout(cb,700); return;
+  }
   const sp=action.sig?sigById(who,action.sig):null;
   // A foe knocked out earlier in the round: the spell goes to another foe instead
   if(action.target&&action.target!==who&&gs[action.target].out){
@@ -2851,6 +2873,17 @@ function elemAIChoose(who){
   const me=gs[who], tgt=ganged?gangedBy.reduce((a,b)=>gs[a].hp<=gs[b].hp?a:b):aiPickTarget(who), opp=gs[tgt];
   const smart=aiDifficulty==='normal';
   const oppWard=hasWard(opp), oppBuffs=buffsOf(opp).length, myCurses=cursesOf(me).length;
+  // Meditate when short of mana, more readily when the foe can't afford a strike or my ward, buffs
+  // and curses are doing the work for me — and less when I'm close to dying
+  if(canMeditate(who)&&me.mana<elemCost(who,'damage',2)){
+    let p=me.mana<elemCost(who,'damage',1)?0.4:0.2;
+    if(!foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',1))) p+=0.3;
+    if(hasWard(me)&&me.shieldHp>=15) p+=0.15;
+    p+=Math.min(0.2,0.1*(buffsOf(me).length+cursesOf(opp).length));
+    if(me.hp<me.maxHp*0.3) p*=0.5;
+    if(!smart) p*=0.6;
+    if(_rng()<p) return {type:'el',cat:'meditate',ok:true};
+  }
   const w={damage:1.0, protect:0.55, dispel:0.08};
   if(oppWard){ w.dispel=smart?1.7:1.0; w.damage=0.5; }
   else if(oppBuffs) w.dispel+=smart?0.9:0.4;
@@ -5672,7 +5705,7 @@ function startTrainingBattle(){
 // ── BALANCE SIMULATOR ──────────────────────────────────────
 // Used by tools/balance.html: AI vs AI duels on the real rules, resolved instantly.
 // Returns {winner:'p1'|'p2'|'draw'|'timeout', rounds, hp:{p1,p2}, picks:{p1:{key:count},p2:{…}}}
-// where pick keys are a signature spell id, or 'damage' / 'protect' / 'dispel' / 'cleanse' / 'pass'.
+// where pick keys are a signature spell id, or 'damage' / 'protect' / 'dispel' / 'cleanse' / 'meditate' / 'pass'.
 const SIM_MAX_ROUNDS=60;
 // The tool page reads the game through an iframe, where only function declarations are visible
 function simInfo(){ return {options:GAME_OPTIONS, suddenDeath:SUDDEN_DEATH, chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE, bounty:ELEM_KO_BOUNTY, phase:PHASE,
@@ -5765,7 +5798,8 @@ const TUTORIAL_CONVOS={
   ],
   'health-mana':[
     {key:'eldrad', text:"Every wizard has Health and Mana. When your HP reaches zero, the duel is over. HP differs between wizards — Gnash and Durin are hardy, Malachar and Fizzwick are fragile."},
-    {key:'sylvara',text:"Everyone starts with the same mana and gains more at the end of every round. There's no channelling and no free attacks — every spell costs something."},
+    {key:'sylvara',text:"Everyone starts with the same mana and gains more at the end of every round. There are no free attacks — every spell costs something."},
+    {key:'skadi',  text:"Short of mana? 🧘 Meditate instead of casting: you gain 3 extra mana that round. But you cast nothing, so if your rival strikes, it lands. You can't meditate two rounds in a row."},
     {key:'ponder', text:"Even the cheapest spell costs only a little, so you can always do something. The question is whether to spend big now or save for a stronger cast next round."},
     {key:'sylvara',text:"Watch your rival's mana bar! If they can't afford a big ward, they won't cast one. Reading their mana is half the game."},
   ],
@@ -6043,6 +6077,13 @@ window.addEventListener('DOMContentLoaded', ()=>{
     if(e.currentTarget.classList.contains('off')||!gs.myTurn||gs.busy) return;
     gs.busy=true;
     commitPick(who,{type:'el',cat:'phase',ok:true,target:who});
+  });
+  // Meditate is a plain choice too: no ritual, no target
+  document.getElementById('bel-meditate').addEventListener('click',e=>{
+    const who=gs.turnPlayer;
+    if(e.currentTarget.classList.contains('off')||!gs.myTurn||gs.busy) return;
+    gs.busy=true;
+    commitPick(who,{type:'el',cat:'meditate',ok:true});
   });
   document.querySelectorAll('.abtn-elem').forEach(btn=>{
     btn.addEventListener('click',()=>openElemWheel(btn.dataset.cat));
