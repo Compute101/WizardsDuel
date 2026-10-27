@@ -37,7 +37,7 @@ Every spell's casting minigame uses glyphs from a shared 12-symbol alphabet. Thi
 | Ice | ice | `θ Φ ☽ ∞` | crystal / polar axis / frost moon / eternal |
 | Arcane | arcane | `Ω ∞ Ψ θ` | cosmos / eternity / spirit / hidden |
 | Dispel | dispel | `∞ ⊕ ∇ θ` | eternal cycle / unbinding / descent / dissolution |
-| Physical (Elemental rules) | physical | `Δ ∇ Ψ ⊕` | stone layers / fork / binding — Rockfall minigame (rune stones fall and slam into the floor) |
+| Physical (Elemental rules) | physical | `Δ ∇ Ψ ⊕` | stone layers / fork / binding — Rockfall minigame (rune stones fall into shuffled spots on a quaking floor) |
 | Dark (Elemental rules) | dark | `☽ ⊗ ∇ Ω` | the Necromancy set — borrows the Mana Burn minigame |
 
 Arcane deliberately shares one glyph with each other element — it's the underlying force of all magic, and the hardest set to memorise in hard mode. Dispel similarly draws one glyph from each elemental set (∞ from Ice, ⊕ from Inferno, ∇ from Lightning, θ from Ice/Arcane), fitting its role as a universal spell that dissolves any type of magic.

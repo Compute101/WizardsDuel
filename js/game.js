@@ -3957,22 +3957,24 @@ function launchRockfallPattern(spell,cb){
     }
   }
 
-  // Sequence boulders — fall under gravity, slam into the floor, then rest there
+  // Sequence boulders — fall under gravity, slam into the floor, then rest there.
+  // Landing spots are shuffled, so the order has to be read from the drops (and badges), not left to right.
   const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
     const frac=(i+0.5)/SEQ_LEN;
     return Math.max(30,Math.min(cw-30,cw*frac+(_rng()-0.5)*16));
   });
+  for(let i=xSlots.length-1;i>0;i--){ const j=Math.floor(_rng()*(i+1)); [xSlots[i],xSlots[j]]=[xSlots[j],xSlots[i]]; }
   const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
   const ROCK_R=26, START_Y=-ROCK_R-4, REST_Y=FLOOR_Y-ROCK_R+4;
   const FALL_MS=550, GRAV=2*(REST_Y-START_Y)/(FALL_MS*FALL_MS);   // px/ms²
-  const BOUNCE_MS=220, SHAKE_MS=300;
+  const BOUNCE_MS=220, SHAKE_MS=300, QUAKE_PX=3.5;
   const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false, shakeAt=-1e9, lastT=startTime;
   const symStates=seq.map((ai,i)=>({
     ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
     x:xSlots[i],y:START_Y,spawnAt:SPAWN_DELAY+i*SPAWN_INTERVAL,idx:i,landed:false,
-    tilt:(_rng()-.5)*0.25,
+    tilt:(_rng()-.5)*0.25, wob:0,
     rock:Array.from({length:9},(_,k)=>({a:k/9*Math.PI*2+(_rng()-.5)*0.3, r:ROCK_R*(0.82+_rng()*0.3)})),
   }));
 
@@ -4020,7 +4022,7 @@ function launchRockfallPattern(spell,cb){
   function drawRock(s,alpha){
     mx.save();
     mx.globalAlpha=alpha;
-    mx.translate(s.x,s.y); mx.rotate(s.tilt);
+    mx.translate(s.x,s.y); mx.rotate(s.tilt+s.wob);
     mx.beginPath();
     s.rock.forEach((p,k)=>{const px=Math.cos(p.a)*p.r,py=Math.sin(p.a)*p.r; k?mx.lineTo(px,py):mx.moveTo(px,py);});
     mx.closePath();
@@ -4056,11 +4058,13 @@ function launchRockfallPattern(spell,cb){
     }
 
     if(phase==='watch'){
-      // Impact shake — decays over SHAKE_MS
+      // Earthquake — a constant rumble that surges in waves, plus a jolt on each impact (decays over SHAKE_MS)
       const sinceShake=elapsed-shakeAt;
-      const shake=sinceShake<SHAKE_MS?7*(1-sinceShake/SHAKE_MS):0;
+      const jolt=sinceShake<SHAKE_MS?7*(1-sinceShake/SHAKE_MS):0;
+      const quake=QUAKE_PX*(0.55+0.45*Math.sin(elapsed/420)*Math.sin(elapsed/1130));
       mx.save();
-      if(shake) mx.translate((_rng()-.5)*shake*2,(_rng()-.5)*shake);
+      mx.translate(Math.sin(elapsed/23)*quake+(_rng()-.5)*jolt*2,
+                   Math.sin(elapsed/31+1.7)*quake*0.6+(_rng()-.5)*jolt);
 
       // Floor
       const fg=mx.createLinearGradient(0,FLOOR_Y,0,ch);
@@ -4097,6 +4101,7 @@ function launchRockfallPattern(spell,cb){
           if(!s.landed){ s.landed=true; shakeAt=elapsed; spawnDust(s.x,16,true); addCrack(s.x); }
           const b=age-FALL_MS;
           s.y=REST_Y-(b<BOUNCE_MS?Math.sin(Math.PI*b/BOUNCE_MS)*10*(1-b/BOUNCE_MS):0);
+          s.wob=Math.sin(elapsed/55+s.idx*2.1)*0.05;   // rattles in the quake
         }
         // Shadow on the floor grows as the boulder nears it
         const near=Math.max(0,Math.min(1,(s.y-START_Y)/(REST_Y-START_Y)));
