@@ -166,8 +166,8 @@ so each spell's numbers can be tuned there.
 | Mordant | 🔇 Silence | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | 3 rounds: foe's spells fail 50% |
 | Mordant | ☠️ Corruption | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Foe gains 3 less mana a round × 3 |
 | Ponder | 👻 Vanish | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 3 / 5 | The next strike within 2 rounds misses |
-| Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant (quick) | 1 / 2 / 3 | Steal 3 mana as the round begins, before they pay |
-| Ponder | 💫 Blink | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 45% dodge × 3 rounds |
+| Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant (quick) | 2 / 3 / 5 | Steal 3 mana as the round begins, before they pay |
+| Ponder | 💫 Blink | 🛡 Protection | ⚡ Lightning | Enchantment (self) + ward | 2 / 4 / 6 | 45% dodge × 3 rounds, plus a 10 HP Lightning ward. Dodge rolls before Vanish, so a dodged strike keeps Vanish up |
 | Durin | 🧱 Stoneskin | 🛡 Protection | 👊 Physical | Ward | 4 / 6 / 10 | Physical ward of 40 |
 | Durin | 💎 Stonesoul | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | −35% damage × 3 |
 | Durin | ⛰️ Rockfall | ⚔️ Damage | 👊 Physical | Strike | 4 / 6 / 10 | 22 physical |
@@ -234,7 +234,7 @@ matchups are worse than 25/75 (the worst is Malachar vs Gnash, 22%).
 | Thessaly | HP 88 → 92 · Enthral 3 → 2 mana · Arcane Weave 3 → 2 mana, +5 / burn 2 → +8 / burn 3 · Spellbind +3 × 3 → +4 × 4 |
 | Nyxara | HP 78 → 86 · Gravity Well 25% → 30% of HP |
 | Aurelia | Foresight 4 → 3 mana |
-| Ponder | Mana Siphon 3 → 4 · Blink 40% → 45% |
+| Ponder | Mana Siphon 3 → 4 · Blink 40% → 45%; later Blink rolls before Vanish and adds a 10 HP ward, 3 → 4 mana, HP 85 → 78; the AI then learned to siphon foes who saved up, so Mana Siphon 2 → 3 mana |
 | Zacharius | Galvanize 3 → 2 mana |
 | Durin | Rockfall 20 → 22 |
 

@@ -707,7 +707,7 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 85,
+    "hp": 78,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -739,7 +739,7 @@
           "cat": "dispel",
           "kind": "instant",
           "elem": "arcane",
-          "cost": 2,
+          "cost": 3,
           "tier": 1,
           "action": {
             "type": "siphon",
@@ -757,14 +757,15 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "lightning",
-          "cost": 3,
+          "cost": 4,
           "tier": 2,
           "effect": {
             "type": "dodge",
             "pct": 0.45,
             "rounds": 3
           },
-          "desc": "45% dodge × 3 rounds"
+          "ward": 10,
+          "desc": "45% dodge × 3 rounds, plus a 10 HP Lightning ward"
         }
       }
     ]

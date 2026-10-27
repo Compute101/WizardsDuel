@@ -2180,7 +2180,7 @@ function sigAtTier(sp,tier){
   const mult=v=>Math.round((1+(v-1)*s)*100)/100;
   el.tier=tier;
   if(el.cost>0) el.cost=Math.max(1,Math.round(el.cost*SIG_COST_SCALE[tier-1]));
-  ['power','retaliate','perSkeleton','perBlade','rewind','manaburn','drainNow','hpCost'].forEach(k=>{ if(el[k]) el[k]=n(el[k]); });
+  ['power','ward','retaliate','perSkeleton','perBlade','rewind','manaburn','drainNow','hpCost'].forEach(k=>{ if(el[k]) el[k]=n(el[k]); });
   if(el.variance) el.variance=el.variance.map(n);
   if(el.pctHp) el.pctHp=pct(el.pctHp,0.6);
   if(el.dot) el.dot.dmg=n(el.dot.dmg);
@@ -2570,6 +2570,8 @@ function executeSignature(who,sp,action,cb){
   if(el.kind==='buff'){
     const mine=el.effect.type==='minion';   // minions always serve their owner
     addEffect(mine?who:ally,effect({kind:'buff'}),who);
+    // A buff that also raises a light ward (Blink) — never replaces a stronger ward already up
+    if(el.ward&&!(hasWard(as)&&as.shieldHp>=el.ward)){ raiseWard(ally,el.elem,el.ward,0); as.wardSig=sp.id; }
     if(fx.self) fx.self(mine?ctx:actx); else { spawnParts(seatX(mine?who:ally),y,e.col,14); anim(mine?who:ally,'shield',700); }
     combatTimeout(cb,900);
     return;
@@ -2704,6 +2706,9 @@ function strikeOne(who,tgt,o,b){
   const burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+b.burn;
 
   if(tgt!==who){
+    // Dodge rolls first, so a dodged strike leaves Vanish / Foresight waiting for the next one
+    const dodge=effectsOf(ts,'dodge')[0];
+    if(dodge&&_rng()<dodge.pct){ addFloat(tx,bH*.28,'💫 Dodged!','#b8a0e8',15); VFX.dodged(tx); anim(who,'cast',600); return; }
     const absorb=takeEffect(ts,'absorbNext');
     if(absorb){
       addFloat(tx,bH*.28,absorb.id==='vanish'?'👻 Missed!':'🔮 Absorbed!','#ffcc44',15);
@@ -2711,8 +2716,6 @@ function strikeOne(who,tgt,o,b){
       anim(who,'cast',600);
       return;
     }
-    const dodge=effectsOf(ts,'dodge')[0];
-    if(dodge&&_rng()<dodge.pct){ addFloat(tx,bH*.28,'💫 Dodged!','#b8a0e8',15); VFX.dodged(tx); anim(who,'cast',600); return; }
   }
   effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
   const resist=effectsOf(ts,'resist').filter(e=>!(e.magicOnly&&o.elem==='physical'))
@@ -2863,6 +2866,18 @@ function elemAIChoose(who){
     if(foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',2))) w.protect+=0.35;
     if(me.hp<me.maxHp*0.35) w.protect+=0.35;
   }
+  // A pending miss (Vanish, Foresight) already covers the next strike: protecting again is mostly wasted
+  if(smart&&effectsOf(me,'absorbNext').length) w.protect*=0.45;
+  // Siphon a foe who has saved up: the steal can leave them short of the spell they saved for
+  const siphon=sigSpells(who,'dispel').find(sp=>sp.el.action&&sp.el.action.type==='siphon'&&!sigBlocked(who,sp,1));
+  const siphonNow=smart&&siphon&&opp.mana>=elemCost(tgt,'damage',3);
+  if(siphonNow) w.dispel+=0.6;
+  // Last round of my miss/dodge cover: spend it on a Siphon or a strike — the foe's strike would be wasted
+  const cover=me.effects.filter(e=>e.type==='dodge'||e.type==='absorbNext');
+  if(smart&&cover.length&&cover.every(e=>e.rounds===1)){
+    w.protect*=0.3; w.damage+=0.5;
+    if(siphon) w.dispel+=0.6;
+  }
   if(ganged){ w.protect+=hasWard(me)&&me.shieldHp>=25?0.4:1.2; w.damage*=0.8; }
   const free=hasFreeSpell(who);
   if(free) w.damage+=1.2;   // a free spell: make it a big strike
@@ -2891,8 +2906,23 @@ function elemAIChoose(who){
   const cleanseOk=cat==='dispel'&&myCurses&&elemCost(who,'dispel',1)<=me.mana;
   if(cleanseOk&&((smart&&effectsOf(me,'bewitch').length)||(!oppWard&&!oppBuffs))&&_rng()<0.7)
     return {type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok};
+  // Combos: a pending miss behind a dodge survives the strikes it dodges (Blink, then Vanish),
+  // and a buff that raises a ward shields the buffs already up from Dispel (Vanish, then Blink)
+  const sigWeight=sp=>{
+    if(!smart) return 1;
+    const e=sp.el.effect||{};
+    let v=1;
+    if(e.type==='absorbNext'&&effectsOf(me,'dodge').length) v+=2;
+    if(sp.el.ward&&buffsOf(me).length&&!hasWard(me)) v+=2;
+    if(sp===siphon&&(siphonNow||cover.length)) v+=2;
+    return v;
+  };
+  const combo=sigs.some(x=>sigWeight(x.sp)>1);
   let choice=null;
-  if(sigs.length&&(!plain.length||_rng()<(smart?0.45:0.3))) choice=sigs[Math.floor(_rng()*sigs.length)];
+  if(sigs.length&&(!plain.length||_rng()<(smart?(combo?0.8:0.45):0.3))){
+    let r=_rng()*sigs.reduce((a,x)=>a+sigWeight(x.sp),0);
+    choice=sigs.find(x=>(r-=sigWeight(x.sp))<=0)||sigs[0];
+  }
   else if(plain.length){
     const pickFrom=list=>list[Math.floor(_rng()*list.length)];
     const has=id=>plain.find(x=>x.elem===id);
@@ -5846,7 +5876,7 @@ const TUTORIAL_CONVOS={
   ],
   ponder:[
     {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
-    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes the next strike miss me entirely. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds."},
+    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes the next strike miss me entirely. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Blink first, then Vanish: every strike I dodge leaves Vanish waiting for the next."},
     {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. It's quick: I steal mana as the round begins, before my rival pays for their spell — if they can't afford it any more, it fails!"},
     {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
   ],
