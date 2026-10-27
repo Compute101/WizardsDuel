@@ -2086,9 +2086,9 @@ const ELEM_CATS={
 const ELEM_TIER_NAMES=['Lesser ','','Greater '];
 const ELEM_STAGE_BANNERS={1:'🛡 Protection',2:'✦ Dispel',3:'⚔️ Damage'};
 
-// Casting minigame per element (Physical and Dark borrow a minigame with their own glyphs)
+// Casting minigame per element (Dark borrows the Mana Burn minigame with its own glyphs)
 const ELEM_MINIGAME={fire:launchPatternEcho, ice:launchIcePattern, lightning:launchLightningPattern,
-  arcane:launchArcanePattern, physical:launchPatternEcho, dark:launchManaBurnPattern};
+  arcane:launchArcanePattern, physical:launchRockfallPattern, dark:launchManaBurnPattern};
 const ELEM_GLYPHS={physical:[1,2,3,8], dark:[6,9,2,4]};   // Δ ∇ Ψ ⊕ (stone) / ☽ ⊗ ∇ Ω (necromancy)
 const ELEM_WARD_THEME={fire:'flameshield', ice:'frostarmor', lightning:'shield',
   arcane:'foresight', physical:'stoneskin', dark:'warpaint'};
@@ -3372,6 +3372,8 @@ function mgSeq(spell,canon,spellIdx){
     ?(spell.glyphs||canon).slice(0,n)
     :Array.from({length:n},()=>spellIdx[Math.floor(_rng()*spellIdx.length)]);
 }
+// Every sequence glyph stays on screen for at least MG_GLYPH_MS (half the watch window).
+const MG_GLYPH_MS=MG_WATCH_MS/2;
 // Stagger n glyph spawns across the watch window, leaving `tail` ms to study the last one.
 function mgSpawnInterval(n,delay,tail){ return n>1?(MG_WATCH_MS-delay-tail)/(n-1):0; }
 
@@ -3712,13 +3714,14 @@ function launchPatternEcho(spell,cb){
     const frac=(i+0.5)/SEQ_LEN;
     return Math.max(28,Math.min(cw-28,cw*frac+(_rng()-0.5)*22));
   });
-  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500),RISE_SPD=0.9;
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
+  const RISE_SPD=0.054,FADE_IN=300; // px/ms; time-based so refresh rate can't speed it up
   const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false;
   const symStates=seq.map((ai,i)=>({
     ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
-    x:xSlots[i],y:ch+30,spawned:false,idx:i,
+    x:xSlots[i],y:ch-20,spawnAt:SPAWN_DELAY+i*SPAWN_INTERVAL,idx:i,
   }));
 
   function startTimer(){
@@ -3796,14 +3799,11 @@ function launchPatternEcho(spell,cb){
 
       // White sequence symbols — coloured glow, oscillating, numbered
       symStates.forEach(s=>{
-        if(!s.spawned&&elapsed>=SPAWN_DELAY+s.idx*SPAWN_INTERVAL){
-          s.spawned=true; s.y=ch+30;
-        }
-        if(!s.spawned) return;
-        s.y-=RISE_SPD;
-        let alpha=1;
-        if(ch-s.y<50) alpha=(ch-s.y)/50;
-        if(s.y<55) alpha=Math.max(0,s.y/55);
+        const age=elapsed-s.spawnAt;
+        if(age<0) return;
+        s.y=ch-20-age*RISE_SPD;
+        let alpha=Math.min(1,age/FADE_IN);
+        if(s.y<55) alpha=Math.min(alpha,Math.max(0,s.y/55));
         if(alpha<=0.01) return;
         const osc=Math.sin(t/900+s.idx*1.3)*0.12;
         mx.save();
@@ -3913,6 +3913,345 @@ function launchPatternEcho(spell,cb){
   mazeRAF=requestAnimationFrame(frame);
 }
 
+// ── PUZZLE: ROCKFALL PATTERN (Physical) ────────────────────
+// Rune-carved boulders drop from the cave roof and slam into the floor, then rest there.
+function launchRockfallPattern(spell,cb){
+  let done=false;
+  document.getElementById('pztitle').textContent='Stone Rune Fall';
+  document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
+  setDpadVisible(false);
+
+  // Indices: 0=ϟ 1=Δ 2=∇ 3=Ψ 4=Ω 5=∞ 6=☽ 7=✸ 8=⊕ 9=⊗ 10=θ 11=Φ
+  const ALPHABET=[
+    {sym:'ϟ',glowCol:'#ccffff'},{sym:'Δ',glowCol:'#ff9944'},{sym:'∇',glowCol:'#44aaff'},
+    {sym:'Ψ',glowCol:'#aaff88'},{sym:'Ω',glowCol:'#ff4444'},{sym:'∞',glowCol:'#44ffcc'},
+    {sym:'☽',glowCol:'#aaddff'},{sym:'✸',glowCol:'#ffff55'},{sym:'⊕',glowCol:'#ffee77'},
+    {sym:'⊗',glowCol:'#ff44aa'},{sym:'θ',glowCol:'#88ff88'},{sym:'Φ',glowCol:'#dd88ff'},
+  ];
+
+  // Physical owns Δ(1) ∇(2) Ψ(3) ⊕(8) — see CLAUDE.md
+  const SPELL_IDX=spell.glyphs||[1,2,3,8];
+  // Stone colours assigned per SPELL_IDX position (0-3)
+  const STONE_COLS=[
+    {col:'#7a5a36',lit:'#e0b070'},
+    {col:'#5c4a3a',lit:'#c8a888'},
+    {col:'#6b5530',lit:'#d8b060'},
+    {col:'#8a6a40',lit:'#f0c880'},
+  ];
+
+  // Canvas: 3-col × 4-row keyboard grid
+  const TS=72,GAP=6,PAD=10;
+  const cw=PAD*2+TS*3+GAP*2;  // 248 px
+  const ch=380;
+  mc.width=cw; mc.height=ch;
+  const mw=Math.min(cw,(window.innerWidth||360)-32);
+  mc.style.width=mw+'px'; mc.style.height='auto';
+
+  // Keyboard tile positions — bottom-aligned
+  const tileAreaH=TS*4+GAP*3;        // 306 px
+  const tileTop=ch-PAD-tileAreaH;    // 64 px
+  const tPos=Array.from({length:12},(_,i)=>({
+    x:PAD+(i%3)*(TS+GAP),
+    y:tileTop+Math.floor(i/3)*(TS+GAP),
+  }));
+
+  // Easy: prefix of the canonical Physical word: Δ ∇ Ψ ⊕
+  const seq=mgSeq(spell,[1,2,3,8],SPELL_IDX);
+  const SEQ_LEN=seq.length;
+  const playerSeq=[];
+  let phase='watch';
+  let timeLeft=MG_INPUT_S;
+
+  const timerEl=document.getElementById('pztimer');
+  timerEl.textContent='—'; timerEl.classList.remove('urgent');
+
+  const FLOOR_Y=ch-40;
+  // Noise pebbles — all 12 arcana glyphs tumble down in dull stone colours (px/ms)
+  const NOISE_COLS=['#5a4a3a','#6b5a44','#4a3e32','#7a6650','#554433'];
+  function newPebble(y){
+    return {x:_rng()*cw, y, vy:0.05+_rng()*0.12, sz:9+_rng()*11, ai:Math.floor(_rng()*12),
+      col:NOISE_COLS[Math.floor(_rng()*5)], rot:_rng()*Math.PI*2, spin:(_rng()-.5)*0.006, alpha:0.2+_rng()*0.3};
+  }
+  const noise=Array.from({length:30},()=>newPebble(_rng()*FLOOR_Y));
+  const dust=[], cracks=[];
+  function spawnDust(x,n,big){
+    for(let i=0;i<n;i++){
+      const a=Math.PI+_rng()*Math.PI, sp=(big?0.06:0.03)+_rng()*(big?0.12:0.05);
+      dust.push({x:x+(_rng()-.5)*(big?40:10),y:FLOOR_Y-2,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+        sz:(big?3:1.5)+_rng()*(big?5:2),life:1,dec:(big?0.0012:0.002)+_rng()*0.001});
+    }
+  }
+  function addCrack(x){
+    for(let side=-1;side<=1;side+=2){
+      let px=x,py=FLOOR_Y;
+      const arm=[{x:px,y:py}];
+      for(let k=0;k<4;k++){ px+=side*(5+_rng()*9); py+=2+_rng()*6; arm.push({x:px,y:py}); }
+      cracks.push(arm);
+    }
+  }
+
+  // Sequence boulders — fall under gravity, slam into the floor, then rest there.
+  // Landing spots are shuffled, so the order has to be read from the drops (and badges), not left to right.
+  const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
+    const frac=(i+0.5)/SEQ_LEN;
+    return Math.max(30,Math.min(cw-30,cw*frac+(_rng()-0.5)*16));
+  });
+  for(let i=xSlots.length-1;i>0;i--){ const j=Math.floor(_rng()*(i+1)); [xSlots[i],xSlots[j]]=[xSlots[j],xSlots[i]]; }
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
+  const ROCK_R=26, START_Y=-ROCK_R-4, REST_Y=FLOOR_Y-ROCK_R+4;
+  const FALL_MS=550, GRAV=2*(REST_Y-START_Y)/(FALL_MS*FALL_MS);   // px/ms²
+  const BOUNCE_MS=220, SHAKE_MS=300, QUAKE_PX=3.5;
+  const watchDuration=MG_WATCH_MS;
+  const startTime=Date.now();
+  let watchDone=false, shakeAt=-1e9, lastT=startTime;
+  const symStates=seq.map((ai,i)=>({
+    ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
+    x:xSlots[i],y:START_Y,spawnAt:SPAWN_DELAY+i*SPAWN_INTERVAL,idx:i,landed:false,
+    tilt:(_rng()-.5)*0.25, wob:0,
+    rock:Array.from({length:9},(_,k)=>({a:k/9*Math.PI*2+(_rng()-.5)*0.3, r:ROCK_R*(0.82+_rng()*0.3)})),
+  }));
+
+  function startTimer(){
+    if(mazeTid) clearInterval(mazeTid);
+    mazeTid=setInterval(()=>{
+      if(done) return;
+      timeLeft--; timerEl.textContent=timeLeft;
+      if(timeLeft<=2) timerEl.classList.add('urgent');
+      if(timeLeft<=0) finish(false);
+    },1000);
+  }
+
+  function onPointer(e){
+    if(done||phase!=='input') return;
+    e.preventDefault();
+    const rect=mc.getBoundingClientRect();
+    const sx=mc.width/rect.width,sy=mc.height/rect.height;
+    const px=(e.clientX-rect.left)*sx,py=(e.clientY-rect.top)*sy;
+    for(let ai=0;ai<12;ai++){
+      const tp=tPos[ai];
+      if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
+        const isSpell=SPELL_IDX.includes(ai);
+        if(!isSpell){
+          if(diffName==='hard') finish(false); // wrong glyph in hard = fail
+          return;                              // easy/normal: silently ignore
+        }
+        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        playerSeq.push(ai);
+        if(playerSeq.length===seq.length) finish(true);
+        return;
+      }
+    }
+  }
+  mc.addEventListener('pointerdown',onPointer);
+
+  function cleanup(){
+    mc.removeEventListener('pointerdown',onPointer);
+    setDpadVisible(true);
+    if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
+    if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
+  }
+  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
+
+  function drawRock(s,alpha){
+    mx.save();
+    mx.globalAlpha=alpha;
+    mx.translate(s.x,s.y); mx.rotate(s.tilt+s.wob);
+    mx.beginPath();
+    s.rock.forEach((p,k)=>{const px=Math.cos(p.a)*p.r,py=Math.sin(p.a)*p.r; k?mx.lineTo(px,py):mx.moveTo(px,py);});
+    mx.closePath();
+    const rg=mx.createRadialGradient(-8,-10,2,0,0,ROCK_R*1.1);
+    rg.addColorStop(0,'#8a7a66'); rg.addColorStop(0.6,'#4e4236'); rg.addColorStop(1,'#2a221a');
+    mx.fillStyle=rg; mx.fill();
+    mx.strokeStyle='#1a140e'; mx.lineWidth=2; mx.stroke();
+    // Carved rune — white with the glyph's glow
+    mx.rotate(-s.tilt*0.5);
+    mx.shadowColor=s.glowCol; mx.shadowBlur=24;
+    mx.fillStyle='#ffffff';
+    mx.font='bold 32px serif';
+    mx.textAlign='center'; mx.textBaseline='middle';
+    mx.fillText(s.sym,0,1);
+    mx.restore();
+  }
+
+  function draw(){
+    const t=Date.now();
+    const elapsed=t-startTime;
+    const dt=Math.min(50,t-lastT); lastT=t;
+
+    // Background — dim cave
+    const bg=mx.createRadialGradient(cw/2,ch*.45,0,cw/2,ch*.45,cw*.95);
+    bg.addColorStop(0,'#2a2018');
+    bg.addColorStop(0.6,'#16100b');
+    bg.addColorStop(1,'#070504');
+    mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
+
+    if(phase==='watch'&&!watchDone&&elapsed>=watchDuration){
+      watchDone=true; phase='input';
+      timerEl.textContent=timeLeft; startTimer();
+    }
+
+    if(phase==='watch'){
+      // Earthquake — a constant rumble that surges in waves, plus a jolt on each impact (decays over SHAKE_MS)
+      const sinceShake=elapsed-shakeAt;
+      const jolt=sinceShake<SHAKE_MS?7*(1-sinceShake/SHAKE_MS):0;
+      const quake=QUAKE_PX*(0.55+0.45*Math.sin(elapsed/420)*Math.sin(elapsed/1130));
+      mx.save();
+      mx.translate(Math.sin(elapsed/23)*quake+(_rng()-.5)*jolt*2,
+                   Math.sin(elapsed/31+1.7)*quake*0.6+(_rng()-.5)*jolt);
+
+      // Floor
+      const fg=mx.createLinearGradient(0,FLOOR_Y,0,ch);
+      fg.addColorStop(0,'#5a4632'); fg.addColorStop(0.15,'#3a2c1e'); fg.addColorStop(1,'#1a120a');
+      mx.fillStyle=fg; mx.fillRect(-10,FLOOR_Y,cw+20,ch-FLOOR_Y+10);
+      mx.strokeStyle='#8a6a48'; mx.lineWidth=1.5;
+      mx.beginPath(); mx.moveTo(-10,FLOOR_Y); mx.lineTo(cw+10,FLOOR_Y); mx.stroke();
+      mx.strokeStyle='#0e0904'; mx.lineWidth=1.5;
+      cracks.forEach(arm=>{ mx.beginPath(); arm.forEach((p,k)=>k?mx.lineTo(p.x,p.y):mx.moveTo(p.x,p.y)); mx.stroke(); });
+
+      // Falling pebble noise
+      mx.save();
+      noise.forEach(f=>{
+        f.vy+=0.0004*dt; f.y+=f.vy*dt; f.rot+=f.spin*dt;
+        if(f.y>FLOOR_Y-f.sz*0.4){ spawnDust(f.x,2,false); Object.assign(f,newPebble(-20)); }
+        mx.save();
+        mx.globalAlpha=f.alpha;
+        mx.translate(f.x,f.y); mx.rotate(f.rot);
+        mx.fillStyle=f.col; mx.shadowColor='#000'; mx.shadowBlur=3;
+        mx.font=`bold ${f.sz}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(ALPHABET[f.ai].sym,0,0);
+        mx.restore();
+      });
+      mx.restore();
+
+      // Sequence boulders
+      symStates.forEach(s=>{
+        const age=elapsed-s.spawnAt;
+        if(age<0) return;
+        if(age<FALL_MS){
+          s.y=START_Y+0.5*GRAV*age*age;
+        } else {
+          if(!s.landed){ s.landed=true; shakeAt=elapsed; spawnDust(s.x,16,true); addCrack(s.x); }
+          const b=age-FALL_MS;
+          s.y=REST_Y-(b<BOUNCE_MS?Math.sin(Math.PI*b/BOUNCE_MS)*10*(1-b/BOUNCE_MS):0);
+          s.wob=Math.sin(elapsed/55+s.idx*2.1)*0.05;   // rattles in the quake
+        }
+        // Shadow on the floor grows as the boulder nears it
+        const near=Math.max(0,Math.min(1,(s.y-START_Y)/(REST_Y-START_Y)));
+        mx.save();
+        mx.globalAlpha=0.15+0.35*near;
+        mx.fillStyle='#000';
+        mx.beginPath(); mx.ellipse(s.x,FLOOR_Y+2,ROCK_R*(0.4+0.6*near),4,0,0,Math.PI*2); mx.fill();
+        mx.restore();
+        drawRock(s,1);
+        mx.save();
+        mx.shadowColor='#ffcc00'; mx.shadowBlur=10;
+        mx.fillStyle='#ffcc00';
+        mx.font='bold 11px Cinzel,serif';
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(s.idx+1,s.x+20,s.y-ROCK_R-6);
+        mx.restore();
+      });
+
+      // Dust puffs
+      for(let i=dust.length-1;i>=0;i--){
+        const d=dust[i];
+        d.x+=d.vx*dt; d.y+=d.vy*dt; d.vy+=0.00008*dt; d.life-=d.dec*dt;
+        if(d.life<=0){ dust.splice(i,1); continue; }
+        mx.globalAlpha=d.life*0.5;
+        mx.fillStyle='#a08668';
+        mx.beginPath(); mx.arc(d.x,d.y,d.sz*(1.6-d.life*0.6),0,Math.PI*2); mx.fill();
+      }
+      mx.globalAlpha=1;
+      mx.restore();
+
+      mx.fillStyle='#e0b070';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText('Watch the rune stones fall!',cw/2,4);
+    }
+
+    if(phase==='input'){
+      // Faint ambient pebbles
+      mx.save();
+      noise.slice(0,12).forEach(f=>{
+        f.y+=f.vy*0.3*dt;
+        if(f.y>ch+20) Object.assign(f,newPebble(-20));
+        mx.globalAlpha=f.alpha*0.3;
+        mx.fillStyle=f.col;
+        mx.font=`${f.sz}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
+      });
+      mx.globalAlpha=1;
+      mx.restore();
+
+      // 12-glyph keyboard
+      const isHard=diffName==='hard';
+      for(let ai=0;ai<12;ai++){
+        const tp=tPos[ai];
+        const g=ALPHABET[ai];
+        const si=SPELL_IDX.indexOf(ai); // -1 if not spell glyph
+        const isSpell=si!==-1;
+
+        let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
+        if(isHard){
+          // All glyphs show as neutral arcane — player must rely on memory
+          bgCol='#2d1a3d'; bgDark='#100820';
+          strokeCol='#44285888'; textCol='#7755aa';
+          blur=4; textAlpha=1;
+        } else if(isSpell){
+          // Spell glyphs: stone colours by SPELL_IDX position
+          bgCol=STONE_COLS[si].col; bgDark='#140e08';
+          strokeCol=STONE_COLS[si].col+'88'; textCol=STONE_COLS[si].lit;
+          blur=8; textAlpha=1;
+        } else {
+          // Non-spell glyphs: ghosted out
+          bgCol='#0f0f0f'; bgDark='#050505';
+          strokeCol='#1e1e1e'; textCol='#2a2a2a';
+          blur=0; textAlpha=0.35;
+        }
+
+        mx.save();
+        mx.shadowColor=bgCol; mx.shadowBlur=blur;
+        const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,3,tp.x+TS/2,tp.y+TS/2,TS*.6);
+        tg.addColorStop(0,bgCol); tg.addColorStop(1,bgDark);
+        mx.fillStyle=tg;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.fill();
+        mx.shadowBlur=0;
+        mx.strokeStyle=strokeCol; mx.lineWidth=1.2;
+        mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.stroke();
+        mx.globalAlpha=textAlpha;
+        mx.fillStyle=textCol;
+        mx.font=`bold ${Math.round(TS*.42)}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(g.sym,tp.x+TS/2,tp.y+TS/2);
+        mx.restore();
+      }
+
+      // Status label
+      mx.fillStyle='#e0b070';
+      mx.font='bold 10px Cinzel,serif';
+      mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
+
+      // Progress dots — sit between status text and keyboard
+      const dotY=tileTop-10,dsp=14;
+      const ds=cw/2-(seq.length-1)*dsp/2;
+      for(let i=0;i<seq.length;i++){
+        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
+        if(i<playerSeq.length){mx.fillStyle='#ffcc00';mx.shadowColor='#ffcc00';mx.shadowBlur=6;}
+        else{mx.fillStyle='rgba(255,204,0,0.2)';mx.shadowBlur=0;}
+        mx.fill(); mx.shadowBlur=0;
+      }
+    }
+  }
+
+  function frame(){if(done)return;draw();mazeRAF=requestAnimationFrame(frame);}
+  showScreen('puzzle-screen');
+  mazeRAF=requestAnimationFrame(frame);
+}
+
 // ── PUZZLE: LIGHTNING PATTERN ─────────────────────────────
 function launchLightningPattern(spell,cb){
   let done=false;
@@ -3997,10 +4336,10 @@ function launchLightningPattern(spell,cb){
     Math.max(50,Math.min(ch-60,ch*Y_BANDS[i%Y_BANDS.length]+(_rng()-0.5)*28))
   );
 
-  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500);
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
   const BOLT_DUR=300;     // bolt flash visible
-  const GLYPH_HOLD=200;   // glyph at full brightness after strike
-  const GLYPH_FADE=1800;  // afterglow fade duration
+  const GLYPH_HOLD=1500;  // glyph at full brightness after strike
+  const GLYPH_FADE=1000;  // afterglow fade duration (hold+fade = MG_GLYPH_MS)
   const GLYPH_DUR=GLYPH_HOLD+GLYPH_FADE;
   const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
@@ -4648,8 +4987,8 @@ function launchIcePattern(spell,cb){
     Math.max(35,Math.min(ch-50,ch*Y_BANDS[i%Y_BANDS.length]+(_rng()-0.5)*35))
   );
 
-  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500);
-  const FADE_IN=500,HOLD=1000,FADE_OUT=800;
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
+  const FADE_IN=400,HOLD=1600,FADE_OUT=500; // sums to MG_GLYPH_MS
   const GLYPH_DUR=FADE_IN+HOLD+FADE_OUT;
   const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
@@ -4946,8 +5285,8 @@ function launchArcanePattern(spell,cb){
   });
 
   // White sequence glyphs — all drift rightward at the same speed, various heights
-  const DRIFT_SPEED=0.5;  // px/frame — consistent across all sequence glyphs
-  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500);
+  const DRIFT_SPEED=0.05,FADE_IN=400;  // px/ms — time-based, consistent across all sequence glyphs
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
   const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false;
@@ -4959,8 +5298,8 @@ function launchArcanePattern(spell,cb){
 
   const symStates=seq.map((ai,i)=>({
     ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
-    x:-30, y:ySlots[i],
-    spawned:false, idx:i,
+    x:10, y:ySlots[i],
+    spawnAt:SPAWN_DELAY+i*SPAWN_INTERVAL, idx:i,
   }));
 
   function startTimer(){
@@ -5041,16 +5380,13 @@ function launchArcanePattern(spell,cb){
 
       // White sequence glyphs — all drift rightward at same speed, various heights
       symStates.forEach(s=>{
-        if(!s.spawned&&elapsed>=SPAWN_DELAY+s.idx*SPAWN_INTERVAL){
-          s.spawned=true; s.x=-30;
-        }
-        if(!s.spawned) return;
-        s.x+=DRIFT_SPEED;
+        const age=elapsed-s.spawnAt;
+        if(age<0) return;
+        s.x=10+age*DRIFT_SPEED;
         if(s.x>cw+30) return;  // drifted off-screen — don't wrap
 
-        let alpha=1;
-        if(s.x<50) alpha=Math.max(0,(s.x+30)/80);
-        else if(s.x>cw-50) alpha=Math.max(0,(cw+30-s.x)/80);
+        let alpha=Math.min(1,age/FADE_IN);
+        if(s.x>cw-50) alpha=Math.min(alpha,Math.max(0,(cw+30-s.x)/80));
         if(alpha<=0.01) return;
 
         const osc=Math.sin(t/1100+s.idx*1.7)*0.07;

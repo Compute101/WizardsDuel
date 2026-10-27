@@ -37,7 +37,7 @@ Every spell's casting minigame uses glyphs from a shared 12-symbol alphabet. Thi
 | Ice | ice | `θ Φ ☽ ∞` | crystal / polar axis / frost moon / eternal |
 | Arcane | arcane | `Ω ∞ Ψ θ` | cosmos / eternity / spirit / hidden |
 | Dispel | dispel | `∞ ⊕ ∇ θ` | eternal cycle / unbinding / descent / dissolution |
-| Physical (Elemental rules) | physical | `Δ ∇ Ψ ⊕` | stone layers / fork / binding — borrows the Inferno minigame |
+| Physical (Elemental rules) | physical | `Δ ∇ Ψ ⊕` | stone layers / fork / binding — Rockfall minigame (rune stones fall into shuffled spots on a quaking floor) |
 | Dark (Elemental rules) | dark | `☽ ⊗ ∇ Ω` | the Necromancy set — borrows the Mana Burn minigame |
 
 Arcane deliberately shares one glyph with each other element — it's the underlying force of all magic, and the hardest set to memorise in hard mode. Dispel similarly draws one glyph from each elemental set (∞ from Ice, ⊕ from Inferno, ∇ from Lightning, θ from Ice/Arcane), fitting its role as a universal spell that dissolves any type of magic.
@@ -62,7 +62,7 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 **Watch phase:**
 - Red glyphs (noise) rise continuously from the bottom — visual distraction.
 - White glyphs (the sequence) rise one at a time, spread evenly across the 5 s watch window, with a coloured glow unique to each glyph and a small order-number badge.
-- 1.5 seconds of viewing time after the last glyph appears before input phase begins.
+- Every sequence glyph stays on screen for at least half the watch window (`MG_GLYPH_MS` = 2.5 s): the last one spawns at the halfway mark. Glyph motion and fades are time-based (ms), not per-frame, so high-refresh screens don't speed them up.
 
 **Glyph glow colours** (used on white sequence glyphs during watch phase — defined for all 12):
 
@@ -125,7 +125,8 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 | Round flow (pick → reveal → resolve) | `js/game.js` | ~1740 |
 | Elemental rules, wheel, AI | `js/game.js` | ~1915 |
 | Tile-match (wards / buffs) minigame | `js/game.js` | ~2840 |
-| Inferno minigame (Fire, Physical) | `js/game.js` | ~3100 |
+| Inferno minigame (Fire) | `js/game.js` | ~3600 |
+| Rockfall minigame (Physical) | `js/game.js` | ~3885 |
 | Lightning minigame | `js/game.js` | ~3380 |
 | Mana Burn minigame (Dark) | `js/game.js` | ~3725 |
 | Ice minigame | `js/game.js` | ~4035 |

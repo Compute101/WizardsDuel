@@ -32,7 +32,7 @@ What was built, including choices made while building:
 - **Picking:** three buttons (⚔️ Damage, 🛡 Protection, ✦ Dispel), then the strength wheel: 6 element
   sectors × 3 rings. A ring you can't afford is greyed out. Dispel also has a **Cleanse Self** button,
   which removes Chill.
-- **Minigames:** Damage uses its element's minigame. Physical borrows Inferno's minigame and Dark
+- **Minigames:** Damage uses its element's minigame. Physical has its own Rockfall minigame and Dark
   borrows Mana Burn's, each with its own glyph set. Protection uses the tile-match and Dispel uses the
   Dispel minigame. A failed minigame fizzles and costs 1 mana.
 - **Mana:** everyone starts with 6 and gains +4 at the end of every round. The cheapest spell costs 1,
