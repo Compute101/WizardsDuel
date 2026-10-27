@@ -62,7 +62,7 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 **Watch phase:**
 - Red glyphs (noise) rise continuously from the bottom — visual distraction.
 - White glyphs (the sequence) rise one at a time, spread evenly across the 5 s watch window, with a coloured glow unique to each glyph and a small order-number badge.
-- 1.5 seconds of viewing time after the last glyph appears before input phase begins.
+- Every sequence glyph stays on screen for at least half the watch window (`MG_GLYPH_MS` = 2.5 s): the last one spawns at the halfway mark. Glyph motion and fades are time-based (ms), not per-frame, so high-refresh screens don't speed them up.
 
 **Glyph glow colours** (used on white sequence glyphs during watch phase — defined for all 12):
 

@@ -3339,6 +3339,8 @@ function mgSeq(spell,canon,spellIdx){
     ?(spell.glyphs||canon).slice(0,n)
     :Array.from({length:n},()=>spellIdx[Math.floor(_rng()*spellIdx.length)]);
 }
+// Every sequence glyph stays on screen for at least MG_GLYPH_MS (half the watch window).
+const MG_GLYPH_MS=MG_WATCH_MS/2;
 // Stagger n glyph spawns across the watch window, leaving `tail` ms to study the last one.
 function mgSpawnInterval(n,delay,tail){ return n>1?(MG_WATCH_MS-delay-tail)/(n-1):0; }
 
@@ -3679,13 +3681,14 @@ function launchPatternEcho(spell,cb){
     const frac=(i+0.5)/SEQ_LEN;
     return Math.max(28,Math.min(cw-28,cw*frac+(_rng()-0.5)*22));
   });
-  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500),RISE_SPD=0.9;
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
+  const RISE_SPD=0.054,FADE_IN=300; // px/ms; time-based so refresh rate can't speed it up
   const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false;
   const symStates=seq.map((ai,i)=>({
     ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
-    x:xSlots[i],y:ch+30,spawned:false,idx:i,
+    x:xSlots[i],y:ch-20,spawnAt:SPAWN_DELAY+i*SPAWN_INTERVAL,idx:i,
   }));
 
   function startTimer(){
@@ -3763,14 +3766,11 @@ function launchPatternEcho(spell,cb){
 
       // White sequence symbols — coloured glow, oscillating, numbered
       symStates.forEach(s=>{
-        if(!s.spawned&&elapsed>=SPAWN_DELAY+s.idx*SPAWN_INTERVAL){
-          s.spawned=true; s.y=ch+30;
-        }
-        if(!s.spawned) return;
-        s.y-=RISE_SPD;
-        let alpha=1;
-        if(ch-s.y<50) alpha=(ch-s.y)/50;
-        if(s.y<55) alpha=Math.max(0,s.y/55);
+        const age=elapsed-s.spawnAt;
+        if(age<0) return;
+        s.y=ch-20-age*RISE_SPD;
+        let alpha=Math.min(1,age/FADE_IN);
+        if(s.y<55) alpha=Math.min(alpha,Math.max(0,s.y/55));
         if(alpha<=0.01) return;
         const osc=Math.sin(t/900+s.idx*1.3)*0.12;
         mx.save();
@@ -3964,10 +3964,10 @@ function launchLightningPattern(spell,cb){
     Math.max(50,Math.min(ch-60,ch*Y_BANDS[i%Y_BANDS.length]+(_rng()-0.5)*28))
   );
 
-  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500);
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
   const BOLT_DUR=300;     // bolt flash visible
-  const GLYPH_HOLD=200;   // glyph at full brightness after strike
-  const GLYPH_FADE=1800;  // afterglow fade duration
+  const GLYPH_HOLD=1500;  // glyph at full brightness after strike
+  const GLYPH_FADE=1000;  // afterglow fade duration (hold+fade = MG_GLYPH_MS)
   const GLYPH_DUR=GLYPH_HOLD+GLYPH_FADE;
   const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
@@ -4615,8 +4615,8 @@ function launchIcePattern(spell,cb){
     Math.max(35,Math.min(ch-50,ch*Y_BANDS[i%Y_BANDS.length]+(_rng()-0.5)*35))
   );
 
-  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500);
-  const FADE_IN=500,HOLD=1000,FADE_OUT=800;
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
+  const FADE_IN=400,HOLD=1600,FADE_OUT=500; // sums to MG_GLYPH_MS
   const GLYPH_DUR=FADE_IN+HOLD+FADE_OUT;
   const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
@@ -4913,8 +4913,8 @@ function launchArcanePattern(spell,cb){
   });
 
   // White sequence glyphs — all drift rightward at the same speed, various heights
-  const DRIFT_SPEED=0.5;  // px/frame — consistent across all sequence glyphs
-  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,1500);
+  const DRIFT_SPEED=0.05,FADE_IN=400;  // px/ms — time-based, consistent across all sequence glyphs
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
   const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false;
@@ -4926,8 +4926,8 @@ function launchArcanePattern(spell,cb){
 
   const symStates=seq.map((ai,i)=>({
     ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
-    x:-30, y:ySlots[i],
-    spawned:false, idx:i,
+    x:10, y:ySlots[i],
+    spawnAt:SPAWN_DELAY+i*SPAWN_INTERVAL, idx:i,
   }));
 
   function startTimer(){
@@ -5008,16 +5008,13 @@ function launchArcanePattern(spell,cb){
 
       // White sequence glyphs — all drift rightward at same speed, various heights
       symStates.forEach(s=>{
-        if(!s.spawned&&elapsed>=SPAWN_DELAY+s.idx*SPAWN_INTERVAL){
-          s.spawned=true; s.x=-30;
-        }
-        if(!s.spawned) return;
-        s.x+=DRIFT_SPEED;
+        const age=elapsed-s.spawnAt;
+        if(age<0) return;
+        s.x=10+age*DRIFT_SPEED;
         if(s.x>cw+30) return;  // drifted off-screen — don't wrap
 
-        let alpha=1;
-        if(s.x<50) alpha=Math.max(0,(s.x+30)/80);
-        else if(s.x>cw-50) alpha=Math.max(0,(cw+30-s.x)/80);
+        let alpha=Math.min(1,age/FADE_IN);
+        if(s.x>cw-50) alpha=Math.min(alpha,Math.max(0,(cw+30-s.x)/80));
         if(alpha<=0.01) return;
 
         const osc=Math.sin(t/1100+s.idx*1.7)*0.07;
