@@ -2868,6 +2868,16 @@ function elemAIChoose(who){
   }
   // A pending miss (Vanish, Foresight) already covers the next strike: protecting again is mostly wasted
   if(smart&&effectsOf(me,'absorbNext').length) w.protect*=0.45;
+  // Siphon a foe who has saved up: the steal can leave them short of the spell they saved for
+  const siphon=sigSpells(who,'dispel').find(sp=>sp.el.action&&sp.el.action.type==='siphon'&&!sigBlocked(who,sp,1));
+  const siphonNow=smart&&siphon&&opp.mana>=elemCost(tgt,'damage',3);
+  if(siphonNow) w.dispel+=0.6;
+  // Last round of my miss/dodge cover: spend it on a Siphon or a strike — the foe's strike would be wasted
+  const cover=me.effects.filter(e=>e.type==='dodge'||e.type==='absorbNext');
+  if(smart&&cover.length&&cover.every(e=>e.rounds===1)){
+    w.protect*=0.3; w.damage+=0.5;
+    if(siphon) w.dispel+=0.6;
+  }
   if(ganged){ w.protect+=hasWard(me)&&me.shieldHp>=25?0.4:1.2; w.damage*=0.8; }
   const free=hasFreeSpell(who);
   if(free) w.damage+=1.2;   // a free spell: make it a big strike
@@ -2904,6 +2914,7 @@ function elemAIChoose(who){
     let v=1;
     if(e.type==='absorbNext'&&effectsOf(me,'dodge').length) v+=2;
     if(sp.el.ward&&buffsOf(me).length&&!hasWard(me)) v+=2;
+    if(sp===siphon&&(siphonNow||cover.length)) v+=2;
     return v;
   };
   const combo=sigs.some(x=>sigWeight(x.sp)>1);

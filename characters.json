@@ -739,7 +739,7 @@
           "cat": "dispel",
           "kind": "instant",
           "elem": "arcane",
-          "cost": 2,
+          "cost": 3,
           "tier": 1,
           "action": {
             "type": "siphon",
