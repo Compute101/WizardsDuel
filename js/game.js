@@ -1484,7 +1484,7 @@ function refreshActionBar(){
   }
   const med=document.getElementById('bel-meditate');
   if(med){
-    document.getElementById('bel-meditate-cost').textContent=gs[who].meditatedRound===gs.round-1?'Rested':'+'+MEDITATE.gain+' Mana';
+    document.getElementById('bel-meditate-cost').textContent=gs[who].meditatedRound===gs.round-1?'Rested':'+'+meditateGain(who)+' Mana';
     med.classList.toggle('off',busy||!canMeditate(who));
   }
 }
@@ -2247,7 +2247,9 @@ function phaseGain(who,n){
 function isPhased(who){ return gs[who]&&gs[who].phasedRound===gs.round; }
 // Meditate: skip your spell to gain mana on top of income, a bet that the foe won't strike this round.
 // It resolves after every Damage, so this round's mana burns can't touch it. Not two rounds in a row.
+// Income-drain curses (Time Drain, Corruption, Maggot Cloud) cut the gain too, as they cut Channel in Classic.
 const MEDITATE={gain:3};
+function meditateGain(who){ return Math.max(0,MEDITATE.gain-incomeDrainOf(who)); }
 function canMeditate(who){
   const st=gs[who];
   return st.meditatedRound!==gs.round-1&&st.mana<MAX_MANA&&!hasFreeSpell(who);
@@ -2452,11 +2454,15 @@ function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
   if(action.cat==='meditate'){
-    const n=Math.min(MEDITATE.gain,MAX_MANA-st.mana);
+    const n=Math.min(meditateGain(who),MAX_MANA-st.mana);
     st.mana+=n;
     anim(who,'cast',600);
     vfxFountain(x,bH*.38,['#7fb2ff','#b8d4ff','#ffffff'],14,{spread:.35,min:.6,var:1.4,w:.08,lift:-.3,sz:2.5,dec:.01});
-    addFloat(x,bH*.33,'🧘 Meditates'+(n>0?' +'+n+' Mana':''),'#7fb2ff',13);
+    const drains=effectsOf(st,'incomeDrain').map(e=>e.icon).join('');
+    addFloat(x,bH*.33,'🧘 Meditates'+(n>0?' +'+n+' Mana':'')+(drains?' · '+drains+' Drained':''),'#7fb2ff',13);
+    // Candle: resting by the flame sets you alight, as warding does
+    const candle=effectsOf(st,'candle')[0];
+    if(candle){ dmgSource=candle.from; elemFloatDmg(who,candle.dmg,'🕯️','#ff6622'); VFX.candle(x); dmgSource=who; }
     combatTimeout(cb,700); return;
   }
   const sp=action.sig?sigById(who,action.sig):null;
@@ -2825,9 +2831,9 @@ function suddenDeathLevel(){
 }
 function suddenDeathMult(){ return 1+SUDDEN_DEATH.dmgPerRound*suddenDeathLevel(); }
 function suddenDeathMana(){ return Math.min(SUDDEN_DEATH.maxMana,SUDDEN_DEATH.manaPerRound*suddenDeathLevel()); }
+function incomeDrainOf(who){ return effectsOf(gs[who],'incomeDrain').reduce((a,e)=>a+e.n,0); }
 function elemIncome(who){
-  const drain=effectsOf(gs[who],'incomeDrain').reduce((a,e)=>a+e.n,0);
-  return Math.max(0,ELEM_INCOME-drain)+suddenDeathMana();
+  return Math.max(0,ELEM_INCOME-incomeDrainOf(who))+suddenDeathMana();
 }
 
 // ── Elemental AI: a weighted mixed strategy so it can't be read every round ──
@@ -2875,12 +2881,15 @@ function elemAIChoose(who){
   const oppWard=hasWard(opp), oppBuffs=buffsOf(opp).length, myCurses=cursesOf(me).length;
   // Meditate when short of mana, more readily when the foe can't afford a strike or my ward, buffs
   // and curses are doing the work for me — and less when I'm close to dying
-  if(canMeditate(who)&&me.mana<elemCost(who,'damage',2)){
-    let p=me.mana<elemCost(who,'damage',1)?0.4:0.2;
+  // Income drains shrink the gain, and Candle burns a wizard who meditates
+  const medGain=meditateGain(who);
+  if(canMeditate(who)&&medGain>0&&me.mana<elemCost(who,'damage',2)){
+    let p=(me.mana<elemCost(who,'damage',1)?0.4:0.2)*medGain/MEDITATE.gain;
     if(!foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',1))) p+=0.3;
     if(hasWard(me)&&me.shieldHp>=15) p+=0.15;
     p+=Math.min(0.2,0.1*(buffsOf(me).length+cursesOf(opp).length));
     if(me.hp<me.maxHp*0.3) p*=0.5;
+    if(effectsOf(me,'candle').length) p*=smart?0.2:0.5;
     if(!smart) p*=0.6;
     if(_rng()<p) return {type:'el',cat:'meditate',ok:true};
   }
@@ -6204,7 +6213,7 @@ const TUTORIAL_CONVOS={
   ],
   aurelia:[
     {key:'aurelia',text:"I see three moves ahead. Foresight, in the Lightning sector of my Protection wheel, makes the next strike against me do nothing at all."},
-    {key:'aurelia',text:"Time Drain is an Arcane curse on my Dispel wheel. My rival gains less mana each round for a while. Stolen resources compound."},
+    {key:'aurelia',text:"Time Drain is an Arcane curse on my Dispel wheel. My rival gains less mana each round for a while — and less from Meditate too. Stolen resources compound."},
     {key:'aurelia',text:"Rewind takes my Arcane ward sector. It raises a ward and also gives back the HP I lost last round — the past undone, and the future guarded."},
     {key:'aurelia',text:"I have already foreseen how this duel ends. I need only wait for you to arrive at the conclusion I have prepared."},
   ],
@@ -6218,7 +6227,7 @@ const TUTORIAL_CONVOS={
     {key:'cinder',text:"You thought the heat would break me? I am the heat. I hit hard and I hit fast."},
     {key:'cinder',text:"Fireball is my Fire strike — the damage is random. Sometimes barely a singe, sometimes the arena goes up. Never bet against fire."},
     {key:'cinder',text:"Flame Shield is my Fire ward. Anyone who strikes it gets burned. You want to throw punches at me? Go ahead."},
-    {key:'cinder',text:"Candle is a Fire curse on my Dispel wheel. While it burns, my rival takes fire damage whenever they raise a ward. Suddenly the safe move isn't safe."},
+    {key:'cinder',text:"Candle is a Fire curse on my Dispel wheel. While it burns, my rival takes fire damage whenever they raise a ward or meditate. Suddenly the safe moves aren't safe."},
   ],
   skadi:[
     {key:'skadi',text:"Patience. The cold does not rush. I let the fight come to me."},
@@ -6241,7 +6250,7 @@ const TUTORIAL_CONVOS={
   mordant:[
     {key:'mordant',text:"Do not think of me as aggressive. I am patient. Half my Dispel wheel is curses — and every one of them wears at your ward too."},
     {key:'mordant',text:"Agony is Dark: whenever you cast anything, you suffer. Silence is Arcane: your spells may simply fail."},
-    {key:'mordant',text:"Corruption is Physical: the rot slows the mana you gain each round. Starve them, and watch their options narrow to nothing."},
+    {key:'mordant',text:"Corruption is Physical: the rot slows the mana you gain each round, and it spoils a Meditate. Starve them, and watch their options narrow to nothing."},
     {key:'mordant',text:"Cleanse Self is the answer to me. Make them spend their rounds cleansing instead of striking. The hex is already written."},
   ],
   ponder:[
@@ -6264,7 +6273,7 @@ const TUTORIAL_CONVOS={
   ],
   gretch:[
     {key:'gretch',text:"Heh. Come closer. My kit is about poison and drain — I infect you, starve you, and keep myself alive while you rot."},
-    {key:'gretch',text:"Plague is a Dark curse — damage every round for a while. Maggot Cloud is a Physical curse — it drains mana now and slows your mana for a couple of rounds."},
+    {key:'gretch',text:"Plague is a Dark curse — damage every round for a while. Maggot Cloud is a Physical curse — it drains mana now and slows your mana for a couple of rounds. Meditating won't save you."},
     {key:'gretch',text:"Bone Totem, in the Dark sector of my Protection wheel, heals me every round. Protect it with a ward or a Dispel will strip it."},
     {key:'gretch',text:"Not elegant. Not subtle. Just results. Plague them, drain them, totem up, and let time finish the job."},
   ],
