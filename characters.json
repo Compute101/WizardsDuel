@@ -252,7 +252,7 @@
             "n": 2,
             "rounds": 3
           },
-          "desc": "Foe gains 2 less mana a round × 3"
+          "desc": "Foe gains 2 less mana a round (and from Meditate) × 3"
         }
       },
       {
@@ -409,7 +409,7 @@
             "dmg": 8,
             "rounds": 3
           },
-          "desc": "3 rounds: foe burns for 8 when they ward"
+          "desc": "3 rounds: foe burns for 8 when they ward or meditate"
         }
       }
     ]
@@ -692,7 +692,7 @@
             "n": 3,
             "rounds": 3
           },
-          "desc": "Foe gains 3 less mana a round × 3"
+          "desc": "Foe gains 3 less mana a round (and from Meditate) × 3"
         }
       }
     ]
@@ -957,7 +957,7 @@
             "n": 3,
             "rounds": 2
           },
-          "desc": "Drain 3 mana; −3 income × 2",
+          "desc": "Drain 3 mana; −3 income and Meditate × 2",
           "drainNow": 3
         }
       },

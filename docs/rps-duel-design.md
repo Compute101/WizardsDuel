@@ -40,8 +40,11 @@ What was built, including choices made while building:
 - **Meditate** (🧘 on the action bar) replaces the old Channel: skip your spell and gain +3 mana on top
   of income (`MEDITATE` in `js/game.js`). It's a bet that the foe won't strike: you cast nothing, so
   nothing stops their spell. It resolves after every Damage, so this round's mana burns can't touch the
-  gain. Not two rounds in a row, and not with a free spell pending. The AI meditates when short of mana,
-  more readily when its foe can't afford a strike or its ward, buffs and curses are working for it.
+  gain. Not two rounds in a row, and not with a free spell pending. As Channel did in Classic, the
+  income-drain curses (Time Drain, Corruption, Maggot Cloud) cut the gain by the same amount, and
+  Cinder's Candle burns a wizard who meditates as well as one who wards. The AI meditates when short of
+  mana, more readily when its foe can't afford a strike or its ward, buffs and curses are working for
+  it, and rarely under a drain or Candle.
 - **Paying:** every seat pays for its pick as the round begins, before anything resolves (`payForAction`).
   The picks were simultaneous, so a mana burn or drain this round can't stop a spell that was already
   paid for, whatever the seat order. A failed ritual costs 1 mana instead. **Quick** spells (`quick` on
@@ -150,14 +153,14 @@ so each spell's numbers can be tuned there.
 | Sylvara | 🌿 Entangle | ✦ Dispel | 👊 Physical | Curse (foe) | 1 / 2 / 3 | 55%: foe can't pick Damage next round |
 | Sylvara | 🌱 Vine Whip | ⚔️ Damage | 👊 Physical | Strike | 2 / 4 / 6 | 10 physical + vines 3 a round × 3 |
 | Aurelia | 🔮 Foresight | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | The next strike within 3 rounds does nothing |
-| Aurelia | ⏳ Time Drain | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | Foe gains 2 less mana a round × 3 |
+| Aurelia | ⏳ Time Drain | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | Foe gains 2 less mana a round (and from Meditate) × 3 |
 | Aurelia | ⏪ Rewind | 🛡 Protection | 🌀 Arcane | Ward | 4 / 7 / 11 | Arcane ward of 25 + heal what you lost last round (max 20) |
 | Gnash | 🩸 War Paint | 🛡 Protection | 👊 Physical | Enchantment (self) | 2 / 3 / 5 | Take 33% less damage × 3 rounds |
 | Gnash | ⚔️ Savage Charge | ⚔️ Damage | 👊 Physical | Strike | 3 / 5 / 8 | 16 physical; burns 2 mana |
 | Gnash | 💢 Frenzy | 🛡 Protection | 🔥 Fire | Enchantment (self) | 1 / 2 / 3 | 2 rounds: strikes +40%, each costs 4 HP |
 | Cinder | 🎱 Fireball | ⚔️ Damage | 🔥 Fire | Strike | 3 / 5 / 8 | 12–24 random fire |
 | Cinder | 🛡️ Flame Shield | 🛡 Protection | 🔥 Fire | Ward | 4 / 7 / 11 | Fire ward of 30; strikers take 8 |
-| Cinder | 🕯️ Candle | ✦ Dispel | 🔥 Fire | Curse (foe) | 1 / 2 / 3 | 3 rounds: foe burns for 8 when they ward |
+| Cinder | 🕯️ Candle | ✦ Dispel | 🔥 Fire | Curse (foe) | 1 / 2 / 3 | 3 rounds: foe burns for 8 when they ward or meditate |
 | Skadi | 🧊 Ice Lance | ⚔️ Damage | ❄️ Ice | Strike | 4 / 6 / 10 | 18 ice; chills (middle ring and up) |
 | Skadi | 🛡️ Frost Armor | 🛡 Protection | ❄️ Ice | Enchantment (self) | 2 / 4 / 6 | 3 rounds: −30% damage, strikers take 4 |
 | Skadi | 🌨️ Blizzard | ✦ Dispel | ❄️ Ice | Curse (foe) | 2 / 4 / 6 | 4 a round + 1 mana drain × 4 |
@@ -169,7 +172,7 @@ so each spell's numbers can be tuned there.
 | Mary | ☀️ Radiant | ⚔️ Damage | 🌀 Arcane | Strike | 2 / 4 / 6 | 12 holy; burns 2 mana |
 | Mordant | 💀 Agony | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: foe takes 8 whenever they cast |
 | Mordant | 🔇 Silence | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | 3 rounds: foe's spells fail 50% |
-| Mordant | ☠️ Corruption | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Foe gains 3 less mana a round × 3 |
+| Mordant | ☠️ Corruption | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Foe gains 3 less mana a round (and from Meditate) × 3 |
 | Ponder | 👻 Vanish | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 3 / 5 | The next strike within 2 rounds misses |
 | Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant (quick) | 2 / 3 / 5 | Steal 3 mana as the round begins, before they pay |
 | Ponder | 💫 Blink | 🛡 Protection | ⚡ Lightning | Enchantment (self) + ward | 2 / 4 / 6 | 45% dodge × 3 rounds, plus a 10 HP Lightning ward. Dodge rolls before Vanish, so a dodged strike keeps Vanish up |
@@ -180,7 +183,7 @@ so each spell's numbers can be tuned there.
 | Weizan | 💫 Bladestorm | ⚔️ Damage | 👊 Physical | Strike | 1 / 2 / 3 | Launch all blades: 10 each |
 | Weizan | 🧘 Iron Patience | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 1 / 2 / 3 | Take 30% less damage × 3 |
 | Gretch | ☠️ Plague | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 a round × 4 |
-| Gretch | 🪲 Maggot Cloud | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Drain 3 mana; −3 income × 2 |
+| Gretch | 🪲 Maggot Cloud | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Drain 3 mana; −3 income and Meditate × 2 |
 | Gretch | 💀 Bone Totem | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 4 / 6 | Heal 4 a round × 4 |
 | Valdris | 💀 Raise Dead | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 4 / 6 | Skeleton (max 2) for 4 rounds: 5 a round; heals 8 if destroyed |
 | Valdris | 🩸 Necrotic Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 40% of HP damage |
