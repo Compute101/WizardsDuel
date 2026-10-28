@@ -2086,9 +2086,9 @@ const ELEM_CATS={
 const ELEM_TIER_NAMES=['Lesser ','','Greater '];
 const ELEM_STAGE_BANNERS={1:'🛡 Protection',2:'✦ Dispel',3:'⚔️ Damage'};
 
-// Casting minigame per element (Dark borrows the Mana Burn minigame with its own glyphs)
+// Casting minigame per element
 const ELEM_MINIGAME={fire:launchPatternEcho, ice:launchIcePattern, lightning:launchLightningPattern,
-  arcane:launchArcanePattern, physical:launchRockfallPattern, dark:launchManaBurnPattern};
+  arcane:launchArcanePattern, physical:launchRockfallPattern, dark:launchShadowCirclePattern};
 const ELEM_GLYPHS={physical:[1,2,3,8], dark:[6,9,2,4]};   // Δ ∇ Ψ ⊕ (stone) / ☽ ⊗ ∇ Ω (necromancy)
 const ELEM_WARD_THEME={fire:'flameshield', ice:'frostarmor', lightning:'shield',
   arcane:'foresight', physical:'stoneskin', dark:'warpaint'};
@@ -4607,54 +4607,50 @@ function launchLightningPattern(spell,cb){
   mazeRAF=requestAnimationFrame(frame);
 }
 
-// ── PUZZLE: MANA BURN PATTERN (Arcane Surge Glyph) ───────────────────────
-function launchManaBurnPattern(spell,cb){
+// ── PUZZLE: SHADOW CIRCLE PATTERN (Dark) ──────────────────
+// Runes rise out of the centre of a slowly turning purple moon circle, then orbit it.
+function launchShadowCirclePattern(spell,cb){
   let done=false;
-  document.getElementById('pztitle').textContent='Arcane Surge Glyph';
+  document.getElementById('pztitle').textContent='Shadow Circle';
   document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
   setDpadVisible(false);
 
-  // ── Full 12-glyph Arcana Alphabet (grid order: 3 cols × 4 rows) ──────
+  // Indices: 0=ϟ 1=Δ 2=∇ 3=Ψ 4=Ω 5=∞ 6=☽ 7=✸ 8=⊕ 9=⊗ 10=θ 11=Φ
   const ALPHABET=[
-    {sym:'ϟ',glowCol:'#ccffff',col:'#0d0830',lit:'#5566cc'}, // 0
-    {sym:'Δ',glowCol:'#ff9944',col:'#0a0828',lit:'#4455bb'}, // 1
-    {sym:'∇',glowCol:'#44aaff',col:'#060830',lit:'#5577dd'}, // 2 — mana burn
-    {sym:'Ψ',glowCol:'#aaff88',col:'#0a0535',lit:'#8855dd'}, // 3 — mana burn
-    {sym:'Ω',glowCol:'#ff4444',col:'#0a0425',lit:'#442288'}, // 4
-    {sym:'∞',glowCol:'#44ffcc',col:'#040e28',lit:'#334499'}, // 5
-    {sym:'☽',glowCol:'#aaddff',col:'#06082a',lit:'#334477'}, // 6
-    {sym:'✸',glowCol:'#ffff55',col:'#0e0a28',lit:'#9966ff'}, // 7 — mana burn
-    {sym:'⊕',glowCol:'#ffee77',col:'#0c0828',lit:'#553399'}, // 8
-    {sym:'⊗',glowCol:'#ff44aa',col:'#130530',lit:'#cc44cc'}, // 9 — mana burn
-    {sym:'θ',glowCol:'#88ff88',col:'#060e28',lit:'#445599'}, // 10
-    {sym:'Φ',glowCol:'#dd88ff',col:'#0e0530',lit:'#8844cc'}, // 11
+    {sym:'ϟ',glowCol:'#ccffff'},{sym:'Δ',glowCol:'#ff9944'},{sym:'∇',glowCol:'#44aaff'},
+    {sym:'Ψ',glowCol:'#aaff88'},{sym:'Ω',glowCol:'#ff4444'},{sym:'∞',glowCol:'#44ffcc'},
+    {sym:'☽',glowCol:'#aaddff'},{sym:'✸',glowCol:'#ffff55'},{sym:'⊕',glowCol:'#ffee77'},
+    {sym:'⊗',glowCol:'#ff44aa'},{sym:'θ',glowCol:'#88ff88'},{sym:'Φ',glowCol:'#dd88ff'},
   ];
 
-  // Mana Burn uses Ψ(3) ∇(2) ⊗(9) ✸(7)
-  const SPELL_IDX=spell.glyphs||[3,2,9,7];
-  const MANABURN_COLS=[
-    {col:'#180028',lit:'#cc44ff'}, // Ψ
-    {col:'#0a0020',lit:'#8844ff'}, // ∇
-    {col:'#1a0028',lit:'#ff44cc'}, // ⊗
-    {col:'#100022',lit:'#aa55ff'}, // ✸
+  // Dark owns ☽(6) ⊗(9) ∇(2) Ω(4) — see CLAUDE.md
+  const SPELL_IDX=spell.glyphs||[6,9,2,4];
+  // Shadow colours assigned per SPELL_IDX position (0-3)
+  const SHADOW_COLS=[
+    {col:'#4a1a6a',lit:'#cc88ff'},
+    {col:'#3a1a5a',lit:'#aa88ff'},
+    {col:'#552070',lit:'#dd99ff'},
+    {col:'#2e1a55',lit:'#9999ff'},
   ];
 
+  // Canvas: 3-col × 4-row keyboard grid
   const TS=72,GAP=6,PAD=10;
-  const cw=PAD*2+TS*3+GAP*2;
+  const cw=PAD*2+TS*3+GAP*2;  // 248 px
   const ch=380;
   mc.width=cw; mc.height=ch;
   const mw=Math.min(cw,(window.innerWidth||360)-32);
   mc.style.width=mw+'px'; mc.style.height='auto';
 
-  const tileAreaH=TS*4+GAP*3;
-  const tileTop=ch-PAD-tileAreaH;
+  // Keyboard tile positions — bottom-aligned
+  const tileAreaH=TS*4+GAP*3;        // 306 px
+  const tileTop=ch-PAD-tileAreaH;    // 64 px
   const tPos=Array.from({length:12},(_,i)=>({
     x:PAD+(i%3)*(TS+GAP),
     y:tileTop+Math.floor(i/3)*(TS+GAP),
   }));
 
-  // Easy: prefix of the canonical Mana Burn word: Ψ ∇ ⊗ ✸
-  const seq=mgSeq(spell,[3,2,9,7],SPELL_IDX);
+  // Easy: prefix of the canonical Dark word: ☽ ⊗ ∇ Ω
+  const seq=mgSeq(spell,[6,9,2,4],SPELL_IDX);
   const SEQ_LEN=seq.length;
   const playerSeq=[];
   let phase='watch';
@@ -4663,44 +4659,35 @@ function launchManaBurnPattern(spell,cb){
   const timerEl=document.getElementById('pztimer');
   timerEl.textContent='—'; timerEl.classList.remove('urgent');
 
-  // Watch phase timing
-  const STATIC_HOLD=2500;        // glyphs static before burning starts
-  const NOISE_RISE_DELAY=0;      // noise starts rising immediately when burn begins
-  const SPELL_RISE_DELAY=600;    // spell glyphs ignite shortly after noise
-  const NOISE_RISE_SPD=2.6;      // noise rises quickly
-  const SPELL_RISE_SPD=3.4;      // spell glyphs burn off before the watch window ends
+  // The circle
+  const CX=cw/2, CY=ch*0.5;
+  const R_OUTER=104, R_ORBIT=80, R_INNER=50;
+  const SPIN=Math.PI*2/24000;   // circle drawing turns once every 24 s (rad/ms)
+  const ORBIT=Math.PI*2/7000;   // sequence runes orbit once every 7 s (rad/ms)
+
+  // Noise — faint purple runes counter-orbit on the outer and inner rings
+  const NOISE_COLS=['#5a2280','#4a1a6a','#6a2a90','#442066','#3a1258'];
+  const noise=[
+    ...Array.from({length:16},(_,i)=>({r:R_OUTER+(_rng()-.5)*10, a:i/16*Math.PI*2, w:-Math.PI*2/(9000+_rng()*3000)})),
+    ...Array.from({length:8}, (_,i)=>({r:R_INNER-14+(_rng()-.5)*8, a:i/8*Math.PI*2,  w:-Math.PI*2/(5000+_rng()*2000)})),
+  ].map(n=>({...n, sz:9+_rng()*8, ai:Math.floor(_rng()*12), col:NOISE_COLS[Math.floor(_rng()*5)],
+    ph:_rng()*Math.PI*2, alpha:0.4+_rng()*0.35}));
+  // Shadow wisps drifting up out of the circle
+  const wisps=Array.from({length:22},()=>({x:CX+(_rng()-.5)*R_OUTER*2, y:_rng()*ch, vy:0.008+_rng()*0.02,
+    sz:1.5+_rng()*2.5, ph:_rng()*Math.PI*2}));
+
+  // Sequence runes — evenly spaced slots around the orbit, shuffled so the order
+  // has to be read from when each one rises (and the badges), not around the ring.
+  const slots=Array.from({length:SEQ_LEN},(_,i)=>i/SEQ_LEN*Math.PI*2-Math.PI/2);
+  for(let i=slots.length-1;i>0;i--){ const j=Math.floor(_rng()*(i+1)); [slots[i],slots[j]]=[slots[j],slots[i]]; }
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
+  const RISE_MS=650;            // centre → orbit
   const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
-  let watchDone=false;
-
-  // Noise glyphs — all 12 arcana scattered across bottom half, faint blue
-  const NOISE_BLUE=['#1133bb','#2244cc','#0d2eaa','#1a44dd','#2233bb'];
-  const noise=Array.from({length:44},()=>{
-    const y=ch*0.5+_rng()*ch*0.5;
-    return {
-      x:_rng()*cw,
-      y,
-      startY:y,
-      sz:9+_rng()*14,
-      ai:Math.floor(_rng()*12),
-      col:NOISE_BLUE[Math.floor(_rng()*5)],
-      ph:_rng()*Math.PI*2,
-      alpha:0.12+_rng()*0.22,
-      spd:NOISE_RISE_SPD*(0.7+_rng()*0.65),
-    };
-  });
-
-  // Spell glyphs — spread horizontally at the very bottom, all visible from start
-  const xSlots=Array.from({length:SEQ_LEN},(_,i)=>{
-    const frac=(i+0.5)/SEQ_LEN;
-    return Math.max(30,Math.min(cw-30,cw*frac+(_rng()-0.5)*12));
-  });
+  let watchDone=false, lastT=startTime, pulseAt=-1e9;
   const symStates=seq.map((ai,i)=>({
     ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
-    x:xSlots[i],
-    y:ch-22,
-    idx:i,
-    spd:SPELL_RISE_SPD*(0.85+_rng()*0.3),
+    base:slots[i],spawnAt:SPAWN_DELAY+i*SPAWN_INTERVAL,idx:i,risen:false,
   }));
 
   function startTimer(){
@@ -4724,8 +4711,8 @@ function launchManaBurnPattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false);
-          return;
+          if(diffName==='hard') finish(false); // wrong glyph in hard = fail
+          return;                              // easy/normal: silently ignore
         }
         if(ai!==seq[playerSeq.length]){finish(false);return;}
         playerSeq.push(ai);
@@ -4744,15 +4731,87 @@ function launchManaBurnPattern(spell,cb){
   }
   function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
 
+  // A moon phase (0 new … 4 full … 7 waning) of radius r at x,y: lit disc, then a shadow disc slid across it
+  function drawMoon(x,y,r,k){
+    mx.fillStyle='#e6d0ff';
+    mx.beginPath(); mx.arc(x,y,r,0,Math.PI*2); mx.fill();
+    const off=r*2*(1-Math.abs(k-4)/4)*(k<4?-1:1);
+    mx.fillStyle='#14081f';
+    mx.beginPath(); mx.arc(x+off,y,r*1.02,0,Math.PI*2); mx.fill();
+    mx.strokeStyle='#7a44aa'; mx.lineWidth=0.8;
+    mx.beginPath(); mx.arc(x,y,r,0,Math.PI*2); mx.stroke();
+  }
+
+  // Purple moon circle: double outer ring with tick marks, an inner ring of moon phases, a crescent at the heart
+  function drawCircle(elapsed,strength){
+    const rot=elapsed*SPIN;
+    const sincePulse=elapsed-pulseAt;
+    const pulse=sincePulse<500?1-sincePulse/500:0;
+    const throb=0.75+0.25*Math.sin(elapsed/600);
+    mx.save();
+    mx.translate(CX,CY);
+    mx.globalAlpha=strength*(throb+pulse*0.6);
+    mx.shadowColor='#bb66ff'; mx.shadowBlur=10+pulse*18;
+    mx.strokeStyle='#9944cc'; mx.lineWidth=2;
+    mx.beginPath(); mx.arc(0,0,R_OUTER+12,0,Math.PI*2); mx.stroke();
+    mx.lineWidth=1;
+    mx.beginPath(); mx.arc(0,0,R_OUTER-12,0,Math.PI*2); mx.stroke();
+    mx.rotate(rot);
+    for(let k=0;k<36;k++){
+      const a=k/36*Math.PI*2, long=k%3===0;
+      mx.beginPath();
+      mx.moveTo(Math.cos(a)*(R_OUTER+12),Math.sin(a)*(R_OUTER+12));
+      mx.lineTo(Math.cos(a)*(R_OUTER+(long?2:7)),Math.sin(a)*(R_OUTER+(long?2:7)));
+      mx.stroke();
+    }
+    mx.rotate(-rot*2.5);
+    mx.strokeStyle='#7a33aa'; mx.lineWidth=1.3;
+    mx.beginPath(); mx.arc(0,0,R_INNER,0,Math.PI*2); mx.stroke();
+    mx.shadowBlur=6+pulse*10;
+    for(let k=0;k<8;k++){
+      const a=k/8*Math.PI*2-Math.PI/2;
+      drawMoon(Math.cos(a)*R_INNER,Math.sin(a)*R_INNER,6,k);
+    }
+    mx.rotate(rot*2.5);
+    // Crescent at the heart
+    mx.shadowColor='#cc99ff'; mx.shadowBlur=14+pulse*16;
+    mx.fillStyle='#e6d0ff';
+    mx.beginPath(); mx.arc(0,0,14,0,Math.PI*2); mx.fill();
+    mx.shadowBlur=0;
+    mx.fillStyle='#14081f';
+    mx.beginPath(); mx.arc(6,-3,12.5,0,Math.PI*2); mx.fill();
+    mx.restore();
+    // Core glow
+    const cg=mx.createRadialGradient(CX,CY,0,CX,CY,R_INNER);
+    cg.addColorStop(0,`rgba(150,70,210,${(0.22+pulse*0.4)*strength})`);
+    cg.addColorStop(1,'rgba(150,70,210,0)');
+    mx.fillStyle=cg; mx.fillRect(CX-R_INNER,CY-R_INNER,R_INNER*2,R_INNER*2);
+  }
+
+  function drawNoise(t,dt,dim){
+    mx.save();
+    noise.forEach(n=>{
+      n.a+=n.w*dt;
+      const pulse=0.55+0.45*Math.abs(Math.sin(t/700+n.ph));
+      mx.globalAlpha=n.alpha*pulse*dim;
+      mx.fillStyle=n.col; mx.shadowColor=n.col; mx.shadowBlur=6;
+      mx.font=`bold ${n.sz}px serif`;
+      mx.textAlign='center'; mx.textBaseline='middle';
+      mx.fillText(ALPHABET[n.ai].sym,CX+Math.cos(n.a)*n.r,CY+Math.sin(n.a)*n.r);
+    });
+    mx.restore();
+  }
+
   function draw(){
     const t=Date.now();
     const elapsed=t-startTime;
+    const dt=Math.min(50,t-lastT); lastT=t;
 
-    // Background — deep arcane indigo
-    const bg=mx.createRadialGradient(cw/2,ch*.6,0,cw/2,ch*.6,cw*.9);
-    bg.addColorStop(0,'#0d0020');
-    bg.addColorStop(0.6,'#070012');
-    bg.addColorStop(1,'#030008');
+    // Background — night sky with a violet heart
+    const bg=mx.createRadialGradient(CX,CY,0,CX,CY,cw*.9);
+    bg.addColorStop(0,'#1e0a2e');
+    bg.addColorStop(0.55,'#0c0416');
+    bg.addColorStop(1,'#030106');
     mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
 
     if(phase==='watch'&&!watchDone&&elapsed>=watchDuration){
@@ -4760,120 +4819,90 @@ function launchManaBurnPattern(spell,cb){
       timerEl.textContent=timeLeft; startTimer();
     }
 
+    // Wisps
+    mx.save();
+    wisps.forEach(w=>{
+      w.y-=w.vy*dt;
+      if(w.y<-6){ w.y=ch+6; w.x=CX+(_rng()-.5)*R_OUTER*2; }
+      mx.globalAlpha=(phase==='watch'?0.35:0.15)*(0.5+0.5*Math.sin(t/500+w.ph));
+      mx.fillStyle='#b077ff'; mx.shadowColor='#b077ff'; mx.shadowBlur=8;
+      mx.beginPath(); mx.arc(w.x+Math.sin(t/900+w.ph)*6,w.y,w.sz,0,Math.PI*2); mx.fill();
+    });
+    mx.restore();
+
     if(phase==='watch'){
-      const noiseBurning=elapsed>=(STATIC_HOLD+NOISE_RISE_DELAY);
-      const spellBurning=elapsed>=(STATIC_HOLD+SPELL_RISE_DELAY);
-      // How far into the burn phase (0→1 over 1200ms) for glow ramp
-      const burnT=noiseBurning?Math.min(1,(elapsed-STATIC_HOLD)/1200):0;
+      drawCircle(elapsed,1);
+      drawNoise(t,dt,1);
 
-      // Noise glyphs — bottom half, faint blue; burn phase: rise bright
-      mx.save();
-      noise.forEach(f=>{
-        if(noiseBurning){
-          f.y-=f.spd;
-          if(f.y<-24){f.y=ch+10;f.x=_rng()*cw;f.ai=Math.floor(_rng()*12);}
-        }
-        const pulse=0.55+0.45*Math.abs(Math.sin(t/680+f.ph));
-        const brightAlpha=f.alpha+burnT*f.alpha*2.2;
-        mx.globalAlpha=Math.min(0.88,brightAlpha*pulse);
-        mx.fillStyle=f.col; mx.shadowColor=f.col;
-        mx.shadowBlur=noiseBurning?10+burnT*14:3;
-        mx.font=`bold ${f.sz}px serif`;
-        mx.textAlign='center'; mx.textBaseline='middle';
-        mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
-      });
-      mx.globalAlpha=1; mx.shadowBlur=0;
-      mx.restore();
-
-      // Spell glyphs — white at bottom; burn phase: rise bright white
+      // Sequence runes — rise out of the centre, then orbit
       symStates.forEach(s=>{
-        if(spellBurning) s.y-=s.spd;
-        if(s.y<-30) return;
-
-        const riseProgress=spellBurning
-          ?Math.min(1,(ch-22-s.y)/(ch*0.75)):0;
-        const pulse=Math.sin(t/820+s.idx*1.4)*0.1;
-
-        let alpha=0.8+pulse;
-        if(s.y<55) alpha=Math.max(0,s.y/55);
-        if(alpha<=0.01) return;
-
-        const glowSize=spellBurning?20+riseProgress*36:14;
-        const glowCol=spellBurning?'#ffffff':s.glowCol;
-
+        const age=elapsed-s.spawnAt;
+        if(age<0) return;
+        if(!s.risen){ s.risen=true; pulseAt=elapsed; }
+        const a=s.base+elapsed*ORBIT;
+        const p=Math.min(1,age/RISE_MS);
+        const ease=1-Math.pow(1-p,3);
+        const r=R_ORBIT*ease;
+        const x=CX+Math.cos(a)*r, y=CY+Math.sin(a)*r;
+        const alpha=Math.min(1,age/300);
+        const scale=0.5+0.5*ease;
         mx.save();
         mx.globalAlpha=alpha;
-        mx.shadowColor=glowCol; mx.shadowBlur=glowSize;
+        mx.translate(x,y); mx.scale(scale,scale);
+        mx.shadowColor='#aa55ff'; mx.shadowBlur=26;
+        mx.fillStyle='rgba(60,15,95,0.6)';
+        mx.beginPath(); mx.arc(0,0,22,0,Math.PI*2); mx.fill();
+        mx.shadowColor=s.glowCol; mx.shadowBlur=28;
         mx.fillStyle='#ffffff';
-        mx.font='bold 40px serif';
+        mx.font='bold 36px serif';
         mx.textAlign='center'; mx.textBaseline='middle';
-        mx.fillText(s.sym,s.x,s.y);
-        // Second pass for extra core brightness when burning
-        if(spellBurning&&riseProgress>0.1){
-          mx.shadowBlur=glowSize*0.6;
-          mx.fillText(s.sym,s.x,s.y);
-        }
+        mx.fillText(s.sym,0,1);
         mx.restore();
-
-        // Order badge
-        if(alpha>0.25){
+        if(p>=1){
           mx.save();
-          mx.globalAlpha=alpha*0.9;
-          mx.shadowColor='#cc88ff'; mx.shadowBlur=8;
-          mx.fillStyle='#cc88ff';
+          mx.shadowColor='#ffcc00'; mx.shadowBlur=10;
+          mx.fillStyle='#ffcc00';
           mx.font='bold 11px Cinzel,serif';
           mx.textAlign='center'; mx.textBaseline='middle';
-          mx.fillText(s.idx+1,s.x+20,s.y-20);
+          mx.fillText(s.idx+1,x+21,y-21);
           mx.restore();
         }
       });
-      mx.globalAlpha=1; mx.shadowBlur=0;
 
-      // Status hint
-      const hint=spellBurning?'The mana burns!':
-                 noiseBurning?'Memorise the white runes...':
-                              'Read the mana runes...';
-      mx.fillStyle=spellBurning?'#ff88ff':'#aa88ff';
+      mx.fillStyle='#cc99ff';
       mx.font='bold 10px Cinzel,serif';
       mx.textAlign='center'; mx.textBaseline='top';
-      mx.fillText(hint,cw/2,4);
+      mx.fillText('Watch the runes rise from the circle!',cw/2,4);
     }
 
     if(phase==='input'){
-      // Faint lingering drift
-      mx.save();
-      noise.slice(0,14).forEach(f=>{
-        f.y-=f.spd*0.18;
-        if(f.y<-24){f.y=ch+10;f.x=_rng()*cw;}
-        mx.globalAlpha=f.alpha*0.14;
-        mx.fillStyle=f.col;
-        mx.font=`${f.sz}px serif`;
-        mx.textAlign='center'; mx.textBaseline='middle';
-        mx.fillText(ALPHABET[f.ai].sym,f.x,f.y);
-      });
-      mx.globalAlpha=1;
-      mx.restore();
+      // The circle smoulders faintly behind the keyboard
+      drawCircle(elapsed,0.25);
+      drawNoise(t,dt,0.3);
 
       // 12-glyph keyboard
       const isHard=diffName==='hard';
       for(let ai=0;ai<12;ai++){
         const tp=tPos[ai];
         const g=ALPHABET[ai];
-        const si=SPELL_IDX.indexOf(ai);
+        const si=SPELL_IDX.indexOf(ai); // -1 if not spell glyph
         const isSpell=si!==-1;
 
         let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
         if(isHard){
-          bgCol='#180a22'; bgDark='#0a0412';
-          strokeCol='#33194488'; textCol='#8855cc';
+          // All glyphs show as neutral arcane — player must rely on memory
+          bgCol='#2d1a3d'; bgDark='#100820';
+          strokeCol='#44285888'; textCol='#7755aa';
           blur=4; textAlpha=1;
         } else if(isSpell){
-          bgCol=MANABURN_COLS[si].col; bgDark='#050010';
-          strokeCol=MANABURN_COLS[si].col+'88'; textCol=MANABURN_COLS[si].lit;
+          // Spell glyphs: shadow colours by SPELL_IDX position
+          bgCol=SHADOW_COLS[si].col; bgDark='#0a0412';
+          strokeCol=SHADOW_COLS[si].col+'88'; textCol=SHADOW_COLS[si].lit;
           blur=8; textAlpha=1;
         } else {
-          bgCol='#080810'; bgDark='#030305';
-          strokeCol='#111120'; textCol='#1a1a28';
+          // Non-spell glyphs: ghosted out
+          bgCol='#0f0f0f'; bgDark='#050505';
+          strokeCol='#1e1e1e'; textCol='#2a2a2a';
           blur=0; textAlpha=0.35;
         }
 
@@ -4894,17 +4923,19 @@ function launchManaBurnPattern(spell,cb){
         mx.restore();
       }
 
-      mx.fillStyle='#cc88ff';
+      // Status label
+      mx.fillStyle='#cc99ff';
       mx.font='bold 10px Cinzel,serif';
       mx.textAlign='center'; mx.textBaseline='top';
       mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
 
+      // Progress dots — sit between status text and keyboard
       const dotY=tileTop-10,dsp=14;
       const ds=cw/2-(seq.length-1)*dsp/2;
       for(let i=0;i<seq.length;i++){
         mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-        if(i<playerSeq.length){mx.fillStyle='#cc88ff';mx.shadowColor='#cc88ff';mx.shadowBlur=6;}
-        else{mx.fillStyle='rgba(204,136,255,0.2)';mx.shadowBlur=0;}
+        if(i<playerSeq.length){mx.fillStyle='#ffcc00';mx.shadowColor='#ffcc00';mx.shadowBlur=6;}
+        else{mx.fillStyle='rgba(255,204,0,0.2)';mx.shadowBlur=0;}
         mx.fill(); mx.shadowBlur=0;
       }
     }

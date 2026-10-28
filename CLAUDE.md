@@ -38,7 +38,7 @@ Every spell's casting minigame uses glyphs from a shared 12-symbol alphabet. Thi
 | Arcane | arcane | `Ω ∞ Ψ θ` | cosmos / eternity / spirit / hidden |
 | Dispel | dispel | `∞ ⊕ ∇ θ` | eternal cycle / unbinding / descent / dissolution |
 | Physical (Elemental rules) | physical | `Δ ∇ Ψ ⊕` | stone layers / fork / binding — Rockfall minigame (rune stones fall into shuffled spots on a quaking floor) |
-| Dark (Elemental rules) | dark | `☽ ⊗ ∇ Ω` | the Necromancy set — borrows the Mana Burn minigame |
+| Dark (Elemental rules) | dark | `☽ ⊗ ∇ Ω` | the Necromancy set — Shadow Circle minigame (runes rise from a purple moon circle and orbit it) |
 
 Arcane deliberately shares one glyph with each other element — it's the underlying force of all magic, and the hardest set to memorise in hard mode. Dispel similarly draws one glyph from each elemental set (∞ from Ice, ⊕ from Inferno, ∇ from Lightning, θ from Ice/Arcane), fitting its role as a universal spell that dissolves any type of magic.
 
@@ -112,7 +112,7 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 - `ELEM_IMPACT_VFX` holds the plain element strikes; `TICK_VFX` / `MINION_VFX` the round-end ticks; `VFX` the shared reactions (ward block/shatter, dodge, dispel, retaliation, …).
 - Primitives: `spawnBeam`, `lunge`, `spawnManaBurnFire`, `vfxRing` / `vfxFountain` / `vfxDrift` / `vfxDrip`. `drawWiz` draws status auras from `wizVisuals()`.
 - Battle sprites: each character's `sprite` in `characters.json`. Either an old 192×320 spritesheet (`mage-*.png`, 48×64 frames, facing left) or a single full-body still named after the character key (`sprites/<key>.png`, 512×768, facing right). `drawSprite` handles both.
-- `js/legacy/` holds code the game doesn't load: the original Classic spell code (`classic_spells.js`, with every effect in context) and the old puzzle minigames.
+- `js/legacy/` holds code the game doesn't load: the original Classic spell code (`classic_spells.js`, with every effect in context) and the old puzzle minigames, including Mana Burn (`puzzles_legacy.js`).
 
 ---
 
@@ -128,7 +128,7 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 | Inferno minigame (Fire) | `js/game.js` | ~3600 |
 | Rockfall minigame (Physical) | `js/game.js` | ~3885 |
 | Lightning minigame | `js/game.js` | ~3380 |
-| Mana Burn minigame (Dark) | `js/game.js` | ~3725 |
+| Shadow Circle minigame (Dark) | `js/game.js` | ~4570 |
 | Ice minigame | `js/game.js` | ~4035 |
 | Arcane minigame | `js/game.js` | ~4335 |
 | Dispel minigame | `js/game.js` | ~4630 |
