@@ -38,7 +38,7 @@ Every spell's casting minigame uses glyphs from a shared 12-symbol alphabet. Thi
 | Arcane | arcane | `Ω ∞ Ψ θ` | cosmos / eternity / spirit / hidden |
 | Dispel | dispel | `∞ ⊕ ∇ θ` | eternal cycle / unbinding / descent / dissolution |
 | Physical (Elemental rules) | physical | `Δ ∇ Ψ ⊕` | stone layers / fork / binding — Rockfall minigame (rune stones fall into shuffled spots on a quaking floor) |
-| Dark (Elemental rules) | dark | `☽ ⊗ ∇ Ω` | the Necromancy set — Blood Circle minigame (runes rise from a dark-red arcane circle and orbit it) |
+| Dark (Elemental rules) | dark | `☽ ⊗ ∇ Ω` | the Necromancy set — Shadow Circle minigame (runes rise from a purple moon circle and orbit it) |
 
 Arcane deliberately shares one glyph with each other element — it's the underlying force of all magic, and the hardest set to memorise in hard mode. Dispel similarly draws one glyph from each elemental set (∞ from Ice, ⊕ from Inferno, ∇ from Lightning, θ from Ice/Arcane), fitting its role as a universal spell that dissolves any type of magic.
 
@@ -128,7 +128,7 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 | Inferno minigame (Fire) | `js/game.js` | ~3600 |
 | Rockfall minigame (Physical) | `js/game.js` | ~3885 |
 | Lightning minigame | `js/game.js` | ~3380 |
-| Blood Circle minigame (Dark) | `js/game.js` | ~4570 |
+| Shadow Circle minigame (Dark) | `js/game.js` | ~4570 |
 | Ice minigame | `js/game.js` | ~4035 |
 | Arcane minigame | `js/game.js` | ~4335 |
 | Dispel minigame | `js/game.js` | ~4630 |

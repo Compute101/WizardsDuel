@@ -1,6 +1,6 @@
 // ── LEGACY PUZZLES ─────────────────────────────────────────
 // Original puzzle implementations for Lightning Bolt, Frost Nova and Arcane
-// Surge, plus the Mana Burn minigame (Dark used it before the Blood Circle).
+// Surge, plus the Mana Burn minigame (Dark used it before the Shadow Circle).
 // Not loaded by the game. To re-enable one, load this file in index.html and point the element's entry in ELEM_MINIGAME (js/game.js) at it.
 
 // ── PUZZLE: MAZE (Lightning) ───────────────────────────────

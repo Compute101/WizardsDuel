@@ -2083,7 +2083,7 @@ const ELEM_STAGE_BANNERS={1:'🛡 Protection',2:'✦ Dispel',3:'⚔️ Damage'};
 
 // Casting minigame per element
 const ELEM_MINIGAME={fire:launchPatternEcho, ice:launchIcePattern, lightning:launchLightningPattern,
-  arcane:launchArcanePattern, physical:launchRockfallPattern, dark:launchBloodCirclePattern};
+  arcane:launchArcanePattern, physical:launchRockfallPattern, dark:launchShadowCirclePattern};
 const ELEM_GLYPHS={physical:[1,2,3,8], dark:[6,9,2,4]};   // Δ ∇ Ψ ⊕ (stone) / ☽ ⊗ ∇ Ω (necromancy)
 const ELEM_WARD_THEME={fire:'flameshield', ice:'frostarmor', lightning:'shield',
   arcane:'foresight', physical:'stoneskin', dark:'warpaint'};
@@ -4565,11 +4565,11 @@ function launchLightningPattern(spell,cb){
   mazeRAF=requestAnimationFrame(frame);
 }
 
-// ── PUZZLE: BLOOD CIRCLE PATTERN (Dark) ───────────────────
-// Runes rise out of the centre of a slowly turning dark-red arcane circle, then orbit it.
-function launchBloodCirclePattern(spell,cb){
+// ── PUZZLE: SHADOW CIRCLE PATTERN (Dark) ──────────────────
+// Runes rise out of the centre of a slowly turning purple moon circle, then orbit it.
+function launchShadowCirclePattern(spell,cb){
   let done=false;
-  document.getElementById('pztitle').textContent='Blood Circle Rite';
+  document.getElementById('pztitle').textContent='Shadow Circle';
   document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
   setDpadVisible(false);
 
@@ -4583,12 +4583,12 @@ function launchBloodCirclePattern(spell,cb){
 
   // Dark owns ☽(6) ⊗(9) ∇(2) Ω(4) — see CLAUDE.md
   const SPELL_IDX=spell.glyphs||[6,9,2,4];
-  // Blood colours assigned per SPELL_IDX position (0-3)
-  const BLOOD_COLS=[
-    {col:'#6a0a14',lit:'#ff5566'},
-    {col:'#550822',lit:'#ff4488'},
-    {col:'#701010',lit:'#ff6644'},
-    {col:'#4a0a2a',lit:'#dd66aa'},
+  // Shadow colours assigned per SPELL_IDX position (0-3)
+  const SHADOW_COLS=[
+    {col:'#4a1a6a',lit:'#cc88ff'},
+    {col:'#3a1a5a',lit:'#aa88ff'},
+    {col:'#552070',lit:'#dd99ff'},
+    {col:'#2e1a55',lit:'#9999ff'},
   ];
 
   // Canvas: 3-col × 4-row keyboard grid
@@ -4623,16 +4623,16 @@ function launchBloodCirclePattern(spell,cb){
   const SPIN=Math.PI*2/24000;   // circle drawing turns once every 24 s (rad/ms)
   const ORBIT=Math.PI*2/7000;   // sequence runes orbit once every 7 s (rad/ms)
 
-  // Noise — faint red runes counter-orbit on the outer and inner rings
-  const NOISE_COLS=['#7a0a10','#5a0610','#8a1418','#661020','#4a0810'];
+  // Noise — faint purple runes counter-orbit on the outer and inner rings
+  const NOISE_COLS=['#5a2280','#4a1a6a','#6a2a90','#442066','#3a1258'];
   const noise=[
     ...Array.from({length:16},(_,i)=>({r:R_OUTER+(_rng()-.5)*10, a:i/16*Math.PI*2, w:-Math.PI*2/(9000+_rng()*3000)})),
     ...Array.from({length:8}, (_,i)=>({r:R_INNER-14+(_rng()-.5)*8, a:i/8*Math.PI*2,  w:-Math.PI*2/(5000+_rng()*2000)})),
   ].map(n=>({...n, sz:9+_rng()*8, ai:Math.floor(_rng()*12), col:NOISE_COLS[Math.floor(_rng()*5)],
     ph:_rng()*Math.PI*2, alpha:0.4+_rng()*0.35}));
-  // Embers drifting up out of the circle
-  const embers=Array.from({length:26},()=>({x:CX+(_rng()-.5)*R_OUTER*2, y:_rng()*ch, vy:0.01+_rng()*0.025,
-    sz:0.8+_rng()*1.8, ph:_rng()*Math.PI*2}));
+  // Shadow wisps drifting up out of the circle
+  const wisps=Array.from({length:22},()=>({x:CX+(_rng()-.5)*R_OUTER*2, y:_rng()*ch, vy:0.008+_rng()*0.02,
+    sz:1.5+_rng()*2.5, ph:_rng()*Math.PI*2}));
 
   // Sequence runes — evenly spaced slots around the orbit, shuffled so the order
   // has to be read from when each one rises (and the badges), not around the ring.
@@ -4689,7 +4689,18 @@ function launchBloodCirclePattern(spell,cb){
   }
   function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
 
-  // Dark-red arcane circle: double outer ring with tick marks, a heptagram, an inner ring
+  // A moon phase (0 new … 4 full … 7 waning) of radius r at x,y: lit disc, then a shadow disc slid across it
+  function drawMoon(x,y,r,k){
+    mx.fillStyle='#e6d0ff';
+    mx.beginPath(); mx.arc(x,y,r,0,Math.PI*2); mx.fill();
+    const off=r*2*(1-Math.abs(k-4)/4)*(k<4?-1:1);
+    mx.fillStyle='#14081f';
+    mx.beginPath(); mx.arc(x+off,y,r*1.02,0,Math.PI*2); mx.fill();
+    mx.strokeStyle='#7a44aa'; mx.lineWidth=0.8;
+    mx.beginPath(); mx.arc(x,y,r,0,Math.PI*2); mx.stroke();
+  }
+
+  // Purple moon circle: double outer ring with tick marks, an inner ring of moon phases, a crescent at the heart
   function drawCircle(elapsed,strength){
     const rot=elapsed*SPIN;
     const sincePulse=elapsed-pulseAt;
@@ -4698,8 +4709,8 @@ function launchBloodCirclePattern(spell,cb){
     mx.save();
     mx.translate(CX,CY);
     mx.globalAlpha=strength*(throb+pulse*0.6);
-    mx.shadowColor='#ff1122'; mx.shadowBlur=10+pulse*18;
-    mx.strokeStyle='#a01020'; mx.lineWidth=2;
+    mx.shadowColor='#bb66ff'; mx.shadowBlur=10+pulse*18;
+    mx.strokeStyle='#9944cc'; mx.lineWidth=2;
     mx.beginPath(); mx.arc(0,0,R_OUTER+12,0,Math.PI*2); mx.stroke();
     mx.lineWidth=1;
     mx.beginPath(); mx.arc(0,0,R_OUTER-12,0,Math.PI*2); mx.stroke();
@@ -4712,21 +4723,26 @@ function launchBloodCirclePattern(spell,cb){
       mx.stroke();
     }
     mx.rotate(-rot*2.5);
-    mx.strokeStyle='#801018'; mx.lineWidth=1.3;
-    mx.beginPath();
-    for(let k=0;k<=7;k++){
-      const a=(k*3%7)/7*Math.PI*2-Math.PI/2;   // {7/3} heptagram
-      const px=Math.cos(a)*R_INNER, py=Math.sin(a)*R_INNER;
-      k?mx.lineTo(px,py):mx.moveTo(px,py);
-    }
-    mx.stroke();
+    mx.strokeStyle='#7a33aa'; mx.lineWidth=1.3;
     mx.beginPath(); mx.arc(0,0,R_INNER,0,Math.PI*2); mx.stroke();
-    mx.beginPath(); mx.arc(0,0,R_INNER*0.38,0,Math.PI*2); mx.stroke();
+    mx.shadowBlur=6+pulse*10;
+    for(let k=0;k<8;k++){
+      const a=k/8*Math.PI*2-Math.PI/2;
+      drawMoon(Math.cos(a)*R_INNER,Math.sin(a)*R_INNER,6,k);
+    }
+    mx.rotate(rot*2.5);
+    // Crescent at the heart
+    mx.shadowColor='#cc99ff'; mx.shadowBlur=14+pulse*16;
+    mx.fillStyle='#e6d0ff';
+    mx.beginPath(); mx.arc(0,0,14,0,Math.PI*2); mx.fill();
+    mx.shadowBlur=0;
+    mx.fillStyle='#14081f';
+    mx.beginPath(); mx.arc(6,-3,12.5,0,Math.PI*2); mx.fill();
     mx.restore();
     // Core glow
     const cg=mx.createRadialGradient(CX,CY,0,CX,CY,R_INNER);
-    cg.addColorStop(0,`rgba(200,20,40,${(0.25+pulse*0.4)*strength})`);
-    cg.addColorStop(1,'rgba(200,20,40,0)');
+    cg.addColorStop(0,`rgba(150,70,210,${(0.22+pulse*0.4)*strength})`);
+    cg.addColorStop(1,'rgba(150,70,210,0)');
     mx.fillStyle=cg; mx.fillRect(CX-R_INNER,CY-R_INNER,R_INNER*2,R_INNER*2);
   }
 
@@ -4749,11 +4765,11 @@ function launchBloodCirclePattern(spell,cb){
     const elapsed=t-startTime;
     const dt=Math.min(50,t-lastT); lastT=t;
 
-    // Background — near-black with a blood-red heart
+    // Background — night sky with a violet heart
     const bg=mx.createRadialGradient(CX,CY,0,CX,CY,cw*.9);
-    bg.addColorStop(0,'#2a0408');
-    bg.addColorStop(0.55,'#120104');
-    bg.addColorStop(1,'#040001');
+    bg.addColorStop(0,'#1e0a2e');
+    bg.addColorStop(0.55,'#0c0416');
+    bg.addColorStop(1,'#030106');
     mx.fillStyle=bg; mx.fillRect(0,0,cw,ch);
 
     if(phase==='watch'&&!watchDone&&elapsed>=watchDuration){
@@ -4761,14 +4777,14 @@ function launchBloodCirclePattern(spell,cb){
       timerEl.textContent=timeLeft; startTimer();
     }
 
-    // Embers
+    // Wisps
     mx.save();
-    embers.forEach(e=>{
-      e.y-=e.vy*dt;
-      if(e.y<-4){ e.y=ch+4; e.x=CX+(_rng()-.5)*R_OUTER*2; }
-      mx.globalAlpha=(phase==='watch'?0.5:0.2)*(0.5+0.5*Math.sin(t/300+e.ph));
-      mx.fillStyle='#ff3322';
-      mx.beginPath(); mx.arc(e.x+Math.sin(t/900+e.ph)*4,e.y,e.sz,0,Math.PI*2); mx.fill();
+    wisps.forEach(w=>{
+      w.y-=w.vy*dt;
+      if(w.y<-6){ w.y=ch+6; w.x=CX+(_rng()-.5)*R_OUTER*2; }
+      mx.globalAlpha=(phase==='watch'?0.35:0.15)*(0.5+0.5*Math.sin(t/500+w.ph));
+      mx.fillStyle='#b077ff'; mx.shadowColor='#b077ff'; mx.shadowBlur=8;
+      mx.beginPath(); mx.arc(w.x+Math.sin(t/900+w.ph)*6,w.y,w.sz,0,Math.PI*2); mx.fill();
     });
     mx.restore();
 
@@ -4791,8 +4807,8 @@ function launchBloodCirclePattern(spell,cb){
         mx.save();
         mx.globalAlpha=alpha;
         mx.translate(x,y); mx.scale(scale,scale);
-        mx.shadowColor='#ff1122'; mx.shadowBlur=26;
-        mx.fillStyle='rgba(120,0,10,0.55)';
+        mx.shadowColor='#aa55ff'; mx.shadowBlur=26;
+        mx.fillStyle='rgba(60,15,95,0.6)';
         mx.beginPath(); mx.arc(0,0,22,0,Math.PI*2); mx.fill();
         mx.shadowColor=s.glowCol; mx.shadowBlur=28;
         mx.fillStyle='#ffffff';
@@ -4811,7 +4827,7 @@ function launchBloodCirclePattern(spell,cb){
         }
       });
 
-      mx.fillStyle='#ff6677';
+      mx.fillStyle='#cc99ff';
       mx.font='bold 10px Cinzel,serif';
       mx.textAlign='center'; mx.textBaseline='top';
       mx.fillText('Watch the runes rise from the circle!',cw/2,4);
@@ -4837,9 +4853,9 @@ function launchBloodCirclePattern(spell,cb){
           strokeCol='#44285888'; textCol='#7755aa';
           blur=4; textAlpha=1;
         } else if(isSpell){
-          // Spell glyphs: blood colours by SPELL_IDX position
-          bgCol=BLOOD_COLS[si].col; bgDark='#120004';
-          strokeCol=BLOOD_COLS[si].col+'88'; textCol=BLOOD_COLS[si].lit;
+          // Spell glyphs: shadow colours by SPELL_IDX position
+          bgCol=SHADOW_COLS[si].col; bgDark='#0a0412';
+          strokeCol=SHADOW_COLS[si].col+'88'; textCol=SHADOW_COLS[si].lit;
           blur=8; textAlpha=1;
         } else {
           // Non-spell glyphs: ghosted out
@@ -4866,7 +4882,7 @@ function launchBloodCirclePattern(spell,cb){
       }
 
       // Status label
-      mx.fillStyle='#ff6677';
+      mx.fillStyle='#cc99ff';
       mx.font='bold 10px Cinzel,serif';
       mx.textAlign='center'; mx.textBaseline='top';
       mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
