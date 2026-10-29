@@ -35,7 +35,7 @@ const CHAR_FLAVOUR={
   gretch:'Infect and drain. The totem heals you — guard it with a ward, or a Dispel will strip it.',
   valdris:'Deathless: a killing blow costs him 8 mana instead, while he has it. Drain his mana to kill him. Dispel his skeletons — but each dying skeleton heals him.',
   mirel:'Simulacra strike every round until dispelled. Bewitch turns the next strike against its caster.',
-  thessaly:'Enthral calls their next move — guess right and it is lost, its mana yours. Spellbind taxes their favourite move. Weave wards her, then turns strikes into mana denial.',
+  thessaly:'Enthral calls their next move — guess right and it is lost, its mana yours. Spellbind taxes their favourite move — strike her over and over, and it is your strikes that cost more. Weave wards her, then turns strikes into mana denial.',
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
   fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
   nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
@@ -89,7 +89,7 @@ let trainingPickPhase=null; // 'p1' or 'p2' — which side is being chosen
 function newSeat(cfg,key){
   return {key, cfg, hp:cfg.hp, maxHp:cfg.hp, mana:ELEM_START_MANA,
     shield:0, shieldHp:0, shieldType:null, wardRetaliate:0, wardSig:null,   // ward (shield = rounds left)
-    effects:[], usedSig:{}, lastElem:null, lastCat:null, lastLockedRound:null, lastRoundLoss:0,
+    effects:[], usedSig:{}, lastElem:null, catCounts:{}, lastLockedRound:null, lastRoundLoss:0,
     blades:0, skeletons:[], simulacra:[]};   // minion counts mirrored for drawWiz
 }
 function newState(){
@@ -2171,6 +2171,10 @@ function catLocked(who,cat){ return effectsOf(gs[who],'lock').some(e=>e.cat===ca
 const ENTHRAL_CALLS=['damage','protect','dispel'];
 // Curses worth cleansing: Enthral springs as the next spell is paid for, so cleansing it then is too late
 function cleansableCurses(st){ return cursesOf(st).filter(e=>e.type!=='enthral'); }
+// Spellbind binds the category a wizard has cast most this duel; ties go to Damage
+function mostUsedCat(st){
+  return ENTHRAL_CALLS.reduce((a,c)=>(st.catCounts[c]||0)>(st.catCounts[a]||0)?c:a,'damage');
+}
 function spellbindExtra(who,cat){
   return effectsOf(gs[who],'spellbind').filter(e=>e.cat===cat).reduce((a,e)=>a+e.extra,0);
 }
@@ -2539,7 +2543,7 @@ function executeElemental(who,action,cb){
   if(action.outcome==='silenced'){ showSilenceBlock(x,bH*.33); combatTimeout(cb,900); return; }
   if(action.outcome==='nomana'){ addFloat(x,bH*.33,'Out of mana!','#ff8844',13); combatTimeout(cb,700); return; }
   anim(who,'cast',600);
-  st.lastCat=action.cat;   // what Spellbind targets
+  st.catCounts[action.cat]=(st.catCounts[action.cat]||0)+1;   // what Spellbind binds, and what Enthral reads
   if(sp){
     st.usedSig[sp.id]=true;
     const hpCost=sigAtTier(sp,action.tier).hpCost;
@@ -2652,7 +2656,7 @@ function executeSignature(who,sp,action,cb){
       else {
         const eff=effect({kind:'curse'});
         if(!eff.elem) eff.elem=el.elem;   // a curse's ticks meet wards as its element
-        if(eff.type==='spellbind') eff.cat=ts.lastCat||'damage';
+        if(eff.type==='spellbind'){ eff.cat=mostUsedCat(ts); eff.name+=' '+ELEM_CATS[eff.cat].icon; }
         if(eff.type==='enthral') eff.call=action.call||'damage';
         if(addEffect(tgt,eff,who)){ if(fx.hit) fx.hit(ctx); else spawnParts(tx,y,e.col,16); }
       }
@@ -2920,6 +2924,9 @@ function aiEnthralCall(who,tgt,smart){
     if(me.mana+elemIncome(who)>=elemCost(who,'damage',2)) w.protect+=0.35;
     if(ts.hp<ts.maxHp*0.35) w.protect+=0.35;
   }
+  // Habits: what they've cast most this duel
+  const casts=ENTHRAL_CALLS.reduce((a,c)=>a+(ts.catCounts[c]||0),0);
+  if(casts) ENTHRAL_CALLS.forEach(c=>{ w[c]*=0.5+1.5*(ts.catCounts[c]||0)/casts; });
   ENTHRAL_CALLS.forEach(c=>{ w[c]=catLocked(tgt,c)?0:Math.pow(w[c]/(1+spellbindExtra(tgt,c)/4),2); });
   let r=_rng()*ENTHRAL_CALLS.reduce((a,c)=>a+w[c],0);
   return ENTHRAL_CALLS.find(c=>(r-=w[c])<=0)||'damage';
@@ -2965,6 +2972,9 @@ function elemAIChoose(who){
   // Curse-casters open the Dispel wheel for their hexes, not only to break wards
   const hexes=sigSpells(who,'dispel').filter(sp=>sp.el.kind==='curse'&&!sigBlocked(who,sp,1)&&aiSigSensible(who,sp,tgt)).length;
   if(hexes) w.dispel+=(smart?0.35:0.2)*hexes;
+  // Called shots (Enthral) are easiest while my ward invites a dispel, or a Spellbind already steers their pick
+  const callShot=smart&&sigSpells(who,'dispel').some(sp=>sp.el.effect&&sp.el.effect.type==='enthral'&&!sigBlocked(who,sp,1)&&aiSigSensible(who,sp,tgt));
+  if(callShot&&(hasWard(me)||effectsOf(opp,'spellbind').length)) w.dispel+=0.5;
   if(hasWard(me)&&me.shieldHp>=15) w.protect=0.2;
   else {
     if(foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',2))) w.protect+=0.35;
@@ -3019,6 +3029,7 @@ function elemAIChoose(who){
     if(e.type==='absorbNext'&&effectsOf(me,'dodge').length) v+=2;
     if(sp.el.ward&&buffsOf(me).length&&!hasWard(me)) v+=2;
     if(sp===siphon&&(siphonNow||cover.length)) v+=2;
+    if(e.type==='enthral'&&(hasWard(me)||effectsOf(opp,'spellbind').length)) v+=2;
     return v;
   };
   const combo=sigs.some(x=>sigWeight(x.sp)>1);
@@ -6386,7 +6397,7 @@ const TUTORIAL_CONVOS={
   thessaly:[
     {key:'thessaly',text:"I don't fight you. I rearrange the battlefield until you can no longer fight me effectively."},
     {key:'thessaly',text:"Enthral is my Arcane curse. I secretly call your next move — Damage, Protection or Dispel. Choose what I called and your spell is lost, its mana mine. Choose otherwise and I misread you. Nobody cleanses it in time: it springs the moment you cast."},
-    {key:'thessaly',text:"Spellbind is my Dark curse — whatever category you used last costs more for a while."},
+    {key:'thessaly',text:"Spellbind is my Dark curse — whatever you cast most often costs more for a while. Lean on one move and I'll make you pay for it."},
     {key:'thessaly',text:"Arcane Weave, in the Arcane sector of my Protection wheel, raises a light ward, then empowers my next few strikes and makes each one burn your mana."},
     {key:'thessaly',text:"By the time you understand what I've done, you've already run out of answers."},
   ],

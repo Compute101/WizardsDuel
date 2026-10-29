@@ -199,7 +199,7 @@ so each spell's numbers can be tuned there.
 | Mirel | 🗡️ Feint | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 11 arcane; burns 2 mana |
 | Thessaly | 🌀 Enthral | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Call the foe's next category: if right, it's lost and up to 3 of its mana is yours |
 | Thessaly | 🌟 Arcane Weave | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | Next 3 strikes +5 and burn 2 mana, plus a 10 HP Arcane ward |
-| Thessaly | 🔒 Spellbind | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | Foe's last category costs +4 × 4 |
+| Thessaly | 🔒 Spellbind | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | Foe's most-used category costs +4 × 4 |
 | Korvath | 🐉 Dragon Scales | 🛡 Protection | 🔥 Fire | Enchantment (self) | 2 / 4 / 6 | 3 rounds: −25% damage, strikers take 4 |
 | Korvath | 🌋 Wyrmfire Breath | ⚔️ Damage | 🔥 Fire | Strike | 3 / 5 / 8 | 13 fire + burn 5 a round × 2 |
 | Korvath | 💥 Ancient Wrath | ⚔️ Damage | 👊 Physical | Strike | 5 / 9 / 14 | 35 physical — once per duel |
@@ -323,6 +323,18 @@ came down:
 - Cost 2 → 4, ward 10, +8 / burn 3 → **+5 / burn 2**, still 3 strikes; HP 95 → **90** (the HP buffs
   were compensating for a kit that didn't work).
 - Normal AI: **Thessaly 49.5%**, every character 46.1–54.1%. Easy: Thessaly 50.9%.
+
+**Spellbind binds the most-used category.** It used to bind whatever the foe resolved last, which
+depended on stage order: a ward cast that round, otherwise last round's pick. Thessaly couldn't aim
+it. Now it binds the category the foe has cast most this duel (`catCounts`, ties go to Damage), so
+a foe who spams Damage pays for it, and the status tag shows which category is bound.
+The AI also plays her combos now:
+- It opens Dispel for Enthral more readily, and prefers Enthral, while its ward invites a dispel or a
+  Spellbind is steering the foe.
+- Its call also weighs the foe's habits (`catCounts`).
+- Enthral picks went 7% → 13%. Calls still land only 32% of the time against the AI, which is close
+  to chance: the read is made a round ahead, and wards and HP change in between.
+- Normal AI: **Thessaly 52.2%**, every character 45.4–53.6%. Easy: Thessaly 52.9%.
 
 ## Multiplayer (Phase 6) — in progress
 
