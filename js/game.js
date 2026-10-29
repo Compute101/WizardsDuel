@@ -35,7 +35,7 @@ const CHAR_FLAVOUR={
   gretch:'Infect and drain. The totem heals you — guard it with a ward, or a Dispel will strip it.',
   valdris:'Deathless: a killing blow costs him 8 mana instead, while he has it. Drain his mana to kill him. Dispel his skeletons — but each dying skeleton heals him.',
   mirel:'Simulacra strike every round until dispelled. Bewitch turns the next strike against its caster.',
-  thessaly:'Enthral calls their next move — guess right and it is lost, its mana yours. Spellbind taxes their favourite move. Weave turns strikes into mana denial.',
+  thessaly:'Enthral calls their next move — guess right and it is lost, its mana yours. Spellbind taxes their favourite move. Weave wards her, then turns strikes into mana denial.',
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
   fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
   nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
@@ -6387,7 +6387,7 @@ const TUTORIAL_CONVOS={
     {key:'thessaly',text:"I don't fight you. I rearrange the battlefield until you can no longer fight me effectively."},
     {key:'thessaly',text:"Enthral is my Arcane curse. I secretly call your next move — Damage, Protection or Dispel. Choose what I called and your spell is lost, its mana mine. Choose otherwise and I misread you. Nobody cleanses it in time: it springs the moment you cast."},
     {key:'thessaly',text:"Spellbind is my Dark curse — whatever category you used last costs more for a while."},
-    {key:'thessaly',text:"Arcane Weave, in the Arcane sector of my Protection wheel, empowers my next few strikes and makes each one burn your mana."},
+    {key:'thessaly',text:"Arcane Weave, in the Arcane sector of my Protection wheel, raises a light ward, then empowers my next few strikes and makes each one burn your mana."},
     {key:'thessaly',text:"By the time you understand what I've done, you've already run out of answers."},
   ],
   korvath:[

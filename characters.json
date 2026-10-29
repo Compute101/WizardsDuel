@@ -1134,7 +1134,7 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 95,
+    "hp": 90,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1163,16 +1163,17 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "arcane",
-          "cost": 2,
+          "cost": 4,
           "tier": 2,
           "effect": {
             "type": "weave",
-            "bonus": 8,
-            "burn": 3,
+            "bonus": 5,
+            "burn": 2,
             "charges": 3,
             "rounds": null
           },
-          "desc": "Next 3 strikes +8 and burn 3 mana"
+          "ward": 10,
+          "desc": "Next 3 strikes +5 and burn 2 mana, plus a 10 HP Arcane ward"
         }
       },
       {

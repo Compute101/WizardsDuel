@@ -198,7 +198,7 @@ so each spell's numbers can be tuned there.
 | Mirel | 🪄 Bewitch | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Foe's next strike within 2 rounds hits themselves |
 | Mirel | 🗡️ Feint | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 11 arcane; burns 2 mana |
 | Thessaly | 🌀 Enthral | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Call the foe's next category: if right, it's lost and up to 3 of its mana is yours |
-| Thessaly | 🌟 Arcane Weave | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 1 / 2 / 3 | Next 3 strikes +8 and burn 3 mana |
+| Thessaly | 🌟 Arcane Weave | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | Next 3 strikes +5 and burn 2 mana, plus a 10 HP Arcane ward |
 | Thessaly | 🔒 Spellbind | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | Foe's last category costs +4 × 4 |
 | Korvath | 🐉 Dragon Scales | 🛡 Protection | 🔥 Fire | Enchantment (self) | 2 / 4 / 6 | 3 rounds: −25% damage, strikers take 4 |
 | Korvath | 🌋 Wyrmfire Breath | ⚔️ Damage | 🔥 Fire | Strike | 3 / 5 / 8 | 13 fire + burn 5 a round × 2 |
@@ -314,6 +314,15 @@ rules): the foe keeps full choice, and Thessaly wins by reading them.
 - Normal AI calls right 33% of the time (no better than chance yet), Easy 26%.
 - Steal 5: Thessaly 54.5%. **Steal 3: 52.6%**, every character 46–54% on Normal. Easy: Thessaly 57.7%.
 - Cancelling the spell is most of its value; the mana steal is a small lever for tuning.
+
+**Arcane Weave gets a ward.** Weave sat on the Protection wheel but raised no ward, so it lost to both
+a strike (nothing blocked it) and a dispel (which stripped it at once). It now raises a light Arcane
+ward, like Blink, which also guards it from Dispel. The ward made Weave far stronger, so its numbers
+came down:
+- Ward 15, unchanged otherwise (2 mana, +8 / burn 3): Thessaly **74.6%**. Cost 4–5 alone still left her at 61–68%.
+- Cost 2 → 4, ward 10, +8 / burn 3 → **+5 / burn 2**, still 3 strikes; HP 95 → **90** (the HP buffs
+  were compensating for a kit that didn't work).
+- Normal AI: **Thessaly 49.5%**, every character 46.1–54.1%. Easy: Thessaly 50.9%.
 
 ## Multiplayer (Phase 6) — in progress
 
