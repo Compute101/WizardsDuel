@@ -1148,11 +1148,11 @@
           "cost": 2,
           "tier": 2,
           "effect": {
-            "type": "lock",
-            "cat": "protect",
+            "type": "enthral",
+            "steal": 3,
             "rounds": 2
           },
-          "desc": "Foe can't pick Protection next round"
+          "desc": "Call the foe's next move: if right, it's lost and its mana is yours"
         }
       },
       {

@@ -130,8 +130,14 @@ so each spell's numbers can be tuned there.
 - **Curses** (Dispel wheel) resolve with Dispels. Besides the hex, each is a weak dispel: it hits the
   foe's ward with half a dispel's power for that ring (double vs a matching ward) but never strips
   buffs (`ELEM_CURSE_DISPEL`). **Cleanse Self** and Mary's Purge remove every curse on you.
-- **Locks** (Ice chill, Entangle, Enthral) block one category for your next pick, and can't be
+- **Locks** (Ice chill, Entangle) block one category for your next pick, and can't be
   applied two rounds running, so nobody can be locked forever.
+- **Enthral** (Thessaly) is a called shot, not a lock: the caster secretly names a category, hidden
+  until it plays out. If the foe's next pick is that category, the spell is lost as it's paid for and
+  its mana goes to the caster (up to `steal`). Otherwise it's a misread and nothing happens. It springs
+  at payment, so Cleanse can't remove it in time (`cleansableCurses` keeps the AI from trying).
+  Meditating dodges it, as it casts nothing. The AI's call (`aiEnthralCall`) reads the same pressures
+  that steer its own picks; Easy guesses at random.
 - **Valdris's Deathless passive still applies.**
 - **AI:** treats signature sectors like any other sector, preferring them (30–45%) when they'd do
   something useful: it won't recast an active buff, heals only when hurt, cleanses when cursed, and
@@ -191,7 +197,7 @@ so each spell's numbers can be tuned there.
 | Mirel | 🪞 Simulacrum | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | Simulacrum (max 2) for 4 rounds: 4 a round |
 | Mirel | 🪄 Bewitch | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Foe's next strike within 2 rounds hits themselves |
 | Mirel | 🗡️ Feint | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 11 arcane; burns 2 mana |
-| Thessaly | 🌀 Enthral | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Foe can't pick Protection next round |
+| Thessaly | 🌀 Enthral | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Call the foe's next category: if right, it's lost and up to 3 of its mana is yours |
 | Thessaly | 🌟 Arcane Weave | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 1 / 2 / 3 | Next 3 strikes +8 and burn 3 mana |
 | Thessaly | 🔒 Spellbind | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | Foe's last category costs +4 × 4 |
 | Korvath | 🐉 Dragon Scales | 🛡 Protection | 🔥 Fire | Enchantment (self) | 2 / 4 / 6 | 3 rounds: −25% damage, strikers take 4 |
@@ -297,6 +303,17 @@ went 4 → 3**. Normal AI: **44.4–55.4%** (sd 2.8), no matchup under 29%.
 
 **Caveats:** this is the AI's skill level, not a human's. Characters whose strength is in reading the
 opponent may play better in human hands. Re-run the tool after any number change, and playtest.
+
+### Thessaly's Enthral reworked (called shot)
+
+Thessaly sat at 44.0% (Normal, 200 games per matchup), the lowest. Her kit no longer fit her theme
+("every spell you cast was mine to exploit"): Classic Enthral cost the foe a whole turn, but the port
+became "no Protection next round", which a foe rarely minded. A hard "repeat your last category" was
+rejected because it takes the foe's choice away. Instead Enthral became a called shot (see Core
+rules): the foe keeps full choice, and Thessaly wins by reading them.
+- Normal AI calls right 33% of the time (no better than chance yet), Easy 26%.
+- Steal 5: Thessaly 54.5%. **Steal 3: 52.6%**, every character 46–54% on Normal. Easy: Thessaly 57.7%.
+- Cancelling the spell is most of its value; the mana steal is a small lever for tuning.
 
 ## Multiplayer (Phase 6) — in progress
 

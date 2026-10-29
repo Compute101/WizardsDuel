@@ -35,7 +35,7 @@ const CHAR_FLAVOUR={
   gretch:'Infect and drain. The totem heals you — guard it with a ward, or a Dispel will strip it.',
   valdris:'Deathless: a killing blow costs him 8 mana instead, while he has it. Drain his mana to kill him. Dispel his skeletons — but each dying skeleton heals him.',
   mirel:'Simulacra strike every round until dispelled. Bewitch turns the next strike against its caster.',
-  thessaly:'Enthral blocks their wards. Spellbind taxes their favourite move. Weave turns strikes into mana denial.',
+  thessaly:'Enthral calls their next move — guess right and it is lost, its mana yours. Spellbind taxes their favourite move. Weave turns strikes into mana denial.',
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
   fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
   nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
@@ -2166,6 +2166,11 @@ function buffsOf(st){ return (st.effects||[]).filter(e=>e.kind==='buff'); }
 function cursesOf(st){ return (st.effects||[]).filter(e=>e.kind==='curse'); }
 
 function catLocked(who,cat){ return effectsOf(gs[who],'lock').some(e=>e.cat===cat); }
+// Enthral: the caster secretly calls the foe's next category. Call it right and that spell is lost,
+// its mana going to the caster (up to the spell's steal). The call stays hidden until it plays out.
+const ENTHRAL_CALLS=['damage','protect','dispel'];
+// Curses worth cleansing: Enthral springs as the next spell is paid for, so cleansing it then is too late
+function cleansableCurses(st){ return cursesOf(st).filter(e=>e.type!=='enthral'); }
 function spellbindExtra(who,cat){
   return effectsOf(gs[who],'spellbind').filter(e=>e.cat===cat).reduce((a,e)=>a+e.extra,0);
 }
@@ -2193,7 +2198,7 @@ function sigAtTier(sp,tier){
   if(el.chance!=null) el.chance=pct(el.chance,1);
   const e=el.effect;
   if(e){
-    ['perRound','retaliate','dmg','n','bonus','burn','extra'].forEach(k=>{ if(e[k]) e[k]=n(e[k]); });
+    ['perRound','retaliate','dmg','n','bonus','burn','extra','steal'].forEach(k=>{ if(e[k]) e[k]=n(e[k]); });
     if(e.ramp) e.ramp=e.ramp.map(n);
     if(e.pct) e.pct=pct(e.pct,0.7);
     if(e.mult) e.mult=mult(e.mult);
@@ -2410,11 +2415,31 @@ function castSignature(id,tier){
   const el=sp.el, elemId=el.elem||'arcane', e=elemById(elemId);
   const spell={name:ELEM_TIER_NAMES[tier-1]+sigName(sp), icon:sigIcon(sp), element:elemId, col:e.col, tier,
     glyphs:el.kind==='strike'?ELEM_GLYPHS[elemId]:undefined};
-  const commit=ok=>chooseTarget(who,{type:'el',cat:el.cat,elem:elemId,tier,sig:id,ok});
+  const cast=call=>{
+    const commit=ok=>chooseTarget(who,Object.assign({type:'el',cat:el.cat,elem:elemId,tier,sig:id,ok},call?{call}:{}));
+    if(el.cat==='dispel') launchDispelPattern(spell,commit);
+    else if(el.kind==='strike') ELEM_MINIGAME[elemId](spell,commit);
+    else launchBuffTileMatch(spell,ELEM_WARD_THEME[elemId],who,ok=>commit(ok));
+  };
   gs.busy=true;
-  if(el.cat==='dispel') launchDispelPattern(spell,commit);
-  else if(el.kind==='strike') ELEM_MINIGAME[elemId](spell,commit);
-  else launchBuffTileMatch(spell,ELEM_WARD_THEME[elemId],who,ok=>commit(ok));
+  if(el.effect&&el.effect.type==='enthral') showCallPicker(cast);
+  else cast();
+}
+// Enthral: secretly call the category the foe will pick next round
+function showCallPicker(cb){
+  let ov=document.getElementById('target-overlay');
+  if(!ov){
+    ov=document.createElement('div'); ov.id='target-overlay';
+    ov.innerHTML='<div class="tg-box"><div class="tg-title"></div><div class="tg-list"></div></div>';
+    document.body.appendChild(ov);
+  }
+  const hint={damage:'Their strike is lost',protect:'Their ward never rises',dispel:'Their dispel or curse is lost'};
+  ov.querySelector('.tg-title').textContent='Call their next move';
+  ov.querySelector('.tg-list').innerHTML=ENTHRAL_CALLS.map(c=>
+    `<button class="tg-foe tg-call" data-cat="${c}"><span class="tg-ico">${ELEM_CATS[c].icon}</span>`+
+    `<span class="tg-name">${ELEM_CATS[c].name}</span><span class="tg-ward">${hint[c]}</span></button>`).join('');
+  ov.querySelectorAll('.tg-call').forEach(b=>b.onclick=()=>{ ov.classList.remove('show'); cb(b.dataset.cat); });
+  ov.classList.add('show');
 }
 
 // ── Resolution ──
@@ -2433,6 +2458,8 @@ function elemHeal(who,n,icon){
 // simultaneous, so nobody's mana can be burned or drained before they pay. Sets action.outcome.
 function payForAction(who,action){
   const st=gs[who];
+  const ent=takeEffect(st,'enthral');
+  if(ent) action.enthral={call:ent.call,from:ent.from};
   if(action.cat==='pass') return;
   if(action.cat==='meditate'){ st.meditatedRound=gs.round; return; }
   const sp=action.sig?sigById(who,action.sig):null;
@@ -2442,6 +2469,20 @@ function payForAction(who,action){
   else if(silence&&_rng()<silence.pct) action.outcome='silenced';
   else if(cost>st.mana) action.outcome='nomana';
   else { st.mana-=cost; action.outcome='cast'; action.paid=cost; }
+  if(ent&&action.outcome==='cast'&&action.cat===ent.call&&!gs[ent.from].out){
+    const gain=Math.min(action.paid,ent.steal,MAX_MANA-gs[ent.from].mana);
+    gs[ent.from].mana+=gain;
+    action.outcome='enthralled'; action.enthral.gain=gain;
+  }
+}
+// The Enthral call plays out: the spell it named is lost, or the call is shown as a misread
+function showEnthral(who,action){
+  const en=action.enthral, x=seatX(who), c=ELEM_CATS[en.call];
+  if(action.outcome==='enthralled'){
+    addFloat(x,bH*.3,'🌀 Called it! '+c.icon+' '+c.name+' lost','#cc88ff',14);
+    spawnParts(x,bH*.38,'#cc88ff',18); spawnParts(x,bH*.38,'#ffdd88',6);
+    if(en.gain) addFloat(seatX(en.from),bH*.3,'+'+en.gain+' Mana 🌀','#ffdd88',13);
+  } else addFloat(x,bH*.24,'🌀 Enthral called '+c.icon+' '+c.name+' — misread','#aaaacc',11);
 }
 function quickSteal(who,action){
   const a=sigAtTier(sigById(who,action.sig),action.tier).action, ts=gs[action.target], st=gs[who];
@@ -2452,6 +2493,7 @@ function quickSteal(who,action){
 }
 function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
+  if(action.enthral){ showEnthral(who,action); if(action.outcome==='enthralled'){ anim(who,'cast',600); combatTimeout(cb,1000); return; } }
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
   if(action.cat==='meditate'){
     const n=Math.min(meditateGain(who),MAX_MANA-st.mana);
@@ -2611,6 +2653,7 @@ function executeSignature(who,sp,action,cb){
         const eff=effect({kind:'curse'});
         if(!eff.elem) eff.elem=el.elem;   // a curse's ticks meet wards as its element
         if(eff.type==='spellbind') eff.cat=ts.lastCat||'damage';
+        if(eff.type==='enthral') eff.call=action.call||'damage';
         if(addEffect(tgt,eff,who)){ if(fx.hit) fx.hit(ctx); else spawnParts(tx,y,e.col,16); }
       }
       if(el.drainNow){ const d=Math.min(ts.mana,el.drainNow); ts.mana-=d; if(d) addFloat(tx,bH*.42,'−'+d+' Mana','#88aaff',12); }
@@ -2857,10 +2900,29 @@ function aiSigSensible(who,sp,tgt=weakestFoe(who)){
     if(a.type==='heal'||a.type==='tonic') return st.hp<st.maxHp*0.7;
     if(a.type==='bloodpact') return st.mana<6&&st.hp>40;
     if(a.type==='rewind') return (st.lastRoundLoss||0)>=10;
-    if(a.type==='cleanse') return cursesOf(st).length>0;
+    if(a.type==='cleanse') return cleansableCurses(st).length>0;
     if(a.type==='siphon') return ts.mana>=3;
   }
   return true;
+}
+// Enthral's call: read the foe's next pick from the same pressures that steer the AI's own picks.
+// Easy guesses at random; Normal leans toward the likeliest pick without becoming predictable.
+function aiEnthralCall(who,tgt,smart){
+  if(!smart) return ENTHRAL_CALLS[Math.floor(_rng()*ENTHRAL_CALLS.length)];
+  const me=gs[who], ts=gs[tgt];
+  const w={damage:1.0, protect:0.55, dispel:0.15};
+  if(hasWard(me)){ w.dispel+=1.5; w.damage=0.5; }
+  else if(buffsOf(me).length) w.dispel+=0.9;
+  if(cleansableCurses(ts).length) w.dispel+=0.5;
+  if(ts.effects.some(e=>e.type==='empower'||e.type==='frenzy'||e.type==='weave')) w.damage+=0.9;
+  if(hasWard(ts)&&ts.shieldHp>=15) w.protect=0.2;
+  else {
+    if(me.mana+elemIncome(who)>=elemCost(who,'damage',2)) w.protect+=0.35;
+    if(ts.hp<ts.maxHp*0.35) w.protect+=0.35;
+  }
+  ENTHRAL_CALLS.forEach(c=>{ w[c]=catLocked(tgt,c)?0:Math.pow(w[c]/(1+spellbindExtra(tgt,c)/4),2); });
+  let r=_rng()*ENTHRAL_CALLS.reduce((a,c)=>a+w[c],0);
+  return ENTHRAL_CALLS.find(c=>(r-=w[c])<=0)||'damage';
 }
 function elemAIChoose(who){
   // Several foes aimed at me last round: hit back at the weakest of them, and turtle
@@ -2878,7 +2940,7 @@ function elemAIChoose(who){
   }
   const me=gs[who], tgt=ganged?gangedBy.reduce((a,b)=>gs[a].hp<=gs[b].hp?a:b):aiPickTarget(who), opp=gs[tgt];
   const smart=aiDifficulty==='normal';
-  const oppWard=hasWard(opp), oppBuffs=buffsOf(opp).length, myCurses=cursesOf(me).length;
+  const oppWard=hasWard(opp), oppBuffs=buffsOf(opp).length, myCurses=cleansableCurses(me).length;
   // Meditate when short of mana, more readily when the foe can't afford a strike or my ward, buffs
   // and curses are doing the work for me — and less when I'm close to dying
   // Income drains shrink the gain, and Candle burns a wizard who meditates
@@ -2997,6 +3059,7 @@ function elemAIChoose(who){
   if(tier>1&&!free&&!(ganged&&cat!=='dispel')&&_rng()<0.4) tier--;
   const elem=choice.elem;
   const pick=choice.sp?{type:'el',cat,elem,tier,sig:choice.sp.id,target:aimTgt,ok}:{type:'el',cat,elem,tier,self:false,target:aimTgt,ok};
+  if(choice.sp&&choice.sp.el.effect&&choice.sp.el.effect.type==='enthral') pick.call=aiEnthralCall(who,aimTgt,smart);
   // Team games: shield a team-mate who's worse off — lower on HP, unwarded, or the one the foes went for
   if(cat==='protect'&&canShareProtection(who,pick)){
     const need=w=>gs[w].hp/gs[w].maxHp-(hasWard(gs[w])?0.2:0)-((gs.focus&&gs.focus[w]||[]).length>=2?0.25:0);
@@ -6203,7 +6266,7 @@ const TUTORIAL_CONVOS={
     {key:'mordant',text:"Curses — like Silence, Plague or Agony — sit on the Dispel wheel. As well as their hex, every curse wears at the target's ward a little, like a weak dispel."},
     {key:'ponder', text:"A Dispel against a rival with no ward strips their newest buff — or all of them, from the outer ring. If they have a ward, the dispel hits the ward instead. Wards protect your buffs!"},
     {key:'mary',   text:"Cursed? Open the Dispel wheel and tap Cleanse Self. It removes every curse on you for very little mana."},
-    {key:'sylvara',text:"Locks — like Ice's chill, my Entangle or Thessaly's Enthral — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
+    {key:'sylvara',text:"Locks — like Ice's chill or my Entangle — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
   ],
   alphabet:[
     {key:'sylvara',text:"Every casting ritual uses symbols from the Arcane Alphabet — twelve sacred glyphs that form the language of magic itself."},
@@ -6322,7 +6385,8 @@ const TUTORIAL_CONVOS={
   ],
   thessaly:[
     {key:'thessaly',text:"I don't fight you. I rearrange the battlefield until you can no longer fight me effectively."},
-    {key:'thessaly',text:"Enthral is my Arcane curse — you can't raise Protection next round. Spellbind is my Dark curse — whatever category you used last costs more for a while."},
+    {key:'thessaly',text:"Enthral is my Arcane curse. I secretly call your next move — Damage, Protection or Dispel. Choose what I called and your spell is lost, its mana mine. Choose otherwise and I misread you. Nobody cleanses it in time: it springs the moment you cast."},
+    {key:'thessaly',text:"Spellbind is my Dark curse — whatever category you used last costs more for a while."},
     {key:'thessaly',text:"Arcane Weave, in the Arcane sector of my Protection wheel, empowers my next few strikes and makes each one burn your mana."},
     {key:'thessaly',text:"By the time you understand what I've done, you've already run out of answers."},
   ],
