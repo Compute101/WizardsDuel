@@ -773,7 +773,7 @@
   "durin": {
     "name": "DURIN",
     "title": "The Stoneheart",
-    "sprite": "sprites/mage-dark.png",
+    "sprite": "sprites/durin.png",
     "col": "#b08040",
     "taunts": [
       "Stone does not bend. Stone does not break. Neither does Durin.",
@@ -837,7 +837,7 @@
   "weizan": {
     "name": "WEIZAN",
     "title": "The Bladecaller",
-    "sprite": "sprites/mage-green.png",
+    "sprite": "sprites/weizan.png",
     "col": "#66aa88",
     "taunts": [
       "Steel remembers every hand that has held it. Mine remembered yours.",
