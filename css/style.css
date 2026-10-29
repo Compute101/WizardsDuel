@@ -1288,6 +1288,8 @@ body {
 .tg-hp { grid-area: hp; font-size: 13px; }
 .tg-ward { grid-area: ward; font-size: 12px; color: #88ffff; }
 .tg-ban { grid-area: ban; font-size: 12px; opacity: .8; }
+.tg-call { grid-template-columns: 40px 1fr; grid-template-areas: "img name" "img ward"; }
+.tg-ico { grid-area: img; font-size: 28px; text-align: center; }
 
 /* ── TUTORIAL MODAL ── */
 #tutorial-modal {
