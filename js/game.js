@@ -637,6 +637,7 @@ const SPRITE_CFG={
   frameW:48, frameH:64, frames:4,
   animRows:{idle:0,cast:1,hit:2,shield:3,death:4},
 };
+const SPRITE_SCALE=1.2;   // battle sprite height relative to drawWiz's sz
 // Two sprite kinds: the old 4x5 spritesheets above (facing left), or a single
 // full-body still of any other size (facing right, animated by drawWiz's bob/lift/shake).
 function isSpriteSheet(img){
@@ -678,8 +679,8 @@ function loadSprites(){
 // Each seat's rune circle on the arena floor
 function seatRunes(){
   if(PLAYERS.length<=2||!gs[PLAYERS[0]]){
-    runeRing(bW*.22,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-    if(p2Cfg) runeRing(bW*.78,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+    runeRing(bW*.25,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
+    if(p2Cfg) runeRing(bW*.75,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
     return;
   }
   PLAYERS.forEach(w=>runeRing(seatX(w),bH*.83,20,`rgba(${hexToRgb(seatCfg(w).col)},0.13)`));
@@ -1174,7 +1175,8 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     const lift=animName==='cast'?-sz*.06:0;
     const shake=animName==='hit'?Math.sin(t/60)*sz*.03:0;
     const bob=animName==='idle'?Math.sin(t/500+x)*sz*.015:0;
-    drawSprite(img,animName,animState[who].frame,x,y+lift+shake+bob,sz,flip);
+    // Drawn a bit taller than sz: the auras around it (radius ~0.82×sz) still enclose it
+    drawSprite(img,animName,animState[who].frame,x,y+lift+shake+bob,sz*SPRITE_SCALE,flip);
   } else {
     if(flip){bx.scale(-1,1); x=-x;}
     const bob=animName==='idle'?Math.sin(t/500+x)*.015*sz:0;
@@ -1387,7 +1389,8 @@ function battleLoop(ts){
   bx.save(); bx.translate(0,bOffY); drawBG(); bx.restore();
   fillSceneBands();
   bx.setTransform(1,0,0,1,0,bOffY);   // everything else draws in scene coordinates
-  const many=PLAYERS.length>2, gy=bH*.74, wsz=bH*.3*(many?.68:1);
+  // Wizard height: capped by width so shield bubbles (radius ~0.82×) stay on screen on tall phones
+  const many=PLAYERS.length>2, gy=bH*.74, wsz=Math.min(bH*.4,bW*.28)*(many?.68:1);
   PLAYERS.forEach(w=>{
     const st=gs[w], hasFx=id=>st.effects.some(e=>e.id===id);
     drawWiz(seatX(w)+(gs[w+'xOff']||0),gy,wsz,seatCfg(w).col,seatFacesRight(w),gs[w+'anim'],
@@ -1805,7 +1808,7 @@ function seatCfg(who){ return (gs&&gs[who]&&gs[who].cfg)||(who==='p1'?p1Cfg:p2Cf
 function seatKey(who){ return (gs&&gs[who]&&gs[who].key)||(who==='p1'?p1Key:p2Key); }
 // 3–4 seats stand in a row across the arena, team-mates side by side
 function seatX(who){
-  if(PLAYERS.length<=2) return who==='p1'?bW*.22:bW*.78;
+  if(PLAYERS.length<=2) return who==='p1'?bW*.25:bW*.75;
   const order=PLAYERS.slice().sort((a,b)=>String(seatTeam(a)).localeCompare(String(seatTeam(b)))||PLAYERS.indexOf(a)-PLAYERS.indexOf(b));
   return bW*(0.13+0.74*order.indexOf(who)/(PLAYERS.length-1));
 }
@@ -3153,7 +3156,7 @@ function showRetryScreen(){
 function onRetryContinue(overlay){
   overlay.classList.remove('active');
   anim('p1','cast',1200);
-  const px=bW*0.22, py=bH*0.65;
+  const px=seatX('p1'), py=bH*0.65;
   spawnParts(px,py,p1Cfg.col,28);
   spawnParts(px,py-bH*0.06,'#ffffff',14);
   addFloat(px,py,'✨ CONTINUE!','#f0cc6a',14);
