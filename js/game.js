@@ -96,7 +96,7 @@ function newState(){
   gs={
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[],
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[],
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1262,7 +1262,7 @@ function addFloat(x,y,t,col,sz=17){ gs.floats.push({x,y,t,col,sz,life:1}); }
 // ── SPELL PROJECTILES ──────────────────────────────────────
 function spawnProj(x1,y1,x2,y2,element,col,cb){
   if(simMode){ if(cb) cb(); return; }
-  const speeds={fire:0.055,lightning:0.3,ice:0.065,arcane:0.06,physical:0.09,dispel:0.07,manaburn:0.08};
+  const speeds={fire:0.055,lightning:0.3,ice:0.065,arcane:0.06,physical:0.09,dispel:0.07,manaburn:0.08,dark:0.07};
   gs.projs.push({x1,y1,x2,y2,progress:0,speed:speeds[element]||0.065,element,col,cb,done:false});
 }
 
@@ -1345,6 +1345,19 @@ function tickProjs(){
       bx.beginPath(); bx.arc(0,0,bH*.010,0,Math.PI*2);
       bx.fillStyle='#220033'; bx.shadowBlur=0; bx.globalAlpha=1; bx.fill();
       bx.restore();
+    } else if(p.element==='dark'){
+      // Shadow orb with the four Dark runes circling it, as in the Shadow Circle minigame
+      const t=Date.now();
+      bx.save(); bx.translate(px,py);
+      bx.beginPath(); bx.arc(0,0,bH*.016,0,Math.PI*2);
+      bx.fillStyle='#1a0628'; bx.shadowColor='#aa44ff'; bx.shadowBlur=18; bx.fill();
+      bx.font=`bold ${Math.round(bH*.034)}px serif`; bx.textAlign='center'; bx.textBaseline='middle';
+      DARK_RUNES.forEach((g,i)=>{
+        const a=t/220+i/4*Math.PI*2, r=bH*.045;
+        bx.globalAlpha=.9; bx.fillStyle='#ffffff'; bx.shadowColor=g.glow; bx.shadowBlur=10;
+        bx.fillText(g.sym,Math.cos(a)*r,Math.sin(a)*r*.6);
+      });
+      bx.shadowBlur=0; bx.globalAlpha=1; bx.textBaseline='alphabetic'; bx.restore();
     }
     if(p.progress>=1){ p.done=true; if(p.cb) p.cb(); }
   });
@@ -1402,7 +1415,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.56);
@@ -1587,6 +1600,51 @@ function lunge(who,amt,cb){
 // Column of blue mana-fire on a target (drawn by tickManaBurnFire)
 function spawnManaBurnFire(x,y){ gs.manaBurnFires.push({x,y,end:Date.now()+2800}); }
 
+// Shadow circle on a target (Dark strikes, drawn by tickShadowCircles): a purple ring opens,
+// the Dark runes ☽ ⊗ ∇ Ω rise from its centre one by one and orbit it, then collapse inward
+// into a burst — the battle-screen version of the Shadow Circle minigame's watch phase.
+const DARK_RUNES=[{sym:'☽',glow:'#aaddff'},{sym:'⊗',glow:'#ff44aa'},{sym:'∇',glow:'#44aaff'},{sym:'Ω',glow:'#ff4444'}];
+const SHADOW_CIRCLE_MS=1500;
+function spawnShadowCircle(x,y,big){
+  gs.shadowCircles.push({x,y,start:Date.now(),big:!!big,base:_rng()*Math.PI*2,burst:false});
+  vfxDrift(x,y+bH*.06,['#5a2280','#6a2a90','#cc88ff'],big?16:10,{w:.1,lift:-1.2,dec:.014});
+}
+function tickShadowCircles(){
+  const now=Date.now();
+  gs.shadowCircles=gs.shadowCircles.filter(c=>now-c.start<SHADOW_CIRCLE_MS);
+  gs.shadowCircles.forEach(c=>{
+    const el=now-c.start, t=el/SHADOW_CIRCLE_MS;
+    const R=bH*.11*(c.big?1.25:1), RY=R*.5;
+    const COLLAPSE=.72, k=t<COLLAPSE?0:(t-COLLAPSE)/(1-COLLAPSE);   // 0 → 1 as the runes fall in
+    const alpha=Math.min(1,t/.12)*(1-k);
+    bx.save(); bx.translate(c.x,c.y);
+    // The circle: dark fill, two glowing rings and a slow-turning dashed band between them
+    bx.globalAlpha=alpha*.35; bx.fillStyle='#1a0628';
+    bx.beginPath(); bx.ellipse(0,0,R*1.1,RY*1.1,0,0,Math.PI*2); bx.fill();
+    bx.globalAlpha=alpha; bx.strokeStyle='#aa66ee'; bx.shadowColor='#aa44ff'; bx.shadowBlur=14; bx.lineWidth=2;
+    bx.beginPath(); bx.ellipse(0,0,R*1.15,RY*1.15,0,0,Math.PI*2); bx.stroke();
+    bx.lineWidth=1.2; bx.beginPath(); bx.ellipse(0,0,R*.55,RY*.55,0,0,Math.PI*2); bx.stroke();
+    bx.setLineDash([4,6]); bx.lineDashOffset=-el/40; bx.strokeStyle='#6a2a90';
+    bx.beginPath(); bx.ellipse(0,0,R*.95,RY*.95,0,0,Math.PI*2); bx.stroke(); bx.setLineDash([]);
+    // The runes: rise from the centre in turn, orbit, then spiral in
+    bx.font=`bold ${Math.round(bH*.048*(c.big?1.15:1))}px serif`; bx.textAlign='center'; bx.textBaseline='middle';
+    DARK_RUNES.forEach((g,i)=>{
+      const rise=Math.max(0,Math.min(1,(el-i*120)/300));
+      if(rise<=0) return;
+      const a=c.base+i/4*Math.PI*2+el/350*(1+k*2);
+      const r=rise*(1-k);
+      const depth=.65+.35*Math.sin(a);   // runes on the far side of the ring are dimmer
+      bx.globalAlpha=rise*(1-k*.6)*depth; bx.fillStyle='#ffffff'; bx.shadowColor=g.glow; bx.shadowBlur=14;
+      bx.fillText(g.sym,Math.cos(a)*R*r,Math.sin(a)*RY*r);
+    });
+    bx.shadowBlur=0; bx.globalAlpha=1; bx.textBaseline='alphabetic'; bx.restore();
+    if(k>=.85&&!c.burst){
+      c.burst=true;
+      spawnParts(c.x,c.y,'#cc44ff',c.big?22:14); spawnParts(c.x,c.y,'#ffffff',6);
+    }
+  });
+}
+
 // Particles on an ellipse around (x,y). o.out flies outward (auras), otherwise inward (impacts).
 function vfxRing(x,y,cols,n,o={}){
   const r=bH*(o.r||.06), ry=bH*(o.ry||.04), spd=o.spd||1.2, dir=o.out?0:Math.PI;
@@ -1654,14 +1712,14 @@ const VFX={
 };
 
 // Plain element strikes off the wheel (the original Inferno / Lightning Bolt / Frost Nova /
-// Arcane Surge impacts; Dark uses Mana Burn's, Physical the melee sparks). An empowered hit bursts bigger.
+// Arcane Surge impacts; Dark the Shadow Circle, Physical the melee sparks). An empowered hit bursts bigger.
 const ELEM_IMPACT_VFX={
   fire:     (c,n)=>{ spawnParts(c.tx,c.y,'#ff6622',n); flash('#ff6622'); },
   ice:      (c,n)=>{ spawnParts(c.tx,c.y,'#88ddff',n); flash('#88ddff'); },
   lightning:(c,n)=>{ spawnParts(c.tx,c.y,'#ffee44',n); spawnParts(c.tx,c.y,'#ffffff',8); flash('#ffee44'); },
   arcane:   (c,n)=>{ spawnParts(c.tx,c.y,'#cc88ff',n); flash('#cc88ff'); },
   physical: (c,n)=>{ spawnParts(c.tx,c.y,'#d0a060',n); flash('#d0a060'); },
-  dark:     (c,n)=>{ spawnParts(c.tx,c.y,'#cc44ff',n); spawnParts(c.tx,c.y,'#ff88ff',10); spawnManaBurnFire(c.tx,c.y); flash('#cc44ff'); },
+  dark:     (c,n)=>{ spawnParts(c.tx,c.y,'#cc44ff',n); spawnShadowCircle(c.tx,c.y,n>30); flash('#cc44ff'); },
 };
 
 // Damage-over-time ticks, by the effect that deals them (fallback: by element)
@@ -2095,7 +2153,7 @@ const ELEM_MINIGAME={fire:launchPatternEcho, ice:launchIcePattern, lightning:lau
 const ELEM_GLYPHS={physical:[1,2,3,8], dark:[6,9,2,4]};   // Δ ∇ Ψ ⊕ (stone) / ☽ ⊗ ∇ Ω (necromancy)
 const ELEM_WARD_THEME={fire:'flameshield', ice:'frostarmor', lightning:'shield',
   arcane:'foresight', physical:'stoneskin', dark:'warpaint'};
-const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane', physical:'physical', dark:'manaburn'};
+const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane', physical:'physical', dark:'dark'};
 
 // Elements a character can't cast at all (characters.json "forbidden"): their sectors are locked
 // on every wheel. Never one of the character's own signature sectors.
@@ -6180,7 +6238,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[];
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[];
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
@@ -6202,7 +6260,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[];
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[];
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
