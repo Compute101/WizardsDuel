@@ -704,10 +704,23 @@ function tickAnimFrame(who,dt){
 
 let lastFrameTime=0;
 
+// When each aura first appeared, per wizard, so new wards and buffs fade in instead of popping
+const auraSince={}, AURA_FADE_MS=700;
+function auraFade(who,key,on){
+  const m=auraSince[who]||(auraSince[who]={});
+  if(!on){ delete m[key]; return 0; }
+  if(m[key]==null) m[key]=Date.now();
+  const k=Math.min(1,(Date.now()-m[key])/AURA_FADE_MS);
+  return k*k*(3-2*k);
+}
+
 function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActive,state){
   bx.save();
   const t=Date.now();
+  const fShield=auraFade(who,'shield',shielded>0), fWard=auraFade(who,'ward',wardActive>0),
+    fSight=auraFade(who,'foresight',!!foresightActive), fCounter=auraFade(who,'counter',!!(state&&state.counter));
   if(foresightActive){
+    bx.globalAlpha=fSight;
     const cy=y-sz*.5;
     for(let i=0;i<3;i++){
       const a=t/900+i/3*Math.PI*2;
@@ -720,11 +733,13 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     const halo=0.07+0.04*Math.sin(t/350);
     bx.beginPath(); bx.arc(x,cy,sz*.8,0,Math.PI*2);
     bx.strokeStyle=`rgba(255,204,68,${halo*5})`; bx.lineWidth=2; bx.stroke();
+    bx.globalAlpha=1;
   }
   if(shielded>0){
     const boosted=state&&state.counter;
     const gv=0.08+0.05*Math.sin(t/300);
-    bx.beginPath(); bx.arc(x,y-sz*.5,sz*.75,0,Math.PI*2);
+    bx.globalAlpha=fShield;
+    bx.beginPath(); bx.arc(x,y-sz*.5,sz*(.6+.15*fShield),0,Math.PI*2);
     if(boosted){
       // Gold-cyan blend fill with higher opacity when counter is active
       bx.fillStyle=`rgba(180,240,120,${gv*2.5})`; bx.fill();
@@ -738,12 +753,14 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
       bx.fillStyle=`rgba(74,240,255,${gv})`; bx.fill();
       bx.strokeStyle=`rgba(74,240,255,${gv*5})`; bx.lineWidth=1.5; bx.stroke();
     }
+    bx.globalAlpha=1;
   }
   if(wardActive>0){
     const gv=0.06+0.04*Math.sin(t/280);
     bx.save();
     bx.translate(x,y-sz*.5);
     bx.rotate(t/1200);
+    bx.globalAlpha=fWard; bx.scale(.8+.2*fWard,.8+.2*fWard);
     bx.strokeStyle=`rgba(255,204,68,${gv*6})`; bx.lineWidth=1.5;
     for(let i=0;i<6;i++){
       const a=i/6*Math.PI*2;
@@ -770,7 +787,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   if(state&&state.counter){
     const rot=-t/420;
     for(let i=0;i<4;i++){
-      const a=rot+i/4*Math.PI*2, alpha=0.65+0.30*Math.sin(t/220+i);
+      const a=rot+i/4*Math.PI*2, alpha=(0.65+0.30*Math.sin(t/220+i))*fCounter;
       bx.beginPath(); bx.arc(x,wy,sz*.82,a,a+Math.PI*.38);
       bx.strokeStyle=`rgba(255,215,0,${alpha})`; bx.lineWidth=3;
       bx.shadowColor='#ffd700'; bx.shadowBlur=10; bx.stroke();
@@ -1211,7 +1228,8 @@ function tickParts(){
   gs.parts=gs.parts.filter(p=>p.life>0);
   gs.parts.forEach(p=>{
     p.x+=p.vx; p.y+=p.vy; if(!p.noGrav) p.vy+=.18; p.life-=p.dec;
-    bx.globalAlpha=p.life; bx.fillStyle=p.col; bx.shadowColor=p.col; bx.shadowBlur=8;
+    bx.globalAlpha=p.fin?p.life*Math.min(1,(1-p.life)/p.fin):p.life;   // p.fin: share of its life spent fading in
+    bx.fillStyle=p.col; bx.shadowColor=p.col; bx.shadowBlur=8;
     bx.beginPath(); bx.arc(p.x,p.y,p.sz,0,Math.PI*2); bx.fill(); bx.shadowBlur=0; bx.globalAlpha=1;
   });
 }
@@ -1622,11 +1640,22 @@ function vfxDrip(x,y,col,n,o={}){
     gs.parts.push({x:x+(_rng()-.5)*bH*.05,y,col,vx:(_rng()-.5)*(o.vx||1),vy:(o.vy||1.5)+_rng()*(o.vyVar||3),
       sz:2+_rng()*2,life:1,dec:o.dec||.02});
 }
+// Motes that fade in around the wizard and drift slowly inward to settle (wards and buffs).
+// No burst, gravity or flash, so it never reads like a hit.
+function vfxPhaseIn(x,y,cols,n,o={}){
+  // Spread over the whole wizard (y is the usual chest-height effect point)
+  const k=PLAYERS.length>2?.68:1, rx=bH*(o.r||.15)*k, ry=bH*(o.ry||.19)*k, cy=y+bH*.12*k, dec=o.dec||.014;
+  for(let i=0;i<n;i++){
+    const a=i/n*Math.PI*2+_rng()*.6, d=.6+_rng()*.5, sx=Math.cos(a)*rx*d, sy=Math.sin(a)*ry*d;
+    gs.parts.push({x:x+sx,y:cy+sy,col:cols[i%cols.length],vx:-sx*dec*.75,vy:-sy*dec*.75-(o.lift||.25),
+      sz:1.5+_rng()*(o.sz||2),life:1,dec:dec*(.85+_rng()*.3),fin:.4,noGrav:true});
+  }
+}
 function vfxStrikeAnim(who,tgt,ms=800){ anim(who,'cast',ms); if(tgt&&tgt!==who) anim(tgt,'hit',ms); }
 
 // ── Reactions shared by every spell ──
 const VFX={
-  wardRaise:(x,col)=>{ spawnParts(x,bH*.38,col,18); spawnParts(x,bH*.38,'#ffffff',6); },
+  wardRaise:(x,col)=>vfxPhaseIn(x,bH*.38,[col,col,'#ffffff'],18),
   wardBlock:x=>{ spawnParts(x,bH*.38,'#4af0ff',8); spawnParts(x,bH*.38,'#ffffff',4); },
   wardShatter:x=>{ spawnParts(x,bH*.38,'#4af0ff',22); spawnParts(x,bH*.38,'#ffffff',8); },
   absorbed:(x,col)=>{ spawnParts(x,bH*.38,'#ffcc44',18); spawnParts(x,bH*.38,col,10); spawnParts(x,bH*.38,'#ffffff',6); },
@@ -1688,10 +1717,10 @@ const MINION_VFX={
 const SPELL_VFX={
   // Eldrin
   shield:   {self:c=>anim(c.who,'shield',700)},
-  counter:  {self:c=>{ spawnParts(c.cx,c.y,'#4af0ff',16); spawnParts(c.cx,c.y,'#ffffff',6); anim(c.who,'shield',700); }},
-  ward:     {self:c=>{ spawnParts(c.cx,c.y,'#ffcc44',14); spawnParts(c.cx,c.y,'#ffffff',6); anim(c.who,'shield',700); }},
+  counter:  {self:c=>{ vfxPhaseIn(c.cx,c.y,['#4af0ff','#4af0ff','#ffffff'],18); anim(c.who,'shield',700); }},
+  ward:     {self:c=>{ vfxPhaseIn(c.cx,c.y,['#ffcc44','#ffcc44','#ffffff'],18); anim(c.who,'shield',700); }},
   // Malachar
-  empower:  {self:c=>{ spawnParts(c.cx,c.y,c.col,10); anim(c.who,'cast',700); }},
+  empower:  {self:c=>{ vfxPhaseIn(c.cx,c.y,[c.col],12); anim(c.who,'cast',700); }},
   bloodpact:{self:c=>{ vfxDrip(c.cx,c.y,'#cc1111',8); vfxFountain(c.cx,c.y,['#8844ff'],10,{spread:.6,min:1.5,var:2.5,w:.04,sz:2,dec:.02}); anim(c.who,'cast',700); }},
   drain:    {hit:c=>{ spawnBeam(c.cx,c.y,c.tx,c.y,'#cc1111'); spawnParts(c.tx,c.y,'#cc1111',18); flash('#cc1111'); vfxStrikeAnim(c.who,c.tgt); }},
   // Sylvara
@@ -1699,20 +1728,20 @@ const SPELL_VFX={
   entangle: {hit:c=>{ vfxRing(c.tx,c.y,['#44cc88'],10,{spd:.9,sz:2}); spawnParts(c.tx,c.y,'#44cc88',8); anim(c.who,'cast',800); }},
   vinewhip: {hit:c=>{ vfxRing(c.tx,c.y,['#44cc88'],12,{r:.07,sz:2}); spawnParts(c.tx,c.y,'#44cc88',10); vfxStrikeAnim(c.who,c.tgt); }},
   // Aurelia
-  foresight:{self:c=>{ spawnParts(c.cx,c.y,c.col,14); spawnParts(c.cx,c.y,'#ffffff',6); anim(c.who,'shield',700); }},
+  foresight:{self:c=>{ vfxPhaseIn(c.cx,c.y,[c.col,c.col,'#ffffff'],18); anim(c.who,'shield',700); }},
   timedrain:{hit:c=>{ spawnParts(c.tx,c.y,'#cc88ff',12); spawnParts(c.tx,c.y,c.col,6); anim(c.who,'cast',700); }},
-  haste:    {self:c=>{ vfxFountain(c.cx,c.y,[c.col,'#ffffff'],14,{spread:1,min:1.5,var:3,w:0,sz:2.5,dec:.016}); anim(c.who,'shield',700); }},   // Rewind
+  haste:    {self:c=>{ vfxPhaseIn(c.cx,c.y,[c.col,'#ffffff'],16); anim(c.who,'shield',700); }},   // Rewind
   // Gnash
-  warpaint: {self:c=>{ vfxDrip(c.cx,bH*.35,'#cc1111',8,{vx:1.5,vy:1,vyVar:2.5,dec:.025}); spawnParts(c.cx,c.y,c.col,10); anim(c.who,'shield',700); }},
+  warpaint: {self:c=>{ vfxDrip(c.cx,bH*.35,'#cc1111',8,{vx:1.5,vy:1,vyVar:2.5,dec:.025}); vfxPhaseIn(c.cx,c.y,[c.col],12); anim(c.who,'shield',700); }},
   charge:   {delivery:'lunge', hit:c=>{ spawnParts(c.tx,c.y,c.col,22); flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
-  frenzy:   {self:c=>{ spawnParts(c.cx,c.y,c.col,18); vfxDrip(c.cx,bH*.35,'#cc1111',6,{vx:1.5,vy:1,vyVar:2.5,dec:.025}); anim(c.who,'cast',700); }},
+  frenzy:   {self:c=>{ vfxPhaseIn(c.cx,c.y,[c.col],18); vfxDrip(c.cx,bH*.35,'#cc1111',6,{vx:1.5,vy:1,vyVar:2.5,dec:.025}); anim(c.who,'cast',700); }},
   // Cinder
   fireball: {hit:c=>{ vfxRing(c.tx,c.y,['#ffaa00','#ff6600'],18,{spd:1.4,lift:-.5,sz:3}); spawnParts(c.tx,c.y,'#ff6600',20); flash('#ff6600'); vfxStrikeAnim(c.who,c.tgt); }},
-  flameshield:{self:c=>{ vfxRing(c.cx,c.y,['#ffaa00','#ff6600'],14,{out:true,spd:1,lift:-.5,dec:.018,noGrav:true}); spawnParts(c.cx,c.y,'#ff6600',8); spawnParts(c.cx,c.y,'#ffaa00',4); anim(c.who,'shield',700); }},
+  flameshield:{self:c=>{ vfxPhaseIn(c.cx,c.y,['#ffaa00','#ff6600'],20,{lift:.5}); anim(c.who,'shield',700); }},
   candle:   {hit:c=>{ vfxDrift(c.tx,c.y,['#ffaa00','#ff6600'],12,{w:.05,spd:.7,lift:-1.5,dec:.018}); spawnParts(c.tx,c.y,'#ff6600',10); anim(c.who,'cast',800); }},
   // Skadi
   icelance: {hit:c=>{ vfxRing(c.tx,c.y,['#88ddff'],16,{r:.05,ry:.03}); spawnParts(c.tx,c.y,'#88ddff',18); flash('#88ddff'); vfxStrikeAnim(c.who,c.tgt); }},
-  frostarmor:{self:c=>{ vfxRing(c.cx,c.y,['#88ddff'],16,{out:true,spd:.8,lift:-.5,dec:.016,noGrav:true}); spawnParts(c.cx,c.y,'#aaeeff',8); spawnParts(c.cx,c.y,'#ffffff',4); anim(c.who,'shield',700); }},
+  frostarmor:{self:c=>{ vfxPhaseIn(c.cx,c.y,['#88ddff','#88ddff','#aaeeff','#ffffff'],20,{lift:0}); anim(c.who,'shield',700); }},
   blizzard: {hit:c=>{
     for(let i=0;i<20;i++){
       const a=_rng()*Math.PI*2, r=bH*(0.05+_rng()*0.08);
@@ -1721,7 +1750,7 @@ const SPELL_VFX={
     }
     spawnParts(c.tx,c.y,'#88ddff',12); spawnParts(c.tx,c.y,'#aaeeff',6); anim(c.who,'cast',800); }},
   // Zacharius
-  galvanize:{self:c=>{ vfxRing(c.cx,c.y,['#88ffcc','#aaff44'],12,{out:true,spd:.9,lift:-.5,dec:.018,noGrav:true}); spawnParts(c.cx,c.y,'#aaff44',8); spawnParts(c.cx,c.y,'#ffffff',4); anim(c.who,'shield',700); }},
+  galvanize:{self:c=>{ vfxPhaseIn(c.cx,c.y,['#88ffcc','#aaff44','#aaff44','#ffffff'],18); anim(c.who,'shield',700); }},
   chainlightning:{hit:c=>{ vfxRing(c.tx,c.y,['#ffffff','#aaff44'],14,{r:.05,ry:.03,spd:1.5,sz:2,dec:.022}); spawnBeam(c.cx,c.y,c.tx,c.y,c.col); spawnParts(c.tx,c.y,c.col,18); flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
   conductivity:{hit:c=>{ vfxDrift(c.tx,c.y,['#88ffcc','#aaff44'],14,{w:.06,lift:-1.2}); spawnParts(c.tx,c.y,c.col,10); anim(c.who,'cast',800); }},
   // Mary
@@ -1734,9 +1763,9 @@ const SPELL_VFX={
   corruption:{hit:c=>SPELL_VFX._hex(c)},
   _hex:c=>{ spawnParts(c.tx,c.y,c.col,18); spawnParts(c.tx,c.y,'#110011',8); spawnBeam(c.cx,c.y,c.tx,c.y,c.col); flash(c.col); vfxStrikeAnim(c.who,c.tgt); },
   // Ponder
-  vanish:   {self:c=>{ spawnParts(c.cx,c.y,'#b8a0e8',14); spawnParts(c.cx,c.y,'#ffffff',6); anim(c.who,'shield',700); }},
+  vanish:   {self:c=>{ vfxPhaseIn(c.cx,c.y,['#b8a0e8','#b8a0e8','#ffffff'],18); anim(c.who,'shield',700); }},
   manasiphon:{self:c=>{ spawnParts(c.tx,c.y,'#b8a0e8',14); spawnParts(c.cx,c.y,'#b8a0e8',8); anim(c.who,'cast',700); }},
-  blink:    {self:c=>{ spawnParts(c.cx,c.y,'#9988cc',22); spawnParts(c.cx,c.y,'#ffffff',8); anim(c.who,'shield',700); }},
+  blink:    {self:c=>{ vfxPhaseIn(c.cx,c.y,['#9988cc','#9988cc','#ffffff'],22); anim(c.who,'shield',700); }},
   // Durin
   stoneskin:{self:c=>{
     // Three waves of rocks fly in and coat the caster
@@ -1749,38 +1778,38 @@ const SPELL_VFX={
         gs.parts.push({x:srcX,y:srcY,col:j%2?'#8b7355':'#a08060',vx:(c.cx-srcX)*speed,vy:(c.y-srcY)*speed,
           sz:3+_rng()*3,life:1,dec:.028,noGrav:true});
       }
-      spawnParts(c.cx,c.y,c.col,4);
+      vfxPhaseIn(c.cx,c.y,[c.col],4,{r:.1,ry:.13});
     },delay));
     anim(c.who,'shield',900); }},
-  stonesoul:{self:c=>{ vfxRing(c.cx,c.y,['#b08040','#8b6914','#c8a060'],14,{out:true,r:.07,ry:.05,spd:.7,lift:-.3,dec:.015,noGrav:true}); spawnParts(c.cx,c.y,'#c8a060',8); spawnParts(c.cx,c.y,'#ffffff',4); anim(c.who,'shield',700); }},
+  stonesoul:{self:c=>{ vfxPhaseIn(c.cx,c.y,['#b08040','#8b6914','#c8a060','#ffffff'],18,{lift:0}); anim(c.who,'shield',700); }},
   rockfall: {delivery:{volley:3,gap:350},
     pre:c=>{ spawnParts(c.cx,c.y,c.col,12); anim(c.who,'cast',900); },
     each:c=>{ vfxRing(c.tx,c.y,['#8b6914','#b08040'],10,{r:.04,ry:.03,lift:-.3,sz:3,dec:.022}); spawnParts(c.tx,c.y,c.col,10); flash(c.col); vfxStrikeAnim(c.who,c.tgt,600); }},
   // Weizan
-  conjureblade:{self:c=>{ spawnParts(c.cx,c.y,'#aaaadd',14); spawnParts(c.cx,c.y,'#ffffff',5); anim(c.who,'cast',700); }},
+  conjureblade:{self:c=>{ vfxPhaseIn(c.cx,c.y,['#aaaadd','#aaaadd','#ffffff'],18); anim(c.who,'cast',700); }},
   bladestorm:{delivery:{volley:'blades',gap:320,proj:'physical',col:'#aaaadd'},
     pre:c=>{ spawnParts(c.cx,c.y,'#aaaadd',16); anim(c.who,'cast',900); },
     each:c=>spawnParts(c.tx,c.y,c.col,10),
     hit:c=>{ flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
-  ironpatience:{self:c=>{ spawnParts(c.cx,c.y,'#888899',12); spawnParts(c.cx,c.y,'#ffffff',4); anim(c.who,'shield',700); }},
+  ironpatience:{self:c=>{ vfxPhaseIn(c.cx,c.y,['#888899','#888899','#ffffff'],16,{lift:0}); anim(c.who,'shield',700); }},
   // Gretch
   plague:     {hit:c=>{ spawnParts(c.tx,c.y,'#55aa33',16); spawnParts(c.tx,c.y,'#aaddaa',5); anim(c.who,'cast',800); }},
   maggotcloud:{hit:c=>{ spawnParts(c.tx,c.y,'#55aa33',14); spawnParts(c.tx,c.y,'#aaddaa',5); anim(c.who,'cast',800); }},
-  bonetotem:  {self:c=>{ spawnParts(c.cx,c.y,'#55aa33',14); spawnParts(c.cx,c.y,'#aaddaa',6); anim(c.who,'shield',700); }},
+  bonetotem:  {self:c=>{ vfxPhaseIn(c.cx,c.y,['#55aa33','#55aa33','#aaddaa'],18); anim(c.who,'shield',700); }},
   // Valdris
-  raisedead:    {self:c=>{ spawnParts(c.cx,c.y,'#8844cc',14); spawnParts(c.cx,c.y,'#ffffff',5); anim(c.who,'cast',800); }},
+  raisedead:    {self:c=>{ vfxPhaseIn(c.cx,c.y,['#8844cc','#8844cc','#ffffff'],18); anim(c.who,'cast',800); }},
   necroticdrain:{hit:c=>{ spawnParts(c.tx,c.y,'#8844cc',16); spawnBeam(c.cx,c.y,c.tx,c.y,'#8844cc'); flash('#8844cc'); vfxStrikeAnim(c.who,c.tgt); }},
-  reinforce:    {self:c=>{ spawnParts(c.cx,c.y,'#8844cc',10); anim(c.who,'cast',700); }},
+  reinforce:    {self:c=>{ vfxPhaseIn(c.cx,c.y,['#8844cc'],12); anim(c.who,'cast',700); }},
   // Mirel
-  simulacrum:{self:c=>{ spawnParts(c.cx,c.y,'#b86ef4',16); spawnParts(c.cx,c.y,'#ffffff',6); anim(c.who,'shield',800); }},
+  simulacrum:{self:c=>{ vfxPhaseIn(c.cx,c.y,['#b86ef4','#b86ef4','#ffffff'],20); anim(c.who,'shield',800); }},
   bewitch:   {hit:c=>{ spawnParts(c.tx,c.y,c.col,18); spawnParts(c.tx,c.y,'#ffffff',6); anim(c.who,'cast',800); }},
   feint:     {hit:c=>{ spawnParts(c.tx,c.y,c.col,18); flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
   // Thessaly
   enthral:    {hit:c=>{ spawnParts(c.tx,c.y,c.col,18); spawnParts(c.tx,c.y,'#ffffff',6); anim(c.who,'cast',800); }},
-  arcaneweave:{self:c=>{ spawnParts(c.cx,c.y,c.col,14); spawnParts(c.cx,c.y,'#ffdd88',5); anim(c.who,'cast',700); }},
+  arcaneweave:{self:c=>{ vfxPhaseIn(c.cx,c.y,[c.col,c.col,'#ffdd88'],18); anim(c.who,'cast',700); }},
   spellbind:  {hit:c=>{ spawnParts(c.tx,c.y,c.col,16); spawnParts(c.tx,c.y,'#ffdd88',5); anim(c.who,'cast',800); }},
   // Korvath
-  dragonscales:  {self:c=>{ vfxRing(c.cx,c.y,['#cc6622'],16,{out:true,spd:.8,lift:-.5,dec:.016,noGrav:true}); spawnParts(c.cx,c.y,'#dd8844',8); spawnParts(c.cx,c.y,'#ffcc88',4); anim(c.who,'shield',700); }},
+  dragonscales:  {self:c=>{ vfxPhaseIn(c.cx,c.y,['#cc6622','#cc6622','#dd8844','#ffcc88'],20,{lift:0}); anim(c.who,'shield',700); }},
   wyrmfirebreath:{hit:c=>{ spawnParts(c.tx,c.y,'#ff6622',18); spawnParts(c.tx,c.y,'#ffaa44',8); flash('#ff6622'); vfxStrikeAnim(c.who,c.tgt); }},
   ancientwrath:  {hit:c=>{ spawnParts(c.tx,c.y,'#ff4400',24); spawnParts(c.tx,c.y,'#ffaa00',10); flash('#ff4400'); vfxStrikeAnim(c.who,c.tgt); }},
   // Fizzwick
@@ -2649,7 +2678,7 @@ function executeSignature(who,sp,action,cb){
     addEffect(mine?who:ally,effect({kind:'buff'}),who);
     // A buff that also raises a light ward (Blink) — never replaces a stronger ward already up
     if(el.ward&&!(hasWard(as)&&as.shieldHp>=el.ward)){ raiseWard(ally,el.elem,el.ward,0); as.wardSig=sp.id; }
-    if(fx.self) fx.self(mine?ctx:actx); else { spawnParts(seatX(mine?who:ally),y,e.col,14); anim(mine?who:ally,'shield',700); }
+    if(fx.self) fx.self(mine?ctx:actx); else { vfxPhaseIn(seatX(mine?who:ally),y,[e.col],14); anim(mine?who:ally,'shield',700); }
     combatTimeout(cb,900);
     return;
   }
