@@ -110,6 +110,7 @@ Every round goes: secret picks → simultaneous reveal → resolution → round-
 Keep VFX: when changing or removing a spell, keep its look. Every spell's visual is in the "VFX LIBRARY" section of `js/game.js`:
 - `SPELL_VFX[spellId]` is each signature spell's own look. `self` plays when cast on yourself, `hit` when it lands on the target, and `delivery` handles lunges and volleys.
 - `ELEM_IMPACT_VFX` holds the plain element strikes; `TICK_VFX` / `MINION_VFX` the round-end ticks; `VFX` the shared reactions (ward block/shatter, dodge, dispel, retaliation, …).
+- Dark strikes travel as a shadow orb with the four Dark runes circling it and land as a Shadow Circle (`spawnShadowCircle`: the runes rise, orbit the target, then collapse). Mana Burn's blue fire column (`spawnManaBurnFire`) is kept in the library but no longer used.
 - Primitives: `spawnBeam`, `lunge`, `spawnManaBurnFire`, `vfxRing` / `vfxFountain` / `vfxDrift` / `vfxDrip` / `vfxPhaseIn`. `drawWiz` draws status auras from `wizVisuals()`.
 - Wards and buffs phase in (`vfxPhaseIn`: motes fade in and settle inward; `auraFade` grows the ward bubble in) — never use `spawnParts` bursts or `flash` for them, since a burst on yourself reads as taking a hit.
 - Battle sprites: each character's `sprite` in `characters.json`. Either an old 192×320 spritesheet (`mage-*.png`, 48×64 frames, facing left) or a single full-body still named after the character key (`sprites/<key>.png`, 512×768, facing right). `drawSprite` handles both.
