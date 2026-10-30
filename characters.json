@@ -837,7 +837,7 @@
   "weizan": {
     "name": "WEIZAN",
     "title": "The Bladecaller",
-    "sprite": "sprites/mage-green.png",
+    "sprite": "sprites/weizan.png",
     "col": "#66aa88",
     "taunts": [
       "Steel remembers every hand that has held it. Mine remembered yours.",
@@ -1127,7 +1127,7 @@
   "thessaly": {
     "name": "THESSALY",
     "title": "The Gilded",
-    "sprite": "sprites/mage-light.png",
+    "sprite": "sprites/thessaly.png",
     "col": "#ddaa22",
     "taunts": [
       "I had already won before you cast your first spell. You simply hadn't realised it yet.",
