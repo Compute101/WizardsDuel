@@ -3558,6 +3558,241 @@ const MG_GLYPH_MS=MG_WATCH_MS/2;
 // Stagger n glyph spawns across the watch window, leaving `tail` ms to study the last one.
 function mgSpawnInterval(n,delay,tail){ return n>1?(MG_WATCH_MS-delay-tail)/(n-1):0; }
 
+// ── MINIGAME END MOMENT (shared) ───────────────────────────
+// Every casting minigame ends through mgEnd: instead of cutting straight back to the
+// battle, it holds the last frame for a moment so the player can see what happened.
+// Failure: the canvas greys out and shakes, the wrong key flashes red, the key that was
+// wanted pulses gold, the slot row reveals the rest of the sequence, and a FIZZLED banner
+// says why. Success: a short gold flash and SPELL WOVEN.
+const MG_SYMS=['ϟ','Δ','∇','Ψ','Ω','∞','☽','✸','⊕','⊗','θ','Φ'];
+const MG_FAIL_MS=1300, MG_WIN_MS=750;
+const MG_SLOT=26, MG_SLOT_GAP=6;
+const MG_REASONS={
+  wrong:'Wrong rune!', forbidden:"Not this spell's rune!",
+  timeout:'Too slow!', strikes:'Too many mismatches!',
+};
+let mgSlotPop={n:0,t:0};
+
+function mgSlotX(cw,n,i){ return cw/2-(n*MG_SLOT+(n-1)*MG_SLOT_GAP)/2+i*(MG_SLOT+MG_SLOT_GAP); }
+function mgSlotY(tileTop){ return tileTop-MG_SLOT-8; }
+
+// One slot of the sequence row. state: empty | done | wrong | answer | missed
+// accent tints the in-game row to the spell's colours (gold by default).
+function mgDrawSlot(x,y,sym,state,scale,alpha,accent){
+  const S=MG_SLOT, cx=x+S/2, cy=y+S/2;
+  const ac=accent||'#ffcc00';
+  const st={
+    empty: {bg:'#120e0a',edge:ac+'55',txt:null,glow:0},
+    done:  {bg:accent?'#10141c':'#3a2a00',edge:ac,txt:accent?'#ffffff':'#ffe680',glow:8},
+    wrong: {bg:'#3a0505',edge:'#ff3333',txt:'#ff6666',glow:10},
+    answer:{bg:'#14141c',edge:'rgba(255,255,255,0.35)',txt:'rgba(255,255,255,0.75)',glow:0},
+    missed:{bg:'#3a0505',edge:'#ff3333',txt:'rgba(255,255,255,0.75)',glow:10},
+  }[state];
+  mx.save();
+  mx.globalAlpha=alpha==null?1:alpha;
+  mx.translate(cx,cy); mx.scale(scale||1,scale||1);
+  mx.shadowColor=st.edge; mx.shadowBlur=st.glow;
+  mx.fillStyle=st.bg;
+  mx.beginPath(); mx.roundRect(-S/2,-S/2,S,S,4); mx.fill();
+  mx.shadowBlur=0;
+  mx.strokeStyle=st.edge; mx.lineWidth=1.5;
+  mx.beginPath(); mx.roundRect(-S/2,-S/2,S,S,4); mx.stroke();
+  if(sym&&st.txt){
+    mx.fillStyle=st.txt;
+    mx.font='bold 17px serif';
+    mx.textAlign='center'; mx.textBaseline='middle';
+    mx.fillText(sym,0,1);
+  }
+  if(state==='wrong'){ // strike through the wrong glyph
+    mx.strokeStyle='#ff3333'; mx.lineWidth=2.5; mx.lineCap='round';
+    mx.beginPath(); mx.moveTo(-S/2+5,S/2-5); mx.lineTo(S/2-5,-S/2+5); mx.stroke();
+  }
+  mx.restore();
+}
+
+// The sequence row above the keyboard, drawn every input frame: entered glyphs fill in gold
+// (the newest pops in), the rest wait as empty slots.
+function mgDrawSlots(seq,playerSeq,cw,tileTop,accent){
+  const n=playerSeq.length, now=performance.now();
+  if(n!==mgSlotPop.n) mgSlotPop={n,t:n>mgSlotPop.n?now:0};
+  const y=mgSlotY(tileTop);
+  for(let i=0;i<seq.length;i++){
+    let scale=1;
+    if(i===n-1&&mgSlotPop.t){
+      const k=Math.min(1,(now-mgSlotPop.t)/220);
+      scale=1+0.35*(1-k);
+    }
+    mgDrawSlot(mgSlotX(cw,seq.length,i),y,i<n?MG_SYMS[playerSeq[i]]:null,i<n?'done':'empty',scale,1,accent);
+  }
+}
+
+function mgDrawKey(x,y,TS,sym,bg,edge,txt,glow){
+  mx.save();
+  mx.shadowColor=edge; mx.shadowBlur=glow;
+  mx.fillStyle=bg;
+  mx.beginPath(); mx.roundRect(x,y,TS,TS,5); mx.fill();
+  mx.shadowBlur=0;
+  mx.strokeStyle=edge; mx.lineWidth=2.5;
+  mx.beginPath(); mx.roundRect(x,y,TS,TS,5); mx.stroke();
+  mx.fillStyle=txt; mx.shadowColor=txt; mx.shadowBlur=glow*0.6;
+  mx.font=`bold ${Math.round(TS*.42)}px serif`;
+  mx.textAlign='center'; mx.textBaseline='middle';
+  mx.fillText(sym,x+TS/2,y+TS/2);
+  mx.restore();
+}
+
+// Big banner text on a dark band.
+function mgBanner(cw,y,text,col,sub,e,start){
+  const k=Math.max(0,Math.min(1,(e-start)/200));
+  if(k<=0) return;
+  const scale=1.4-0.4*k;
+  mx.save();
+  mx.globalAlpha=k*0.75; mx.fillStyle='#000';
+  mx.fillRect(0,y-24,cw,sub?52:48);
+  mx.globalAlpha=k;
+  mx.translate(cw/2,y); mx.scale(scale,scale);
+  mx.fillStyle=col; mx.shadowColor=col; mx.shadowBlur=16;
+  mx.font='bold 26px Cinzel,serif';
+  mx.textAlign='center'; mx.textBaseline='middle';
+  mx.fillText(text,0,sub?-5:0);
+  if(sub){
+    mx.shadowBlur=4; mx.fillStyle='#ffd0c0';
+    mx.font='bold 10px Cinzel,serif';
+    mx.fillText(sub,0,15);
+  }
+  mx.restore();
+}
+
+// Pick the gap between keyboard rows furthest from the highlighted keys, so the banner
+// never hides the wrong key or the wanted one.
+function mgBannerY(info,keys){
+  if(!info.tPos) return info.bannerY||info.ch/2;
+  const {TS,tileTop}=info, step=TS+(info.tPos[3].y-info.tPos[0].y-TS);
+  let best=tileTop+2*step, bestD=-1;
+  for(let r=1;r<=3;r++){
+    const gy=tileTop+r*step-(step-TS)/2;
+    const d=keys.length?Math.min(...keys.map(ai=>Math.abs(info.tPos[ai].y+TS/2-gy))):0;
+    if(d>bestD){bestD=d;best=gy;}
+  }
+  return best;
+}
+
+function mgDrawFail(info,snap,e,expect){
+  const {cw,ch}=info;
+  const dim=Math.min(1,e/250);
+  const shake=e<320?(1-e/320)*5:0;
+  mx.save();
+  mx.fillStyle='#000'; mx.fillRect(0,0,cw,ch);
+  mx.filter=`grayscale(${dim})`;
+  mx.drawImage(snap,shake*Math.sin(e*0.09),shake*0.5*Math.cos(e*0.13),cw,ch);
+  mx.filter='none';
+  mx.fillStyle=`rgba(0,0,0,${0.5*dim})`; mx.fillRect(0,0,cw,ch);
+  const vg=mx.createRadialGradient(cw/2,ch/2,ch*0.25,cw/2,ch/2,ch*0.75);
+  vg.addColorStop(0,'rgba(200,0,0,0)');
+  vg.addColorStop(1,`rgba(200,0,0,${0.45*dim})`);
+  mx.fillStyle=vg; mx.fillRect(0,0,cw,ch);
+  mx.restore();
+
+  const keys=[];
+  if(info.tPos){
+    const {tPos,TS}=info;
+    // The key that was wanted pulses gold
+    if(expect>=0){
+      keys.push(expect);
+      const a=Math.min(1,Math.max(0,(e-150)/200));
+      if(a>0){
+        const p=0.6+0.4*Math.sin(e/90);
+        mx.save(); mx.globalAlpha=a;
+        mgDrawKey(tPos[expect].x,tPos[expect].y,TS,MG_SYMS[expect],'#3a2a00','#ffcc00','#ffe680',10+14*p);
+        mx.restore();
+      }
+    }
+    // The wrong key flashes red, shakes and is crossed out
+    const w=info.wrongAi;
+    if(w!=null&&w>=0){
+      keys.push(w);
+      const jx=e<450?Math.sin(e*0.12)*6*(1-e/450):0;
+      const tp=tPos[w], flash=e<300&&Math.floor(e/75)%2===0;
+      mgDrawKey(tp.x+jx,tp.y,TS,MG_SYMS[w],flash?'#aa1111':'#4a0808','#ff3333','#ff8888',16);
+      mx.save();
+      mx.strokeStyle='#ff3333'; mx.lineWidth=4; mx.lineCap='round';
+      mx.shadowColor='#ff0000'; mx.shadowBlur=8;
+      const m=14;
+      mx.beginPath();
+      mx.moveTo(tp.x+jx+m,tp.y+m); mx.lineTo(tp.x+jx+TS-m,tp.y+TS-m);
+      mx.moveTo(tp.x+jx+TS-m,tp.y+m); mx.lineTo(tp.x+jx+m,tp.y+TS-m);
+      mx.stroke(); mx.restore();
+    }
+    // Slot row: what was entered, where it broke, and the rest of the answer
+    if(info.seq){
+      const {seq,playerSeq,tileTop}=info, n=playerSeq.length;
+      mx.save(); mx.fillStyle='rgba(8,2,2,0.92)'; mx.fillRect(0,0,cw,tileTop-3); mx.restore();
+      const y=mgSlotY(tileTop), reveal=Math.min(1,Math.max(0,(e-400)/250));
+      for(let i=0;i<seq.length;i++){
+        const x=mgSlotX(cw,seq.length,i);
+        if(i<n) mgDrawSlot(x,y,MG_SYMS[playerSeq[i]],'done',1);
+        else if(i===n&&w!=null&&w>=0) mgDrawSlot(x,y,MG_SYMS[w],'wrong',1);
+        else if(i===n){
+          // Timed out here: blink, then show the glyph that was wanted
+          const on=reveal>0||Math.floor(e/160)%2===0;
+          mgDrawSlot(x,y,reveal>0?MG_SYMS[seq[i]]:null,on?'missed':'empty',1);
+        }
+        else mgDrawSlot(x,y,MG_SYMS[seq[i]],reveal>0?'answer':'empty',1,reveal>0?reveal:1);
+      }
+    }
+  }
+  // Why it failed, in place of the status line
+  mx.save();
+  mx.fillStyle='#ff5544'; mx.shadowColor='#ff0000'; mx.shadowBlur=6;
+  mx.font='bold 11px Cinzel,serif';
+  mx.textAlign='center'; mx.textBaseline='top';
+  mx.fillText(MG_REASONS[info.reason]||'The ritual breaks!',cw/2,info.tPos?4:info.ch-18);
+  mx.restore();
+  mgBanner(cw,mgBannerY(info,keys),'FIZZLED','#ff5533','The ritual breaks',e,300);
+}
+
+function mgDrawWin(info,snap,e,dur){
+  const {cw,ch}=info;
+  mx.drawImage(snap,0,0,cw,ch);
+  if(info.seq){
+    const {seq,tileTop}=info;
+    for(let i=0;i<seq.length;i++){
+      const k=Math.min(1,Math.max(0,(e-i*60)/220));
+      mgDrawSlot(mgSlotX(cw,seq.length,i),mgSlotY(tileTop),MG_SYMS[seq[i]],'done',1+0.3*Math.sin(k*Math.PI));
+    }
+  }
+  const f=Math.max(0,1-e/(dur*0.7));
+  const g=mx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,ch*0.7);
+  g.addColorStop(0,`rgba(255,230,140,${0.55*f})`);
+  g.addColorStop(1,`rgba(255,200,0,${0.15*f})`);
+  mx.fillStyle=g; mx.fillRect(0,0,cw,ch);
+  mgBanner(cw,mgBannerY(info,[]),'SPELL WOVEN','#ffcc33',null,e,60);
+}
+
+// Hold the minigame canvas for the end moment, then return to the battle.
+// info: {cw, ch, reason, and for glyph games: seq, playerSeq, tPos, TS, tileTop, wrongAi;
+// or bannerY for layouts without a keyboard}. Runs on mazeRAF so the training-mode exit
+// button still cancels it.
+function mgEnd(ok,info,cb){
+  const snap=document.createElement('canvas');
+  snap.width=mc.width; snap.height=mc.height;
+  snap.getContext('2d').drawImage(mc,0,0);
+  const dur=ok?MG_WIN_MS:MG_FAIL_MS;
+  const expect=!ok&&info.seq?info.seq[info.playerSeq.length]:-1;
+  if(!ok){
+    if(info.reason==='timeout') document.getElementById('pztimer').classList.add('urgent');
+    try{ if(navigator.vibrate) navigator.vibrate([70,50,110]); }catch(err){}
+  }
+  const t0=performance.now();
+  function frame(){
+    const e=performance.now()-t0;
+    if(e>=dur){ mazeRAF=null; puzzleFinish(ok,cb); return; }
+    if(ok) mgDrawWin(info,snap,e,dur); else mgDrawFail(info,snap,e,expect);
+    mazeRAF=requestAnimationFrame(frame);
+  }
+  mazeRAF=requestAnimationFrame(frame);
+}
+
 function launchBuffTileMatch(spell,spellId,who,cb){
   let done=false;
 
@@ -3628,7 +3863,7 @@ function launchBuffTileMatch(spell,spellId,who,cb){
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
       if(timeLeft<=2) timerEl.classList.add('urgent');
-      if(timeLeft<=0) finish(false);
+      if(timeLeft<=0) finish(false,'timeout');
     },1000);
   },MG_WATCH_MS);
 
@@ -3673,7 +3908,7 @@ function launchBuffTileMatch(spell,spellId,who,cb){
         setTimeout(()=>{
           revealed.forEach(t=>{t.flipped=false; t.mismatch=false;});
           revealed=[]; locked=false;
-          if(strikes>=MAX_STRIKES) finish(false);
+          if(strikes>=MAX_STRIKES) finish(false,'strikes');
         },550);
       }
     }
@@ -3686,7 +3921,10 @@ function launchBuffTileMatch(spell,spellId,who,cb){
     if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
     if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){if(done)return;done=true;cleanup();const perf=strikes===0;puzzleFinish(ok,r=>cb(r,perf));}
+  function finish(ok,reason){
+    if(done)return;done=true;cleanup();const perf=strikes===0;
+    mgEnd(ok,{cw,ch,reason,bannerY:CY},r=>cb(r,perf));
+  }
 
   function draw(ts){
     if(done) return;
@@ -3911,7 +4149,7 @@ function launchPatternEcho(spell,cb){
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
       if(timeLeft<=2) timerEl.classList.add('urgent');
-      if(timeLeft<=0) finish(false);
+      if(timeLeft<=0) finish(false,'timeout');
     },1000);
   }
 
@@ -3926,10 +4164,10 @@ function launchPatternEcho(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false); // wrong glyph in hard = fail
+          if(diffName==='hard') finish(false,'forbidden',ai); // wrong glyph in hard = fail
           return;                              // easy/normal: silently ignore
         }
-        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
         playerSeq.push(ai);
         if(playerSeq.length===seq.length) finish(true);
         return;
@@ -3944,7 +4182,10 @@ function launchPatternEcho(spell,cb){
     if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
     if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
+  function finish(ok,reason,wrongAi){
+    if(done)return;done=true;cleanup();draw();
+    mgEnd(ok,{cw,ch,seq,playerSeq,tPos,TS,tileTop,reason,wrongAi},cb);
+  }
 
   function draw(){
     const t=Date.now();
@@ -4077,15 +4318,8 @@ function launchPatternEcho(spell,cb){
       mx.textAlign='center'; mx.textBaseline='top';
       mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
 
-      // Progress dots — sit between status text and keyboard
-      const dotY=tileTop-10,dsp=14;
-      const ds=cw/2-(seq.length-1)*dsp/2;
-      for(let i=0;i<seq.length;i++){
-        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-        if(i<playerSeq.length){mx.fillStyle='#ffcc00';mx.shadowColor='#ffcc00';mx.shadowBlur=6;}
-        else{mx.fillStyle='rgba(255,204,0,0.2)';mx.shadowBlur=0;}
-        mx.fill(); mx.shadowBlur=0;
-      }
+      // Sequence slots — sit between status text and keyboard
+      mgDrawSlots(seq,playerSeq,cw,tileTop);
     }
   }
 
@@ -4198,7 +4432,7 @@ function launchRockfallPattern(spell,cb){
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
       if(timeLeft<=2) timerEl.classList.add('urgent');
-      if(timeLeft<=0) finish(false);
+      if(timeLeft<=0) finish(false,'timeout');
     },1000);
   }
 
@@ -4213,10 +4447,10 @@ function launchRockfallPattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false); // wrong glyph in hard = fail
+          if(diffName==='hard') finish(false,'forbidden',ai); // wrong glyph in hard = fail
           return;                              // easy/normal: silently ignore
         }
-        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
         playerSeq.push(ai);
         if(playerSeq.length===seq.length) finish(true);
         return;
@@ -4231,7 +4465,10 @@ function launchRockfallPattern(spell,cb){
     if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
     if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
+  function finish(ok,reason,wrongAi){
+    if(done)return;done=true;cleanup();draw();
+    mgEnd(ok,{cw,ch,seq,playerSeq,tPos,TS,tileTop,reason,wrongAi},cb);
+  }
 
   function drawRock(s,alpha){
     mx.save();
@@ -4416,15 +4653,8 @@ function launchRockfallPattern(spell,cb){
       mx.textAlign='center'; mx.textBaseline='top';
       mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
 
-      // Progress dots — sit between status text and keyboard
-      const dotY=tileTop-10,dsp=14;
-      const ds=cw/2-(seq.length-1)*dsp/2;
-      for(let i=0;i<seq.length;i++){
-        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-        if(i<playerSeq.length){mx.fillStyle='#ffcc00';mx.shadowColor='#ffcc00';mx.shadowBlur=6;}
-        else{mx.fillStyle='rgba(255,204,0,0.2)';mx.shadowBlur=0;}
-        mx.fill(); mx.shadowBlur=0;
-      }
+      // Sequence slots — sit between status text and keyboard
+      mgDrawSlots(seq,playerSeq,cw,tileTop);
     }
   }
 
@@ -4556,7 +4786,7 @@ function launchLightningPattern(spell,cb){
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
       if(timeLeft<=2) timerEl.classList.add('urgent');
-      if(timeLeft<=0) finish(false);
+      if(timeLeft<=0) finish(false,'timeout');
     },1000);
   }
 
@@ -4571,10 +4801,10 @@ function launchLightningPattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false);
+          if(diffName==='hard') finish(false,'forbidden',ai);
           return;
         }
-        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
         playerSeq.push(ai);
         if(playerSeq.length===seq.length) finish(true);
         return;
@@ -4589,7 +4819,10 @@ function launchLightningPattern(spell,cb){
     if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
     if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
+  function finish(ok,reason,wrongAi){
+    if(done)return;done=true;cleanup();draw();
+    mgEnd(ok,{cw,ch,seq,playerSeq,tPos,TS,tileTop,reason,wrongAi},cb);
+  }
 
   function draw(){
     const t=Date.now();
@@ -4762,15 +4995,8 @@ function launchLightningPattern(spell,cb){
       mx.textAlign='center'; mx.textBaseline='top';
       mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
 
-      // Progress dots
-      const dotY=tileTop-10,dsp=14;
-      const ds=cw/2-(seq.length-1)*dsp/2;
-      for(let i=0;i<seq.length;i++){
-        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-        if(i<playerSeq.length){mx.fillStyle='#88ccff';mx.shadowColor='#88ccff';mx.shadowBlur=6;}
-        else{mx.fillStyle='rgba(136,204,255,0.2)';mx.shadowBlur=0;}
-        mx.fill(); mx.shadowBlur=0;
-      }
+      // Sequence slots
+      mgDrawSlots(seq,playerSeq,cw,tileTop,'#88ccff');
     }
   }
 
@@ -4868,7 +5094,7 @@ function launchShadowCirclePattern(spell,cb){
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
       if(timeLeft<=2) timerEl.classList.add('urgent');
-      if(timeLeft<=0) finish(false);
+      if(timeLeft<=0) finish(false,'timeout');
     },1000);
   }
 
@@ -4883,10 +5109,10 @@ function launchShadowCirclePattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false); // wrong glyph in hard = fail
+          if(diffName==='hard') finish(false,'forbidden',ai); // wrong glyph in hard = fail
           return;                              // easy/normal: silently ignore
         }
-        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
         playerSeq.push(ai);
         if(playerSeq.length===seq.length) finish(true);
         return;
@@ -4901,7 +5127,10 @@ function launchShadowCirclePattern(spell,cb){
     if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
     if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
+  function finish(ok,reason,wrongAi){
+    if(done)return;done=true;cleanup();draw();
+    mgEnd(ok,{cw,ch,seq,playerSeq,tPos,TS,tileTop,reason,wrongAi},cb);
+  }
 
   // A moon phase (0 new … 4 full … 7 waning) of radius r at x,y: lit disc, then a shadow disc slid across it
   function drawMoon(x,y,r,k){
@@ -5101,15 +5330,8 @@ function launchShadowCirclePattern(spell,cb){
       mx.textAlign='center'; mx.textBaseline='top';
       mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
 
-      // Progress dots — sit between status text and keyboard
-      const dotY=tileTop-10,dsp=14;
-      const ds=cw/2-(seq.length-1)*dsp/2;
-      for(let i=0;i<seq.length;i++){
-        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-        if(i<playerSeq.length){mx.fillStyle='#ffcc00';mx.shadowColor='#ffcc00';mx.shadowBlur=6;}
-        else{mx.fillStyle='rgba(255,204,0,0.2)';mx.shadowBlur=0;}
-        mx.fill(); mx.shadowBlur=0;
-      }
+      // Sequence slots — sit between status text and keyboard
+      mgDrawSlots(seq,playerSeq,cw,tileTop);
     }
   }
 
@@ -5219,7 +5441,7 @@ function launchIcePattern(spell,cb){
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
       if(timeLeft<=2) timerEl.classList.add('urgent');
-      if(timeLeft<=0) finish(false);
+      if(timeLeft<=0) finish(false,'timeout');
     },1000);
   }
 
@@ -5234,10 +5456,10 @@ function launchIcePattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false);
+          if(diffName==='hard') finish(false,'forbidden',ai);
           return;
         }
-        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
         playerSeq.push(ai);
         if(playerSeq.length===seq.length) finish(true);
         return;
@@ -5252,7 +5474,10 @@ function launchIcePattern(spell,cb){
     if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
     if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
+  function finish(ok,reason,wrongAi){
+    if(done)return;done=true;cleanup();draw();
+    mgEnd(ok,{cw,ch,seq,playerSeq,tPos,TS,tileTop,reason,wrongAi},cb);
+  }
 
   function draw(){
     const t=Date.now();
@@ -5404,15 +5629,8 @@ function launchIcePattern(spell,cb){
       mx.textAlign='center'; mx.textBaseline='top';
       mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
 
-      // Progress dots — sit between status text and keyboard
-      const dotY=tileTop-10,dsp=14;
-      const ds=cw/2-(seq.length-1)*dsp/2;
-      for(let i=0;i<seq.length;i++){
-        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-        if(i<playerSeq.length){mx.fillStyle='#88ddff';mx.shadowColor='#88ddff';mx.shadowBlur=6;}
-        else{mx.fillStyle='rgba(136,221,255,0.2)';mx.shadowBlur=0;}
-        mx.fill(); mx.shadowBlur=0;
-      }
+      // Sequence slots — sit between status text and keyboard
+      mgDrawSlots(seq,playerSeq,cw,tileTop,'#88ddff');
     }
   }
 
@@ -5520,7 +5738,7 @@ function launchArcanePattern(spell,cb){
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
       if(timeLeft<=2) timerEl.classList.add('urgent');
-      if(timeLeft<=0) finish(false);
+      if(timeLeft<=0) finish(false,'timeout');
     },1000);
   }
 
@@ -5535,10 +5753,10 @@ function launchArcanePattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false);
+          if(diffName==='hard') finish(false,'forbidden',ai);
           return;
         }
-        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
         playerSeq.push(ai);
         if(playerSeq.length===seq.length) finish(true);
         return;
@@ -5553,7 +5771,10 @@ function launchArcanePattern(spell,cb){
     if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
     if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
+  function finish(ok,reason,wrongAi){
+    if(done)return;done=true;cleanup();draw();
+    mgEnd(ok,{cw,ch,seq,playerSeq,tPos,TS,tileTop,reason,wrongAi},cb);
+  }
 
   function draw(){
     const t=Date.now();
@@ -5693,15 +5914,8 @@ function launchArcanePattern(spell,cb){
       mx.textAlign='center'; mx.textBaseline='top';
       mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
 
-      // Progress dots
-      const dotY=tileTop-10,dsp=14;
-      const ds=cw/2-(seq.length-1)*dsp/2;
-      for(let i=0;i<seq.length;i++){
-        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-        if(i<playerSeq.length){mx.fillStyle='#cc99ff';mx.shadowColor='#cc99ff';mx.shadowBlur=6;}
-        else{mx.fillStyle='rgba(204,153,255,0.2)';mx.shadowBlur=0;}
-        mx.fill(); mx.shadowBlur=0;
-      }
+      // Sequence slots
+      mgDrawSlots(seq,playerSeq,cw,tileTop,'#cc99ff');
     }
   }
 
@@ -5814,7 +6028,7 @@ function launchDispelPattern(spell,cb){
       if(done) return;
       timeLeft--; timerEl.textContent=timeLeft;
       if(timeLeft<=2) timerEl.classList.add('urgent');
-      if(timeLeft<=0) finish(false);
+      if(timeLeft<=0) finish(false,'timeout');
     },1000);
   }
 
@@ -5829,10 +6043,10 @@ function launchDispelPattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false);
+          if(diffName==='hard') finish(false,'forbidden',ai);
           return;
         }
-        if(ai!==seq[playerSeq.length]){finish(false);return;}
+        if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
         playerSeq.push(ai);
         if(playerSeq.length===seq.length) finish(true);
         return;
@@ -5847,7 +6061,10 @@ function launchDispelPattern(spell,cb){
     if(mazeTid){clearInterval(mazeTid);mazeTid=null;}
     if(mazeRAF){cancelAnimationFrame(mazeRAF);mazeRAF=null;}
   }
-  function finish(ok){if(done)return;done=true;cleanup();puzzleFinish(ok,cb);}
+  function finish(ok,reason,wrongAi){
+    if(done)return;done=true;cleanup();draw();
+    mgEnd(ok,{cw,ch,seq,playerSeq,tPos,TS,tileTop,reason,wrongAi},cb);
+  }
 
   function drawRingCircle(r,alpha){
     if(alpha<=0.01) return;
@@ -6021,15 +6238,8 @@ function launchDispelPattern(spell,cb){
       mx.textAlign='center'; mx.textBaseline='top';
       mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
 
-      // Progress dots
-      const dotY=tileTop-10,dsp=14;
-      const ds=cw/2-(seq.length-1)*dsp/2;
-      for(let i=0;i<seq.length;i++){
-        mx.beginPath(); mx.arc(ds+i*dsp,dotY,4,0,Math.PI*2);
-        if(i<playerSeq.length){mx.fillStyle='#cc99ff';mx.shadowColor='#cc99ff';mx.shadowBlur=6;}
-        else{mx.fillStyle='rgba(204,153,255,0.2)';mx.shadowBlur=0;}
-        mx.fill(); mx.shadowBlur=0;
-      }
+      // Sequence slots
+      mgDrawSlots(seq,playerSeq,cw,tileTop,'#cc99ff');
     }
   }
 
