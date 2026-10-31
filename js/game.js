@@ -1101,17 +1101,25 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.beginPath(); bx.arc(x,wy,sz*.72,rot,rot+Math.PI*.7); bx.stroke();
     bx.beginPath(); bx.arc(x,wy,sz*.72,rot+Math.PI,rot+Math.PI*1.7); bx.stroke();
   }
-  // Arcane Weave: golden shimmer threads
+  // Arcane Weave: one Arcane rune (Ω ∞ Ψ θ) orbits per empowered strike left, joined by a faint
+  // woven thread; each charge used drops a rune. Runes passing behind the wizard dim and shrink.
   if(state&&state.arcaneWeave>0){
-    bx.save(); bx.translate(x,wy);
-    for(let i=0;i<state.arcaneWeave;i++){
-      const a=t/600+i/3*Math.PI*2;
-      bx.globalAlpha=0.6+0.25*Math.sin(t/250+i*1.5);
-      bx.strokeStyle='#ffdd44'; bx.lineWidth=1.5; bx.shadowColor='#ffdd44'; bx.shadowBlur=6;
-      bx.beginPath(); bx.moveTo(Math.cos(a)*sz*.3,Math.sin(a)*sz*.18);
-      bx.lineTo(Math.cos(a+.9)*sz*.65,Math.sin(a+.9)*sz*.4); bx.stroke();
+    const n=Math.min(state.arcaneWeave,4), runes=['Ω','∞','Ψ','θ'];
+    const rx=sz*.78, ry=sz*.2, cy=wy+sz*.12;
+    bx.save();
+    bx.strokeStyle=`rgba(210,160,255,${0.35+0.1*Math.sin(t/400)})`; bx.lineWidth=1.5;
+    bx.setLineDash([sz*.04,sz*.05]); bx.lineDashOffset=-t/40;
+    bx.beginPath(); bx.ellipse(x,cy,rx,ry,0,0,Math.PI*2); bx.stroke(); bx.setLineDash([]);
+    bx.textAlign='center'; bx.textBaseline='middle';
+    for(let i=0;i<n;i++){
+      const a=t/1100+i/n*Math.PI*2, depth=(Math.sin(a)+1)/2;   // 0 = behind, 1 = in front
+      const gx=x+Math.cos(a)*rx, gy=cy+Math.sin(a)*ry;
+      bx.globalAlpha=(0.5+0.5*depth)*(0.85+0.15*Math.sin(t/260+i*1.7));
+      bx.font=`bold ${Math.round(sz*(.15+.07*depth))}px serif`;
+      bx.shadowColor="#bb66ff"; bx.shadowBlur=14;
+      bx.fillStyle='#ffe9a8'; bx.fillText(runes[i],gx,gy);
     }
-    bx.globalAlpha=1; bx.shadowBlur=0; bx.restore();
+    bx.restore();
   }
   // Spellbound: pulsing purple chain on this wizard (they have the debuff)
   if(state&&state.spellbound){
@@ -1398,7 +1406,7 @@ function wizVisuals(st){
   const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra};
   st.effects.forEach(e=>{
     const k=WIZ_VISUAL_BY_ID[e.id];
-    if(k) v[k]=e.rounds||1;
+    if(k) v[k]=e.type==='weave'?e.charges:(e.rounds||1);
     if(e.type==='empower') v.empowered=true;
     if(e.type==='dot'&&e.id.startsWith('dot-')) v[e.elem==='fire'?'burn':'poison']=1;   // strike riders
   });
