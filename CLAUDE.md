@@ -56,6 +56,8 @@ Each spell's minigame has three difficulty modes. Difficulty is set globally in 
 
 **Pacing (all minigames):** 5 s to watch (`MG_WATCH_MS`), then 5 s to enter (`MG_INPUT_S`). Sequence length comes from cast strength, not difficulty: `spell.tier` 1 / 2 / 3 (inner / middle / outer strength ring) means 2 / 3 / 4 glyphs. The tile-match uses 2 / 3 / 4 pairs. With no tier, a cast uses the middle ring. The shared helpers `mgSeqLen` / `mgSeq` / `mgSpawnInterval` sit just above `launchBuffTileMatch`.
 
+**Ending (all minigames):** every minigame ends through `mgEnd(ok, info, cb)` instead of calling `puzzleFinish` directly, and never cuts straight back to the battle. Failure holds for `MG_FAIL_MS` (1.3 s): the canvas greys out and shakes, the wrong key is crossed out in red, the key that was wanted pulses gold, the slot row shows the rest of the answer, and a FIZZLED banner gives the reason (`wrong` / `forbidden` / `timeout` / `strikes`, see `MG_REASONS`). Phones also vibrate. Success holds for `MG_WIN_MS` (0.75 s) with a gold flash and SPELL WOVEN. During input, glyph games draw the sequence as a row of slots (`mgDrawSlots`) that fill in as you tap. Pass the reason (and the wrong glyph) to `finish(ok, reason, wrongAi)`.
+
 ### Inferno (launchPatternEcho) — the reference implementation
 The Inferno minigame was redesigned as an animated rising-glyph mechanic and serves as the model for how the new system should work in all spells.
 
