@@ -136,10 +136,10 @@ function buildBracket(){
     } else rlabel='Round '+(i+1);
     col.innerHTML=
       '<div class="bracket-rlabel">'+rlabel+'</div>'+
-      '<div class="bracket-slot bslot-player"><img src="portraits/'+p1Key+'.png" alt="'+p1Cfg.name+'"></div>'+
+      '<div class="bracket-slot bslot-player"><img src="portraits/small/'+p1Key+'.jpg" alt="'+p1Cfg.name+'"></div>'+
       '<div class="bracket-cross">⚔</div>'+
       '<div class="bracket-slot bslot-opp" id="bopp-'+i+'">'+
-        '<img src="portraits/'+oppKey+'.png" alt="'+oppCfg.name+'">'+
+        '<img src="portraits/small/'+oppKey+'.jpg" alt="'+oppCfg.name+'">'+
         '<div class="bslot-name">'+oppCfg.name+'</div>'+
         (isBossRound||isFinal?'<div class="bslot-boss">'+(isFinal?'FINAL BOSS':'BOSS')+'</div>':'')+
       '</div>';
@@ -1486,7 +1486,7 @@ function buildMultiHUD(){
   document.getElementById('mhud').innerHTML=PLAYERS.map(w=>{
     const cfg=seatCfg(w), team=seatSetup&&seatSetup.find(st=>st.who===w).team;
     return `<div class="mh-card" id="mh-${w}" style="--mh-col:${cfg.col}">`+
-      `<img class="mh-img" src="portraits/${seatKey(w)}.png" alt=""><span class="mh-name">${cfg.name}</span>`+
+      `<img class="mh-img" src="portraits/small/${seatKey(w)}.jpg" alt=""><span class="mh-name">${cfg.name}</span>`+
       (team?`<span class="mh-team">Team ${team}</span>`:'')+
       `<div class="mh-bar mh-hp"><div class="mh-fill"></div></div><div class="mh-bar mh-mana"><div class="mh-fill"></div></div>`+
       `<div class="mh-nums"><span class="mh-hpn"></span><span class="mh-mn"></span><span class="mh-ward"></span></div></div>`;
@@ -2010,7 +2010,7 @@ function showReveal(){
     const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${hitsAllFoes(who,act)?'All foes':seatCfg(act.target).name}</span>`:
       act.ally&&act.ally!==who?`<span class="rv-aim">→ ${seatCfg(act.ally).name}</span>`:'';
     return `<div class="rv-card" style="--rv-col:${cfg.col}"><div class="rv-inner">`+
-      `<div class="rv-face rv-back"><img class="rv-portrait" src="portraits/${seatKey(who)}.png" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
+      `<div class="rv-face rv-back"><img class="rv-portrait" src="portraits/small/${seatKey(who)}.jpg" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
       `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}<span class="rv-name">${label}</span></div>`+
       `</div></div>`;
   }).join('');
@@ -2503,7 +2503,7 @@ function showTargetPicker(who,foes,cb,title='Choose a target'){
     const ward=hasWard(st)?`<span class="tg-ward">🛡 ${el.icon} ${st.shieldHp}</span>`:'';
     const ban=(cfg.forbidden||[]).map(id=>elemById(id).icon).join('');
     return `<button class="tg-foe" data-who="${w}" style="--tg-col:${cfg.col}">`+
-      `<img src="portraits/${seatKey(w)}.png" alt=""><span class="tg-name">${cfg.name}${w===who?' (you)':''}</span>`+
+      `<img src="portraits/small/${seatKey(w)}.jpg" alt=""><span class="tg-name">${cfg.name}${w===who?' (you)':''}</span>`+
       `<span class="tg-hp">❤ ${st.hp} / ${st.maxHp}</span>${ward}`+
       (ban?`<span class="tg-ban">⛔ ${ban}</span>`:'')+`</button>`;
   }).join('');
@@ -3216,7 +3216,7 @@ function showRetryScreen(){
   // Populate opponent taunt
   if(p2Cfg && p2Cfg.taunts && p2Cfg.taunts.length){
     const taunt=p2Cfg.taunts[Math.floor(_rng()*p2Cfg.taunts.length)];
-    document.getElementById('retry-portrait').src='portraits/'+p2Key+'.png';
+    document.getElementById('retry-portrait').src='portraits/small/'+p2Key+'.jpg';
     document.getElementById('retry-portrait').alt=p2Cfg.name;
     document.getElementById('retry-taunt-text').textContent='“'+taunt+'”';
     document.getElementById('retry-taunt-attr').textContent='— '+p2Cfg.name+', '+p2Cfg.title;
@@ -6073,7 +6073,7 @@ function showWizardDetail(key){
   const col=cfg.col||'#f0cc6a';
   const portrait=document.getElementById('wd-portrait');
   portrait.style.display='';
-  portrait.src='portraits/'+key+'.png';
+  portrait.src='portraits/medium/'+key+'.jpg';
   const nameEl=document.getElementById('wd-name');
   nameEl.textContent=cfg.name||key.toUpperCase();
   nameEl.style.color=col;
@@ -6093,11 +6093,11 @@ function pickCharacter(key){
   if(trainingMode){
     if(trainingPickPhase==='p1'){
       p1Key=key; p1Cfg=CHAR_DEFS[key];
-      document.getElementById('tp-p1-portrait').src='portraits/'+key+'.png';
+      document.getElementById('tp-p1-portrait').src='portraits/small/'+key+'.jpg';
       document.getElementById('tp-p1-name').textContent=p1Cfg.name;
     } else if(trainingPickPhase==='p2'){
       p2Key=key; p2Cfg=CHAR_DEFS[key];
-      document.getElementById('tp-p2-portrait').src='portraits/'+key+'.png';
+      document.getElementById('tp-p2-portrait').src='portraits/small/'+key+'.jpg';
       document.getElementById('tp-p2-name').textContent=p2Cfg.name;
     }
     trainingPickPhase=null;
@@ -6163,11 +6163,11 @@ function startTwoPlayerBattle(){
   updateActionBar(p1Cfg);
   document.getElementById('p1name').textContent=p1Cfg.name+' (P1)';
   document.getElementById('p1-portrait').style.visibility='';
-  document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
+  document.getElementById('p1-portrait').src='portraits/small/'+p1Key+'.jpg';
   const p2hud=document.querySelector('.phud-p2');
   p2hud.style.visibility='';
   document.getElementById('p2name').textContent=p2Cfg.name+' (P2)';
-  document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
+  document.getElementById('p2-portrait').src='portraits/small/'+p2Key+'.jpg';
   newState();
   gs.myTurn=false; gs.busy=true;
   gameEnded=false;
@@ -6185,7 +6185,7 @@ function showHandoffOverlay(toPlayer, callback){
   document.getElementById('handoff-player-num').textContent='Player '+num;
   document.getElementById('handoff-char-name').textContent=cfg.name.toUpperCase();
   const portrait=document.getElementById('handoff-portrait');
-  portrait.src='portraits/'+seatKey(toPlayer)+'.png';
+  portrait.src='portraits/small/'+seatKey(toPlayer)+'.jpg';
   portrait.style.borderColor=cfg.col;
   const p1s='★'.repeat(Math.min(2,p1MatchWins))+'☆'.repeat(Math.max(0,2-p1MatchWins));
   const p2s='★'.repeat(Math.min(2,p2MatchWins))+'☆'.repeat(Math.max(0,2-p2MatchWins));
@@ -6207,11 +6207,11 @@ function startNextBattle(){
   updateActionBar(p1Cfg);
   document.getElementById('p1name').textContent=p1Cfg.name;
   document.getElementById('p1-portrait').style.visibility='';
-  document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
+  document.getElementById('p1-portrait').src='portraits/small/'+p1Key+'.jpg';
   const p2hud=document.querySelector('.phud-p2');
   p2hud.style.visibility='';
   document.getElementById('p2name').textContent=p2Cfg.name;
-  document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
+  document.getElementById('p2-portrait').src='portraits/small/'+p2Key+'.jpg';
   // Show fight progress in HUD
   const fightLbl=document.getElementById('fightlbl');
   if(fightLbl){
@@ -6233,11 +6233,11 @@ function startTrainingBattle(){
   updateActionBar(p1Cfg);
   document.getElementById('p1name').textContent=p1Cfg.name;
   document.getElementById('p1-portrait').style.visibility='';
-  document.getElementById('p1-portrait').src='portraits/'+p1Key+'.png';
+  document.getElementById('p1-portrait').src='portraits/small/'+p1Key+'.jpg';
   const p2hud=document.querySelector('.phud-p2');
   p2hud.style.visibility='';
   document.getElementById('p2name').textContent=p2Cfg.name;
-  document.getElementById('p2-portrait').src='portraits/'+p2Key+'.png';
+  document.getElementById('p2-portrait').src='portraits/small/'+p2Key+'.jpg';
   const fightLbl=document.getElementById('fightlbl');
   if(fightLbl) fightLbl.textContent='Training';
   document.getElementById('btn-training-menu').style.display='block';
@@ -6555,7 +6555,7 @@ function buildTutorialUI(){
     const col=CHAR_COLORS_TUT[key];
     const name=CHAR_NAMES_TUT[key];
     const img=document.createElement('img');
-    img.src='portraits/'+key+'.png';
+    img.src='portraits/small/'+key+'.jpg';
     img.alt=name;
     img.style.borderColor=key===activeTutTopic?col:'rgba(201,168,76,0.3)';
     const lbl=document.createElement('span');
@@ -6597,7 +6597,7 @@ function renderTutConvo(){
     div.style.animationDelay=(i*0.06)+'s';
     const portrait=document.createElement('img');
     portrait.className='tut-msg-portrait';
-    portrait.src='portraits/'+msg.key+'.png';
+    portrait.src='portraits/small/'+msg.key+'.jpg';
     portrait.alt=name;
     portrait.style.borderColor=col;
     const bubble=document.createElement('div');
@@ -6743,11 +6743,11 @@ window.addEventListener('DOMContentLoaded', ()=>{
     twoPlayerMode=false;
     // Initialise with defaults (updated once CHAR_DEFS loads)
     if(CHAR_DEFS[p1Key]){
-      document.getElementById('tp-p1-portrait').src='portraits/'+p1Key+'.png';
+      document.getElementById('tp-p1-portrait').src='portraits/small/'+p1Key+'.jpg';
       document.getElementById('tp-p1-name').textContent=CHAR_DEFS[p1Key].name;
     }
     if(CHAR_DEFS[p2Key]){
-      document.getElementById('tp-p2-portrait').src='portraits/'+p2Key+'.png';
+      document.getElementById('tp-p2-portrait').src='portraits/small/'+p2Key+'.jpg';
       document.getElementById('tp-p2-name').textContent=CHAR_DEFS[p2Key].name;
     }
     document.getElementById('tai-on').classList.add('active');
