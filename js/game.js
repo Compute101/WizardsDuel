@@ -96,7 +96,7 @@ function newState(){
   gs={
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[],
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], fireballs:[], explosions:[],
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1670,7 +1670,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickFireballs(); tickExplosions(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
@@ -1855,6 +1855,110 @@ function lunge(who,amt,cb){
 // Column of blue mana-fire on a target (drawn by tickManaBurnFire)
 function spawnManaBurnFire(x,y){ gs.manaBurnFires.push({x,y,end:Date.now()+2800}); }
 
+// Fire Strike fireball (plain Fire damage off the wheel), drawn by tickFireballs.
+// Purely visual, so it uses Math.random, never the replayable _rng.
+// Charge: it swells in front of the caster to a size set by the damage it will deal.
+// Flight: it streaks across trailing flame. On arrival cb() runs the strike, whose
+// impact (ELEM_IMPACT_VFX.fire) is spawnFireExplosion, scaled by the damage dealt.
+const FIREBALL_CHARGE_MS=900, FIREBALL_FLIGHT_MS=420;
+function fireballRadius(dmg){ return bH*Math.min(.085,.012+.0016*Math.max(1,dmg)); }
+// The damage a strike is about to deal, before the target's defences — for sizing the fireball
+function previewStrikeDmg(who,elem,power){
+  const st=gs[who];
+  let m=seatCfg(who).dmgMult||1;
+  const emp=effectsOf(st,'empower').find(e=>!e.elem||e.elem===elem);
+  if(emp) m*=emp.mult;
+  const fr=effectsOf(st,'frenzy')[0]; if(fr) m*=fr.mult;
+  const wv=effectsOf(st,'weave')[0];
+  return Math.round((power*m+(wv?wv.bonus:0))*suddenDeathMult());
+}
+function spawnFireball(who,tgt,dmg,cb){
+  if(simMode){ if(cb) cb(); return; }
+  const dir=seatX(tgt)>=seatX(who)?1:-1;
+  const x1=seatX(who)+dir*wizSize()*.28, y1=wizMidY()-bH*.02;
+  anim(who,'cast',FIREBALL_CHARGE_MS+FIREBALL_FLIGHT_MS);
+  gs.fireballs.push({x1,y1,x2:seatX(tgt),y2:wizMidY(),R:fireballRadius(dmg),start:Date.now(),cb,done:false,lx:x1,ly:y1});
+}
+function drawFireballCore(x,y,r,t){
+  const flick=1+.08*Math.sin(t/45)+.05*Math.sin(t/23);
+  const rr=r*flick;
+  const g=bx.createRadialGradient(x,y,0,x,y,rr*1.9);
+  g.addColorStop(0,'rgba(255,170,40,.55)'); g.addColorStop(1,'rgba(255,60,0,0)');
+  bx.fillStyle=g; bx.beginPath(); bx.arc(x,y,rr*1.9,0,Math.PI*2); bx.fill();
+  const c=bx.createRadialGradient(x-rr*.2,y-rr*.2,0,x,y,rr);
+  c.addColorStop(0,'#ffffee'); c.addColorStop(.3,'#ffdd55'); c.addColorStop(.7,'#ff7711'); c.addColorStop(1,'#cc2200');
+  bx.fillStyle=c; bx.shadowColor='#ff5500'; bx.shadowBlur=rr*1.2;
+  bx.beginPath(); bx.arc(x,y,rr,0,Math.PI*2); bx.fill(); bx.shadowBlur=0;
+}
+function tickFireballs(){
+  const now=Date.now();
+  gs.fireballs=gs.fireballs.filter(f=>!f.done);
+  gs.fireballs.forEach(f=>{
+    const el=now-f.start;
+    let x,y,r;
+    if(el<FIREBALL_CHARGE_MS){
+      // Charging: grows (ease-out) with flame motes spiralling in
+      const k=el/FIREBALL_CHARGE_MS, e=1-Math.pow(1-k,2);
+      x=f.x1; y=f.y1; r=f.R*(.15+.85*e);
+      if(Math.random()<.7*fk){
+        const a=Math.random()*Math.PI*2, d=f.R*(2.2+Math.random()*1.5);
+        gs.parts.push({x:x+Math.cos(a)*d,y:y+Math.sin(a)*d,col:Math.random()<.5?'#ffaa22':'#ff5511',
+          vx:-Math.cos(a)*d/14,vy:-Math.sin(a)*d/14,sz:1.5+Math.random()*2,life:1,dec:.07,noGrav:true});
+      }
+    } else {
+      const k=Math.min(1,(el-FIREBALL_CHARGE_MS)/FIREBALL_FLIGHT_MS), e=k*k;   // accelerates away
+      x=f.x1+(f.x2-f.x1)*e; y=f.y1+(f.y2-f.y1)*e-Math.sin(k*Math.PI)*bH*.03; r=f.R;
+      // Flame trail along the path travelled since last frame
+      const steps=Math.max(1,Math.ceil(Math.hypot(x-f.lx,y-f.ly)/(r*.5)));
+      for(let i=0;i<steps;i++){
+        const s=i/steps, tx=f.lx+(x-f.lx)*s, ty=f.ly+(y-f.ly)*s;
+        gs.parts.push({x:tx+(Math.random()-.5)*r,y:ty+(Math.random()-.5)*r,col:['#ffdd55','#ff8822','#ff4411','#552211'][Math.floor(Math.random()*4)],
+          vx:(Math.random()-.5)*.6,vy:-.4-Math.random()*.8,sz:r*(.25+Math.random()*.35),life:1,dec:.05+Math.random()*.04,noGrav:true});
+      }
+      if(k>=1){ f.done=true; if(f.cb) f.cb(); return; }
+    }
+    f.lx=x; f.ly=y;
+    drawFireballCore(x,y,r,now);
+  });
+}
+// Fiery explosion on a target, sized by the damage: a white-hot flash, an expanding
+// shockwave ring, a billowing fireball and flying embers, then rising smoke
+const FIRE_EXPLOSION_MS=750;
+function spawnFireExplosion(x,y,dmg){
+  if(simMode) return;
+  const R=fireballRadius(dmg)*2.6;
+  gs.explosions.push({x,y,R,start:Date.now()});
+  const n=Math.round(14+dmg*.9);
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, sp=(2+Math.random()*4.5)*(R/(bH*.09));
+    gs.parts.push({x,y,col:['#ffffaa','#ffcc33','#ff7711','#ff3300'][Math.floor(Math.random()*4)],
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1.5,sz:1.5+Math.random()*3,life:1,dec:.018+Math.random()*.025});
+  }
+  vfxDrift(x,y,['#443322','#554433','#332222'],Math.round(6+dmg*.3),{w:.08,lift:-1.2,dec:.012});
+}
+function tickExplosions(){
+  const now=Date.now();
+  gs.explosions=gs.explosions.filter(e=>now-e.start<FIRE_EXPLOSION_MS);
+  gs.explosions.forEach(e=>{
+    const k=(now-e.start)/FIRE_EXPLOSION_MS, out=1-Math.pow(1-k,3);
+    bx.save();
+    // Shockwave ring
+    bx.globalAlpha=(1-k)*.8; bx.strokeStyle='#ffcc66'; bx.lineWidth=Math.max(1,e.R*.12*(1-k));
+    bx.shadowColor='#ff8800'; bx.shadowBlur=16;
+    bx.beginPath(); bx.ellipse(e.x,e.y,e.R*1.5*out,e.R*1.1*out,0,0,Math.PI*2); bx.stroke();
+    // Billowing fireball: swells fast, then fades and darkens
+    const r=e.R*(.4+.8*out), a=Math.max(0,1-k*1.15);
+    const g=bx.createRadialGradient(e.x,e.y,0,e.x,e.y,r);
+    g.addColorStop(0,`rgba(255,255,220,${a})`); g.addColorStop(.25,`rgba(255,210,80,${a})`);
+    g.addColorStop(.6,`rgba(255,100,20,${a*.85})`); g.addColorStop(1,'rgba(160,30,0,0)');
+    bx.globalAlpha=1; bx.shadowBlur=0; bx.fillStyle=g;
+    bx.beginPath(); bx.arc(e.x,e.y,r,0,Math.PI*2); bx.fill();
+    // Initial white-hot flash
+    if(k<.2){ bx.globalAlpha=1-k/.2; bx.fillStyle='#ffffff'; bx.beginPath(); bx.arc(e.x,e.y,e.R*.5,0,Math.PI*2); bx.fill(); }
+    bx.restore();
+  });
+}
+
 // Shadow circle on a target (Dark strikes, drawn by tickShadowCircles): a purple ring opens,
 // the Dark runes ☽ ⊗ ∇ Ω rise from its centre one by one and orbit it, then collapse inward
 // into a burst — the battle-screen version of the Shadow Circle minigame's watch phase.
@@ -1980,7 +2084,7 @@ const VFX={
 // Plain element strikes off the wheel (the original Inferno / Lightning Bolt / Frost Nova /
 // Arcane Surge impacts; Dark the Shadow Circle, Physical the melee sparks). An empowered hit bursts bigger.
 const ELEM_IMPACT_VFX={
-  fire:     (c,n)=>{ spawnParts(c.tx,c.y,'#ff6622',n); flash('#ff6622'); },
+  fire:     (c,n,dmg)=>{ spawnFireExplosion(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); flash('#ff6622'); },
   ice:      (c,n)=>{ spawnParts(c.tx,c.y,'#88ddff',n); flash('#88ddff'); },
   lightning:(c,n)=>{ spawnParts(c.tx,c.y,'#ffee44',n); spawnParts(c.tx,c.y,'#ffffff',8); flash('#ffee44'); },
   arcane:   (c,n)=>{ spawnParts(c.tx,c.y,'#4499ff',n); spawnParts(c.tx,c.y,'#ddeeff',6); flash('#4499ff'); },
@@ -2908,12 +3012,20 @@ function executeWheel(who,action,cb){
     elemStrikeVolley(who,tgts,{elem:action.elem,tier:action.tier,power},()=>combatTimeout(cb,600));
     return;
   }
-  fanOut(who,tgts,ELEM_PROJ[action.elem],el.col);
-  spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,()=>{
+  const land=()=>{
     if(action.cat==='dispel') elemDispelHit(tgt,action.elem,power,action.tier);
     else elemStrike(who,tgts,{elem:action.elem,tier:action.tier,power});
     combatTimeout(cb,600);
-  });
+  };
+  if(action.cat==='damage'&&action.elem==='fire'){
+    // Fire Strike: a fireball swells in the caster's hands (bigger for more damage), then flies
+    const dmg=previewStrikeDmg(who,'fire',power);
+    tgts.slice(1).forEach(t=>spawnFireball(who,t,dmg,()=>{}));
+    spawnFireball(who,tgt,dmg,land);
+    return;
+  }
+  fanOut(who,tgts,ELEM_PROJ[action.elem],el.col);
+  spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,land);
 }
 
 function executeSignature(who,sp,action,cb){
@@ -3200,7 +3312,7 @@ function strikeFinish(who,r,o,b,hit){
   const burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+b.burn;
   const ctx=vfxCtx(who,tgt);
   if(o.vfx) o.vfx(ctx);
-  else { ELEM_IMPACT_VFX[o.elem](ctx,b.emp?38:22); vfxStrikeAnim(who,tgt); }
+  else { ELEM_IMPACT_VFX[o.elem](ctx,b.emp?38:22,r.dmg); vfxStrikeAnim(who,tgt); }
   if(hit.hp>0){
     if(o.lifesteal){ elemHeal(who,Math.round(hit.hp*o.lifesteal),'🩸'); VFX.lifesteal(seatX(who)); }
     if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',elem:o.elem,name:o.name||el.name,icon:el.icon},o.dot),who);
@@ -3735,7 +3847,7 @@ function resetTrainingRound(knockedOut){
     gs.p1=newSeat(p1Cfg,p1Key);
     gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
-    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[];
+    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.fireballs=[]; gs.explosions=[];
     gs.pending={};
     const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
     addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
@@ -6787,7 +6899,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[];
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.fireballs=[]; gs.explosions=[];
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
@@ -6809,7 +6921,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[];
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.fireballs=[]; gs.explosions=[];
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
