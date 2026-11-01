@@ -96,7 +96,7 @@ function newState(){
   gs={
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], wardUnravels:[], fireballs:[], explosions:[],
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], wardUnravels:[], fireballs:[], explosions:[], boulders:[], quake:null,
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1654,9 +1654,10 @@ function battleLoop(ts){
   PLAYERS.forEach(w=>tickAnimFrame(w,dt));
   resizeBC();
   bx.setTransform(1,0,0,1,0,0);
-  bx.save(); bx.translate(0,bOffY); drawBG(); bx.restore();
+  const q=quakeOffset();
+  bx.save(); bx.translate(q.x,bOffY+q.y); drawBG(); bx.restore();
   fillSceneBands();
-  bx.setTransform(1,0,0,1,0,bOffY);   // everything else draws in scene coordinates
+  bx.setTransform(1,0,0,1,q.x,bOffY+q.y);   // everything else draws in scene coordinates
   // Wizard height: capped by width so shield bubbles stay (mostly) on screen on tall phones
   const many=PLAYERS.length>2, gy=wizFeetY(), wsz=wizSize();
   PLAYERS.forEach(w=>{
@@ -1670,7 +1671,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickBoulders(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
@@ -1921,6 +1922,93 @@ function tickFireballs(){
     drawFireballCore(x,y,r,now);
   });
 }
+// Physical Strike boulder (plain Physical damage off the wheel), drawn by tickBoulders.
+// Purely visual, so it uses Math.random, never the replayable _rng.
+// Form: grit and pebbles spiral in above the caster's head and pack into a boulder
+// sized by the damage. Flight: it heaves up and over, then drops near-vertically onto
+// the target under gravity. On arrival cb() runs the strike, whose impact
+// (ELEM_IMPACT_VFX.physical) is spawnBoulderImpact: shattering rock, dust and a quake.
+const BOULDER_FORM_MS=950, BOULDER_FLIGHT_MS=620;
+function boulderRadius(dmg){ return bH*Math.min(.09,.024+.0018*Math.max(1,dmg)); }
+function spawnBoulder(who,tgt,dmg,cb){
+  if(simMode){ if(cb) cb(); return; }
+  const x1=seatX(who), y1=wizFeetY()-wizSize()*1.25;
+  anim(who,'cast',BOULDER_FORM_MS+BOULDER_FLIGHT_MS);
+  const verts=[]; for(let j=0;j<9;j++) verts.push(.74+.3*Math.random());
+  gs.boulders.push({x1,y1,x2:seatX(tgt),y2:wizMidY(),R:boulderRadius(dmg),start:Date.now(),cb,done:false,
+    verts,spin:(seatX(tgt)>=x1?1:-1)*(.004+Math.random()*.002),rot:Math.random()*6.3,lx:x1,ly:y1});
+}
+function drawBoulderCore(x,y,r,rot,verts,alpha){
+  bx.save(); bx.translate(x,y); bx.rotate(rot); bx.globalAlpha=alpha;
+  const g=bx.createRadialGradient(-r*.35,-r*.35,r*.1,0,0,r*1.15);
+  g.addColorStop(0,'#d4b488'); g.addColorStop(.55,'#8b6b45'); g.addColorStop(1,'#3e2e1a');
+  bx.fillStyle=g; bx.shadowColor='rgba(0,0,0,.55)'; bx.shadowBlur=r*.5;
+  bx.beginPath();
+  verts.forEach((v,j)=>{ const a=j/verts.length*Math.PI*2, vr=r*v;
+    j?bx.lineTo(Math.cos(a)*vr,Math.sin(a)*vr):bx.moveTo(Math.cos(a)*vr,Math.sin(a)*vr); });
+  bx.closePath(); bx.fill(); bx.shadowBlur=0;
+  // Cracks and a glowing rune scar of the earth magic holding it together
+  bx.strokeStyle='rgba(50,32,16,.7)'; bx.lineWidth=Math.max(1,r*.06);
+  bx.beginPath(); bx.moveTo(-r*.45,-r*.15); bx.lineTo(-r*.05,r*.2); bx.lineTo(r*.4,r*.05);
+  bx.moveTo(-r*.05,r*.2); bx.lineTo(r*.05,r*.55); bx.stroke();
+  bx.strokeStyle='rgba(255,200,110,.55)'; bx.lineWidth=Math.max(1,r*.05);
+  bx.beginPath(); bx.moveTo(r*.1,-r*.5); bx.lineTo(r*.3,-r*.2); bx.lineTo(r*.15,-r*.05); bx.stroke();
+  bx.restore(); bx.globalAlpha=1;
+}
+function tickBoulders(){
+  const now=Date.now();
+  gs.boulders=gs.boulders.filter(b=>!b.done);
+  gs.boulders.forEach(b=>{
+    const el=now-b.start;
+    let x,y,r=b.R,a=1;
+    if(el<BOULDER_FORM_MS){
+      // Forming: grows (ease-out) and fades in, with earth motes spiralling in
+      const k=el/BOULDER_FORM_MS, e=1-Math.pow(1-k,2);
+      x=b.x1+Math.sin(el/90)*r*.04*k; y=b.y1; r=b.R*(.2+.8*e); a=.35+.65*e;
+      if(Math.random()<.8*fk){
+        const ang=Math.random()*Math.PI*2, d=b.R*(2+Math.random()*1.6);
+        gs.parts.push({x:x+Math.cos(ang)*d,y:y+Math.sin(ang)*d,col:['#c8a878','#8b6b45','#6b5235'][Math.floor(Math.random()*3)],
+          vx:-Math.cos(ang)*d/13,vy:-Math.sin(ang)*d/13,sz:1.5+Math.random()*2.5,life:1,dec:.075,noGrav:true});
+      }
+      b.rot+=b.spin*.4*16*fk;
+    } else {
+      // Flight: across fast (done by 70%), height on a high lob that ends in a heavy drop
+      const k=Math.min(1,(el-BOULDER_FORM_MS)/BOULDER_FLIGHT_MS);
+      const kx=Math.min(1,k/.7), ex=1-Math.pow(1-kx,2);
+      x=b.x1+(b.x2-b.x1)*ex;
+      const apex=Math.max(b.R*2.6,Math.min(b.y1,b.y2)-bH*.09);   // high, but kept inside the scene
+      // Rise to the apex in the first 45%, then fall with gravity (quadratic) onto the target
+      y=k<.45 ? b.y1+(apex-b.y1)*(1-Math.pow(1-k/.45,2)) : apex+(b.y2-apex)*Math.pow((k-.45)/.55,2);
+      b.rot+=b.spin*16*fk;
+      // Dust trail while falling
+      if(k>.45&&Math.random()<.9*fk) gs.parts.push({x:x+(Math.random()-.5)*r,y:y-r*.6,col:'#9b8060',
+        vx:(Math.random()-.5)*.4,vy:-.3,sz:r*(.15+Math.random()*.2),life:.8,dec:.04,noGrav:true});
+      if(k>=1){ b.done=true; if(b.cb) b.cb(); return; }
+    }
+    b.lx=x; b.ly=y;
+    drawBoulderCore(x,y,r,b.rot,b.verts,a);
+  });
+}
+// Boulder impact on a target, sized by the damage: rock shards flying, a dust cloud and a quake
+function spawnBoulderImpact(x,y,dmg){
+  if(simMode) return;
+  const R=boulderRadius(dmg), n=Math.round(10+dmg*.7);
+  for(let i=0;i<n;i++){
+    const a=-Math.PI*(.05+.9*Math.random()), sp=(2+Math.random()*4)*(R/(bH*.05));
+    gs.parts.push({x:x+(Math.random()-.5)*R,y,col:['#e0c498','#c8a878','#a08058','#8b6b45'][Math.floor(Math.random()*4)],
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2.5+Math.random()*R*.3,life:1,dec:.016+Math.random()*.02});
+  }
+  vfxDrift(x,y,['#9b8060','#7a6448','#b09878'],Math.round(8+dmg*.35),{w:.1,lift:-.6,dec:.012});
+  quake(Math.min(14,4+dmg*.3),380+dmg*8);
+}
+// Brief screen shake (the battle loop offsets the whole scene by quakeOffset())
+function quake(amp,ms){ if(simMode) return; gs.quake={start:Date.now(),amp,ms}; }
+function quakeOffset(){
+  const q=gs.quake; if(!q) return {x:0,y:0};
+  const el=Date.now()-q.start; if(el>=q.ms){ gs.quake=null; return {x:0,y:0}; }
+  const a=q.amp*Math.pow(1-el/q.ms,2);
+  return {x:a*Math.sin(el*.09),y:a*.6*Math.cos(el*.13)};
+}
 // Fiery explosion on a target, sized by the damage: a white-hot flash, an expanding
 // shockwave ring, a billowing fireball and flying embers, then rising smoke
 const FIRE_EXPLOSION_MS=750;
@@ -2136,13 +2224,13 @@ const VFX={
 };
 
 // Plain element strikes off the wheel (the original Inferno / Lightning Bolt / Frost Nova /
-// Arcane Surge impacts; Dark the Shadow Circle, Physical the melee sparks). An empowered hit bursts bigger.
+// Arcane Surge impacts; Dark the Shadow Circle, Physical a falling boulder). An empowered hit bursts bigger.
 const ELEM_IMPACT_VFX={
   fire:     (c,n,dmg)=>{ spawnFireExplosion(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); flash('#ff6622'); },
   ice:      (c,n)=>{ spawnParts(c.tx,c.y,'#88ddff',n); flash('#88ddff'); },
   lightning:(c,n)=>{ spawnParts(c.tx,c.y,'#ffee44',n); spawnParts(c.tx,c.y,'#ffffff',8); flash('#ffee44'); },
   arcane:   (c,n)=>{ spawnParts(c.tx,c.y,'#4499ff',n); spawnParts(c.tx,c.y,'#ddeeff',6); flash('#4499ff'); },
-  physical: (c,n)=>{ spawnParts(c.tx,c.y,'#d0a060',n); flash('#d0a060'); },
+  physical: (c,n,dmg)=>{ spawnBoulderImpact(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); spawnParts(c.tx,c.y,'#d0a060',Math.round(n*.5)); flash('#d0a060'); },
   dark:     (c,n)=>{ spawnParts(c.tx,c.y,'#cc44ff',n); spawnShadowCircle(c.tx,c.y,n>30); flash('#cc44ff'); },
 };
 
@@ -3078,6 +3166,13 @@ function executeWheel(who,action,cb){
     spawnFireball(who,tgt,dmg,land);
     return;
   }
+  if(action.cat==='damage'&&action.elem==='physical'){
+    // Physical Strike: a boulder forms above the caster (bigger for more damage), then drops on the target
+    const dmg=previewStrikeDmg(who,'physical',power);
+    tgts.slice(1).forEach(t=>spawnBoulder(who,t,dmg,()=>{}));
+    spawnBoulder(who,tgt,dmg,land);
+    return;
+  }
   fanOut(who,tgts,ELEM_PROJ[action.elem],el.col);
   spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,land);
 }
@@ -3902,7 +3997,7 @@ function resetTrainingRound(knockedOut){
     gs.p1=newSeat(p1Cfg,p1Key);
     gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
-    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.boulders=[]; gs.quake=null;
     gs.pending={};
     const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
     addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
@@ -6954,7 +7049,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.boulders=[]; gs.quake=null;
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
@@ -6976,7 +7071,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.boulders=[]; gs.quake=null;
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
