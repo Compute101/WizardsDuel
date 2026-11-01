@@ -2360,7 +2360,7 @@ function tickShadowCircles(){
 // runes appears on the ground at the target's feet and whirls around them, fast at first and slowing to a stop;
 // the stilled runes then glow white-hot and burn out in purple embers, and the damage lands
 // as they burn (cb). big: a heavier strike (bigger runes, longer spin).
-const DARK_RITUAL_SPIN_MS=1150, DARK_RITUAL_GLOW_MS=380, DARK_RITUAL_BURN_MS=420, DARK_RITUAL_TURNS=3;
+const DARK_RITUAL_SPIN_MS=1150, DARK_RITUAL_GLOW_MS=380, DARK_RITUAL_BURN_MS=420, DARK_RITUAL_TURNS=1.25;   // opening speed is 3×TURNS per spin, ~3.3 turns/s
 function spawnDarkRitual(who,tgt,big,cb){
   if(simMode){ if(cb) cb(); return; }
   const sz=wizSize(tgt), x=seatX(tgt);
