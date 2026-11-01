@@ -96,7 +96,7 @@ function newState(){
   gs={
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], wardUnravels:[], fireballs:[], explosions:[], iceCrystals:[], iceShards:[], boulders:[], quake:null,
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], darkRituals:[], wardUnravels:[], fireballs:[], explosions:[], iceCrystals:[], iceShards:[], boulders:[], quake:null,
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1671,7 +1671,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickBoulders(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickDarkRituals(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickBoulders(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
@@ -2203,6 +2203,76 @@ function tickShadowCircles(){
   });
 }
 
+// Dark ritual circle (Dark strikes, drawn by tickDarkRituals). No projectile: a ring of Dark
+// runes appears on the ground at the target's feet and whirls around them, fast at first and slowing to a stop;
+// the stilled runes then glow white-hot and burn out in purple embers, and the damage lands
+// as they burn (cb). big: a heavier strike (bigger runes, longer spin).
+const DARK_RITUAL_SPIN_MS=1150, DARK_RITUAL_GLOW_MS=380, DARK_RITUAL_BURN_MS=420, DARK_RITUAL_TURNS=3;
+function spawnDarkRitual(who,tgt,big,cb){
+  if(simMode){ if(cb) cb(); return; }
+  const sz=wizSize(), x=seatX(tgt);
+  gs.darkRituals.push({x,y:wizFeetY()-sz*.02,rx:sz*.55*AURA_SX,ry:sz*.12,big:!!big,start:Date.now(),
+    base:_rng()*Math.PI*2,dir:_rng()<.5?-1:1,spin:DARK_RITUAL_SPIN_MS*(big?1.15:1),cb,fired:false});
+  anim(who,'cast',900);
+  vfxDrift(seatX(who),wizMidY(),['#5a2280','#cc88ff'],8,{w:.05,lift:-1,dec:.02});
+}
+function tickDarkRituals(){
+  const now=Date.now();
+  gs.darkRituals.forEach(c=>{
+    const el=now-c.start, spinEnd=c.spin, glowEnd=spinEnd+DARK_RITUAL_GLOW_MS, end=glowEnd+DARK_RITUAL_BURN_MS;
+    if(el>=end){ c.done=true; return; }
+    // Spin: angular speed falls off as (1-s)², so the runes whirl, slow and settle with no jolt
+    const s=Math.min(1,el/spinEnd);
+    const rot=c.base+c.dir*DARK_RITUAL_TURNS*Math.PI*2*(1-Math.pow(1-s,3));
+    const glow=el<spinEnd?0:Math.min(1,(el-spinEnd)/DARK_RITUAL_GLOW_MS);   // 0 → 1 once stopped
+    const burn=el<glowEnd?0:(el-glowEnd)/DARK_RITUAL_BURN_MS;               // 0 → 1 as it burns out
+    if(burn>0&&!c.fired){
+      c.fired=true;
+      spawnParts(c.x,c.y,'#cc44ff',c.big?24:16); spawnParts(c.x,c.y,'#ffffff',c.big?10:6);
+      vfxDrift(c.x,c.y,['#cc88ff','#6a2a90','#ffffff'],c.big?18:12,{w:.14,lift:-1.6,dec:.014});
+      if(c.cb) c.cb();
+    }
+    const appear=Math.min(1,el/180), alpha=appear*(1-burn);
+    const spinBlur=1-s;   // fast runes leave a smear behind them
+    bx.save(); bx.translate(c.x,c.y);
+    // The circle itself: a faint dark disc and two rings that brighten as the spin stops
+    bx.globalAlpha=alpha*(.25+.2*glow); bx.fillStyle='#1a0628';
+    bx.beginPath(); bx.ellipse(0,0,c.rx*1.05,c.ry*1.05,0,0,Math.PI*2); bx.fill();
+    const ringCol=glow>.5?'#e6c8ff':'#aa66ee';
+    bx.globalAlpha=alpha*(.6+.4*glow); bx.strokeStyle=ringCol; bx.shadowColor='#aa44ff';
+    bx.shadowBlur=10+26*glow; bx.lineWidth=1.5+2*glow;
+    bx.beginPath(); bx.ellipse(0,0,c.rx*1.12,c.ry*1.12,0,0,Math.PI*2); bx.stroke();
+    bx.lineWidth=1+glow; bx.beginPath(); bx.ellipse(0,0,c.rx*.82,c.ry*.82,0,0,Math.PI*2); bx.stroke();
+    // The runes: the four Dark runes twice over, evenly spaced on the ring
+    const N=8, fs=bH*.05*(c.big?1.2:1)*(1+.25*glow+.35*burn)*(1-.6*burn);
+    bx.font=`bold ${Math.round(fs)}px serif`; bx.textAlign='center'; bx.textBaseline='middle';
+    for(let i=0;i<N;i++){
+      const g=DARK_RUNES[i%4], a=rot+i/N*Math.PI*2;
+      const depth=.55+.45*Math.sin(a);   // the far side of the ring is dimmer and smaller
+      // Motion smear: a few fading copies trailing the way it came
+      if(spinBlur>.15){
+        for(let k=1;k<=3;k++){
+          const ta=a-c.dir*k*.13*spinBlur;
+          bx.globalAlpha=alpha*depth*spinBlur*(.35-k*.09); bx.fillStyle='#bb55ff'; bx.shadowBlur=0;
+          bx.fillText(g.sym,Math.cos(ta)*c.rx,Math.sin(ta)*c.ry);
+        }
+      }
+      bx.globalAlpha=alpha*(depth+(1-depth)*glow);
+      bx.fillStyle=glow>0?'#ffffff':'#e6c8ff';
+      bx.shadowColor=glow>.4?'#ffffff':g.glow; bx.shadowBlur=12+30*glow;
+      bx.save(); bx.translate(Math.cos(a)*c.rx,Math.sin(a)*c.ry); bx.scale(.75+.25*depth,.75+.25*depth);
+      bx.fillText(g.sym,0,0);
+      if(glow>0){ bx.globalAlpha*=.6*glow; bx.shadowColor='#cc44ff'; bx.shadowBlur=40; bx.fillText(g.sym,0,0); }
+      bx.restore();
+      // Burning out: each rune sheds an ember or two
+      if(burn>0&&_rng()<.35) gs.parts.push({x:c.x+Math.cos(a)*c.rx,y:c.y+Math.sin(a)*c.ry,
+        vx:(_rng()-.5)*.8,vy:-.6-_rng()*1.2,life:1,dec:.03,col:_rng()<.5?'#cc88ff':'#ffffff',sz:2,noGrav:true});
+    }
+    bx.shadowBlur=0; bx.globalAlpha=1; bx.textBaseline='alphabetic'; bx.restore();
+  });
+  gs.darkRituals=gs.darkRituals.filter(c=>!c.done);
+}
+
 // Ward unravelling (a dispel or curse wearing at a ward, drawn by tickWardUnravels): threads of
 // the ward's own colour and dispel pink peel off the bubble's edge and spiral outward, shedding
 // motes as they unwind. No flash, burst or hit animation, so it never reads as anyone being hurt.
@@ -2335,14 +2405,14 @@ const VFX={
 };
 
 // Plain element strikes off the wheel (the original Inferno / Lightning Bolt / Frost Nova /
-// Arcane Surge impacts; Dark the Shadow Circle, Physical a falling boulder). An empowered hit bursts bigger.
+// Arcane Surge impacts; Dark the ritual circle burn-out, Physical a falling boulder). An empowered hit bursts bigger.
 const ELEM_IMPACT_VFX={
   fire:     (c,n,dmg)=>{ spawnFireExplosion(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); flash('#ff6622'); },
   ice:      (c,n,dmg)=>{ spawnIceShatter(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); spawnParts(c.tx,c.y,'#ddf6ff',Math.round(n*.5)); flash('#88ddff'); },
   lightning:(c,n)=>{ spawnParts(c.tx,c.y,'#ffee44',n); spawnParts(c.tx,c.y,'#ffffff',8); flash('#ffee44'); },
   arcane:   (c,n)=>{ spawnParts(c.tx,c.y,'#4499ff',n); spawnParts(c.tx,c.y,'#ddeeff',6); flash('#4499ff'); },
   physical: (c,n,dmg)=>{ spawnBoulderImpact(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); spawnParts(c.tx,c.y,'#d0a060',Math.round(n*.5)); flash('#d0a060'); },
-  dark:     (c,n)=>{ spawnParts(c.tx,c.y,'#cc44ff',n); spawnShadowCircle(c.tx,c.y,n>30); flash('#cc44ff'); },
+  dark:     (c,n)=>{ spawnParts(c.tx,c.y,'#cc44ff',n); flash('#cc44ff'); },   // the ritual circle (spawnDarkRitual) already burned out
 };
 
 // Damage-over-time ticks, by the effect that deals them (fallback: by element)
@@ -3291,6 +3361,14 @@ function executeWheel(who,action,cb){
     spawnIceCrystals(who,tgt,dmg,land);
     return;
   }
+  if(action.cat==='damage'&&action.elem==='dark'){
+    // Dark Strike: no projectile — a ritual circle of runes spins around each target, stops,
+    // glows and burns out, and the damage lands as it burns
+    const big=previewStrikeDmg(who,'dark',power)>=20;
+    tgts.slice(1).forEach(t=>spawnDarkRitual(who,t,big,()=>{}));
+    spawnDarkRitual(who,tgt,big,land);
+    return;
+  }
   fanOut(who,tgts,ELEM_PROJ[action.elem],el.col);
   spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,land);
 }
@@ -3317,7 +3395,9 @@ function executeSignature(who,sp,action,cb){
       elemStrikeVolley(who,tgts,Object.assign({},el,{power,name:sigName(sp),vfx:fx.hit}),()=>combatTimeout(cb,600));
       return;
     }
-    fanOut(who,tgts,ELEM_PROJ[el.elem],e.col);
+    // Dark strikes are a ritual circle of runes around each target, not a projectile
+    const ritual=el.elem==='dark'&&!d;
+    if(!ritual) fanOut(who,tgts,ELEM_PROJ[el.elem],e.col);
     // A volley's own per-projectile effects stand in for the default impact burst
     const vfx=fx.hit||(d&&d.volley?()=>{}:null);
     const land=()=>{
@@ -3337,6 +3417,12 @@ function executeSignature(who,sp,action,cb){
         });
       };
       fire();
+      return;
+    }
+    if(ritual){
+      const big=previewStrikeDmg(who,'dark',power)>=20;
+      tgts.slice(1).forEach(t=>spawnDarkRitual(who,t,big,()=>{}));
+      spawnDarkRitual(who,tgt,big,land);
       return;
     }
     spawnProj(x,y,tx,y,ELEM_PROJ[el.elem],e.col,land);
@@ -7167,7 +7253,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.quake=null;
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.quake=null;
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
@@ -7189,7 +7275,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.quake=null;
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.quake=null;
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
