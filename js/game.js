@@ -96,7 +96,7 @@ function newState(){
   gs={
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], darkRituals:[], wardUnravels:[], fireballs:[], explosions:[],
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], darkRituals:[], wardUnravels:[], fireballs:[], explosions:[], iceCrystals:[], iceShards:[], boulders:[], quake:null,
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1654,9 +1654,10 @@ function battleLoop(ts){
   PLAYERS.forEach(w=>tickAnimFrame(w,dt));
   resizeBC();
   bx.setTransform(1,0,0,1,0,0);
-  bx.save(); bx.translate(0,bOffY); drawBG(); bx.restore();
+  const q=quakeOffset();
+  bx.save(); bx.translate(q.x,bOffY+q.y); drawBG(); bx.restore();
   fillSceneBands();
-  bx.setTransform(1,0,0,1,0,bOffY);   // everything else draws in scene coordinates
+  bx.setTransform(1,0,0,1,q.x,bOffY+q.y);   // everything else draws in scene coordinates
   // Wizard height: capped by width so shield bubbles stay (mostly) on screen on tall phones
   const many=PLAYERS.length>2, gy=wizFeetY(), wsz=wizSize();
   PLAYERS.forEach(w=>{
@@ -1670,7 +1671,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickDarkRituals(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickDarkRituals(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickBoulders(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
@@ -1921,6 +1922,93 @@ function tickFireballs(){
     drawFireballCore(x,y,r,now);
   });
 }
+// Physical Strike boulder (plain Physical damage off the wheel), drawn by tickBoulders.
+// Purely visual, so it uses Math.random, never the replayable _rng.
+// Form: grit and pebbles spiral in above the caster's head and pack into a boulder
+// sized by the damage. Flight: it heaves up and over, then drops near-vertically onto
+// the target under gravity. On arrival cb() runs the strike, whose impact
+// (ELEM_IMPACT_VFX.physical) is spawnBoulderImpact: shattering rock, dust and a quake.
+const BOULDER_FORM_MS=950, BOULDER_FLIGHT_MS=620;
+function boulderRadius(dmg){ return bH*Math.min(.09,.024+.0018*Math.max(1,dmg)); }
+function spawnBoulder(who,tgt,dmg,cb){
+  if(simMode){ if(cb) cb(); return; }
+  const x1=seatX(who), y1=wizFeetY()-wizSize()*1.25;
+  anim(who,'cast',BOULDER_FORM_MS+BOULDER_FLIGHT_MS);
+  const verts=[]; for(let j=0;j<9;j++) verts.push(.74+.3*Math.random());
+  gs.boulders.push({x1,y1,x2:seatX(tgt),y2:wizMidY(),R:boulderRadius(dmg),start:Date.now(),cb,done:false,
+    verts,spin:(seatX(tgt)>=x1?1:-1)*(.004+Math.random()*.002),rot:Math.random()*6.3,lx:x1,ly:y1});
+}
+function drawBoulderCore(x,y,r,rot,verts,alpha){
+  bx.save(); bx.translate(x,y); bx.rotate(rot); bx.globalAlpha=alpha;
+  const g=bx.createRadialGradient(-r*.35,-r*.35,r*.1,0,0,r*1.15);
+  g.addColorStop(0,'#d4b488'); g.addColorStop(.55,'#8b6b45'); g.addColorStop(1,'#3e2e1a');
+  bx.fillStyle=g; bx.shadowColor='rgba(0,0,0,.55)'; bx.shadowBlur=r*.5;
+  bx.beginPath();
+  verts.forEach((v,j)=>{ const a=j/verts.length*Math.PI*2, vr=r*v;
+    j?bx.lineTo(Math.cos(a)*vr,Math.sin(a)*vr):bx.moveTo(Math.cos(a)*vr,Math.sin(a)*vr); });
+  bx.closePath(); bx.fill(); bx.shadowBlur=0;
+  // Cracks and a glowing rune scar of the earth magic holding it together
+  bx.strokeStyle='rgba(50,32,16,.7)'; bx.lineWidth=Math.max(1,r*.06);
+  bx.beginPath(); bx.moveTo(-r*.45,-r*.15); bx.lineTo(-r*.05,r*.2); bx.lineTo(r*.4,r*.05);
+  bx.moveTo(-r*.05,r*.2); bx.lineTo(r*.05,r*.55); bx.stroke();
+  bx.strokeStyle='rgba(255,200,110,.55)'; bx.lineWidth=Math.max(1,r*.05);
+  bx.beginPath(); bx.moveTo(r*.1,-r*.5); bx.lineTo(r*.3,-r*.2); bx.lineTo(r*.15,-r*.05); bx.stroke();
+  bx.restore(); bx.globalAlpha=1;
+}
+function tickBoulders(){
+  const now=Date.now();
+  gs.boulders=gs.boulders.filter(b=>!b.done);
+  gs.boulders.forEach(b=>{
+    const el=now-b.start;
+    let x,y,r=b.R,a=1;
+    if(el<BOULDER_FORM_MS){
+      // Forming: grows (ease-out) and fades in, with earth motes spiralling in
+      const k=el/BOULDER_FORM_MS, e=1-Math.pow(1-k,2);
+      x=b.x1+Math.sin(el/90)*r*.04*k; y=b.y1; r=b.R*(.2+.8*e); a=.35+.65*e;
+      if(Math.random()<.8*fk){
+        const ang=Math.random()*Math.PI*2, d=b.R*(2+Math.random()*1.6);
+        gs.parts.push({x:x+Math.cos(ang)*d,y:y+Math.sin(ang)*d,col:['#c8a878','#8b6b45','#6b5235'][Math.floor(Math.random()*3)],
+          vx:-Math.cos(ang)*d/13,vy:-Math.sin(ang)*d/13,sz:1.5+Math.random()*2.5,life:1,dec:.075,noGrav:true});
+      }
+      b.rot+=b.spin*.4*16*fk;
+    } else {
+      // Flight: across fast (done by 70%), height on a high lob that ends in a heavy drop
+      const k=Math.min(1,(el-BOULDER_FORM_MS)/BOULDER_FLIGHT_MS);
+      const kx=Math.min(1,k/.7), ex=1-Math.pow(1-kx,2);
+      x=b.x1+(b.x2-b.x1)*ex;
+      const apex=Math.max(b.R*2.6,Math.min(b.y1,b.y2)-bH*.09);   // high, but kept inside the scene
+      // Rise to the apex in the first 45%, then fall with gravity (quadratic) onto the target
+      y=k<.45 ? b.y1+(apex-b.y1)*(1-Math.pow(1-k/.45,2)) : apex+(b.y2-apex)*Math.pow((k-.45)/.55,2);
+      b.rot+=b.spin*16*fk;
+      // Dust trail while falling
+      if(k>.45&&Math.random()<.9*fk) gs.parts.push({x:x+(Math.random()-.5)*r,y:y-r*.6,col:'#9b8060',
+        vx:(Math.random()-.5)*.4,vy:-.3,sz:r*(.15+Math.random()*.2),life:.8,dec:.04,noGrav:true});
+      if(k>=1){ b.done=true; if(b.cb) b.cb(); return; }
+    }
+    b.lx=x; b.ly=y;
+    drawBoulderCore(x,y,r,b.rot,b.verts,a);
+  });
+}
+// Boulder impact on a target, sized by the damage: rock shards flying, a dust cloud and a quake
+function spawnBoulderImpact(x,y,dmg){
+  if(simMode) return;
+  const R=boulderRadius(dmg), n=Math.round(10+dmg*.7);
+  for(let i=0;i<n;i++){
+    const a=-Math.PI*(.05+.9*Math.random()), sp=(2+Math.random()*4)*(R/(bH*.05));
+    gs.parts.push({x:x+(Math.random()-.5)*R,y,col:['#e0c498','#c8a878','#a08058','#8b6b45'][Math.floor(Math.random()*4)],
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,sz:2.5+Math.random()*R*.3,life:1,dec:.016+Math.random()*.02});
+  }
+  vfxDrift(x,y,['#9b8060','#7a6448','#b09878'],Math.round(8+dmg*.35),{w:.1,lift:-.6,dec:.012});
+  quake(Math.min(14,4+dmg*.3),380+dmg*8);
+}
+// Brief screen shake (the battle loop offsets the whole scene by quakeOffset())
+function quake(amp,ms){ if(simMode) return; gs.quake={start:Date.now(),amp,ms}; }
+function quakeOffset(){
+  const q=gs.quake; if(!q) return {x:0,y:0};
+  const el=Date.now()-q.start; if(el>=q.ms){ gs.quake=null; return {x:0,y:0}; }
+  const a=q.amp*Math.pow(1-el/q.ms,2);
+  return {x:a*Math.sin(el*.09),y:a*.6*Math.cos(el*.13)};
+}
 // Fiery explosion on a target, sized by the damage: a white-hot flash, an expanding
 // shockwave ring, a billowing fireball and flying embers, then rising smoke
 const FIRE_EXPLOSION_MS=750;
@@ -1955,6 +2043,117 @@ function tickExplosions(){
     bx.beginPath(); bx.arc(e.x,e.y,r,0,Math.PI*2); bx.fill();
     // Initial white-hot flash
     if(k<.2){ bx.globalAlpha=1-k/.2; bx.fillStyle='#ffffff'; bx.beginPath(); bx.arc(e.x,e.y,e.R*.5,0,Math.PI*2); bx.fill(); }
+    bx.restore();
+  });
+}
+
+// Ice Strike (plain Ice damage off the wheel), drawn by tickIceCrystals: no projectile.
+// A snowflake crystallises over the target: six arms grow out from a hexagonal core,
+// sprouting side branches as they pass, while it turns slowly. Then cracks run along
+// the arms, cb() runs the strike, and its impact (ELEM_IMPACT_VFX.ice) is spawnIceShatter,
+// scaled by the damage dealt. Purely visual, so it uses Math.random.
+const ICE_FORM_MS=1000, ICE_CRACK_MS=240, ICE_SHARD_MS=900;
+function iceScale(dmg){ return .7+Math.min(.6,Math.max(1,dmg)/50); }
+function spawnIceCrystals(who,tgt,dmg,cb){
+  if(simMode){ if(cb) cb(); return; }
+  const sz=wizSize(), s=iceScale(dmg);
+  // Branches along each arm: position on the arm, length, and when they start growing
+  const nb=s>1.05?3:2;
+  const branches=Array.from({length:nb},(_,i)=>{
+    const at=.35+i*(.45/nb)+Math.random()*.05;
+    return {at,len:(.42-i*.09)*(.9+Math.random()*.2)};
+  });
+  anim(who,'cast',ICE_FORM_MS+ICE_CRACK_MS);
+  gs.iceCrystals.push({cx:seatX(tgt),cy:wizMidY()+sz*.05,R:sz*.36*s,s,branches,
+    rot:Math.random()*Math.PI/3,spin:(Math.random()<.5?-1:1)*.00035,start:Date.now(),cb,done:false});
+}
+// One arm of the snowflake along +x, grown to g (0..1)
+function snowflakeArm(R,g,branches){
+  const L=R*g;
+  bx.moveTo(0,0); bx.lineTo(L,0);
+  branches.forEach(b=>{
+    const p=R*b.at; if(L<=p) return;
+    const bl=R*b.len*Math.min(1,(L-p)/(R*.25));
+    const dx=Math.cos(Math.PI/3)*bl, dy=Math.sin(Math.PI/3)*bl;
+    bx.moveTo(p,0); bx.lineTo(p+dx,-dy); bx.moveTo(p,0); bx.lineTo(p+dx,dy);
+  });
+  if(g>=.98){   // little diamond at the tip once the arm is complete
+    const d=R*.06;
+    bx.moveTo(L,0); bx.lineTo(L-d,-d*.7); bx.lineTo(L-d*2,0); bx.lineTo(L-d,d*.7); bx.closePath();
+  }
+}
+function tickIceCrystals(){
+  const now=Date.now();
+  gs.iceCrystals=gs.iceCrystals.filter(f=>!f.done);
+  gs.iceCrystals.forEach(f=>{
+    const el=now-f.start, k=Math.min(1,el/ICE_FORM_MS);
+    const crack=el<ICE_FORM_MS?0:Math.min(1,(el-ICE_FORM_MS)/ICE_CRACK_MS);
+    if(crack>=1){ f.done=true; if(f.cb) f.cb(); return; }
+    // Frost motes drawn in toward the flake while it forms
+    if(k<1&&Math.random()<.8*fk){
+      const a=Math.random()*Math.PI*2, d=f.R*(1.1+Math.random()*.5);
+      gs.parts.push({x:f.cx+Math.cos(a)*d,y:f.cy+Math.sin(a)*d,col:Math.random()<.5?'#ddf6ff':'#88ddff',
+        vx:-Math.cos(a)*d/18,vy:-Math.sin(a)*d/18,sz:1+Math.random()*2,life:1,dec:.06,noGrav:true});
+    }
+    const g=1-Math.pow(1-Math.min(1,k/.85),3);   // arms grow ease-out, done just before the crack
+    const shake=crack*f.R*.03;
+    bx.save();
+    bx.translate(f.cx+(Math.random()-.5)*shake,f.cy+(Math.random()-.5)*shake);
+    bx.rotate(f.rot+el*f.spin);
+    // Soft cold glow behind it
+    const gl=bx.createRadialGradient(0,0,0,0,0,f.R*1.15);
+    gl.addColorStop(0,`rgba(190,235,255,${.3*k})`); gl.addColorStop(1,'rgba(120,200,255,0)');
+    bx.fillStyle=gl; bx.beginPath(); bx.arc(0,0,f.R*1.15,0,Math.PI*2); bx.fill();
+    bx.lineCap='round'; bx.lineJoin='round';
+    const path=()=>{
+      bx.beginPath();
+      for(let i=0;i<6;i++){ bx.save(); bx.rotate(i*Math.PI/3); snowflakeArm(f.R,g,f.branches); bx.restore(); }
+      // Hexagonal core
+      const hr=f.R*.13*Math.min(1,k*3);
+      for(let i=0;i<=6;i++){ const a=i*Math.PI/3+Math.PI/6; i?bx.lineTo(Math.cos(a)*hr,Math.sin(a)*hr):bx.moveTo(Math.cos(a)*hr,Math.sin(a)*hr); }
+    };
+    // Thick blue body, then a thin white-hot core line
+    path(); bx.strokeStyle='rgba(120,200,255,.75)'; bx.shadowColor='#66ccff'; bx.shadowBlur=14;
+    bx.lineWidth=Math.max(2,f.R*.07); bx.stroke();
+    path(); bx.strokeStyle=crack>0?'#ffffff':'rgba(240,252,255,.95)'; bx.shadowBlur=6;
+    bx.lineWidth=Math.max(1,f.R*.025*(1+crack*1.5)); bx.stroke();
+    // Bright flare at the centre as it is about to burst
+    if(crack>0){
+      bx.globalAlpha=crack; bx.fillStyle='#ffffff'; bx.shadowColor='#bbeeff'; bx.shadowBlur=20;
+      bx.beginPath(); bx.arc(0,0,f.R*.12*(1+crack),0,Math.PI*2); bx.fill();
+    }
+    bx.restore();
+  });
+}
+// The snowflake bursts: spinning ice shards fly out and fall, a cold flash and drifting frost mist
+function spawnIceShatter(x,y,dmg){
+  if(simMode) return;
+  const s=iceScale(dmg), sz=wizSize();
+  const n=Math.round(12+Math.max(1,dmg)*.7);
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, sp=(2+Math.random()*5)*s;
+    const d=Math.random()*sz*.36*s;   // spread over the snowflake
+    gs.iceShards.push({x:x+Math.cos(a)*d,y:y+sz*.05+Math.sin(a)*d,
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2.5,rot:Math.random()*Math.PI*2,spin:(Math.random()-.5)*.4,
+      L:sz*(.03+Math.random()*.06)*s,start:Date.now(),ms:ICE_SHARD_MS*(.6+Math.random()*.4)});
+  }
+  vfxRing(x,y,['#ffffff','#aaddff'],Math.round(14*s),{r:.06*s,ry:.04*s,out:true,noGrav:true});
+  vfxDrift(x,y,['#cceeff','#aaddff','#ffffff'],Math.round(8+dmg*.3),{w:.08,lift:-.6,dec:.014});
+}
+function tickIceShards(){
+  const now=Date.now();
+  gs.iceShards=gs.iceShards.filter(p=>now-p.start<p.ms);
+  gs.iceShards.forEach(p=>{
+    p.x+=p.vx*fk; p.y+=p.vy*fk; p.vy+=.22*fk; p.rot+=p.spin*fk;
+    const a=1-(now-p.start)/p.ms;
+    bx.save(); bx.translate(p.x,p.y); bx.rotate(p.rot); bx.globalAlpha=a;
+    // A broken-off piece of a snowflake arm: a stem with one pair of side branches
+    const h=p.L*.5, b=p.L*.28;
+    bx.beginPath(); bx.moveTo(-h,0); bx.lineTo(h,0);
+    bx.moveTo(0,0); bx.lineTo(b*.5,-b*.87); bx.moveTo(0,0); bx.lineTo(b*.5,b*.87);
+    bx.lineCap='round'; bx.shadowColor='#66ccff'; bx.shadowBlur=10;
+    bx.strokeStyle='rgba(120,200,255,.8)'; bx.lineWidth=Math.max(2,p.L*.14); bx.stroke();
+    bx.strokeStyle='#ffffff'; bx.lineWidth=Math.max(1,p.L*.05); bx.stroke();
     bx.restore();
   });
 }
@@ -2206,13 +2405,13 @@ const VFX={
 };
 
 // Plain element strikes off the wheel (the original Inferno / Lightning Bolt / Frost Nova /
-// Arcane Surge impacts; Dark the Shadow Circle, Physical the melee sparks). An empowered hit bursts bigger.
+// Arcane Surge impacts; Dark the ritual circle burn-out, Physical a falling boulder). An empowered hit bursts bigger.
 const ELEM_IMPACT_VFX={
   fire:     (c,n,dmg)=>{ spawnFireExplosion(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); flash('#ff6622'); },
-  ice:      (c,n)=>{ spawnParts(c.tx,c.y,'#88ddff',n); flash('#88ddff'); },
+  ice:      (c,n,dmg)=>{ spawnIceShatter(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); spawnParts(c.tx,c.y,'#ddf6ff',Math.round(n*.5)); flash('#88ddff'); },
   lightning:(c,n)=>{ spawnParts(c.tx,c.y,'#ffee44',n); spawnParts(c.tx,c.y,'#ffffff',8); flash('#ffee44'); },
   arcane:   (c,n)=>{ spawnParts(c.tx,c.y,'#4499ff',n); spawnParts(c.tx,c.y,'#ddeeff',6); flash('#4499ff'); },
-  physical: (c,n)=>{ spawnParts(c.tx,c.y,'#d0a060',n); flash('#d0a060'); },
+  physical: (c,n,dmg)=>{ spawnBoulderImpact(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); spawnParts(c.tx,c.y,'#d0a060',Math.round(n*.5)); flash('#d0a060'); },
   dark:     (c,n)=>{ spawnParts(c.tx,c.y,'#cc44ff',n); flash('#cc44ff'); },   // the ritual circle (spawnDarkRitual) already burned out
 };
 
@@ -3148,6 +3347,20 @@ function executeWheel(who,action,cb){
     spawnFireball(who,tgt,dmg,land);
     return;
   }
+  if(action.cat==='damage'&&action.elem==='physical'){
+    // Physical Strike: a boulder forms above the caster (bigger for more damage), then drops on the target
+    const dmg=previewStrikeDmg(who,'physical',power);
+    tgts.slice(1).forEach(t=>spawnBoulder(who,t,dmg,()=>{}));
+    spawnBoulder(who,tgt,dmg,land);
+    return;
+  }
+  if(action.cat==='damage'&&action.elem==='ice'){
+    // Ice Strike: crystals freeze over each target (bigger for more damage), then shatter
+    const dmg=previewStrikeDmg(who,'ice',power);
+    tgts.slice(1).forEach(t=>spawnIceCrystals(who,t,dmg,()=>{}));
+    spawnIceCrystals(who,tgt,dmg,land);
+    return;
+  }
   if(action.cat==='damage'&&action.elem==='dark'){
     // Dark Strike: no projectile — a ritual circle of runes spins around each target, stops,
     // glows and burns out, and the damage lands as it burns
@@ -3988,7 +4201,7 @@ function resetTrainingRound(knockedOut){
     gs.p1=newSeat(p1Cfg,p1Key);
     gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
-    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.quake=null;
     gs.pending={};
     const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
     addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
@@ -7040,7 +7253,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.quake=null;
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
@@ -7062,7 +7275,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.quake=null;
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
