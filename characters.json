@@ -775,6 +775,7 @@
     "title": "The Stoneheart",
     "sprite": "sprites/durin.png",
     "spriteHeight": 0.72,
+    "spriteWidth": 1.2,
     "col": "#b08040",
     "taunts": [
       "Stone does not bend. Stone does not break. Neither does Durin.",

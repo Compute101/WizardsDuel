@@ -644,6 +644,8 @@ const SPRITE_SCALE=1.2;   // battle sprite height relative to drawWiz's sz
 // A character's optional "spriteHeight" in characters.json shrinks its battle sprite (e.g. Durin
 // is a dwarf, so 0.72 of a man's height). Feet stay on the floor; only the drawn figure changes.
 function seatSpriteHeight(who){ const c=who&&seatCfg(who); return (c&&c.spriteHeight)||1; }
+// Optional "spriteWidth": stretches the battle sprite sideways (Durin is a stocky dwarf: 1.2).
+function seatSpriteWidth(who){ const c=who&&seatCfg(who); return (c&&c.spriteWidth)||1; }
 // Where the wizards stand and how big they are, in scene coordinates. Feet sit low on the arena
 // floor so the (large) wizards use the ground below the horizon. WIZ_GROW enlarges them over the
 // original size; minions keep the original layout (see drawWiz). 3–4 seats grow less so neighbours
@@ -673,17 +675,17 @@ function isSpriteSheet(img){
   return img.naturalWidth===SPRITE_CFG.frameW*4&&img.naturalHeight===SPRITE_CFG.frameH*5;
 }
 // Draws a sprite standing at (x,y), sz tall. flip = the p1 seat (face right).
-function drawSprite(img,animName,frame,x,y,sz,flip){
+function drawSprite(img,animName,frame,x,y,sz,flip,wMul=1){
   bx.save();
   if(isSpriteSheet(img)){
     const cfg=SPRITE_CFG;
     const row=cfg.animRows[animName]??cfg.animRows.idle;
     const srcX=frame*cfg.frameW, srcY=row*cfg.frameH;
-    const scale=sz/cfg.frameH, dw=cfg.frameW*scale, dh=cfg.frameH*scale;
+    const scale=sz/cfg.frameH, dw=cfg.frameW*scale*wMul, dh=cfg.frameH*scale;
     if(flip){ bx.scale(-1,1); x=-x; }
     bx.drawImage(img,srcX,srcY,cfg.frameW,cfg.frameH,x-dw/2,y-dh,dw,dh);
   } else {
-    const dh=sz*1.04, dw=dh*img.naturalWidth/img.naturalHeight;
+    const dh=sz*1.04, dw=dh*img.naturalWidth/img.naturalHeight*wMul;
     if(!flip){ bx.scale(-1,1); x=-x; }
     if(animName==='death') bx.globalAlpha*=0.45;
     bx.drawImage(img,x-dw/2,y-dh,dw,dh);
@@ -1400,7 +1402,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     const shake=animName==='hit'?Math.sin(t/60)*sz*.03:0;
     const bob=animName==='idle'?Math.sin(t/500+x)*sz*.015:0;
     // Drawn a bit taller than sz: the auras around it (radius ~0.82×sz) still enclose it
-    drawSprite(img,animName,animState[who].frame,x,y+lift+shake+bob,sz*SPRITE_SCALE,flip);
+    drawSprite(img,animName,animState[who].frame,x,y+lift+shake+bob,sz*SPRITE_SCALE,flip,seatSpriteWidth(who));
   } else {
     if(flip){bx.scale(-1,1); x=-x;}
     const bob=animName==='idle'?Math.sin(t/500+x)*.015*sz:0;
