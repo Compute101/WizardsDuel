@@ -2968,7 +2968,7 @@ const ELEM_START_MANA=6;
 const ELEM_INCOME=4;            // mana every seat gains at the end of each round
 const ELEM_WARD_ROUNDS=3;       // a ward lasts the round it is raised + 2 more
 const ELEM_WARD_DECAY=0.75;     // ward HP kept at each round end
-const ELEM_CHILL_MIN_TIER=2;    // Ice of this strength or more chills when it reaches HP
+const ELEM_CHILL_MIN_TIER=2;    // a chilling strike (Ice Lance, el.chill) of this strength or more chills when it reaches HP
 const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or not
 const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
 const ELEM_DISPEL_ALL_TIER=3;
@@ -3199,7 +3199,7 @@ function openElemWheel(cat){
   selfBtn.style.display=cat==='dispel'?'':'none';
   selfBtn.textContent='✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
   const ruleText={
-    damage:'A ward\'s own element unravels it · Lightning also burns mana · Ice (middle ring or stronger) chills: no Damage next round',
+    damage:'A ward\'s own element unravels it · Lightning also burns mana',
     protect:'Wards last 3 rounds, fading each round · they resist other elements, but their own element unravels them',
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
@@ -3831,7 +3831,7 @@ function strikeFinish(who,r,o,b,hit){
   if(hit.hp>0){
     if(o.lifesteal){ elemHeal(who,Math.round(hit.hp*o.lifesteal),'🩸'); VFX.lifesteal(seatX(who)); }
     if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',elem:o.elem,name:o.name||el.name,icon:el.icon},o.dot),who);
-    if(o.elem==='ice'&&(o.tier||2)>=ELEM_CHILL_MIN_TIER)
+    if(o.chill&&(o.tier||2)>=ELEM_CHILL_MIN_TIER)   // plain element strikes never lock
       addEffect(tgt,{id:'chill',type:'lock',cat:'damage',kind:'curse',name:'Chilled',icon:'❄️',rounds:ELEM_LOCK_ROUNDS},who);
   }
   if(burn>0){
@@ -7533,7 +7533,7 @@ const TUTORIAL_CONVOS={
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
     {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too. With more than one rival, an outer-ring strike hits every one of them."},
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
-    {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward. A strong Ice strike that reaches them chills them, so they can't pick Damage next round."},
+    {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward."},
     {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
@@ -7543,7 +7543,7 @@ const TUTORIAL_CONVOS={
     {key:'mordant',text:"Curses — like Silence, Plague or Agony — sit on the Dispel wheel. As well as their hex, every curse wears at the target's ward a little, like a weak dispel."},
     {key:'ponder', text:"A Dispel against a rival with no ward strips their newest buff — or all of them, from the outer ring. If they have a ward, the dispel hits the ward instead. Wards protect your buffs!"},
     {key:'mary',   text:"Cursed? Open the Dispel wheel and tap Cleanse Self. It removes every curse on you for very little mana."},
-    {key:'sylvara',text:"Locks — like Ice's chill or my Entangle — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
+    {key:'sylvara',text:"Locks — like my Entangle or Skadi's Ice Lance — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
   ],
   alphabet:[
     {key:'sylvara',text:"Every casting ritual uses symbols from the Arcane Alphabet — twelve sacred glyphs that form the language of magic itself."},

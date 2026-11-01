@@ -31,7 +31,7 @@ constants at the top of the `ELEMENTAL DUEL` section of `js/game.js`.
 What was built, including choices made while building:
 - **Picking:** three buttons (⚔️ Damage, 🛡 Protection, ✦ Dispel), then the strength wheel: 6 element
   sectors × 3 rings. A ring you can't afford is greyed out. Dispel also has a **Cleanse Self** button,
-  which removes Chill.
+  which removes curses such as Chill.
 - **Minigames:** Damage uses its element's minigame. Physical has its own Rockfall minigame and Dark
   its own Shadow Circle, each with its own glyph set. Protection uses the tile-match and Dispel uses the
   Dispel minigame. A failed minigame fizzles and costs 1 mana.
@@ -61,8 +61,9 @@ What was built, including choices made while building:
   A ward in an element your rival can't cast can never be unravelled or matched, so it naturally lasts
   longer. That rewards knowing the roster.
 - **Lightning** burns 1 / 2 / 3 mana, even when it hits a ward.
-- **Ice:** a middle- or outer-ring hit that reaches HP **chills** the target. A chilled player can't
-  pick Damage next round. This replaces Freeze.
+- **Ice:** plain Ice strikes carry no rider. Plain element strikes never lock: a hard lock hands the
+  caster a pick that can't lose, which breaks the guessing game for a round. Chill (can't pick Damage
+  next round) is now Skadi's Ice Lance's own rider (`"chill": true`, middle ring and up, reaching HP).
 - **Character stats:** each character's HP and damage multiplier apply. Eldrin's wards cost 1 less
   (`shieldCostMod` in `characters.json`). Character spells: see Phase 4.
 - **AI:** a weighted mixed strategy. It dispels when you have a ward, and on Normal it matches your
@@ -119,7 +120,7 @@ so each spell's numbers can be tuned there.
   Ponder's Blink → Lightning, Durin's Stonesoul → Arcane, Weizan's Iron Patience → Arcane, Gretch's
   Maggot Cloud → Physical, Valdris's Reinforce → Physical, Thessaly's Spellbind → Dark, Korvath's
   Ancient Wrath → Physical, Nyxara's Event Horizon → Arcane.
-- **Strikes** follow the normal damage rules (wards, matching elements, Lightning burn, Ice chill) plus
+- **Strikes** follow the normal damage rules (wards, matching elements, Lightning burn) plus
   their own riders: lifesteal, damage-over-time, mana burn, random power, % of foe's HP, recoil, arcing.
   **Piercing is gone:** Radiant, Feint and Charge burn mana instead.
 - **Signature wards** are wards with a twist: Flame Shield hits back; Reinforce grows with skeletons;
@@ -130,8 +131,8 @@ so each spell's numbers can be tuned there.
 - **Curses** (Dispel wheel) resolve with Dispels. Besides the hex, each is a weak dispel: it hits the
   foe's ward with half a dispel's power for that ring (double vs a matching ward) but never strips
   buffs (`ELEM_CURSE_DISPEL`). **Cleanse Self** and Mary's Purge remove every curse on you.
-- **Locks** (Ice chill, Entangle) block one category for your next pick, and can't be
-  applied two rounds running, so nobody can be locked forever.
+- **Locks** (Ice Lance's chill, Entangle) come only from signature spells. They block one category
+  for your next pick, and can't be applied two rounds running, so nobody can be locked forever.
 - **Enthral** (Thessaly) is a called shot, not a lock: the caster secretly names a category, hidden
   until it plays out. If the foe's next pick is that category, the spell is lost as it's paid for and
   its mana goes to the caster (up to `steal`). Otherwise it's a misread and nothing happens. It springs

@@ -441,6 +441,7 @@
           "cost": 6,
           "power": 18,
           "tier": 2,
+          "chill": true,
           "desc": "18 ice; chills (middle ring and up)"
         }
       },
