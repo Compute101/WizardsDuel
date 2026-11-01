@@ -729,7 +729,142 @@ function auraFade(who,key,on){
   return k*k*(3-2*k);
 }
 
+// ── WARD ORBITERS ──────────────────────────────────────────
+// A ward's elemental "electrons": one object per 10 ward HP left (rounded up, max 9) orbits the
+// wizard on three tilted rings like an atom. Slots are fixed (ring = i%3, place on ring = i/3),
+// so losing HP removes the last orbiter without the others jumping. Objects on the far side of
+// a ring are drawn behind the sprite ('back' layer), the near side in front ('front' layer).
+const WARD_ORBIT_MAX=9, WARD_ORBIT_TILTS=[0,-1.05,1.05];
+const WARD_ORBIT_SPEED={physical:1/1500, ice:1/1150, dark:1/1300, fire:1/1000, lightning:1/330, arcane:1/1250};
+const DARK_ORBIT_RUNES=['☽','⊗','∇','Ω'];
+// Cheap deterministic noise (keeps the replay RNG untouched)
+function orbNoise(n){ const s=Math.sin(n*12.9898)*43758.5453; return s-Math.floor(s); }
+function wardOrbitCount(hp){ return hp>0?Math.min(WARD_ORBIT_MAX,Math.ceil(hp/10)):0; }
+// Point on ring `ring` at angle th around (cx,cy). z>0 = near side.
+function orbitPt(cx,cy,sz,ring,th){
+  const A=sz*.8, B=A*.3, px=Math.cos(th)*A, py=Math.sin(th)*B, tl=WARD_ORBIT_TILTS[ring];
+  const c=Math.cos(tl), s=Math.sin(tl);
+  return {x:cx+(px*c-py*s)*.85, y:cy+(px*s+py*c)*1.05, z:Math.sin(th)};
+}
+function drawWardOrbiters(x,cy,sz,state,layer,fade,t){
+  const elem=state&&state.wardElem, n=wardOrbitCount(state&&state.wardHp);
+  if(!elem||!n||fade<=0) return;
+  const speed=WARD_ORBIT_SPEED[elem]||1/1300, front=layer==='front';
+  bx.save();
+  // Lightning: the faint "wires" the sparks run along, split into near and far halves
+  if(elem==='lightning'){
+    bx.lineWidth=1; bx.strokeStyle=`rgba(255,238,68,${0.16*fade})`;
+    for(let ring=0;ring<Math.min(3,n);ring++){
+      bx.beginPath();
+      const th0=front?0:Math.PI;
+      for(let k=0;k<=24;k++){
+        const p=orbitPt(x,cy,sz,ring,th0+k/24*Math.PI);
+        k?bx.lineTo(p.x,p.y):bx.moveTo(p.x,p.y);
+      }
+      bx.stroke();
+    }
+  }
+  for(let i=0;i<n;i++){
+    const ring=i%3, slot=Math.floor(i/3);
+    const dir=ring===1?-1:1;
+    const th=dir*t*speed*(1+ring*.12)+slot*Math.PI*2/3+ring*.9;
+    const p=orbitPt(x,cy,sz,ring,th);
+    if((p.z>=0)!==front) continue;
+    const depth=1+.2*p.z, a=fade*(.6+.4*(p.z+1)/2);
+    // Direction of travel, for shapes that point or trail
+    const q=orbitPt(x,cy,sz,ring,th+dir*.05), ang=Math.atan2(q.y-p.y,q.x-p.x);
+    bx.globalAlpha=a;
+    if(elem==='physical'){
+      // Boulder: lumpy rock tumbling as it goes
+      const r=sz*.09*depth;
+      bx.save(); bx.translate(p.x,p.y); bx.rotate(t/700*dir+i*1.7);
+      const g=bx.createRadialGradient(-r*.3,-r*.3,r*.1,0,0,r*1.1);
+      g.addColorStop(0,'#c8a878'); g.addColorStop(.6,'#8b6b45'); g.addColorStop(1,'#4a3820');
+      bx.fillStyle=g; bx.shadowColor='rgba(0,0,0,.5)'; bx.shadowBlur=4;
+      bx.beginPath();
+      for(let j=0;j<7;j++){
+        const va=j/7*Math.PI*2, vr=r*(.72+.32*orbNoise(i*7+j));
+        j?bx.lineTo(Math.cos(va)*vr,Math.sin(va)*vr):bx.moveTo(Math.cos(va)*vr,Math.sin(va)*vr);
+      }
+      bx.closePath(); bx.fill(); bx.shadowBlur=0;
+      bx.strokeStyle='rgba(60,40,20,.6)'; bx.lineWidth=1;
+      bx.beginPath(); bx.moveTo(-r*.3,-r*.1); bx.lineTo(r*.1,r*.2); bx.lineTo(r*.35,r*.05); bx.stroke();
+      bx.restore();
+    } else if(elem==='ice'){
+      // Ice shard: a long crystal pointing the way it flies, glinting
+      const L=sz*.14*depth, W=sz*.04*depth, glint=.5+.5*Math.sin(t/180+i*2.3);
+      bx.save(); bx.translate(p.x,p.y); bx.rotate(ang);
+      bx.shadowColor='#aaeeff'; bx.shadowBlur=8;
+      bx.fillStyle='rgba(170,230,255,.85)';
+      bx.beginPath(); bx.moveTo(L,0); bx.lineTo(L*.1,-W); bx.lineTo(-L*.7,0); bx.lineTo(L*.1,W); bx.closePath(); bx.fill();
+      bx.shadowBlur=0;
+      bx.strokeStyle=`rgba(255,255,255,${.5+.5*glint})`; bx.lineWidth=1;
+      bx.beginPath(); bx.moveTo(L,0); bx.lineTo(-L*.7,0); bx.stroke();
+      bx.restore();
+    } else if(elem==='dark'){
+      // Glowing runes from the Dark set, pulsing as they circle
+      const pulse=.65+.35*Math.sin(t/260+i*1.9);
+      bx.globalAlpha=a*pulse;
+      bx.font=`bold ${Math.round(sz*.16*depth)}px serif`; bx.textAlign='center'; bx.textBaseline='middle';
+      bx.shadowColor='#bb55ff'; bx.shadowBlur=12;
+      bx.fillStyle='#e6c8ff'; bx.fillText(DARK_ORBIT_RUNES[i%4],p.x,p.y);
+      bx.shadowBlur=0;
+    } else if(elem==='fire'){
+      // Flame: a flickering teardrop whose tip streams back along the orbit and up
+      const fl=1+.25*Math.sin(t/55+i*3.1)+.15*Math.sin(t/31+i), r=sz*.055*depth;
+      const back=ang+Math.PI, tipA=Math.atan2(Math.sin(back)*.6-.8,Math.cos(back)*.6);
+      // Embers left in its wake
+      for(let k=1;k<=3;k++){
+        const e=orbitPt(x,cy,sz,ring,th-dir*k*.09);
+        bx.globalAlpha=a*(.5-k*.13); bx.fillStyle=k%2?'#ffaa33':'#ff5500';
+        bx.beginPath(); bx.arc(e.x+Math.sin(t/90+k+i)*1.5,e.y-k*1.5,r*(.45-k*.09),0,Math.PI*2); bx.fill();
+      }
+      bx.globalAlpha=a;
+      bx.save(); bx.translate(p.x,p.y); bx.rotate(tipA+Math.PI/2);
+      const h=r*2.6*fl, wob=Math.sin(t/70+i*2)*r*.25;
+      bx.shadowColor='#ff4400'; bx.shadowBlur=10;
+      bx.fillStyle='#ff5a10';
+      bx.beginPath(); bx.moveTo(0,-h);
+      bx.quadraticCurveTo(r*1.1+wob,-h*.3,r,0); bx.arc(0,0,r,0,Math.PI);
+      bx.quadraticCurveTo(-r*1.1+wob,-h*.3,0,-h); bx.fill();
+      bx.shadowBlur=0; bx.fillStyle='#ffd040';
+      bx.beginPath(); bx.moveTo(0,-h*.55);
+      bx.quadraticCurveTo(r*.55,-h*.15,r*.5,0); bx.arc(0,0,r*.5,0,Math.PI);
+      bx.quadraticCurveTo(-r*.55,-h*.15,0,-h*.55); bx.fill();
+      bx.restore();
+    } else if(elem==='lightning'){
+      // Spark zipping along its wire: bright head, fading trail, a crackle of tiny forks
+      for(let k=8;k>=1;k--){
+        const e=orbitPt(x,cy,sz,ring,th-dir*k*.05);
+        bx.globalAlpha=a*(1-k/9)*.8; bx.fillStyle='#ffee44';
+        bx.beginPath(); bx.arc(e.x,e.y,sz*.022*(1-k/10)*depth,0,Math.PI*2); bx.fill();
+      }
+      bx.globalAlpha=a; bx.shadowColor='#ffee44'; bx.shadowBlur=14;
+      bx.fillStyle='#ffffff';
+      bx.beginPath(); bx.arc(p.x,p.y,sz*.032*depth,0,Math.PI*2); bx.fill();
+      const tick=Math.floor(t/45);
+      bx.strokeStyle='#fff6aa'; bx.lineWidth=1.2;
+      for(let f=0;f<2;f++){
+        const seed=tick*31+i*7+f*13, fa=orbNoise(seed)*Math.PI*2, fr=sz*(.05+.05*orbNoise(seed+1));
+        bx.beginPath(); bx.moveTo(p.x,p.y);
+        bx.lineTo(p.x+Math.cos(fa+.5)*fr*.5,p.y+Math.sin(fa+.5)*fr*.5);
+        bx.lineTo(p.x+Math.cos(fa)*fr,p.y+Math.sin(fa)*fr); bx.stroke();
+      }
+      bx.shadowBlur=0;
+    } else if(elem==='arcane'){
+      // Glowing blue sphere, pulsing
+      const pulse=.8+.3*Math.sin(t/240+i*1.6), r=sz*.05*depth*pulse;
+      const g=bx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*2.4);
+      g.addColorStop(0,'rgba(220,240,255,1)'); g.addColorStop(.3,'rgba(90,160,255,.9)');
+      g.addColorStop(.6,'rgba(50,100,255,.35)'); g.addColorStop(1,'rgba(40,80,255,0)');
+      bx.fillStyle=g; bx.beginPath(); bx.arc(p.x,p.y,r*2.4,0,Math.PI*2); bx.fill();
+    }
+  }
+  bx.restore();
+}
+
 function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActive,state){
+  const x0=x;
   bx.save();
   // Auras (wards, buffs, debuffs) are drawn as circles around (x, y-sz*.5); squash them into an
   // upright oval centred on the sprite, so they hug the tall figure and stay on screen
@@ -1025,8 +1160,8 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
     bx.globalAlpha=1;
   }
-  if(state&&state.stoneskin>0&&state.stoneskinHp>0){
-    // Three chunky rock chunks orbiting in an ellipse
+  if(state&&state.stoneskin>0&&state.stoneskinHp>0&&!state.wardElem){
+    // Three chunky rock chunks (only without ward orbiters, which draw a boulder per 10 HP instead) orbiting in an ellipse
     const rockCols=[['#8b7355','#6b5335'],['#a08060','#7a6040'],['#7a6244','#5a4a2c']];
     const rockVerts=[[1.0,0.62,0.88,0.70,0.82],[0.78,1.0,0.65,0.85,0.72],[0.90,0.68,1.0,0.74,0.80]];
     for(let i=0;i<3;i++){
@@ -1176,6 +1311,8 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.globalAlpha=1;
   }
   bx.restore();   // end of the aura oval
+  // Ward orbiters on the far side, behind the sprite
+  if(shielded>0) drawWardOrbiters(x,y-sz*.62,sz,state,'back',fShield,t);
   // Skeletons (Valdris): small bone-coloured circles beside wizard
   // Minions keep the original (pre-WIZ_GROW) size and spacing, standing on the same floor
   const minionDir=flip?1:-1, msz=sz/wizGrow(), mwy=y-msz*.5;
@@ -1252,6 +1389,8 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.fillRect(x+sz*.07,y-sz*.02+dy,sz*.17,sz*.08);
   }
   bx.restore();
+  // Ward orbiters on the near side, in front of the sprite (x0: the fallback figure flips x)
+  if(shielded>0) drawWardOrbiters(x0,y-sz*.62,sz,state,'front',fShield,t);
 }
 
 function tickParts(){
@@ -1432,7 +1571,7 @@ function wizVisuals(st){
     if(e.type==='empower') v.empowered=true;
     if(e.type==='dot'&&e.id.startsWith('dot-')) v[e.elem==='fire'?'burn':'poison']=1;   // strike riders
   });
-  if(st.shieldType) v.wardCol=wardCol(st);
+  if(st.shieldType){ v.wardCol=wardCol(st); v.wardElem=st.shieldType; v.wardHp=st.shieldHp; }
   if(st.wardSig==='flameshield') v.flameShield=1;
   if(st.wardSig==='stoneskin'){ v.stoneskin=1; v.stoneskinHp=st.shieldHp; }
   return v;
