@@ -96,7 +96,7 @@ function newState(){
   gs={
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], wardUnravels:[], fireballs:[], explosions:[],
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], wardUnravels:[], fireballs:[], explosions:[], iceCrystals:[], iceShards:[],
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1670,7 +1670,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
@@ -1959,6 +1959,121 @@ function tickExplosions(){
   });
 }
 
+// Ice Strike (plain Ice damage off the wheel), drawn by tickIceCrystals: no projectile.
+// Freezing crystals form over the target, a frost glaze creeps across them, cracks race
+// through, then cb() runs the strike, whose impact (ELEM_IMPACT_VFX.ice) is
+// spawnIceShatter, scaled by the damage dealt. Purely visual, so it uses Math.random.
+const ICE_FORM_MS=1000, ICE_CRACK_MS=240, ICE_SHARD_MS=900;
+function iceScale(dmg){ return .7+Math.min(.6,Math.max(1,dmg)/50); }
+function spawnIceCrystals(who,tgt,dmg,cb){
+  if(simMode){ if(cb) cb(); return; }
+  const sz=wizSize(), s=iceScale(dmg);
+  const cx=seatX(tgt), cy=wizFeetY()-sz*.5;
+  const n=Math.min(16,6+Math.round(Math.max(1,dmg)*.35));
+  const crystals=[];
+  for(let i=0;i<n;i++){
+    // Rooted inside the body, radiating outward, so the cluster encases the wizard
+    const ra=Math.random()*Math.PI*2, rr=Math.sqrt(Math.random())*.75;
+    const bx0=cx+Math.cos(ra)*sz*.18*rr, by0=cy+Math.sin(ra)*sz*.38*rr;
+    const ang=Math.atan2(by0-cy,(bx0-cx)*1.6)+(Math.random()-.5)*.7;
+    const L=sz*(.16+Math.random()*.2)*s;
+    crystals.push({x:bx0,y:by0,ang,L,w:L*(.22+Math.random()*.1),
+      t0:(i/n)*.6+Math.random()*.08,shade:Math.random()});
+  }
+  crystals.sort((a,b)=>a.L-b.L);   // short ones behind, long ones in front
+  anim(who,'cast',ICE_FORM_MS+ICE_CRACK_MS);
+  gs.iceCrystals.push({cx,cy,sz,s,crystals,start:Date.now(),cb,done:false,
+    cracks:Array.from({length:4+Math.round(s*3)},()=>({a:Math.random()*Math.PI*2,segs:3+Math.floor(Math.random()*3)}))});
+}
+function drawIceCrystal(c,g,jx,jy){
+  const L=c.L*g, w=c.w*Math.min(1,g*1.3);
+  if(L<1) return;
+  bx.save(); bx.translate(c.x+jx,c.y+jy); bx.rotate(c.ang);
+  // Elongated hexagonal prism pointing along +x
+  bx.beginPath();
+  bx.moveTo(0,-w*.35); bx.lineTo(L*.72,-w*.5); bx.lineTo(L,0); bx.lineTo(L*.72,w*.5); bx.lineTo(0,w*.35); bx.closePath();
+  const gr=bx.createLinearGradient(0,-w*.5,0,w*.5);
+  const a=.55+.3*c.shade;
+  gr.addColorStop(0,`rgba(235,250,255,${a})`); gr.addColorStop(.45,`rgba(150,215,255,${a})`); gr.addColorStop(1,`rgba(60,130,210,${a})`);
+  bx.fillStyle=gr; bx.shadowColor='#88ddff'; bx.shadowBlur=10; bx.fill(); bx.shadowBlur=0;
+  bx.strokeStyle='rgba(230,250,255,.85)'; bx.lineWidth=1; bx.stroke();
+  // Facet ridge and a glint near the tip
+  bx.beginPath(); bx.moveTo(0,0); bx.lineTo(L,0); bx.strokeStyle='rgba(255,255,255,.6)'; bx.stroke();
+  bx.fillStyle='rgba(255,255,255,.9)'; bx.beginPath(); bx.arc(L*.8,-w*.15,Math.max(1,w*.09),0,Math.PI*2); bx.fill();
+  bx.restore();
+}
+function tickIceCrystals(){
+  const now=Date.now();
+  gs.iceCrystals=gs.iceCrystals.filter(f=>!f.done);
+  gs.iceCrystals.forEach(f=>{
+    const el=now-f.start, k=Math.min(1,el/ICE_FORM_MS);
+    const crack=el<ICE_FORM_MS?0:Math.min(1,(el-ICE_FORM_MS)/ICE_CRACK_MS);
+    if(crack>=1){ f.done=true; if(f.cb) f.cb(); return; }
+    // Frost motes drawn in toward the target while it freezes
+    if(k<1&&Math.random()<.8*fk){
+      const a=Math.random()*Math.PI*2, d=f.sz*(.45+Math.random()*.3);
+      gs.parts.push({x:f.cx+Math.cos(a)*d,y:f.cy+Math.sin(a)*d*1.3,col:Math.random()<.5?'#ddf6ff':'#88ddff',
+        vx:-Math.cos(a)*d/18,vy:-Math.sin(a)*d*1.3/18,sz:1+Math.random()*2,life:1,dec:.06,noGrav:true});
+    }
+    // Frost glaze over the body
+    bx.save();
+    const rx=f.sz*.3*f.s, ry=f.sz*.55*f.s;
+    bx.translate(f.cx,f.cy); bx.scale(rx*1.4/ry,1);   // circular gradient squashed into the oval
+    const gl=bx.createRadialGradient(0,0,0,0,0,ry);
+    gl.addColorStop(0,`rgba(200,240,255,${.28*k})`); gl.addColorStop(.7,`rgba(120,200,255,${.18*k})`); gl.addColorStop(1,'rgba(120,200,255,0)');
+    bx.fillStyle=gl; bx.beginPath(); bx.arc(0,0,ry,0,Math.PI*2); bx.fill();
+    bx.restore();
+    // Crystals grow in turn (ease-out with a slight overshoot); they tremble once cracking starts
+    const shake=crack*f.sz*.012;
+    f.crystals.forEach(c=>{
+      const t=Math.max(0,Math.min(1,(k-c.t0)/.35));
+      if(t<=0) return;
+      const g=1+2.2*Math.pow(t-1,3)+1.2*Math.pow(t-1,2);
+      drawIceCrystal(c,g,(Math.random()-.5)*shake,(Math.random()-.5)*shake);
+    });
+    // Cracks race out from the centre just before it shatters
+    if(crack>0){
+      bx.save(); bx.strokeStyle='#ffffff'; bx.shadowColor='#bbeeff'; bx.shadowBlur=6; bx.lineWidth=1.1;
+      bx.globalAlpha=.6+.4*crack;
+      f.cracks.forEach(cr=>{
+        let x=f.cx, y=f.cy, a=cr.a;
+        const step=f.sz*.055*f.s*crack;
+        bx.beginPath(); bx.moveTo(x,y);
+        for(let i=0;i<cr.segs;i++){ a+=(i%2?.45:-.45); x+=Math.cos(a)*step; y+=Math.sin(a)*step*1.5; bx.lineTo(x,y); }
+        bx.stroke();
+      });
+      bx.restore();
+    }
+  });
+}
+// The crystals burst: spinning ice shards fly out and fall, a cold flash and drifting frost mist
+function spawnIceShatter(x,y,dmg){
+  if(simMode) return;
+  const s=iceScale(dmg), sz=wizSize();
+  const n=Math.round(12+Math.max(1,dmg)*.7);
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, sp=(2+Math.random()*5)*s;
+    gs.iceShards.push({x:x+(Math.random()-.5)*sz*.2,y:y+(Math.random()-.3)*sz*.4,
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2.5,rot:Math.random()*Math.PI*2,spin:(Math.random()-.5)*.4,
+      L:sz*(.03+Math.random()*.06)*s,start:Date.now(),ms:ICE_SHARD_MS*(.6+Math.random()*.4)});
+  }
+  vfxRing(x,y,['#ffffff','#aaddff'],Math.round(14*s),{r:.06*s,ry:.04*s,out:true,noGrav:true});
+  vfxDrift(x,y,['#cceeff','#aaddff','#ffffff'],Math.round(8+dmg*.3),{w:.08,lift:-.6,dec:.014});
+}
+function tickIceShards(){
+  const now=Date.now();
+  gs.iceShards=gs.iceShards.filter(p=>now-p.start<p.ms);
+  gs.iceShards.forEach(p=>{
+    p.x+=p.vx*fk; p.y+=p.vy*fk; p.vy+=.22*fk; p.rot+=p.spin*fk;
+    const a=1-(now-p.start)/p.ms;
+    bx.save(); bx.translate(p.x,p.y); bx.rotate(p.rot); bx.globalAlpha=a;
+    bx.beginPath(); bx.moveTo(-p.L*.5,-p.L*.18); bx.lineTo(p.L*.5,0); bx.lineTo(-p.L*.3,p.L*.22); bx.closePath();
+    bx.fillStyle='#e2f6ff'; bx.shadowColor='#66ccff'; bx.shadowBlur=10; bx.fill();
+    bx.strokeStyle='rgba(255,255,255,.9)'; bx.lineWidth=1; bx.stroke();
+    bx.restore();
+  });
+}
+
 // Shadow circle on a target (Dark strikes, drawn by tickShadowCircles): a purple ring opens,
 // the Dark runes ☽ ⊗ ∇ Ω rise from its centre one by one and orbit it, then collapse inward
 // into a burst — the battle-screen version of the Shadow Circle minigame's watch phase.
@@ -2139,7 +2254,7 @@ const VFX={
 // Arcane Surge impacts; Dark the Shadow Circle, Physical the melee sparks). An empowered hit bursts bigger.
 const ELEM_IMPACT_VFX={
   fire:     (c,n,dmg)=>{ spawnFireExplosion(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); flash('#ff6622'); },
-  ice:      (c,n)=>{ spawnParts(c.tx,c.y,'#88ddff',n); flash('#88ddff'); },
+  ice:      (c,n,dmg)=>{ spawnIceShatter(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); spawnParts(c.tx,c.y,'#ddf6ff',Math.round(n*.5)); flash('#88ddff'); },
   lightning:(c,n)=>{ spawnParts(c.tx,c.y,'#ffee44',n); spawnParts(c.tx,c.y,'#ffffff',8); flash('#ffee44'); },
   arcane:   (c,n)=>{ spawnParts(c.tx,c.y,'#4499ff',n); spawnParts(c.tx,c.y,'#ddeeff',6); flash('#4499ff'); },
   physical: (c,n)=>{ spawnParts(c.tx,c.y,'#d0a060',n); flash('#d0a060'); },
@@ -3078,6 +3193,13 @@ function executeWheel(who,action,cb){
     spawnFireball(who,tgt,dmg,land);
     return;
   }
+  if(action.cat==='damage'&&action.elem==='ice'){
+    // Ice Strike: crystals freeze over each target (bigger for more damage), then shatter
+    const dmg=previewStrikeDmg(who,'ice',power);
+    tgts.slice(1).forEach(t=>spawnIceCrystals(who,t,dmg,()=>{}));
+    spawnIceCrystals(who,tgt,dmg,land);
+    return;
+  }
   fanOut(who,tgts,ELEM_PROJ[action.elem],el.col);
   spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,land);
 }
@@ -3902,7 +4024,7 @@ function resetTrainingRound(knockedOut){
     gs.p1=newSeat(p1Cfg,p1Key);
     gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
-    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[];
     gs.pending={};
     const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
     addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
@@ -6954,7 +7076,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[];
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
@@ -6976,7 +7098,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[];
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
