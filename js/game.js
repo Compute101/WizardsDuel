@@ -736,7 +736,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.globalAlpha=1;
   }
   if(shielded>0){
-    const boosted=state&&state.counter;
+    const boosted=state&&state.counter, wc=hexToRgb((state&&state.wardCol)||'#4af0ff');
     const gv=0.08+0.05*Math.sin(t/300);
     bx.globalAlpha=fShield;
     bx.beginPath(); bx.arc(x,y-sz*.5,sz*(.6+.15*fShield),0,Math.PI*2);
@@ -748,10 +748,11 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
       bx.shadowBlur=0;
       // Second inner ring for depth
       bx.beginPath(); bx.arc(x,y-sz*.5,sz*.6,0,Math.PI*2);
-      bx.strokeStyle=`rgba(74,240,255,${gv*4})`; bx.lineWidth=1.5; bx.stroke();
+      bx.strokeStyle=`rgba(${wc},${gv*4})`; bx.lineWidth=1.5; bx.stroke();
     } else {
-      bx.fillStyle=`rgba(74,240,255,${gv})`; bx.fill();
-      bx.strokeStyle=`rgba(74,240,255,${gv*5})`; bx.lineWidth=1.5; bx.stroke();
+      bx.fillStyle=`rgba(${wc},${gv*1.3})`; bx.fill();
+      bx.shadowColor=`rgb(${wc})`; bx.shadowBlur=10;
+      bx.strokeStyle=`rgba(${wc},${gv*6})`; bx.lineWidth=1.8; bx.stroke(); bx.shadowBlur=0;
     }
     bx.globalAlpha=1;
   }
@@ -1235,7 +1236,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
 function tickParts(){
   gs.parts=gs.parts.filter(p=>p.life>0);
   gs.parts.forEach(p=>{
-    p.x+=p.vx; p.y+=p.vy; if(!p.noGrav) p.vy+=.18; p.life-=p.dec;
+    p.x+=p.vx*fk; p.y+=p.vy*fk; if(!p.noGrav) p.vy+=.18*fk; p.life-=p.dec*fk;
     bx.globalAlpha=p.fin?p.life*Math.min(1,(1-p.life)/p.fin):p.life;   // p.fin: share of its life spent fading in
     bx.fillStyle=p.col; bx.shadowColor=p.col; bx.shadowBlur=8;
     bx.beginPath(); bx.arc(p.x,p.y,p.sz,0,Math.PI*2); bx.fill(); bx.shadowBlur=0; bx.globalAlpha=1;
@@ -1275,7 +1276,7 @@ function spawnParts(x,y,col,n=16){
 function tickFloats(){
   gs.floats=gs.floats.filter(f=>f.life>0);
   gs.floats.forEach(f=>{
-    f.y-=0.55; f.life-=.016;
+    f.y-=0.55*fk; f.life-=.016*fk;
     bx.globalAlpha=Math.min(1,f.life*3); bx.fillStyle=f.col;
     bx.font=`bold ${f.sz}px Cinzel,serif`; bx.textAlign='center';
     bx.shadowColor=f.col; bx.shadowBlur=10;
@@ -1288,14 +1289,14 @@ function addFloat(x,y,t,col,sz=17){ gs.floats.push({x,y,t,col,sz,life:1}); }
 // ── SPELL PROJECTILES ──────────────────────────────────────
 function spawnProj(x1,y1,x2,y2,element,col,cb){
   if(simMode){ if(cb) cb(); return; }
-  const speeds={fire:0.055,lightning:0.3,ice:0.065,arcane:0.06,physical:0.09,dispel:0.07,manaburn:0.08,dark:0.07};
-  gs.projs.push({x1,y1,x2,y2,progress:0,speed:speeds[element]||0.065,element,col,cb,done:false});
+  const speeds={fire:0.038,lightning:0.22,ice:0.045,arcane:0.042,physical:0.065,dispel:0.05,manaburn:0.056,dark:0.048};
+  gs.projs.push({x1,y1,x2,y2,progress:0,speed:speeds[element]||0.045,element,col,cb,done:false});
 }
 
 function tickProjs(){
   gs.projs=gs.projs.filter(p=>!p.done);
   gs.projs.forEach(p=>{
-    p.progress=Math.min(1,p.progress+p.speed);
+    p.progress=Math.min(1,p.progress+p.speed*fk);
     const px=p.x1+(p.x2-p.x1)*p.progress;
     const py=p.y1+(p.y2-p.y1)*p.progress;
     if(p.element==='fire'){
@@ -1410,6 +1411,7 @@ function wizVisuals(st){
     if(e.type==='empower') v.empowered=true;
     if(e.type==='dot'&&e.id.startsWith('dot-')) v[e.elem==='fire'?'burn':'poison']=1;   // strike riders
   });
+  if(st.shieldType) v.wardCol=wardCol(st);
   if(st.wardSig==='flameshield') v.flameShield=1;
   if(st.wardSig==='stoneskin'){ v.stoneskin=1; v.stoneskinHp=st.shieldHp; }
   return v;
@@ -1417,11 +1419,22 @@ function wizVisuals(st){
 
 // ── BATTLE LOOP ────────────────────────────────────────────
 let battleRunning=false, gameEnded=false;
+// Only ever one battle loop: starting it again (e.g. after each minigame) replaces the old one.
+// Stacked loops used to tick every effect several times per frame, so attacks flashed by.
+let battleRAF=0;
+function startBattleLoop(){
+  cancelAnimationFrame(battleRAF);
+  lastFrameTime=0;
+  battleRAF=requestAnimationFrame(battleLoop);
+}
+// Per-frame VFX steps are tuned for 60 fps; fk scales them by real elapsed time
+let fk=1;
 function battleLoop(ts){
   if(!battleRunning) return;
-  requestAnimationFrame(battleLoop);
+  battleRAF=requestAnimationFrame(battleLoop);
   const dt=lastFrameTime?Math.min(ts-lastFrameTime,100):16;
   lastFrameTime=ts;
+  fk=Math.min(dt,50)/16.67;
   PLAYERS.forEach(w=>tickAnimFrame(w,dt));
   resizeBC();
   bx.setTransform(1,0,0,1,0,0);
@@ -1607,8 +1620,8 @@ function spawnBeam(x1,y1,x2,y2,col){
 function tickBeams(){
   gs.beams=gs.beams.filter(b=>b.ttl>0);
   gs.beams.forEach(b=>{
-    b.ttl--;
-    bx.globalAlpha=b.ttl/8;
+    b.ttl-=fk;
+    bx.globalAlpha=Math.max(0,b.ttl/8);
     bx.strokeStyle=b.col; bx.lineWidth=2.5;
     bx.shadowColor=b.col; bx.shadowBlur=12;
     bx.beginPath(); bx.moveTo(b.x1,b.y1); bx.lineTo(b.x2,b.y2); bx.stroke();
@@ -1722,8 +1735,8 @@ function vfxStrikeAnim(who,tgt,ms=800){ anim(who,'cast',ms); if(tgt&&tgt!==who) 
 // ── Reactions shared by every spell ──
 const VFX={
   wardRaise:(x,col)=>vfxPhaseIn(x,bH*.38,[col,col,'#ffffff'],18),
-  wardBlock:x=>{ spawnParts(x,bH*.38,'#4af0ff',8); spawnParts(x,bH*.38,'#ffffff',4); },
-  wardShatter:x=>{ spawnParts(x,bH*.38,'#4af0ff',22); spawnParts(x,bH*.38,'#ffffff',8); },
+  wardBlock:(x,col='#4af0ff')=>{ spawnParts(x,bH*.38,col,8); spawnParts(x,bH*.38,'#ffffff',4); },
+  wardShatter:(x,col='#4af0ff')=>{ spawnParts(x,bH*.38,col,22); spawnParts(x,bH*.38,'#ffffff',8); },
   absorbed:(x,col)=>{ spawnParts(x,bH*.38,'#ffcc44',18); spawnParts(x,bH*.38,col,10); spawnParts(x,bH*.38,'#ffffff',6); },
   vanished:x=>spawnParts(x,bH*.38,'#b8a0e8',12),
   dodged:x=>{ spawnParts(x,bH*.38,'#9988cc',22); spawnParts(x,bH*.38,'#ffffff',8); flash('#9988cc'); },
@@ -2786,6 +2799,8 @@ function executeSignature(who,sp,action,cb){
   combatTimeout(cb,900);
 }
 
+// A ward's bubble and its block / shatter sparks take its element's colour
+function wardCol(st){ return st.shieldType?elemById(st.shieldType).col:'#4af0ff'; }
 function raiseWard(who,elem,power,retaliate){
   const st=gs[who], el=elemById(elem);
   st.shield=ELEM_WARD_ROUNDS;
@@ -2794,9 +2809,10 @@ function raiseWard(who,elem,power,retaliate){
   VFX.wardRaise(seatX(who),el.col);
 }
 function breakWard(st,x){
+  const col=wardCol(st);
   st.shield=0; st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null;
-  addFloat(x,bH*.24,'🛡 SHATTERED!','#88ffff',18);
-  VFX.wardShatter(x);
+  addFloat(x,bH*.24,'🛡 SHATTERED!',col,18);
+  VFX.wardShatter(x,col);
 }
 function elemCleanse(who){
   const st=gs[who], curses=cursesOf(st);
@@ -2835,8 +2851,8 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet){
     const blocked=Math.min(dmg,Math.floor(ts.shieldHp/take));
     ts.shieldHp-=Math.max(1,Math.ceil(blocked*take));
     dmg-=blocked; warded=true;
-    addFloat(tx,bH*.24,'🛡 −'+blocked+(take<1?' resisted':take>1?' unravels':' blocked'),'#4af0ff',12);
-    VFX.wardBlock(tx);
+    addFloat(tx,bH*.24,'🛡 −'+blocked+(take<1?' resisted':take>1?' unravels':' blocked'),wardCol(ts),12);
+    VFX.wardBlock(tx,wardCol(ts));
     if(ts.shieldHp<=0) breakWard(ts,tx);
   }
   if(dmg>0){
@@ -3359,7 +3375,7 @@ function startMultiBattle(){
   gameEnded=false; battleRunning=true; lastFrameTime=0;
   resizeBC();
   showScreen('battle-screen');
-  requestAnimationFrame(battleLoop);
+  startBattleLoop();
   setTimeout(beginPickPhase,200);
 }
 // Setup screen: how many wizards, the format, and who is played by a person
@@ -3530,7 +3546,7 @@ function puzzleFinish(ok,cb){
   lastFrameTime=0;
   showScreen('battle-screen');
   if(cb){cb(ok);}
-  requestAnimationFrame(battleLoop);
+  startBattleLoop();
 }
 
 function setDpadVisible(v){
@@ -6385,7 +6401,7 @@ function startTwoPlayerBattle(){
   lastFrameTime=0;
   resizeBC();
   showScreen('battle-screen');
-  requestAnimationFrame(battleLoop);
+  startBattleLoop();
   setTimeout(beginPickPhase,200);
 }
 
@@ -6434,7 +6450,7 @@ function startNextBattle(){
   lastFrameTime=0;
   resizeBC();
   showScreen('battle-screen');
-  requestAnimationFrame(battleLoop);
+  startBattleLoop();
 }
 
 function startTrainingBattle(){
@@ -6457,7 +6473,7 @@ function startTrainingBattle(){
   lastFrameTime=0;
   resizeBC();
   showScreen('battle-screen');
-  requestAnimationFrame(battleLoop);
+  startBattleLoop();
 }
 
 // ── BALANCE SIMULATOR ──────────────────────────────────────
