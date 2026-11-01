@@ -61,9 +61,12 @@ What was built, including choices made while building:
   A ward in an element your rival can't cast can never be unravelled or matched, so it naturally lasts
   longer. That rewards knowing the roster.
 - **Lightning** burns 1 / 2 / 3 mana, even when it hits a ward.
-- **Ice:** plain Ice strikes carry no rider. Plain element strikes never lock: a hard lock hands the
-  caster a pick that can't lose, which breaks the guessing game for a round. Chill (can't pick Damage
-  next round) is now Skadi's Ice Lance's own rider (`"chill": true`, middle ring and up, reaching HP).
+- **Ice:** a middle- or outer-ring hit that reaches HP **frostbites** the target. If they pick Damage
+  next round, a coin flip at the reveal decides whether it freezes and is lost (no mana spent,
+  `ELEM_FROSTBITE_PCT`). Plain element strikes never lock: a hard lock hands the caster a pick that
+  can't lose, which breaks the guessing game for a round. Rolling at the reveal keeps both sides
+  guessing. Chill (a hard lock: can't pick Damage next round) is Skadi's Ice Lance's own rider
+  (`"chill": true`, middle ring and up, reaching HP).
 - **Character stats:** each character's HP and damage multiplier apply. Eldrin's wards cost 1 less
   (`shieldCostMod` in `characters.json`). Character spells: see Phase 4.
 - **AI:** a weighted mixed strategy. It dispels when you have a ward, and on Normal it matches your
@@ -120,7 +123,7 @@ so each spell's numbers can be tuned there.
   Ponder's Blink → Lightning, Durin's Stonesoul → Arcane, Weizan's Iron Patience → Arcane, Gretch's
   Maggot Cloud → Physical, Valdris's Reinforce → Physical, Thessaly's Spellbind → Dark, Korvath's
   Ancient Wrath → Physical, Nyxara's Event Horizon → Arcane.
-- **Strikes** follow the normal damage rules (wards, matching elements, Lightning burn) plus
+- **Strikes** follow the normal damage rules (wards, matching elements, Lightning burn, Ice frostbite) plus
   their own riders: lifesteal, damage-over-time, mana burn, random power, % of foe's HP, recoil, arcing.
   **Piercing is gone:** Radiant, Feint and Charge burn mana instead.
 - **Signature wards** are wards with a twist: Flame Shield hits back; Reinforce grows with skeletons;

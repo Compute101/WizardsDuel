@@ -1634,7 +1634,7 @@ const WIZ_VISUAL_BY_ID={timedrain:'timeDrain', counter:'counter', candle:'candle
   singularity:'voidCollapse', frostarmor:'frostArmor', dragonscales:'dragonScales', stonesoul:'stonesoul',
   galvanize:'charge', conductivity:'conductivity', agony:'agony', silence:'silence', corruption:'corruption',
   vanish:'invisible', blink:'blink', plague:'plague', maggotcloud:'maggotCloud', bonetotem:'boneTotem',
-  enthral:'enthralled', arcaneweave:'arcaneWeave', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen',
+  enthral:'enthralled', arcaneweave:'arcaneWeave', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen', frostbite:'frozen',
   warpaint:'resist', ironpatience:'resist', heal:'regen'};
 function wizVisuals(st){
   const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra};
@@ -2968,7 +2968,8 @@ const ELEM_START_MANA=6;
 const ELEM_INCOME=4;            // mana every seat gains at the end of each round
 const ELEM_WARD_ROUNDS=3;       // a ward lasts the round it is raised + 2 more
 const ELEM_WARD_DECAY=0.75;     // ward HP kept at each round end
-const ELEM_CHILL_MIN_TIER=2;    // a chilling strike (Ice Lance, el.chill) of this strength or more chills when it reaches HP
+const ELEM_CHILL_MIN_TIER=2;    // Ice of this strength or more frostbites (Ice Lance, el.chill: chills) when it reaches HP
+const ELEM_FROSTBITE_PCT=0.5;   // frostbitten: chance a Damage pick next round freezes and is lost (rolled at the reveal)
 const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or not
 const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
 const ELEM_DISPEL_ALL_TIER=3;
@@ -3199,7 +3200,7 @@ function openElemWheel(cat){
   selfBtn.style.display=cat==='dispel'?'':'none';
   selfBtn.textContent='✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
   const ruleText={
-    damage:'A ward\'s own element unravels it · Lightning also burns mana',
+    damage:'A ward\'s own element unravels it · Lightning also burns mana · Ice (middle ring or stronger) frostbites: a Damage pick next round has a 50% chance to freeze',
     protect:'Wards last 3 rounds, fading each round · they resist other elements, but their own element unravels them',
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
@@ -3376,8 +3377,11 @@ function payForAction(who,action){
   const sp=action.sig?sigById(who,action.sig):null;
   const cost=action.cat==='phase'?PHASE.cost:sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
   const silence=effectsOf(st,'silence')[0];
+  const frost=effectsOf(st,'frostbite').find(e=>e.cat===action.cat);
+  if(frost) st.effects=st.effects.filter(e=>e!==frost);   // one roll, on the next pick it covers
   if(!action.ok){ st.mana=Math.max(0,st.mana-1); action.outcome='fizzle'; }
   else if(silence&&_rng()<silence.pct) action.outcome='silenced';
+  else if(frost&&_rng()<frost.pct) action.outcome='frozen';
   else if(cost>st.mana) action.outcome='nomana';
   else { st.mana-=cost; action.outcome='cast'; action.paid=cost; }
   if(ent&&action.outcome==='cast'&&action.cat===ent.call&&!gs[ent.from].out){
@@ -3448,6 +3452,7 @@ function executeElemental(who,action,cb){
   // Paid (or not) when the round began — see payForAction
   if(action.outcome==='fizzle'){ addFloat(x,bH*.33,'Fizzled!','#ff8844',13); combatTimeout(cb,700); return; }
   if(action.outcome==='silenced'){ showSilenceBlock(x,bH*.33); combatTimeout(cb,900); return; }
+  if(action.outcome==='frozen'){ showFrozenBlock(x,bH*.33); combatTimeout(cb,900); return; }
   if(action.outcome==='nomana'){ addFloat(x,bH*.33,'Out of mana!','#ff8844',13); combatTimeout(cb,700); return; }
   anim(who,'cast',600);
   st.catCounts[action.cat]=(st.catCounts[action.cat]||0)+1;   // what Spellbind binds, and what Enthral reads
@@ -3831,8 +3836,13 @@ function strikeFinish(who,r,o,b,hit){
   if(hit.hp>0){
     if(o.lifesteal){ elemHeal(who,Math.round(hit.hp*o.lifesteal),'🩸'); VFX.lifesteal(seatX(who)); }
     if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',elem:o.elem,name:o.name||el.name,icon:el.icon},o.dot),who);
-    if(o.chill&&(o.tier||2)>=ELEM_CHILL_MIN_TIER)   // plain element strikes never lock
-      addEffect(tgt,{id:'chill',type:'lock',cat:'damage',kind:'curse',name:'Chilled',icon:'❄️',rounds:ELEM_LOCK_ROUNDS},who);
+    // Plain Ice never locks: it frostbites, and the coin flip waits for the target's next pick, so
+    // neither side can plan around it. Ice Lance (el.chill) keeps the hard lock.
+    if(o.elem==='ice'&&(o.tier||2)>=ELEM_CHILL_MIN_TIER){
+      if(o.chill) addEffect(tgt,{id:'chill',type:'lock',cat:'damage',kind:'curse',name:'Chilled',icon:'❄️',rounds:ELEM_LOCK_ROUNDS},who);
+      else if(!catLocked(tgt,'damage'))
+        addEffect(tgt,{id:'frostbite',type:'frostbite',cat:'damage',pct:ELEM_FROSTBITE_PCT,kind:'curse',name:'Frostbitten',icon:'🥶',rounds:ELEM_LOCK_ROUNDS},who);
+    }
   }
   if(burn>0){
     const n=Math.min(ts.mana,burn);
@@ -7215,6 +7225,13 @@ function flash(col){
 }
 
 // ── SILENCE BLOCK VISUAL ───────────────────────────────────
+// Frostbite's coin flip came up: the Damage pick freezes before it's cast (no mana spent)
+function showFrozenBlock(cx,y){
+  addFloat(cx,y,'🥶 FROZEN!','#aaddff',22);
+  addFloat(cx,y+bH*.07,'Strike lost','#88ccff',13);
+  spawnParts(cx,wizMidY(cx),'#aaddff',16);
+  spawnParts(cx,wizMidY(cx),'#ffffff',8);
+}
 function showSilenceBlock(cx,y){
   addFloat(cx,y,'🔇 SILENCED!','#cc44ff',22);
   addFloat(cx,y+bH*.07,'Spell Blocked','#9944cc',13);
@@ -7533,7 +7550,7 @@ const TUTORIAL_CONVOS={
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
     {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too. With more than one rival, an outer-ring strike hits every one of them."},
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
-    {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward."},
+    {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward. A strong Ice strike that reaches them frostbites them: if they pick Damage next round, it's a coin flip whether it freezes and is lost."},
     {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
