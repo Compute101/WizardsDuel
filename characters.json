@@ -984,7 +984,7 @@
   "valdris": {
     "name": "VALDRIS",
     "title": "The Undying",
-    "sprite": "sprites/mage-dark.png",
+    "sprite": "sprites/valdris.png",
     "col": "#8844cc",
     "taunts": [
       "I have outlasted empires. Did you truly think you would be different?",
@@ -1055,7 +1055,7 @@
   "mirel": {
     "name": "MIREL",
     "title": "The Deceiver",
-    "sprite": "sprites/mage-dark.png",
+    "sprite": "sprites/mirel.png",
     "col": "#b86ef4",
     "taunts": [
       "You were fighting my shadow the entire time. I was never even there.",
