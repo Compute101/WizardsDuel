@@ -641,6 +641,9 @@ const SPRITE_CFG={
   animRows:{idle:0,cast:1,hit:2,shield:3,death:4},
 };
 const SPRITE_SCALE=1.2;   // battle sprite height relative to drawWiz's sz
+// A character's optional "spriteHeight" in characters.json shrinks its battle sprite (e.g. Durin
+// is a dwarf, so 0.72 of a man's height). Feet stay on the floor; only the drawn figure changes.
+function seatSpriteHeight(who){ const c=seatCfg(who); return (c&&c.spriteHeight)||1; }
 // Where the wizards stand and how big they are, in scene coordinates. Feet sit low on the arena
 // floor so the (large) wizards use the ground below the horizon. WIZ_GROW enlarges them over the
 // original size; minions keep the original layout (see drawWiz). 3–4 seats grow less so neighbours
@@ -1385,7 +1388,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     const shake=animName==='hit'?Math.sin(t/60)*sz*.03:0;
     const bob=animName==='idle'?Math.sin(t/500+x)*sz*.015:0;
     // Drawn a bit taller than sz: the auras around it (radius ~0.82×sz) still enclose it
-    drawSprite(img,animName,animState[who].frame,x,y+lift+shake+bob,sz*SPRITE_SCALE,flip);
+    drawSprite(img,animName,animState[who].frame,x,y+lift+shake+bob,sz*SPRITE_SCALE*seatSpriteHeight(who),flip);
   } else {
     if(flip){bx.scale(-1,1); x=-x;}
     const bob=animName==='idle'?Math.sin(t/500+x)*.015*sz:0;
