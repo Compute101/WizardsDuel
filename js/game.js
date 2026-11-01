@@ -96,7 +96,7 @@ function newState(){
   gs={
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], fireballs:[], explosions:[],
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], wardUnravels:[], fireballs:[], explosions:[],
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1639,7 +1639,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickFireballs(); tickExplosions(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
@@ -1973,6 +1973,57 @@ function tickShadowCircles(){
   });
 }
 
+// Ward unravelling (a dispel or curse wearing at a ward, drawn by tickWardUnravels): threads of
+// the ward's own colour and dispel pink peel off the bubble's edge and spiral outward, shedding
+// motes as they unwind. No flash, burst or hit animation, so it never reads as anyone being hurt.
+// big: the ward is fully unravelled (more threads, flung further).
+const WARD_UNRAVEL_MS=1300;
+function wardBubble(){
+  const sz=wizSize();
+  return {cy:wizFeetY()-sz*.62, rx:sz*.75*AURA_SX, ry:sz*.75*AURA_SY};
+}
+function spawnWardUnravel(x,col,big){
+  const b=wardBubble();
+  gs.wardUnravels.push({x,y:b.cy,rx:b.rx,ry:b.ry,col,big:!!big,start:Date.now(),
+    base:_rng()*Math.PI*2,dir:_rng()<.5?-1:1,ms:WARD_UNRAVEL_MS*(big?1.25:1)});
+}
+function tickWardUnravels(){
+  const now=Date.now();
+  gs.wardUnravels=gs.wardUnravels.filter(u=>now-u.start<u.ms);
+  gs.wardUnravels.forEach(u=>{
+    const t=(now-u.start)/u.ms, ease=1-Math.pow(1-t,2);
+    const arms=u.big?6:3, sweep=Math.PI*1.4, out=(u.big?.75:.45)*ease, SEG=22;
+    const alpha=Math.min(1,t/.1)*(1-Math.pow(t,3));
+    const cols=[u.col,'#ffaaff'];
+    bx.save(); bx.lineCap='round';
+    for(let i=0;i<arms;i++){
+      const head=u.base+i/arms*Math.PI*2+u.dir*t*Math.PI*1.6;
+      const col=cols[i%2];
+      const pt=k=>{   // k: 0 tail (still on the bubble) → 1 head (flung outward)
+        const a=head-u.dir*(1-k)*sweep, rf=1+out*(k*k+t*.4);
+        return [u.x+Math.cos(a)*u.rx*rf, u.y+Math.sin(a)*u.ry*rf];
+      };
+      bx.strokeStyle=col; bx.shadowColor=col; bx.shadowBlur=10;
+      let [px,py]=pt(0);
+      for(let s=1;s<=SEG;s++){
+        const k=s/SEG, [nx,ny]=pt(k);
+        bx.globalAlpha=alpha*k; bx.lineWidth=.8+k*2.2*(u.big?1.2:1);
+        bx.beginPath(); bx.moveTo(px,py); bx.lineTo(nx,ny); bx.stroke();
+        px=nx; py=ny;
+      }
+      // A bright mote at the loose end, shedding sparks along the spiral
+      bx.globalAlpha=alpha; bx.fillStyle='#ffffff'; bx.shadowColor=col; bx.shadowBlur=14;
+      bx.beginPath(); bx.arc(px,py,2.2*(u.big?1.3:1),0,Math.PI*2); bx.fill();
+      if(t<.85&&_rng()<.5*fk){
+        const [qx,qy]=pt(.97), tx=px-qx, ty=py-qy, d=Math.hypot(tx,ty)||1;
+        gs.parts.push({x:px,y:py,col:_rng()<.5?col:'#ffffff',vx:tx/d*1.2,vy:ty/d*1.2,
+          sz:1+_rng()*1.6,life:1,dec:.03+_rng()*.02,noGrav:true});
+      }
+    }
+    bx.shadowBlur=0; bx.globalAlpha=1; bx.restore();
+  });
+}
+
 // Particles on an ellipse around (x,y). o.out flies outward (auras), otherwise inward (impacts).
 function vfxRing(x,y,cols,n,o={}){
   const r=bH*(o.r||.06), ry=bH*(o.ry||.04), spd=o.spd||1.2, dir=o.out?0:Math.PI;
@@ -2026,6 +2077,9 @@ const VFX={
   wardRaise:(x,col)=>vfxPhaseIn(x,wizMidY(),[col,col,'#ffffff'],18),
   wardBlock:(x,col='#4af0ff')=>{ spawnParts(x,wizMidY(),col,8); spawnParts(x,wizMidY(),'#ffffff',4); },
   wardShatter:(x,col='#4af0ff')=>{ spawnParts(x,wizMidY(),col,22); spawnParts(x,wizMidY(),'#ffffff',8); },
+  // A dispel wearing at a ward: threads spiral off the bubble (no burst — nobody is hurt)
+  wardUnravel:(x,col='#4af0ff')=>spawnWardUnravel(x,col,false),
+  wardUnravelled:(x,col='#4af0ff')=>spawnWardUnravel(x,col,true),
   absorbed:(x,col)=>{ spawnParts(x,wizMidY(),'#ffcc44',18); spawnParts(x,wizMidY(),col,10); spawnParts(x,wizMidY(),'#ffffff',6); },
   vanished:x=>spawnParts(x,wizMidY(),'#b8a0e8',12),
   dodged:x=>{ spawnParts(x,wizMidY(),'#9988cc',22); spawnParts(x,wizMidY(),'#ffffff',8); flash('#9988cc'); },
@@ -3105,11 +3159,12 @@ function raiseWard(who,elem,power,retaliate){
   addFloat(seatX(who),bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
   VFX.wardRaise(seatX(who),el.col);
 }
-function breakWard(st,x){
+// unravel: a dispel took it down, so it comes apart in spiralling threads instead of shattering
+function breakWard(st,x,unravel){
   const col=wardCol(st);
   st.shield=0; st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null;
-  addFloat(x,bH*.24,'🛡 SHATTERED!',col,18);
-  VFX.wardShatter(x,col);
+  addFloat(x,bH*.24,unravel?'🛡 UNRAVELLED!':'🛡 SHATTERED!',col,18);
+  (unravel?VFX.wardUnravelled:VFX.wardShatter)(x,col);
 }
 function elemCleanse(who){
   const st=gs[who], curses=cursesOf(st);
@@ -3126,13 +3181,13 @@ function elemWardDispel(tgt,elem,power){
   const dmg=power*(match?2:1);
   ts.shieldHp-=dmg;
   addFloat(tx,bH*.3,'✦ −'+dmg+' ward'+(match?' (matched!)':''),'#ffaaff',14);
-  spawnParts(tx,wizMidY(),'#ffaaff',12);
-  if(ts.shieldHp<=0) breakWard(ts,tx);
+  if(ts.shieldHp<=0) breakWard(ts,tx,true);
+  else VFX.wardUnravel(tx,wardCol(ts));
 }
 function elemDispelHit(tgt,elem,power,tier){
   const ts=gs[tgt], tx=seatX(tgt);
-  VFX.dispelHit(tx);
   if(hasWard(ts)){ elemWardDispel(tgt,elem,power); return; }
+  VFX.dispelHit(tx);
   const buffs=buffsOf(ts);
   if(!buffs.length){ addFloat(tx,bH*.3,'✦ Nothing to dispel','#ffaaff',12); return; }
   removeEffects(tgt,tier>=ELEM_DISPEL_ALL_TIER?buffs:[buffs[buffs.length-1]],'✦ Dispelled');
@@ -3746,7 +3801,7 @@ function resetTrainingRound(knockedOut){
     gs.p1=newSeat(p1Cfg,p1Key);
     gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
-    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.fireballs=[]; gs.explosions=[];
+    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
     gs.pending={};
     const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
     addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
@@ -6798,7 +6853,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.fireballs=[]; gs.explosions=[];
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
@@ -6820,7 +6875,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.fireballs=[]; gs.explosions=[];
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
