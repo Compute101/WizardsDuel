@@ -690,6 +690,21 @@ function loadSprites(){
     img.src=cfg.sprite;
   });
 }
+// Skeleton summons (Valdris's Raise Dead): one still per cast strength — inner / middle / outer ring.
+// Same format as the full-body character stills: any size, facing right, feet at the bottom edge.
+// A missing file just keeps the plain circle for that tier.
+const SKELETON_SPRITES=['sprites/skeleton1.png','sprites/skeleton2.png','sprites/skeleton3.png'];
+const SKELETON_HEIGHT=[0.55,0.62,0.7];   // fraction of the (pre-WIZ_GROW) wizard height, by tier
+const skeletonImgs=SKELETON_SPRITES.map(src=>{
+  const rec={img:new Image(),ready:false};
+  rec.img.onload=()=>{ rec.ready=true; };
+  rec.img.src=src;
+  return rec;
+});
+function skeletonSprite(tier){
+  const rec=skeletonImgs[Math.min(3,Math.max(1,tier||2))-1];
+  return rec&&rec.ready?rec.img:null;
+}
 // Each seat's rune circle on the arena floor
 function seatRunes(){
   if(PLAYERS.length<=2||!gs[PLAYERS[0]]){
@@ -1313,12 +1328,22 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   bx.restore();   // end of the aura oval
   // Ward orbiters on the far side, behind the sprite
   if(shielded>0) drawWardOrbiters(x,y-sz*.62,sz,state,'back',fShield,t);
-  // Skeletons (Valdris): small bone-coloured circles beside wizard
+  // Skeletons (Valdris): one sprite per summon strength (see SKELETON_SPRITES), or a
+  // bone-coloured circle until that tier's art exists.
   // Minions keep the original (pre-WIZ_GROW) size and spacing, standing on the same floor
   const minionDir=flip?1:-1, msz=sz/wizGrow(), mwy=y-msz*.5;
   if(state&&state.skeletons&&state.skeletons.length>0){
     state.skeletons.forEach((skel,i)=>{
       const sx=x+minionDir*(i===0?msz*1.3:msz*2.1), sy=mwy;
+      const img=skeletonSprite(skel.tier);
+      if(img){
+        // Stands on the floor, faces the same way as its master; stronger summons stand taller
+        const bob=Math.sin(t/450+i*1.7)*msz*.01;
+        bx.save(); bx.globalAlpha=0.95;
+        drawSprite(img,'idle',0,sx,y+bob,msz*SKELETON_HEIGHT[(skel.tier||2)-1],flip);
+        bx.restore();
+        return;
+      }
       bx.globalAlpha=0.85; bx.fillStyle='#ccccbb'; bx.shadowColor='#aaaaaa'; bx.shadowBlur=4;
       bx.beginPath(); bx.arc(sx,sy,msz*.18,0,Math.PI*2); bx.fill();
       bx.fillStyle='#333'; bx.font=`${Math.round(msz*.14)}px serif`;
@@ -2392,7 +2417,7 @@ function countMinions(st,minion){ return effectsOf(st,'minion').filter(e=>e.mini
 function syncMinionVisuals(st){
   // drawWiz draws blades / skeletons / simulacra from these fields
   st.blades=countMinions(st,'blade');
-  st.skeletons=effectsOf(st,'minion').filter(e=>e.minion==='skeleton').map(()=>({hp:25}));
+  st.skeletons=effectsOf(st,'minion').filter(e=>e.minion==='skeleton').map(e=>({tier:e.tier||2}));
   st.simulacra=effectsOf(st,'minion').filter(e=>e.minion==='simulacrum').map(()=>({}));
 }
 function addEffect(who,eff,fromWho){
@@ -2861,7 +2886,7 @@ function executeSignature(who,sp,action,cb){
   const tgt=action.target, ts=gs[tgt], tx=seatX(tgt);
   const e=elemById(el.elem||'arcane');
   const fx=SPELL_VFX[sp.id]||{}, ctx=vfxCtx(who,tgt);
-  const effect=(overrides)=>Object.assign({id:sp.id,name:sigName(sp),icon:sigIcon(sp)},el.effect,overrides);
+  const effect=(overrides)=>Object.assign({id:sp.id,name:sigName(sp),icon:sigIcon(sp),tier:el.tier},el.effect,overrides);
   if(el.kind==='strike'){
     st.lastElem=el.elem;
     let power=el.power||0;
