@@ -91,6 +91,9 @@ The Inferno minigame was redesigned as an animated rising-glyph mechanic and ser
 | Normal | 3×4 grid, non-spell glyphs greyed out | Random from spell's 4 |
 | Hard | 3×4 grid, nothing greyed out — all 12 active; a wrong glyph fails | Random from spell's 4 |
 
+### Dispel (launchDispelPattern) — Veil Unravelling
+Made harder than the others on purpose (Dispels were too easy). The sequence glyphs are unveiled **one at a time** (fade in / hold / fade out, `MG_GLYPH_MS` each) in **shuffled slots** of a 6-slot inner ring that rotates, with **no order badges** — the order is only shown by when each one appears. Brighter, faster noise rings stay up for most of the watch, and violet **decoy flares** of Dispel's own glyphs appear in the middle ring (2 / 3 / 5 on easy / normal / hard), so the greyed-out keyboard can't rule them out.
+
 **Easy mode canonical words** (the fixed sequence a player can learn for each spell):
 
 | Spell | Canonical sequence |
