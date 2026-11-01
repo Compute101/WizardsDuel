@@ -96,7 +96,7 @@ function newState(){
   gs={
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], darkRituals:[], wardUnravels:[], fireballs:[], explosions:[], iceCrystals:[], iceShards:[], boulders:[], quake:null,
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], darkRituals:[], wardUnravels:[], fireballs:[], explosions:[], iceCrystals:[], iceShards:[], boulders:[], storms:[], quake:null,
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1688,7 +1688,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickDarkRituals(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickBoulders(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickDarkRituals(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickBoulders(); tickStorms(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
@@ -2175,6 +2175,142 @@ function tickIceShards(){
   });
 }
 
+// Lightning Strike (plain Lightning damage off the wheel), drawn by tickStorms: no projectile.
+// Form: a dark storm cloud swirls together over the target's head (puffs spiral inward and
+// spin, sparks flicker inside it), sized by the damage. Discharge: cb() runs the strike and a
+// jagged, branching bolt cracks down from the cloud into the target, its width and branches
+// set by the damage; it flickers twice, then the cloud breaks up. The impact
+// (ELEM_IMPACT_VFX.lightning) is spawnLightningImpact. Purely visual, so it uses Math.random.
+const STORM_FORM_MS=1050, STORM_BOLT_MS=420, STORM_FADE_MS=520;
+function stormScale(dmg){ return .7+Math.min(.7,Math.max(1,dmg)/40); }
+function boltWidth(dmg){ return Math.max(1.5,bH*Math.min(.016,.004+.0003*Math.max(1,dmg))); }
+function spawnStormCloud(who,tgt,dmg,cb){
+  if(simMode){ if(cb) cb(); return; }
+  const sz=wizSize(tgt), s=stormScale(dmg), R=sz*.28*s;
+  // Just above the hat; a big storm may spill off the top of the scene, like a real sky
+  const cx=seatX(tgt), cy=Math.max(bH*.05,wizFeetY()-sz*1.2-R*.3);
+  const np=Math.round(9+s*5);
+  const puffs=Array.from({length:np},(_,i)=>({
+    a:i/np*Math.PI*2+Math.random()*.4, d:.2+Math.random()*.7, r:.28+Math.random()*.22,
+    shade:Math.random()}));
+  anim(who,'cast',STORM_FORM_MS);
+  gs.storms.push({cx,cy,R,s,dmg,puffs,tx:cx,ty:wizMidY(tgt),start:Date.now(),cb,fired:false,
+    spin:(Math.random()<.5?-1:1),bolt:null,flick:0});
+}
+// A jagged line by midpoint displacement: [[x,y],…]
+function boltPath(x1,y1,x2,y2,rough,depth){
+  let pts=[[x1,y1],[x2,y2]];
+  const len=Math.hypot(x2-x1,y2-y1), nx=-(y2-y1)/len, ny=(x2-x1)/len;
+  let amp=len*rough;
+  for(let d=0;d<depth;d++){
+    const out=[pts[0]];
+    for(let i=1;i<pts.length;i++){
+      const [ax,ay]=pts[i-1],[bx2,by2]=pts[i], o=(Math.random()-.5)*amp;
+      out.push([(ax+bx2)/2+nx*o,(ay+by2)/2+ny*o],pts[i]);
+    }
+    pts=out; amp*=.55;
+  }
+  return pts;
+}
+function makeBolt(f){
+  const x1=f.cx+(Math.random()-.5)*f.R*.3, y1=f.cy+f.R*.15;
+  const main=boltPath(x1,y1,f.tx,f.ty,.18,6);
+  const branches=[], nb=Math.min(6,1+Math.round(f.dmg/8));
+  for(let i=0;i<nb;i++){
+    const at=Math.floor(main.length*(.15+Math.random()*.55)), [bx1,by1]=main[at];
+    const side=Math.random()<.5?-1:1, L=(f.ty-f.cy)*(.2+Math.random()*.25);
+    branches.push(boltPath(bx1,by1,bx1+side*L*(.5+Math.random()*.6),by1+L,.25,4));
+  }
+  return {main,branches};
+}
+function strokeBolt(pts,w,col,alpha){
+  bx.beginPath(); pts.forEach(([x,y],i)=>i?bx.lineTo(x,y):bx.moveTo(x,y));
+  bx.globalAlpha=alpha*.45; bx.strokeStyle=col; bx.lineWidth=w*3.2; bx.shadowColor=col; bx.shadowBlur=w*6; bx.stroke();
+  bx.globalAlpha=alpha; bx.strokeStyle='#ffffff'; bx.lineWidth=w; bx.shadowBlur=w*3; bx.stroke();
+}
+function drawStormCloud(f,el,k,a){
+  // Puffs spiral in from wide to packed while forming, and the whole cloud keeps turning
+  const gather=1.7-.7*k, rot=f.spin*el*.0032;
+  bx.save(); bx.translate(f.cx,f.cy);
+  const glow=bx.createRadialGradient(0,0,0,0,0,f.R*1.4);
+  glow.addColorStop(0,`rgba(90,80,140,${.3*a*k})`); glow.addColorStop(1,'rgba(40,40,80,0)');
+  bx.fillStyle=glow; bx.beginPath(); bx.ellipse(0,0,f.R*1.5,f.R*.6,0,0,Math.PI*2); bx.fill();
+  f.puffs.forEach(p=>{
+    const ang=p.a+rot*(1.4-p.d*.6), d=f.R*p.d*gather;
+    const x=Math.cos(ang)*d, y=Math.sin(ang)*d*.3, r=f.R*p.r*(.5+.5*k);
+    const c=Math.round(22+p.shade*28);
+    const g=bx.createRadialGradient(x,y-r*.3,r*.1,x,y,r);
+    g.addColorStop(0,`rgba(${c+28},${c+26},${c+55},${a})`); g.addColorStop(.7,`rgba(${c},${c},${c+22},${a*.95})`);
+    g.addColorStop(1,`rgba(${c},${c},${c+22},0)`);
+    bx.fillStyle=g; bx.beginPath(); bx.arc(x,y,r,0,Math.PI*2); bx.fill();
+  });
+  // Lit from inside: flickers more and more as it charges
+  if(f.flick>0){
+    const g=bx.createRadialGradient(0,f.R*.1,0,0,f.R*.1,f.R*1.1);
+    g.addColorStop(0,`rgba(255,255,240,${.6*f.flick*a})`); g.addColorStop(.5,`rgba(200,190,255,${.22*f.flick*a})`);
+    g.addColorStop(1,'rgba(200,190,255,0)');
+    bx.fillStyle=g; bx.beginPath(); bx.ellipse(0,f.R*.1,f.R*1.2,f.R*.45,0,0,Math.PI*2); bx.fill();
+  }
+  bx.restore();
+}
+function tickStorms(){
+  const now=Date.now();
+  gs.storms=gs.storms.filter(f=>!f.fired||now-f.start<STORM_FORM_MS+Math.max(STORM_FADE_MS,STORM_BOLT_MS));   // never drop one before its strike lands
+  gs.storms.forEach(f=>{
+    const el=now-f.start, k=Math.min(1,el/STORM_FORM_MS), e=1-Math.pow(1-k,2);
+    const after=el-STORM_FORM_MS;
+    // Inner flicker: rare at first, near-constant just before the discharge
+    if(after<0&&Math.random()<(.03+.3*k*k)*fk) f.flick=.5+Math.random()*.5;
+    else f.flick=Math.max(0,f.flick-.18*fk);
+    if(after<0){
+      // Wind and sparks drawn into the swirl
+      if(Math.random()<.7*fk){
+        const a=Math.random()*Math.PI*2, d=f.R*(1.6+Math.random()*.8);
+        gs.parts.push({x:f.cx+Math.cos(a)*d,y:f.cy+Math.sin(a)*d*.45,col:Math.random()<.25?'#ffee44':'#8a8aa8',
+          vx:-Math.cos(a)*d/16+f.spin*Math.sin(a)*2,vy:-Math.sin(a)*d*.45/16,sz:1+Math.random()*1.8,life:1,dec:.06,noGrav:true});
+      }
+      // Tiny arcs crackling inside the cloud as it charges
+      if(k>.55&&Math.random()<.35*fk){
+        const ax=f.cx+(Math.random()-.5)*f.R*1.4, ay=f.cy+(Math.random()-.4)*f.R*.5;
+        bx.save(); strokeBolt(boltPath(ax,ay,ax+(Math.random()-.5)*f.R*.8,ay+f.R*(.1+Math.random()*.3),.3,3),1,'#ffee44',.8); bx.restore();
+      }
+      drawStormCloud(f,el,e,.35+.65*e);
+      return;
+    }
+    // Discharge: the strike lands as the bolt hits
+    if(!f.fired){ f.fired=true; f.bolt=makeBolt(f); f.flick=1; if(f.cb) f.cb(); }
+    const fade=Math.max(0,1-after/STORM_FADE_MS);
+    drawStormCloud(f,el,1+after/STORM_FADE_MS*.5,fade);
+    if(after<STORM_BOLT_MS){
+      const bk=after/STORM_BOLT_MS;
+      // Two flashes, re-forking for the second, then it fades
+      if(bk>.3&&!f.rebolt){ f.rebolt=true; f.bolt=makeBolt(f); }
+      const alpha=bk<.18?1:bk<.3?.25:bk<.5?1:Math.max(0,1-(bk-.5)/.5);
+      const w=boltWidth(f.dmg);
+      bx.save(); bx.lineCap='round'; bx.lineJoin='round';
+      f.bolt.branches.forEach(b=>strokeBolt(b,w*.45,'#ffee44',alpha*.8));
+      strokeBolt(f.bolt.main,w,'#ffee44',alpha);
+      // Light thrown on the target where it strikes
+      const gl=bx.createRadialGradient(f.tx,f.ty,0,f.tx,f.ty,f.R*1.3);
+      gl.addColorStop(0,`rgba(255,255,230,${.6*alpha})`); gl.addColorStop(1,'rgba(255,238,68,0)');
+      bx.globalAlpha=1; bx.shadowBlur=0; bx.fillStyle=gl; bx.beginPath(); bx.arc(f.tx,f.ty,f.R*1.3,0,Math.PI*2); bx.fill();
+      bx.restore(); bx.globalAlpha=1;
+    }
+  });
+}
+// The bolt's impact, sized by the damage: a burst of sparks, a crackling ring and, for big hits, a jolt
+function spawnLightningImpact(x,y,dmg){
+  if(simMode) return;
+  const s=stormScale(dmg), n=Math.round(12+Math.max(1,dmg)*.8);
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, sp=(2+Math.random()*5)*s;
+    gs.parts.push({x,y,col:['#ffffff','#ffffaa','#ffee44','#ccccff'][Math.floor(Math.random()*4)],
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,sz:1+Math.random()*2.2,life:1,dec:.03+Math.random()*.03});
+  }
+  vfxRing(x,y,['#ffffff','#ffee44'],Math.round(12*s),{r:.05*s,ry:.03*s,out:true,noGrav:true,spd:1.6,dec:.03});
+  if(dmg>=18) quake(Math.min(8,2+dmg*.15),220+dmg*4);
+}
+
 // Shadow circle on a target (Dark strikes, drawn by tickShadowCircles): a purple ring opens,
 // the Dark runes ☽ ⊗ ∇ Ω rise from its centre one by one and orbit it, then collapse inward
 // into a burst — the battle-screen version of the Shadow Circle minigame's watch phase.
@@ -2426,7 +2562,7 @@ const VFX={
 const ELEM_IMPACT_VFX={
   fire:     (c,n,dmg)=>{ spawnFireExplosion(c.tx,c.ty,dmg!=null?dmg:(n>30?30:15)); flash('#ff6622'); },
   ice:      (c,n,dmg)=>{ spawnIceShatter(c.tx,c.ty,dmg!=null?dmg:(n>30?30:15)); spawnParts(c.tx,c.ty,'#ddf6ff',Math.round(n*.5)); flash('#88ddff'); },
-  lightning:(c,n)=>{ spawnParts(c.tx,c.ty,'#ffee44',n); spawnParts(c.tx,c.ty,'#ffffff',8); flash('#ffee44'); },
+  lightning:(c,n,dmg)=>{ spawnLightningImpact(c.tx,c.ty,dmg!=null?dmg:(n>30?30:15)); flash('#ffee44'); },
   arcane:   (c,n)=>{ spawnParts(c.tx,c.ty,'#4499ff',n); spawnParts(c.tx,c.ty,'#ddeeff',6); flash('#4499ff'); },
   physical: (c,n,dmg)=>{ spawnBoulderImpact(c.tx,c.ty,dmg!=null?dmg:(n>30?30:15)); spawnParts(c.tx,c.ty,'#d0a060',Math.round(n*.5)); flash('#d0a060'); },
   dark:     (c,n)=>{ spawnParts(c.tx,c.ty,'#cc44ff',n); flash('#cc44ff'); },   // the ritual circle (spawnDarkRitual) already burned out
@@ -3378,6 +3514,14 @@ function executeWheel(who,action,cb){
     spawnIceCrystals(who,tgt,dmg,land);
     return;
   }
+  if(action.cat==='damage'&&action.elem==='lightning'){
+    // Lightning Strike: a storm swirls up over each target (bigger for more damage), then a bolt
+    // discharges into them, as thick and forked as the damage is high
+    const dmg=previewStrikeDmg(who,'lightning',power);
+    tgts.slice(1).forEach(t=>spawnStormCloud(who,t,dmg,()=>{}));
+    spawnStormCloud(who,tgt,dmg,land);
+    return;
+  }
   if(action.cat==='damage'&&action.elem==='dark'){
     // Dark Strike: no projectile — a ritual circle of runes spins around each target, stops,
     // glows and burns out, and the damage lands as it burns
@@ -4218,7 +4362,7 @@ function resetTrainingRound(knockedOut){
     gs.p1=newSeat(p1Cfg,p1Key);
     gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
-    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.quake=null;
+    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.quake=null;
     gs.pending={};
     const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
     addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
@@ -7270,7 +7414,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.quake=null;
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.quake=null;
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
@@ -7292,7 +7436,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.quake=null;
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.quake=null;
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
