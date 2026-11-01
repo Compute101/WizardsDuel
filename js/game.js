@@ -1472,10 +1472,47 @@ function tickFloats(){
 function addFloat(x,y,t,col,sz=17){ gs.floats.push({x,y,t,col,sz,life:1}); }
 
 // ── SPELL PROJECTILES ──────────────────────────────────────
-function spawnProj(x1,y1,x2,y2,element,col,cb){
+// o.arc: peak height (px) of a parabolic flight path instead of a straight line
+function spawnProj(x1,y1,x2,y2,element,col,cb,o={}){
   if(simMode){ if(cb) cb(); return; }
-  const speeds={fire:0.038,lightning:0.22,ice:0.045,arcane:0.042,physical:0.065,dispel:0.05,manaburn:0.056,dark:0.048};
-  gs.projs.push({x1,y1,x2,y2,progress:0,speed:speeds[element]||0.045,element,col,cb,done:false});
+  const speeds={fire:0.038,lightning:0.22,ice:0.045,arcane:0.042,physical:0.065,dispel:0.05,manaburn:0.056,dark:0.048,arcaneOrb:0.03};
+  gs.projs.push({x1,y1,x2,y2,progress:0,speed:speeds[element]||0.045,element,col,cb,done:false,arc:o.arc||0,
+    phase:_rng()*Math.PI*2});
+}
+
+// Arcane strikes: pulsating blue orbs lobbed one after another, each on a parabola with its own
+// random peak height — one orb per ARCANE_ORB_DMG points of damage (rounded up). The strike lands
+// with the last orb; the earlier ones just pop on the target.
+const ARCANE_ORB_DMG=5, ARCANE_ORB_MAX=12, ARCANE_ORB_GAP=140;
+function arcaneOrbCount(dmg){ return Math.max(1,Math.min(ARCANE_ORB_MAX,Math.ceil((dmg||0)/ARCANE_ORB_DMG))); }
+function spawnArcaneVolley(x1,y1,x2,y2,n,cb){
+  if(simMode){ if(cb) cb(); return; }
+  let landed=0;
+  for(let i=0;i<n;i++){
+    setTimeout(()=>{
+      const arc=bH*(.08+_rng()*.3);   // random max height for each orb
+      spawnProj(x1,y1,x2,y2,'arcaneOrb','#4499ff',()=>{
+        spawnParts(x2,y2,'#66aaff',5); spawnParts(x2,y2,'#ddeeff',2);
+        if(++landed===n&&cb) cb();
+      },{arc});
+    },i*ARCANE_ORB_GAP);
+  }
+}
+// The damage a strike will roughly deal before wards and resistances, for sizing the volley.
+// Peeks at the caster's boosts without spending them (elemStrike spends them on landing).
+function strikeEstimate(who,elem,power){
+  const st=gs[who];
+  let mult=seatCfg(who).dmgMult||1, bonus=0;
+  const emp=effectsOf(st,'empower').find(e=>!e.elem||e.elem===elem);
+  if(emp) mult*=emp.mult;
+  const frenzy=effectsOf(st,'frenzy')[0]; if(frenzy) mult*=frenzy.mult;
+  const weave=effectsOf(st,'weave')[0]; if(weave) bonus+=weave.bonus;
+  return Math.round((power*mult+bonus)*suddenDeathMult());
+}
+// A strike's flight: an arcane volley sized by damage, or a single projectile of its element
+function strikeFlight(who,x1,y1,x2,y2,elem,col,power,cb){
+  if(elem==='arcane') spawnArcaneVolley(x1,y1,x2,y2,arcaneOrbCount(strikeEstimate(who,elem,power)),cb);
+  else spawnProj(x1,y1,x2,y2,ELEM_PROJ[elem],col,cb);
 }
 
 function tickProjs(){
@@ -1483,7 +1520,7 @@ function tickProjs(){
   gs.projs.forEach(p=>{
     p.progress=Math.min(1,p.progress+p.speed*fk);
     const px=p.x1+(p.x2-p.x1)*p.progress;
-    const py=p.y1+(p.y2-p.y1)*p.progress;
+    const py=p.y1+(p.y2-p.y1)*p.progress-(p.arc?4*p.arc*p.progress*(1-p.progress):0);
     if(p.element==='fire'){
       bx.save();
       bx.beginPath(); bx.arc(px,py,bH*.028,0,Math.PI*2);
@@ -1530,6 +1567,17 @@ function tickProjs(){
         bx.beginPath(); bx.arc(Math.cos(a)*r,Math.sin(a)*r,bH*.013,0,Math.PI*2); bx.fill();
       }
       bx.shadowBlur=0; bx.globalAlpha=1; bx.restore();
+    } else if(p.element==='arcaneOrb'){
+      // Pulsating blue orb with a faint trail
+      const t=Date.now(), pulse=.75+.25*Math.sin(t/90+p.phase);
+      bx.save(); bx.translate(px,py);
+      bx.beginPath(); bx.arc(0,0,bH*.02*pulse,0,Math.PI*2);
+      bx.fillStyle='#3388ff'; bx.shadowColor='#55aaff'; bx.shadowBlur=22*pulse; bx.globalAlpha=.9; bx.fill();
+      bx.beginPath(); bx.arc(0,0,bH*.008*pulse,0,Math.PI*2);
+      bx.fillStyle='#e8f4ff'; bx.shadowBlur=8; bx.globalAlpha=1; bx.fill();
+      bx.shadowBlur=0; bx.restore();
+      if(_rng()<.5*fk) gs.parts.push({x:px,y:py,col:'#66aaff',vx:(_rng()-.5)*.6,vy:(_rng()-.5)*.6,
+        sz:1.5+_rng()*1.5,life:.7,dec:.04,noGrav:true});
     } else if(p.element==='physical'){
       const dir=Math.atan2(p.y2-p.y1,p.x2-p.x1);
       bx.save(); bx.translate(px,py); bx.rotate(dir);
@@ -1952,7 +2000,7 @@ const ELEM_IMPACT_VFX={
   fire:     (c,n)=>{ spawnParts(c.tx,c.y,'#ff6622',n); flash('#ff6622'); },
   ice:      (c,n)=>{ spawnParts(c.tx,c.y,'#88ddff',n); flash('#88ddff'); },
   lightning:(c,n)=>{ spawnParts(c.tx,c.y,'#ffee44',n); spawnParts(c.tx,c.y,'#ffffff',8); flash('#ffee44'); },
-  arcane:   (c,n)=>{ spawnParts(c.tx,c.y,'#cc88ff',n); flash('#cc88ff'); },
+  arcane:   (c,n)=>{ spawnParts(c.tx,c.y,'#4499ff',n); spawnParts(c.tx,c.y,'#ddeeff',6); flash('#4499ff'); },
   physical: (c,n)=>{ spawnParts(c.tx,c.y,'#d0a060',n); flash('#d0a060'); },
   dark:     (c,n)=>{ spawnParts(c.tx,c.y,'#cc44ff',n); spawnShadowCircle(c.tx,c.y,n>30); flash('#cc44ff'); },
 };
@@ -2672,9 +2720,12 @@ function strikeTargets(who,action){
   return [action.target].concat(foes.filter(w=>w!==action.target)).filter(w=>!isPhased(w));
 }
 // Extra projectiles, for show, toward every target after the first
-function fanOut(who,tgts,proj,col){
+function fanOut(who,tgts,proj,col,power){
   const x=seatX(who), y=wizMidY();
-  tgts.slice(1).forEach(t=>spawnProj(x,y,seatX(t),y,proj,col,()=>{}));
+  tgts.slice(1).forEach(t=>{
+    if(proj==='arcane'&&power!=null) strikeFlight(who,x,y,seatX(t),y,'arcane',col,power,()=>{});
+    else spawnProj(x,y,seatX(t),y,proj,col,()=>{});
+  });
 }
 
 // After the ritual: with more than one foe, the picker taps who the spell is aimed at
@@ -2873,12 +2924,15 @@ function executeWheel(who,action,cb){
   const tgt=action.target, tx=seatX(tgt);
   if(action.cat==='damage') st.lastElem=action.elem;
   const tgts=action.cat==='damage'?strikeTargets(who,action):[tgt];
-  fanOut(who,tgts,ELEM_PROJ[action.elem],el.col);
-  spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,()=>{
+  const strike=action.cat==='damage';
+  fanOut(who,tgts,ELEM_PROJ[action.elem],el.col,strike?power:null);
+  const land=()=>{
     if(action.cat==='dispel') elemDispelHit(tgt,action.elem,power,action.tier);
     else elemStrike(who,tgts,{elem:action.elem,tier:action.tier,power});
     combatTimeout(cb,600);
-  });
+  };
+  if(strike) strikeFlight(who,x,y,tx,y,action.elem,el.col,power,land);
+  else spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,land);
 }
 
 function executeSignature(who,sp,action,cb){
@@ -2897,7 +2951,7 @@ function executeSignature(who,sp,action,cb){
       power=el.perBlade*blades;
       removeEffects(who,effectsOf(st,'minion').filter(m=>m.minion==='blade'),'Launched');
     }
-    fanOut(who,tgts,ELEM_PROJ[el.elem],e.col);
+    fanOut(who,tgts,ELEM_PROJ[el.elem],e.col,power);
     const d=fx.delivery;
     // A volley's own per-projectile effects stand in for the default impact burst
     const vfx=fx.hit||(d&&d.volley?()=>{}:null);
@@ -2920,7 +2974,7 @@ function executeSignature(who,sp,action,cb){
       fire();
       return;
     }
-    spawnProj(x,y,tx,y,ELEM_PROJ[el.elem],e.col,land);
+    strikeFlight(who,x,y,tx,y,el.elem,e.col,power,land);
     return;
   }
   const ally=protectTarget(who,action), as=gs[ally], actx=ally===who?ctx:vfxCtx(ally,ally);
