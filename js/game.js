@@ -1960,47 +1960,39 @@ function tickExplosions(){
 }
 
 // Ice Strike (plain Ice damage off the wheel), drawn by tickIceCrystals: no projectile.
-// Freezing crystals form over the target, a frost glaze creeps across them, cracks race
-// through, then cb() runs the strike, whose impact (ELEM_IMPACT_VFX.ice) is
-// spawnIceShatter, scaled by the damage dealt. Purely visual, so it uses Math.random.
+// A snowflake crystallises over the target: six arms grow out from a hexagonal core,
+// sprouting side branches as they pass, while it turns slowly. Then cracks run along
+// the arms, cb() runs the strike, and its impact (ELEM_IMPACT_VFX.ice) is spawnIceShatter,
+// scaled by the damage dealt. Purely visual, so it uses Math.random.
 const ICE_FORM_MS=1000, ICE_CRACK_MS=240, ICE_SHARD_MS=900;
 function iceScale(dmg){ return .7+Math.min(.6,Math.max(1,dmg)/50); }
 function spawnIceCrystals(who,tgt,dmg,cb){
   if(simMode){ if(cb) cb(); return; }
   const sz=wizSize(), s=iceScale(dmg);
-  const cx=seatX(tgt), cy=wizFeetY()-sz*.5;
-  const n=Math.min(16,6+Math.round(Math.max(1,dmg)*.35));
-  const crystals=[];
-  for(let i=0;i<n;i++){
-    // Rooted inside the body, radiating outward, so the cluster encases the wizard
-    const ra=Math.random()*Math.PI*2, rr=Math.sqrt(Math.random())*.75;
-    const bx0=cx+Math.cos(ra)*sz*.18*rr, by0=cy+Math.sin(ra)*sz*.38*rr;
-    const ang=Math.atan2(by0-cy,(bx0-cx)*1.6)+(Math.random()-.5)*.7;
-    const L=sz*(.16+Math.random()*.2)*s;
-    crystals.push({x:bx0,y:by0,ang,L,w:L*(.22+Math.random()*.1),
-      t0:(i/n)*.6+Math.random()*.08,shade:Math.random()});
-  }
-  crystals.sort((a,b)=>a.L-b.L);   // short ones behind, long ones in front
+  // Branches along each arm: position on the arm, length, and when they start growing
+  const nb=s>1.05?3:2;
+  const branches=Array.from({length:nb},(_,i)=>{
+    const at=.35+i*(.45/nb)+Math.random()*.05;
+    return {at,len:(.42-i*.09)*(.9+Math.random()*.2)};
+  });
   anim(who,'cast',ICE_FORM_MS+ICE_CRACK_MS);
-  gs.iceCrystals.push({cx,cy,sz,s,crystals,start:Date.now(),cb,done:false,
-    cracks:Array.from({length:4+Math.round(s*3)},()=>({a:Math.random()*Math.PI*2,segs:3+Math.floor(Math.random()*3)}))});
+  gs.iceCrystals.push({cx:seatX(tgt),cy:wizMidY()+sz*.05,R:sz*.36*s,s,branches,
+    rot:Math.random()*Math.PI/3,spin:(Math.random()<.5?-1:1)*.00035,start:Date.now(),cb,done:false});
 }
-function drawIceCrystal(c,g,jx,jy){
-  const L=c.L*g, w=c.w*Math.min(1,g*1.3);
-  if(L<1) return;
-  bx.save(); bx.translate(c.x+jx,c.y+jy); bx.rotate(c.ang);
-  // Elongated hexagonal prism pointing along +x
-  bx.beginPath();
-  bx.moveTo(0,-w*.35); bx.lineTo(L*.72,-w*.5); bx.lineTo(L,0); bx.lineTo(L*.72,w*.5); bx.lineTo(0,w*.35); bx.closePath();
-  const gr=bx.createLinearGradient(0,-w*.5,0,w*.5);
-  const a=.55+.3*c.shade;
-  gr.addColorStop(0,`rgba(235,250,255,${a})`); gr.addColorStop(.45,`rgba(150,215,255,${a})`); gr.addColorStop(1,`rgba(60,130,210,${a})`);
-  bx.fillStyle=gr; bx.shadowColor='#88ddff'; bx.shadowBlur=10; bx.fill(); bx.shadowBlur=0;
-  bx.strokeStyle='rgba(230,250,255,.85)'; bx.lineWidth=1; bx.stroke();
-  // Facet ridge and a glint near the tip
-  bx.beginPath(); bx.moveTo(0,0); bx.lineTo(L,0); bx.strokeStyle='rgba(255,255,255,.6)'; bx.stroke();
-  bx.fillStyle='rgba(255,255,255,.9)'; bx.beginPath(); bx.arc(L*.8,-w*.15,Math.max(1,w*.09),0,Math.PI*2); bx.fill();
-  bx.restore();
+// One arm of the snowflake along +x, grown to g (0..1)
+function snowflakeArm(R,g,branches){
+  const L=R*g;
+  bx.moveTo(0,0); bx.lineTo(L,0);
+  branches.forEach(b=>{
+    const p=R*b.at; if(L<=p) return;
+    const bl=R*b.len*Math.min(1,(L-p)/(R*.25));
+    const dx=Math.cos(Math.PI/3)*bl, dy=Math.sin(Math.PI/3)*bl;
+    bx.moveTo(p,0); bx.lineTo(p+dx,-dy); bx.moveTo(p,0); bx.lineTo(p+dx,dy);
+  });
+  if(g>=.98){   // little diamond at the tip once the arm is complete
+    const d=R*.06;
+    bx.moveTo(L,0); bx.lineTo(L-d,-d*.7); bx.lineTo(L-d*2,0); bx.lineTo(L-d,d*.7); bx.closePath();
+  }
 }
 function tickIceCrystals(){
   const now=Date.now();
@@ -2009,51 +2001,51 @@ function tickIceCrystals(){
     const el=now-f.start, k=Math.min(1,el/ICE_FORM_MS);
     const crack=el<ICE_FORM_MS?0:Math.min(1,(el-ICE_FORM_MS)/ICE_CRACK_MS);
     if(crack>=1){ f.done=true; if(f.cb) f.cb(); return; }
-    // Frost motes drawn in toward the target while it freezes
+    // Frost motes drawn in toward the flake while it forms
     if(k<1&&Math.random()<.8*fk){
-      const a=Math.random()*Math.PI*2, d=f.sz*(.45+Math.random()*.3);
-      gs.parts.push({x:f.cx+Math.cos(a)*d,y:f.cy+Math.sin(a)*d*1.3,col:Math.random()<.5?'#ddf6ff':'#88ddff',
-        vx:-Math.cos(a)*d/18,vy:-Math.sin(a)*d*1.3/18,sz:1+Math.random()*2,life:1,dec:.06,noGrav:true});
+      const a=Math.random()*Math.PI*2, d=f.R*(1.1+Math.random()*.5);
+      gs.parts.push({x:f.cx+Math.cos(a)*d,y:f.cy+Math.sin(a)*d,col:Math.random()<.5?'#ddf6ff':'#88ddff',
+        vx:-Math.cos(a)*d/18,vy:-Math.sin(a)*d/18,sz:1+Math.random()*2,life:1,dec:.06,noGrav:true});
     }
-    // Frost glaze over the body
+    const g=1-Math.pow(1-Math.min(1,k/.85),3);   // arms grow ease-out, done just before the crack
+    const shake=crack*f.R*.03;
     bx.save();
-    const rx=f.sz*.3*f.s, ry=f.sz*.55*f.s;
-    bx.translate(f.cx,f.cy); bx.scale(rx*1.4/ry,1);   // circular gradient squashed into the oval
-    const gl=bx.createRadialGradient(0,0,0,0,0,ry);
-    gl.addColorStop(0,`rgba(200,240,255,${.28*k})`); gl.addColorStop(.7,`rgba(120,200,255,${.18*k})`); gl.addColorStop(1,'rgba(120,200,255,0)');
-    bx.fillStyle=gl; bx.beginPath(); bx.arc(0,0,ry,0,Math.PI*2); bx.fill();
-    bx.restore();
-    // Crystals grow in turn (ease-out with a slight overshoot); they tremble once cracking starts
-    const shake=crack*f.sz*.012;
-    f.crystals.forEach(c=>{
-      const t=Math.max(0,Math.min(1,(k-c.t0)/.35));
-      if(t<=0) return;
-      const g=1+2.2*Math.pow(t-1,3)+1.2*Math.pow(t-1,2);
-      drawIceCrystal(c,g,(Math.random()-.5)*shake,(Math.random()-.5)*shake);
-    });
-    // Cracks race out from the centre just before it shatters
+    bx.translate(f.cx+(Math.random()-.5)*shake,f.cy+(Math.random()-.5)*shake);
+    bx.rotate(f.rot+el*f.spin);
+    // Soft cold glow behind it
+    const gl=bx.createRadialGradient(0,0,0,0,0,f.R*1.15);
+    gl.addColorStop(0,`rgba(190,235,255,${.3*k})`); gl.addColorStop(1,'rgba(120,200,255,0)');
+    bx.fillStyle=gl; bx.beginPath(); bx.arc(0,0,f.R*1.15,0,Math.PI*2); bx.fill();
+    bx.lineCap='round'; bx.lineJoin='round';
+    const path=()=>{
+      bx.beginPath();
+      for(let i=0;i<6;i++){ bx.save(); bx.rotate(i*Math.PI/3); snowflakeArm(f.R,g,f.branches); bx.restore(); }
+      // Hexagonal core
+      const hr=f.R*.13*Math.min(1,k*3);
+      for(let i=0;i<=6;i++){ const a=i*Math.PI/3+Math.PI/6; i?bx.lineTo(Math.cos(a)*hr,Math.sin(a)*hr):bx.moveTo(Math.cos(a)*hr,Math.sin(a)*hr); }
+    };
+    // Thick blue body, then a thin white-hot core line
+    path(); bx.strokeStyle='rgba(120,200,255,.75)'; bx.shadowColor='#66ccff'; bx.shadowBlur=14;
+    bx.lineWidth=Math.max(2,f.R*.07); bx.stroke();
+    path(); bx.strokeStyle=crack>0?'#ffffff':'rgba(240,252,255,.95)'; bx.shadowBlur=6;
+    bx.lineWidth=Math.max(1,f.R*.025*(1+crack*1.5)); bx.stroke();
+    // Bright flare at the centre as it is about to burst
     if(crack>0){
-      bx.save(); bx.strokeStyle='#ffffff'; bx.shadowColor='#bbeeff'; bx.shadowBlur=6; bx.lineWidth=1.1;
-      bx.globalAlpha=.6+.4*crack;
-      f.cracks.forEach(cr=>{
-        let x=f.cx, y=f.cy, a=cr.a;
-        const step=f.sz*.055*f.s*crack;
-        bx.beginPath(); bx.moveTo(x,y);
-        for(let i=0;i<cr.segs;i++){ a+=(i%2?.45:-.45); x+=Math.cos(a)*step; y+=Math.sin(a)*step*1.5; bx.lineTo(x,y); }
-        bx.stroke();
-      });
-      bx.restore();
+      bx.globalAlpha=crack; bx.fillStyle='#ffffff'; bx.shadowColor='#bbeeff'; bx.shadowBlur=20;
+      bx.beginPath(); bx.arc(0,0,f.R*.12*(1+crack),0,Math.PI*2); bx.fill();
     }
+    bx.restore();
   });
 }
-// The crystals burst: spinning ice shards fly out and fall, a cold flash and drifting frost mist
+// The snowflake bursts: spinning ice shards fly out and fall, a cold flash and drifting frost mist
 function spawnIceShatter(x,y,dmg){
   if(simMode) return;
   const s=iceScale(dmg), sz=wizSize();
   const n=Math.round(12+Math.max(1,dmg)*.7);
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2, sp=(2+Math.random()*5)*s;
-    gs.iceShards.push({x:x+(Math.random()-.5)*sz*.2,y:y+(Math.random()-.3)*sz*.4,
+    const d=Math.random()*sz*.36*s;   // spread over the snowflake
+    gs.iceShards.push({x:x+Math.cos(a)*d,y:y+sz*.05+Math.sin(a)*d,
       vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2.5,rot:Math.random()*Math.PI*2,spin:(Math.random()-.5)*.4,
       L:sz*(.03+Math.random()*.06)*s,start:Date.now(),ms:ICE_SHARD_MS*(.6+Math.random()*.4)});
   }
@@ -2067,9 +2059,13 @@ function tickIceShards(){
     p.x+=p.vx*fk; p.y+=p.vy*fk; p.vy+=.22*fk; p.rot+=p.spin*fk;
     const a=1-(now-p.start)/p.ms;
     bx.save(); bx.translate(p.x,p.y); bx.rotate(p.rot); bx.globalAlpha=a;
-    bx.beginPath(); bx.moveTo(-p.L*.5,-p.L*.18); bx.lineTo(p.L*.5,0); bx.lineTo(-p.L*.3,p.L*.22); bx.closePath();
-    bx.fillStyle='#e2f6ff'; bx.shadowColor='#66ccff'; bx.shadowBlur=10; bx.fill();
-    bx.strokeStyle='rgba(255,255,255,.9)'; bx.lineWidth=1; bx.stroke();
+    // A broken-off piece of a snowflake arm: a stem with one pair of side branches
+    const h=p.L*.5, b=p.L*.28;
+    bx.beginPath(); bx.moveTo(-h,0); bx.lineTo(h,0);
+    bx.moveTo(0,0); bx.lineTo(b*.5,-b*.87); bx.moveTo(0,0); bx.lineTo(b*.5,b*.87);
+    bx.lineCap='round'; bx.shadowColor='#66ccff'; bx.shadowBlur=10;
+    bx.strokeStyle='rgba(120,200,255,.8)'; bx.lineWidth=Math.max(2,p.L*.14); bx.stroke();
+    bx.strokeStyle='#ffffff'; bx.lineWidth=Math.max(1,p.L*.05); bx.stroke();
     bx.restore();
   });
 }
