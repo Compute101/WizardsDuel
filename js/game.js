@@ -1481,38 +1481,21 @@ function spawnProj(x1,y1,x2,y2,element,col,cb,o={}){
 }
 
 // Arcane strikes: pulsating blue orbs lobbed one after another, each on a parabola with its own
-// random peak height — one orb per ARCANE_ORB_DMG points of damage (rounded up). The strike lands
-// with the last orb; the earlier ones just pop on the target.
-const ARCANE_ORB_DMG=5, ARCANE_ORB_MAX=12, ARCANE_ORB_GAP=140;
-function arcaneOrbCount(dmg){ return Math.max(1,Math.min(ARCANE_ORB_MAX,Math.ceil((dmg||0)/ARCANE_ORB_DMG))); }
-function spawnArcaneVolley(x1,y1,x2,y2,n,cb){
-  if(simMode){ if(cb) cb(); return; }
+// random peak height. The strike's damage is split into ARCANE_ORB_DMG-point hits, one per orb
+// (see elemStrikeVolley). onOrb(i) runs as orb i lands, then done() after the last.
+const ARCANE_ORB_DMG=5, ARCANE_ORB_GAP=140;
+function spawnArcaneVolley(x1,y1,x2,y2,n,onOrb,done){
+  if(simMode){ for(let i=0;i<n;i++) onOrb(i); done(); return; }
   let landed=0;
   for(let i=0;i<n;i++){
     setTimeout(()=>{
       const arc=bH*(.08+_rng()*.3);   // random max height for each orb
       spawnProj(x1,y1,x2,y2,'arcaneOrb','#4499ff',()=>{
-        spawnParts(x2,y2,'#66aaff',5); spawnParts(x2,y2,'#ddeeff',2);
-        if(++landed===n&&cb) cb();
+        onOrb(landed);
+        if(++landed===n) done();
       },{arc});
     },i*ARCANE_ORB_GAP);
   }
-}
-// The damage a strike will roughly deal before wards and resistances, for sizing the volley.
-// Peeks at the caster's boosts without spending them (elemStrike spends them on landing).
-function strikeEstimate(who,elem,power){
-  const st=gs[who];
-  let mult=seatCfg(who).dmgMult||1, bonus=0;
-  const emp=effectsOf(st,'empower').find(e=>!e.elem||e.elem===elem);
-  if(emp) mult*=emp.mult;
-  const frenzy=effectsOf(st,'frenzy')[0]; if(frenzy) mult*=frenzy.mult;
-  const weave=effectsOf(st,'weave')[0]; if(weave) bonus+=weave.bonus;
-  return Math.round((power*mult+bonus)*suddenDeathMult());
-}
-// A strike's flight: an arcane volley sized by damage, or a single projectile of its element
-function strikeFlight(who,x1,y1,x2,y2,elem,col,power,cb){
-  if(elem==='arcane') spawnArcaneVolley(x1,y1,x2,y2,arcaneOrbCount(strikeEstimate(who,elem,power)),cb);
-  else spawnProj(x1,y1,x2,y2,ELEM_PROJ[elem],col,cb);
 }
 
 function tickProjs(){
@@ -1795,7 +1778,7 @@ function checkDeathless(who,x,y){
   if(!cost) return;
   if(state.hp<=0&&state.mana>=cost){
     state.mana=Math.max(0,state.mana-cost);
-    state.hp=1;
+    state.hp=1; state.deathlessSaved=true;   // ends an arcane volley's remaining hits
     addFloat(x,y-30,'💀 DEATHLESS! −'+cost+' Mana','#8844cc',16);
     spawnParts(x,y,'#8844cc',24); spawnParts(x,y,'#ffffff',10);
     flash('#8844cc');
@@ -2720,12 +2703,9 @@ function strikeTargets(who,action){
   return [action.target].concat(foes.filter(w=>w!==action.target)).filter(w=>!isPhased(w));
 }
 // Extra projectiles, for show, toward every target after the first
-function fanOut(who,tgts,proj,col,power){
+function fanOut(who,tgts,proj,col){
   const x=seatX(who), y=wizMidY();
-  tgts.slice(1).forEach(t=>{
-    if(proj==='arcane'&&power!=null) strikeFlight(who,x,y,seatX(t),y,'arcane',col,power,()=>{});
-    else spawnProj(x,y,seatX(t),y,proj,col,()=>{});
-  });
+  tgts.slice(1).forEach(t=>spawnProj(x,y,seatX(t),y,proj,col,()=>{}));
 }
 
 // After the ritual: with more than one foe, the picker taps who the spell is aimed at
@@ -2924,15 +2904,16 @@ function executeWheel(who,action,cb){
   const tgt=action.target, tx=seatX(tgt);
   if(action.cat==='damage') st.lastElem=action.elem;
   const tgts=action.cat==='damage'?strikeTargets(who,action):[tgt];
-  const strike=action.cat==='damage';
-  fanOut(who,tgts,ELEM_PROJ[action.elem],el.col,strike?power:null);
-  const land=()=>{
+  if(action.cat==='damage'&&action.elem==='arcane'){
+    elemStrikeVolley(who,tgts,{elem:action.elem,tier:action.tier,power},()=>combatTimeout(cb,600));
+    return;
+  }
+  fanOut(who,tgts,ELEM_PROJ[action.elem],el.col);
+  spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,()=>{
     if(action.cat==='dispel') elemDispelHit(tgt,action.elem,power,action.tier);
     else elemStrike(who,tgts,{elem:action.elem,tier:action.tier,power});
     combatTimeout(cb,600);
-  };
-  if(strike) strikeFlight(who,x,y,tx,y,action.elem,el.col,power,land);
-  else spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,land);
+  });
 }
 
 function executeSignature(who,sp,action,cb){
@@ -2951,8 +2932,13 @@ function executeSignature(who,sp,action,cb){
       power=el.perBlade*blades;
       removeEffects(who,effectsOf(st,'minion').filter(m=>m.minion==='blade'),'Launched');
     }
-    fanOut(who,tgts,ELEM_PROJ[el.elem],e.col,power);
     const d=fx.delivery;
+    // Arcane strikes fly as an orb volley that deals the damage in ARCANE_ORB_DMG-point hits
+    if(el.elem==='arcane'&&!d){
+      elemStrikeVolley(who,tgts,Object.assign({},el,{power,name:sigName(sp),vfx:fx.hit}),()=>combatTimeout(cb,600));
+      return;
+    }
+    fanOut(who,tgts,ELEM_PROJ[el.elem],e.col);
     // A volley's own per-projectile effects stand in for the default impact burst
     const vfx=fx.hit||(d&&d.volley?()=>{}:null);
     const land=()=>{
@@ -2974,7 +2960,7 @@ function executeSignature(who,sp,action,cb){
       fire();
       return;
     }
-    strikeFlight(who,x,y,tx,y,el.elem,e.col,power,land);
+    spawnProj(x,y,tx,y,ELEM_PROJ[el.elem],e.col,land);
     return;
   }
   const ally=protectTarget(who,action), as=gs[ally], actx=ally===who?ctx:vfxCtx(ally,ally);
@@ -3081,14 +3067,21 @@ function elemDispelHit(tgt,elem,power,tier){
 }
 
 // Damage that meets the target's ward first. Returns {hp, warded}.
-function elemIncoming(tgt,dmg,elem,icon,col,quiet){
+// wear: {blocked,worn}, shared by the hits of one split strike (an arcane volley) so the ward
+// wears exactly as it would from one big hit — rounding once, with the 1-point minimum once.
+function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear){
   const ts=gs[tgt], tx=seatX(tgt);
   let warded=false;
   if(hasWard(ts)&&dmg>0){
     // The ward loses only its take share of what it stops, so a resistant ward stops more
     const take=ELEM_WARD_TAKE[ts.shieldType===elem?'match':'off'];
     const blocked=Math.min(dmg,Math.floor(ts.shieldHp/take));
-    ts.shieldHp-=Math.max(1,Math.ceil(blocked*take));
+    if(wear){
+      wear.blocked+=blocked;
+      const worn=Math.max(1,Math.ceil(wear.blocked*take));
+      ts.shieldHp-=worn-wear.worn; wear.worn=worn;
+    }
+    else ts.shieldHp-=Math.max(1,Math.ceil(blocked*take));
     dmg-=blocked; warded=true;
     addFloat(tx,bH*.24,'🛡 −'+blocked+(take<1?' resisted':take>1?' unravels':' blocked'),wardCol(ts),12);
     VFX.wardBlock(tx,wardCol(ts));
@@ -3106,6 +3099,45 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet){
 // tgts: one seat, or several — a Greater strike in a 3–4 seat duel hits every foe (strikeTargets).
 // Bewitch, the caster's boosts (Empower, Frenzy, Weave) and recoil apply once for the whole cast.
 function elemStrike(who,tgts,o){
+  const p=strikePrep(who,tgts,o);
+  p.tgts.forEach(t=>strikeOne(who,t,o,p.b));
+  if(o.recoil) elemFloatDmg(who,o.recoil,'💥','#ff6644');
+}
+// An arcane strike: resolved up front (dodge, Vanish, resistances — once for the whole strike),
+// then each target's damage arrives as a volley of ARCANE_ORB_DMG-point hits, one per orb.
+// Wards wear as from one hit, and the riders (mana burn, lifesteal, DoTs, retaliation) apply
+// once, after the last orb. A Deathless save or a knock-out ends that target's volley.
+function elemStrikeVolley(who,tgts,o,cb){
+  const p=strikePrep(who,tgts,o), x=seatX(who), y=wizMidY();
+  let left=p.tgts.length;
+  p.tgts.forEach(t=>{
+    const r=strikeResolve(who,t,o,p.b), ts=gs[t];
+    const n=r.miss?1:Math.max(1,Math.ceil(r.dmg/ARCANE_ORB_DMG));
+    const wear={blocked:0,worn:0}, hit={hp:0,warded:false};
+    let dealt=0, stopped=false;
+    ts.deathlessSaved=false;
+    spawnArcaneVolley(x,y,seatX(t),y,n,i=>{
+      if(r.miss||stopped) return;
+      const chunk=Math.min(ARCANE_ORB_DMG,r.dmg-dealt); dealt+=chunk;
+      if(chunk<=0) return;
+      dmgSource=who;
+      const h=strikeChunk(who,r,o,chunk,wear);
+      hit.hp+=h.hp; hit.warded=hit.warded||h.warded;
+      if(ts.hp<=0||ts.deathlessSaved) stopped=true;
+      if(i<n-1&&!stopped) anim(t,'hit',250);
+    },()=>{
+      dmgSource=who;
+      if(r.miss) strikeMiss(who,r,o);
+      else strikeFinish(who,r,o,p.b,hit);
+      if(--left===0){
+        if(o.recoil) elemFloatDmg(who,o.recoil,'💥','#ff6644');
+        cb();
+      }
+    });
+  });
+}
+// Bewitch and the caster's boosts (Empower, Frenzy, Weave): once per cast
+function strikePrep(who,tgts,o){
   const st=gs[who];
   tgts=[].concat(tgts);
   if(takeEffect(st,'bewitch')){
@@ -3123,34 +3155,49 @@ function elemStrike(who,tgts,o){
     b.bonus+=weave.bonus; b.burn+=weave.burn;
     if(--weave.charges<=0) st.effects=st.effects.filter(e=>e!==weave);
   }
-  tgts.forEach(t=>strikeOne(who,t,o,b));
-  if(o.recoil) elemFloatDmg(who,o.recoil,'💥','#ff6644');
+  return {tgts,b};
 }
 function strikeOne(who,tgt,o,b){
-  const ts=gs[tgt], tx=seatX(tgt), el=elemById(o.elem);
+  const r=strikeResolve(who,tgt,o,b);
+  if(r.miss) return strikeMiss(who,r,o);
+  strikeFinish(who,r,o,b,strikeChunk(who,r,o,r.dmg));
+}
+// How much a strike deals this target, or how it misses. Rolls and spends, but draws nothing.
+function strikeResolve(who,tgt,o,b){
+  const ts=gs[tgt];
   let base=o.power;
   if(o.pctHp) base=Math.max(base,Math.round(ts.hp*o.pctHp));   // Nyxara: a share of this target's HP
   let dmg=(base*b.mult+b.bonus)*suddenDeathMult();
-  const burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+b.burn;
-
   if(tgt!==who){
     // Dodge rolls first, so a dodged strike leaves Vanish / Foresight waiting for the next one
     const dodge=effectsOf(ts,'dodge')[0];
-    if(dodge&&_rng()<dodge.pct){ addFloat(tx,bH*.28,'💫 Dodged!','#b8a0e8',15); VFX.dodged(tx); anim(who,'cast',600); return; }
+    if(dodge&&_rng()<dodge.pct) return {tgt,miss:'dodge'};
     const absorb=takeEffect(ts,'absorbNext');
-    if(absorb){
-      addFloat(tx,bH*.28,absorb.id==='vanish'?'👻 Missed!':'🔮 Absorbed!','#ffcc44',15);
-      if(absorb.id==='vanish') VFX.vanished(tx); else VFX.absorbed(tx,el.col);
-      anim(who,'cast',600);
-      return;
-    }
+    if(absorb) return {tgt,miss:absorb.id==='vanish'?'vanish':'absorb'};
   }
   effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
   const resist=effectsOf(ts,'resist').filter(e=>!(e.magicOnly&&o.elem==='physical'))
     .reduce((m,e)=>Math.max(m,e.pct),0);
-  dmg=Math.round(dmg*(1-resist));
-
-  const hit=elemIncoming(tgt,dmg,o.elem,el.icon,el.col,true);
+  return {tgt,dmg:Math.round(dmg*(1-resist))};
+}
+function strikeMiss(who,r,o){
+  const tx=seatX(r.tgt);
+  if(r.miss==='dodge'){ addFloat(tx,bH*.28,'💫 Dodged!','#b8a0e8',15); VFX.dodged(tx); }
+  else {
+    addFloat(tx,bH*.28,r.miss==='vanish'?'👻 Missed!':'🔮 Absorbed!','#ffcc44',15);
+    if(r.miss==='vanish') VFX.vanished(tx); else VFX.absorbed(tx,elemById(o.elem).col);
+  }
+  anim(who,'cast',600);
+}
+// One hit of a strike's damage (the whole of it, or one orb's share of an arcane volley)
+function strikeChunk(who,r,o,dmg,wear){
+  const el=elemById(o.elem);
+  return elemIncoming(r.tgt,dmg,o.elem,el.icon,el.col,true,wear);
+}
+// After the damage: impact look, riders, mana burn, arcs and retaliation — once per strike
+function strikeFinish(who,r,o,b,hit){
+  const tgt=r.tgt, ts=gs[tgt], tx=seatX(tgt), el=elemById(o.elem);
+  const burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+b.burn;
   const ctx=vfxCtx(who,tgt);
   if(o.vfx) o.vfx(ctx);
   else { ELEM_IMPACT_VFX[o.elem](ctx,b.emp?38:22); vfxStrikeAnim(who,tgt); }
