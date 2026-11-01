@@ -6915,15 +6915,13 @@ function launchDispelPattern(spell,cb){
   // Watch phase center — upper portion of canvas
   const cx=cw/2, cy=ch*0.40;
 
-  // Ring radii — inner scales slightly with sequence length to avoid crowding
-  const R_OUTER=110, R_MID=72;
-  const R_INNER=SEQ_LEN<=4?38:SEQ_LEN<=5?48:64;
-  const INNER_FONT=SEQ_LEN<=4?52:SEQ_LEN<=5?44:36;
+  // Ring radii
+  const R_OUTER=110, R_MID=72, R_INNER=40;
+  const INNER_FONT=40;
 
-  // Layer fade timings (ms)
-  const OUTER_FADE_START=1000, OUTER_FADE_DUR=1000;  // outer fades 1–2 s
-  const MID_FADE_START=2200,   MID_FADE_DUR=1300;    // middle fades 2.2–3.5 s
-  const INNER_FADE_START=3600, INNER_FADE_DUR=1300;  // inner fades 3.6–4.9 s
+  // Layer fade timings (ms) — the noise rings now linger for the whole watch
+  const OUTER_FADE_START=3800, OUTER_FADE_DUR=1200;
+  const MID_FADE_START=4200,   MID_FADE_DUR=800;
   const watchDuration=MG_WATCH_MS;
   const startTime=Date.now();
   let watchDone=false;
@@ -6938,12 +6936,37 @@ function launchDispelPattern(spell,cb){
     angle:(i/8)*Math.PI*2+(_rng()-0.5)*0.15,
   }));
 
-  // Inner ring: sequence glyphs, starting at top (−π/2), clockwise
+  // Inner ring: the sequence glyphs are unveiled one at a time, each in a shuffled
+  // slot of a 6-slot ring, with no order badge — the only clue to the order is
+  // when each one appears. Each stays MG_GLYPH_MS (fade in + hold + fade out).
+  const INNER_SLOTS=6;
+  const slotOrder=Array.from({length:INNER_SLOTS},(_,i)=>i);
+  for(let i=slotOrder.length-1;i>0;i--){const j=Math.floor(_rng()*(i+1));[slotOrder[i],slotOrder[j]]=[slotOrder[j],slotOrder[i]];}
+  const SPAWN_DELAY=300,SPAWN_INTERVAL=mgSpawnInterval(SEQ_LEN,SPAWN_DELAY,MG_GLYPH_MS);
+  const G_IN=300,G_HOLD=1500,G_OUT=700; // sums to MG_GLYPH_MS
   const innerGlyphs=seq.map((ai,i)=>({
     ai,sym:ALPHABET[ai].sym,glowCol:ALPHABET[ai].glowCol,
-    angle:(i/SEQ_LEN)*Math.PI*2-Math.PI/2,
+    angle:(slotOrder[i]/INNER_SLOTS)*Math.PI*2-Math.PI/2,
+    at:SPAWN_DELAY+i*SPAWN_INTERVAL,
     idx:i,
   }));
+  // False threads: Dispel's own glyphs flare briefly in the middle ring, tinted violet
+  // rather than white — the greyed-out keyboard can't rule them out.
+  const DECOY_N=diffName==='easy'?2:diffName==='hard'?5:3;
+  const DECOY_DUR=900;
+  const decoys=Array.from({length:DECOY_N},(_,i)=>({
+    ai:SPELL_IDX[Math.floor(_rng()*SPELL_IDX.length)],
+    angle:_rng()*Math.PI*2,
+    at:200+(i+_rng())*(MG_WATCH_MS-DECOY_DUR-400)/DECOY_N,
+  }));
+  // 0→1→0 envelope for a glyph shown from `at` for fadeIn+hold+fadeOut ms
+  function veilAlpha(el,at,fi,hold,fo){
+    const d=el-at;
+    if(d<0||d>fi+hold+fo) return 0;
+    if(d<fi) return d/fi;
+    if(d<fi+hold) return 1;
+    return 1-(d-fi-hold)/fo;
+  }
 
   function ringFade(elapsed,fadeStart,fadeDur){
     if(elapsed<fadeStart) return 1;
@@ -7026,22 +7049,20 @@ function launchDispelPattern(spell,cb){
     if(phase==='watch'){
       const outerA=ringFade(elapsed,OUTER_FADE_START,OUTER_FADE_DUR);
       const midA=ringFade(elapsed,MID_FADE_START,MID_FADE_DUR);
-      const innerA=ringFade(elapsed,INNER_FADE_START,INNER_FADE_DUR);
-
       // Faint concentric circle guides — the onion skin boundaries
       drawRingCircle(R_OUTER+14,outerA);
       drawRingCircle(R_MID+12,midA);
-      drawRingCircle(R_INNER+18,innerA);
+      drawRingCircle(R_INNER+22,1);
 
-      // Outer ring — slow clockwise rotation, fades first
+      // Outer ring — clockwise rotation
       if(outerA>0.01){
-        const rot=rotT*0.05;
+        const rot=rotT*0.12;
         mx.save();
         mx.font='bold 18px serif';
         mx.textAlign='center'; mx.textBaseline='middle';
         outerNoise.forEach(g=>{
           const a=g.angle+rot;
-          mx.globalAlpha=outerA*0.20;
+          mx.globalAlpha=outerA*0.32;
           mx.fillStyle='#bdb8cc';
           mx.shadowBlur=0;
           mx.fillText(ALPHABET[g.ai].sym,cx+R_OUTER*Math.cos(a),cy+R_OUTER*Math.sin(a));
@@ -7049,15 +7070,15 @@ function launchDispelPattern(spell,cb){
         mx.restore();
       }
 
-      // Middle ring — counter-clockwise, slightly faster, fades second
+      // Middle ring — counter-clockwise, faster
+      const midRot=-rotT*0.22;
       if(midA>0.01){
-        const rot=-rotT*0.09;
         mx.save();
         mx.font='bold 24px serif';
         mx.textAlign='center'; mx.textBaseline='middle';
         midNoise.forEach(g=>{
-          const a=g.angle+rot;
-          mx.globalAlpha=midA*0.30;
+          const a=g.angle+midRot;
+          mx.globalAlpha=midA*0.42;
           mx.fillStyle='#ccc8dc';
           mx.shadowBlur=0;
           mx.fillText(ALPHABET[g.ai].sym,cx+R_MID*Math.cos(a),cy+R_MID*Math.sin(a));
@@ -7065,46 +7086,54 @@ function launchDispelPattern(spell,cb){
         mx.restore();
       }
 
+      // False threads — Dispel glyphs flaring violet in the middle ring
+      decoys.forEach(d=>{
+        const al=veilAlpha(elapsed,d.at,200,400,300);
+        if(al<=0.01) return;
+        const a=d.angle+midRot;
+        mx.save();
+        mx.globalAlpha=al*0.85;
+        mx.shadowColor='#aa66ff'; mx.shadowBlur=18;
+        mx.fillStyle='#c9a8ff';
+        mx.font='bold 30px serif';
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(ALPHABET[d.ai].sym,cx+R_MID*Math.cos(a),cy+R_MID*Math.sin(a));
+        mx.restore();
+      });
+
       // Soft centre glow — drawn before inner glyphs so glyphs sit on top
-      if(innerA>0.01){
-        const grd=mx.createRadialGradient(cx,cy,0,cx,cy,R_INNER*0.8);
-        grd.addColorStop(0,`rgba(180,140,220,${0.06*innerA})`);
+      {
+        const grd=mx.createRadialGradient(cx,cy,0,cx,cy,R_INNER*1.2);
+        grd.addColorStop(0,'rgba(180,140,220,0.07)');
         grd.addColorStop(1,'rgba(0,0,0,0)');
         mx.fillStyle=grd; mx.fillRect(0,0,cw,ch);
-
-        // Inner ring — spell sequence glyphs, very slow rotation, fades last
-        const rot=rotT*0.03;
-        innerGlyphs.forEach(s=>{
-          const a=s.angle+rot;
-          const gx=cx+R_INNER*Math.cos(a);
-          const gy=cy+R_INNER*Math.sin(a);
-          const osc=Math.sin(t/1000+s.idx)*0.04;
-          mx.save();
-          mx.globalAlpha=innerA;
-          mx.translate(gx,gy); mx.rotate(osc);
-          mx.shadowColor=s.glowCol; mx.shadowBlur=30;
-          mx.fillStyle='#ffffff';
-          mx.font=`bold ${INNER_FONT}px serif`;
-          mx.textAlign='center'; mx.textBaseline='middle';
-          mx.fillText(s.sym,0,0);
-          mx.restore();
-          // Order badge
-          mx.save();
-          mx.globalAlpha=innerA;
-          mx.shadowColor='#eeddff'; mx.shadowBlur=8;
-          mx.fillStyle='#eeddff';
-          mx.font='bold 11px Cinzel,serif';
-          mx.textAlign='center'; mx.textBaseline='middle';
-          mx.fillText(s.idx+1,gx+20,gy-18);
-          mx.restore();
-        });
-        mx.globalAlpha=1; mx.shadowBlur=0;
       }
+
+      // Inner ring — the true sequence, unveiled one glyph at a time (no order badge)
+      const rot=-rotT*0.15;
+      innerGlyphs.forEach(s=>{
+        const al=veilAlpha(elapsed,s.at,G_IN,G_HOLD,G_OUT);
+        if(al<=0.01) return;
+        const a=s.angle+rot;
+        const gx=cx+R_INNER*Math.cos(a);
+        const gy=cy+R_INNER*Math.sin(a);
+        const osc=Math.sin(t/1000+s.idx)*0.04;
+        mx.save();
+        mx.globalAlpha=al;
+        mx.translate(gx,gy); mx.rotate(osc);
+        mx.shadowColor=s.glowCol; mx.shadowBlur=30;
+        mx.fillStyle='#ffffff';
+        mx.font=`bold ${INNER_FONT}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle';
+        mx.fillText(s.sym,0,0);
+        mx.restore();
+      });
+      mx.globalAlpha=1; mx.shadowBlur=0;
 
       mx.fillStyle='#cc99ee';
       mx.font='bold 10px Cinzel,serif';
       mx.textAlign='center'; mx.textBaseline='top';
-      mx.fillText('Watch the veil unravel!',cw/2,4);
+      mx.fillText('Mark the order the white glyphs appear',cw/2,4);
     }
 
     if(phase==='input'){
