@@ -234,7 +234,9 @@ function hexToRgb(hex){
   return `${r},${g},${b}`;
 }
 
-function runeRing(cx,cy,r,c){
+// sy < 1 flattens the ring onto the floor (seen in perspective)
+function runeRing(cx,cy,r,c,sy=1){
+  bx.save(); bx.translate(cx,cy); bx.scale(1,sy); bx.translate(-cx,-cy);
   bx.strokeStyle=c; bx.lineWidth=1;
   bx.beginPath(); bx.arc(cx,cy,r,0,Math.PI*2); bx.stroke();
   bx.beginPath(); bx.arc(cx,cy,r*.6,0,Math.PI*2); bx.stroke();
@@ -242,6 +244,7 @@ function runeRing(cx,cy,r,c){
     bx.beginPath(); bx.moveTo(cx+Math.cos(a)*r*.6,cy+Math.sin(a)*r*.6);
     bx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r); bx.stroke();
   }
+  bx.restore();
 }
 
 function drawBG_moonlight(){
@@ -638,6 +641,17 @@ const SPRITE_CFG={
   animRows:{idle:0,cast:1,hit:2,shield:3,death:4},
 };
 const SPRITE_SCALE=1.2;   // battle sprite height relative to drawWiz's sz
+// Where the wizards stand and how big they are, in scene coordinates. Feet sit low on the arena
+// floor so the (large) wizards use the ground below the horizon. WIZ_GROW enlarges them over the
+// original size; minions keep the original layout (see drawWiz). 3–4 seats grow less so neighbours
+// don't overlap.
+const WIZ_GROW=1.5, WIZ_GROW_MANY=1.25;
+const AURA_SX=.7, AURA_SY=.9;   // drawWiz squashes its round auras into an oval around the sprite
+function wizGrow(){ return PLAYERS.length>2?WIZ_GROW_MANY:WIZ_GROW; }
+function wizFeetY(){ return bH*(PLAYERS.length>2?.88:.92); }
+function wizSize(){ return Math.min(bH*.4,bW*.28)*(PLAYERS.length>2?.68:1)*wizGrow(); }
+// Upper body: where strikes land and effects play on a wizard
+function wizMidY(){ return wizFeetY()-wizSize()*.8; }
 // Two sprite kinds: the old 4x5 spritesheets above (facing left), or a single
 // full-body still of any other size (facing right, animated by drawWiz's bob/lift/shake).
 function isSpriteSheet(img){
@@ -679,11 +693,12 @@ function loadSprites(){
 // Each seat's rune circle on the arena floor
 function seatRunes(){
   if(PLAYERS.length<=2||!gs[PLAYERS[0]]){
-    runeRing(bW*.25,bH*.83,28,`rgba(${hexToRgb(p1Cfg.col)},0.13)`);
-    if(p2Cfg) runeRing(bW*.75,bH*.83,28,`rgba(${hexToRgb(p2Cfg.col)},0.13)`);
+    const fy=bH*.92, r=Math.min(bW*.13,bH*.2);   // flat on the floor under the wizards' feet (wizFeetY)
+    runeRing(bW*.25,fy,r,`rgba(${hexToRgb(p1Cfg.col)},0.16)`,.3);
+    if(p2Cfg) runeRing(bW*.75,fy,r,`rgba(${hexToRgb(p2Cfg.col)},0.16)`,.3);
     return;
   }
-  PLAYERS.forEach(w=>runeRing(seatX(w),bH*.83,20,`rgba(${hexToRgb(seatCfg(w).col)},0.13)`));
+  PLAYERS.forEach(w=>runeRing(seatX(w),wizFeetY(),bW*.08,`rgba(${hexToRgb(seatCfg(w).col)},0.16)`,.3));
 }
 
 const animState={p1:{frame:0,timer:0},p2:{frame:0,timer:0}};
@@ -716,6 +731,10 @@ function auraFade(who,key,on){
 
 function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActive,state){
   bx.save();
+  // Auras (wards, buffs, debuffs) are drawn as circles around (x, y-sz*.5); squash them into an
+  // upright oval centred on the sprite, so they hug the tall figure and stay on screen
+  bx.save();
+  bx.translate(x,y-sz*.62); bx.scale(AURA_SX,AURA_SY); bx.translate(-x,-(y-sz*.5));
   const t=Date.now();
   const fShield=auraFade(who,'shield',shielded>0), fWard=auraFade(who,'ward',wardActive>0),
     fSight=auraFade(who,'foresight',!!foresightActive), fCounter=auraFade(who,'counter',!!(state&&state.counter));
@@ -1156,23 +1175,25 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
     bx.globalAlpha=1;
   }
+  bx.restore();   // end of the aura oval
   // Skeletons (Valdris): small bone-coloured circles beside wizard
-  const minionDir=flip?1:-1;
+  // Minions keep the original (pre-WIZ_GROW) size and spacing, standing on the same floor
+  const minionDir=flip?1:-1, msz=sz/wizGrow(), mwy=y-msz*.5;
   if(state&&state.skeletons&&state.skeletons.length>0){
     state.skeletons.forEach((skel,i)=>{
-      const sx=x+minionDir*(i===0?sz*1.3:sz*2.1), sy=wy;
+      const sx=x+minionDir*(i===0?msz*1.3:msz*2.1), sy=mwy;
       bx.globalAlpha=0.85; bx.fillStyle='#ccccbb'; bx.shadowColor='#aaaaaa'; bx.shadowBlur=4;
-      bx.beginPath(); bx.arc(sx,sy,sz*.18,0,Math.PI*2); bx.fill();
-      bx.fillStyle='#333'; bx.font=`${Math.round(sz*.14)}px serif`;
-      bx.textAlign='center'; bx.fillText('💀',sx,sy+sz*.06);
+      bx.beginPath(); bx.arc(sx,sy,msz*.18,0,Math.PI*2); bx.fill();
+      bx.fillStyle='#333'; bx.font=`${Math.round(msz*.14)}px serif`;
+      bx.textAlign='center'; bx.fillText('💀',sx,sy+msz*.06);
       bx.globalAlpha=1; bx.shadowBlur=0;
     });
   }
   // Simulacra (Mirel): ghostly wizard clones, same sprite/animation as the caster
   if(state&&state.simulacra&&state.simulacra.length>0){
-    const simSz=sz*.62;
+    const simSz=msz*.62;
     state.simulacra.forEach((sim,i)=>{
-      const sx=x+minionDir*(i===0?sz*1.5:sz*2.6);
+      const sx=x+minionDir*(i===0?msz*1.5:msz*2.6);
       const pulse=0.5+0.15*Math.sin(t/600+i);
       const bob=Math.sin(t/500+i*2)*simSz*.04;
       bx.save();
@@ -1184,9 +1205,9 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
         bx.shadowBlur=0;
       } else {
         bx.fillStyle='#88aaff'; bx.shadowColor='#4466dd'; bx.shadowBlur=8;
-        bx.beginPath(); bx.arc(sx,wy,sz*.22,0,Math.PI*2); bx.fill();
-        bx.font=`${Math.round(sz*.16)}px serif`;
-        bx.textAlign='center'; bx.fillText('👤',sx,wy+sz*.07);
+        bx.beginPath(); bx.arc(sx,mwy,msz*.22,0,Math.PI*2); bx.fill();
+        bx.font=`${Math.round(msz*.16)}px serif`;
+        bx.textAlign='center'; bx.fillText('👤',sx,mwy+msz*.07);
         bx.shadowBlur=0;
       }
       bx.restore();
@@ -1441,8 +1462,8 @@ function battleLoop(ts){
   bx.save(); bx.translate(0,bOffY); drawBG(); bx.restore();
   fillSceneBands();
   bx.setTransform(1,0,0,1,0,bOffY);   // everything else draws in scene coordinates
-  // Wizard height: capped by width so shield bubbles (radius ~0.82×) stay on screen on tall phones
-  const many=PLAYERS.length>2, gy=bH*.74, wsz=Math.min(bH*.4,bW*.28)*(many?.68:1);
+  // Wizard height: capped by width so shield bubbles stay (mostly) on screen on tall phones
+  const many=PLAYERS.length>2, gy=wizFeetY(), wsz=wizSize();
   PLAYERS.forEach(w=>{
     const st=gs[w], hasFx=id=>st.effects.some(e=>e.id===id);
     drawWiz(seatX(w)+(gs[w+'xOff']||0),gy,wsz,seatCfg(w).col,seatFacesRight(w),gs[w+'anim'],
@@ -1457,14 +1478,14 @@ function battleLoop(ts){
   tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
-    bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.56);
+    bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
   }
   if(passPhone()&&gs.myTurn){
     const twoCfg=seatCfg(gs.turnPlayer);
     const twoNum=PLAYERS.indexOf(gs.turnPlayer)+1;
     bx.fillStyle=`rgba(${hexToRgb(twoCfg.col)},0.75)`;
     bx.font='bold 9px Cinzel,serif'; bx.textAlign='center';
-    bx.fillText('PLAYER '+twoNum+' — YOUR TURN',bW*.5,bH*.57);
+    bx.fillText('PLAYER '+twoNum+' — YOUR TURN',bW*.5,bH*.08);
   }
   refreshHUD();
   refreshStatusBar();
@@ -1734,30 +1755,30 @@ function vfxStrikeAnim(who,tgt,ms=800){ anim(who,'cast',ms); if(tgt&&tgt!==who) 
 
 // ── Reactions shared by every spell ──
 const VFX={
-  wardRaise:(x,col)=>vfxPhaseIn(x,bH*.38,[col,col,'#ffffff'],18),
-  wardBlock:(x,col='#4af0ff')=>{ spawnParts(x,bH*.38,col,8); spawnParts(x,bH*.38,'#ffffff',4); },
-  wardShatter:(x,col='#4af0ff')=>{ spawnParts(x,bH*.38,col,22); spawnParts(x,bH*.38,'#ffffff',8); },
-  absorbed:(x,col)=>{ spawnParts(x,bH*.38,'#ffcc44',18); spawnParts(x,bH*.38,col,10); spawnParts(x,bH*.38,'#ffffff',6); },
-  vanished:x=>spawnParts(x,bH*.38,'#b8a0e8',12),
-  dodged:x=>{ spawnParts(x,bH*.38,'#9988cc',22); spawnParts(x,bH*.38,'#ffffff',8); flash('#9988cc'); },
-  curseWarded:x=>spawnParts(x,bH*.38,'#ffcc44',14),
+  wardRaise:(x,col)=>vfxPhaseIn(x,wizMidY(),[col,col,'#ffffff'],18),
+  wardBlock:(x,col='#4af0ff')=>{ spawnParts(x,wizMidY(),col,8); spawnParts(x,wizMidY(),'#ffffff',4); },
+  wardShatter:(x,col='#4af0ff')=>{ spawnParts(x,wizMidY(),col,22); spawnParts(x,wizMidY(),'#ffffff',8); },
+  absorbed:(x,col)=>{ spawnParts(x,wizMidY(),'#ffcc44',18); spawnParts(x,wizMidY(),col,10); spawnParts(x,wizMidY(),'#ffffff',6); },
+  vanished:x=>spawnParts(x,wizMidY(),'#b8a0e8',12),
+  dodged:x=>{ spawnParts(x,wizMidY(),'#9988cc',22); spawnParts(x,wizMidY(),'#ffffff',8); flash('#9988cc'); },
+  curseWarded:x=>spawnParts(x,wizMidY(),'#ffcc44',14),
   resisted:x=>vfxDrip(x,bH*.34,'#665522',8,{vx:1.5,vy:0,vyVar:2,dec:.025}),
-  bewitched:who=>{ const x=seatX(who); spawnParts(x,bH*.38,'#b86ef4',20); spawnParts(x,bH*.38,'#ffffff',8); flash('#b86ef4'); anim(who,'hit',800); },
-  agony:x=>{ spawnParts(x,bH*.38,'#9944cc',12); flash('#330033'); },
-  candle:x=>vfxFountain(x,bH*.38,['#ff6622','#ff9900'],8,{spread:.7,min:1.5,var:2.5,w:.04,sz:2.5,dec:.02}),
+  bewitched:who=>{ const x=seatX(who); spawnParts(x,wizMidY(),'#b86ef4',20); spawnParts(x,wizMidY(),'#ffffff',8); flash('#b86ef4'); anim(who,'hit',800); },
+  agony:x=>{ spawnParts(x,wizMidY(),'#9944cc',12); flash('#330033'); },
+  candle:x=>vfxFountain(x,wizMidY(),['#ff6622','#ff9900'],8,{spread:.7,min:1.5,var:2.5,w:.04,sz:2.5,dec:.02}),
   // Dispel: pink burst at the target; stripped buffs float away in a white spray
-  dispelHit:x=>{ flash('#ffaaff'); spawnParts(x,bH*.38,'#ffaaff',20); },
-  stripped:x=>vfxFountain(x,bH*.38,['#ffddee','#ffffff','#ffffff','#ffffff'],28,{spread:.55,min:.7,var:1.8,w:.08,h:.05,dec:.010,decVar:.009}),
-  cleanse:x=>{ spawnParts(x,bH*.38,'#ffaaff',30);
-    vfxFountain(x,bH*.38,['#ffddee','#ffffff','#ffffff','#ffffff'],32,{spread:.55,min:.6,var:1.8,w:.08,h:.05,dec:.010,decVar:.009}); },
-  arc:(x,col)=>spawnParts(x,bH*.38,col,8),
-  lifesteal:(x)=>vfxFountain(x,bH*.38,['#cc1111'],10,{spread:.6,min:1.5,var:2.5,w:.04,sz:2,dec:.018}),
+  dispelHit:x=>{ flash('#ffaaff'); spawnParts(x,wizMidY(),'#ffaaff',20); },
+  stripped:x=>vfxFountain(x,wizMidY(),['#ffddee','#ffffff','#ffffff','#ffffff'],28,{spread:.55,min:.7,var:1.8,w:.08,h:.05,dec:.010,decVar:.009}),
+  cleanse:x=>{ spawnParts(x,wizMidY(),'#ffaaff',30);
+    vfxFountain(x,wizMidY(),['#ffddee','#ffffff','#ffffff','#ffffff'],32,{spread:.55,min:.6,var:1.8,w:.08,h:.05,dec:.010,decVar:.009}); },
+  arc:(x,col)=>spawnParts(x,wizMidY(),col,8),
+  lifesteal:(x)=>vfxFountain(x,wizMidY(),['#cc1111'],10,{spread:.6,min:1.5,var:2.5,w:.04,sz:2,dec:.018}),
   // Retaliation, by the enchantment or ward that hit back
   retaliate:{
-    counter:(fromX,toX)=>{ spawnParts(toX,bH*.38,'#4af0ff',16); spawnBeam(fromX,bH*.38,toX,bH*.38,'#4af0ff'); },
-    flameshield:(fromX,toX)=>spawnParts(toX,bH*.38,'#ff6600',8),
-    frostarmor:(fromX,toX)=>spawnParts(toX,bH*.38,'#88ddff',8),
-    dragonscales:(fromX,toX)=>spawnParts(toX,bH*.38,'#cc6622',8),
+    counter:(fromX,toX)=>{ spawnParts(toX,wizMidY(),'#4af0ff',16); spawnBeam(fromX,wizMidY(),toX,wizMidY(),'#4af0ff'); },
+    flameshield:(fromX,toX)=>spawnParts(toX,wizMidY(),'#ff6600',8),
+    frostarmor:(fromX,toX)=>spawnParts(toX,wizMidY(),'#88ddff',8),
+    dragonscales:(fromX,toX)=>spawnParts(toX,wizMidY(),'#cc6622',8),
   },
 };
 
@@ -1904,7 +1925,7 @@ const SPELL_VFX={
   eventhorizon:{hit:c=>{ spawnParts(c.cx,c.y,'#6633aa',12); spawnParts(c.tx,c.y,'#aa66ff',22); spawnParts(c.tx,c.y,'#6633aa',8); flash('#6633aa'); vfxStrikeAnim(c.who,c.tgt); }},
 };
 function vfxCtx(who,tgt,extra){
-  return Object.assign({who,tgt,cx:seatX(who),tx:seatX(tgt||who),y:bH*.38,col:seatCfg(who).col},extra);
+  return Object.assign({who,tgt,cx:seatX(who),tx:seatX(tgt||who),y:wizMidY(),col:seatCfg(who).col},extra);
 }
 
 // ── ROUND FLOW ─────────────────────────────────────────────
@@ -2488,7 +2509,7 @@ function strikeTargets(who,action){
 }
 // Extra projectiles, for show, toward every target after the first
 function fanOut(who,tgts,proj,col){
-  const x=seatX(who), y=bH*.38;
+  const x=seatX(who), y=wizMidY();
   tgts.slice(1).forEach(t=>spawnProj(x,y,seatX(t),y,proj,col,()=>{}));
 }
 
@@ -2560,7 +2581,7 @@ function showCallPicker(cb){
 // ── Resolution ──
 function elemFloatDmg(who,n,icon,col){
   if(n<=0) return;
-  dealDmgToPlayer(who,n,seatX(who),bH*.38);
+  dealDmgToPlayer(who,n,seatX(who),wizMidY());
   addFloat(seatX(who),bH*.36,icon+' −'+n,col,13);
 }
 function elemHeal(who,n,icon){
@@ -2595,7 +2616,7 @@ function showEnthral(who,action){
   const en=action.enthral, x=seatX(who), c=ELEM_CATS[en.call];
   if(action.outcome==='enthralled'){
     addFloat(x,bH*.3,'🌀 Called it! '+c.icon+' '+c.name+' lost','#cc88ff',14);
-    spawnParts(x,bH*.38,'#cc88ff',18); spawnParts(x,bH*.38,'#ffdd88',6);
+    spawnParts(x,wizMidY(),'#cc88ff',18); spawnParts(x,wizMidY(),'#ffdd88',6);
     if(en.gain) addFloat(seatX(en.from),bH*.3,'+'+en.gain+' Mana 🌀','#ffdd88',13);
   } else addFloat(x,bH*.24,'🌀 Enthral called '+c.icon+' '+c.name+' — misread','#aaaacc',11);
 }
@@ -2614,7 +2635,7 @@ function executeElemental(who,action,cb){
     const n=Math.min(meditateGain(who),MAX_MANA-st.mana);
     st.mana+=n;
     anim(who,'cast',600);
-    vfxFountain(x,bH*.38,['#7fb2ff','#b8d4ff','#ffffff'],14,{spread:.35,min:.6,var:1.4,w:.08,lift:-.3,sz:2.5,dec:.01});
+    vfxFountain(x,wizMidY(),['#7fb2ff','#b8d4ff','#ffffff'],14,{spread:.35,min:.6,var:1.4,w:.08,lift:-.3,sz:2.5,dec:.01});
     const drains=effectsOf(st,'incomeDrain').map(e=>e.icon).join('');
     addFloat(x,bH*.33,'🧘 Meditates'+(n>0?' +'+n+' Mana':'')+(drains?' · '+drains+' Drained':''),'#7fb2ff',13);
     // Candle: resting by the flame sets you alight, as warding does
@@ -2670,7 +2691,7 @@ function executeElemental(who,action,cb){
 }
 
 function executeWheel(who,action,cb){
-  const st=gs[who], x=seatX(who), y=bH*.38;
+  const st=gs[who], x=seatX(who), y=wizMidY();
   const cat=ELEM_CATS[action.cat], el=elemById(action.elem);
   const power=cat.power[action.tier-1];
   if(action.cat==='protect'){
@@ -2697,7 +2718,7 @@ function executeWheel(who,action,cb){
 }
 
 function executeSignature(who,sp,action,cb){
-  const st=gs[who], x=seatX(who), y=bH*.38, el=sigAtTier(sp,action.tier);
+  const st=gs[who], x=seatX(who), y=wizMidY(), el=sigAtTier(sp,action.tier);
   const tgt=action.target, ts=gs[tgt], tx=seatX(tgt);
   const e=elemById(el.elem||'arcane');
   const fx=SPELL_VFX[sp.id]||{}, ctx=vfxCtx(who,tgt);
@@ -2829,7 +2850,7 @@ function elemWardDispel(tgt,elem,power){
   const dmg=power*(match?2:1);
   ts.shieldHp-=dmg;
   addFloat(tx,bH*.3,'✦ −'+dmg+' ward'+(match?' (matched!)':''),'#ffaaff',14);
-  spawnParts(tx,bH*.38,'#ffaaff',12);
+  spawnParts(tx,wizMidY(),'#ffaaff',12);
   if(ts.shieldHp<=0) breakWard(ts,tx);
 }
 function elemDispelHit(tgt,elem,power,tier){
@@ -2856,9 +2877,9 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet){
     if(ts.shieldHp<=0) breakWard(ts,tx);
   }
   if(dmg>0){
-    dealDmgToPlayer(tgt,dmg,tx,bH*.38);
+    dealDmgToPlayer(tgt,dmg,tx,wizMidY());
     addFloat(tx,bH*.33,icon+' −'+dmg,col,16);
-    if(!quiet) spawnParts(tx,bH*.38,col,16);
+    if(!quiet) spawnParts(tx,wizMidY(),col,16);
   }
   return {hp:Math.max(0,dmg),warded};
 }
@@ -2955,20 +2976,20 @@ function elemTickEffects(who){
     }
     else elemIncoming(who,dmg,e.elem||'arcane',e.icon,'#cc88ff',true);
     const tick=TICK_VFX[e.id]||TICK_VFX[e.elem];
-    if(tick) tick(x,bH*.38);
+    if(tick) tick(x,wizMidY());
     if(e.manaDrain){ const d=Math.min(st.mana,e.manaDrain); st.mana-=d; if(d) addFloat(x,bH*.46,'−'+d+' Mana','#88aaff',11); }
   });
   effectsOf(st,'regen').forEach(e=>{
     if(st.hp<=0) return;
     elemHeal(who,e.perRound,e.icon);
-    (TICK_VFX[e.id]||TICK_VFX.regen)(x,bH*.38);
+    (TICK_VFX[e.id]||TICK_VFX.regen)(x,wizMidY());
   });
   activeSeats().filter(o=>o!==who&&minionTarget(o)===who).forEach(owner=>{
     effectsOf(gs[owner],'minion').forEach(m=>{
       const el=elemById(m.elem||'physical');
       dmgSource=owner;
       elemIncoming(who,Math.round(m.dmg*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
-      if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,bH*.38);
+      if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,wizMidY());
     });
   });
   const expired=[];
