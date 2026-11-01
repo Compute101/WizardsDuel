@@ -96,7 +96,7 @@ function newState(){
   gs={
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], wardUnravels:[], fireballs:[], explosions:[],
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], wardUnravels:[], fireballs:[], explosions:[], iceCrystals:[], iceShards:[],
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1670,7 +1670,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickWardUnravels(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
@@ -1959,6 +1959,117 @@ function tickExplosions(){
   });
 }
 
+// Ice Strike (plain Ice damage off the wheel), drawn by tickIceCrystals: no projectile.
+// A snowflake crystallises over the target: six arms grow out from a hexagonal core,
+// sprouting side branches as they pass, while it turns slowly. Then cracks run along
+// the arms, cb() runs the strike, and its impact (ELEM_IMPACT_VFX.ice) is spawnIceShatter,
+// scaled by the damage dealt. Purely visual, so it uses Math.random.
+const ICE_FORM_MS=1000, ICE_CRACK_MS=240, ICE_SHARD_MS=900;
+function iceScale(dmg){ return .7+Math.min(.6,Math.max(1,dmg)/50); }
+function spawnIceCrystals(who,tgt,dmg,cb){
+  if(simMode){ if(cb) cb(); return; }
+  const sz=wizSize(), s=iceScale(dmg);
+  // Branches along each arm: position on the arm, length, and when they start growing
+  const nb=s>1.05?3:2;
+  const branches=Array.from({length:nb},(_,i)=>{
+    const at=.35+i*(.45/nb)+Math.random()*.05;
+    return {at,len:(.42-i*.09)*(.9+Math.random()*.2)};
+  });
+  anim(who,'cast',ICE_FORM_MS+ICE_CRACK_MS);
+  gs.iceCrystals.push({cx:seatX(tgt),cy:wizMidY()+sz*.05,R:sz*.36*s,s,branches,
+    rot:Math.random()*Math.PI/3,spin:(Math.random()<.5?-1:1)*.00035,start:Date.now(),cb,done:false});
+}
+// One arm of the snowflake along +x, grown to g (0..1)
+function snowflakeArm(R,g,branches){
+  const L=R*g;
+  bx.moveTo(0,0); bx.lineTo(L,0);
+  branches.forEach(b=>{
+    const p=R*b.at; if(L<=p) return;
+    const bl=R*b.len*Math.min(1,(L-p)/(R*.25));
+    const dx=Math.cos(Math.PI/3)*bl, dy=Math.sin(Math.PI/3)*bl;
+    bx.moveTo(p,0); bx.lineTo(p+dx,-dy); bx.moveTo(p,0); bx.lineTo(p+dx,dy);
+  });
+  if(g>=.98){   // little diamond at the tip once the arm is complete
+    const d=R*.06;
+    bx.moveTo(L,0); bx.lineTo(L-d,-d*.7); bx.lineTo(L-d*2,0); bx.lineTo(L-d,d*.7); bx.closePath();
+  }
+}
+function tickIceCrystals(){
+  const now=Date.now();
+  gs.iceCrystals=gs.iceCrystals.filter(f=>!f.done);
+  gs.iceCrystals.forEach(f=>{
+    const el=now-f.start, k=Math.min(1,el/ICE_FORM_MS);
+    const crack=el<ICE_FORM_MS?0:Math.min(1,(el-ICE_FORM_MS)/ICE_CRACK_MS);
+    if(crack>=1){ f.done=true; if(f.cb) f.cb(); return; }
+    // Frost motes drawn in toward the flake while it forms
+    if(k<1&&Math.random()<.8*fk){
+      const a=Math.random()*Math.PI*2, d=f.R*(1.1+Math.random()*.5);
+      gs.parts.push({x:f.cx+Math.cos(a)*d,y:f.cy+Math.sin(a)*d,col:Math.random()<.5?'#ddf6ff':'#88ddff',
+        vx:-Math.cos(a)*d/18,vy:-Math.sin(a)*d/18,sz:1+Math.random()*2,life:1,dec:.06,noGrav:true});
+    }
+    const g=1-Math.pow(1-Math.min(1,k/.85),3);   // arms grow ease-out, done just before the crack
+    const shake=crack*f.R*.03;
+    bx.save();
+    bx.translate(f.cx+(Math.random()-.5)*shake,f.cy+(Math.random()-.5)*shake);
+    bx.rotate(f.rot+el*f.spin);
+    // Soft cold glow behind it
+    const gl=bx.createRadialGradient(0,0,0,0,0,f.R*1.15);
+    gl.addColorStop(0,`rgba(190,235,255,${.3*k})`); gl.addColorStop(1,'rgba(120,200,255,0)');
+    bx.fillStyle=gl; bx.beginPath(); bx.arc(0,0,f.R*1.15,0,Math.PI*2); bx.fill();
+    bx.lineCap='round'; bx.lineJoin='round';
+    const path=()=>{
+      bx.beginPath();
+      for(let i=0;i<6;i++){ bx.save(); bx.rotate(i*Math.PI/3); snowflakeArm(f.R,g,f.branches); bx.restore(); }
+      // Hexagonal core
+      const hr=f.R*.13*Math.min(1,k*3);
+      for(let i=0;i<=6;i++){ const a=i*Math.PI/3+Math.PI/6; i?bx.lineTo(Math.cos(a)*hr,Math.sin(a)*hr):bx.moveTo(Math.cos(a)*hr,Math.sin(a)*hr); }
+    };
+    // Thick blue body, then a thin white-hot core line
+    path(); bx.strokeStyle='rgba(120,200,255,.75)'; bx.shadowColor='#66ccff'; bx.shadowBlur=14;
+    bx.lineWidth=Math.max(2,f.R*.07); bx.stroke();
+    path(); bx.strokeStyle=crack>0?'#ffffff':'rgba(240,252,255,.95)'; bx.shadowBlur=6;
+    bx.lineWidth=Math.max(1,f.R*.025*(1+crack*1.5)); bx.stroke();
+    // Bright flare at the centre as it is about to burst
+    if(crack>0){
+      bx.globalAlpha=crack; bx.fillStyle='#ffffff'; bx.shadowColor='#bbeeff'; bx.shadowBlur=20;
+      bx.beginPath(); bx.arc(0,0,f.R*.12*(1+crack),0,Math.PI*2); bx.fill();
+    }
+    bx.restore();
+  });
+}
+// The snowflake bursts: spinning ice shards fly out and fall, a cold flash and drifting frost mist
+function spawnIceShatter(x,y,dmg){
+  if(simMode) return;
+  const s=iceScale(dmg), sz=wizSize();
+  const n=Math.round(12+Math.max(1,dmg)*.7);
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, sp=(2+Math.random()*5)*s;
+    const d=Math.random()*sz*.36*s;   // spread over the snowflake
+    gs.iceShards.push({x:x+Math.cos(a)*d,y:y+sz*.05+Math.sin(a)*d,
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2.5,rot:Math.random()*Math.PI*2,spin:(Math.random()-.5)*.4,
+      L:sz*(.03+Math.random()*.06)*s,start:Date.now(),ms:ICE_SHARD_MS*(.6+Math.random()*.4)});
+  }
+  vfxRing(x,y,['#ffffff','#aaddff'],Math.round(14*s),{r:.06*s,ry:.04*s,out:true,noGrav:true});
+  vfxDrift(x,y,['#cceeff','#aaddff','#ffffff'],Math.round(8+dmg*.3),{w:.08,lift:-.6,dec:.014});
+}
+function tickIceShards(){
+  const now=Date.now();
+  gs.iceShards=gs.iceShards.filter(p=>now-p.start<p.ms);
+  gs.iceShards.forEach(p=>{
+    p.x+=p.vx*fk; p.y+=p.vy*fk; p.vy+=.22*fk; p.rot+=p.spin*fk;
+    const a=1-(now-p.start)/p.ms;
+    bx.save(); bx.translate(p.x,p.y); bx.rotate(p.rot); bx.globalAlpha=a;
+    // A broken-off piece of a snowflake arm: a stem with one pair of side branches
+    const h=p.L*.5, b=p.L*.28;
+    bx.beginPath(); bx.moveTo(-h,0); bx.lineTo(h,0);
+    bx.moveTo(0,0); bx.lineTo(b*.5,-b*.87); bx.moveTo(0,0); bx.lineTo(b*.5,b*.87);
+    bx.lineCap='round'; bx.shadowColor='#66ccff'; bx.shadowBlur=10;
+    bx.strokeStyle='rgba(120,200,255,.8)'; bx.lineWidth=Math.max(2,p.L*.14); bx.stroke();
+    bx.strokeStyle='#ffffff'; bx.lineWidth=Math.max(1,p.L*.05); bx.stroke();
+    bx.restore();
+  });
+}
+
 // Shadow circle on a target (Dark strikes, drawn by tickShadowCircles): a purple ring opens,
 // the Dark runes ☽ ⊗ ∇ Ω rise from its centre one by one and orbit it, then collapse inward
 // into a burst — the battle-screen version of the Shadow Circle minigame's watch phase.
@@ -2139,7 +2250,7 @@ const VFX={
 // Arcane Surge impacts; Dark the Shadow Circle, Physical the melee sparks). An empowered hit bursts bigger.
 const ELEM_IMPACT_VFX={
   fire:     (c,n,dmg)=>{ spawnFireExplosion(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); flash('#ff6622'); },
-  ice:      (c,n)=>{ spawnParts(c.tx,c.y,'#88ddff',n); flash('#88ddff'); },
+  ice:      (c,n,dmg)=>{ spawnIceShatter(c.tx,c.y,dmg!=null?dmg:(n>30?30:15)); spawnParts(c.tx,c.y,'#ddf6ff',Math.round(n*.5)); flash('#88ddff'); },
   lightning:(c,n)=>{ spawnParts(c.tx,c.y,'#ffee44',n); spawnParts(c.tx,c.y,'#ffffff',8); flash('#ffee44'); },
   arcane:   (c,n)=>{ spawnParts(c.tx,c.y,'#4499ff',n); spawnParts(c.tx,c.y,'#ddeeff',6); flash('#4499ff'); },
   physical: (c,n)=>{ spawnParts(c.tx,c.y,'#d0a060',n); flash('#d0a060'); },
@@ -3078,6 +3189,13 @@ function executeWheel(who,action,cb){
     spawnFireball(who,tgt,dmg,land);
     return;
   }
+  if(action.cat==='damage'&&action.elem==='ice'){
+    // Ice Strike: crystals freeze over each target (bigger for more damage), then shatter
+    const dmg=previewStrikeDmg(who,'ice',power);
+    tgts.slice(1).forEach(t=>spawnIceCrystals(who,t,dmg,()=>{}));
+    spawnIceCrystals(who,tgt,dmg,land);
+    return;
+  }
   fanOut(who,tgts,ELEM_PROJ[action.elem],el.col);
   spawnProj(x,y,tx,y,action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,land);
 }
@@ -3902,7 +4020,7 @@ function resetTrainingRound(knockedOut){
     gs.p1=newSeat(p1Cfg,p1Key);
     gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
-    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[];
     gs.pending={};
     const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
     addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
@@ -6954,7 +7072,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[];
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
@@ -6976,7 +7094,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[];
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.wardUnravels=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[];
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
