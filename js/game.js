@@ -2005,14 +2005,14 @@ function tickShadowCircles(){
 }
 
 // Dark ritual circle (Dark strikes, drawn by tickDarkRituals). No projectile: a ring of Dark
-// runes appears around the target and whirls around them, fast at first and slowing to a stop;
+// runes appears on the ground at the target's feet and whirls around them, fast at first and slowing to a stop;
 // the stilled runes then glow white-hot and burn out in purple embers, and the damage lands
 // as they burn (cb). big: a heavier strike (bigger runes, longer spin).
 const DARK_RITUAL_SPIN_MS=1150, DARK_RITUAL_GLOW_MS=380, DARK_RITUAL_BURN_MS=420, DARK_RITUAL_TURNS=3;
 function spawnDarkRitual(who,tgt,big,cb){
   if(simMode){ if(cb) cb(); return; }
   const sz=wizSize(), x=seatX(tgt);
-  gs.darkRituals.push({x,y:wizMidY()+sz*.08,rx:sz*.5*AURA_SX,ry:sz*.13,big:!!big,start:Date.now(),
+  gs.darkRituals.push({x,y:wizFeetY()-sz*.02,rx:sz*.55*AURA_SX,ry:sz*.12,big:!!big,start:Date.now(),
     base:_rng()*Math.PI*2,dir:_rng()<.5?-1:1,spin:DARK_RITUAL_SPIN_MS*(big?1.15:1),cb,fired:false});
   anim(who,'cast',900);
   vfxDrift(seatX(who),wizMidY(),['#5a2280','#cc88ff'],8,{w:.05,lift:-1,dec:.02});
