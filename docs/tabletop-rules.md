@@ -108,12 +108,12 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 
 <!-- characters:start -->
 ### ELDRIN — The Stalwart
-**HP 19** · Greater strikes +1
+**HP 18** · Greater strikes +1
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Shield** | Protection | Arcane | Greater | 5 | Arcane ward of 14 (a Greater ward is 12). |
-| **Counter** | Protection | Lightning | Normal | 2 | 3 rounds: anyone who strikes you takes 2, and your ward doesn't wear down. |
+| **Shield** | Protection | Arcane | Normal | 5 | Arcane ward of 14, for a Normal flick (a Greater ward is 12 and needs 3 winks). |
+| **Counter** | Protection | Lightning | Normal | 2 | 3 rounds: anyone who strikes you takes 3, and your ward doesn't wear down. |
 | **Ward** | Protection | Ice | Normal | 2 | 3 rounds: curses can't touch you. The next dispel only removes this Ward. |
 
 ### MALACHAR — The Relentless

@@ -1,12 +1,12 @@
 {
   "_about": "Tabletop mode: every character's numbers in whole counters (max 20 each of HP, mana and ward). Names, colours and forbidden elements come from characters.json unless set here. Each spell's 'text' is its card text: keep it in step with the numbers. Rules: docs/tabletop-rules.md. Engine and simulator: js/tabletop.js.",
   "eldrad": {
-    "hp": 19, "strikeBonus": [0, 0, 1],
+    "hp": 18, "strikeBonus": [0, 0, 1],
     "spells": [
-      {"id": "shield", "name": "Shield", "cat": "protect", "elem": "arcane", "ring": 3, "cost": 5, "kind": "ward", "ward": 14,
-       "text": "Arcane ward of 14 (a Greater ward is 12)."},
-      {"id": "counter", "name": "Counter", "cat": "protect", "elem": "lightning", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "counter", "retaliate": 2, "holdWard": true, "rounds": 3},
-       "text": "3 rounds: anyone who strikes you takes 2, and your ward doesn't wear down."},
+      {"id": "shield", "name": "Shield", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 5, "kind": "ward", "ward": 14,
+       "text": "Arcane ward of 14, for a Normal flick (a Greater ward is 12 and needs 3 winks)."},
+      {"id": "counter", "name": "Counter", "cat": "protect", "elem": "lightning", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "counter", "retaliate": 3, "holdWard": true, "rounds": 3},
+       "text": "3 rounds: anyone who strikes you takes 3, and your ward doesn't wear down."},
       {"id": "ward", "name": "Ward", "cat": "protect", "elem": "ice", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "warding", "rounds": 3},
        "text": "3 rounds: curses can't touch you. The next dispel only removes this Ward."}
     ]
