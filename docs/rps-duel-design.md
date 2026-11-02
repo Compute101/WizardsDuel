@@ -194,7 +194,7 @@ so each spell's numbers can be tuned there.
 | Mary | 💛 Heal | 🛡 Protection | 🌀 Arcane | Instant | 4 / 6 / 10 | Heal 25 now |
 | Mary | ✨ Purge | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Remove your curses and heal 12 |
 | Mary | ☀️ Radiant | ⚔️ Damage | 🌀 Arcane | Strike | 2 / 4 / 6 | 12 holy; burns 2 mana |
-| Mordant | 💀 Agony | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: foe takes 6 whatever they do (Meditate escapes it, unless Corrupted) |
+| Mordant | 💀 Agony | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 4 / 6 | 4 rounds: foe takes 7 whatever they do (Meditate escapes it, unless Corrupted) |
 | Mordant | 🔇 Silence | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | 3 rounds: foe's spells fail 50% |
 | Mordant | ☠️ Corruption | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Foe gains 3 less mana a round (and from Meditate) × 3; meditating while Corrupted triggers Agony |
 | Ponder | 👻 Vanish | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 3 / 5 | The next strike within 2 rounds misses |
@@ -282,13 +282,14 @@ Fire or Dark fell behind (Mary and Gretch 44.9%, Sylvara 48.3%):
 Mordant's curses were reworked: Agony bites whatever the foe does (Meditate escapes it, unless the
 foe is Corrupted), and Cleanse Self clears only the newest curse. Then two AI fixes: it no longer
 casts a plain dispel at a foe with no ward or buff (it casts a curse instead; before, curse-casters
-wasted about 2.5 rounds a duel this way), and it meditates through Agony (up to 70%, by damage).
+wasted about 2.5 rounds a duel this way), and it meditates through Agony (70% on Normal whenever it
+may: even a light Agony is worth resting through, since Meditate also banks mana).
 That made every curse-caster much stronger (Gretch 64.8%, Mordant 62.4%; Valdris 39.2%, Mary 40.6%),
 so (Normal AI, 200 games per matchup, after: 47.1–54.7%, Mordant highest as an arcade boss):
 
 | Character | Change |
 |---|---|
-| Mordant | Agony 8 → 6 |
+| Mordant | Agony 8 → 6, then 7 and 3 → 4 mana once the AI rested through it as often as it may (70%) |
 | Gretch | HP 89 → 85 · Plague 4 → 3 a round · Maggot Cloud drains 3 → 2 |
 | Nyxara | Singularity 5, 9, 13 → 4, 8, 11 |
 | Mirel | Simulacrum 4 → 3 rounds |

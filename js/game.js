@@ -4041,9 +4041,10 @@ function elemAIChoose(who){
   // and curses are doing the work for me — and less when I'm close to dying
   // Income drains shrink the gain, and Candle burns a wizard who meditates
   const medGain=meditateGain(who);
-  // Agony bites anything but a Meditate: rest through it, more readily the harder it bites
+  // Agony bites anything but a Meditate: rest through it whenever allowed (not two rounds running).
+  // Even a light Agony is worth it — the rest dodges the hit and banks mana (tested in the sim)
   const agonyOn=effectsOf(me,'agony')[0];
-  if(agonyOn&&canMeditate(who)&&!agonyBites(who,{cat:'meditate'})&&_rng()<Math.min(0.7,agonyOn.dmg/20)*(smart?1:0.5))
+  if(agonyOn&&canMeditate(who)&&!agonyBites(who,{cat:'meditate'})&&_rng()<(smart?0.7:0.35))
     return {type:'el',cat:'meditate',ok:true};
   if(canMeditate(who)&&medGain>0&&me.mana<elemCost(who,'damage',2)){
     let p=(me.mana<elemCost(who,'damage',1)?0.4:0.2)*medGain/MEDITATE.gain;

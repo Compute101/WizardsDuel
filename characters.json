@@ -650,14 +650,14 @@
           "cat": "dispel",
           "kind": "curse",
           "elem": "dark",
-          "cost": 3,
+          "cost": 4,
           "tier": 2,
           "effect": {
             "type": "agony",
-            "dmg": 6,
+            "dmg": 7,
             "rounds": 4
           },
-          "desc": "4 rounds: foe takes 6 whatever they do (Meditate escapes it, unless Corrupted)"
+          "desc": "4 rounds: foe takes 7 whatever they do (Meditate escapes it, unless Corrupted)"
         }
       },
       {
