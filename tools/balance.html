@@ -45,7 +45,11 @@ tr.up td.wr { color: var(--up); font-weight: 700; }
 characters, on both sides of the board. Characters far from 50% overall are flagged. An individual bad
 matchup is expected; a bad <em>character</em> is not. Results reflect how the AI plays them, not a skilled human.</p>
 
+<p class="sub"><b>Tabletop</b> mode runs the counters-and-tiddlywinks rules instead (<code>js/tabletop.js</code>,
+numbers in <code>tabletop.json</code>, rules in <code>docs/tabletop-rules.md</code>). Each mode is balanced on its own.</p>
+
 <div class="bar">
+  <label>Mode <select id="mode"><option value="standard">Standard</option><option value="tabletop">Tabletop</option></select></label>
   <label>Games per matchup <input id="games" type="number" value="40" min="2" step="2"></label>
   <label>AI <select id="ai"><option value="normal">Normal</option><option value="easy">Easy</option></select></label>
   <label>Flag outside <input id="band" type="number" value="8" min="1" max="40">% of 50%</label>
@@ -58,16 +62,27 @@ matchup is expected; a bad <em>character</em> is not. Results reflect how the AI
 
 <iframe id="gameframe" src="../index.html"></iframe>
 
+<script src="../js/tabletop.js"></script>
 <script>
 const frame=document.getElementById('gameframe');
 let G=null;   // the game's window
-let CHARS={}; // its character definitions
+let CHARS={}; // the current mode's character definitions
+let STD_CHARS={}, TT_READY=null;
 let last=null;
+// The two rule sets: the standard game (in the iframe) and tabletop mode (js/tabletop.js)
+const MODES={
+  standard:{simMatch:(a,b,ai)=>G.simMatch(a,b,ai), chars:()=>STD_CHARS, maxRounds:()=>G.simInfo().maxRounds},
+  tabletop:{simMatch:(a,b,ai)=>TT.simMatch(a,b,ai), chars:()=>TT.chars, maxRounds:()=>TT.RULES.maxRounds},
+};
+let mode=MODES.standard;
+function setMode(m){ mode=MODES[m]||MODES.standard; CHARS=mode.chars(); }
+TT_READY=Promise.all(['../characters.json','../tabletop.json'].map(u=>fetch(u).then(r=>r.json())))
+  .then(([chars,tt])=>TT.load(chars,tt));
 
 frame.addEventListener('load',()=>{
   const wait=()=>{
     const w=frame.contentWindow;
-    if(w.simInfo&&Object.keys(w.simInfo().chars).length){ G=w; CHARS=w.simInfo().chars; ready(); }
+    if(w.simInfo&&Object.keys(w.simInfo().chars).length){ G=w; STD_CHARS=w.simInfo().chars; TT_READY.then(()=>{ setMode(document.getElementById('mode').value); ready(); }); }
     else setTimeout(wait,100);
   };
   wait();
@@ -82,6 +97,7 @@ function ready(){
 function run(){
   const games=Math.max(2,+document.getElementById('games').value|0);
   const ai=document.getElementById('ai').value;
+  setMode(document.getElementById('mode').value);
   const keys=Object.keys(CHARS);
   // Every ordered pair, so each character plays both seats
   const jobs=[];
@@ -98,7 +114,7 @@ function run(){
     while(j<jobs.length&&performance.now()<until){
       const [a,b]=jobs[j++];
       for(let g=0;g<per;g++){
-        const r=G.simMatch(a,b,ai);
+        const r=mode.simMatch(a,b,ai);
         record(stats[a],b,r,'p1');
         record(stats[b],a,r,'p2');
       }
@@ -109,7 +125,7 @@ function run(){
       btn.disabled=false; document.getElementById('copy').disabled=false;
       document.getElementById('progress').textContent=
         `Done: ${jobs.length*per} duels in ${((performance.now()-t0)/1000).toFixed(1)} s`;
-      last={stats,keys,games,ai,band:+document.getElementById('band').value};
+      last={stats,keys,games,ai,band:+document.getElementById('band').value,mode:document.getElementById('mode').value};
       render(last);
     }
   };
@@ -127,12 +143,12 @@ function record(s,opp,r,seat){
 }
 const winRate=s=>(s.w+0.5*(s.d+s.t))/s.games;
 
-function render({stats,keys,games,ai,band}){
+function render({stats,keys,games,ai,band,mode:m}){
   const name=k=>CHARS[k].name;
   const sorted=keys.slice().sort((a,b)=>winRate(stats[b])-winRate(stats[a]));
   const lim=band/100;
-  let html=`<h2>Overall win rate</h2><p class="note">${games} games per matchup (half on each side), AI ${ai}.
-    Draws and ${G.simInfo().maxRounds}-round timeouts count as half a win. Flagged when more than ${band}% from 50%.</p>
+  let html=`<h2>Overall win rate — ${m==='tabletop'?'Tabletop':'Standard'} rules</h2><p class="note">${games} games per matchup (half on each side), AI ${ai}.
+    Draws and ${mode.maxRounds()}-round timeouts count as half a win. Flagged when more than ${band}% from 50%.</p>
     <table><tr><th class="name">Character</th><th>Win %</th><th></th><th>W</th><th>L</th><th>Draw</th><th>Timeout</th>
     <th>Avg rounds</th><th>HP</th><th>Worst matchup</th><th>Best matchup</th></tr>`;
   sorted.forEach(k=>{
@@ -168,7 +184,7 @@ function render({stats,keys,games,ai,band}){
     may be too weak or too situational for the AI to see value in.</p><table><tr><th class="name">Character</th><th class="name">Picks</th></tr>`;
   sorted.forEach(k=>{
     const p=stats[k].picks, total=Object.values(p).reduce((a,b)=>a+b,0);
-    const sigName=id=>{ const sp=CHARS[k].spells.find(s=>s.id===id); return sp?(sp.el.name||sp.name):({damage:'⚔ Damage',protect:'🛡 Protection',dispel:'✦ Dispel',cleanse:'Cleanse',pass:'Wait'}[id]||id); };
+    const sigName=id=>{ const sp=CHARS[k].spells.find(s=>s.id===id); return sp?(sp.el&&sp.el.name||sp.name):({damage:'⚔ Damage',protect:'🛡 Protection',dispel:'✦ Dispel',cleanse:'Cleanse',meditate:'Meditate',pass:'Wait'}[id]||id); };
     const sigIds=CHARS[k].spells.map(s=>s.id);
     const entries=Object.entries(p).sort((a,b)=>b[1]-a[1]);
     sigIds.forEach(id=>{ if(!p[id]) entries.push([id,0]); });
@@ -186,12 +202,14 @@ function resultsText(){
     .map(k=>`${CHARS[k].name}\t${(winRate(stats[k])*100).toFixed(1)}%\tavg ${(stats[k].rounds/stats[k].games).toFixed(1)} rounds`).join('\n');
 }
 // Headless use (e.g. from a test script): run synchronously and return the stats
-window.runBalance=(games,ai)=>{
+// mode: 'standard' (default) or 'tabletop'
+window.runBalance=(games,ai,m)=>{
+  setMode(m||'standard');
   const keys=Object.keys(CHARS), stats={};
   keys.forEach(k=>stats[k]={w:0,l:0,d:0,t:0,rounds:0,games:0,picks:{},vs:{}});
   keys.forEach(a=>keys.forEach(b=>{ if(a===b) return;
-    for(let g=0;g<games/2;g++){ const r=G.simMatch(a,b,ai||'normal'); record(stats[a],b,r,'p1'); record(stats[b],a,r,'p2'); } }));
-  last={stats,keys,games,ai:ai||'normal',band:+document.getElementById('band').value};
+    for(let g=0;g<games/2;g++){ const r=mode.simMatch(a,b,ai||'normal'); record(stats[a],b,r,'p1'); record(stats[b],a,r,'p2'); } }));
+  last={stats,keys,games,ai:ai||'normal',band:+document.getElementById('band').value,mode:m||'standard'};
   render(last);
   return keys.map(k=>({key:k,name:CHARS[k].name,winRate:winRate(stats[k]),rounds:stats[k].rounds/stats[k].games,
     draws:stats[k].d,timeouts:stats[k].t,picks:stats[k].picks,

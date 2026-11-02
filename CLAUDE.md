@@ -111,6 +111,15 @@ Every round goes: secret picks → simultaneous reveal → resolution → round-
 
 ---
 
+## Tabletop mode
+A separate, simplified rule set for playing on a real table: HP, mana and wards are whole counters (max 20 each), signature spells are fixed cards, and a tiddlywink flick replaces the glyph minigames (a miss fizzles; `RULES.flick` is the hit chance by ring). Games are tuned shorter (about 11 rounds against about 20 in the standard game). **It never touches the standard game:** `js/game.js` doesn't load it, and the standard game stays the default.
+- `js/tabletop.js`: rules (`RULES`), engine, AI and `simMatch`. Self-contained, and runs in Node too.
+- `tabletop.json`: each character's counter numbers and spell card text. Names, colours and `forbidden` come from `characters.json`.
+- `docs/tabletop-rules.md`: the rulebook. After changing numbers, run `node tools/tabletop_doc.js` to regenerate its base-spell and character sections, and keep the hand-written rules in step with the engine.
+- Balance: in `tools/balance.html`, set **Mode** to **Tabletop**, or run `TT.balance(games)` in Node. Keep every character within ±8% of 50%, the same target as the standard game.
+
+---
+
 ## Visual effects
 Keep VFX: when changing or removing a spell, keep its look. Every spell's visual is in the "VFX LIBRARY" section of `js/game.js`:
 - `SPELL_VFX[spellId]` is each signature spell's own look. `self` plays when cast on yourself, `hit` when it lands on the target, and `delivery` handles lunges and volleys.
@@ -153,6 +162,7 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 | Characters and signature spells | `characters.json` | whole file |
 | Archived Classic spell code (not loaded) | `js/legacy/classic_spells.js` | whole file |
 | Balance simulator (AI-vs-AI win rates) | `tools/balance.html`, `simMatch` in `js/game.js` | whole file |
+| Tabletop mode (rules, engine, AI, sim) | `js/tabletop.js`, `tabletop.json`, `docs/tabletop-rules.md` | whole files |
 | Puzzle screen HTML | `index.html` | ~242 |
 | Canvas styling | `css/style.css` | ~530–560 |
 
