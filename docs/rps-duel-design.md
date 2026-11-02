@@ -67,6 +67,18 @@ What was built, including choices made while building:
   can't lose, which breaks the guessing game for a round. Rolling at the reveal keeps both sides
   guessing. Chill (a hard lock: can't pick Damage next round) is Skadi's Ice Lance's own rider
   (`"chill": true`, middle ring and up, reaching HP).
+- **Dark:** the mirror of Ice. A middle- or outer-ring hit that reaches HP fills the target with
+  **dread**: if they pick Protection next round, a coin flip at the reveal decides whether it falters
+  and is lost (`ELEM_RISK_PCT`).
+- **Fire:** a middle- or outer-ring hit that reaches HP **scorches**: a burn of 2 a round × 2 (outer
+  ring 3 × 2, `ELEM_SCORCH`). A strike with its own DoT (Wyrmfire Breath) doesn't also scorch.
+- **Physical:** **crushes** wards. A Physical strike wears an off-element ward at 100% instead of 75%
+  (`ELEM_WARD_TAKE.crush`); a Physical ward still unravels at 150%. Strikes only, not minions or ticks.
+- **Arcane:** a middle-ring hit that reaches HP **unweaves** a round off the target's newest timed buff
+  (minion timers included); an outer-ring hit takes a round off every one. Buffs with no timer
+  (Empower, blades) are immune.
+- Every rider applies to signature strikes of that element too. `ELEM_RIDERS` switches each one off,
+  for testing in the balance simulator.
 - **Character stats:** each character's HP and damage multiplier apply. Eldrin's wards cost 1 less
   (`shieldCostMod` in `characters.json`). Character spells: see Phase 4.
 - **AI:** a weighted mixed strategy. It dispels when you have a ward, and on Normal it matches your
