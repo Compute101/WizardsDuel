@@ -1,7 +1,7 @@
 {
   "_about": "Tabletop mode: every character's numbers in whole counters (max 20 each of HP, mana and ward). Names, colours and forbidden elements come from characters.json unless set here. Each spell's 'text' is its card text: keep it in step with the numbers. Rules: docs/tabletop-rules.md. Engine and simulator: js/tabletop.js.",
   "eldrad": {
-    "hp": 18, "strikeBonus": [0, 0, 1],
+    "hp": 19, "strikeBonus": [0, 0, 1],
     "spells": [
       {"id": "shield", "name": "Shield", "cat": "protect", "elem": "arcane", "ring": 3, "cost": 5, "kind": "ward", "ward": 14,
        "text": "Arcane ward of 14 (a Greater ward is 12)."},

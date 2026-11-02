@@ -108,7 +108,7 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 
 <!-- characters:start -->
 ### ELDRIN — The Stalwart
-**HP 18** · Greater strikes +1
+**HP 19** · Greater strikes +1
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
