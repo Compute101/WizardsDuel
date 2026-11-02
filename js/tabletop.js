@@ -17,37 +17,31 @@ const RULES={
   startMana:6,
   income:4,                    // mana each wizard gains at the end of every round
   meditate:3,                  // Meditate: skip your spell for this much mana (not two rounds running)
+  // Spell levels: Lesser / Normal / Greater (index 0 / 1 / 2). Easy to remember:
+  // every spell costs 2 mana per wink to pot; damage equals the cost; wards and dispels are double it.
   cats:{
-    //        mana cost and power for the inner / middle / outer ring; stage = resolution order
-    protect:{cost:[5,8,12], power:[4,7,11], stage:1},
-    dispel: {cost:[1,2,4],  power:[3,6,10], stage:2},
-    damage: {cost:[3,5,8],  power:[2,4,6],  stage:3},
+    //        mana cost and power for Lesser / Normal / Greater; stage = resolution order
+    protect:{cost:[2,4,6], power:[4,8,12], stage:1},
+    dispel: {cost:[2,4,6], power:[4,8,12], stage:2},
+    damage: {cost:[2,4,6], power:[2,4,6],  stage:3},
   },
-  wardRounds:3,                // a ward lasts the round it goes up + 2 more
-  wardWear:1,                  // a ward loses this many counters at every round end
-  wardMatch:1,                 // a strike in the ward's own element hits the ward this much harder
-  wardOff:1,                   // ...and any other element (not Physical) this much softer (min 1)
-  dispelMatch:2,               // a dispel in the ward's own element strips this many times its power
-  dispelAllRing:3,             // an outer-ring dispel removes every buff, not just the newest
-  // Tiddlywink cast. Every caster flicks from their handicap line (set per player, so everyone
-  // pots about as often), and must pot `winks` winks for the ring (inner / middle / outer). After a
-  // miss, pay retryCost mana to have another go, or stop and the spell fizzles (its cost is lost).
-  // Missed winks stay on the table for the foe to squop at the end of the round.
+  wardWear:1,                  // a ward loses this many counters at every round end; it lasts until it runs out
+  wardMatch:2,                 // a strike or dispel in the ward's own element counts this much more against it
+  dispelAllRing:3,             // a Greater dispel removes every buff, not just the newest
+  // Tiddlywink cast. Every caster flicks from their own handicap line (set per player, so everyone
+  // pots about as often), and must pot `winks` winks for the level. After a miss, pay retryCost mana
+  // to have another go, or stop and the spell fizzles (its cost is lost). Missed winks stay on the
+  // table, round after round, until someone squops them.
   winks:[1,2,3],
   retryCost:1,
   pot:0.75,                    // simulator: chance a flick pots from your handicap line
-  // Squops, after the spells resolve: the foe gets one squop attempt at each of your missed winks
-  // on the table (at most maxSquops a round), and gains squopGain mana for each one they squop. Missed winks carry over between
-  // rounds until squopped. A wizard who Meditates (channels) instead takes channelSquops attempts,
-  // before the foe's turn.
+  // Squops, after the spells resolve: the wizards take turns, squops attempts each, at any missed
+  // winks on the table (their own or the foe's), gaining squopGain mana for each one squopped.
+  // Turn order: the closer handicap line first (gs.handicap), then whoever potted more winks this
+  // round, then whoever has less HP.
+  squops:3,
   squop:0.4,                   // simulator: chance a squop attempt lands
   squopGain:1,
-  maxSquops:3,
-  channelSquops:3,
-  riderRing:2,                 // element riders need a strike from this ring or more that reached HP
-  scorch:[0,1,2],              // Fire: burn 1 at round end for this many rounds, by ring
-  lightningBurn:[1,1,2],       // Lightning: mana the foe loses, by ring (even through a ward)
-  riskRoll:4,                  // Ice frostbite / Dark dread: the covered pick is lost on a die roll under this
   // Sudden death keeps games short: from this round, both wizards lose dmg HP at every round end,
   // 1 more every `every` rounds after that.
   suddenDeath:{round:8, dmg:1, every:3},
@@ -66,7 +60,7 @@ function load(chars,tt){
     if(k.startsWith('_')||!chars[k]) return;
     const c=chars[k], t=tt[k];
     CHARS[k]={key:k, name:c.name, title:c.title, col:c.col,
-      hp:Math.min(RULES.max,t.hp), strikeBonus:t.strikeBonus||[0,0,0], wardCostMod:t.wardCostMod||0,
+      hp:Math.min(RULES.max,t.hp), strikeBonus:t.strikeBonus||[0,0,0],
       deathless:t.deathless||0, forbidden:t.forbidden||c.forbidden||[], spells:t.spells||[]};
   });
   return CHARS;
@@ -86,8 +80,8 @@ const clamp=v=>Math.max(0,Math.min(RULES.max,v));
 let gs=null;
 function newGame(k1,k2){
   const seat=k=>({key:k, c:CHARS[k], hp:CHARS[k].hp, mana:RULES.startMana, ward:null, effects:[],
-    medRound:-9, missed:0, catCounts:{}, lostLast:0, hpAtStart:0, used:{}, meditated:false});
-  gs={round:1, p1:seat(k1), p2:seat(k2), over:null, log:[]};
+    medRound:-9, potted:0, catCounts:{}, lostLast:0, hpAtStart:0, used:{}, meditated:false});
+  gs={round:1, p1:seat(k1), p2:seat(k2), table:0, over:null, log:[]};
   return gs;
 }
 const foe=w=>w==='p1'?'p2':'p1';
@@ -105,7 +99,7 @@ function mostUsedCat(st){ return ['damage','protect','dispel'].reduce((a,c)=>(st
 function costOf(st,a){
   if(a.cat==='meditate'||a.cat==='pass') return 0;
   const sp=a.sig&&sigById(st,a.sig);
-  let c=sp?sp.cost:RULES.cats[a.cat].cost[a.ring-1]+(a.cat==='protect'?st.c.wardCostMod:0);
+  let c=sp?sp.cost:RULES.cats[a.cat].cost[a.ring-1];
   if(!sp) c=Math.max(1,c);
   c+=fx(st,'spellbind').filter(e=>e.cat===a.cat).reduce((s,e)=>s+e.extra,0);
   return c;
@@ -160,15 +154,11 @@ function incoming(who,dmg,adj){
   loseHp(who,dmg);
   return dmg;
 }
-function wardAdj(st,elem){
-  if(!st.ward) return 0;
-  if(st.ward.elem===elem) return RULES.wardMatch;
-  return elem==='physical'?0:-RULES.wardOff;
-}
+function wardAdj(st,elem){ return st.ward&&st.ward.elem===elem?RULES.wardMatch:0; }
 
 // ── Casting ────────────────────────────────────────────────
 function raiseWard(who,elem,hp,ret){
-  gs[who].ward={hp:Math.min(RULES.max,hp), elem, rounds:RULES.wardRounds, ret:ret||0};
+  gs[who].ward={hp:Math.min(RULES.max,hp), elem, ret:ret||0};
 }
 
 function doProtect(who,a){
@@ -182,14 +172,13 @@ function doProtect(who,a){
   }
   if(sp.kind==='instant'){ doInstant(who,sp); return; }
   const e=Object.assign({id:sp.id, kind:'buff', name:sp.name},sp.effect);
-  if(e.type==='counter'&&e.extend&&st.ward) st.ward.rounds+=e.extend;
   addEffect(who,e,who);
   if(sp.ward) raiseWard(who,sp.elem,sp.ward);
 }
 function doInstant(who,sp){
   const st=gs[who], x=sp.action;
   if(x.type==='heal') heal(who,x.n);
-  else if(x.type==='bloodpact'){ loseHp(who,x.hp); gainMana(who,x.mana); }
+  else if(x.type==='bloodpact') gainMana(who,x.mana);   // the HP was turned into mana as it was paid
   else if(x.type==='tonic'){
     if(d6()<=3) heal(who,x.heal);
     else addEffect(who,{id:'tonic', type:'empower', kind:'buff', name:'Tonic', bonus:x.bonus, rounds:null},who);
@@ -216,7 +205,7 @@ function doDispel(who,a){
   const warding=fx(ts,'warding');
   if(warding.length){ removeEffects(t,warding); return; }
   if(ts.ward){
-    ts.ward.hp-=power*(ts.ward.elem===a.elem?RULES.dispelMatch:1);
+    ts.ward.hp-=power+wardAdj(ts,a.elem);
     if(ts.ward.hp<=0) ts.ward=null;
     return;
   }
@@ -244,7 +233,7 @@ function doDamage(who,a){
   dmg+=st.c.strikeBonus[ring-1]||0;
   let burn=0;
   const emp=st.effects.find(e=>e.type==='empower'&&(!e.elem||e.elem===elem));
-  if(emp){ dmg+=emp.bonus; removeEffects(who,[emp]); }
+  if(emp){ dmg=emp.double?dmg*2:dmg+emp.bonus; removeEffects(who,[emp]); }
   fx(st,'frenzy').forEach(e=>{ dmg+=e.bonus; loseHp(who,e.selfDmg); });
   const weave=fx(st,'weave')[0];
   if(weave){ dmg+=weave.bonus; burn+=weave.burn; if(--weave.charges<=0) removeEffects(who,[weave]); }
@@ -262,29 +251,14 @@ function doDamage(who,a){
   if(hp>0){
     if(sp&&sp.lifesteal) heal(who,Math.floor(hp/2));
     if(sp&&sp.dot) addEffect(tgt,{id:sp.id+'-dot', type:'dot', kind:'curse', name:sp.name, dmg:sp.dot.dmg, rounds:sp.dot.rounds, bypassWard:sp.dot.bypassWard},who);
-    riders(who,tgt,elem,ring,sp);
+    if(sp&&sp.chill) addEffect(tgt,{id:'chill', type:'lock', kind:'curse', name:'Chilled', cat:'damage', rounds:2},who);
   }
   // Mana burn lands whether or not the ward held
-  burn+=(sp&&sp.manaburn||0)+(elem==='lightning'?RULES.lightningBurn[ring-1]:0);
+  burn+=sp&&sp.manaburn||0;
   loseMana(tgt,burn);
   if(sp&&sp.arc&&rolls(sp.arc.roll)) incoming(tgt,sp.arc.dmg,0);
   if(retaliate) loseHp(who,retaliate);
 }
-function riders(who,tgt,elem,ring,sp){
-  if(sp&&sp.chill&&ring>=RULES.riderRing){ addEffect(tgt,{id:'chill', type:'lock', kind:'curse', name:'Chilled', cat:'damage', rounds:2},who); return; }
-  if(ring<RULES.riderRing) return;
-  const ts=gs[tgt];
-  if(elem==='fire'&&!(sp&&sp.dot)&&RULES.scorch[ring-1]) addEffect(tgt,{id:'scorch', type:'dot', kind:'curse', name:'Scorched', dmg:1, rounds:RULES.scorch[ring-1]},who);
-  if(elem==='ice'&&!locked(ts,'damage')) addEffect(tgt,{id:'frostbite', type:'risk', kind:'curse', name:'Frostbitten', cat:'damage', rounds:2},who);
-  if(elem==='dark'&&!locked(ts,'protect')) addEffect(tgt,{id:'dread', type:'risk', kind:'curse', name:'Dread', cat:'protect', rounds:2},who);
-  if(elem==='arcane'){
-    const timed=buffs(ts).filter(e=>e.rounds!=null);
-    const hit=ring>=3?timed:timed.slice(-1);
-    hit.forEach(e=>e.rounds--);
-    removeEffects(tgt,hit.filter(e=>e.rounds<=0));
-  }
-}
-
 // ── A round ────────────────────────────────────────────────
 // picks: {p1:action, p2:action}. action: {cat:'damage'|'protect'|'dispel', elem, ring} or
 // {cat, sig:'spellId'} or {cat:'dispel', self:true, ring:1} (cleanse) or {cat:'meditate'} / {cat:'pass'}.
@@ -293,7 +267,7 @@ function riders(who,tgt,elem,ring,sp){
 // rolled from RULES.squop.
 function playRound(picks,flicks,squops){
   const W=['p1','p2'];
-  W.forEach(w=>{ gs[w].hpAtStart=gs[w].hp; gs[w].meditated=false; });
+  W.forEach(w=>{ gs[w].hpAtStart=gs[w].hp; gs[w].meditated=false; gs[w].potted=0; });
   const outcome={};
   // Quick spells (Mana Siphon) are paid and steal before anyone else pays
   const quick=w=>{ const sp=picks[w].sig&&sigById(gs[w],picks[w].sig); return !!(sp&&sp.quick); };
@@ -317,49 +291,45 @@ function playRound(picks,flicks,squops){
   endRound();
   return outcome;
 }
-// Each wizard squops the foe's missed winks for mana: channellers (Meditate) first, with
-// channelSquops attempts, then everyone else with one attempt per missed wink still there (max maxSquops).
+// Squops: the wizards take turns, RULES.squops attempts each, at any missed winks on the table.
+// given (real play): {p1:winks squopped, p2:...}.
 function squopPhase(given){
   const W=['p1','p2'];
-  const go=w=>{
-    const f=foe(w), left=gs[f].missed;
-    if(!left) return;
-    let got;
-    if(given&&given[w]!=null) got=Math.min(left,given[w]);
-    else {
-      const tries=gs[w].meditated?RULES.channelSquops:Math.min(left,RULES.maxSquops);
-      got=0;
-      for(let i=0;i<tries&&got<left;i++) if(rng()<squopChance(w)) got++;
-    }
-    gs[f].missed-=got;
-    gainMana(w,got*RULES.squopGain);
-    gs[w].squopped=(gs[w].squopped||0)+got;
-  };
-  W.filter(w=>gs[w].meditated).forEach(go);
-  W.filter(w=>!gs[w].meditated).forEach(go);
+  if(given){
+    W.forEach(w=>{ const got=Math.min(gs.table,given[w]||0); gs.table-=got; gainMana(w,got*RULES.squopGain); });
+    return;
+  }
+  const hc=w=>gs.handicap&&gs.handicap[w]!=null?gs.handicap[w]:0;
+  const order=W.slice().sort((a,b)=>hc(a)-hc(b)||gs[b].potted-gs[a].potted||gs[a].hp-gs[b].hp||(rng()<0.5?-1:1));
+  for(let i=0;i<RULES.squops&&gs.table>0;i++){
+    order.forEach(w=>{
+      if(gs.table>0&&rng()<squopChance(w)){ gs.table--; gainMana(w,RULES.squopGain); gs[w].squopped=(gs[w].squopped||0)+1; }
+    });
+  }
 }
 const potChance=w=>gs.pot&&gs.pot[w]!=null?gs.pot[w]:RULES.pot;
 const squopChance=w=>gs.squop&&gs.squop[w]!=null?gs.squop[w]:RULES.squop;
 // The flick: pot RULES.winks[ring] winks; after each miss, pay retryCost to go again or give up.
-// Returns true when the spell is cast. Missed winks are left on the table (st.missed).
+// Returns true when the spell is cast. Missed winks are left on the table (gs.table).
 function flickCast(w,ring,given){
   const st=gs[w], need=RULES.winks[ring-1];
   if(given){
     const retries=given.cast?given.missed:Math.max(0,given.missed-1);
     loseMana(w,retries*RULES.retryCost);
-    st.missed+=given.missed;
+    gs.table+=given.missed;
+    if(given.cast) st.potted+=need;
     return !!given.cast;
   }
   let potted=0;
   while(potted<need){
-    if(rng()<potChance(w)){ potted++; continue; }
-    st.missed++;
+    if(rng()<potChance(w)){ potted++; st.potted++; continue; }
+    gs.table++;
     if(st.mana<RULES.retryCost) return false;
     st.mana-=RULES.retryCost;
   }
   return true;
 }
-// Curses that bite as the spell is picked, then the mana, then the flick
+// Curses that bite as the spell is picked (Enthral, Silence), then the mana, then the flick
 function pay(w,a,flick){
   const st=gs[w];
   if(a.cat==='pass') return 'pass';
@@ -381,8 +351,9 @@ function pay(w,a,flick){
   }
   const sil=fx(st,'silence')[0];
   if(sil&&!rolls(sil.roll)) return 'silenced';
-  const risk=st.effects.find(e=>e.type==='risk'&&e.cat===a.cat);
-  if(risk){ removeEffects(w,[risk]); if(d6()<RULES.riskRoll) return 'risked'; }
+  // Blood Pact: the HP counters are turned into mana first, so they can be potted
+  const sp=a.sig&&sigById(st,a.sig);
+  if(sp&&sp.action&&sp.action.type==='bloodpact'){ loseHp(w,sp.action.hp); gainMana(w,sp.action.hp); }
   if(cost>st.mana) return 'nomana';
   st.mana-=cost;
   if(!flickCast(w,ringOf(st,a),flick)) return 'fizzle';
@@ -416,10 +387,10 @@ function endRound(){
   if(checkOver()) return;
   W.forEach(w=>{
     const st=gs[w];
-    // Wards wear and expire
+    // Wards wear down, and last until they run out
     if(st.ward){
       if(!fx(st,'counter').some(e=>e.holdWard)) st.ward.hp-=RULES.wardWear;
-      if(--st.ward.rounds<=0||st.ward.hp<=0) st.ward=null;
+      if(st.ward.hp<=0) st.ward=null;
     }
     // Timed enchantments run down
     st.effects.forEach(e=>{ if(e.rounds!=null) e.rounds--; });

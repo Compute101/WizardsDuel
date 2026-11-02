@@ -6,25 +6,23 @@ const root=path.join(__dirname,'..');
 const TT=require(path.join(root,'js/tabletop.js'));
 const chars=TT.load(require(path.join(root,'characters.json')),require(path.join(root,'tabletop.json')));
 const R=TT.RULES;
-const RING=['Inner','Middle','Outer'];
+const RING=['Lesser','Normal','Greater'];
 const ELEM={fire:'Fire',ice:'Ice',lightning:'Lightning',arcane:'Arcane',physical:'Physical',dark:'Dark'};
 const CAT={damage:'Damage',protect:'Protection',dispel:'Dispel'};
 
-let base='| Ring | Damage (cost → dmg) | Protection (cost → ward) | Dispel (cost → power vs ward) | Winks to pot |\n|---|---|---|---|---|\n';
+let base='| Level | Winks to pot | Cost | Damage | Ward | Dispel |\n|---|---|---|---|---|---|\n';
 [0,1,2].forEach(i=>{
-  base+=`| ${RING[i]} | ${R.cats.damage.cost[i]} → ${R.cats.damage.power[i]} | ${R.cats.protect.cost[i]} → ${R.cats.protect.power[i]} | ${R.cats.dispel.cost[i]} → ${R.cats.dispel.power[i]} | ${R.winks[i]} |\n`;
+  base+=`| ${RING[i]} | ${R.winks[i]} | ${R.cats.damage.cost[i]} | ${R.cats.damage.power[i]} | ${R.cats.protect.power[i]} | ${R.cats.dispel.power[i]} |\n`;
 });
 
 let out='';
 Object.values(chars).forEach(c=>{
   const notes=[];
-  const sb=c.strikeBonus.map((b,i)=>b?`${RING[i].toLowerCase()} +${b}`:null).filter(Boolean);
-  if(sb.length) notes.push('Strikes: '+sb.join(', '));
-  if(c.wardCostMod) notes.push(`Protection costs ${c.wardCostMod>0?'+':''}${c.wardCostMod}`);
+  c.strikeBonus.forEach((b,i)=>{ if(b) notes.push(`${RING[i]} strikes +${b}`); });
   if(c.deathless) notes.push(`Deathless: when knocked to 0 HP, pay ${c.deathless} mana to stay on 1 HP`);
   if(c.forbidden.length) notes.push('Can\'t cast: '+c.forbidden.map(e=>ELEM[e]).join(', '));
   out+=`### ${c.name} — ${c.title}\n**HP ${c.hp}**${notes.length?' · '+notes.join(' · '):''}\n\n`;
-  out+='| Spell | Type | Element | Ring | Cost | Effect |\n|---|---|---|---|---|---|\n';
+  out+='| Spell | Type | Element | Level | Cost | Effect |\n|---|---|---|---|---|---|\n';
   c.spells.forEach(s=>{ out+=`| **${s.name}** | ${CAT[s.cat]} | ${ELEM[s.elem]} | ${RING[s.ring-1]} | ${s.cost} | ${s.text} |\n`; });
   out+='\n';
 });
