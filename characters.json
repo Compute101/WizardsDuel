@@ -40,9 +40,11 @@
           "effect": {
             "type": "counter",
             "retaliate": 10,
-            "rounds": 3
+            "rounds": 3,
+            "extend": 1,
+            "holdWard": true
           },
-          "desc": "3 rounds: strikers take 10"
+          "desc": "3 rounds: strikers take 10, and your ward doesn't wear; a ward already up lasts 1 round longer (outer ring: 2)"
         }
       },
       {
