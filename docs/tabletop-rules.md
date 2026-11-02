@@ -279,7 +279,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Dragon Scales** | Protection | Fire | Normal | 4 | Until dispelled: every hit on you deals 1 less (min 1), and strikers take 1. |
+| **Dragon Scales** | Protection | Fire | Normal | 5 | Until dispelled: every hit on you deals 1 less (min 1), and strikers take 1. |
 | **Wyrmfire Breath** | Damage | Fire | Normal | 4 | Fire strike of 4. Until cleansed, the foe burns for 1 at every round end. |
 | **Ancient Wrath** | Damage | Physical | Greater | 7 | Physical strike of 9. Once per game. |
 
