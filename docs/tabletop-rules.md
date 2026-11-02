@@ -14,7 +14,7 @@ The app's standard game is unchanged: this is a separate rule set.
 - A six-sided die (d6).
 - A way to pick secretly: a dial, or face-down cards for Damage / Protection / Dispel / Meditate plus a note of the element and ring.
 - Small tokens with a number (or a spare die) to track buffs and curses and how many rounds they have left.
-- Tiddlywinks and a target (see **The flick**).
+- Tiddlywinks, a pot, and a squidger each (see **The flick**).
 
 ## Setup
 
@@ -27,36 +27,46 @@ The app's standard game is unchanged: this is a separate rule set.
    - **Damage**, **Protection** or **Dispel**, plus an **element** and a **ring** (inner, middle or outer). The ring sets cost and strength. You can't use elements your wizard can't cast.
    - One of your wizard's **signature spells**. Each has its own cost and a fixed ring.
    - **Cleanse:** an inner-ring Dispel at yourself that removes your newest curse.
-   - **Meditate:** skip your spell and gain 3 mana. You can't Meditate two rounds running.
+   - **Meditate (channel):** skip your spell and gain 3 mana. You also squop first, with 3 attempts (see **Squops**). You can't Meditate two rounds running.
 2. **Reveal** both picks.
-3. **Pay.** Mana Siphon is a quick spell: it's paid and steals before anyone else pays. Then check curses that react to your pick: Enthral, Silence, then Frostbite or Dread. Then pay the mana. If you can't afford your spell, it's lost (you pay nothing).
-4. **Flick.** Each caster flicks a tiddlywink at the target. **A miss fizzles the spell: you pay 1 mana instead of its cost.**
+3. **Pay.** Mana Siphon is a quick spell: it's paid and steals before anyone else pays. Then check curses that react to your pick: Enthral, Silence, then Frostbite or Dread. Then pay the spell's mana. If you can't afford your spell, it's lost (you pay nothing).
+4. **Flick.** Each caster pots winks for their spell: **1 / 2 / 3 winks** for the inner / middle / outer ring (see **The flick**).
 5. **Resolve, in this order:** every **Protection**, then every **Dispel**, then every **Damage**, then **Meditate**. Within a stage, both spells happen together.
-6. **Round end** (see below).
+6. **Squops:** each player squops the other's missed winks for mana (see **Squops**).
+7. **Round end** (see below).
 
 When a wizard reaches 0 HP, the game ends straight away. If both fall at the same moment, it's a draw.
 
 ## Base spells
 
 <!-- base-spells:start -->
-| Ring | Damage (cost → dmg) | Protection (cost → ward) | Dispel (cost → power vs ward) | Flick lands* |
+| Ring | Damage (cost → dmg) | Protection (cost → ward) | Dispel (cost → power vs ward) | Winks to pot |
 |---|---|---|---|---|
-| Inner | 3 → 2 | 5 → 4 | 1 → 3 | 90% |
-| Middle | 5 → 4 | 8 → 7 | 2 → 6 | 80% |
-| Outer | 8 → 6 | 12 → 11 | 4 → 10 | 65% |
+| Inner | 3 → 2 | 5 → 4 | 1 → 3 | 1 |
+| Middle | 5 → 4 | 8 → 7 | 2 → 6 | 2 |
+| Outer | 8 → 6 | 12 → 11 | 4 → 10 | 3 |
 <!-- base-spells:end -->
-
-\* *What the simulator assumes a player hits. Tune `RULES.flick` once you know your real flick rates.*
 
 ## The flick
 
-The flick replaces the app's glyph minigames. The simulator only needs a hit or miss per cast, and a harder flick for a bigger ring. A suggested setup:
+The flick replaces the app's glyph minigames.
 
-- Lay out a target (a cup, or a circle about 8 cm across) and three lines in front of it: **inner** about 15 cm away, **middle** about 25 cm, **outer** about 35 cm.
-- Flick from the line of the ring you cast. Signature spells use their card's ring.
-- The wink must end up in the cup or touching the circle.
+- **Distance is your handicap.** Each player flicks from their own line, set before the game so everyone pots about as often. For example, a beginner might flick from 15 cm, a regular player from 25 cm and an expert from 35 cm. Adjust the lines between games until wins even out.
+- **The ring sets how many winks you must pot:** **1** for the inner ring, **2** for the middle, **3** for the outer. Signature spells use their card's ring.
+- **After a miss, pay 1 mana to have another go.** Your run carries on: a middle-ring spell needs 2 potted winks however many misses come between. If you can't pay, or don't want to, the spell **fizzles** and the mana you paid for it is lost.
+- **Missed winks stay where they land.** They're targets for the other player's squops this round.
 
-The flick takes longer than the app's minigame, which is why tabletop games are tuned shorter. They average about 11 rounds in the simulator; the standard game averages about 20.
+## Squops
+
+After the spells resolve, each player can win mana by squopping (landing a wink on top of) the other player's missed winks from this round.
+
+1. **Channelling first:** a player who Meditated this round takes **3 squop attempts** before the other player gets a turn.
+2. Then a player who cast gets **one squop attempt for each missed wink** of the other player's that is still on the table.
+3. **Each wink you squop gains you 1 mana.** Then both players pick up all their winks.
+
+The simulator assumes a player pots **75%** of flicks from their handicap line and lands **40%** of squop attempts (`RULES.pot` and `RULES.squop` in `js/tabletop.js`). Change them once you know your real rates, then re-run the balance check.
+
+Flicking takes longer than the app's minigame, which is why tabletop games are tuned shorter. They average about 11 rounds in the simulator; the standard game averages about 20.
 
 ## Wards (Protection)
 
@@ -136,7 +146,7 @@ Frostbite, Dread and Scorch are curses: Cleanse removes them.
 |---|---|---|---|---|---|
 | **Regen** | Protection | Physical | Middle | 4 | Heal 1 at the end of each round for 5 rounds. |
 | **Entangle** | Dispel | Physical | Middle | 2 | Roll a die: on 4+ the foe can't pick Damage next round. |
-| **Vine Whip** | Damage | Physical | Middle | 4 | Physical strike of 4, then vines deal 1 at the end of each round for 3 rounds. |
+| **Vine Whip** | Damage | Physical | Middle | 4 | Physical strike of 3, then vines deal 1 at the end of each round for 3 rounds. |
 
 ### AURELIA — The Radiant
 **HP 19**
@@ -161,7 +171,7 @@ Frostbite, Dread and Scorch are curses: Cleanse removes them.
 
 | Spell | Type | Element | Ring | Cost | Effect |
 |---|---|---|---|---|---|
-| **Fireball** | Damage | Fire | Middle | 5 | Fire strike: roll a die, deal that +1. |
+| **Fireball** | Damage | Fire | Middle | 5 | Fire strike: roll a die, deal that +2. |
 | **Flame Shield** | Protection | Fire | Middle | 7 | Fire ward of 8. While it holds, anyone who strikes you takes 2. |
 | **Candle** | Dispel | Fire | Middle | 2 | 3 rounds: the foe takes 2 each time they cast Protection or Meditate. |
 
@@ -226,7 +236,7 @@ Frostbite, Dread and Scorch are curses: Cleanse removes them.
 |---|---|---|---|---|---|
 | **Conjure Blade** | Protection | Physical | Middle | 2 | Conjure a blade (max 3). Each blade deals 1 to the foe at the end of every round. |
 | **Bladestorm** | Damage | Physical | Middle | 2 | Needs a blade. Launch all your blades: a Physical strike of 3 per blade. The blades are used up. |
-| **Iron Patience** | Protection | Arcane | Middle | 2 | 3 rounds: every hit on you deals 1 less (min 1). |
+| **Iron Patience** | Protection | Arcane | Middle | 3 | 3 rounds: every hit on you deals 1 less (min 1). |
 
 ### GRETCH — The Festering
 **HP 18** · Can't cast: Fire, Arcane

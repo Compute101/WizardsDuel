@@ -35,9 +35,9 @@
       {"id": "entangle", "name": "Entangle", "cat": "dispel", "elem": "physical", "ring": 2, "cost": 2, "kind": "curse",
        "roll": 4, "effect": {"type": "lock", "cat": "damage", "rounds": 2},
        "text": "Roll a die: on 4+ the foe can't pick Damage next round."},
-      {"id": "vinewhip", "name": "Vine Whip", "cat": "damage", "elem": "physical", "ring": 2, "cost": 4, "kind": "strike", "dmg": 4,
+      {"id": "vinewhip", "name": "Vine Whip", "cat": "damage", "elem": "physical", "ring": 2, "cost": 4, "kind": "strike", "dmg": 3,
        "dot": {"dmg": 1, "rounds": 3},
-       "text": "Physical strike of 4, then vines deal 1 at the end of each round for 3 rounds."}
+       "text": "Physical strike of 3, then vines deal 1 at the end of each round for 3 rounds."}
     ]
   },
   "aurelia": {
@@ -69,8 +69,8 @@
   "cinder": {
     "hp": 17, "strikeBonus": [0, 0, 1],
     "spells": [
-      {"id": "fireball", "name": "Fireball", "cat": "damage", "elem": "fire", "ring": 2, "cost": 5, "kind": "strike", "dice": "d6+1",
-       "text": "Fire strike: roll a die, deal that +1."},
+      {"id": "fireball", "name": "Fireball", "cat": "damage", "elem": "fire", "ring": 2, "cost": 5, "kind": "strike", "dice": "d6+2",
+       "text": "Fire strike: roll a die, deal that +2."},
       {"id": "flameshield", "name": "Flame Shield", "cat": "protect", "elem": "fire", "ring": 2, "cost": 7, "kind": "ward", "ward": 8, "retaliate": 2,
        "text": "Fire ward of 8. While it holds, anyone who strikes you takes 2."},
       {"id": "candle", "name": "Candle", "cat": "dispel", "elem": "fire", "ring": 2, "cost": 2, "kind": "curse",
@@ -166,7 +166,7 @@
        "text": "Conjure a blade (max 3). Each blade deals 1 to the foe at the end of every round."},
       {"id": "bladestorm", "name": "Bladestorm", "cat": "damage", "elem": "physical", "ring": 2, "cost": 2, "kind": "strike", "perBlade": 3, "requires": "blade",
        "text": "Needs a blade. Launch all your blades: a Physical strike of 3 per blade. The blades are used up."},
-      {"id": "ironpatience", "name": "Iron Patience", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 2, "kind": "buff",
+      {"id": "ironpatience", "name": "Iron Patience", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 3, "kind": "buff",
        "effect": {"type": "resist", "n": 1, "rounds": 3},
        "text": "3 rounds: every hit on you deals 1 less (min 1)."}
     ]

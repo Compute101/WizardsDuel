@@ -10,9 +10,9 @@ const RING=['Inner','Middle','Outer'];
 const ELEM={fire:'Fire',ice:'Ice',lightning:'Lightning',arcane:'Arcane',physical:'Physical',dark:'Dark'};
 const CAT={damage:'Damage',protect:'Protection',dispel:'Dispel'};
 
-let base='| Ring | Damage (cost → dmg) | Protection (cost → ward) | Dispel (cost → power vs ward) | Flick lands* |\n|---|---|---|---|---|\n';
+let base='| Ring | Damage (cost → dmg) | Protection (cost → ward) | Dispel (cost → power vs ward) | Winks to pot |\n|---|---|---|---|---|\n';
 [0,1,2].forEach(i=>{
-  base+=`| ${RING[i]} | ${R.cats.damage.cost[i]} → ${R.cats.damage.power[i]} | ${R.cats.protect.cost[i]} → ${R.cats.protect.power[i]} | ${R.cats.dispel.cost[i]} → ${R.cats.dispel.power[i]} | ${Math.round(R.flick[i]*100)}% |\n`;
+  base+=`| ${RING[i]} | ${R.cats.damage.cost[i]} → ${R.cats.damage.power[i]} | ${R.cats.protect.cost[i]} → ${R.cats.protect.power[i]} | ${R.cats.dispel.cost[i]} → ${R.cats.dispel.power[i]} | ${R.winks[i]} |\n`;
 });
 
 let out='';

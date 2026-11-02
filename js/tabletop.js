@@ -29,10 +29,19 @@ const RULES={
   wardOff:1,                   // ...and any other element (not Physical) this much softer (min 1)
   dispelMatch:2,               // a dispel in the ward's own element strips this many times its power
   dispelAllRing:3,             // an outer-ring dispel removes every buff, not just the newest
-  // Tiddlywink cast: the chance a flick lands, by ring (inner / middle / outer). A miss fizzles
-  // the spell and costs fizzleCost mana instead of its price.
-  flick:[0.9,0.8,0.65],
-  fizzleCost:1,
+  // Tiddlywink cast. Every caster flicks from their handicap line (set per player, so everyone
+  // pots about as often), and must pot `winks` winks for the ring (inner / middle / outer). After a
+  // miss, pay retryCost mana to have another go, or stop and the spell fizzles (its cost is lost).
+  // Missed winks stay on the table for the foe to squop at the end of the round.
+  winks:[1,2,3],
+  retryCost:1,
+  pot:0.75,                    // simulator: chance a flick pots from your handicap line
+  // Squops, after the spells resolve: the foe gets one squop attempt at each of your missed winks
+  // this round, and gains squopGain mana for each one they squop. A wizard who Meditates (channels)
+  // instead takes channelSquops attempts, before the foe's turn.
+  squop:0.4,                   // simulator: chance a squop attempt lands
+  squopGain:1,
+  channelSquops:3,
   riderRing:2,                 // element riders need a strike from this ring or more that reached HP
   scorch:[0,1,2],              // Fire: burn 1 at round end for this many rounds, by ring
   lightningBurn:[1,1,2],       // Lightning: mana the foe loses, by ring (even through a ward)
@@ -277,10 +286,12 @@ function riders(who,tgt,elem,ring,sp){
 // ── A round ────────────────────────────────────────────────
 // picks: {p1:action, p2:action}. action: {cat:'damage'|'protect'|'dispel', elem, ring} or
 // {cat, sig:'spellId'} or {cat:'dispel', self:true, ring:1} (cleanse) or {cat:'meditate'} / {cat:'pass'}.
-// flicks (optional): {p1:true/false,...} the tiddlywink results; otherwise rolled from RULES.flick.
-function playRound(picks,flicks){
+// flicks (optional, for real play): {p1:{cast:true|false, missed:n}, ...} the tiddlywink results;
+// otherwise they are rolled from RULES.pot. squops (optional): {p1:winks squopped, ...}; otherwise
+// rolled from RULES.squop.
+function playRound(picks,flicks,squops){
   const W=['p1','p2'];
-  W.forEach(w=>{ gs[w].hpAtStart=gs[w].hp; gs[w].meditated=false; });
+  W.forEach(w=>{ gs[w].hpAtStart=gs[w].hp; gs[w].meditated=false; gs[w].missed=0; });
   const outcome={};
   // Quick spells (Mana Siphon) are paid and steal before anyone else pays
   const quick=w=>{ const sp=picks[w].sig&&sigById(gs[w],picks[w].sig); return !!(sp&&sp.quick); };
@@ -300,8 +311,51 @@ function playRound(picks,flicks){
     if(checkOver()) return outcome;
   }
   W.forEach(w=>{ if(picks[w].cat==='meditate'&&outcome[w]==='cast') gainMana(w,Math.max(0,RULES.meditate-incomeDrain(gs[w]))); });
+  squopPhase(squops);
   endRound();
   return outcome;
+}
+// Each wizard squops the foe's missed winks for mana: channellers (Meditate) first, with
+// channelSquops attempts, then everyone else with one attempt per missed wink still there.
+function squopPhase(given){
+  const W=['p1','p2'];
+  const go=w=>{
+    const f=foe(w), left=gs[f].missed;
+    if(!left) return;
+    let got;
+    if(given&&given[w]!=null) got=Math.min(left,given[w]);
+    else {
+      const tries=gs[w].meditated?RULES.channelSquops:left;
+      got=0;
+      for(let i=0;i<tries&&got<left;i++) if(rng()<squopChance(w)) got++;
+    }
+    gs[f].missed-=got;
+    gainMana(w,got*RULES.squopGain);
+    gs[w].squopped=(gs[w].squopped||0)+got;
+  };
+  W.filter(w=>gs[w].meditated).forEach(go);
+  W.filter(w=>!gs[w].meditated).forEach(go);
+}
+const potChance=w=>gs.pot&&gs.pot[w]!=null?gs.pot[w]:RULES.pot;
+const squopChance=w=>gs.squop&&gs.squop[w]!=null?gs.squop[w]:RULES.squop;
+// The flick: pot RULES.winks[ring] winks; after each miss, pay retryCost to go again or give up.
+// Returns true when the spell is cast. Missed winks are left on the table (st.missed).
+function flickCast(w,ring,given){
+  const st=gs[w], need=RULES.winks[ring-1];
+  if(given){
+    const retries=given.cast?given.missed:Math.max(0,given.missed-1);
+    loseMana(w,retries*RULES.retryCost);
+    st.missed+=given.missed;
+    return !!given.cast;
+  }
+  let potted=0;
+  while(potted<need){
+    if(rng()<potChance(w)){ potted++; continue; }
+    st.missed++;
+    if(st.mana<RULES.retryCost) return false;
+    st.mana-=RULES.retryCost;
+  }
+  return true;
 }
 // Curses that bite as the spell is picked, then the mana, then the flick
 function pay(w,a,flick){
@@ -328,9 +382,8 @@ function pay(w,a,flick){
   const risk=st.effects.find(e=>e.type==='risk'&&e.cat===a.cat);
   if(risk){ removeEffects(w,[risk]); if(d6()<RULES.riskRoll) return 'risked'; }
   if(cost>st.mana) return 'nomana';
-  const hit=flick!=null?flick:rng()<RULES.flick[ringOf(st,a)-1]*(gs.flickSkill?gs.flickSkill[w]:1);
-  if(!hit){ loseMana(w,RULES.fizzleCost); return 'fizzle'; }
   st.mana-=cost;
+  if(!flickCast(w,ringOf(st,a),flick)) return 'fizzle';
   if(a.cat==='protect') fx(st,'candle').forEach(e=>loseHp(w,e.dmg));
   return 'cast';
 }

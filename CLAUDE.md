@@ -112,7 +112,7 @@ Every round goes: secret picks → simultaneous reveal → resolution → round-
 ---
 
 ## Tabletop mode
-A separate, simplified rule set for playing on a real table: HP, mana and wards are whole counters (max 20 each), signature spells are fixed cards, and a tiddlywink flick replaces the glyph minigames (a miss fizzles; `RULES.flick` is the hit chance by ring). Games are tuned shorter (about 11 rounds against about 20 in the standard game). **It never touches the standard game:** `js/game.js` doesn't load it, and the standard game stays the default.
+A separate, simplified rule set for playing on a real table: HP, mana and wards are whole counters (max 20 each), signature spells are fixed cards, and tiddlywinks replace the glyph minigames. You flick from a handicap distance and pot 1 / 2 / 3 winks by ring (`RULES.winks`). Each miss costs 1 mana to go again, or the spell fizzles. Missed winks are squopped by the foe for mana, and a Meditating (channelling) wizard squops 3 times first. `RULES.pot` / `RULES.squop` are the success rates the sim assumes. Games are tuned shorter (about 11 rounds against about 20 in the standard game). **It never touches the standard game:** `js/game.js` doesn't load it, and the standard game stays the default.
 - `js/tabletop.js`: rules (`RULES`), engine, AI and `simMatch`. Self-contained, and runs in Node too.
 - `tabletop.json`: each character's counter numbers and spell card text. Names, colours and `forbidden` come from `characters.json`.
 - `docs/tabletop-rules.md`: the rulebook. After changing numbers, run `node tools/tabletop_doc.js` to regenerate its base-spell and character sections, and keep the hand-written rules in step with the engine.
