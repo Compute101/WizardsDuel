@@ -657,7 +657,7 @@
             "dmg": 8,
             "rounds": 4
           },
-          "desc": "4 rounds: foe takes 8 whenever they cast"
+          "desc": "4 rounds: foe takes 8 whatever they do (Meditate escapes it, unless Corrupted)"
         }
       },
       {
@@ -693,7 +693,7 @@
             "n": 3,
             "rounds": 3
           },
-          "desc": "Foe gains 3 less mana a round (and from Meditate) × 3"
+          "desc": "Foe gains 3 less mana a round (and from Meditate) × 3; meditating while Corrupted triggers Agony"
         }
       }
     ]

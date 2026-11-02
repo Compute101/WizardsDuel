@@ -145,7 +145,8 @@ so each spell's numbers can be tuned there.
   Greater (outer ring) dispel strips all of them — so wards protect your buffs.
 - **Curses** (Dispel wheel) resolve with Dispels. Besides the hex, each is a weak dispel: it hits the
   foe's ward with half a dispel's power for that ring (double vs a matching ward) but never strips
-  buffs (`ELEM_CURSE_DISPEL`). **Cleanse Self** and Mary's Purge remove every curse on you.
+  buffs (`ELEM_CURSE_DISPEL`). **Cleanse Self** removes only your newest curse; Mary's Purge removes every curse on you. Silence can
+  block a Cleanse Self like any other spell.
 - **Locks** (Ice Lance's chill, Entangle) come only from signature spells. They block one category
   for your next pick, and can't be applied two rounds running, so nobody can be locked forever.
 - **Enthral** (Thessaly) is a called shot, not a lock: the caster secretly names a category, hidden
@@ -192,9 +193,9 @@ so each spell's numbers can be tuned there.
 | Mary | 💛 Heal | 🛡 Protection | 🌀 Arcane | Instant | 4 / 6 / 10 | Heal 22 now |
 | Mary | ✨ Purge | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Remove your curses and heal 12 |
 | Mary | ☀️ Radiant | ⚔️ Damage | 🌀 Arcane | Strike | 2 / 4 / 6 | 12 holy; burns 2 mana |
-| Mordant | 💀 Agony | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: foe takes 8 whenever they cast |
+| Mordant | 💀 Agony | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: foe takes 8 whatever they do (Meditate escapes it, unless Corrupted) |
 | Mordant | 🔇 Silence | ✦ Dispel | 🌀 Arcane | Curse (foe) | 2 / 3 / 5 | 3 rounds: foe's spells fail 50% |
-| Mordant | ☠️ Corruption | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Foe gains 3 less mana a round (and from Meditate) × 3 |
+| Mordant | ☠️ Corruption | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Foe gains 3 less mana a round (and from Meditate) × 3; meditating while Corrupted triggers Agony |
 | Ponder | 👻 Vanish | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 3 / 5 | The next strike within 2 rounds misses |
 | Ponder | 🌀 Mana Siphon | ✦ Dispel | 🌀 Arcane | Instant (quick) | 2 / 3 / 5 | Steal 3 mana as the round begins, before they pay |
 | Ponder | 💫 Blink | 🛡 Protection | ⚡ Lightning | Enchantment (self) + ward | 2 / 4 / 6 | 45% dodge × 3 rounds, plus a 10 HP Lightning ward. Dodge rolls before Vanish, so a dodged strike keeps Vanish up |

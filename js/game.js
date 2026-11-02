@@ -3423,8 +3423,17 @@ function quickSteal(who,action){
   ts.mana-=n; st.mana=Math.min(MAX_MANA,st.mana+n);
   action.stolen=n;
 }
+// Agony bites whatever the foe does: casting, failing, waiting or shifting. Meditate is the one
+// escape, unless Corruption has spoiled it too.
+function agonyBites(who,action){
+  if(action.cat!=='meditate') return true;
+  return effectsOf(gs[who],'incomeDrain').some(e=>e.id==='corruption');
+}
 function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
+  const agony=effectsOf(st,'agony')[0];
+  if(agony&&agonyBites(who,action)){ dmgSource=agony.from; elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); dmgSource=who; }
+  if(agony&&st.hp<=0){ combatTimeout(cb,700); return; }   // Agony knocked them out before they could act
   if(action.enthral){ showEnthral(who,action); if(action.outcome==='enthralled'){ anim(who,'cast',600); combatTimeout(cb,1000); return; } }
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
   if(action.cat==='meditate'){
@@ -3463,8 +3472,6 @@ function executeElemental(who,action,cb){
     }
   }
 
-  const agony=effectsOf(st,'agony')[0];
-  if(agony){ dmgSource=agony.from; elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); }
   dmgSource=who;
   // Paid (or not) when the round began — see payForAction
   if(action.outcome==='fizzle'){ addFloat(x,bH*.33,'Fizzled!','#ff8844',13); combatTimeout(cb,700); return; }
@@ -3499,7 +3506,7 @@ function executeWheel(who,action,cb){
     return;
   }
   if(action.self){
-    elemCleanse(who);
+    elemCleanse(who,false);
     combatTimeout(cb,800);
     return;
   }
@@ -3655,7 +3662,7 @@ function executeSignature(who,sp,action,cb){
   const a=el.action;
   if(a.type==='heal') elemHeal(ally,a.amt);
   else if(a.type==='bloodpact'){ st.mana=Math.min(MAX_MANA,st.mana+a.mana); addFloat(x,bH*.3,'+'+a.mana+' Mana','#88aaff',13); }
-  else if(a.type==='cleanse'){ elemCleanse(who); if(a.heal) elemHeal(who,a.heal); }
+  else if(a.type==='cleanse'){ elemCleanse(who,true); if(a.heal) elemHeal(who,a.heal); }
   else if(a.type==='rewind'){ elemHeal(who,Math.min(a.max,st.lastRoundLoss||0),'⏪'); if(!st.lastRoundLoss) addFloat(x,bH*.3,'⏪ Nothing to undo','#cccccc',12); }
   else if(a.type==='siphon'){
     // A quick siphon already stole as the round began (quickSteal); this only shows it
@@ -3688,8 +3695,10 @@ function breakWard(st,x,unravel){
   addFloat(x,bH*.24,unravel?'🛡 UNRAVELLED!':'🛡 SHATTERED!',col,18);
   (unravel?VFX.wardUnravelled:VFX.wardShatter)(x,col);
 }
-function elemCleanse(who){
-  const st=gs[who], curses=cursesOf(st);
+// Cleanse Self clears only the newest curse (so an older Agony can hide behind a fresh Silence);
+// all: Mary's Purge clears every one
+function elemCleanse(who,all){
+  const st=gs[who], curses=all?cursesOf(st):cursesOf(st).slice(-1);
   if(curses.length) removeEffects(who,curses,'✦ Cleansed');
   else addFloat(seatX(who),bH*.28,'✦ Nothing to cleanse','#ffaaff',13);
   VFX.cleanse(seatX(who));
@@ -7596,7 +7605,7 @@ const TUTORIAL_CONVOS={
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
     {key:'zacharius',text:"Every element carries an extra effect. Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
-    {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. Burns, frostbite and dread are curses: Cleanse Self clears them."},
+    {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
     {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
@@ -7605,7 +7614,7 @@ const TUTORIAL_CONVOS={
     {key:'mary',   text:"Some wizards cast enchantments. Buffs — like Regen, War Paint or a skeleton servant — sit on the Protection wheel and last a while."},
     {key:'mordant',text:"Curses — like Silence, Plague or Agony — sit on the Dispel wheel. As well as their hex, every curse wears at the target's ward a little, like a weak dispel."},
     {key:'ponder', text:"A Dispel against a rival with no ward strips their newest buff — or all of them, from the outer ring. If they have a ward, the dispel hits the ward instead. Wards protect your buffs!"},
-    {key:'mary',   text:"Cursed? Open the Dispel wheel and tap Cleanse Self. It removes every curse on you for very little mana."},
+    {key:'mary',   text:"Cursed? Open the Dispel wheel and tap Cleanse Self. It removes your newest curse for very little mana — just one, so mind the order they land in."},
     {key:'sylvara',text:"Locks — like my Entangle or Skadi's Ice Lance — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
   ],
   alphabet:[
@@ -7683,8 +7692,8 @@ const TUTORIAL_CONVOS={
   ],
   mordant:[
     {key:'mordant',text:"Do not think of me as aggressive. I am patient. Half my Dispel wheel is curses — and every one of them wears at your ward too."},
-    {key:'mordant',text:"Agony is Dark: whenever you cast anything, you suffer. Silence is Arcane: your spells may simply fail."},
-    {key:'mordant',text:"Corruption is Physical: the rot slows the mana you gain each round, and it spoils a Meditate. Starve them, and watch their options narrow to nothing."},
+    {key:'mordant',text:"Agony is Dark: whatever you do, you suffer — only a Meditate escapes it. Silence is Arcane: your spells may simply fail."},
+    {key:'mordant',text:"Corruption is Physical: the rot slows the mana you gain each round, and it spoils a Meditate — under Corruption, even meditating feeds my Agony. Starve them, and watch their options narrow to nothing."},
     {key:'mordant',text:"Cleanse Self is the answer to me. Make them spend their rounds cleansing instead of striking. The hex is already written."},
   ],
   ponder:[
