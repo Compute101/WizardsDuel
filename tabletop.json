@@ -58,8 +58,8 @@
   "cinder": {
     "hp": 17, "strikeBonus": [0, 0, 1],
     "spells": [
-      {"id": "fireball", "name": "Fireball", "cat": "damage", "elem": "fire", "ring": 2, "cost": 4, "kind": "strike", "dice": "d6+2",
-       "text": "Fire strike: roll a die, deal that +2 (3–8; a Normal strike is 4)."},
+      {"id": "fireball", "name": "Fireball", "cat": "damage", "elem": "fire", "ring": 1, "cost": 2, "kind": "strike", "dmg": 4,
+       "text": "Fire strike of 4 (a Lesser strike is 2)."},
       {"id": "flameshield", "name": "Flame Shield", "cat": "protect", "elem": "fire", "ring": 2, "cost": 5, "kind": "ward", "ward": 8, "retaliate": 2,
        "text": "Fire ward of 8. While it holds, anyone who strikes you takes 2."},
       {"id": "candle", "name": "Candle", "cat": "dispel", "elem": "fire", "ring": 2, "cost": 2, "kind": "curse", "effect": {"type": "candle", "dmg": 2, "rounds": 3},

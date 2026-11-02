@@ -157,7 +157,7 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Fireball** | Damage | Fire | Normal | 4 | Fire strike: roll a die, deal that +2 (3–8; a Normal strike is 4). |
+| **Fireball** | Damage | Fire | Lesser | 2 | Fire strike of 4 (a Lesser strike is 2). |
 | **Flame Shield** | Protection | Fire | Normal | 5 | Fire ward of 8. While it holds, anyone who strikes you takes 2. |
 | **Candle** | Dispel | Fire | Normal | 2 | 3 rounds: the foe takes 2 each time they cast Protection or Meditate. |
 
