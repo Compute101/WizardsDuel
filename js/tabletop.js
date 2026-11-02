@@ -27,7 +27,11 @@ const RULES={
   },
   wardWear:1,                  // a ward loses this many counters at every round end; it lasts until it runs out
   wardMatch:2,                 // a strike or dispel in the ward's own element counts this much more against it
-  dispelAllRing:3,             // a Greater dispel removes every buff, not just the newest
+  dispelAllRing:3,
+  // Cleanse (a Dispel at yourself): Lesser removes 1 curse, Normal 2, Greater all of them; it costs
+  // 1 mana per level, and the usual 1 / 2 / 3 winks to pot.
+  cleanseCost:[1,2,3],
+  cleanseCount:[1,2,Infinity],             // a Greater dispel removes every buff, not just the newest
   // Tiddlywink cast. Every caster flicks from their own handicap line (set per player, so everyone
   // pots about as often), and must pot `winks` winks for the level. After a miss, pay retryCost mana
   // to have another go, or stop and the spell fizzles (its cost is lost). Missed winks stay on the
@@ -99,7 +103,7 @@ function mostUsedCat(st){ return ['damage','protect','dispel'].reduce((a,c)=>(st
 function costOf(st,a){
   if(a.cat==='meditate'||a.cat==='pass') return 0;
   const sp=a.sig&&sigById(st,a.sig);
-  let c=sp?sp.cost:RULES.cats[a.cat].cost[a.ring-1];
+  let c=sp?sp.cost:a.self?RULES.cleanseCost[a.ring-1]:RULES.cats[a.cat].cost[a.ring-1];
   if(!sp) c=Math.max(1,c);
   c+=fx(st,'spellbind').filter(e=>e.cat===a.cat).reduce((s,e)=>s+e.extra,0);
   return c;
@@ -186,9 +190,16 @@ function doInstant(who,sp){
   else if(x.type==='cleanse'){ removeEffects(who,curses(st)); heal(who,x.heal||0); }
 }
 
+// How much a curse hurts, so the AI (and a sensible player) cleanses the worst first
+function curseHarm(e){
+  return {agony:5, dot:4, silence:4, incomeDrain:3, vuln:3, spellbind:3, candle:2, bewitch:2, lock:1, enthral:1}[e.type]||1;
+}
 function doDispel(who,a){
   const st=gs[who], t=foe(who), ts=gs[t], sp=a.sig&&sigById(st,a.sig);
-  if(a.self){ removeEffects(who,curses(st)); return; }   // Cleanse clears every curse
+  if(a.self){   // Cleanse: the worst curses first (a player picks which)
+    const list=curses(st).sort((x,y)=>curseHarm(y)-curseHarm(x)).slice(0,RULES.cleanseCount[a.ring-1]);
+    removeEffects(who,list); return;
+  }
   if(sp){
     if(sp.kind==='instant'){ if(!sp.quick) doInstant(who,sp); return; }
     // A curse
@@ -483,8 +494,13 @@ function aiChoose(w,level){
 function aiInCat(w,cat,smart){
   const st=gs[w], ts=gs[foe(w)];
   // Cleanse a curse
-  if(cat==='dispel'&&curses(st).length&&canPick(st,{cat,self:true,ring:1})&&rng()<(smart?(!ts.ward&&!buffs(ts).length?0.9:0.6):0.5))
-    return {cat,self:true,ring:1};
+  const nc=curses(st).length;
+  if(cat==='dispel'&&nc&&canPick(st,{cat,self:true,ring:1})&&rng()<(smart?(!ts.ward&&!buffs(ts).length?0.9:0.6):0.5)){
+    // Clear as many as are worth it (Greater clears them all), at a level we can afford
+    let ring=Math.min(3,nc);
+    while(ring>1&&!canPick(st,{cat,self:true,ring})) ring--;
+    return {cat,self:true,ring};
+  }
   const sigs=st.c.spells.filter(s=>s.cat===cat&&canPick(st,{cat,sig:s.id})&&sigSensible(w,s));
   const idleDispel=cat==='dispel'&&!ts.ward&&!buffs(ts).length;
   if(sigs.length&&(idleDispel||rng()<(smart?0.5:0.3))){

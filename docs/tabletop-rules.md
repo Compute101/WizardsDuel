@@ -27,7 +27,7 @@ The app's standard game is unchanged: this is a separate rule set.
 1. **Pick in secret.** Choose one of these:
    - **Damage**, **Protection** or **Dispel**, plus an **element** and a **level**: **Lesser**, **Normal** or **Greater**. You can't use elements your wizard can't cast.
    - One of your wizard's **signature spells**. Each card has its own cost and level.
-   - **Cleanse:** a Lesser Dispel at yourself that removes **all** your curses.
+   - **Cleanse:** a Dispel at yourself that removes your curses (see **Buffs and curses**).
    - **Meditate:** skip your spell and gain 3 mana. You can't Meditate two rounds running.
 2. **Reveal** both picks.
 3. **Pay.** Mana Siphon is a quick spell: it's paid and steals before anyone else pays. Then check curses that react to your pick (Enthral, then Silence). Then pay the spell's cost in mana winks. If you can't afford your spell, it's lost (you pay nothing).
@@ -89,6 +89,15 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 ## Buffs and curses
 
 There are no round counters. **Buffs last until a Dispel removes them**, and **curses last until the cursed wizard Cleanses**.
+
+Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
+
+| Cleanse | Winks to pot | Cost | Removes |
+|---|---|---|---|
+| Lesser | 1 | 1 | 1 curse of your choice |
+| Normal | 2 | 2 | 2 curses of your choice |
+| Greater | 3 | 3 | all your curses |
+
 - "Next strike" and "next pick" effects (Empower, Foresight, Vanish, Bewitch, Enthral and similar) go as soon as they're used.
 - "Can't pick Damage next round" lasts for that one round only.
 - Casting a buff or curse that's already in play does nothing extra; minions (blades, skeletons, simulacra) stack up to their card's max.
