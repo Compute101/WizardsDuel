@@ -59,7 +59,7 @@
             "type": "warding",
             "rounds": 3
           },
-          "desc": "3 rounds: immune to curses"
+          "desc": "3 rounds: immune to curses; the next dispel only removes the Ward"
         }
       }
     ]

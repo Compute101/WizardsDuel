@@ -3653,7 +3653,8 @@ function executeSignature(who,sp,action,cb){
       }
       if(el.drainNow){ const d=Math.min(ts.mana,el.drainNow); ts.mana-=d; if(d) addFloat(tx,bH*.42,'−'+d+' Mana','#88aaff',12); }
       // A curse is a weak dispel too: it wears at the foe's ward (never strips buffs)
-      if(hasWard(ts)) elemWardDispel(tgt,el.elem,Math.round(ELEM_CATS.dispel.power[action.tier-1]*ELEM_CURSE_DISPEL));
+      // Warding stops that wear too, and isn't used up by it
+      if(hasWard(ts)&&!effectsOf(ts,'warding').length) elemWardDispel(tgt,el.elem,Math.round(ELEM_CATS.dispel.power[action.tier-1]*ELEM_CURSE_DISPEL));
       combatTimeout(cb,700);
     });
     return;
@@ -3717,6 +3718,9 @@ function elemWardDispel(tgt,elem,power){
 }
 function elemDispelHit(tgt,elem,power,tier){
   const ts=gs[tgt], tx=seatX(tgt);
+  // Warding (Eldrin's Ward) takes the dispel in place of the ward and every other buff
+  const warding=effectsOf(ts,'warding');
+  if(warding.length){ VFX.dispelHit(tx); removeEffects(tgt,warding,'✦ Ward takes the dispel'); return; }
   if(hasWard(ts)){ elemWardDispel(tgt,elem,power); return; }
   VFX.dispelHit(tx);
   const buffs=buffsOf(ts);
@@ -4122,6 +4126,7 @@ function elemAIChoose(who){
     let v=1;
     if(e.type==='absorbNext'&&effectsOf(me,'dodge').length) v+=2;
     if(sp.el.ward&&buffsOf(me).length&&!hasWard(me)) v+=2;
+    if(e.type==='warding'&&hasWard(me)&&!effectsOf(me,'warding').length) v+=2;   // Ward takes the next dispel for the ward
     if(sp===siphon&&(siphonNow||cover.length)) v+=2;
     if(e.type==='enthral'&&(hasWard(me)||effectsOf(opp,'spellbind').length)) v+=2;
     return v;
@@ -7646,7 +7651,7 @@ const TUTORIAL_CONVOS={
   eldrad:[
     {key:'eldrad',text:"I am Eldrin — the Stalwart. My wards cost less than anyone else's. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
     {key:'eldrad',text:"My Shield takes the Arcane sector of my Protection wheel — a far larger ward than most wizards can raise."},
-    {key:'eldrad',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds. Ward, in the Ice sector, makes me immune to curses."},
+    {key:'eldrad',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds. Ward, in the Ice sector, makes me immune to curses, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
     {key:'eldrad',text:"Dispels are my weakness. Keep a ward between your buffs and their unbinding, and I am very hard to wear down."},
   ],
   mal:[
