@@ -163,9 +163,9 @@
           "effect": {
             "type": "regen",
             "perRound": 5,
-            "rounds": 4
+            "rounds": 5
           },
-          "desc": "Heal 5 a round for 4 rounds"
+          "desc": "Heal 5 a round for 5 rounds"
         }
       },
       {
@@ -587,9 +587,9 @@
           "tier": 1,
           "action": {
             "type": "heal",
-            "amt": 21
+            "amt": 22
           },
-          "desc": "Heal 21 now"
+          "desc": "Heal 22 now"
         }
       },
       {
@@ -604,9 +604,9 @@
           "tier": 1,
           "action": {
             "type": "cleanse",
-            "heal": 8
+            "heal": 12
           },
-          "desc": "Remove your curses and heal 8"
+          "desc": "Remove your curses and heal 12"
         }
       },
       {
@@ -920,7 +920,7 @@
       "You called it ugly. Gretch calls it efficient.",
       "The swamp takes all things. Even stubborn little wizards."
     ],
-    "hp": 85,
+    "hp": 89,
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
