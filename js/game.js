@@ -1319,6 +1319,14 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.fillText('⛓', x, wy-sz*.58);
     bx.globalAlpha=1;
   }
+  // Dread: a dark shadow pooling and pulsing around the wizard
+  if(state&&state.dread){
+    bx.globalAlpha=0.14+0.08*Math.sin(t/240); bx.fillStyle='#3a0a5a';
+    bx.beginPath(); bx.arc(x,wy,sz*.66,0,Math.PI*2); bx.fill(); bx.globalAlpha=1;
+    bx.strokeStyle=`rgba(150,60,210,${0.35+0.2*Math.sin(t/320)})`; bx.lineWidth=1.5;
+    bx.shadowColor='#6a1aa0'; bx.shadowBlur=8;
+    bx.beginPath(); bx.arc(x,wy,sz*.66,0,Math.PI*2); bx.stroke(); bx.shadowBlur=0;
+  }
   // Bewitched: mirror shimmer
   if(state&&state.bewitched){
     bx.globalAlpha=0.12+0.07*Math.sin(t/300); bx.fillStyle='#ff88ff';
@@ -1634,7 +1642,7 @@ const WIZ_VISUAL_BY_ID={timedrain:'timeDrain', counter:'counter', candle:'candle
   singularity:'voidCollapse', frostarmor:'frostArmor', dragonscales:'dragonScales', stonesoul:'stonesoul',
   galvanize:'charge', conductivity:'conductivity', agony:'agony', silence:'silence', corruption:'corruption',
   vanish:'invisible', blink:'blink', plague:'plague', maggotcloud:'maggotCloud', bonetotem:'boneTotem',
-  enthral:'enthralled', arcaneweave:'arcaneWeave', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen',
+  enthral:'enthralled', arcaneweave:'arcaneWeave', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen', frostbite:'frozen', dread:'dread',
   warpaint:'resist', ironpatience:'resist', heal:'regen'};
 function wizVisuals(st){
   const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra};
@@ -2968,13 +2976,23 @@ const ELEM_START_MANA=6;
 const ELEM_INCOME=4;            // mana every seat gains at the end of each round
 const ELEM_WARD_ROUNDS=3;       // a ward lasts the round it is raised + 2 more
 const ELEM_WARD_DECAY=0.75;     // ward HP kept at each round end
-const ELEM_CHILL_MIN_TIER=2;    // Ice of this strength or more chills when it reaches HP
+// Element riders on strikes. Plain strikes never lock (hard locks are for signature spells); a
+// chance roll waits for the target's next pick, so neither side can plan around it.
+//   Lightning burns mana (even through a ward) · Ice frostbites and Dark dreads (a Damage / Protection
+//   pick next round may be lost) · Fire scorches (a burn) · Physical crushes wards (no off-element
+//   resistance) · Arcane unweaves buffs (rounds off their timers).
+// The riders that need HP reached also need ELEM_RIDER_MIN_TIER or more. ELEM_RIDERS switches each off.
+const ELEM_RIDERS={frostbite:true, dread:true, scorch:true, crush:true, unweave:true};
+const ELEM_RIDER_MIN_TIER=2;
+const ELEM_CHILL_MIN_TIER=2;    // Ice Lance (el.chill) chills (a hard lock) at this strength or more
+const ELEM_RISK_PCT={frostbite:0.5, dread:0.5};   // chance the covered pick next round is lost
+const ELEM_SCORCH=[null,{dmg:2,rounds:2},{dmg:3,rounds:2}];   // burn by tier (inner ring: none)
 const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or not
 const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
 const ELEM_DISPEL_ALL_TIER=3;
 const ELEM_CURSE_DISPEL=0.5;
 // Share of a strike's damage a ward loses: match = a strike in the ward's own element, off = any other element
-const ELEM_WARD_TAKE={match:1.5, off:0.75};   // wards resist other elements; their own unravels them
+const ELEM_WARD_TAKE={match:1.5, off:0.75, crush:1};   // wards resist other elements; their own unravels them; Physical strikes crush through the resistance
 
 const ELEMENTS=[
   {id:'fire',      name:'Fire',      icon:'🔥', col:'#ff6622'},
@@ -3199,7 +3217,7 @@ function openElemWheel(cat){
   selfBtn.style.display=cat==='dispel'?'':'none';
   selfBtn.textContent='✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
   const ruleText={
-    damage:'A ward\'s own element unravels it · Lightning also burns mana · Ice (middle ring or stronger) chills: no Damage next round',
+    damage:'A ward\'s own element unravels it · Lightning burns mana · Physical crushes wards · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
     protect:'Wards last 3 rounds, fading each round · they resist other elements, but their own element unravels them',
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
@@ -3376,8 +3394,11 @@ function payForAction(who,action){
   const sp=action.sig?sigById(who,action.sig):null;
   const cost=action.cat==='phase'?PHASE.cost:sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
   const silence=effectsOf(st,'silence')[0];
+  const risk=effectsOf(st,'risk').find(e=>e.cat===action.cat);   // Frostbite / Dread
+  if(risk) st.effects=st.effects.filter(e=>e!==risk);   // one roll, on the next pick it covers
   if(!action.ok){ st.mana=Math.max(0,st.mana-1); action.outcome='fizzle'; }
   else if(silence&&_rng()<silence.pct) action.outcome='silenced';
+  else if(risk&&_rng()<risk.pct){ action.outcome='risked'; action.riskId=risk.id; }
   else if(cost>st.mana) action.outcome='nomana';
   else { st.mana-=cost; action.outcome='cast'; action.paid=cost; }
   if(ent&&action.outcome==='cast'&&action.cat===ent.call&&!gs[ent.from].out){
@@ -3402,8 +3423,17 @@ function quickSteal(who,action){
   ts.mana-=n; st.mana=Math.min(MAX_MANA,st.mana+n);
   action.stolen=n;
 }
+// Agony bites whatever the foe does: casting, failing, waiting or shifting. Meditate is the one
+// escape, unless Corruption has spoiled it too.
+function agonyBites(who,action){
+  if(action.cat!=='meditate') return true;
+  return effectsOf(gs[who],'incomeDrain').some(e=>e.id==='corruption');
+}
 function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
+  const agony=effectsOf(st,'agony')[0];
+  if(agony&&agonyBites(who,action)){ dmgSource=agony.from; elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); dmgSource=who; }
+  if(agony&&st.hp<=0){ combatTimeout(cb,700); return; }   // Agony knocked them out before they could act
   if(action.enthral){ showEnthral(who,action); if(action.outcome==='enthralled'){ anim(who,'cast',600); combatTimeout(cb,1000); return; } }
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
   if(action.cat==='meditate'){
@@ -3442,12 +3472,11 @@ function executeElemental(who,action,cb){
     }
   }
 
-  const agony=effectsOf(st,'agony')[0];
-  if(agony){ dmgSource=agony.from; elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); }
   dmgSource=who;
   // Paid (or not) when the round began — see payForAction
   if(action.outcome==='fizzle'){ addFloat(x,bH*.33,'Fizzled!','#ff8844',13); combatTimeout(cb,700); return; }
   if(action.outcome==='silenced'){ showSilenceBlock(x,bH*.33); combatTimeout(cb,900); return; }
+  if(action.outcome==='risked'){ showRiskBlock(x,bH*.33,action.riskId); combatTimeout(cb,900); return; }
   if(action.outcome==='nomana'){ addFloat(x,bH*.33,'Out of mana!','#ff8844',13); combatTimeout(cb,700); return; }
   anim(who,'cast',600);
   st.catCounts[action.cat]=(st.catCounts[action.cat]||0)+1;   // what Spellbind binds, and what Enthral reads
@@ -3477,7 +3506,7 @@ function executeWheel(who,action,cb){
     return;
   }
   if(action.self){
-    elemCleanse(who);
+    elemCleanse(who,false);
     combatTimeout(cb,800);
     return;
   }
@@ -3633,7 +3662,7 @@ function executeSignature(who,sp,action,cb){
   const a=el.action;
   if(a.type==='heal') elemHeal(ally,a.amt);
   else if(a.type==='bloodpact'){ st.mana=Math.min(MAX_MANA,st.mana+a.mana); addFloat(x,bH*.3,'+'+a.mana+' Mana','#88aaff',13); }
-  else if(a.type==='cleanse'){ elemCleanse(who); if(a.heal) elemHeal(who,a.heal); }
+  else if(a.type==='cleanse'){ elemCleanse(who,true); if(a.heal) elemHeal(who,a.heal); }
   else if(a.type==='rewind'){ elemHeal(who,Math.min(a.max,st.lastRoundLoss||0),'⏪'); if(!st.lastRoundLoss) addFloat(x,bH*.3,'⏪ Nothing to undo','#cccccc',12); }
   else if(a.type==='siphon'){
     // A quick siphon already stole as the round began (quickSteal); this only shows it
@@ -3666,8 +3695,10 @@ function breakWard(st,x,unravel){
   addFloat(x,bH*.24,unravel?'🛡 UNRAVELLED!':'🛡 SHATTERED!',col,18);
   (unravel?VFX.wardUnravelled:VFX.wardShatter)(x,col);
 }
-function elemCleanse(who){
-  const st=gs[who], curses=cursesOf(st);
+// Cleanse Self clears only the newest curse (so an older Agony can hide behind a fresh Silence);
+// all: Mary's Purge clears every one
+function elemCleanse(who,all){
+  const st=gs[who], curses=all?cursesOf(st):cursesOf(st).slice(-1);
   if(curses.length) removeEffects(who,curses,'✦ Cleansed');
   else addFloat(seatX(who),bH*.28,'✦ Nothing to cleanse','#ffaaff',13);
   VFX.cleanse(seatX(who));
@@ -3696,12 +3727,13 @@ function elemDispelHit(tgt,elem,power,tier){
 // Damage that meets the target's ward first. Returns {hp, warded}.
 // wear: {blocked,worn}, shared by the hits of one split strike (an arcane volley) so the ward
 // wears exactly as it would from one big hit — rounding once, with the 1-point minimum once.
-function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear){
+function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike){
   const ts=gs[tgt], tx=seatX(tgt);
   let warded=false;
   if(hasWard(ts)&&dmg>0){
-    // The ward loses only its take share of what it stops, so a resistant ward stops more
-    const take=ELEM_WARD_TAKE[ts.shieldType===elem?'match':'off'];
+    // The ward loses only its take share of what it stops, so a resistant ward stops more.
+    // Crush: a Physical strike (not ticks or minions) ignores an off-element ward's resistance.
+    const take=ELEM_WARD_TAKE[ts.shieldType===elem?'match':strike&&elem==='physical'&&ELEM_RIDERS.crush?'crush':'off'];
     const blocked=Math.min(dmg,Math.floor(ts.shieldHp/take));
     if(wear){
       wear.blocked+=blocked;
@@ -3819,7 +3851,38 @@ function strikeMiss(who,r,o){
 // One hit of a strike's damage (the whole of it, or one orb's share of an arcane volley)
 function strikeChunk(who,r,o,dmg,wear){
   const el=elemById(o.elem);
-  return elemIncoming(r.tgt,dmg,o.elem,el.icon,el.col,true,wear);
+  return elemIncoming(r.tgt,dmg,o.elem,el.icon,el.col,true,wear,true);
+}
+// The element riders of a strike that reached HP (see ELEM_RIDERS). Signature strikes get them too,
+// except that one with its own DoT doesn't also scorch.
+function elemStrikeRiders(who,tgt,o){
+  const tier=o.tier||2, ts=gs[tgt];
+  if(o.elem==='ice'&&o.chill&&tier>=ELEM_CHILL_MIN_TIER){
+    addEffect(tgt,{id:'chill',type:'lock',cat:'damage',kind:'curse',name:'Chilled',icon:'❄️',rounds:ELEM_LOCK_ROUNDS},who);
+    return;
+  }
+  if(tier<ELEM_RIDER_MIN_TIER) return;
+  const risk=(id,cat,name,icon)=>{
+    if(ELEM_RIDERS[id]&&!catLocked(tgt,cat))
+      addEffect(tgt,{id,type:'risk',cat,pct:ELEM_RISK_PCT[id],kind:'curse',name,icon,rounds:ELEM_LOCK_ROUNDS},who);
+  };
+  if(o.elem==='ice') risk('frostbite','damage','Frostbitten','🥶');
+  if(o.elem==='dark') risk('dread','protect','Dread','😱');
+  if(o.elem==='fire'&&ELEM_RIDERS.scorch&&!o.dot)
+    addEffect(tgt,Object.assign({id:'dot-scorch',type:'dot',kind:'curse',elem:'fire',name:'Scorched',icon:'🔥'},ELEM_SCORCH[Math.min(3,tier)-1]),who);
+  if(o.elem==='arcane'&&ELEM_RIDERS.unweave&&tgt!==who){
+    // Middle ring: a round off the newest timed buff; outer ring: a round off every one
+    const timed=ts.effects.filter(e=>e.kind==='buff'&&e.rounds!=null&&e.rounds>0);
+    const hit=tier>=3?timed:timed.slice(-1);
+    if(hit.length){
+      hit.forEach(e=>e.rounds--);
+      const gone=hit.filter(e=>e.rounds<=0);
+      ts.effects=ts.effects.filter(e=>!gone.includes(e));
+      if(gone.length) syncMinionVisuals(ts);
+      addFloat(seatX(tgt),bH*.3,'🌀 Unweave: '+hit.map(e=>e.icon).join(' ')+' −1','#cc88ff',12);
+      VFX.stripped(seatX(tgt));
+    }
+  }
 }
 // After the damage: impact look, riders, mana burn, arcs and retaliation — once per strike
 function strikeFinish(who,r,o,b,hit){
@@ -3831,8 +3894,7 @@ function strikeFinish(who,r,o,b,hit){
   if(hit.hp>0){
     if(o.lifesteal){ elemHeal(who,Math.round(hit.hp*o.lifesteal),'🩸'); VFX.lifesteal(seatX(who)); }
     if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',elem:o.elem,name:o.name||el.name,icon:el.icon},o.dot),who);
-    if(o.elem==='ice'&&(o.tier||2)>=ELEM_CHILL_MIN_TIER)
-      addEffect(tgt,{id:'chill',type:'lock',cat:'damage',kind:'curse',name:'Chilled',icon:'❄️',rounds:ELEM_LOCK_ROUNDS},who);
+    elemStrikeRiders(who,tgt,o);
   }
   if(burn>0){
     const n=Math.min(ts.mana,burn);
@@ -3979,6 +4041,11 @@ function elemAIChoose(who){
   // and curses are doing the work for me — and less when I'm close to dying
   // Income drains shrink the gain, and Candle burns a wizard who meditates
   const medGain=meditateGain(who);
+  // Agony bites anything but a Meditate: rest through it whenever allowed (not two rounds running).
+  // Even a light Agony is worth it — the rest dodges the hit and banks mana (tested in the sim)
+  const agonyOn=effectsOf(me,'agony')[0];
+  if(agonyOn&&canMeditate(who)&&!agonyBites(who,{cat:'meditate'})&&_rng()<(smart?0.7:0.35))
+    return {type:'el',cat:'meditate',ok:true};
   if(canMeditate(who)&&medGain>0&&me.mana<elemCost(who,'damage',2)){
     let p=(me.mana<elemCost(who,'damage',1)?0.4:0.2)*medGain/MEDITATE.gain;
     if(!foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',1))) p+=0.3;
@@ -4061,7 +4128,9 @@ function elemAIChoose(who){
   };
   const combo=sigs.some(x=>sigWeight(x.sp)>1);
   let choice=null;
-  if(sigs.length&&(!plain.length||_rng()<(smart?(combo?0.8:0.45):0.3))){
+  // A plain dispel with no ward or buff to hit does nothing: cast a curse instead when there's one to cast
+  const idleDispel=cat==='dispel'&&!oppWard&&!oppBuffs;
+  if(sigs.length&&(!plain.length||idleDispel||_rng()<(smart?(combo?0.8:0.45):0.3))){
     let r=_rng()*sigs.reduce((a,x)=>a+sigWeight(x.sp),0);
     choice=sigs.find(x=>(r-=sigWeight(x.sp))<=0)||sigs[0];
   }
@@ -7215,6 +7284,14 @@ function flash(col){
 }
 
 // ── SILENCE BLOCK VISUAL ───────────────────────────────────
+// Frostbite's or Dread's coin flip came up: the pick is lost before it's cast (no mana spent)
+function showRiskBlock(cx,y,id){
+  const [title,sub,c1,c2]=id==='dread'?['😱 FALTERED!','Spell lost','#bb66ee','#2a0840']:['🥶 FROZEN!','Strike lost','#aaddff','#ffffff'];
+  addFloat(cx,y,title,c1,22);
+  addFloat(cx,y+bH*.07,sub,c1,13);
+  spawnParts(cx,wizMidY(cx),c1,16);
+  spawnParts(cx,wizMidY(cx),c2,8);
+}
 function showSilenceBlock(cx,y){
   addFloat(cx,y,'🔇 SILENCED!','#cc44ff',22);
   addFloat(cx,y+bH*.07,'Spell Blocked','#9944cc',13);
@@ -7533,7 +7610,9 @@ const TUTORIAL_CONVOS={
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
     {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too. With more than one rival, an outer-ring strike hits every one of them."},
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
-    {key:'zacharius',text:"Some elements carry extra effects. Lightning burns your rival's mana even if it hits a ward. A strong Ice strike that reaches them chills them, so they can't pick Damage next round."},
+    {key:'zacharius',text:"Every element carries an extra effect. Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements."},
+    {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
+    {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
     {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
@@ -7542,8 +7621,8 @@ const TUTORIAL_CONVOS={
     {key:'mary',   text:"Some wizards cast enchantments. Buffs — like Regen, War Paint or a skeleton servant — sit on the Protection wheel and last a while."},
     {key:'mordant',text:"Curses — like Silence, Plague or Agony — sit on the Dispel wheel. As well as their hex, every curse wears at the target's ward a little, like a weak dispel."},
     {key:'ponder', text:"A Dispel against a rival with no ward strips their newest buff — or all of them, from the outer ring. If they have a ward, the dispel hits the ward instead. Wards protect your buffs!"},
-    {key:'mary',   text:"Cursed? Open the Dispel wheel and tap Cleanse Self. It removes every curse on you for very little mana."},
-    {key:'sylvara',text:"Locks — like Ice's chill or my Entangle — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
+    {key:'mary',   text:"Cursed? Open the Dispel wheel and tap Cleanse Self. It removes your newest curse for very little mana — just one, so mind the order they land in."},
+    {key:'sylvara',text:"Locks — like my Entangle or Skadi's Ice Lance — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
   ],
   alphabet:[
     {key:'sylvara',text:"Every casting ritual uses symbols from the Arcane Alphabet — twelve sacred glyphs that form the language of magic itself."},
@@ -7620,8 +7699,8 @@ const TUTORIAL_CONVOS={
   ],
   mordant:[
     {key:'mordant',text:"Do not think of me as aggressive. I am patient. Half my Dispel wheel is curses — and every one of them wears at your ward too."},
-    {key:'mordant',text:"Agony is Dark: whenever you cast anything, you suffer. Silence is Arcane: your spells may simply fail."},
-    {key:'mordant',text:"Corruption is Physical: the rot slows the mana you gain each round, and it spoils a Meditate. Starve them, and watch their options narrow to nothing."},
+    {key:'mordant',text:"Agony is Dark: whatever you do, you suffer — only a Meditate escapes it. Silence is Arcane: your spells may simply fail."},
+    {key:'mordant',text:"Corruption is Physical: the rot slows the mana you gain each round, and it spoils a Meditate — under Corruption, even meditating feeds my Agony. Starve them, and watch their options narrow to nothing."},
     {key:'mordant',text:"Cleanse Self is the answer to me. Make them spend their rounds cleansing instead of striking. The hex is already written."},
   ],
   ponder:[

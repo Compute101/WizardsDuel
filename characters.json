@@ -163,9 +163,9 @@
           "effect": {
             "type": "regen",
             "perRound": 5,
-            "rounds": 4
+            "rounds": 5
           },
-          "desc": "Heal 5 a round for 4 rounds"
+          "desc": "Heal 5 a round for 5 rounds"
         }
       },
       {
@@ -228,7 +228,7 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "lightning",
-          "cost": 3,
+          "cost": 4,
           "tier": 2,
           "effect": {
             "type": "absorbNext",
@@ -284,7 +284,7 @@
       "Gnash not done smashing. Where you going? COME BACK.",
       "Little mage runs away? Gnash will wait. Gnash ALWAYS waits."
     ],
-    "hp": 105,
+    "hp": 110,
     "dmgMult": 1.05,
     "forbidden": [
       "arcane",
@@ -441,6 +441,7 @@
           "cost": 6,
           "power": 18,
           "tier": 2,
+          "chill": true,
           "desc": "18 ice; chills (middle ring and up)"
         }
       },
@@ -586,9 +587,9 @@
           "tier": 1,
           "action": {
             "type": "heal",
-            "amt": 21
+            "amt": 25
           },
-          "desc": "Heal 21 now"
+          "desc": "Heal 25 now"
         }
       },
       {
@@ -603,9 +604,9 @@
           "tier": 1,
           "action": {
             "type": "cleanse",
-            "heal": 8
+            "heal": 12
           },
-          "desc": "Remove your curses and heal 8"
+          "desc": "Remove your curses and heal 12"
         }
       },
       {
@@ -649,14 +650,14 @@
           "cat": "dispel",
           "kind": "curse",
           "elem": "dark",
-          "cost": 3,
+          "cost": 4,
           "tier": 2,
           "effect": {
             "type": "agony",
-            "dmg": 8,
+            "dmg": 7,
             "rounds": 4
           },
-          "desc": "4 rounds: foe takes 8 whenever they cast"
+          "desc": "4 rounds: foe takes 7 whatever they do (Meditate escapes it, unless Corrupted)"
         }
       },
       {
@@ -692,7 +693,7 @@
             "n": 3,
             "rounds": 3
           },
-          "desc": "Foe gains 3 less mana a round (and from Meditate) × 3"
+          "desc": "Foe gains 3 less mana a round (and from Meditate) × 3; meditating while Corrupted triggers Agony"
         }
       }
     ]
@@ -846,7 +847,7 @@
       "You counted the blades. You forgot to count the one behind you.",
       "The patient sword outlasts the hasty one. Always."
     ],
-    "hp": 90,
+    "hp": 94,
     "dmgMult": 1.0,
     "forbidden": [
       "dark"
@@ -938,10 +939,10 @@
           "tier": 2,
           "effect": {
             "type": "dot",
-            "dmg": 4,
+            "dmg": 3,
             "rounds": 4
           },
-          "desc": "4 a round × 4"
+          "desc": "3 a round × 4"
         }
       },
       {
@@ -959,8 +960,8 @@
             "n": 3,
             "rounds": 2
           },
-          "desc": "Drain 3 mana; −3 income and Meditate × 2",
-          "drainNow": 3
+          "desc": "Drain 2 mana; −3 income and Meditate × 2",
+          "drainNow": 2
         }
       },
       {
@@ -993,7 +994,7 @@
       "Death is not an ending. It is merely an inconvenience.",
       "Kneel before the undying, or be consumed by it. There is no third option."
     ],
-    "hp": 82,
+    "hp": 88,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -1087,9 +1088,9 @@
             "dmg": 4,
             "elem": "arcane",
             "max": 2,
-            "rounds": 4
+            "rounds": 3
           },
-          "desc": "Simulacrum (max 2) for 4 rounds: 4 a round"
+          "desc": "Simulacrum (max 2) for 3 rounds: 4 a round"
         }
       },
       {
@@ -1190,10 +1191,10 @@
           "tier": 2,
           "effect": {
             "type": "spellbind",
-            "extra": 4,
+            "extra": 3,
             "rounds": 4
           },
-          "desc": "Foe's most-used category costs +4 × 4"
+          "desc": "Foe's most-used category costs +3 × 4"
         }
       }
     ]
@@ -1208,7 +1209,7 @@
       "Strike me. My scales have tasted dragonfire and grown harder for it.",
       "I have one wrath left in me. You have already wasted my patience earning it."
     ],
-    "hp": 95,
+    "hp": 98,
     "dmgMult": 1.05,
     "forbidden": [
       "ice"
@@ -1278,7 +1279,7 @@
       "Half of what's in my satchel is medicine. The other half is, well, also medicine. Different patient.",
       "Don't worry about the smell. That's normal. Probably."
     ],
-    "hp": 80,
+    "hp": 85,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1367,13 +1368,13 @@
           "effect": {
             "type": "dot",
             "ramp": [
-              5,
-              9,
-              13
+              4,
+              8,
+              11
             ],
             "rounds": 3
           },
-          "desc": "Rift: 5, 9, 13 over 3 rounds"
+          "desc": "Rift: 4, 8, 11 over 3 rounds"
         }
       },
       {
