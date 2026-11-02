@@ -14,7 +14,7 @@ The app's standard game is unchanged: this is a separate rule set.
 - A pot, and a squidger each.
 - A six-sided die (d6).
 - A way to pick secretly: a dial, or face-down cards for Damage / Protection / Dispel / Meditate plus a note of the element and level.
-- Small tokens with a number (or a spare die) to track buffs and curses and how many rounds they have left.
+- A token or the spell card to mark each buff and curse while it's in play (no round counting needed).
 
 ## Setup
 
@@ -27,7 +27,7 @@ The app's standard game is unchanged: this is a separate rule set.
 1. **Pick in secret.** Choose one of these:
    - **Damage**, **Protection** or **Dispel**, plus an **element** and a **level**: **Lesser**, **Normal** or **Greater**. You can't use elements your wizard can't cast.
    - One of your wizard's **signature spells**. Each card has its own cost and level.
-   - **Cleanse:** a Lesser Dispel at yourself that removes your newest curse.
+   - **Cleanse:** a Lesser Dispel at yourself that removes **all** your curses.
    - **Meditate:** skip your spell and gain 3 mana. You can't Meditate two rounds running.
 2. **Reveal** both picks.
 3. **Pay.** Mana Siphon is a quick spell: it's paid and steals before anyone else pays. Then check curses that react to your pick (Enthral, then Silence). Then pay the spell's cost in mana winks. If you can't afford your spell, it's lost (you pay nothing).
@@ -86,20 +86,25 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 - With no ward up, it removes the foe's **newest buff**. A **Greater** Dispel removes **every** buff.
 - Curses are Dispel-type signature spells. They land on the foe even through a ward.
 
+## Buffs and curses
+
+There are no round counters. **Buffs last until a Dispel removes them**, and **curses last until the cursed wizard Cleanses**.
+- "Next strike" and "next pick" effects (Empower, Foresight, Vanish, Bewitch, Enthral and similar) go as soon as they're used.
+- "Can't pick Damage next round" lasts for that one round only.
+- Casting a buff or curse that's already in play does nothing extra; minions (blades, skeletons, simulacra) stack up to their card's max.
+
 ## Round end
 
 1. **Ticks:** curses on each wizard (burns, poison, plague, Agony and similar), then their regeneration, then their minions strike the foe.
 2. **Sudden death:** from **round 8**, both wizards lose 1 HP at every round end, +1 more every 3 rounds after that (2 HP from round 11).
 3. **Wards wear** by 1 wink. A ward with no winks left is gone.
-4. **Buffs and curses** run down a round. "3 rounds" includes the round the spell was cast.
-5. **Income:** each wizard gains **4 mana** (less any curse that cuts income).
+4. **Income:** each wizard gains **4 mana** (less any curse that cuts income).
 
 ## Keywords
 
 - **Strikers take N:** whenever the foe strikes you, they lose N HP (straight to HP).
 - **Every hit deals N less (min 1):** applies to strikes, after any +damage bonuses.
 - **Can't pick Damage next round:** a lock. A wizard can't be locked two rounds running.
-- **Strikes +1:** some wizards add 1 to their Normal or Greater strikes (shown under their name).
 - **Heal:** never above your starting HP.
 
 ---
@@ -108,39 +113,39 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 
 <!-- characters:start -->
 ### ELDRIN — The Stalwart
-**HP 18** · Greater strikes +1
+**HP 18**
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Shield** | Protection | Arcane | Normal | 5 | Arcane ward of 14, for a Normal flick (a Greater ward is 12 and needs 3 winks). |
-| **Counter** | Protection | Lightning | Normal | 2 | 3 rounds: anyone who strikes you takes 3, and your ward doesn't wear down. |
-| **Ward** | Protection | Ice | Normal | 2 | 3 rounds: curses can't touch you. The next dispel only removes this Ward. |
+| **Counter** | Protection | Lightning | Normal | 2 | Until dispelled: anyone who strikes you takes 3, and your ward doesn't wear down. |
+| **Ward** | Protection | Ice | Normal | 2 | Until dispelled: curses can't touch you. A dispel at you only removes this Ward. |
 
 ### MALACHAR — The Relentless
-**HP 16** · Normal strikes +1 · Greater strikes +1 · Can't cast: Arcane
+**HP 17** · Can't cast: Arcane
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Empower** | Protection | Fire | Lesser | 3 | Your next strike deals double damage. |
+| **Empower** | Protection | Fire | Lesser | 2 | Your next strike deals double damage. |
 | **Blood Pact** | Protection | Dark | Lesser | 1 | Turn 3 HP winks into mana winks before you flick, and pot with them. If it is cast, gain 4 more mana. |
-| **Drain** | Damage | Dark | Normal | 4 | Dark strike of 4. Heal half the HP damage it deals (round down). |
+| **Drain** | Damage | Dark | Normal | 4 | Dark strike of 5. Heal half the HP damage it deals (round down). |
 
 ### SYLVARA — The Verdant
 **HP 18** · Can't cast: Fire, Dark
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Regen** | Protection | Physical | Normal | 3 | Heal 1 at the end of each round for 5 rounds. |
+| **Regen** | Protection | Physical | Normal | 3 | Until dispelled: heal 1 at every round end. |
 | **Entangle** | Dispel | Physical | Lesser | 2 | Roll a die: on 4+ the foe can't pick Damage next round. |
-| **Vine Whip** | Damage | Physical | Normal | 3 | Physical strike of 3, then vines deal 1 at the end of each round for 3 rounds. |
+| **Vine Whip** | Damage | Physical | Normal | 3 | Physical strike of 3. Until cleansed, vines deal 1 to the foe at every round end. |
 
 ### AURELIA — The Radiant
 **HP 19**
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Foresight** | Protection | Lightning | Normal | 2 | The next strike at you within 3 rounds does nothing. |
-| **Time Drain** | Dispel | Arcane | Normal | 2 | 3 rounds: the foe gains 2 less mana each round (and from Meditate). |
+| **Foresight** | Protection | Lightning | Normal | 2 | The next strike at you does nothing. |
+| **Time Drain** | Dispel | Arcane | Normal | 2 | Until cleansed: the foe gains 1 less mana each round (and from Meditate). |
 | **Rewind** | Protection | Arcane | Normal | 6 | Arcane ward of 7, and heal the HP you lost last round (max 5). |
 
 ### GNASH — The Feral
@@ -148,18 +153,18 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **War Paint** | Protection | Physical | Normal | 2 | 3 rounds: every hit on you deals 1 less (min 1). |
+| **War Paint** | Protection | Physical | Normal | 2 | Until dispelled: every hit on you deals 1 less (min 1). |
 | **Savage Charge** | Damage | Physical | Normal | 4 | Physical strike of 5. The foe loses 2 mana. |
-| **Frenzy** | Protection | Fire | Lesser | 2 | 2 rounds: your strikes deal +2, but each costs you 1 HP. |
+| **Frenzy** | Protection | Fire | Lesser | 2 | Until dispelled: your strikes deal +2, but each costs you 1 HP. |
 
 ### CINDER — The Volatile
-**HP 17** · Greater strikes +1 · Can't cast: Ice
+**HP 17** · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Fireball** | Damage | Fire | Lesser | 2 | Fire strike of 4 (a Lesser strike is 2). |
 | **Flame Shield** | Protection | Fire | Normal | 5 | Fire ward of 8. While it holds, anyone who strikes you takes 2. |
-| **Candle** | Dispel | Fire | Normal | 2 | 3 rounds: the foe takes 2 each time they cast Protection or Meditate. |
+| **Candle** | Dispel | Fire | Normal | 2 | Until cleansed: the foe takes 2 each time they cast Protection or Meditate. |
 
 ### SKADI — The Permafrost
 **HP 18** · Can't cast: Fire
@@ -167,17 +172,17 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Ice Lance** | Damage | Ice | Normal | 5 | Ice strike of 5. If it reaches HP, the foe can't pick Damage next round. |
-| **Frost Armor** | Protection | Ice | Normal | 3 | 3 rounds: every hit on you deals 1 less (min 1), and strikers take 1. |
-| **Blizzard** | Dispel | Ice | Normal | 3 | 4 rounds: at the end of each round the foe takes 1 and loses 1 mana. |
+| **Frost Armor** | Protection | Ice | Normal | 3 | Until dispelled: every hit on you deals 1 less (min 1), and strikers take 1. |
+| **Blizzard** | Dispel | Ice | Normal | 3 | Until cleansed: at every round end the foe takes 1 and loses 1 mana. |
 
 ### ZACHARIUS — The Conductor
-**HP 18** · Greater strikes +1 · Can't cast: Physical
+**HP 19** · Can't cast: Physical
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Galvanize** | Protection | Lightning | Lesser | 2 | Your next Lightning strike deals +3. |
 | **Chain Lightning** | Damage | Lightning | Normal | 4 | Lightning strike of 4. Roll a die: on 4+ it arcs for 2 more. |
-| **Conductivity** | Dispel | Lightning | Normal | 2 | 4 rounds: every strike on the foe deals +1. |
+| **Conductivity** | Dispel | Lightning | Normal | 2 | Until cleansed: every strike on the foe deals +1. |
 
 ### MARY — The Devoted
 **HP 17** · Can't cast: Dark, Fire
@@ -193,18 +198,18 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Agony** | Dispel | Dark | Normal | 4 | 3 rounds: the foe takes 2 at the end of each round, unless they Meditated that round (while Corrupted, Meditate doesn't escape it). |
-| **Silence** | Dispel | Arcane | Normal | 2 | 3 rounds: each spell the foe casts, they roll a die: on 1–3 it fails (no mana spent). |
-| **Corruption** | Dispel | Physical | Normal | 2 | 3 rounds: the foe gains 3 less mana each round (and from Meditate), and Meditate doesn't escape Agony. |
+| **Agony** | Dispel | Dark | Normal | 4 | Until cleansed: the foe takes 2 at every round end, unless they Meditated that round (Corruption stops Meditate escaping it). |
+| **Silence** | Dispel | Arcane | Normal | 2 | Until cleansed: each spell the foe casts, they roll a die: on 1–2 it fails (no mana spent). |
+| **Corruption** | Dispel | Physical | Normal | 2 | Until cleansed: the foe gains 1 less mana each round (and from Meditate), and Meditate doesn't escape Agony. |
 
 ### PONDER — The Apprentice
 **HP 17** · Can't cast: Dark, Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Vanish** | Protection | Arcane | Normal | 2 | The next strike at you within 3 rounds misses. |
+| **Vanish** | Protection | Arcane | Normal | 2 | The next strike at you misses. |
 | **Mana Siphon** | Dispel | Arcane | Lesser | 2 | Quick: before anyone pays, steal 4 mana from the foe. |
-| **Blink** | Protection | Lightning | Normal | 3 | 3 rounds: roll a die for each strike at you, on 4+ it misses. Plus a Lightning ward of 3. |
+| **Blink** | Protection | Lightning | Normal | 3 | Until dispelled: roll a die for each strike at you, on 4+ it misses. Plus a Lightning ward of 3. |
 
 ### DURIN — The Stoneheart
 **HP 20** · Can't cast: Lightning
@@ -212,7 +217,7 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Stoneskin** | Protection | Physical | Normal | 5 | Physical ward of 9. |
-| **Stonesoul** | Protection | Arcane | Normal | 2 | 3 rounds: every hit on you deals 1 less (min 1). |
+| **Stonesoul** | Protection | Arcane | Normal | 2 | Until dispelled: every hit on you deals 1 less (min 1). |
 | **Rockfall** | Damage | Physical | Greater | 5 | Physical strike of 7. |
 
 ### WEIZAN — The Bladecaller
@@ -220,25 +225,25 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Conjure Blade** | Protection | Physical | Normal | 2 | Conjure a blade (max 3). Each blade deals 1 to the foe at the end of every round. |
+| **Conjure Blade** | Protection | Physical | Normal | 2 | Conjure a blade (max 3). Until dispelled, each blade deals 1 to the foe at every round end. |
 | **Bladestorm** | Damage | Physical | Normal | 2 | Needs a blade. Launch all your blades: a Physical strike of 3 per blade. The blades are used up. |
-| **Iron Patience** | Protection | Arcane | Normal | 2 | 3 rounds: every hit on you deals 1 less (min 1). |
+| **Iron Patience** | Protection | Arcane | Normal | 2 | Until dispelled: every hit on you deals 1 less (min 1). |
 
 ### GRETCH — The Festering
 **HP 18** · Can't cast: Fire, Arcane
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Plague** | Dispel | Dark | Normal | 3 | 4 rounds: the foe takes 1 at the end of each round. |
-| **Maggot Cloud** | Dispel | Physical | Normal | 2 | The foe loses 2 mana now, and gains 3 less each round (and from Meditate) for 2 rounds. |
-| **Bone Totem** | Protection | Dark | Normal | 3 | Heal 1 at the end of each round for 4 rounds. |
+| **Plague** | Dispel | Dark | Normal | 3 | Until cleansed: the foe takes 1 at every round end. |
+| **Maggot Cloud** | Dispel | Physical | Normal | 2 | The foe loses 3 mana now. Until cleansed, they gain 1 less mana each round (and from Meditate). |
+| **Bone Totem** | Protection | Dark | Normal | 4 | Until dispelled: heal 1 at every round end. |
 
 ### VALDRIS — The Undying
 **HP 18** · Deathless: when knocked to 0 HP, pay 6 mana to stay on 1 HP · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Raise Dead** | Protection | Dark | Normal | 3 | Raise a skeleton (max 2) for 3 rounds. Each deals 1 to the foe at the end of every round. If one is dispelled, heal 2. |
+| **Raise Dead** | Protection | Dark | Normal | 3 | Raise a skeleton (max 2). Until dispelled, each deals 1 to the foe at every round end. If one is dispelled, heal 2. |
 | **Necrotic Drain** | Damage | Dark | Normal | 4 | Dark strike of 4. Heal half the HP damage it deals (round down). |
 | **Reinforce** | Protection | Physical | Normal | 4 | Physical ward of 5, +3 for each skeleton you have. |
 
@@ -247,8 +252,8 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Simulacrum** | Protection | Arcane | Normal | 4 | Summon a simulacrum (max 2) for 3 rounds. Each deals 1 to the foe at the end of every round. |
-| **Bewitch** | Dispel | Arcane | Normal | 2 | The foe's next strike within 2 rounds hits themselves instead. |
+| **Simulacrum** | Protection | Arcane | Normal | 5 | Summon a simulacrum (max 2). Until dispelled, each deals 1 to the foe at every round end. |
+| **Bewitch** | Dispel | Arcane | Normal | 2 | The foe's next strike hits themselves instead. |
 | **Feint** | Damage | Arcane | Normal | 4 | Arcane strike of 4. The foe loses 2 mana. |
 
 ### THESSALY — The Gilded
@@ -257,24 +262,24 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Enthral** | Dispel | Arcane | Lesser | 2 | Secretly write down Damage, Protection or Dispel. If the foe's next pick is that, it's lost and you take up to 3 of the mana they paid. |
-| **Arcane Weave** | Protection | Arcane | Normal | 3 | Your next 3 strikes deal +1 and make the foe lose 2 mana. Plus an Arcane ward of 3. |
-| **Spellbind** | Dispel | Dark | Normal | 2 | 4 rounds: the foe's most-cast category (Damage, Protection or Dispel) costs 3 more. |
+| **Arcane Weave** | Protection | Arcane | Normal | 3 | Your next strike deals +3 and makes the foe lose 2 mana. Plus an Arcane ward of 4. |
+| **Spellbind** | Dispel | Dark | Normal | 2 | Until cleansed: the foe's most-cast category (Damage, Protection or Dispel) costs 3 more. |
 
 ### KORVATH — The Wyrmlord
 **HP 19** · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Dragon Scales** | Protection | Fire | Normal | 3 | 3 rounds: every hit on you deals 1 less (min 1), and strikers take 1. |
-| **Wyrmfire Breath** | Damage | Fire | Normal | 4 | Fire strike of 4, then the foe burns for 1 at the end of each round for 2 rounds. |
+| **Dragon Scales** | Protection | Fire | Normal | 4 | Until dispelled: every hit on you deals 1 less (min 1), and strikers take 1. |
+| **Wyrmfire Breath** | Damage | Fire | Normal | 4 | Fire strike of 4. Until cleansed, the foe burns for 1 at every round end. |
 | **Ancient Wrath** | Damage | Physical | Greater | 7 | Physical strike of 9. Once per game. |
 
 ### FIZZWICK — The Concoctor
-**HP 17**
+**HP 18**
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Caustic Bomb** | Damage | Dark | Normal | 3 | Dark strike of 3, then poison deals 1 at the end of each round for 3 rounds. If the strike reached HP, the poison ignores wards. |
+| **Caustic Bomb** | Damage | Dark | Normal | 3 | Dark strike of 3. Until cleansed, poison deals 1 to the foe at every round end. If the strike reached HP, the poison ignores wards. |
 | **Volatile Tonic** | Protection | Physical | Lesser | 2 | Roll a die: on 1–3 heal 5; on 4–6 your next strike deals +2. |
 | **Unstable Concoction** | Damage | Arcane | Normal | 4 | Arcane strike: roll a die and deal that much. On a 6, roll again and add it (keep going on 6s). |
 
@@ -283,7 +288,7 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Singularity** | Dispel | Dark | Normal | 3 | A rift: the foe takes 1, then 2, then 3 at the end of the next 3 rounds. |
+| **Singularity** | Dispel | Dark | Normal | 3 | Until cleansed: a rift deals 2 to the foe at every round end. |
 | **Gravity Well** | Damage | Dark | Normal | 4 | Dark strike of a third of the foe's HP (round down, min 3). |
 | **Event Horizon** | Damage | Arcane | Greater | 7 | Arcane strike of half the foe's HP (round down, min 4). You take 2. |
 

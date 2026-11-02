@@ -18,7 +18,6 @@ let base='| Level | Winks to pot | Cost | Damage | Ward | Dispel |\n|---|---|---
 let out='';
 Object.values(chars).forEach(c=>{
   const notes=[];
-  c.strikeBonus.forEach((b,i)=>{ if(b) notes.push(`${RING[i]} strikes +${b}`); });
   if(c.deathless) notes.push(`Deathless: when knocked to 0 HP, pay ${c.deathless} mana to stay on 1 HP`);
   if(c.forbidden.length) notes.push('Can\'t cast: '+c.forbidden.map(e=>ELEM[e]).join(', '));
   out+=`### ${c.name} — ${c.title}\n**HP ${c.hp}**${notes.length?' · '+notes.join(' · '):''}\n\n`;

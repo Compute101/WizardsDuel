@@ -60,7 +60,7 @@ function load(chars,tt){
     if(k.startsWith('_')||!chars[k]) return;
     const c=chars[k], t=tt[k];
     CHARS[k]={key:k, name:c.name, title:c.title, col:c.col,
-      hp:Math.min(RULES.max,t.hp), strikeBonus:t.strikeBonus||[0,0,0],
+      hp:Math.min(RULES.max,t.hp),
       deathless:t.deathless||0, forbidden:t.forbidden||c.forbidden||[], spells:t.spells||[]};
   });
   return CHARS;
@@ -181,14 +181,14 @@ function doInstant(who,sp){
   else if(x.type==='bloodpact') gainMana(who,x.mana);   // the HP was turned into mana as it was paid
   else if(x.type==='tonic'){
     if(d6()<=3) heal(who,x.heal);
-    else addEffect(who,{id:'tonic', type:'empower', kind:'buff', name:'Tonic', bonus:x.bonus, rounds:null},who);
+    else addEffect(who,{id:'tonic', type:'empower', kind:'buff', name:'Tonic', bonus:x.bonus},who);
   }
   else if(x.type==='cleanse'){ removeEffects(who,curses(st)); heal(who,x.heal||0); }
 }
 
 function doDispel(who,a){
   const st=gs[who], t=foe(who), ts=gs[t], sp=a.sig&&sigById(st,a.sig);
-  if(a.self){ const c=curses(st); if(c.length) removeEffects(who,[c[c.length-1]]); return; }
+  if(a.self){ removeEffects(who,curses(st)); return; }   // Cleanse clears every curse
   if(sp){
     if(sp.kind==='instant'){ if(!sp.quick) doInstant(who,sp); return; }
     // A curse
@@ -230,7 +230,6 @@ function doDamage(who,a){
     else dmg=sp.dmg;
   } else dmg=RULES.cats.damage.power[ring-1];
   // The caster's boosts
-  dmg+=st.c.strikeBonus[ring-1]||0;
   let burn=0;
   const emp=st.effects.find(e=>e.type==='empower'&&(!e.elem||e.elem===elem));
   if(emp){ dmg=emp.double?dmg*2:dmg+emp.bonus; removeEffects(who,[emp]); }
@@ -250,8 +249,8 @@ function doDamage(who,a){
   const hp=incoming(tgt,dmg,wardAdj(ts,elem));
   if(hp>0){
     if(sp&&sp.lifesteal) heal(who,Math.floor(hp/2));
-    if(sp&&sp.dot) addEffect(tgt,{id:sp.id+'-dot', type:'dot', kind:'curse', name:sp.name, dmg:sp.dot.dmg, rounds:sp.dot.rounds, bypassWard:sp.dot.bypassWard},who);
-    if(sp&&sp.chill) addEffect(tgt,{id:'chill', type:'lock', kind:'curse', name:'Chilled', cat:'damage', rounds:2},who);
+    if(sp&&sp.dot) addEffect(tgt,{id:sp.id+'-dot', type:'dot', kind:'curse', name:sp.name, dmg:sp.dot.dmg, bypassWard:sp.dot.bypassWard},who);
+    if(sp&&sp.chill) addEffect(tgt,{id:'chill', type:'lock', kind:'curse', name:'Chilled', cat:'damage'},who);
   }
   // Mana burn lands whether or not the ward held
   burn+=sp&&sp.manaburn||0;
@@ -393,8 +392,9 @@ function endRound(){
       if(st.ward.hp<=0) st.ward=null;
     }
     // Timed enchantments run down
-    st.effects.forEach(e=>{ if(e.rounds!=null) e.rounds--; });
-    st.effects=st.effects.filter(e=>e.rounds==null||e.rounds>0);
+    // Buffs and curses have no timers: they last until a Dispel or Cleanse removes them, or (for
+    // "next strike" / "next pick" effects) until used. A lock lasts for the one round it blocks.
+    st.effects=st.effects.filter(e=>!(e.type==='lock'&&e.from<gs.round));
     gainMana(w,Math.max(0,RULES.income-incomeDrain(st)));
     st.lostLast=Math.max(0,st.hpAtStart-st.hp);
   });
@@ -454,7 +454,9 @@ function aiChoose(w,level){
   const w8={damage:1.0, protect:0.55, dispel:0.08};
   if(ts.ward){ w8.dispel=smart?1.6:1.0; w8.damage=0.6; }
   else if(buffs(ts).length) w8.dispel+=smart?0.9:0.4;
-  if(curses(st).length) w8.dispel+=0.4;
+  // Curses never wear off on their own: clear them, more urgently the more there are
+  const nCurses=curses(st).length;
+  if(nCurses) w8.dispel+=smart?0.6+0.5*nCurses:0.4;
   if(st.effects.some(e=>e.type==='empower'||e.type==='frenzy'||e.type==='weave')) w8.damage+=0.9;
   if(minions(st,'blade').length>=2) w8.damage+=0.6;
   const hexes=st.c.spells.filter(s=>s.cat==='dispel'&&s.kind==='curse'&&sigSensible(w,s)).length;
@@ -481,7 +483,7 @@ function aiChoose(w,level){
 function aiInCat(w,cat,smart){
   const st=gs[w], ts=gs[foe(w)];
   // Cleanse a curse
-  if(cat==='dispel'&&curses(st).length&&!ts.ward&&!buffs(ts).length&&canPick(st,{cat,self:true,ring:1})&&rng()<0.7)
+  if(cat==='dispel'&&curses(st).length&&canPick(st,{cat,self:true,ring:1})&&rng()<(smart?(!ts.ward&&!buffs(ts).length?0.9:0.6):0.5))
     return {cat,self:true,ring:1};
   const sigs=st.c.spells.filter(s=>s.cat===cat&&canPick(st,{cat,sig:s.id})&&sigSensible(w,s));
   const idleDispel=cat==='dispel'&&!ts.ward&&!buffs(ts).length;
