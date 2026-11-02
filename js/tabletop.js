@@ -37,8 +37,9 @@ const RULES={
   retryCost:1,
   pot:0.75,                    // simulator: chance a flick pots from your handicap line
   // Squops, after the spells resolve: the foe gets one squop attempt at each of your missed winks
-  // this round, and gains squopGain mana for each one they squop. A wizard who Meditates (channels)
-  // instead takes channelSquops attempts, before the foe's turn.
+  // on the table, and gains squopGain mana for each one they squop. Missed winks carry over between
+  // rounds until squopped. A wizard who Meditates (channels) instead takes channelSquops attempts,
+  // before the foe's turn.
   squop:0.4,                   // simulator: chance a squop attempt lands
   squopGain:1,
   channelSquops:3,
@@ -84,7 +85,7 @@ const clamp=v=>Math.max(0,Math.min(RULES.max,v));
 let gs=null;
 function newGame(k1,k2){
   const seat=k=>({key:k, c:CHARS[k], hp:CHARS[k].hp, mana:RULES.startMana, ward:null, effects:[],
-    medRound:-9, catCounts:{}, lostLast:0, hpAtStart:0, used:{}, meditated:false});
+    medRound:-9, missed:0, catCounts:{}, lostLast:0, hpAtStart:0, used:{}, meditated:false});
   gs={round:1, p1:seat(k1), p2:seat(k2), over:null, log:[]};
   return gs;
 }
@@ -291,7 +292,7 @@ function riders(who,tgt,elem,ring,sp){
 // rolled from RULES.squop.
 function playRound(picks,flicks,squops){
   const W=['p1','p2'];
-  W.forEach(w=>{ gs[w].hpAtStart=gs[w].hp; gs[w].meditated=false; gs[w].missed=0; });
+  W.forEach(w=>{ gs[w].hpAtStart=gs[w].hp; gs[w].meditated=false; });
   const outcome={};
   // Quick spells (Mana Siphon) are paid and steal before anyone else pays
   const quick=w=>{ const sp=picks[w].sig&&sigById(gs[w],picks[w].sig); return !!(sp&&sp.quick); };

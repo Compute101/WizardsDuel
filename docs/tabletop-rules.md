@@ -54,15 +54,15 @@ The flick replaces the app's glyph minigames.
 - **Distance is your handicap.** Each player flicks from their own line, set before the game so everyone pots about as often. For example, a beginner might flick from 15 cm, a regular player from 25 cm and an expert from 35 cm. Adjust the lines between games until wins even out.
 - **The ring sets how many winks you must pot:** **1** for the inner ring, **2** for the middle, **3** for the outer. Signature spells use their card's ring.
 - **After a miss, pay 1 mana to have another go.** Your run carries on: a middle-ring spell needs 2 potted winks however many misses come between. If you can't pay, or don't want to, the spell **fizzles** and the mana you paid for it is lost.
-- **Missed winks stay where they land.** They're targets for the other player's squops this round.
+- **Missed winks stay where they land, round after round,** until the other player squops them.
 
 ## Squops
 
-After the spells resolve, each player can win mana by squopping (landing a wink on top of) the other player's missed winks from this round.
+After the spells resolve, each player can win mana by squopping (landing a wink on top of) the other player's missed winks. Missed winks from earlier rounds count too.
 
 1. **Channelling first:** a player who Meditated this round takes **3 squop attempts** before the other player gets a turn.
 2. Then a player who cast gets **one squop attempt for each missed wink** of the other player's that is still on the table.
-3. **Each wink you squop gains you 1 mana.** Then both players pick up all their winks.
+3. **Each wink you squop gains you 1 mana.** Take the squopped wink off the table. Unsquopped winks stay where they are for next round.
 
 The simulator assumes a player pots **75%** of flicks from their handicap line and lands **40%** of squop attempts (`RULES.pot` and `RULES.squop` in `js/tabletop.js`). Change them once you know your real rates, then re-run the balance check.
 
