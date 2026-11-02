@@ -4041,6 +4041,10 @@ function elemAIChoose(who){
   // and curses are doing the work for me — and less when I'm close to dying
   // Income drains shrink the gain, and Candle burns a wizard who meditates
   const medGain=meditateGain(who);
+  // Agony bites anything but a Meditate: rest through it, more readily the harder it bites
+  const agonyOn=effectsOf(me,'agony')[0];
+  if(agonyOn&&canMeditate(who)&&!agonyBites(who,{cat:'meditate'})&&_rng()<Math.min(0.7,agonyOn.dmg/20)*(smart?1:0.5))
+    return {type:'el',cat:'meditate',ok:true};
   if(canMeditate(who)&&medGain>0&&me.mana<elemCost(who,'damage',2)){
     let p=(me.mana<elemCost(who,'damage',1)?0.4:0.2)*medGain/MEDITATE.gain;
     if(!foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',1))) p+=0.3;
@@ -4123,7 +4127,9 @@ function elemAIChoose(who){
   };
   const combo=sigs.some(x=>sigWeight(x.sp)>1);
   let choice=null;
-  if(sigs.length&&(!plain.length||_rng()<(smart?(combo?0.8:0.45):0.3))){
+  // A plain dispel with no ward or buff to hit does nothing: cast a curse instead when there's one to cast
+  const idleDispel=cat==='dispel'&&!oppWard&&!oppBuffs;
+  if(sigs.length&&(!plain.length||idleDispel||_rng()<(smart?(combo?0.8:0.45):0.3))){
     let r=_rng()*sigs.reduce((a,x)=>a+sigWeight(x.sp),0);
     choice=sigs.find(x=>(r-=sigWeight(x.sp))<=0)||sigs[0];
   }
