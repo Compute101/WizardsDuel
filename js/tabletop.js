@@ -37,11 +37,12 @@ const RULES={
   retryCost:1,
   pot:0.75,                    // simulator: chance a flick pots from your handicap line
   // Squops, after the spells resolve: the foe gets one squop attempt at each of your missed winks
-  // on the table, and gains squopGain mana for each one they squop. Missed winks carry over between
+  // on the table (at most maxSquops a round), and gains squopGain mana for each one they squop. Missed winks carry over between
   // rounds until squopped. A wizard who Meditates (channels) instead takes channelSquops attempts,
   // before the foe's turn.
   squop:0.4,                   // simulator: chance a squop attempt lands
   squopGain:1,
+  maxSquops:3,
   channelSquops:3,
   riderRing:2,                 // element riders need a strike from this ring or more that reached HP
   scorch:[0,1,2],              // Fire: burn 1 at round end for this many rounds, by ring
@@ -317,7 +318,7 @@ function playRound(picks,flicks,squops){
   return outcome;
 }
 // Each wizard squops the foe's missed winks for mana: channellers (Meditate) first, with
-// channelSquops attempts, then everyone else with one attempt per missed wink still there.
+// channelSquops attempts, then everyone else with one attempt per missed wink still there (max maxSquops).
 function squopPhase(given){
   const W=['p1','p2'];
   const go=w=>{
@@ -326,7 +327,7 @@ function squopPhase(given){
     let got;
     if(given&&given[w]!=null) got=Math.min(left,given[w]);
     else {
-      const tries=gs[w].meditated?RULES.channelSquops:left;
+      const tries=gs[w].meditated?RULES.channelSquops:Math.min(left,RULES.maxSquops);
       got=0;
       for(let i=0;i<tries&&got<left;i++) if(rng()<squopChance(w)) got++;
     }

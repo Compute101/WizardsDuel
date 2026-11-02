@@ -61,7 +61,7 @@ The flick replaces the app's glyph minigames.
 After the spells resolve, each player can win mana by squopping (landing a wink on top of) the other player's missed winks. Missed winks from earlier rounds count too.
 
 1. **Channelling first:** a player who Meditated this round takes **3 squop attempts** before the other player gets a turn.
-2. Then a player who cast gets **one squop attempt for each missed wink** of the other player's that is still on the table.
+2. Then a player who cast gets **one squop attempt for each missed wink** of the other player's that is still on the table, **up to 3 attempts a round**.
 3. **Each wink you squop gains you 1 mana.** Take the squopped wink off the table. Unsquopped winks stay where they are for next round.
 
 The simulator assumes a player pots **75%** of flicks from their handicap line and lands **40%** of squop attempts (`RULES.pot` and `RULES.squop` in `js/tabletop.js`). Change them once you know your real rates, then re-run the balance check.
