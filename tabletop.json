@@ -181,7 +181,7 @@
     "spells": [
       {"id": "enthral", "name": "Enthral", "cat": "dispel", "elem": "arcane", "ring": 1, "cost": 2, "kind": "curse", "effect": {"type": "enthral", "steal": 3},
        "text": "Secretly write down Damage, Protection or Dispel. If the foe's next pick is that, it's lost and you take up to 3 of the mana they paid."},
-      {"id": "arcaneweave", "name": "Arcane Weave", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 3, "kind": "buff", "ward": 4, "effect": {"type": "weave", "bonus": 3, "burn": 2, "charges": 1},
+      {"id": "arcaneweave", "name": "Arcane Weave", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 2, "kind": "buff", "ward": 4, "effect": {"type": "weave", "bonus": 3, "burn": 2, "charges": 1},
        "text": "Your next strike deals +3 and makes the foe lose 2 mana. Plus an Arcane ward of 4."},
       {"id": "spellbind", "name": "Spellbind", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 2, "kind": "curse", "effect": {"type": "spellbind", "extra": 3},
        "text": "Until cleansed: the foe's most-cast category (Damage, Protection or Dispel) costs 3 more."}
@@ -203,8 +203,8 @@
     "spells": [
       {"id": "causticbomb", "name": "Caustic Bomb", "cat": "damage", "elem": "dark", "ring": 2, "cost": 3, "kind": "strike", "dmg": 3, "dot": {"dmg": 1, "bypassWard": true},
        "text": "Dark strike of 3. Until cleansed, poison deals 1 to the foe at every round end. If the strike reached HP, the poison ignores wards."},
-      {"id": "volatiletonic", "name": "Volatile Tonic", "cat": "protect", "elem": "physical", "ring": 1, "cost": 2, "kind": "instant", "action": {"type": "tonic", "heal": 5, "bonus": 2},
-       "text": "Roll a die: on 1–3 heal 5; on 4–6 your next strike deals +2."},
+      {"id": "volatiletonic", "name": "Volatile Tonic", "cat": "protect", "elem": "physical", "ring": 1, "cost": 2, "kind": "instant", "action": {"type": "tonic", "heal": 6, "bonus": 3},
+       "text": "Roll a die: on 1–3 heal 6; on 4–6 your next strike deals +3."},
       {"id": "unstableconcoction", "name": "Unstable Concoction", "cat": "damage", "elem": "arcane", "ring": 2, "cost": 4, "kind": "strike", "dice": "d6!",
        "text": "Arcane strike: roll a die and deal that much. On a 6, roll again and add it (keep going on 6s)."}
     ]

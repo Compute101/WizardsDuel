@@ -271,7 +271,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Enthral** | Dispel | Arcane | Lesser | 2 | Secretly write down Damage, Protection or Dispel. If the foe's next pick is that, it's lost and you take up to 3 of the mana they paid. |
-| **Arcane Weave** | Protection | Arcane | Normal | 3 | Your next strike deals +3 and makes the foe lose 2 mana. Plus an Arcane ward of 4. |
+| **Arcane Weave** | Protection | Arcane | Normal | 2 | Your next strike deals +3 and makes the foe lose 2 mana. Plus an Arcane ward of 4. |
 | **Spellbind** | Dispel | Dark | Normal | 2 | Until cleansed: the foe's most-cast category (Damage, Protection or Dispel) costs 3 more. |
 
 ### KORVATH — The Wyrmlord
@@ -289,7 +289,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Caustic Bomb** | Damage | Dark | Normal | 3 | Dark strike of 3. Until cleansed, poison deals 1 to the foe at every round end. If the strike reached HP, the poison ignores wards. |
-| **Volatile Tonic** | Protection | Physical | Lesser | 2 | Roll a die: on 1–3 heal 5; on 4–6 your next strike deals +2. |
+| **Volatile Tonic** | Protection | Physical | Lesser | 2 | Roll a die: on 1–3 heal 6; on 4–6 your next strike deals +3. |
 | **Unstable Concoction** | Damage | Arcane | Normal | 4 | Arcane strike: roll a die and deal that much. On a 6, roll again and add it (keep going on 6s). |
 
 ### NYXARA — The Hollow
