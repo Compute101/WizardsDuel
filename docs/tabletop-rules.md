@@ -189,8 +189,8 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Galvanize** | Protection | Lightning | Lesser | 2 | Your next Lightning strike deals +3. |
-| **Chain Lightning** | Damage | Lightning | Normal | 4 | Lightning strike of 4. Roll a die: on 4+ it arcs for 2 more. |
+| **Galvanize** | Protection | Lightning | Lesser | 2 | Your next Lightning strike deals +4. |
+| **Chain Lightning** | Damage | Lightning | Normal | 4 | Lightning strike of 4. Roll a die: on 3+ it arcs for 2 more. |
 | **Conductivity** | Dispel | Lightning | Normal | 2 | Until cleansed: every strike on the foe deals +1. |
 
 ### MARY — The Devoted
@@ -298,7 +298,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Singularity** | Dispel | Dark | Normal | 3 | Until cleansed: a rift deals 2 to the foe at every round end. |
-| **Gravity Well** | Damage | Dark | Normal | 4 | Dark strike of a third of the foe's HP (round down, min 3). |
+| **Gravity Well** | Damage | Dark | Normal | 3 | Dark strike of a third of the foe's HP (round down, min 3). |
 | **Event Horizon** | Damage | Arcane | Greater | 7 | Arcane strike of half the foe's HP (round down, min 4). You take 2. |
 
 <!-- characters:end -->

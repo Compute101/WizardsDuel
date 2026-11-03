@@ -80,10 +80,10 @@
   "zacharius": {
     "hp": 19,
     "spells": [
-      {"id": "galvanize", "name": "Galvanize", "cat": "protect", "elem": "lightning", "ring": 1, "cost": 2, "kind": "buff", "effect": {"type": "empower", "bonus": 3, "elem": "lightning"},
-       "text": "Your next Lightning strike deals +3."},
-      {"id": "chainlightning", "name": "Chain Lightning", "cat": "damage", "elem": "lightning", "ring": 2, "cost": 4, "kind": "strike", "dmg": 4, "arc": {"roll": 4, "dmg": 2},
-       "text": "Lightning strike of 4. Roll a die: on 4+ it arcs for 2 more."},
+      {"id": "galvanize", "name": "Galvanize", "cat": "protect", "elem": "lightning", "ring": 1, "cost": 2, "kind": "buff", "effect": {"type": "empower", "bonus": 4, "elem": "lightning"},
+       "text": "Your next Lightning strike deals +4."},
+      {"id": "chainlightning", "name": "Chain Lightning", "cat": "damage", "elem": "lightning", "ring": 2, "cost": 4, "kind": "strike", "dmg": 4, "arc": {"roll": 3, "dmg": 2},
+       "text": "Lightning strike of 4. Roll a die: on 3+ it arcs for 2 more."},
       {"id": "conductivity", "name": "Conductivity", "cat": "dispel", "elem": "lightning", "ring": 2, "cost": 2, "kind": "curse", "effect": {"type": "vuln", "n": 1},
        "text": "Until cleansed: every strike on the foe deals +1."}
     ]
@@ -214,7 +214,7 @@
     "spells": [
       {"id": "singularity", "name": "Singularity", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 3, "kind": "curse", "effect": {"type": "dot", "dmg": 2},
        "text": "Until cleansed: a rift deals 2 to the foe at every round end."},
-      {"id": "gravitywell", "name": "Gravity Well", "cat": "damage", "elem": "dark", "ring": 2, "cost": 4, "kind": "strike", "pctHp": {"div": 3, "min": 3},
+      {"id": "gravitywell", "name": "Gravity Well", "cat": "damage", "elem": "dark", "ring": 2, "cost": 3, "kind": "strike", "pctHp": {"div": 3, "min": 3},
        "text": "Dark strike of a third of the foe's HP (round down, min 3)."},
       {"id": "eventhorizon", "name": "Event Horizon", "cat": "damage", "elem": "arcane", "ring": 3, "cost": 7, "kind": "strike", "pctHp": {"div": 2, "min": 4}, "recoil": 2,
        "text": "Arcane strike of half the foe's HP (round down, min 4). You take 2."}
