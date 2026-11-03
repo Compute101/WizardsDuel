@@ -111,6 +111,15 @@ Every round goes: secret picks → simultaneous reveal → resolution → round-
 
 ---
 
+## Tabletop mode
+A separate, simplified rule set for playing on a real table. HP, mana and wards are whole counters (max 20 each), and the counters are the tiddlywinks. Spells have three levels, Lesser / Normal / Greater (stored as `ring` 1–3), with a memorable rule: cost is 2 mana per wink to pot, damage equals the cost, and wards and dispels are double the cost. Signature spells are fixed cards. To cast, you flick from your handicap distance and pot 1 / 2 / 3 winks by level (`RULES.winks`). Each miss costs 1 mana to go again, or the spell fizzles. Missed winks stay on the table between rounds, and each round both players take turns, 3 attempts each, squopping any of them for mana. Nothing has a round timer: wards last until worn down or broken, buffs until dispelled, curses until cleansed (Cleanse costs 1 / 2 / 3 mana and pots 1 / 2 / 3 winks to remove 1 / 2 / all curses, `RULES.cleanseCost`), and "next strike" effects until used. Wizards have no general strike bonuses. a ward's own element counts +2 against it (strikes and dispels), and there are no element riders. `RULES.pot` / `RULES.squop` are the success rates the sim assumes. Games are tuned shorter (about 11 rounds against about 20 in the standard game). **It never touches the standard game:** `js/game.js` doesn't load it, and the standard game stays the default.
+- `js/tabletop.js`: rules (`RULES`), engine, AI and `simMatch`. Self-contained, and runs in Node too.
+- `tabletop.json`: each character's counter numbers and spell card text. Names, colours and `forbidden` come from `characters.json`.
+- `docs/tabletop-rules.md`: the rulebook. After changing numbers, run `node tools/tabletop_doc.js` to regenerate its base-spell and character sections, and keep the hand-written rules in step with the engine.
+- Balance: in `tools/balance.html`, set **Mode** to **Tabletop**, or run `TT.balance(games)` in Node. `node tools/tabletop_matchups.js` prints the full matchup table. Keep every character within ±8% of 50%, the same target as the standard game.
+
+---
+
 ## Visual effects
 Keep VFX: when changing or removing a spell, keep its look. Every spell's visual is in the "VFX LIBRARY" section of `js/game.js`:
 - `SPELL_VFX[spellId]` is each signature spell's own look. `self` plays when cast on yourself, `hit` when it lands on the target, and `delivery` handles lunges and volleys.
@@ -153,6 +162,7 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 | Characters and signature spells | `characters.json` | whole file |
 | Archived Classic spell code (not loaded) | `js/legacy/classic_spells.js` | whole file |
 | Balance simulator (AI-vs-AI win rates) | `tools/balance.html`, `simMatch` in `js/game.js` | whole file |
+| Tabletop mode (rules, engine, AI, sim) | `js/tabletop.js`, `tabletop.json`, `docs/tabletop-rules.md` | whole files |
 | Puzzle screen HTML | `index.html` | ~242 |
 | Canvas styling | `css/style.css` | ~530–560 |
 
