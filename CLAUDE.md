@@ -116,7 +116,7 @@ A separate, simplified rule set for playing on a real table. HP, mana and wards 
 - `js/tabletop.js`: rules (`RULES`), engine, AI and `simMatch`. Self-contained, and runs in Node too.
 - `tabletop.json`: each character's counter numbers and spell card text. Names, colours and `forbidden` come from `characters.json`.
 - `docs/tabletop-rules.md`: the rulebook. After changing numbers, run `node tools/tabletop_doc.js` to regenerate its base-spell and character sections, and keep the hand-written rules in step with the engine.
-- Balance: in `tools/balance.html`, set **Mode** to **Tabletop**, or run `TT.balance(games)` in Node. Keep every character within ±8% of 50%, the same target as the standard game.
+- Balance: in `tools/balance.html`, set **Mode** to **Tabletop**, or run `TT.balance(games)` in Node. `node tools/tabletop_matchups.js` prints the full matchup table. Keep every character within ±8% of 50%, the same target as the standard game.
 
 ---
 
