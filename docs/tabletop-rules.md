@@ -79,6 +79,8 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
   - Example: a Normal Fire strike (4) hits a Fire ward of 5. It counts as 6, so the ward breaks and 1 goes through to HP.
 - A ward **lasts until it runs out**. It loses **1 wink at every round end**, and strikes and dispels take it down.
 - Ticks (burns, poison, minions) also hit the ward first.
+- **Skeletons stand in front of the ward.** Each skeleton has 1 HP: every point of damage (strikes and ticks) kills one skeleton before anything reaches the ward. Only what gets past the skeletons meets the ward, and the ward's +2 element bonus applies only to that.
+  - Example: a Normal Fire strike (4) hits 3 skeletons and a Fire ward of 5. 3 skeletons fall, the last 1 counts as 3 against the ward, and the ward drops to 2.
 
 ## Dispels
 
@@ -100,6 +102,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 
 - "Next strike" and "next pick" effects (Empower, Foresight, Vanish, Bewitch, Enthral and similar) go as soon as they're used.
 - "Can't pick Damage next round" lasts for that one round only.
+- Skeletons aren't buffs: a Dispel never removes them, only damage does.
 - Casting a buff or curse that's already in play does nothing extra; minions (blades, skeletons, simulacra) stack up to their card's max.
 
 ## Round end
@@ -248,13 +251,13 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Bone Totem** | Protection | Dark | Normal | 4 | Until dispelled: heal 1 at every round end. |
 
 ### VALDRIS — The Undying
-**HP 18** · Deathless: when knocked to 0 HP, pay 6 mana to stay on 1 HP · Can't cast: Fire
+**HP 16** · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Raise Dead** | Protection | Dark | Normal | 3 | Raise a skeleton (max 2). Until dispelled, each deals 1 to the foe at every round end. If one is dispelled, heal 2. |
+| **Raise Dead** | Protection | Dark | Normal | 4 | Raise 3 skeletons (max 5 on the table). Each has 1 HP and stands in front of your ward: every point of damage (strikes and ticks) kills one skeleton before anything reaches your ward. Dispels can't touch them. Each skeleton still standing deals 1 to the foe at every round end. |
 | **Necrotic Drain** | Damage | Dark | Normal | 4 | Dark strike of 4. Heal half the HP damage it deals (round down). |
-| **Reinforce** | Protection | Physical | Normal | 4 | Physical ward of 5, +3 for each skeleton you have. |
+| **Soul Tithe** | Dispel | Dark | Lesser | 2 | Until cleansed: the foe loses 1 mana for each of your skeletons they kill. |
 
 ### MIREL — The Deceiver
 **HP 17** · Can't cast: Physical, Fire

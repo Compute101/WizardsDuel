@@ -33,7 +33,7 @@ const CHAR_FLAVOUR={
   durin:'The mountain endures. Outlast every spell — stone by stone.',
   weizan:'Build blades slowly. Release all at once. Dispel kills your investment — protect it.',
   gretch:'Infect and drain. The totem heals you — guard it with a ward, or a Dispel will strip it.',
-  valdris:'Deathless: a killing blow costs him 8 mana instead, while he has it. Drain his mana to kill him. Dispel his skeletons — but each dying skeleton heals him.',
+  valdris:'His skeletons stand in front of his ward and soak your damage, and dispels can\'t touch them, so batter through with strikes. Cleanse Soul Tithe first, or each skeleton you kill costs you mana.',
   mirel:'Simulacra strike every round until dispelled. Bewitch turns the next strike against its caster.',
   thessaly:'Enthral calls their next move — guess right and it is lost, its mana yours. Spellbind taxes their favourite move — strike her over and over, and it is your strikes that cost more. Weave wards her, then turns strikes into mana denial.',
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
@@ -711,7 +711,10 @@ function loadSprites(){
 // Same format as the full-body character stills: any size, facing right, feet at the bottom edge.
 // A missing file just keeps the plain circle for that tier.
 const SKELETON_SPRITES=['sprites/skeleton1.png','sprites/skeleton2.png','sprites/skeleton3.png'];
-const SKELETON_HEIGHT=[0.55,0.62,0.7];   // fraction of the (pre-WIZ_GROW) wizard height, by tier
+const SKELETON_HEIGHT=[0.50,0.68,0.74];   // fraction of the master's drawn height, by tier (the ragged one hunches lower)
+// Where each skeleton stands, in fill order: [distance toward the foe, height offset (negative =
+// back row, further up the floor), scale], in units of the master's drawn height
+const SKELETON_SLOTS=[[0.39,0,1],[0.14,0,1],[0.64,0,1],[0.26,-.06,.88],[0.52,-.06,.88]];
 const skeletonImgs=SKELETON_SPRITES.map(src=>{
   const rec={img:new Image(),ready:false};
   rec.img.onload=()=>{ rec.ready=true; };
@@ -1353,29 +1356,8 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   bx.restore();   // end of the aura oval
   // Ward orbiters on the far side, behind the sprite
   if(shielded>0) drawWardOrbiters(x,y-sz*.62,sz,state,'back',fShield,t);
-  // Skeletons (Valdris): one sprite per summon strength (see SKELETON_SPRITES), or a
-  // bone-coloured circle until that tier's art exists.
   // Minions keep the original (pre-WIZ_GROW) size and spacing, standing on the same floor
   const minionDir=flip?1:-1, msz=sz/seatSpriteHeight(who)/wizGrow(), mwy=y-msz*.5;
-  if(state&&state.skeletons&&state.skeletons.length>0){
-    state.skeletons.forEach((skel,i)=>{
-      const sx=x+minionDir*(i===0?msz*1.3:msz*2.1), sy=mwy;
-      const img=skeletonSprite(skel.tier);
-      if(img){
-        // Stands on the floor, faces the same way as its master; stronger summons stand taller
-        const bob=Math.sin(t/450+i*1.7)*msz*.01;
-        bx.save(); bx.globalAlpha=0.95;
-        drawSprite(img,'idle',0,sx,y+bob,msz*SKELETON_HEIGHT[(skel.tier||2)-1],flip);
-        bx.restore();
-        return;
-      }
-      bx.globalAlpha=0.85; bx.fillStyle='#ccccbb'; bx.shadowColor='#aaaaaa'; bx.shadowBlur=4;
-      bx.beginPath(); bx.arc(sx,sy,msz*.18,0,Math.PI*2); bx.fill();
-      bx.fillStyle='#333'; bx.font=`${Math.round(msz*.14)}px serif`;
-      bx.textAlign='center'; bx.fillText('💀',sx,sy+msz*.06);
-      bx.globalAlpha=1; bx.shadowBlur=0;
-    });
-  }
   // Simulacra (Mirel): ghostly wizard clones, same sprite/animation as the caster
   if(state&&state.simulacra&&state.simulacra.length>0){
     const simSz=msz*.62;
@@ -1441,6 +1423,37 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   bx.restore();
   // Ward orbiters on the near side, in front of the sprite (x0: the fallback figure flips x)
   if(shielded>0) drawWardOrbiters(x0,y-sz*.62,sz,state,'front',fShield,t);
+  // Skeletons stand in front of their master and his ward, so they're drawn last
+  if(state&&state.skeletons&&state.skeletons.length) drawSkeletons(x,y,sz,who,flip,state.skeletons,t);
+}
+// Skeletons (Valdris): one sprite per summon strength (see SKELETON_SPRITES), or a bone-coloured
+// circle if that art is missing. Up to five stand guard on the foe's side of their master
+// (SKELETON_SLOTS), back row first so the front row overlaps it, with the tallest in the back row. Sized from the master's drawn
+// height, so they shrink with him on small screens and in 3–4 seat duels.
+function drawSkeletons(x,y,sz,who,flip,skels,t){
+  const dir=flip?1:-1, hsz=sz*SPRITE_SCALE/seatSpriteHeight(who);
+  // Back-row slots (drawn first) go to the tallest skeletons, so the short ones in front never hide them
+  const slots=SKELETON_SLOTS.slice(0,skels.length).slice().sort((a,b)=>a[1]-b[1]);
+  const order=skels.map((k,i)=>i).sort((a,b)=>(skels[b].tier||2)-(skels[a].tier||2));
+  slots.forEach((s,j)=>{
+    const i=order[j], skel=skels[i], [dx,dy,sc]=s;
+    const sx=x+dir*hsz*dx, fy=y+dy*hsz, h=hsz*SKELETON_HEIGHT[(skel.tier||2)-1]*sc;
+    const img=skeletonSprite(skel.tier);
+    if(img){
+      // Stands on the floor and faces the same way as its master; stronger summons stand taller
+      const bob=Math.sin(t/450+i*1.7)*hsz*.004;
+      bx.save(); bx.globalAlpha=0.97;
+      drawSprite(img,'idle',0,sx,fy+bob,h,flip);
+      bx.restore();
+      return;
+    }
+    const r=h*.22, cy=fy-r;
+    bx.globalAlpha=0.85; bx.fillStyle='#ccccbb'; bx.shadowColor='#aaaaaa'; bx.shadowBlur=4;
+    bx.beginPath(); bx.arc(sx,cy,r,0,Math.PI*2); bx.fill();
+    bx.fillStyle='#333'; bx.font=`${Math.round(r*.8)}px serif`;
+    bx.textAlign='center'; bx.fillText('💀',sx,cy+r*.3);
+    bx.globalAlpha=1; bx.shadowBlur=0;
+  });
 }
 
 function tickParts(){
@@ -2545,6 +2558,8 @@ const VFX={
   vanished:x=>spawnParts(x,wizMidY(x),'#b8a0e8',12),
   dodged:x=>{ spawnParts(x,wizMidY(x),'#9988cc',22); spawnParts(x,wizMidY(x),'#ffffff',8); flash('#9988cc'); },
   curseWarded:x=>spawnParts(x,wizMidY(x),'#ffcc44',14),
+  // Skeletons cut down in front of the ward: bones clatter to the floor
+  minionFall:(x,n)=>vfxDrift(x,wizMidY(x),['#e8e0cc','#bbb3a0','#9966cc'],Math.min(30,6*n),{spd:1.6,lift:-.3,dec:.02,grav:true}),
   resisted:x=>vfxDrip(x,bH*.34,'#665522',8,{vx:1.5,vy:0,vyVar:2,dec:.025}),
   bewitched:who=>{ const x=seatX(who); spawnParts(x,wizMidY(x),'#b86ef4',20); spawnParts(x,wizMidY(x),'#ffffff',8); flash('#b86ef4'); anim(who,'hit',800); },
   agony:x=>{ spawnParts(x,wizMidY(x),'#9944cc',12); flash('#330033'); },
@@ -2682,6 +2697,7 @@ const SPELL_VFX={
   // Valdris
   raisedead:    {self:c=>{ vfxPhaseIn(c.cx,c.cy,['#8844cc','#8844cc','#ffffff'],18); anim(c.who,'cast',800); }},
   necroticdrain:{hit:c=>{ spawnParts(c.tx,c.ty,'#8844cc',16); spawnBeam(c.cx,c.cy,c.tx,c.ty,'#8844cc'); flash('#8844cc'); vfxStrikeAnim(c.who,c.tgt); }},
+  soultithe:    {hit:c=>{ spawnBeam(c.cx,c.cy,c.tx,c.ty,'#aa88ff'); vfxDrip(c.tx,c.ty,'#aa88ff',10,{vx:1,vy:1,vyVar:1.5,dec:.02}); }},
   reinforce:    {self:c=>{ vfxPhaseIn(c.cx,c.cy,['#8844cc'],12); anim(c.who,'cast',700); }},
   // Mirel
   simulacrum:{self:c=>{ vfxPhaseIn(c.cx,c.cy,['#b86ef4','#b86ef4','#ffffff'],20); anim(c.who,'shield',800); }},
@@ -3066,10 +3082,17 @@ function addEffect(who,eff,fromWho){
     }
     st.lastLockedRound=gs.round+1;   // the round the lock actually blocks
   }
-  // Same enchantment again refreshes it; minions stack instead
-  if(eff.type!=='minion') st.effects=st.effects.filter(e=>e.id!==eff.id);
+  // Same enchantment again refreshes it; minions stack instead (`raise` at a time, up to `max`)
+  if(eff.type==='minion'){
+    const n=Math.min(eff.raise||1,(eff.max||Infinity)-countMinions(st,eff.minion));
+    if(n<=0) return false;
+    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:fromWho},eff,eff.soak?{hp:eff.soak}:{}));
+    syncMinionVisuals(st);
+    addFloat(x,bH*.26,eff.icon+' '+eff.name+(n>1?' ×'+n:'')+'!','#88ffcc',13);
+    return true;
+  }
+  st.effects=st.effects.filter(e=>e.id!==eff.id);
   st.effects.push(Object.assign({from:fromWho},eff));
-  if(eff.type==='minion') syncMinionVisuals(st);
   addFloat(x,bH*.26,eff.icon+' '+eff.name+'!',eff.kind==='curse'?'#cc88ff':'#88ffcc',13);
   return true;
 }
@@ -3127,7 +3150,8 @@ function sigAtTier(sp,tier){
   if(el.arc) el.arc.dmg=n(el.arc.dmg);
   if(el.chance!=null) el.chance=pct(el.chance,1);
   const e=el.effect;
-  if(e){
+  if(e&&e.soak){ e.raise=Math.max(1,(e.raise||1)+tier-2); }
+  else if(e){
     ['perRound','retaliate','dmg','n','bonus','burn','extra','steal'].forEach(k=>{ if(e[k]) e[k]=n(e[k]); });
     if(e.ramp) e.ramp=e.ramp.map(n);
     if(e.pct) e.pct=pct(e.pct,0.7);
@@ -3636,7 +3660,7 @@ function executeSignature(who,sp,action,cb){
   }
   if(el.kind==='buff'){
     const mine=el.effect.type==='minion';   // minions always serve their owner
-    addEffect(mine?who:ally,effect({kind:'buff'}),who);
+    addEffect(mine?who:ally,effect({kind:el.effect.kind||'buff'}),who);
     // A buff that also raises a light ward (Blink) — never replaces a stronger ward already up
     if(el.ward&&!(hasWard(as)&&as.shieldHp>=el.ward)){ raiseWard(ally,el.elem,el.ward,0); as.wardSig=sp.id; }
     // A buff that holds up a ward already standing (Counter): it lasts longer
@@ -3732,12 +3756,42 @@ function elemDispelHit(tgt,elem,power,tier){
   removeEffects(tgt,tier>=ELEM_DISPEL_ALL_TIER?buffs:[buffs[buffs.length-1]],'✦ Dispelled');
 }
 
-// Damage that meets the target's ward first. Returns {hp, warded}.
+// Soak minions (Valdris's skeletons) stand in front of the ward: damage wears them down, oldest
+// first, before anything reaches the ward. Dispels can't touch them (kind 'minion', not a buff).
+// Soul Tithe: whoever kills them while cursed by their owner loses mana for each one.
+function soakMinions(tgt,dmg){
+  const ts=gs[tgt], tx=seatX(tgt);
+  const wall=effectsOf(ts,'minion').filter(m=>m.soak);
+  if(!wall.length||dmg<=0) return dmg;
+  let soaked=0; const dead=[];
+  for(const m of wall){
+    if(dmg<=0) break;
+    const d=Math.min(dmg,m.hp);
+    m.hp-=d; dmg-=d; soaked+=d;
+    if(m.hp<=0) dead.push(m);
+  }
+  if(dead.length){
+    ts.effects=ts.effects.filter(e=>!dead.includes(e));
+    syncMinionVisuals(ts);
+    VFX.minionFall(tx,dead.length);
+    const killer=dmgSource;
+    if(killer&&killer!==tgt&&gs[killer]){
+      const n=effectsOf(gs[killer],'tithe').filter(e=>e.from===tgt).reduce((a,e)=>a+e.n,0)*dead.length;
+      const lost=Math.min(gs[killer].mana,n);
+      if(lost>0){ gs[killer].mana-=lost; addFloat(seatX(killer),bH*.42,'🪙 Tithe −'+lost+' Mana','#aa88ff',12); }
+    }
+  }
+  addFloat(tx,bH*.2,'💀 −'+soaked+(dead.length?' ('+dead.length+' fall'+(dead.length>1?'':'s')+')':''),'#ccccdd',12);
+  return dmg;
+}
+
+// Damage that meets the target's skeletons, then its ward. Returns {hp, warded}.
 // wear: {blocked,worn}, shared by the hits of one split strike (an arcane volley) so the ward
 // wears exactly as it would from one big hit — rounding once, with the 1-point minimum once.
 function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike){
   const ts=gs[tgt], tx=seatX(tgt);
   let warded=false;
+  dmg=soakMinions(tgt,dmg);
   if(hasWard(ts)&&dmg>0){
     // The ward loses only its take share of what it stops, so a resistant ward stops more.
     // Crush: a Physical strike (not ticks or minions) ignores an off-element ward's resistance.
@@ -3932,7 +3986,7 @@ function elemTickEffects(who){
     e.tick=(e.tick||0)+1;
     const dmg=Math.round((e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg)*suddenDeathMult());
     // Ticks hit a ward first, like any damage — unless the effect seeps past wards (Caustic Bomb's poison)
-    if(e.bypassWard||!hasWard(st)){
+    if(e.bypassWard||(!hasWard(st)&&!effectsOf(st,'minion').some(m=>m.soak))){
       if(e.bypassWard&&hasWard(st)) addFloat(x,bH*.3,e.icon+' Seeps past the ward!','#99dd55',11);
       elemFloatDmg(who,dmg,e.icon,'#cc88ff');
     }
@@ -3991,6 +4045,9 @@ function aiPickTarget(who){
   const score=Object.fromEntries(foes.map(w=>[w,gs[w].hp+(hasWard(gs[w])?gs[w].shieldHp:0)+_rng()*noise]));
   return foes.reduce((a,b)=>score[a]<=score[b]?a:b);
 }
+// Soak minions (Valdris's skeletons): the signature spell that raises them, and how many stand
+function guardSpell(who){ return sigSpells(who,'protect').find(sp=>sp.el.effect&&sp.el.effect.type==='minion'&&sp.el.effect.soak); }
+function guardCount(st){ return effectsOf(st,'minion').filter(m=>m.soak).length; }
 function aiSigSensible(who,sp,tgt=weakestFoe(who)){
   const st=gs[who], ts=gs[tgt], el=sp.el;
   const active=(s,id)=>(s.effects||[]).some(e=>e.id===id);
@@ -4094,6 +4151,10 @@ function elemAIChoose(who){
     w.protect*=0.3; w.damage+=0.5;
     if(siphon) w.dispel+=0.6;
   }
+  // Keep a screen of skeletons up; batter through the foe's (dispels can't touch them)
+  const guardSp=guardSpell(who), myGuards=guardCount(me), oppGuards=guardCount(opp);
+  if(guardSp&&myGuards<=2) w.protect+=smart?1.2:0.6;
+  if(oppGuards){ w.damage+=(smart?0.25:0.1)*oppGuards; if(!oppWard) w.dispel*=0.5; }
   if(ganged){ w.protect+=hasWard(me)&&me.shieldHp>=25?0.4:1.2; w.damage*=0.8; }
   const free=hasFreeSpell(who);
   if(free) w.damage+=1.2;   // a free spell: make it a big strike
@@ -4140,7 +4201,9 @@ function elemAIChoose(who){
   let choice=null;
   // A plain dispel with no ward or buff to hit does nothing: cast a curse instead when there's one to cast
   const idleDispel=cat==='dispel'&&!oppWard&&!oppBuffs;
-  if(sigs.length&&(!plain.length||idleDispel||_rng()<(smart?(combo?0.8:0.45):0.3))){
+  const guardSec=cat==='protect'&&guardSp&&myGuards<=2&&sigs.find(x=>x.sp===guardSp);
+  if(guardSec&&_rng()<(smart?0.85:0.5)) choice=guardSec;
+  else if(sigs.length&&(!plain.length||idleDispel||_rng()<(smart?(combo?0.8:0.45):0.3))){
     let r=_rng()*sigs.reduce((a,x)=>a+sigWeight(x.sp),0);
     choice=sigs.find(x=>(r-=sigWeight(x.sp))<=0)||sigs[0];
   }
@@ -7738,10 +7801,10 @@ const TUTORIAL_CONVOS={
     {key:'gretch',text:"Not elegant. Not subtle. Just results. Plague them, drain them, totem up, and let time finish the job."},
   ],
   valdris:[
-    {key:'valdris',text:"I am Valdris. The Deathless. While I have 8 mana or more, a killing blow takes 8 mana instead of ending me."},
-    {key:'valdris',text:"Raise Dead, in the Dark sector of my Protection wheel, summons a skeleton that strikes every round. I can have two. If they are dispelled, their death heals me."},
-    {key:'valdris',text:"Necrotic Drain is my Dark strike — it heals me for part of the damage dealt. Reinforce is my Physical ward, and it grows stronger for every skeleton at my side."},
-    {key:'valdris',text:"Burn my mana and the Deathless can fall. Fail, and I will outlast you."},
+    {key:'valdris',text:"I am Valdris, the Undying. I do not fight alone — the dead stand between you and me."},
+    {key:'valdris',text:"Raise Dead, in the Dark sector of my Protection wheel, raises three skeletons — up to five at once. They stand in front of my ward and soak your damage until it cuts them down, and dispels can't touch them. Every one still standing strikes you each round."},
+    {key:'valdris',text:"Necrotic Drain is my Dark strike — it heals me for part of the damage dealt. Soul Tithe, on my Dispel wheel, curses you: each skeleton you kill costs you mana."},
+    {key:'valdris',text:"Cut through my dead, and you may yet reach me. Leave them standing, and they will grind you to dust."},
   ],
   mirel:[
     {key:'mirel',text:"Nothing you see is real. I am Mirel. Simulacrum, in the Arcane sector of my Protection wheel, creates a copy of me that strikes my rival every round. I can have two."},

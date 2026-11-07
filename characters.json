@@ -996,12 +996,11 @@
       "Death is not an ending. It is merely an inconvenience.",
       "Kneel before the undying, or be consumed by it. There is no third option."
     ],
-    "hp": 88,
+    "hp": 80,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
     ],
-    "deathlessCost": 8,
     "spells": [
       {
         "id": "raisedead",
@@ -1011,18 +1010,20 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "dark",
-          "cost": 4,
+          "cost": 5,
           "tier": 2,
           "effect": {
             "type": "minion",
             "minion": "skeleton",
-            "dmg": 5,
+            "kind": "minion",
+            "soak": 3,
+            "dmg": 3,
             "elem": "dark",
-            "max": 2,
-            "healOnRemove": 8,
-            "rounds": 4
+            "max": 5,
+            "raise": 3,
+            "rounds": null
           },
-          "desc": "Skeleton (max 2) for 4 rounds: 5 a round; heals 8 if destroyed"
+          "desc": "Raise 3 skeletons (max 5): each soaks 3 damage in front of your ward and strikes for 3 a round; dispels can't touch them"
         }
       },
       {
@@ -1041,18 +1042,21 @@
         }
       },
       {
-        "id": "reinforce",
-        "name": "Reinforce",
-        "icon": "🔧",
+        "id": "soultithe",
+        "name": "Soul Tithe",
+        "icon": "🪙",
         "el": {
-          "cat": "protect",
-          "kind": "ward",
-          "elem": "physical",
-          "cost": 5,
-          "power": 20,
+          "cat": "dispel",
+          "kind": "curse",
+          "elem": "dark",
+          "cost": 3,
           "tier": 2,
-          "desc": "Physical ward of 20 +12 per skeleton",
-          "perSkeleton": 12
+          "effect": {
+            "type": "tithe",
+            "n": 1,
+            "rounds": 4
+          },
+          "desc": "4 rounds: the foe loses 1 mana for each of your skeletons they kill"
         }
       }
     ]

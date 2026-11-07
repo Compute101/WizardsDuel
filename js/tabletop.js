@@ -119,8 +119,13 @@ function addEffect(who,eff,from){
     st.lastLocked=gs.round+1;
   }
   if(eff.type==='minion'){
-    if(minions(st,eff.minion).length>=eff.max) return false;
-  } else st.effects=st.effects.filter(e=>e.id!==eff.id);
+    // Minions stack: add up to `raise` copies (default 1), never past `max`
+    const n=Math.min(eff.max-minions(st,eff.minion).length, eff.raise||1);
+    if(n<=0) return false;
+    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:gs.round, by:from},eff));
+    return true;
+  }
+  st.effects=st.effects.filter(e=>e.id!==eff.id);
   st.effects.push(Object.assign({from:gs.round, by:from},eff));
   return true;
 }
@@ -143,11 +148,22 @@ function loseHp(who,n){
 function loseMana(who,n){ gs[who].mana=Math.max(0,gs[who].mana-n); }
 function gainMana(who,n){ gs[who].mana=clamp(gs[who].mana+n); }
 
-// Damage that meets the ward first. adj: +n / −n against the ward (element match / off-element).
+// Damage that meets soak minions, then the ward. adj: +n / −n against the ward (element match / off-element).
+// own: the damage is the target's own (a Bewitched self-hit), so the foe pays no Soul Tithe.
 // Returns the HP damage dealt.
-function incoming(who,dmg,adj){
+function incoming(who,dmg,adj,own){
   const st=gs[who];
   if(dmg<=0) return 0;
+  // Soak minions (skeletons) stand in front of the ward: each takes 1 damage and falls
+  const wall=st.effects.filter(e=>e.type==='minion'&&e.soak);
+  if(wall.length){
+    const k=Math.min(dmg,wall.length), dead=wall.slice(0,k);
+    st.effects=st.effects.filter(e=>!dead.includes(e));
+    dmg-=k;
+    // Soul Tithe: a foe cursed with it loses mana for each skeleton they kill
+    if(!own) fx(gs[foe(who)],'tithe').forEach(e=>loseMana(foe(who),k*e.n));
+    if(dmg<=0) return 0;
+  }
   if(st.ward){
     const eff=Math.max(1,dmg+(adj||0));
     if(eff<st.ward.hp){ st.ward.hp-=eff; return 0; }
@@ -248,7 +264,7 @@ function doDamage(who,a){
   const weave=fx(st,'weave')[0];
   if(weave){ dmg+=weave.bonus; burn+=weave.burn; if(--weave.charges<=0) removeEffects(who,[weave]); }
   if(sp&&sp.recoil) loseHp(who,sp.recoil);
-  if(tgt===who){ incoming(who,dmg,0); return; }
+  if(tgt===who){ incoming(who,dmg,0,true); return; }
   // Misses
   const abs=fx(ts,'absorbNext')[0];
   if(abs){ removeEffects(tgt,[abs]); return; }
@@ -449,6 +465,8 @@ function sigSensible(w,sp){
   if(sp.pctHp) return Math.floor(ts.hp/sp.pctHp.div)>=sp.pctHp.min||ts.hp<=sp.pctHp.min+1;
   return true;
 }
+const guardSpell=st=>st.c.spells.find(s=>s.effect&&s.effect.type==='minion'&&s.effect.soak);
+const guards=st=>st.effects.filter(e=>e.type==='minion'&&e.soak).length;
 function aiChoose(w,level){
   const st=gs[w], ts=gs[foe(w)], smart=level!=='easy';
   // Meditate when short of mana
@@ -477,6 +495,10 @@ function aiChoose(w,level){
     if(ts.mana>=costOf(ts,{cat:'damage',ring:2})) w8.protect+=0.35;
     if(st.hp<st.c.hp*0.35) w8.protect+=0.35;
   }
+  // Soak minions: keep a screen of skeletons up; batter through the foe's
+  if(guardSpell(st)&&guards(st)<=2) w8.protect+=smart?1.2:0.6;
+  const tg=guards(ts);
+  if(tg){ w8.damage+=(smart?0.25:0.1)*tg; if(!ts.ward) w8.dispel*=0.5; }
   if(fx(st,'bewitch').length){ w8.damage*=smart?0.15:0.6; w8.dispel+=smart?0.8:0.3; }
   const cats=CATS.filter(c=>!locked(st,c)&&w8[c]>0);
   // Pick a category, then a spell in it that we can afford; fall back through the others
@@ -501,6 +523,8 @@ function aiInCat(w,cat,smart){
     while(ring>1&&!canPick(st,{cat,self:true,ring})) ring--;
     return {cat,self:true,ring};
   }
+  const gsp=guardSpell(st);
+  if(cat==='protect'&&gsp&&guards(st)<=2&&canPick(st,{cat,sig:gsp.id})&&rng()<(smart?0.85:0.5)) return {cat,sig:gsp.id};
   const sigs=st.c.spells.filter(s=>s.cat===cat&&canPick(st,{cat,sig:s.id})&&sigSensible(w,s));
   const idleDispel=cat==='dispel'&&!ts.ward&&!buffs(ts).length;
   if(sigs.length&&(idleDispel||rng()<(smart?0.5:0.3))){
