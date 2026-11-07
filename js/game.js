@@ -711,10 +711,10 @@ function loadSprites(){
 // Same format as the full-body character stills: any size, facing right, feet at the bottom edge.
 // A missing file just keeps the plain circle for that tier.
 const SKELETON_SPRITES=['sprites/skeleton1.png','sprites/skeleton2.png','sprites/skeleton3.png'];
-const SKELETON_HEIGHT=[0.55,0.62,0.7];   // fraction of the (pre-WIZ_GROW) wizard height, by tier
-// Where each skeleton stands, in fill order: [distance in front of its master, height offset
-// (negative = back row, further up the floor), scale], all in minion-size units
-const SKELETON_SLOTS=[[1.0,0,1],[0.72,0,1],[1.28,0,1],[0.86,-.1,.85],[1.14,-.1,.85]];
+const SKELETON_HEIGHT=[0.42,0.48,0.54];   // fraction of the master's drawn height, by tier
+// Where each skeleton stands, in fill order: [distance toward the foe, height offset (negative =
+// back row, further up the floor), scale], in units of the master's drawn height
+const SKELETON_SLOTS=[[0.34,0,1],[0.12,0,1],[0.56,0,1],[0.23,-.06,.88],[0.45,-.06,.88]];
 const skeletonImgs=SKELETON_SPRITES.map(src=>{
   const rec={img:new Image(),ready:false};
   rec.img.onload=()=>{ rec.ready=true; };
@@ -1356,33 +1356,8 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   bx.restore();   // end of the aura oval
   // Ward orbiters on the far side, behind the sprite
   if(shielded>0) drawWardOrbiters(x,y-sz*.62,sz,state,'back',fShield,t);
-  // Skeletons (Valdris): one sprite per summon strength (see SKELETON_SPRITES), or a
-  // bone-coloured circle until that tier's art exists.
   // Minions keep the original (pre-WIZ_GROW) size and spacing, standing on the same floor
   const minionDir=flip?1:-1, msz=sz/seatSpriteHeight(who)/wizGrow(), mwy=y-msz*.5;
-  if(state&&state.skeletons&&state.skeletons.length>0){
-    // Up to five stand guard between their master and the foe: a front row of three, then
-    // a smaller back row of two (drawn first, so the front row overlaps it)
-    const slots=SKELETON_SLOTS.slice(0,state.skeletons.length).map((s,i)=>({s,i})).sort((a,b)=>a.s[1]-b.s[1]);
-    slots.forEach(({s,i})=>{
-      const skel=state.skeletons[i], [dx,dy,sc]=s;
-      const sx=x+minionDir*msz*dx, fy=y+dy*msz, sy=mwy+dy*msz;
-      const img=skeletonSprite(skel.tier);
-      if(img){
-        // Stands on the floor, faces the same way as its master; stronger summons stand taller
-        const bob=Math.sin(t/450+i*1.7)*msz*.01;
-        bx.save(); bx.globalAlpha=0.95;
-        drawSprite(img,'idle',0,sx,fy+bob,msz*SKELETON_HEIGHT[(skel.tier||2)-1]*sc,flip);
-        bx.restore();
-        return;
-      }
-      bx.globalAlpha=0.85; bx.fillStyle='#ccccbb'; bx.shadowColor='#aaaaaa'; bx.shadowBlur=4;
-      bx.beginPath(); bx.arc(sx,sy,msz*.16*sc,0,Math.PI*2); bx.fill();
-      bx.fillStyle='#333'; bx.font=`${Math.round(msz*.13*sc)}px serif`;
-      bx.textAlign='center'; bx.fillText('💀',sx,sy+msz*.05*sc);
-      bx.globalAlpha=1; bx.shadowBlur=0;
-    });
-  }
   // Simulacra (Mirel): ghostly wizard clones, same sprite/animation as the caster
   if(state&&state.simulacra&&state.simulacra.length>0){
     const simSz=msz*.62;
@@ -1448,6 +1423,37 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   bx.restore();
   // Ward orbiters on the near side, in front of the sprite (x0: the fallback figure flips x)
   if(shielded>0) drawWardOrbiters(x0,y-sz*.62,sz,state,'front',fShield,t);
+  // Skeletons stand in front of their master and his ward, so they're drawn last
+  if(state&&state.skeletons&&state.skeletons.length) drawSkeletons(x,y,sz,who,flip,state.skeletons,t);
+}
+// Skeletons (Valdris): one sprite per summon strength (see SKELETON_SPRITES), or a bone-coloured
+// circle if that art is missing. Up to five stand guard on the foe's side of their master
+// (SKELETON_SLOTS), back row first so the front row overlaps it, with the tallest in the back row. Sized from the master's drawn
+// height, so they shrink with him on small screens and in 3–4 seat duels.
+function drawSkeletons(x,y,sz,who,flip,skels,t){
+  const dir=flip?1:-1, hsz=sz*SPRITE_SCALE/seatSpriteHeight(who);
+  // Back-row slots (drawn first) go to the tallest skeletons, so the short ones in front never hide them
+  const slots=SKELETON_SLOTS.slice(0,skels.length).slice().sort((a,b)=>a[1]-b[1]);
+  const order=skels.map((k,i)=>i).sort((a,b)=>(skels[b].tier||2)-(skels[a].tier||2));
+  slots.forEach((s,j)=>{
+    const i=order[j], skel=skels[i], [dx,dy,sc]=s;
+    const sx=x+dir*hsz*dx, fy=y+dy*hsz, h=hsz*SKELETON_HEIGHT[(skel.tier||2)-1]*sc;
+    const img=skeletonSprite(skel.tier);
+    if(img){
+      // Stands on the floor and faces the same way as its master; stronger summons stand taller
+      const bob=Math.sin(t/450+i*1.7)*hsz*.004;
+      bx.save(); bx.globalAlpha=0.97;
+      drawSprite(img,'idle',0,sx,fy+bob,h,flip);
+      bx.restore();
+      return;
+    }
+    const r=h*.22, cy=fy-r;
+    bx.globalAlpha=0.85; bx.fillStyle='#ccccbb'; bx.shadowColor='#aaaaaa'; bx.shadowBlur=4;
+    bx.beginPath(); bx.arc(sx,cy,r,0,Math.PI*2); bx.fill();
+    bx.fillStyle='#333'; bx.font=`${Math.round(r*.8)}px serif`;
+    bx.textAlign='center'; bx.fillText('💀',sx,cy+r*.3);
+    bx.globalAlpha=1; bx.shadowBlur=0;
+  });
 }
 
 function tickParts(){
