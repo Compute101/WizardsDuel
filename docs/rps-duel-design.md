@@ -156,7 +156,7 @@ so each spell's numbers can be tuned there.
   at payment, so Cleanse can't remove it in time (`cleansableCurses` keeps the AI from trying).
   Meditating dodges it, as it casts nothing. The AI's call (`aiEnthralCall`) reads the same pressures
   that steer its own picks; Easy guesses at random.
-- **Valdris's Deathless passive still applies.**
+- **Valdris no longer has Deathless.** The skeleton rework (matching tabletop mode) removed it, along with Reinforce; Soul Tithe took Reinforce's place.
 - **AI:** treats signature sectors like any other sector, preferring them (30–45%) when they'd do
   something useful: it won't recast an active buff, heals only when hurt, cleanses when cursed, and
   dispels your buffs when you have no ward.
@@ -209,9 +209,9 @@ so each spell's numbers can be tuned there.
 | Gretch | ☠️ Plague | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 3 a round × 4 |
 | Gretch | 🪲 Maggot Cloud | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Drain 2 mana; −3 income and Meditate × 2 |
 | Gretch | 💀 Bone Totem | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 4 / 6 | Heal 4 a round × 4 |
-| Valdris | 💀 Raise Dead | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 4 / 6 | Skeleton (max 2) for 4 rounds: 5 a round; heals 8 if destroyed |
+| Valdris | 💀 Raise Dead | 🛡 Protection | 💀 Dark | Minions (self) | 3 / 5 / 8 | Raise 2 / 3 / 4 skeletons (max 5): each soaks 3 damage in front of the ward and strikes for 3 a round; dispels can't touch them |
 | Valdris | 🩸 Necrotic Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 40% of HP damage |
-| Valdris | 🔧 Reinforce | 🛡 Protection | 👊 Physical | Ward | 3 / 5 / 8 | Physical ward of 20 +12 per skeleton |
+| Valdris | 🪙 Soul Tithe | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: the foe loses 1 mana (2 at the outer ring) for each of your skeletons they kill |
 | Mirel | 🪞 Simulacrum | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 2 / 4 / 6 | Simulacrum (max 2) for 3 rounds: 4 a round |
 | Mirel | 🪄 Bewitch | ✦ Dispel | 🌀 Arcane | Curse (foe) | 1 / 2 / 3 | Foe's next strike within 2 rounds hits themselves |
 | Mirel | 🗡️ Feint | ⚔️ Damage | 🌀 Arcane | Strike | 3 / 5 / 8 | 11 arcane; burns 2 mana |
