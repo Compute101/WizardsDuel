@@ -149,8 +149,9 @@ function loseMana(who,n){ gs[who].mana=Math.max(0,gs[who].mana-n); }
 function gainMana(who,n){ gs[who].mana=clamp(gs[who].mana+n); }
 
 // Damage that meets soak minions, then the ward. adj: +n / −n against the ward (element match / off-element).
+// own: the damage is the target's own (a Bewitched self-hit), so the foe pays no Soul Tithe.
 // Returns the HP damage dealt.
-function incoming(who,dmg,adj){
+function incoming(who,dmg,adj,own){
   const st=gs[who];
   if(dmg<=0) return 0;
   // Soak minions (skeletons) stand in front of the ward: each takes 1 damage and falls
@@ -159,6 +160,8 @@ function incoming(who,dmg,adj){
     const k=Math.min(dmg,wall.length), dead=wall.slice(0,k);
     st.effects=st.effects.filter(e=>!dead.includes(e));
     dmg-=k;
+    // Soul Tithe: a foe cursed with it loses mana for each skeleton they kill
+    if(!own) fx(gs[foe(who)],'tithe').forEach(e=>loseMana(foe(who),k*e.n));
     if(dmg<=0) return 0;
   }
   if(st.ward){
@@ -261,7 +264,7 @@ function doDamage(who,a){
   const weave=fx(st,'weave')[0];
   if(weave){ dmg+=weave.bonus; burn+=weave.burn; if(--weave.charges<=0) removeEffects(who,[weave]); }
   if(sp&&sp.recoil) loseHp(who,sp.recoil);
-  if(tgt===who){ incoming(who,dmg,0); return; }
+  if(tgt===who){ incoming(who,dmg,0,true); return; }
   // Misses
   const abs=fx(ts,'absorbNext')[0];
   if(abs){ removeEffects(tgt,[abs]); return; }

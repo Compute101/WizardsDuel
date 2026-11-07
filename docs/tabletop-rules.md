@@ -251,13 +251,13 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Bone Totem** | Protection | Dark | Normal | 4 | Until dispelled: heal 1 at every round end. |
 
 ### VALDRIS — The Undying
-**HP 16** · Deathless: when knocked to 0 HP, pay 6 mana to stay on 1 HP · Can't cast: Fire
+**HP 16** · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Raise Dead** | Protection | Dark | Normal | 4 | Raise 3 skeletons (max 5 on the table). Each has 1 HP and stands in front of your ward: every point of damage (strikes and ticks) kills one skeleton before anything reaches your ward. Dispels can't touch them. Each skeleton still standing deals 1 to the foe at every round end. |
 | **Necrotic Drain** | Damage | Dark | Normal | 4 | Dark strike of 4. Heal half the HP damage it deals (round down). |
-| **Reinforce** | Protection | Physical | Normal | 4 | Physical ward of 5, +3 for each skeleton you have. |
+| **Soul Tithe** | Dispel | Dark | Lesser | 2 | Until cleansed: the foe loses 1 mana for each of your skeletons they kill. |
 
 ### MIREL — The Deceiver
 **HP 17** · Can't cast: Physical, Fire
