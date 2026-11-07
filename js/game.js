@@ -711,10 +711,10 @@ function loadSprites(){
 // Same format as the full-body character stills: any size, facing right, feet at the bottom edge.
 // A missing file just keeps the plain circle for that tier.
 const SKELETON_SPRITES=['sprites/skeleton1.png','sprites/skeleton2.png','sprites/skeleton3.png'];
-const SKELETON_HEIGHT=[0.42,0.48,0.54];   // fraction of the master's drawn height, by tier
+const SKELETON_HEIGHT=[0.50,0.68,0.74];   // fraction of the master's drawn height, by tier (the ragged one hunches lower)
 // Where each skeleton stands, in fill order: [distance toward the foe, height offset (negative =
 // back row, further up the floor), scale], in units of the master's drawn height
-const SKELETON_SLOTS=[[0.34,0,1],[0.12,0,1],[0.56,0,1],[0.23,-.06,.88],[0.45,-.06,.88]];
+const SKELETON_SLOTS=[[0.39,0,1],[0.14,0,1],[0.64,0,1],[0.26,-.06,.88],[0.52,-.06,.88]];
 const skeletonImgs=SKELETON_SPRITES.map(src=>{
   const rec={img:new Image(),ready:false};
   rec.img.onload=()=>{ rec.ready=true; };
