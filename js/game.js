@@ -2451,7 +2451,10 @@ function tickDarkRituals(){
 // stream across to the caster along gently curving paths, each with a fading trail, and soak
 // into the caster with a soft red glow as they arrive. More healing, more motes.
 const SIPHON_MS=1500, SIPHON_TRAVEL_MS=750;
-function spawnSiphon(who,tgt,heal){
+const SIPHON_BLOOD={cols:['#ff6666','#aa0000','#dd1a1a'],glow:'#ff1111',core:'#ffd0d0'};
+// pal: {cols:[light, dark, mid], glow, core}; a spell sets it as SPELL_VFX[id].siphon
+function spawnSiphon(who,tgt,heal,pal){
+  pal=pal||SIPHON_BLOOD;
   if(!tgt||tgt===who) return;
   const sx=seatX(tgt), sy=wizMidY(tgt), ex=seatX(who), ey=wizMidY(who);
   const ssz=wizSize(tgt), esz=wizSize(who), n=Math.max(16,Math.min(44,12+(heal||0)*3));
@@ -2462,9 +2465,9 @@ function spawnSiphon(who,tgt,heal){
       ox:(_rng()-.5)*ssz*.35, oy:(_rng()-.5)*ssz*.45,     // where in the target's body it's pulled from
       lx:(_rng()-.5)*esz*.2, ly:(_rng()-.5)*esz*.25,      // where it lands on the caster
       bend:(_rng()-.5)*bH*.32-bH*.06,                     // curve of its path (mostly arcing upward)
-      wob:_rng()*Math.PI*2, sz:2.2+_rng()*2.2, col:_rng()<.25?'#ff6666':_rng()<.5?'#aa0000':'#dd1a1a'});
+      wob:_rng()*Math.PI*2, sz:2.2+_rng()*2.2, col:_rng()<.25?pal.cols[0]:_rng()<.5?pal.cols[1]:pal.cols[2]});
   }
-  gs.siphons.push({sx,sy,ex,ey,motes,start:Date.now(),ms:SIPHON_MS+SIPHON_TRAVEL_MS*.3});
+  gs.siphons.push({sx,sy,ex,ey,motes,pal,start:Date.now(),ms:SIPHON_MS+SIPHON_TRAVEL_MS*.3});
 }
 function tickSiphons(){
   if(!gs.siphons||!gs.siphons.length) return;
@@ -2484,7 +2487,7 @@ function tickSiphons(){
       if(t<0||t>1.15) return;
       if(t>1){   // arrived: a brief red glow soaking into the caster
         const g=1-(t-1)/.15, [x,y]=at(m,1);
-        bx.globalAlpha=g*.6; bx.fillStyle='#ff3333'; bx.shadowColor='#ff2222'; bx.shadowBlur=14;
+        bx.globalAlpha=g*.6; bx.fillStyle=s.pal.cols[0]; bx.shadowColor=s.pal.glow; bx.shadowBlur=14;
         bx.beginPath(); bx.arc(x,y,m.sz*(1.5+(1-g)*2),0,Math.PI*2); bx.fill();
         return;
       }
@@ -2497,9 +2500,9 @@ function tickSiphons(){
         bx.beginPath(); bx.arc(x,y,m.sz*(1-j*.15),0,Math.PI*2); bx.fill();
       }
       const [x,y]=at(m,k);
-      bx.globalAlpha=fadeIn; bx.fillStyle=m.col; bx.shadowColor='#ff1111'; bx.shadowBlur=10;
+      bx.globalAlpha=fadeIn; bx.fillStyle=m.col; bx.shadowColor=s.pal.glow; bx.shadowBlur=10;
       bx.beginPath(); bx.arc(x,y,m.sz,0,Math.PI*2); bx.fill();
-      bx.globalAlpha=fadeIn*.8; bx.fillStyle='#ffd0d0'; bx.shadowBlur=0;
+      bx.globalAlpha=fadeIn*.8; bx.fillStyle=s.pal.core; bx.shadowBlur=0;
       bx.beginPath(); bx.arc(x,y,m.sz*.4,0,Math.PI*2); bx.fill();
     });
   });
@@ -2630,7 +2633,7 @@ const VFX={
     vfxFountain(x,wizMidY(x),['#ffddee','#ffffff','#ffffff','#ffffff'],32,{spread:.55,min:.6,var:1.8,w:.08,h:.05,dec:.010,decVar:.009}); },
   arc:(x,col)=>spawnParts(x,wizMidY(x),col,8),
   // Life drained from the target streams across to the caster (spawnSiphon)
-  lifesteal:(who,tgt,heal)=>spawnSiphon(who,tgt,heal),
+  lifesteal:(who,tgt,heal,pal)=>spawnSiphon(who,tgt,heal,pal),
   // Retaliation, by the enchantment or ward that hit back
   retaliate:{
     counter:(fromX,toX)=>{ spawnParts(toX,wizMidY(toX),'#4af0ff',16); spawnBeam(fromX,wizMidY(fromX),toX,wizMidY(toX),'#4af0ff'); },
@@ -2756,7 +2759,9 @@ const SPELL_VFX={
   bonetotem:  {self:c=>{ vfxPhaseIn(c.cx,c.cy,['#55aa33','#55aa33','#aaddaa'],18); anim(c.who,'shield',700); }},
   // Valdris
   raisedead:    {self:c=>{ vfxPhaseIn(c.cx,c.cy,['#8844cc','#8844cc','#ffffff'],18); anim(c.who,'cast',800); }},
-  necroticdrain:{hit:c=>{ spawnParts(c.tx,c.ty,'#8844cc',16); spawnBeam(c.cx,c.cy,c.tx,c.ty,'#8844cc'); flash('#8844cc'); vfxStrikeAnim(c.who,c.tgt); }},
+  // siphon: the lifesteal stream's colours (spawnSiphon); without one it's blood red
+  necroticdrain:{siphon:{cols:['#b366ff','#6a1fb0','#8844cc'],glow:'#9933ff',core:'#ecd6ff'},
+    hit:c=>{ spawnParts(c.tx,c.ty,'#8844cc',16); flash('#8844cc'); vfxStrikeAnim(c.who,c.tgt); }},
   soultithe:    {hit:c=>{ spawnBeam(c.cx,c.cy,c.tx,c.ty,'#aa88ff'); vfxDrip(c.tx,c.ty,'#aa88ff',10,{vx:1,vy:1,vyVar:1.5,dec:.02}); }},
   reinforce:    {self:c=>{ vfxPhaseIn(c.cx,c.cy,['#8844cc'],12); anim(c.who,'cast',700); }},
   // Mirel
@@ -3668,7 +3673,7 @@ function executeSignature(who,sp,action,cb){
     const d=fx.delivery;
     // Arcane strikes fly as an orb volley that deals the damage in ARCANE_ORB_DMG-point hits
     if(el.elem==='arcane'&&!d){
-      elemStrikeVolley(who,tgts,Object.assign({},el,{power,name:sigName(sp),vfx:fx.hit}),()=>combatTimeout(cb,600));
+      elemStrikeVolley(who,tgts,Object.assign({},el,{power,name:sigName(sp),vfx:fx.hit,siphon:fx.siphon}),()=>combatTimeout(cb,600));
       return;
     }
     // Dark strikes are a ritual circle of runes around each target, not a projectile
@@ -3677,7 +3682,7 @@ function executeSignature(who,sp,action,cb){
     // A volley's own per-projectile effects stand in for the default impact burst
     const vfx=fx.hit||(d&&d.volley?()=>{}:null);
     const land=()=>{
-      elemStrike(who,tgts,Object.assign({},el,{power,name:sigName(sp),vfx}));
+      elemStrike(who,tgts,Object.assign({},el,{power,name:sigName(sp),vfx,siphon:fx.siphon}));
       combatTimeout(cb,600);
     };
     if(d==='lunge'){ lunge(who,0.12,land); return; }
@@ -4014,7 +4019,7 @@ function strikeFinish(who,r,o,b,hit){
   if(o.vfx) o.vfx(ctx);
   else { ELEM_IMPACT_VFX[o.elem](ctx,b.emp?38:22,r.dmg); vfxStrikeAnim(who,tgt); }
   if(hit.hp>0){
-    if(o.lifesteal){ const heal=Math.round(hit.hp*o.lifesteal); elemHeal(who,heal,'🩸'); VFX.lifesteal(who,tgt,heal); }
+    if(o.lifesteal){ const heal=Math.round(hit.hp*o.lifesteal); elemHeal(who,heal,'🩸'); VFX.lifesteal(who,tgt,heal,o.siphon); }
     if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',elem:o.elem,name:o.name||el.name,icon:el.icon},o.dot),who);
     elemStrikeRiders(who,tgt,o);
   }
