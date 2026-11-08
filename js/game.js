@@ -4019,7 +4019,10 @@ function strikeFinish(who,r,o,b,hit){
   if(o.vfx) o.vfx(ctx);
   else { ELEM_IMPACT_VFX[o.elem](ctx,b.emp?38:22,r.dmg); vfxStrikeAnim(who,tgt); }
   if(hit.hp>0){
-    if(o.lifesteal){ const heal=Math.round(hit.hp*o.lifesteal); elemHeal(who,heal,'🩸'); VFX.lifesteal(who,tgt,heal,o.siphon); }
+    if(o.lifesteal){   // only what got past skeletons and the ward feeds the drain
+      const heal=Math.round(hit.hp*o.lifesteal);
+      if(heal>0){ elemHeal(who,heal,'🩸'); VFX.lifesteal(who,tgt,heal,o.siphon); }
+    }
     if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',elem:o.elem,name:o.name||el.name,icon:el.icon},o.dot),who);
     elemStrikeRiders(who,tgt,o);
   }
