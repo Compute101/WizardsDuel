@@ -96,7 +96,7 @@ function newState(){
   gs={
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], darkRituals:[], wardUnravels:[], siphons:[], fireballs:[], explosions:[], iceCrystals:[], iceShards:[], boulders:[], storms:[], quake:null,
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], darkRituals:[], wardUnravels:[], siphons:[], fireballs:[], explosions:[], iceCrystals:[], iceShards:[], boulders:[], storms:[], counterArcs:[], quake:null,
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1709,7 +1709,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickDarkRituals(); tickWardUnravels(); tickSiphons(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickBoulders(); tickStorms(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickDarkRituals(); tickWardUnravels(); tickSiphons(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickBoulders(); tickStorms(); tickCounterArcs(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
@@ -2331,6 +2331,91 @@ function spawnLightningImpact(x,y,dmg){
   vfxRing(x,y,['#ffffff','#ffee44'],Math.round(12*s),{r:.05*s,ry:.03*s,out:true,noGrav:true,spd:1.6,dec:.03});
   if(dmg>=18) quake(Math.min(8,2+dmg*.15),220+dmg*4);
 }
+
+// Counter's retaliation (drawn by tickCounterArcs). A short pause lets the strike that set it off
+// be seen; then sparks crawl over the holder's ward bubble (or Counter's gold ring with no ward)
+// and gather into a crackling ball on the side facing the striker; then it discharges as an
+// arcing, forked bolt over to the striker, flickering twice. cb() (the damage) runs as it lands.
+// Holds the round (holdFx) until then. Purely visual, so it uses Math.random.
+const COUNTER_WAIT_MS=450, COUNTER_CHARGE_MS=950, COUNTER_BOLT_MS=480;
+function holdFx(ms){
+  gs.fxHold=Math.max(gs.fxHold||0,Date.now()+ms);
+  gs.lastAnimEnd=Math.max(gs.lastAnimEnd||0,gs.fxHold);
+}
+function spawnCounterArc(from,to,dmg,cb){
+  const sz=wizSize(from), x=seatX(from), cy=wizFeetY()-sz*.62;
+  const rx=sz*.75*AURA_SX, ry=sz*.75*AURA_SY, dir=seatX(to)>x?1:-1, a0=-.45;
+  const ex=x+dir*rx*Math.cos(a0), ey=cy+ry*Math.sin(a0);
+  gs.counterArcs.push({x,cy,rx,ry,ex,ey,tx:seatX(to),ty:wizMidY(to),dir,dmg,from,cb,
+    start:Date.now(),fired:false,bolt:null,rebolt:false});
+  holdFx(COUNTER_WAIT_MS+COUNTER_CHARGE_MS+150);
+}
+// A jagged bolt along a curve that bows upward between the two points
+function makeArcBolt(f){
+  const mx=(f.ex+f.tx)/2, my=Math.min(f.ey,f.ty)-Math.abs(f.tx-f.ex)*(.18+Math.random()*.1);
+  const N=7, curve=[];
+  for(let i=0;i<=N;i++){
+    const u=i/N, v=1-u;
+    curve.push([v*v*f.ex+2*u*v*mx+u*u*f.tx, v*v*f.ey+2*u*v*my+u*u*f.ty]);
+  }
+  let main=[curve[0]];
+  for(let i=1;i<curve.length;i++) main=main.concat(boltPath(curve[i-1][0],curve[i-1][1],curve[i][0],curve[i][1],.22,3).slice(1));
+  const branches=[], nb=Math.min(4,1+Math.round(f.dmg/6));
+  for(let i=0;i<nb;i++){
+    const [bx1,by1]=main[Math.floor(main.length*(.2+Math.random()*.6))];
+    const L=Math.abs(f.tx-f.ex)*(.08+Math.random()*.1), a=Math.random()*Math.PI*2;
+    branches.push(boltPath(bx1,by1,bx1+Math.cos(a)*L,by1+Math.abs(Math.sin(a))*L,.3,3));
+  }
+  return {main,branches};
+}
+function tickCounterArcs(){
+  const now=Date.now(), T=COUNTER_WAIT_MS+COUNTER_CHARGE_MS;
+  gs.counterArcs=gs.counterArcs.filter(f=>!f.fired||now-f.start<T+COUNTER_BOLT_MS);
+  gs.counterArcs.forEach(f=>{
+    const el=now-f.start;
+    if(el<COUNTER_WAIT_MS) return;
+    bx.save(); bx.lineCap='round'; bx.lineJoin='round';
+    if(el<T){
+      const k=(el-COUNTER_WAIT_MS)/COUNTER_CHARGE_MS;
+      if(!f.casting){ f.casting=true; anim(f.from,'cast',COUNTER_CHARGE_MS); }
+      // Sparks crawling over the bubble, more and more as it charges
+      const n=Math.random()<(.4+1.6*k)*fk?1+Math.floor(k*3):0;
+      for(let i=0;i<n;i++){
+        const a=Math.random()*Math.PI*2, da=(Math.random()<.5?-1:1)*(.25+Math.random()*.3);
+        const p1=[f.x+f.rx*Math.cos(a),f.cy+f.ry*Math.sin(a)], p2=[f.x+f.rx*Math.cos(a+da),f.cy+f.ry*Math.sin(a+da)];
+        strokeBolt(boltPath(p1[0],p1[1],p2[0],p2[1],.35,3),1.2,'#ffee44',.6+.4*k);
+      }
+      // Arcs reaching in from the bubble to the gathering point
+      if(k>.35&&Math.random()<.5*fk){
+        const a=a0Rand(f), p=[f.x+f.rx*Math.cos(a),f.cy+f.ry*Math.sin(a)];
+        strokeBolt(boltPath(p[0],p[1],f.ex,f.ey,.3,3),1,'#ffee44',.7);
+      }
+      // The charge itself: a crackling ball growing on the striker's side
+      const r=f.rx*(.06+.16*k)*(0.85+Math.random()*.3);
+      const g=bx.createRadialGradient(f.ex,f.ey,0,f.ex,f.ey,r*2.4);
+      g.addColorStop(0,`rgba(255,255,255,${.5+.5*k})`); g.addColorStop(.35,`rgba(255,238,68,${.5*k+.2})`);
+      g.addColorStop(1,'rgba(255,238,68,0)');
+      bx.fillStyle=g; bx.beginPath(); bx.arc(f.ex,f.ey,r*2.4,0,Math.PI*2); bx.fill();
+      if(Math.random()<.6*fk){
+        const a=Math.random()*Math.PI*2, d=f.rx*(.3+Math.random()*.3);
+        gs.parts.push({x:f.ex+Math.cos(a)*d,y:f.ey+Math.sin(a)*d,col:Math.random()<.5?'#ffffff':'#ffee44',
+          vx:-Math.cos(a)*d/10,vy:-Math.sin(a)*d/10,sz:1+Math.random()*1.5,life:1,dec:.09,noGrav:true});
+      }
+      bx.restore();
+      return;
+    }
+    // Discharge
+    if(!f.fired){ f.fired=true; f.bolt=makeArcBolt(f); if(f.cb) f.cb(); }
+    const bk=(el-T)/COUNTER_BOLT_MS;
+    if(bk>.3&&!f.rebolt){ f.rebolt=true; f.bolt=makeArcBolt(f); }
+    const alpha=bk<.18?1:bk<.3?.25:bk<.5?1:Math.max(0,1-(bk-.5)/.5);
+    const w=boltWidth(f.dmg)*1.1;
+    f.bolt.branches.forEach(b=>strokeBolt(b,w*.45,'#ffee44',alpha*.8));
+    strokeBolt(f.bolt.main,w,'#ffee44',alpha);
+    bx.restore(); bx.globalAlpha=1;
+  });
+}
+function a0Rand(f){ return (f.dir>0?0:Math.PI)+(Math.random()-.5)*Math.PI*1.2; }
 
 // Shadow circle on a target (Dark strikes, drawn by tickShadowCircles): a purple ring opens,
 // the Dark runes ☽ ⊗ ∇ Ω rise from its centre one by one and orbit it, then collapse inward
@@ -2994,6 +3079,9 @@ function resolveSimRound(){
     deferWinCheck=true;
     const next=()=>{
       if(!battleRunning) return;
+      // An effect still playing out (Counter's arc) holds the round until it lands
+      const hold=simMode?0:(gs.fxHold||0)-Date.now();
+      if(hold>0){ setTimeout(next,hold); return; }
       if(si>=seats.length){
         settleWin();
         runTier();
@@ -4042,30 +4130,25 @@ function strikeFinish(who,r,o,b,hit){
     effectsOf(ts,'resist').concat(effectsOf(ts,'counter')).forEach(e=>{ if(e.retaliate) sources.push({id:e.id,n:e.retaliate}); });
     let back=0, orbs=0;
     sources.forEach(r=>{
-      // Counter hits back with an arcane strike's orb volley, so the striker sees it land
+      // Counter hits back with a charged lightning arc from the ward bubble, so the striker sees it land
       if(r.id==='counter'){ orbs+=r.n; return; }
       back+=r.n; const f=VFX.retaliate[r.id]; if(f) f(tx,seatX(who));
     });
     if(back>0){ const src=dmgSource; dmgSource=tgt; elemFloatDmg(who,back,'↩️','#ff8844'); dmgSource=src; }
-    if(orbs>0) counterVolley(tgt,who,orbs);
+    if(orbs>0) counterArc(tgt,who,orbs);
   }
 }
 
-// Counter's retaliation as an arcane orb volley from `from` back at the striker `to`. The damage
-// is dealt at once (resolution and knock-outs stay in step); the flinch and number show as the orbs land.
-function counterVolley(from,to,n){
-  const src=dmgSource; dmgSource=from;
-  dealDmgToPlayer(to,n,seatX(to),wizMidY(to));
-  dmgSource=src;
-  const ctx=vfxCtx(from,to), orbs=Math.max(1,Math.ceil(n/ARCANE_ORB_DMG));
-  anim(from,'cast',600);
-  spawnArcaneVolley(ctx.cx,ctx.cy,ctx.tx,ctx.ty,orbs,i=>{
-    if(i<orbs-1) anim(to,'hit',250);
-  },()=>{
-    ELEM_IMPACT_VFX.arcane(ctx,16,n);
-    anim(to,'hit',800);
-    addFloat(seatX(to),bH*.36,'↩️ −'+n,'#4499ff',13);
-  });
+// Counter's retaliation: a charged electrical arc from the holder's ward bubble back at the
+// striker (spawnCounterArc). The damage lands with the bolt; the round waits for it (holdFx).
+function counterArc(from,to,n){
+  const hit=()=>{
+    const src=dmgSource; dmgSource=from;
+    elemFloatDmg(to,n,'⚡','#ffee44');
+    dmgSource=src;
+  };
+  if(simMode){ hit(); return; }
+  spawnCounterArc(from,to,n,()=>{ hit(); spawnLightningImpact(seatX(to),wizMidY(to),n); anim(to,'hit',700); });
 }
 
 // Round-end effects on `who` (Elemental rules): DoTs, regen, the foe's minions, then durations tick down
@@ -4594,7 +4677,7 @@ function resetTrainingRound(knockedOut){
     gs.p1=newSeat(p1Cfg,p1Key);
     gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
-    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.quake=null;
+    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
     gs.pending={};
     const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
     addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
@@ -7683,7 +7766,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.quake=null;
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
@@ -7705,7 +7788,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.quake=null;
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
