@@ -319,7 +319,7 @@ body {
 }
 .char-card:hover  { transform: scale(1.02); }
 .char-card:active { transform: scale(0.97); }
-#pick-eldrad:hover, #pick-eldrad:active   { border-color: #4af0ff; box-shadow: 0 0 20px rgba(74,240,255,0.25); }
+#pick-eldrin:hover, #pick-eldrin:active   { border-color: #4af0ff; box-shadow: 0 0 20px rgba(74,240,255,0.25); }
 #pick-mal:hover,   #pick-mal:active      { border-color: #ff4a6e; box-shadow: 0 0 20px rgba(255,74,110,0.25); }
 #pick-ponder:hover, #pick-ponder:active  { border-color: #9988cc; box-shadow: 0 0 20px rgba(153,136,204,0.25); }
 .char-card-ponder { border-style: solid; }

@@ -1,8 +1,8 @@
 {
-  "eldrad": {
+  "eldrin": {
     "name": "ELDRIN",
     "title": "The Stalwart",
-    "sprite": "sprites/eldrad.png",
+    "sprite": "sprites/eldrin.png",
     "col": "#4af0ff",
     "taunts": [
       "Your spells shattered against my shield like waves on stone. Try again.",
