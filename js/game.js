@@ -14,12 +14,12 @@ const BUFF_TILE_GLYPHS={
 
 // ── CHARACTER DEFINITIONS (loaded from characters.json) ───────
 let CHAR_DEFS={};
-let p1Key='eldrad', p2Key='mal';
+let p1Key='eldrin', p2Key='mal';
 let p1Cfg, p2Cfg;
 
 // One-line pitch on the character detail screen (stats come from characters.json)
 const CHAR_FLAVOUR={
-  eldrad:'Outlast your foe with arcane endurance.',
+  eldrin:'Outlast your foe with arcane endurance.',
   mal:'Strike hard. Strike first. No mercy.',
   sylvara:"Sustain and control with nature's power.",
   aurelia:'Bend time — foresee attacks and drain your foe.',
@@ -223,7 +223,7 @@ function fillSceneBands(){
 }
 
 function drawBG(){
-  ({eldrad:drawBG_moonlight,mal:drawBG_hellfire,sylvara:drawBG_forest,
+  ({eldrin:drawBG_moonlight,mal:drawBG_hellfire,sylvara:drawBG_forest,
     aurelia:drawBG_dawn,gnash:drawBG_storm,ponder:drawBG_astral,
     skadi:drawBG_winter,cinder:drawBG_embers,zacharius:drawBG_arc,mary:drawBG_holy,mordant:drawBG_abyss,
     durin:drawBG_stone}[p2Key]||drawBG_moonlight)();
@@ -7627,20 +7627,20 @@ function simMatchN(seats,ai){
 
 // ── TUTORIAL ─────────────────────────────────────────────────────────────────
 const CHAR_COLORS_TUT={
-  eldrad:'#4af0ff',mal:'#ff4a6e',sylvara:'#44cc88',aurelia:'#ffcc44',
+  eldrin:'#4af0ff',mal:'#ff4a6e',sylvara:'#44cc88',aurelia:'#ffcc44',
   gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zacharius:'#aaff44',
   mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040',
   weizan:'#aabbee',gretch:'#55aa33',valdris:'#8899cc',mirel:'#cc88ff',thessaly:'#ffdd88',
   korvath:'#cc6622',fizzwick:'#99cc44',nyxara:'#6633aa'
 };
 const CHAR_NAMES_TUT={
-  eldrad:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
+  eldrin:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
   gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zacharius',
   mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin',
   weizan:'Weizan',gretch:'Gretch',valdris:'Valdris',mirel:'Mirel',thessaly:'Thessaly',
   korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara'
 };
-const CHAR_KEYS_TUT=['eldrad','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara'];
+const CHAR_KEYS_TUT=['eldrin','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara'];
 
 // Character guides describe each spell's effect and wheel sector rather than exact numbers,
 // which live in characters.json and are shown on the wheel itself.
@@ -7657,24 +7657,24 @@ const TUTORIAL_TOPICS=[
 
 const TUTORIAL_CONVOS={
   welcome:[
-    {key:'eldrad', text:"Greetings, young mage. Welcome to the arena of wizards — a place where reading your rival matters as much as raw power."},
+    {key:'eldrin', text:"Greetings, young mage. Welcome to the arena of wizards — a place where reading your rival matters as much as raw power."},
     {key:'sylvara',text:"Every round, each wizard chooses a spell in secret. When everyone has chosen, the spells are revealed together — like turning over cards — and then they all play out."},
     {key:'ponder', text:"Use the topics above to learn how it works, then tap any portrait below to hear that wizard explain their own spells. I'm Ponder — come find me!"},
-    {key:'eldrad', text:"Learn the rules, then learn your rivals. We are all here to help."},
+    {key:'eldrin', text:"Learn the rules, then learn your rivals. We are all here to help."},
   ],
   'health-mana':[
-    {key:'eldrad', text:"Every wizard has Health and Mana. When your HP reaches zero, the duel is over. HP differs between wizards — Gnash and Durin are hardy, Malachar and Fizzwick are fragile."},
+    {key:'eldrin', text:"Every wizard has Health and Mana. When your HP reaches zero, the duel is over. HP differs between wizards — Gnash and Durin are hardy, Malachar and Fizzwick are fragile."},
     {key:'sylvara',text:"Everyone starts with the same mana and gains more at the end of every round. There are no free attacks — every spell costs something."},
     {key:'skadi',  text:"Short of mana? 🧘 Meditate instead of casting: you gain 3 extra mana that round. But you cast nothing, so if your rival strikes, it lands. You can't meditate two rounds in a row."},
     {key:'ponder', text:"Even the cheapest spell costs only a little, so you can always do something. The question is whether to spend big now or save for a stronger cast next round."},
     {key:'sylvara',text:"Watch your rival's mana bar! If they can't afford a big ward, they won't cast one. Reading their mana is half the game."},
   ],
   triangle:[
-    {key:'eldrad', text:"There are three kinds of spell: ⚔️ Damage, 🛡 Protection and ✦ Dispel. They work like rock, paper, scissors."},
-    {key:'eldrad', text:"Protection beats Damage: a ward soaks up strikes, and it's raised before any damage lands — even in the same round. Strike into a ward and you've wasted your mana."},
+    {key:'eldrin', text:"There are three kinds of spell: ⚔️ Damage, 🛡 Protection and ✦ Dispel. They work like rock, paper, scissors."},
+    {key:'eldrin', text:"Protection beats Damage: a ward soaks up strikes, and it's raised before any damage lands — even in the same round. Strike into a ward and you've wasted your mana."},
     {key:'ponder', text:"Dispel beats Protection: dispels are cheap and tear through wards. Your rival spends a lot of mana on a ward, you break it for a little."},
     {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the surest way to win."},
-    {key:'eldrad', text:"Each round resolves in that order — every Protection first, then every Dispel, then every Damage. So the trick is guessing what your rival will choose."},
+    {key:'eldrin', text:"Each round resolves in that order — every Protection first, then every Dispel, then every Damage. So the trick is guessing what your rival will choose."},
     {key:'mal',    text:"With three or four of us, whoever deals the most damage to a wizard in the round they fall claims a bounty: HP and mana. Gang up on someone if you like — but your ally wants that kill as much as you do."},
     {key:'gnash',  text:"Duel drag on too long? Normally it ends in a draw at the round limit. Pick SUDDEN DEATH in Options instead: from round 30 — round 20 with three or four of us — every round hits harder and brings more mana. Wards don't grow. Somebody falls soon."},
     {key:'ponder', text:"Think they're all coming for you? Tap 🌀 Phase. Everything aimed at you that round misses, and you soak up the mana they spent on it. Catch two or more spells and your next spell is free — any ring! Guess wrong and you've lost your turn and 4 mana."},
@@ -7686,7 +7686,7 @@ const TUTORIAL_CONVOS={
     {key:'zacharius',text:"Every element carries an extra effect. Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
-    {key:'eldrad', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
+    {key:'eldrin', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],
@@ -7708,7 +7708,7 @@ const TUTORIAL_CONVOS={
     {key:'ponder', text:"Every spell needs a casting ritual. You get five seconds to watch the glyphs appear, then five seconds to tap them back in the same order."},
     {key:'sylvara',text:"Ignore the faint noise glyphs. Your sequence glows brightly, with a small number showing its order."},
     {key:'ponder', text:"The ring you chose sets the length: two glyphs on the inner ring, three on the middle, four on the outer. Bigger magic, harder ritual."},
-    {key:'eldrad', text:"Wards use a different ritual: match the pairs of tiles after studying them face-up. Get the ritual wrong and the spell fizzles, costing you a little mana."},
+    {key:'eldrin', text:"Wards use a different ritual: match the pairs of tiles after studying them face-up. Get the ritual wrong and the spell fizzles, costing you a little mana."},
     {key:'sylvara',text:"Your rival can't see your ritual — only the spell you chose, when the cards are revealed."},
   ],
   difficulty:[
@@ -7716,11 +7716,11 @@ const TUTORIAL_CONVOS={
     {key:'ponder',text:"On Easy and Normal, glyphs that don't belong to the spell are greyed out on the keyboard. On Normal the order is random every cast."},
     {key:'ponder',text:"On Hard, all twelve glyphs are active and a single wrong tap breaks the ritual. You are relying entirely on memory and focus. Good luck!"},
   ],
-  eldrad:[
-    {key:'eldrad',text:"I am Eldrin — the Stalwart. My wards cost less than anyone else's. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
-    {key:'eldrad',text:"My Shield takes the Arcane sector of my Protection wheel — a far larger ward than most wizards can raise."},
-    {key:'eldrad',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds — and braces my Shield, so it lasts longer and stops wearing away. Ward, in the Ice sector, makes me immune to curses, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
-    {key:'eldrad',text:"Dispels are my weakness. Keep a ward between your buffs and their unbinding, and I am very hard to wear down."},
+  eldrin:[
+    {key:'eldrin',text:"I am Eldrin — the Stalwart. My wards cost less than anyone else's. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
+    {key:'eldrin',text:"My Shield takes the Arcane sector of my Protection wheel — a far larger ward than most wizards can raise."},
+    {key:'eldrin',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds — and braces my Shield, so it lasts longer and stops wearing away. Ward, in the Ice sector, makes me immune to curses, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
+    {key:'eldrin',text:"Dispels are my weakness. Keep a ward between your buffs and their unbinding, and I am very hard to wear down."},
   ],
   mal:[
     {key:'mal',text:"Pain is power. Empower, in the Fire sector of my Protection wheel, makes my next strike hit far harder. Cast it, then make them pay."},
@@ -8144,7 +8144,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     }
   });
 
-  document.getElementById('pick-eldrad').addEventListener('click',()=>showWizardDetail('eldrad'));
+  document.getElementById('pick-eldrin').addEventListener('click',()=>showWizardDetail('eldrin'));
   document.getElementById('pick-mal').addEventListener('click',()=>showWizardDetail('mal'));
   document.getElementById('pick-sylvara').addEventListener('click',()=>showWizardDetail('sylvara'));
   document.getElementById('pick-aurelia').addEventListener('click',()=>showWizardDetail('aurelia'));

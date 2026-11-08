@@ -26,7 +26,7 @@ const SPELLS=[
 
 
 const CHAR_DISPLAY={
-  eldrad:{
+  eldrin:{
     stats:[['❤ HP','115'],['🛡 Shield','60 HP / 10T'],['⚡ Counter','20 reflect / 2M'],['🔰 Ward','Block next status / 3T']],
     flavour:'Outlast your foe with arcane endurance.'
   },
@@ -2701,7 +2701,7 @@ function aiDecideNormal(who){
   const universalSpells=available.filter(s=>s.element);
   let chosen=null, aiDispelSelf=false, forceChannel=false;
   if(ai.enthralled>0) return {chosen:null, aiDispelSelf:false, forceChannel:true};
-  if(aiKey==='eldrad'&&!chosen){
+  if(aiKey==='eldrin'&&!chosen){
     const canShield=charSpells.find(s=>s.id==='shield');
     const canCounter=charSpells.find(s=>s.id==='counter');
     const canWard=charSpells.find(s=>s.id==='ward');
