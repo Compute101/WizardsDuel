@@ -4040,10 +4040,32 @@ function strikeFinish(who,r,o,b,hit){
     const sources=[];
     if(hit.warded&&ts.wardRetaliate) sources.push({id:ts.wardSig,n:ts.wardRetaliate});
     effectsOf(ts,'resist').concat(effectsOf(ts,'counter')).forEach(e=>{ if(e.retaliate) sources.push({id:e.id,n:e.retaliate}); });
-    let back=0;
-    sources.forEach(r=>{ back+=r.n; const f=VFX.retaliate[r.id]; if(f) f(tx,seatX(who)); });
+    let back=0, orbs=0;
+    sources.forEach(r=>{
+      // Counter hits back with an arcane strike's orb volley, so the striker sees it land
+      if(r.id==='counter'){ orbs+=r.n; return; }
+      back+=r.n; const f=VFX.retaliate[r.id]; if(f) f(tx,seatX(who));
+    });
     if(back>0){ const src=dmgSource; dmgSource=tgt; elemFloatDmg(who,back,'↩️','#ff8844'); dmgSource=src; }
+    if(orbs>0) counterVolley(tgt,who,orbs);
   }
+}
+
+// Counter's retaliation as an arcane orb volley from `from` back at the striker `to`. The damage
+// is dealt at once (resolution and knock-outs stay in step); the flinch and number show as the orbs land.
+function counterVolley(from,to,n){
+  const src=dmgSource; dmgSource=from;
+  dealDmgToPlayer(to,n,seatX(to),wizMidY(to));
+  dmgSource=src;
+  const ctx=vfxCtx(from,to), orbs=Math.max(1,Math.ceil(n/ARCANE_ORB_DMG));
+  anim(from,'cast',600);
+  spawnArcaneVolley(ctx.cx,ctx.cy,ctx.tx,ctx.ty,orbs,i=>{
+    if(i<orbs-1) anim(to,'hit',250);
+  },()=>{
+    ELEM_IMPACT_VFX.arcane(ctx,16,n);
+    anim(to,'hit',800);
+    addFloat(seatX(to),bH*.36,'↩️ −'+n,'#4499ff',13);
+  });
 }
 
 // Round-end effects on `who` (Elemental rules): DoTs, regen, the foe's minions, then durations tick down
