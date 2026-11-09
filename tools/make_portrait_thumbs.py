@@ -44,7 +44,7 @@ PIXEL_TUNE = {
 FACES = {
     'aurelia':   (0.475, 0.21, 0.34),
     'cinder':    (0.52, 0.21, 0.32),
-    'daveron':   (0.50, 0.43, 0.62),   # already a close-up (cut from a mock-up)
+    'daveron':   (0.52, 0.24, 0.34),
     'durin':     (0.47, 0.24, 0.36),
     'eldrin':    (0.47, 0.25, 0.32),
     'emberic':   (0.44, 0.22, 0.32),
