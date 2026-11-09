@@ -39,6 +39,7 @@ const CHAR_FLAVOUR={
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
   fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
   daveron:'A necromancer guarded by a few elite graveguard. They soak your damage and dispels can\'t touch them, so batter through — and dispel Danse Macabre before it makes them deadly. Meditating won\'t escape Curse of the Years — cleanse it.',
+  xerrakh:'A furious horned liturgist who blasts through wards. Doom Bolt and Blue Fire each get part of their damage around a ward, and Infernal Gate swallows your next strike and burns you for it — so bait the Gate with a cheap strike first.',
   nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
 };
 
@@ -1254,6 +1255,25 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.strokeStyle=`rgba(176,128,64,${0.28+0.1*Math.sin(t/700)})`; bx.lineWidth=2;
     bx.beginPath(); bx.arc(x,wy,sz*.72,0,Math.PI*2); bx.stroke();
   }
+  if(state&&state.infernalGate>0){
+    // Infernal Gate: a burning ring of fire on the floor at his feet, flames licking up from its rim
+    const rx=sz*.78, ry=sz*.15, gy=y+sz*.15;   // pre-squash numbers: this lands it on the floor under his feet
+    bx.save();
+    const g=bx.createRadialGradient(x,gy,0,x,gy,rx);
+    g.addColorStop(0,'rgba(20,0,0,.85)'); g.addColorStop(.7,'rgba(90,10,0,.6)'); g.addColorStop(1,'rgba(255,80,0,0)');
+    bx.fillStyle=g; bx.beginPath(); bx.ellipse(x,gy,rx,ry,0,0,Math.PI*2); bx.fill();
+    bx.strokeStyle=`rgba(255,${120+Math.round(60*Math.sin(t/120))},40,.9)`; bx.lineWidth=2.5;
+    bx.shadowColor='#ff5500'; bx.shadowBlur=14;
+    bx.beginPath(); bx.ellipse(x,gy,rx,ry,0,0,Math.PI*2); bx.stroke();
+    for(let i=0;i<10;i++){
+      const a=spinAngle(t,2600)+i/10*Math.PI*2, fx=x+Math.cos(a)*rx, fy=gy+Math.sin(a)*ry;
+      const h=sz*(.07+.05*(.5+.5*Math.sin(t/90+i*1.7)));
+      bx.globalAlpha=.55+.35*Math.sin(t/110+i);
+      bx.fillStyle=i%2?'#ffaa33':'#ff4411';
+      bx.beginPath(); bx.moveTo(fx-sz*.02,fy); bx.quadraticCurveTo(fx,fy-h*1.3,fx+sz*.02,fy); bx.fill();
+    }
+    bx.restore();
+  }
   if(state&&state.blink>0){
     const wy2=y-sz*.5;
     for(let off=0;off<2;off++){
@@ -1409,6 +1429,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     });
   }
   if(state&&state.invisible>0) bx.globalAlpha=0.35;
+  else if(state&&state.infernalGate>0) bx.globalAlpha=0.55+0.25*Math.sin(t/180);
   else if(state&&state.blink>0) bx.globalAlpha=0.3+0.7*(0.5+0.5*Math.sin(t/350));
   if(state&&state.stoneskin>0&&state.stoneskinHp>0) bx.filter='grayscale(0.75) sepia(0.15)';
   const img=sprites[who];
@@ -1679,7 +1700,7 @@ function refreshStatusBar(){
 const WIZ_VISUAL_BY_ID={timedrain:'timeDrain', counter:'counter', candle:'candle', blizzard:'blizzard',
   singularity:'voidCollapse', frostarmor:'frostArmor', dragonscales:'dragonScales', stonesoul:'stonesoul',
   galvanize:'charge', conductivity:'conductivity', agony:'agony', silence:'silence', corruption:'corruption',
-  vanish:'invisible', blink:'blink', plague:'plague', maggotcloud:'maggotCloud', bonetotem:'boneTotem',
+  vanish:'invisible', blink:'blink', infernalgate:'infernalGate', plague:'plague', maggotcloud:'maggotCloud', bonetotem:'boneTotem',
   enthral:'enthralled', arcaneweave:'arcaneWeave', curseyears:'yearsCurse', dansemacabre:'danse', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen', frostbite:'frozen', dread:'dread',
   warpaint:'resist', ironpatience:'resist', heal:'regen'};
 function wizVisuals(st){
@@ -1925,6 +1946,22 @@ function spawnManaBurnFire(x,y){ gs.manaBurnFires.push({x,y,end:Date.now()+2800}
 // Flight: it streaks across trailing flame. On arrival cb() runs the strike, whose
 // impact (ELEM_IMPACT_VFX.fire) is spawnFireExplosion, scaled by the damage dealt.
 const FIREBALL_CHARGE_MS=900, FIREBALL_FLIGHT_MS=420;
+// Fireball colours. 'fire' is the plain Fire strike; Xerrakh's spells reuse the fireball in their own flame:
+// Doom Bolt is the purple flame from his hand, Blue Fire a blue one. glow/edge are 'r,g,b' for rgba gradients.
+const FIRE_PALETTES={
+  fire:{core:['#ffffee','#ffdd55','#ff7711','#cc2200'],glow:'255,170,40',edge:'255,60,0',shadow:'#ff5500',
+    motes:['#ffaa22','#ff5511'],trail:['#ffdd55','#ff8822','#ff4411','#552211'],
+    ring:'#ffcc66',ringGlow:'#ff8800',ball:['255,255,220','255,210,80','255,100,20','160,30,0'],
+    embers:['#ffffaa','#ffcc33','#ff7711','#ff3300'],smoke:['#443322','#554433','#332222']},
+  doom:{core:['#fbeaff','#e0a0ff','#9933ff','#4a0f8a'],glow:'200,110,255',edge:'110,20,200',shadow:'#9933ff',
+    motes:['#cc77ff','#7a22dd'],trail:['#e0a0ff','#b055ff','#7a22dd','#2a0a44'],
+    ring:'#d9a0ff',ringGlow:'#9933ff',ball:['250,235,255','215,150,255','140,50,240','60,10,110'],
+    embers:['#f4ddff','#d38bff','#9b3dff','#5a12aa'],smoke:['#2a1838','#3a2250','#1e1028']},
+  blue:{core:['#f2fbff','#9fe4ff','#2f8cff','#0a2e9a'],glow:'120,200,255',edge:'20,80,255',shadow:'#3399ff',
+    motes:['#88d4ff','#2f6cff'],trail:['#c8f0ff','#66c2ff','#2f6cff','#10224a'],
+    ring:'#aee6ff',ringGlow:'#3399ff',ball:['240,252,255','150,220,255','40,130,255','10,30,140'],
+    embers:['#eefbff','#99e0ff','#3d8bff','#1236c0'],smoke:['#1c2a3c','#24364d','#141e2c']},
+};
 function fireballRadius(dmg){ return bH*Math.min(.085,.012+.0016*Math.max(1,dmg)); }
 // The damage a strike is about to deal, before the target's defences — for sizing the fireball
 function previewStrikeDmg(who,elem,power){
@@ -1936,22 +1973,23 @@ function previewStrikeDmg(who,elem,power){
   const wv=effectsOf(st,'weave')[0];
   return Math.round((power*m+(wv?wv.bonus:0))*suddenDeathMult());
 }
-function spawnFireball(who,tgt,dmg,cb){
+function spawnFireball(who,tgt,dmg,cb,pal){
   if(simMode){ if(cb) cb(); return; }
+  const P=FIRE_PALETTES[pal]||FIRE_PALETTES.fire;
   const dir=seatX(tgt)>=seatX(who)?1:-1;
   const x1=seatX(who)+dir*wizSize(who)*.28, y1=wizMidY(who)-bH*.02;
   anim(who,'cast',FIREBALL_CHARGE_MS+FIREBALL_FLIGHT_MS);
-  gs.fireballs.push({x1,y1,x2:seatX(tgt),y2:wizMidY(tgt),R:fireballRadius(dmg),start:Date.now(),cb,done:false,lx:x1,ly:y1});
+  gs.fireballs.push({x1,y1,x2:seatX(tgt),y2:wizMidY(tgt),R:fireballRadius(dmg),start:Date.now(),cb,done:false,lx:x1,ly:y1,P});
 }
-function drawFireballCore(x,y,r,t){
+function drawFireballCore(x,y,r,t,P=FIRE_PALETTES.fire){
   const flick=1+.08*Math.sin(t/45)+.05*Math.sin(t/23);
   const rr=r*flick;
   const g=bx.createRadialGradient(x,y,0,x,y,rr*1.9);
-  g.addColorStop(0,'rgba(255,170,40,.55)'); g.addColorStop(1,'rgba(255,60,0,0)');
+  g.addColorStop(0,`rgba(${P.glow},.55)`); g.addColorStop(1,`rgba(${P.edge},0)`);
   bx.fillStyle=g; bx.beginPath(); bx.arc(x,y,rr*1.9,0,Math.PI*2); bx.fill();
   const c=bx.createRadialGradient(x-rr*.2,y-rr*.2,0,x,y,rr);
-  c.addColorStop(0,'#ffffee'); c.addColorStop(.3,'#ffdd55'); c.addColorStop(.7,'#ff7711'); c.addColorStop(1,'#cc2200');
-  bx.fillStyle=c; bx.shadowColor='#ff5500'; bx.shadowBlur=rr*1.2;
+  c.addColorStop(0,P.core[0]); c.addColorStop(.3,P.core[1]); c.addColorStop(.7,P.core[2]); c.addColorStop(1,P.core[3]);
+  bx.fillStyle=c; bx.shadowColor=P.shadow; bx.shadowBlur=rr*1.2;
   bx.beginPath(); bx.arc(x,y,rr,0,Math.PI*2); bx.fill(); bx.shadowBlur=0;
 }
 function tickFireballs(){
@@ -1966,7 +2004,7 @@ function tickFireballs(){
       x=f.x1; y=f.y1; r=f.R*(.15+.85*e);
       if(Math.random()<.7*fk){
         const a=Math.random()*Math.PI*2, d=f.R*(2.2+Math.random()*1.5);
-        gs.parts.push({x:x+Math.cos(a)*d,y:y+Math.sin(a)*d,col:Math.random()<.5?'#ffaa22':'#ff5511',
+        gs.parts.push({x:x+Math.cos(a)*d,y:y+Math.sin(a)*d,col:f.P.motes[Math.random()<.5?0:1],
           vx:-Math.cos(a)*d/14,vy:-Math.sin(a)*d/14,sz:1.5+Math.random()*2,life:1,dec:.07,noGrav:true});
       }
     } else {
@@ -1976,13 +2014,13 @@ function tickFireballs(){
       const steps=Math.max(1,Math.ceil(Math.hypot(x-f.lx,y-f.ly)/(r*.5)));
       for(let i=0;i<steps;i++){
         const s=i/steps, tx=f.lx+(x-f.lx)*s, ty=f.ly+(y-f.ly)*s;
-        gs.parts.push({x:tx+(Math.random()-.5)*r,y:ty+(Math.random()-.5)*r,col:['#ffdd55','#ff8822','#ff4411','#552211'][Math.floor(Math.random()*4)],
+        gs.parts.push({x:tx+(Math.random()-.5)*r,y:ty+(Math.random()-.5)*r,col:f.P.trail[Math.floor(Math.random()*4)],
           vx:(Math.random()-.5)*.6,vy:-.4-Math.random()*.8,sz:r*(.25+Math.random()*.35),life:1,dec:.05+Math.random()*.04,noGrav:true});
       }
       if(k>=1){ f.done=true; if(f.cb) f.cb(); return; }
     }
     f.lx=x; f.ly=y;
-    drawFireballCore(x,y,r,now);
+    drawFireballCore(x,y,r,now,f.P);
   });
 }
 // Physical Strike boulder (plain Physical damage off the wheel), drawn by tickBoulders.
@@ -2075,17 +2113,19 @@ function quakeOffset(){
 // Fiery explosion on a target, sized by the damage: a white-hot flash, an expanding
 // shockwave ring, a billowing fireball and flying embers, then rising smoke
 const FIRE_EXPLOSION_MS=750;
-function spawnFireExplosion(x,y,dmg){
+// pal: a FIRE_PALETTES key; scale: a bigger blast for the same damage (Blue Fire)
+function spawnFireExplosion(x,y,dmg,pal,scale=1){
   if(simMode) return;
-  const R=fireballRadius(dmg)*2.6;
-  gs.explosions.push({x,y,R,start:Date.now()});
+  const P=FIRE_PALETTES[pal]||FIRE_PALETTES.fire;
+  const R=fireballRadius(dmg)*2.6*scale;
+  gs.explosions.push({x,y,R,start:Date.now(),P});
   const n=Math.round(14+dmg*.9);
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2, sp=(2+Math.random()*4.5)*(R/(bH*.09));
-    gs.parts.push({x,y,col:['#ffffaa','#ffcc33','#ff7711','#ff3300'][Math.floor(Math.random()*4)],
+    gs.parts.push({x,y,col:P.embers[Math.floor(Math.random()*4)],
       vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1.5,sz:1.5+Math.random()*3,life:1,dec:.018+Math.random()*.025});
   }
-  vfxDrift(x,y,['#443322','#554433','#332222'],Math.round(6+dmg*.3),{w:.08,lift:-1.2,dec:.012});
+  vfxDrift(x,y,P.smoke,Math.round(6+dmg*.3),{w:.08,lift:-1.2,dec:.012});
 }
 function tickExplosions(){
   const now=Date.now();
@@ -2094,14 +2134,15 @@ function tickExplosions(){
     const k=(now-e.start)/FIRE_EXPLOSION_MS, out=1-Math.pow(1-k,3);
     bx.save();
     // Shockwave ring
-    bx.globalAlpha=(1-k)*.8; bx.strokeStyle='#ffcc66'; bx.lineWidth=Math.max(1,e.R*.12*(1-k));
-    bx.shadowColor='#ff8800'; bx.shadowBlur=16;
+    const P=e.P||FIRE_PALETTES.fire;
+    bx.globalAlpha=(1-k)*.8; bx.strokeStyle=P.ring; bx.lineWidth=Math.max(1,e.R*.12*(1-k));
+    bx.shadowColor=P.ringGlow; bx.shadowBlur=16;
     bx.beginPath(); bx.ellipse(e.x,e.y,e.R*1.5*out,e.R*1.1*out,0,0,Math.PI*2); bx.stroke();
     // Billowing fireball: swells fast, then fades and darkens
     const r=e.R*(.4+.8*out), a=Math.max(0,1-k*1.15);
     const g=bx.createRadialGradient(e.x,e.y,0,e.x,e.y,r);
-    g.addColorStop(0,`rgba(255,255,220,${a})`); g.addColorStop(.25,`rgba(255,210,80,${a})`);
-    g.addColorStop(.6,`rgba(255,100,20,${a*.85})`); g.addColorStop(1,'rgba(160,30,0,0)');
+    g.addColorStop(0,`rgba(${P.ball[0]},${a})`); g.addColorStop(.25,`rgba(${P.ball[1]},${a})`);
+    g.addColorStop(.6,`rgba(${P.ball[2]},${a*.85})`); g.addColorStop(1,`rgba(${P.ball[3]},0)`);
     bx.globalAlpha=1; bx.shadowBlur=0; bx.fillStyle=g;
     bx.beginPath(); bx.arc(e.x,e.y,r,0,Math.PI*2); bx.fill();
     // Initial white-hot flash
@@ -2728,6 +2769,10 @@ const VFX={
   wardUnravelled:(x,col='#4af0ff')=>spawnWardUnravel(x,col,true),
   absorbed:(x,col)=>{ spawnParts(x,wizMidY(x),'#ffcc44',18); spawnParts(x,wizMidY(x),col,10); spawnParts(x,wizMidY(x),'#ffffff',6); },
   vanished:x=>spawnParts(x,wizMidY(x),'#b8a0e8',12),
+  // Infernal Gate swallows a strike: he flickers out through the gate and its fire bursts on the striker
+  gateSlip:(who,striker)=>{ const x=seatX(who);
+    vfxRing(x,wizFeetY(),['#ff7733','#ff3300','#ffcc66'],22,{spd:1.8,lift:-1,sz:3}); anim(who,'shield',500);
+    if(striker&&striker!==who) spawnFireExplosion(seatX(striker),wizMidY(striker),8); },
   dodged:x=>{ spawnParts(x,wizMidY(x),'#9988cc',22); spawnParts(x,wizMidY(x),'#ffffff',8); flash('#9988cc'); },
   curseWarded:x=>spawnParts(x,wizMidY(x),'#ffcc44',14),
   // Skeletons cut down in front of the ward: bones clatter to the floor
@@ -2903,6 +2948,14 @@ const SPELL_VFX={
   singularity: {hit:c=>{ vfxRing(c.tx,c.ty,['#6633aa'],16,{dec:.018}); spawnParts(c.tx,c.ty,'#aa66ff',10); spawnParts(c.tx,c.ty,'#330055',6); anim(c.who,'cast',800); }},
   gravitywell: {hit:c=>{ spawnParts(c.tx,c.ty,'#aa66ff',22); spawnParts(c.tx,c.ty,'#6633aa',8); flash('#6633aa'); vfxStrikeAnim(c.who,c.tgt); }},
   eventhorizon:{hit:c=>{ spawnParts(c.cx,c.cy,'#6633aa',12); spawnParts(c.tx,c.ty,'#aa66ff',22); spawnParts(c.tx,c.ty,'#6633aa',8); flash('#6633aa'); vfxStrikeAnim(c.who,c.tgt); }},
+  // Xerrakh: Doom Bolt is a purple fireball with a small blast; Blue Fire a big blue one with a far bigger blast
+  doombolt:{delivery:{fireball:'doom'},
+    hit:c=>{ spawnFireExplosion(c.tx,c.ty,c.dmg||12,'doom',1.1); flash('#9933ff'); vfxStrikeAnim(c.who,c.tgt); }},
+  bluefire:{delivery:{fireball:'blue'},
+    hit:c=>{ spawnFireExplosion(c.tx,c.ty,c.dmg||24,'blue',1.7); vfxRing(c.tx,c.ty,['#aee6ff','#3399ff','#ffffff'],26,{spd:2.2,sz:3});
+      quake(bH*.012,450); flash('#3399ff'); vfxStrikeAnim(c.who,c.tgt); }},
+  // Infernal Gate: a burning gate opens at his feet and he sinks through it (the gate aura, infernalGate in drawWiz, stays while it lasts)
+  infernalgate:{self:c=>{ vfxPhaseIn(c.cx,c.cy,['#ff7733','#cc2200','#ffcc66'],22); vfxRing(c.cx,wizFeetY(),['#ff7733','#ff3300'],18,{spd:1.2,lift:-.8,sz:2.5}); anim(c.who,'shield',700); }},
 };
 function vfxCtx(who,tgt,extra){
   return Object.assign({who,tgt,cx:seatX(who),tx:seatX(tgt||who),y:wizMidY(who),cy:wizMidY(who),ty:wizMidY(tgt||who),col:seatCfg(who).col},extra);
@@ -3327,7 +3380,7 @@ function sigAtTier(sp,tier){
   const mult=v=>Math.round((1+(v-1)*s)*100)/100;
   el.tier=tier;
   if(el.cost>0) el.cost=Math.max(1,Math.round(el.cost*SIG_COST_SCALE[tier-1]));
-  ['power','ward','retaliate','perSkeleton','perBlade','rewind','manaburn','drainNow','hpCost'].forEach(k=>{ if(el[k]) el[k]=n(el[k]); });
+  ['power','blast','ward','retaliate','perSkeleton','perBlade','rewind','manaburn','drainNow','hpCost'].forEach(k=>{ if(el[k]) el[k]=n(el[k]); });
   if(el.variance) el.variance=el.variance.map(n);
   if(el.pctHp) el.pctHp=pct(el.pctHp,0.6);
   if(el.dot) el.dot.dmg=n(el.dot.dmg);
@@ -3503,8 +3556,10 @@ function castElemental(cat,elemId,tier,self){
 
 // A Greater (outer ring) strike hits every foe once there's more than one
 const ELEM_GREATER_HITS_ALL_TIER=3;
+// A blast signature (Xerrakh's Doom Bolt / Blue Fire, el.blast) catches every foe at any ring
 function hitsAllFoes(who,action){
-  return action.cat==='damage'&&needsTarget(who,action)&&action.tier>=ELEM_GREATER_HITS_ALL_TIER&&foesOf(who).length>1;
+  const sp=action.sig&&sigById(who,action.sig);
+  return action.cat==='damage'&&needsTarget(who,action)&&(action.tier>=ELEM_GREATER_HITS_ALL_TIER||!!(sp&&sp.el.blast))&&foesOf(who).length>1;
 }
 // Who a strike lands on: its target, then (for a Greater strike) every other foe
 function strikeTargets(who,action){
@@ -3802,7 +3857,9 @@ function executeSignature(who,sp,action,cb){
     }
     // Dark strikes are a ritual circle of runes around each target, not a projectile
     const ritual=el.elem==='dark'&&!d;
-    if(!ritual) fanOut(who,tgts,ELEM_PROJ[el.elem],e.col);
+    // A fireball in the spell's own colours (Xerrakh): swells in his hand, sized by the damage, then flies
+    const ball=d&&d.fireball;
+    if(!ritual&&!ball) fanOut(who,tgts,ELEM_PROJ[el.elem],e.col);
     // A volley's own per-projectile effects stand in for the default impact burst
     const vfx=fx.hit||(d&&d.volley?()=>{}:null);
     const land=()=>{
@@ -3810,6 +3867,12 @@ function executeSignature(who,sp,action,cb){
       combatTimeout(cb,600);
     };
     if(d==='lunge'){ lunge(who,0.12,land); return; }
+    if(ball){
+      const dmg=previewStrikeDmg(who,el.elem,power);
+      tgts.slice(1).forEach(t=>spawnFireball(who,t,dmg,()=>{},d.fireball));
+      spawnFireball(who,tgt,dmg,land,d.fireball);
+      return;
+    }
     if(d&&d.volley){
       const n=Math.max(1,d.volley==='blades'?blades:d.volley);
       if(fx.pre) fx.pre(ctx);
@@ -3977,10 +4040,15 @@ function soakMinions(tgt,dmg){
 // Damage that meets the target's skeletons, then its ward. Returns {hp, warded}.
 // wear: {blocked,worn}, shared by the hits of one split strike (an arcane volley) so the ward
 // wears exactly as it would from one big hit — rounding once, with the 1-point minimum once.
-function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike){
+// blast: up to this much of the damage washes around the ward straight to HP (skeletons still soak it)
+function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike,blast){
   const ts=gs[tgt], tx=seatX(tgt);
-  let warded=false;
+  let warded=false, around=0;
   dmg=soakMinions(tgt,dmg);
+  if(blast&&hasWard(ts)&&dmg>0){
+    around=Math.min(blast,dmg); dmg-=around;
+    addFloat(tx,bH*.18,'💥 Blast −'+around+' around the ward',col,12);
+  }
   if(hasWard(ts)&&dmg>0){
     // The ward loses only its take share of what it stops, so a resistant ward stops more.
     // Crush: a Physical strike (not ticks or minions) ignores an off-element ward's resistance.
@@ -3997,6 +4065,7 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike){
     VFX.wardBlock(tx,wardCol(ts));
     if(ts.shieldHp<=0) breakWard(ts,tx);
   }
+  dmg+=around;
   if(dmg>0){
     dealDmgToPlayer(tgt,dmg,tx,wizMidY(tgt));
     addFloat(tx,bH*.33,icon+' −'+dmg,col,16);
@@ -4083,7 +4152,7 @@ function strikeResolve(who,tgt,o,b){
     const dodge=effectsOf(ts,'dodge')[0];
     if(dodge&&_rng()<dodge.pct) return {tgt,miss:'dodge'};
     const absorb=takeEffect(ts,'absorbNext');
-    if(absorb) return {tgt,miss:absorb.id==='vanish'?'vanish':'absorb'};
+    if(absorb) return {tgt,miss:absorb.id==='vanish'?'vanish':absorb.id==='infernalgate'?'gate':'absorb',absorb};
   }
   effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
   const resist=effectsOf(ts,'resist').filter(e=>!(e.magicOnly&&o.elem==='physical'))
@@ -4093,6 +4162,12 @@ function strikeResolve(who,tgt,o,b){
 function strikeMiss(who,r,o){
   const tx=seatX(r.tgt);
   if(r.miss==='dodge'){ addFloat(tx,bH*.28,'💫 Dodged!','#b8a0e8',15); VFX.dodged(tx); }
+  else if(r.miss==='gate'){
+    // Infernal Gate: the caster steps through, the strike finds nothing, and the gate's fire lashes the striker
+    addFloat(tx,bH*.28,'🌀 Through the Gate!','#ff7733',15); VFX.gateSlip(r.tgt,who);
+    const n=r.absorb.retaliate||0;
+    if(n>0&&who!==r.tgt){ const src=dmgSource; dmgSource=r.tgt; elemFloatDmg(who,n,'🔥','#ff7733'); dmgSource=src; }
+  }
   else {
     addFloat(tx,bH*.28,r.miss==='vanish'?'👻 Missed!':'🔮 Absorbed!','#ffcc44',15);
     if(r.miss==='vanish') VFX.vanished(tx); else VFX.absorbed(tx,elemById(o.elem).col);
@@ -4102,7 +4177,7 @@ function strikeMiss(who,r,o){
 // One hit of a strike's damage (the whole of it, or one orb's share of an arcane volley)
 function strikeChunk(who,r,o,dmg,wear){
   const el=elemById(o.elem);
-  return elemIncoming(r.tgt,dmg,o.elem,el.icon,el.col,true,wear,true);
+  return elemIncoming(r.tgt,dmg,o.elem,el.icon,el.col,true,wear,true,wear?0:o.blast);
 }
 // The element riders of a strike that reached HP (see ELEM_RIDERS). Signature strikes get them too,
 // except that one with its own DoT doesn't also scorch.
@@ -4140,6 +4215,7 @@ function strikeFinish(who,r,o,b,hit){
   const tgt=r.tgt, ts=gs[tgt], tx=seatX(tgt), el=elemById(o.elem);
   const burn=(o.elem==='lightning'?ELEM_LIGHTNING_BURN[(o.tier||2)-1]:0)+b.burn;
   const ctx=vfxCtx(who,tgt);
+  ctx.dmg=r.dmg;
   if(o.vfx) o.vfx(ctx);
   else { ELEM_IMPACT_VFX[o.elem](ctx,b.emp?38:22,r.dmg); vfxStrikeAnim(who,tgt); }
   if(hit.hp>0){
@@ -7851,16 +7927,16 @@ const CHAR_COLORS_TUT={
   gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zacharius:'#aaff44',
   mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040',
   weizan:'#aabbee',gretch:'#55aa33',valdris:'#8899cc',mirel:'#cc88ff',thessaly:'#ffdd88',
-  korvath:'#cc6622',fizzwick:'#99cc44',nyxara:'#6633aa',daveron:'#b8283c'
+  korvath:'#cc6622',fizzwick:'#99cc44',nyxara:'#6633aa',daveron:'#b8283c',xerrakh:'#8a4dff'
 };
 const CHAR_NAMES_TUT={
   eldrin:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
   gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zacharius',
   mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin',
   weizan:'Weizan',gretch:'Gretch',valdris:'Valdris',mirel:'Mirel',thessaly:'Thessaly',
-  korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara',daveron:'Daveron'
+  korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara',daveron:'Daveron',xerrakh:'Xerrakh'
 };
-const CHAR_KEYS_TUT=['eldrin','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara','daveron'];
+const CHAR_KEYS_TUT=['eldrin','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara','daveron','xerrakh'];
 
 // Character guides describe each spell's effect and wheel sector rather than exact numbers,
 // which live in characters.json and are shown on the wheel itself.
@@ -8056,6 +8132,12 @@ const TUTORIAL_CONVOS={
     {key:'daveron',text:"Raise Graveguard, in the Dark sector of my Protection wheel, raises one armoured graveguard — up to three at once. Each stands in front of my ward and soaks a great deal of damage, strikes you every round, and dispels can't touch it. A stronger cast raises a tougher guard."},
     {key:'daveron',text:"Vanhal's Danse Macabre, in the Arcane sector, sets my dead dancing: for a few rounds every skeleton strikes harder. It needs a skeleton standing, and it is a buff, so a Dispel can stop the music."},
     {key:'daveron',text:"Curse of the Years is my Dark curse. Time falls on you all at once: you take damage whatever you do, and unlike Agony, even Meditating won't escape it. Only a Cleanse will."},
+  ],
+  xerrakh:[
+    {key:'xerrakh',text:"I am Xerrakh, and I have run out of patience for every one of you. Stand still. This will be loud."},
+    {key:'xerrakh',text:"Doom Bolt is my Dark strike — cheap, quick, and a small blast: part of it rolls around your ward and finds you anyway."},
+    {key:'xerrakh',text:"Blue Fire is my Fire strike. It costs me dearly and I do not care. It hits hard, and its blast is far bigger — a ward will barely slow it."},
+    {key:'xerrakh',text:"Infernal Gate, in the Fire sector of my Protection wheel, opens a gate beneath me. Your next strike finds empty air, and the gate's fire burns you for trying. Strike me, then. I dare you."},
   ],
   nyxara:[
     {key:'nyxara',text:"My magic doesn't care how strong you are — only how much of you is left."},
@@ -8391,6 +8473,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-fizzwick').addEventListener('click',()=>showWizardDetail('fizzwick'));
   document.getElementById('pick-nyxara').addEventListener('click',()=>showWizardDetail('nyxara'));
   document.getElementById('pick-daveron').addEventListener('click',()=>showWizardDetail('daveron'));
+  document.getElementById('pick-xerrakh').addEventListener('click',()=>showWizardDetail('xerrakh'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{
     document.getElementById('wizard-detail').classList.remove('active');

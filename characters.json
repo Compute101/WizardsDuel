@@ -1497,5 +1497,71 @@
         }
       }
     ]
+  },
+  "xerrakh": {
+    "name": "XERRAKH",
+    "title": "The Horned Liturgist",
+    "sprite": "sprites/xerrakh.png",
+    "col": "#8a4dff",
+    "taunts": [
+      "ENOUGH! I will burn your name out of every book that ever held it!",
+      "You DARE stand before me? I will drag you screaming through the Gate!",
+      "Run, then! Hide! There is nowhere my fire cannot follow!"
+    ],
+    "hp": 90,
+    "dmgMult": 1.0,
+    "forbidden": [
+      "ice"
+    ],
+    "spells": [
+      {
+        "id": "doombolt",
+        "name": "Doom Bolt",
+        "icon": "☄️",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "dark",
+          "cost": 4,
+          "power": 13,
+          "blast": 4,
+          "tier": 2,
+          "desc": "13 dark; small blast: 4 of it gets around a ward"
+        }
+      },
+      {
+        "id": "infernalgate",
+        "name": "Infernal Gate",
+        "icon": "🌀",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "fire",
+          "cost": 4,
+          "tier": 2,
+          "effect": {
+            "type": "absorbNext",
+            "rounds": 2,
+            "retaliate": 6
+          },
+          "desc": "The next strike within 2 rounds misses, and its caster takes 6"
+        }
+      },
+      {
+        "id": "bluefire",
+        "name": "Blue Fire",
+        "icon": "🔥",
+        "el": {
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "fire",
+          "cost": 8,
+          "power": 26,
+          "blast": 10,
+          "tier": 2,
+          "desc": "26 fire; big blast: 10 of it gets around a ward"
+        }
+      }
+    ]
   }
 }
