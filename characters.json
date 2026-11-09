@@ -1489,10 +1489,11 @@
           "tier": 2,
           "effect": {
             "type": "agony",
-            "dmg": 6,
-            "rounds": 4
+            "dmg": 4,
+            "rounds": 4,
+            "inescapable": true
           },
-          "desc": "4 rounds: foe takes 6 whatever they do (Meditate escapes it, unless Corrupted)"
+          "desc": "4 rounds: foe takes 4 whatever they do — even Meditate doesn't escape it"
         }
       }
     ]

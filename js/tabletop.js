@@ -406,7 +406,7 @@ function endRound(){
     });
     fx(st,'agony').forEach(e=>{
       const corrupt=fx(st,'incomeDrain').some(c=>c.corrupt);
-      if(!st.meditated||corrupt) loseHp(w,e.dmg);
+      if(!st.meditated||corrupt||e.inescapable) loseHp(w,e.dmg);   // Curse of the Years: no escape
     });
     fx(st,'regen').forEach(e=>heal(w,e.heal));
     // Danse Macabre (Daveron): each of your skeletons deals its bonus more
@@ -462,7 +462,7 @@ function sigSensible(w,sp){
   if(sp.kind==='curse'){
     if(fx(ts,'warding').length) return false;
     if(ts.effects.some(f=>f.id===sp.id)) return false;
-    if(e.type==='agony'&&ts.mana<3) return true;
+    if(e.type==='agony'&&!e.inescapable&&ts.mana<3) return true;
   }
   if(x.type==='heal') return st.hp<=st.c.hp-x.n;
   if(x.type==='tonic') return st.hp<=st.c.hp-4;
@@ -487,7 +487,7 @@ function aiChoose(w,level){
     let p=st.mana<costOf(st,{cat:'damage',ring:1})?0.5:0.25;
     if(ts.mana<costOf(ts,{cat:'damage',ring:1})) p+=0.3;
     if(st.ward&&st.ward.hp>=3) p+=0.15;
-    if(fx(st,'agony').length&&!fx(st,'incomeDrain').some(e=>e.corrupt)) p+=0.4;
+    if(fx(st,'agony').some(e=>!e.inescapable)&&!fx(st,'incomeDrain').some(e=>e.corrupt)) p+=0.4;
     if(fx(st,'candle').length) p*=0.3;
     if(st.hp<st.c.hp*0.3) p*=0.5;
     if(!smart) p*=0.6;

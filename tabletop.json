@@ -227,8 +227,8 @@
        "text": "Raise 1 graveguard (max 3 on the table). Each has 3 HP and stands in front of your ward: damage (strikes and ticks) wears down the oldest graveguard first, and only what gets past them reaches your ward. Dispels can't touch them. Each graveguard still standing deals 1 to the foe at every round end."},
       {"id": "dansemacabre", "name": "Vanhal's Danse Macabre", "cat": "protect", "elem": "arcane", "ring": 1, "cost": 2, "kind": "buff", "requires": "skeleton", "effect": {"type": "danse", "bonus": 1},
        "text": "Needs a graveguard on the table. Until dispelled: each of your graveguard deals 1 more at every round end."},
-      {"id": "curseyears", "name": "Curse of the Years", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 4, "kind": "curse", "effect": {"type": "agony", "dmg": 2},
-       "text": "Until cleansed: the foe takes 2 at every round end, unless they Meditated that round (Corruption stops Meditate escaping it)."}
+      {"id": "curseyears", "name": "Curse of the Years", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 4, "kind": "curse", "effect": {"type": "agony", "dmg": 2, "inescapable": true},
+       "text": "Until cleansed: the foe takes 2 at every round end, whatever they did. Unlike Agony, Meditating doesn't escape it."}
     ]
   }
 }

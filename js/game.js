@@ -38,7 +38,7 @@ const CHAR_FLAVOUR={
   thessaly:'Enthral calls their next move — guess right and it is lost, its mana yours. Spellbind taxes their favourite move — strike her over and over, and it is your strikes that cost more. Weave wards her, then turns strikes into mana denial.',
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
   fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
-  daveron:'A necromancer guarded by a few elite graveguard. They soak your damage and dispels can\'t touch them, so batter through — and dispel Danse Macabre before it makes them deadly. Meditate to escape Curse of the Years.',
+  daveron:'A necromancer guarded by a few elite graveguard. They soak your damage and dispels can\'t touch them, so batter through — and dispel Danse Macabre before it makes them deadly. Meditating won\'t escape Curse of the Years — cleanse it.',
   nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
 };
 
@@ -3636,16 +3636,19 @@ function quickSteal(who,action){
   action.stolen=n;
 }
 // Agony bites whatever the foe does: casting, failing, waiting or shifting. Meditate is the one
-// escape, unless Corruption has spoiled it too.
-function agonyBites(who,action){
-  if(action.cat!=='meditate') return true;
+// escape, unless Corruption has spoiled it too. An `inescapable` one (Curse of the Years) bites even then.
+function agonyBites(who,action,agony){
+  if(action.cat!=='meditate'||(agony&&agony.inescapable)) return true;
   return effectsOf(gs[who],'incomeDrain').some(e=>e.id==='corruption');
 }
 function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
-  const agony=effectsOf(st,'agony')[0];
-  if(agony&&agonyBites(who,action)){ dmgSource=agony.from; elemFloatDmg(who,agony.dmg,agony.icon+' '+agony.name,'#9944cc'); if(TICK_VFX[agony.id]) TICK_VFX[agony.id](x,wizMidY(x)); else VFX.agony(x); dmgSource=who; }
-  if(agony&&st.hp<=0){ combatTimeout(cb,700); return; }   // Agony knocked them out before they could act
+  const agonies=effectsOf(st,'agony');
+  agonies.forEach(agony=>{
+    if(st.hp<=0||!agonyBites(who,action,agony)) return;
+    dmgSource=agony.from; elemFloatDmg(who,agony.dmg,agony.icon+' '+agony.name,'#9944cc'); if(TICK_VFX[agony.id]) TICK_VFX[agony.id](x,wizMidY(x)); else VFX.agony(x); dmgSource=who;
+  });
+  if(agonies.length&&st.hp<=0){ combatTimeout(cb,700); return; }   // Agony knocked them out before they could act
   if(action.enthral){ showEnthral(who,action); if(action.outcome==='enthralled'){ anim(who,'cast',600); combatTimeout(cb,1000); return; } }
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
   if(action.cat==='meditate'){
@@ -4320,8 +4323,9 @@ function elemAIChoose(who){
   const medGain=meditateGain(who);
   // Agony bites anything but a Meditate: rest through it whenever allowed (not two rounds running).
   // Even a light Agony is worth it — the rest dodges the hit and banks mana (tested in the sim)
-  const agonyOn=effectsOf(me,'agony')[0];
-  if(agonyOn&&canMeditate(who)&&!agonyBites(who,{cat:'meditate'})&&_rng()<(smart?0.7:0.35))
+  // (only an escapable one: Curse of the Years bites a Meditate too)
+  const agonyOn=effectsOf(me,'agony').find(e=>!agonyBites(who,{cat:'meditate'},e));
+  if(agonyOn&&canMeditate(who)&&_rng()<(smart?0.7:0.35))
     return {type:'el',cat:'meditate',ok:true};
   if(canMeditate(who)&&medGain>0&&me.mana<elemCost(who,'damage',2)){
     let p=(me.mana<elemCost(who,'damage',1)?0.4:0.2)*medGain/MEDITATE.gain;
@@ -8051,7 +8055,7 @@ const TUTORIAL_CONVOS={
     {key:'daveron',text:"I am Daveron. I do not need a horde — only a few who were the finest in life, and are finer still in death."},
     {key:'daveron',text:"Raise Graveguard, in the Dark sector of my Protection wheel, raises one armoured graveguard — up to three at once. Each stands in front of my ward and soaks a great deal of damage, strikes you every round, and dispels can't touch it. A stronger cast raises a tougher guard."},
     {key:'daveron',text:"Vanhal's Danse Macabre, in the Arcane sector, sets my dead dancing: for a few rounds every skeleton strikes harder. It needs a skeleton standing, and it is a buff, so a Dispel can stop the music."},
-    {key:'daveron',text:"Curse of the Years is my Dark curse. Time falls on you all at once: you take damage whatever you do — unless you Meditate."},
+    {key:'daveron',text:"Curse of the Years is my Dark curse. Time falls on you all at once: you take damage whatever you do, and unlike Agony, even Meditating won't escape it. Only a Cleanse will."},
   ],
   nyxara:[
     {key:'nyxara',text:"My magic doesn't care how strong you are — only how much of you is left."},
