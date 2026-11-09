@@ -756,6 +756,9 @@ let lastFrameTime=0;
 
 // When each aura first appeared, per wizard, so new wards and buffs fade in instead of popping
 const auraSince={}, AURA_FADE_MS=700;
+// An angle that turns once every `period` ms, kept within 0..2π. Canvas arc() works in 32-bit
+// floats, so an angle built straight from Date.now() (billions of radians) collapses to nothing.
+function spinAngle(t,period){ return (t/period)%(Math.PI*2); }
 function auraFade(who,key,on){
   const m=auraSince[who]||(auraSince[who]={});
   if(!on){ delete m[key]; return 0; }
@@ -812,7 +815,7 @@ function drawWardOrbiters(x,cy,sz,state,layer,fade,t){
     if(elem==='physical'){
       // Boulder: lumpy rock tumbling as it goes
       const r=sz*.09*depth;
-      bx.save(); bx.translate(p.x,p.y); bx.rotate(t/700*dir+i*1.7);
+      bx.save(); bx.translate(p.x,p.y); bx.rotate(spinAngle(t,700)*dir+i*1.7);
       const g=bx.createRadialGradient(-r*.3,-r*.3,r*.1,0,0,r*1.1);
       g.addColorStop(0,'#c8a878'); g.addColorStop(.6,'#8b6b45'); g.addColorStop(1,'#4a3820');
       bx.fillStyle=g; bx.shadowColor='rgba(0,0,0,.5)'; bx.shadowBlur=4;
@@ -949,7 +952,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     const gv=0.06+0.04*Math.sin(t/280);
     bx.save();
     bx.translate(x,y-sz*.5);
-    bx.rotate(t/1200);
+    bx.rotate(spinAngle(t,1200));
     bx.globalAlpha=fWard; bx.scale(.8+.2*fWard,.8+.2*fWard);
     bx.strokeStyle=`rgba(255,204,68,${gv*6})`; bx.lineWidth=1.5;
     for(let i=0;i<6;i++){
@@ -975,7 +978,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
   }
   if(state&&state.counter){
-    const rot=-t/420;
+    const rot=-spinAngle(t,420);
     for(let i=0;i<4;i++){
       const a=rot+i/4*Math.PI*2, alpha=(0.65+0.30*Math.sin(t/220+i))*fCounter;
       bx.beginPath(); bx.arc(x,wy,sz*.82,a,a+Math.PI*.38);
@@ -1207,7 +1210,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
       const rockSz=sz*(0.058+0.008*i);
       bx.save();
       bx.translate(rx,ry);
-      bx.rotate(t/900+i*1.4);
+      bx.rotate(spinAngle(t,900)+i*1.4);
       bx.globalAlpha=0.82+0.15*Math.sin(t/500+i*1.3);
       bx.fillStyle=rockCols[i][0]; bx.shadowColor=rockCols[i][1]; bx.shadowBlur=5;
       bx.beginPath();
@@ -1286,7 +1289,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
       bx.beginPath(); bx.arc(x,wy,r,0,Math.PI*2);
       bx.strokeStyle=`rgba(180,80,255,${(1-phase)*0.5})`; bx.lineWidth=2; bx.stroke();
     }
-    const rot=t/500;
+    const rot=spinAngle(t,500);
     bx.strokeStyle=`rgba(180,80,255,${0.35+0.15*Math.sin(t/280)})`; bx.lineWidth=1.5;
     bx.beginPath(); bx.arc(x,wy,sz*.72,rot,rot+Math.PI*.7); bx.stroke();
     bx.beginPath(); bx.arc(x,wy,sz*.72,rot+Math.PI,rot+Math.PI*1.7); bx.stroke();
