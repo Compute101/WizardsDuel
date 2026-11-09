@@ -1498,10 +1498,10 @@
       }
     ]
   },
-  "xerrakh": {
-    "name": "XERRAKH",
-    "title": "The Horned Liturgist",
-    "sprite": "sprites/xerrakh.png",
+  "frederick": {
+    "name": "FREDERICK",
+    "title": "The Black",
+    "sprite": "sprites/frederick.png",
     "col": "#8a4dff",
     "taunts": [
       "ENOUGH! I will burn your name out of every book that ever held it!",

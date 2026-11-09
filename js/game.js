@@ -39,7 +39,7 @@ const CHAR_FLAVOUR={
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
   fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
   daveron:'A necromancer guarded by a few elite graveguard. They soak your damage and dispels can\'t touch them, so batter through — and dispel Danse Macabre before it makes them deadly. Meditating won\'t escape Curse of the Years — cleanse it.',
-  xerrakh:'A furious horned liturgist who blasts through wards. Doom Bolt and Blue Fire each get part of their damage around a ward, and Infernal Gate swallows your next strike and burns you for it — so bait the Gate with a cheap strike first.',
+  frederick:'A furious horned necromancer who blasts through wards. Doom Bolt and Blue Fire each get part of their damage around a ward, and Infernal Gate swallows your next strike and burns you for it — so bait the Gate with a cheap strike first.',
   nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
 };
 
@@ -1946,7 +1946,7 @@ function spawnManaBurnFire(x,y){ gs.manaBurnFires.push({x,y,end:Date.now()+2800}
 // Flight: it streaks across trailing flame. On arrival cb() runs the strike, whose
 // impact (ELEM_IMPACT_VFX.fire) is spawnFireExplosion, scaled by the damage dealt.
 const FIREBALL_CHARGE_MS=900, FIREBALL_FLIGHT_MS=420;
-// Fireball colours. 'fire' is the plain Fire strike; Xerrakh's spells reuse the fireball in their own flame:
+// Fireball colours. 'fire' is the plain Fire strike; Frederick's spells reuse the fireball in their own flame:
 // Doom Bolt is the purple flame from his hand, Blue Fire a blue one. glow/edge are 'r,g,b' for rgba gradients.
 const FIRE_PALETTES={
   fire:{core:['#ffffee','#ffdd55','#ff7711','#cc2200'],glow:'255,170,40',edge:'255,60,0',shadow:'#ff5500',
@@ -2948,7 +2948,7 @@ const SPELL_VFX={
   singularity: {hit:c=>{ vfxRing(c.tx,c.ty,['#6633aa'],16,{dec:.018}); spawnParts(c.tx,c.ty,'#aa66ff',10); spawnParts(c.tx,c.ty,'#330055',6); anim(c.who,'cast',800); }},
   gravitywell: {hit:c=>{ spawnParts(c.tx,c.ty,'#aa66ff',22); spawnParts(c.tx,c.ty,'#6633aa',8); flash('#6633aa'); vfxStrikeAnim(c.who,c.tgt); }},
   eventhorizon:{hit:c=>{ spawnParts(c.cx,c.cy,'#6633aa',12); spawnParts(c.tx,c.ty,'#aa66ff',22); spawnParts(c.tx,c.ty,'#6633aa',8); flash('#6633aa'); vfxStrikeAnim(c.who,c.tgt); }},
-  // Xerrakh: Doom Bolt is a purple fireball with a small blast; Blue Fire a big blue one with a far bigger blast
+  // Frederick: Doom Bolt is a purple fireball with a small blast; Blue Fire a big blue one with a far bigger blast
   doombolt:{delivery:{fireball:'doom'},
     hit:c=>{ spawnFireExplosion(c.tx,c.ty,c.dmg||12,'doom',1.1); flash('#9933ff'); vfxStrikeAnim(c.who,c.tgt); }},
   bluefire:{delivery:{fireball:'blue'},
@@ -3556,7 +3556,7 @@ function castElemental(cat,elemId,tier,self){
 
 // A Greater (outer ring) strike hits every foe once there's more than one
 const ELEM_GREATER_HITS_ALL_TIER=3;
-// A blast signature (Xerrakh's Doom Bolt / Blue Fire, el.blast) catches every foe at any ring
+// A blast signature (Frederick's Doom Bolt / Blue Fire, el.blast) catches every foe at any ring
 function hitsAllFoes(who,action){
   const sp=action.sig&&sigById(who,action.sig);
   return action.cat==='damage'&&needsTarget(who,action)&&(action.tier>=ELEM_GREATER_HITS_ALL_TIER||!!(sp&&sp.el.blast))&&foesOf(who).length>1;
@@ -3857,7 +3857,7 @@ function executeSignature(who,sp,action,cb){
     }
     // Dark strikes are a ritual circle of runes around each target, not a projectile
     const ritual=el.elem==='dark'&&!d;
-    // A fireball in the spell's own colours (Xerrakh): swells in his hand, sized by the damage, then flies
+    // A fireball in the spell's own colours (Frederick): swells in his hand, sized by the damage, then flies
     const ball=d&&d.fireball;
     if(!ritual&&!ball) fanOut(who,tgts,ELEM_PROJ[el.elem],e.col);
     // A volley's own per-projectile effects stand in for the default impact burst
@@ -7927,16 +7927,16 @@ const CHAR_COLORS_TUT={
   gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zacharius:'#aaff44',
   mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040',
   weizan:'#aabbee',gretch:'#55aa33',valdris:'#8899cc',mirel:'#cc88ff',thessaly:'#ffdd88',
-  korvath:'#cc6622',fizzwick:'#99cc44',nyxara:'#6633aa',daveron:'#b8283c',xerrakh:'#8a4dff'
+  korvath:'#cc6622',fizzwick:'#99cc44',nyxara:'#6633aa',daveron:'#b8283c',frederick:'#8a4dff'
 };
 const CHAR_NAMES_TUT={
   eldrin:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
   gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zacharius',
   mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin',
   weizan:'Weizan',gretch:'Gretch',valdris:'Valdris',mirel:'Mirel',thessaly:'Thessaly',
-  korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara',daveron:'Daveron',xerrakh:'Xerrakh'
+  korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara',daveron:'Daveron',frederick:'Frederick'
 };
-const CHAR_KEYS_TUT=['eldrin','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara','daveron','xerrakh'];
+const CHAR_KEYS_TUT=['eldrin','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara','daveron','frederick'];
 
 // Character guides describe each spell's effect and wheel sector rather than exact numbers,
 // which live in characters.json and are shown on the wheel itself.
@@ -8133,11 +8133,11 @@ const TUTORIAL_CONVOS={
     {key:'daveron',text:"Vanhal's Danse Macabre, in the Arcane sector, sets my dead dancing: for a few rounds every skeleton strikes harder. It needs a skeleton standing, and it is a buff, so a Dispel can stop the music."},
     {key:'daveron',text:"Curse of the Years is my Dark curse. Time falls on you all at once: you take damage whatever you do, and unlike Agony, even Meditating won't escape it. Only a Cleanse will."},
   ],
-  xerrakh:[
-    {key:'xerrakh',text:"I am Xerrakh, and I have run out of patience for every one of you. Stand still. This will be loud."},
-    {key:'xerrakh',text:"Doom Bolt is my Dark strike — cheap, quick, and a small blast: part of it rolls around your ward and finds you anyway."},
-    {key:'xerrakh',text:"Blue Fire is my Fire strike. It costs me dearly and I do not care. It hits hard, and its blast is far bigger — a ward will barely slow it."},
-    {key:'xerrakh',text:"Infernal Gate, in the Fire sector of my Protection wheel, opens a gate beneath me. Your next strike finds empty air, and the gate's fire burns you for trying. Strike me, then. I dare you."},
+  frederick:[
+    {key:'frederick',text:"I am Frederick the Black, and I have run out of patience for every one of you. Stand still. This will be loud."},
+    {key:'frederick',text:"Doom Bolt is my Dark strike — cheap, quick, and a small blast: part of it rolls around your ward and finds you anyway."},
+    {key:'frederick',text:"Blue Fire is my Fire strike. It costs me dearly and I do not care. It hits hard, and its blast is far bigger — a ward will barely slow it."},
+    {key:'frederick',text:"Infernal Gate, in the Fire sector of my Protection wheel, opens a gate beneath me. Your next strike finds empty air, and the gate's fire burns you for trying. Strike me, then. I dare you."},
   ],
   nyxara:[
     {key:'nyxara',text:"My magic doesn't care how strong you are — only how much of you is left."},
@@ -8473,7 +8473,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-fizzwick').addEventListener('click',()=>showWizardDetail('fizzwick'));
   document.getElementById('pick-nyxara').addEventListener('click',()=>showWizardDetail('nyxara'));
   document.getElementById('pick-daveron').addEventListener('click',()=>showWizardDetail('daveron'));
-  document.getElementById('pick-xerrakh').addEventListener('click',()=>showWizardDetail('xerrakh'));
+  document.getElementById('pick-frederick').addEventListener('click',()=>showWizardDetail('frederick'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{
     document.getElementById('wizard-detail').classList.remove('active');
