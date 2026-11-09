@@ -122,7 +122,8 @@ function addEffect(who,eff,from){
     // Minions stack: add up to `raise` copies (default 1), never past `max`
     const n=Math.min(eff.max-minions(st,eff.minion).length, eff.raise||1);
     if(n<=0) return false;
-    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:gs.round, by:from},eff));
+    // Soak minions get HP: soak:true is 1 (Valdris's skeletons), a number is tougher (Daveron's graveguard)
+    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:gs.round, by:from},eff,eff.soak?{hp:eff.soak===true?1:eff.soak}:{}));
     return true;
   }
   st.effects=st.effects.filter(e=>e.id!==eff.id);
@@ -154,14 +155,20 @@ function gainMana(who,n){ gs[who].mana=clamp(gs[who].mana+n); }
 function incoming(who,dmg,adj,own){
   const st=gs[who];
   if(dmg<=0) return 0;
-  // Soak minions (skeletons) stand in front of the ward: each takes 1 damage and falls
+  // Soak minions (skeletons) stand in front of the ward, oldest first: each soaks damage up to its HP
+  // (1 for a plain skeleton, so every point kills one) and falls when its HP runs out
   const wall=st.effects.filter(e=>e.type==='minion'&&e.soak);
   if(wall.length){
-    const k=Math.min(dmg,wall.length), dead=wall.slice(0,k);
+    const dead=[];
+    for(const m of wall){
+      if(dmg<=0) break;
+      const d=Math.min(dmg,m.hp);
+      m.hp-=d; dmg-=d;
+      if(m.hp<=0) dead.push(m);
+    }
     st.effects=st.effects.filter(e=>!dead.includes(e));
-    dmg-=k;
     // Soul Tithe: a foe cursed with it loses mana for each skeleton they kill
-    if(!own) fx(gs[foe(who)],'tithe').forEach(e=>loseMana(foe(who),k*e.n));
+    if(!own&&dead.length) fx(gs[foe(who)],'tithe').forEach(e=>loseMana(foe(who),dead.length*e.n));
     if(dmg<=0) return 0;
   }
   if(st.ward){
@@ -399,10 +406,12 @@ function endRound(){
     });
     fx(st,'agony').forEach(e=>{
       const corrupt=fx(st,'incomeDrain').some(c=>c.corrupt);
-      if(!st.meditated||corrupt) loseHp(w,e.dmg);
+      if(!st.meditated||corrupt||e.inescapable) loseHp(w,e.dmg);   // Curse of the Years: no escape
     });
     fx(st,'regen').forEach(e=>heal(w,e.heal));
-    minions(st).forEach(m=>incoming(f,m.dmg,0));
+    // Danse Macabre (Daveron): each of your skeletons deals its bonus more
+    const danse=fx(st,'danse').reduce((a,e)=>a+e.bonus,0);
+    minions(st).forEach(m=>incoming(f,m.dmg+(m.minion==='skeleton'?danse:0),0));
   });
   // Sudden death
   const sd=RULES.suddenDeath;
@@ -440,6 +449,8 @@ function canPick(st,a){
   if(a.cat==='pass') return true;
   if(locked(st,a.cat)) return false;
   if(a.elem&&!a.sig&&st.c.forbidden.includes(a.elem)) return false;
+  const sp=a.sig&&sigById(st,a.sig);
+  if(sp&&sp.requires==='skeleton'&&!minions(st,'skeleton').length) return false;   // Danse Macabre needs a dancer
   return costOf(st,a)<=st.mana;
 }
 function sigSensible(w,sp){
@@ -451,7 +462,7 @@ function sigSensible(w,sp){
   if(sp.kind==='curse'){
     if(fx(ts,'warding').length) return false;
     if(ts.effects.some(f=>f.id===sp.id)) return false;
-    if(e.type==='agony'&&ts.mana<3) return true;
+    if(e.type==='agony'&&!e.inescapable&&ts.mana<3) return true;
   }
   if(x.type==='heal') return st.hp<=st.c.hp-x.n;
   if(x.type==='tonic') return st.hp<=st.c.hp-4;
@@ -467,6 +478,8 @@ function sigSensible(w,sp){
 }
 const guardSpell=st=>st.c.spells.find(s=>s.effect&&s.effect.type==='minion'&&s.effect.soak);
 const guards=st=>st.effects.filter(e=>e.type==='minion'&&e.soak).length;
+// Screen running thin: at or below half the card's max (Valdris: 2 of 5; Daveron's graveguard: 1 of 3)
+const guardLow=st=>{ const g=guardSpell(st); return !!g&&guards(st)<=Math.floor(g.effect.max/2); };
 function aiChoose(w,level){
   const st=gs[w], ts=gs[foe(w)], smart=level!=='easy';
   // Meditate when short of mana
@@ -474,7 +487,7 @@ function aiChoose(w,level){
     let p=st.mana<costOf(st,{cat:'damage',ring:1})?0.5:0.25;
     if(ts.mana<costOf(ts,{cat:'damage',ring:1})) p+=0.3;
     if(st.ward&&st.ward.hp>=3) p+=0.15;
-    if(fx(st,'agony').length&&!fx(st,'incomeDrain').some(e=>e.corrupt)) p+=0.4;
+    if(fx(st,'agony').some(e=>!e.inescapable)&&!fx(st,'incomeDrain').some(e=>e.corrupt)) p+=0.4;
     if(fx(st,'candle').length) p*=0.3;
     if(st.hp<st.c.hp*0.3) p*=0.5;
     if(!smart) p*=0.6;
@@ -496,7 +509,7 @@ function aiChoose(w,level){
     if(st.hp<st.c.hp*0.35) w8.protect+=0.35;
   }
   // Soak minions: keep a screen of skeletons up; batter through the foe's
-  if(guardSpell(st)&&guards(st)<=2) w8.protect+=smart?1.2:0.6;
+  if(guardLow(st)) w8.protect+=smart?1.2:0.6;
   const tg=guards(ts);
   if(tg){ w8.damage+=(smart?0.25:0.1)*tg; if(!ts.ward) w8.dispel*=0.5; }
   if(fx(st,'bewitch').length){ w8.damage*=smart?0.15:0.6; w8.dispel+=smart?0.8:0.3; }
@@ -524,7 +537,10 @@ function aiInCat(w,cat,smart){
     return {cat,self:true,ring};
   }
   const gsp=guardSpell(st);
-  if(cat==='protect'&&gsp&&guards(st)<=2&&canPick(st,{cat,sig:gsp.id})&&rng()<(smart?0.85:0.5)) return {cat,sig:gsp.id};
+  // Danse Macabre: set the dead dancing while there are dancers, more readily the more there are
+  const dsp=st.c.spells.find(s=>s.effect&&s.effect.type==='danse');
+  if(cat==='protect'&&dsp&&guards(st)&&!fx(st,'danse').length&&canPick(st,{cat,sig:dsp.id})&&rng()<(smart?0.35+0.15*guards(st):0.25)) return {cat,sig:dsp.id};
+  if(cat==='protect'&&guardLow(st)&&canPick(st,{cat,sig:gsp.id})&&rng()<(smart?0.85:0.5)) return {cat,sig:gsp.id};
   const sigs=st.c.spells.filter(s=>s.cat===cat&&canPick(st,{cat,sig:s.id})&&sigSensible(w,s));
   const idleDispel=cat==='dispel'&&!ts.ward&&!buffs(ts).length;
   if(sigs.length&&(idleDispel||rng()<(smart?0.5:0.3))){

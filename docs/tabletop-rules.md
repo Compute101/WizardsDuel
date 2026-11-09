@@ -81,6 +81,8 @@ Flicking takes longer than the app's minigame, which is why tabletop games are t
 - Ticks (burns, poison, minions) also hit the ward first.
 - **Skeletons stand in front of the ward.** Each skeleton has 1 HP: every point of damage (strikes and ticks) kills one skeleton before anything reaches the ward. Only what gets past the skeletons meets the ward, and the ward's +2 element bonus applies only to that.
   - Example: a Normal Fire strike (4) hits 3 skeletons and a Fire ward of 5. 3 skeletons fall, the last 1 counts as 3 against the ward, and the ward drops to 2.
+- **Graveguard** (Daveron's elite skeletons) work the same way but have **3 HP each**: damage wears down the oldest graveguard first, and each one falls when its HP runs out. Keep a die or extra winks by each one to track its HP.
+  - Example: a Normal Fire strike (4) hits 2 graveguard (3 HP each) and a Fire ward of 5. The first graveguard falls (3), the second drops to 2 HP (1), and nothing reaches the ward.
 
 ## Dispels
 
@@ -102,7 +104,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 
 - "Next strike" and "next pick" effects (Empower, Foresight, Vanish, Bewitch, Enthral and similar) go as soon as they're used.
 - "Can't pick Damage next round" lasts for that one round only.
-- Skeletons aren't buffs: a Dispel never removes them, only damage does.
+- Skeletons and graveguard aren't buffs: a Dispel never removes them, only damage does. Danse Macabre *is* a buff, so a Dispel can stop it.
 - Casting a buff or curse that's already in play does nothing extra; minions (blades, skeletons, simulacra) stack up to their card's max.
 
 ## Round end
@@ -303,5 +305,14 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Singularity** | Dispel | Dark | Normal | 3 | Until cleansed: a rift deals 2 to the foe at every round end. |
 | **Gravity Well** | Damage | Dark | Normal | 3 | Dark strike of a third of the foe's HP (round down, min 3). |
 | **Event Horizon** | Damage | Arcane | Greater | 7 | Arcane strike of half the foe's HP (round down, min 4). You take 2. |
+
+### DAVERON — The Gravelord
+**HP 18** · Can't cast: Fire
+
+| Spell | Type | Element | Level | Cost | Effect |
+|---|---|---|---|---|---|
+| **Raise Graveguard** | Protection | Dark | Normal | 4 | Raise 1 graveguard (max 3 on the table). Each has 3 HP and stands in front of your ward: damage (strikes and ticks) wears down the oldest graveguard first, and only what gets past them reaches your ward. Dispels can't touch them. Each graveguard still standing deals 1 to the foe at every round end. |
+| **Vanhal's Danse Macabre** | Protection | Arcane | Lesser | 2 | Needs a graveguard on the table. Until dispelled: each of your graveguard deals 1 more at every round end. |
+| **Curse of the Years** | Dispel | Dark | Normal | 4 | Until cleansed: the foe takes 2 at every round end, whatever they did. Unlike Agony, Meditating doesn't escape it. |
 
 <!-- characters:end -->

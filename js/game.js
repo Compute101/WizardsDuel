@@ -38,6 +38,7 @@ const CHAR_FLAVOUR={
   thessaly:'Enthral calls their next move — guess right and it is lost, its mana yours. Spellbind taxes their favourite move — strike her over and over, and it is your strikes that cost more. Weave wards her, then turns strikes into mana denial.',
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
   fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
+  daveron:'A necromancer guarded by a few elite graveguard. They soak your damage and dispels can\'t touch them, so batter through — and dispel Danse Macabre before it makes them deadly. Meditating won\'t escape Curse of the Years — cleanse it.',
   nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
 };
 
@@ -1162,6 +1163,27 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.strokeStyle=`rgba(100,0,40,${0.35+0.2*Math.sin(t/280)})`; bx.lineWidth=1.5;
     bx.beginPath(); bx.arc(x,wy,sz*.62,0,Math.PI*2); bx.stroke();
   }
+  if(state&&state.yearsCurse>0){
+    // Curse of the Years: grains of grey sand trickle down around the cursed wizard, like an hourglass emptying
+    for(let i=0;i<9;i++){
+      const ph=((t/1700)+i/9)%1, side=i%2?1:-1, sway=Math.sin(t/500+i*2.1)*sz*.03;
+      const gx=x+side*sz*(0.18+0.13*((i*37)%5)/4)+sway, gy=wy-sz*.45+ph*sz*.95;
+      bx.globalAlpha=0.65*Math.sin(ph*Math.PI);
+      bx.fillStyle=i%3?'#c8b48a':'#9a9488';
+      bx.fillRect(gx,gy,sz*.022,sz*.022);
+    }
+    bx.globalAlpha=1;
+  }
+  if(state&&state.danse>0){
+    // Danse Macabre: ghostly green-violet wisps dance in a ring at the necromancer's feet
+    for(let i=0;i<6;i++){
+      const a=spinAngle(t,700)+i/6*Math.PI*2, hop=Math.abs(Math.sin(t/240+i*1.3));
+      bx.globalAlpha=0.45+0.3*hop;
+      bx.fillStyle=i%2?'#66ffaa':'#aa77ff'; bx.shadowColor=bx.fillStyle; bx.shadowBlur=6;
+      bx.beginPath(); bx.arc(x+Math.cos(a)*sz*.42,y-sz*.04+Math.sin(a)*sz*.08-hop*sz*.08,sz*.03,0,Math.PI*2); bx.fill();
+    }
+    bx.globalAlpha=1; bx.shadowBlur=0;
+  }
   if(state&&state.silence>0){
     // Grey bars across the wizard (silenced)
     bx.globalAlpha=0.18+0.08*Math.sin(t/400);
@@ -1658,7 +1680,7 @@ const WIZ_VISUAL_BY_ID={timedrain:'timeDrain', counter:'counter', candle:'candle
   singularity:'voidCollapse', frostarmor:'frostArmor', dragonscales:'dragonScales', stonesoul:'stonesoul',
   galvanize:'charge', conductivity:'conductivity', agony:'agony', silence:'silence', corruption:'corruption',
   vanish:'invisible', blink:'blink', plague:'plague', maggotcloud:'maggotCloud', bonetotem:'boneTotem',
-  enthral:'enthralled', arcaneweave:'arcaneWeave', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen', frostbite:'frozen', dread:'dread',
+  enthral:'enthralled', arcaneweave:'arcaneWeave', curseyears:'yearsCurse', dansemacabre:'danse', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen', frostbite:'frozen', dread:'dread',
   warpaint:'resist', ironpatience:'resist', heal:'regen'};
 function wizVisuals(st){
   const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra};
@@ -2752,6 +2774,8 @@ const TICK_VFX={
   physical:   (x,y)=>vfxDrift(x,y,['#22aa66','#44cc88'],10,{spd:1.2,lift:-.5,sz:2.5,dec:.02,grav:true}),
   regen:      (x,y)=>vfxFountain(x,y,['#88ffcc','#44ee88'],10,{spread:.55,min:.8,var:1.8,w:.06,lift:-.5,sz:2.5,dec:.011,decVar:.01}),
   bonetotem:  (x,y)=>vfxFountain(x,y,['#55aa33'],6,{spread:.6,min:.7,var:0,w:.04,lift:-.3,sz:2,dec:.016}),
+  dansemacabre:(x,y)=>vfxDrift(x,y,['#66ffaa','#aa77ff'],8,{spd:1.4,lift:-.8,dec:.02}),
+  curseyears: (x,y)=>vfxDrip(x,y-bH*.06,'#c8b48a',10,{vx:.6,vy:.6,vyVar:1.2,dec:.018}),
 };
 const MINION_VFX={
   blade:(x,y)=>vfxDrift(x,y,['#aaaadd'],4,{spd:1.2,lift:-.5,dec:.022,grav:true}),
@@ -2851,6 +2875,10 @@ const SPELL_VFX={
   necroticdrain:{siphon:{cols:['#b366ff','#6a1fb0','#8844cc'],glow:'#9933ff',core:'#ecd6ff'},
     hit:c=>{ spawnParts(c.tx,c.ty,'#8844cc',16); flash('#8844cc'); vfxStrikeAnim(c.who,c.tgt); }},
   soultithe:    {hit:c=>{ spawnBeam(c.cx,c.cy,c.tx,c.ty,'#aa88ff'); vfxDrip(c.tx,c.ty,'#aa88ff',10,{vx:1,vy:1,vyVar:1.5,dec:.02}); }},
+  // Daveron
+  raisegraveguard:{self:c=>{ vfxPhaseIn(c.cx,c.cy,['#8844cc','#cc2233','#e8e0cc'],20); anim(c.who,'cast',800); }},
+  dansemacabre:   {self:c=>{ vfxPhaseIn(c.cx,c.cy,['#66ffaa','#aa77ff','#ffffff'],18); anim(c.who,'cast',800); }},
+  curseyears:     {hit:c=>{ spawnBeam(c.cx,c.cy,c.tx,c.ty,'#c8b48a'); vfxDrift(c.tx,c.ty,['#c8b48a','#9a9488','#ddd6c0'],18,{spd:.7,lift:-.3,dec:.012,grav:true}); anim(c.who,'cast',800); }},
   reinforce:    {self:c=>{ vfxPhaseIn(c.cx,c.cy,['#8844cc'],12); anim(c.who,'cast',700); }},
   // Mirel
   simulacrum:{self:c=>{ vfxPhaseIn(c.cx,c.cy,['#b86ef4','#b86ef4','#ffffff'],20); anim(c.who,'shield',800); }},
@@ -3219,7 +3247,7 @@ function countMinions(st,minion){ return effectsOf(st,'minion').filter(e=>e.mini
 function syncMinionVisuals(st){
   // drawWiz draws blades / skeletons / simulacra from these fields
   st.blades=countMinions(st,'blade');
-  st.skeletons=effectsOf(st,'minion').filter(e=>e.minion==='skeleton').map(e=>({tier:e.tier||2}));
+  st.skeletons=effectsOf(st,'minion').filter(e=>e.minion==='skeleton').map(e=>({tier:e.look||e.tier||2}));
   st.simulacra=effectsOf(st,'minion').filter(e=>e.minion==='simulacrum').map(()=>({}));
 }
 function addEffect(who,eff,fromWho){
@@ -3306,7 +3334,8 @@ function sigAtTier(sp,tier){
   if(el.arc) el.arc.dmg=n(el.arc.dmg);
   if(el.chance!=null) el.chance=pct(el.chance,1);
   const e=el.effect;
-  if(e&&e.soak){ e.raise=Math.max(1,(e.raise||1)+tier-2); }
+  if(e&&e.soak&&e.elite){ e.soak=n(e.soak); e.dmg=n(e.dmg); }   // elite (Daveron's graveguard): the ring makes each one tougher, not more of them
+  else if(e&&e.soak){ e.raise=Math.max(1,(e.raise||1)+tier-2); }
   else if(e){
     ['perRound','retaliate','dmg','n','bonus','burn','extra','steal'].forEach(k=>{ if(e[k]) e[k]=n(e[k]); });
     if(e.ramp) e.ramp=e.ramp.map(n);
@@ -3333,6 +3362,7 @@ function sigBlocked(who,sp,tier){
   if(sigCost(who,sp,tier)>st.mana) return 'Not enough mana';
   if(el.oncePerDuel&&st.usedSig[sp.id]) return 'Once per duel';
   if(el.requires==='blades'&&countMinions(st,'blade')===0) return 'Needs a blade';
+  if(el.requires==='skeletons'&&countMinions(st,'skeleton')===0) return 'Needs a skeleton';
   if(el.kind==='buff'&&el.effect.type==='minion'&&countMinions(st,el.effect.minion)>=el.effect.max) return 'Maximum reached';
   if(el.hpCost&&st.hp<=el.hpCost) return 'Not enough HP';
   return '';
@@ -3606,16 +3636,19 @@ function quickSteal(who,action){
   action.stolen=n;
 }
 // Agony bites whatever the foe does: casting, failing, waiting or shifting. Meditate is the one
-// escape, unless Corruption has spoiled it too.
-function agonyBites(who,action){
-  if(action.cat!=='meditate') return true;
+// escape, unless Corruption has spoiled it too. An `inescapable` one (Curse of the Years) bites even then.
+function agonyBites(who,action,agony){
+  if(action.cat!=='meditate'||(agony&&agony.inescapable)) return true;
   return effectsOf(gs[who],'incomeDrain').some(e=>e.id==='corruption');
 }
 function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
-  const agony=effectsOf(st,'agony')[0];
-  if(agony&&agonyBites(who,action)){ dmgSource=agony.from; elemFloatDmg(who,agony.dmg,'💀 Agony','#9944cc'); VFX.agony(x); dmgSource=who; }
-  if(agony&&st.hp<=0){ combatTimeout(cb,700); return; }   // Agony knocked them out before they could act
+  const agonies=effectsOf(st,'agony');
+  agonies.forEach(agony=>{
+    if(st.hp<=0||!agonyBites(who,action,agony)) return;
+    dmgSource=agony.from; elemFloatDmg(who,agony.dmg,agony.icon+' '+agony.name,'#9944cc'); if(TICK_VFX[agony.id]) TICK_VFX[agony.id](x,wizMidY(x)); else VFX.agony(x); dmgSource=who;
+  });
+  if(agonies.length&&st.hp<=0){ combatTimeout(cb,700); return; }   // Agony knocked them out before they could act
   if(action.enthral){ showEnthral(who,action); if(action.outcome==='enthralled'){ anim(who,'cast',600); combatTimeout(cb,1000); return; } }
   if(action.cat==='pass'){ addFloat(x,bH*.33,'… Waits','#aaaacc',12); combatTimeout(cb,500); return; }
   if(action.cat==='meditate'){
@@ -4177,10 +4210,14 @@ function elemTickEffects(who){
     (TICK_VFX[e.id]||TICK_VFX.regen)(x,wizMidY(x));
   });
   activeSeats().filter(o=>o!==who&&minionTarget(o)===who).forEach(owner=>{
+    // Danse Macabre (Daveron): every skeleton strikes harder while it lasts
+    const danse=effectsOf(gs[owner],'danse').reduce((a,e)=>a+e.bonus,0);
     effectsOf(gs[owner],'minion').forEach(m=>{
       const el=elemById(m.elem||'physical');
       dmgSource=owner;
-      elemIncoming(who,Math.round(m.dmg*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
+      const bonus=m.minion==='skeleton'?danse:0;
+      elemIncoming(who,Math.round((m.dmg+bonus)*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
+      if(bonus&&TICK_VFX.dansemacabre) TICK_VFX.dansemacabre(x,wizMidY(x));
       if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,wizMidY(x));
     });
   });
@@ -4224,6 +4261,8 @@ function aiPickTarget(who){
 // Soak minions (Valdris's skeletons): the signature spell that raises them, and how many stand
 function guardSpell(who){ return sigSpells(who,'protect').find(sp=>sp.el.effect&&sp.el.effect.type==='minion'&&sp.el.effect.soak); }
 function guardCount(st){ return effectsOf(st,'minion').filter(m=>m.soak).length; }
+// Screen running thin: at or below half the cap (Valdris: 2 of 5; Daveron's graveguard: 1 of 3)
+function guardLow(who){ const sp=guardSpell(who); return !!sp&&guardCount(gs[who])<=Math.floor(sp.el.effect.max/2); }
 function aiSigSensible(who,sp,tgt=weakestFoe(who)){
   const st=gs[who], ts=gs[tgt], el=sp.el;
   const active=(s,id)=>(s.effects||[]).some(e=>e.id===id);
@@ -4284,8 +4323,9 @@ function elemAIChoose(who){
   const medGain=meditateGain(who);
   // Agony bites anything but a Meditate: rest through it whenever allowed (not two rounds running).
   // Even a light Agony is worth it — the rest dodges the hit and banks mana (tested in the sim)
-  const agonyOn=effectsOf(me,'agony')[0];
-  if(agonyOn&&canMeditate(who)&&!agonyBites(who,{cat:'meditate'})&&_rng()<(smart?0.7:0.35))
+  // (only an escapable one: Curse of the Years bites a Meditate too)
+  const agonyOn=effectsOf(me,'agony').find(e=>!agonyBites(who,{cat:'meditate'},e));
+  if(agonyOn&&canMeditate(who)&&_rng()<(smart?0.7:0.35))
     return {type:'el',cat:'meditate',ok:true};
   if(canMeditate(who)&&medGain>0&&me.mana<elemCost(who,'damage',2)){
     let p=(me.mana<elemCost(who,'damage',1)?0.4:0.2)*medGain/MEDITATE.gain;
@@ -4329,7 +4369,7 @@ function elemAIChoose(who){
   }
   // Keep a screen of skeletons up; batter through the foe's (dispels can't touch them)
   const guardSp=guardSpell(who), myGuards=guardCount(me), oppGuards=guardCount(opp);
-  if(guardSp&&myGuards<=2) w.protect+=smart?1.2:0.6;
+  if(guardSp&&guardLow(who)) w.protect+=smart?1.2:0.6;
   if(oppGuards){ w.damage+=(smart?0.25:0.1)*oppGuards; if(!oppWard) w.dispel*=0.5; }
   if(ganged){ w.protect+=hasWard(me)&&me.shieldHp>=25?0.4:1.2; w.damage*=0.8; }
   const free=hasFreeSpell(who);
@@ -4371,14 +4411,18 @@ function elemAIChoose(who){
     if(e.extend&&hasWard(me)) v+=2;   // Counter holds a standing ward up longer   // Ward takes the next dispel for the ward
     if(sp===siphon&&(siphonNow||cover.length)) v+=2;
     if(e.type==='enthral'&&(hasWard(me)||effectsOf(opp,'spellbind').length)) v+=2;
+    if(e.type==='danse') v+=guardCount(me);   // more dancers, more worth it
     return v;
   };
   const combo=sigs.some(x=>sigWeight(x.sp)>1);
   let choice=null;
   // A plain dispel with no ward or buff to hit does nothing: cast a curse instead when there's one to cast
   const idleDispel=cat==='dispel'&&!oppWard&&!oppBuffs;
-  const guardSec=cat==='protect'&&guardSp&&myGuards<=2&&sigs.find(x=>x.sp===guardSp);
-  if(guardSec&&_rng()<(smart?0.85:0.5)) choice=guardSec;
+  const guardSec=cat==='protect'&&guardLow(who)&&sigs.find(x=>x.sp===guardSp);
+  // Danse Macabre: set the dead dancing while there are dancers — more readily the more there are
+  const danseSec=cat==='protect'&&myGuards>0&&sigs.find(x=>x.sp.el.effect&&x.sp.el.effect.type==='danse');
+  if(danseSec&&_rng()<(smart?0.35+0.15*myGuards:0.25)) choice=danseSec;
+  else if(guardSec&&_rng()<(smart?0.85:0.5)) choice=guardSec;
   else if(sigs.length&&(!plain.length||idleDispel||_rng()<(smart?(combo?0.8:0.45):0.3))){
     let r=_rng()*sigs.reduce((a,x)=>a+sigWeight(x.sp),0);
     choice=sigs.find(x=>(r-=sigWeight(x.sp))<=0)||sigs[0];
@@ -7807,16 +7851,16 @@ const CHAR_COLORS_TUT={
   gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zacharius:'#aaff44',
   mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040',
   weizan:'#aabbee',gretch:'#55aa33',valdris:'#8899cc',mirel:'#cc88ff',thessaly:'#ffdd88',
-  korvath:'#cc6622',fizzwick:'#99cc44',nyxara:'#6633aa'
+  korvath:'#cc6622',fizzwick:'#99cc44',nyxara:'#6633aa',daveron:'#b8283c'
 };
 const CHAR_NAMES_TUT={
   eldrin:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
   gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zacharius',
   mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin',
   weizan:'Weizan',gretch:'Gretch',valdris:'Valdris',mirel:'Mirel',thessaly:'Thessaly',
-  korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara'
+  korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara',daveron:'Daveron'
 };
-const CHAR_KEYS_TUT=['eldrin','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara'];
+const CHAR_KEYS_TUT=['eldrin','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara','daveron'];
 
 // Character guides describe each spell's effect and wheel sector rather than exact numbers,
 // which live in characters.json and are shown on the wheel itself.
@@ -8006,6 +8050,12 @@ const TUTORIAL_CONVOS={
     {key:'fizzwick',text:"Caustic Bomb is my Dark strike. If it gets through to them, the poison is in their blood — it seeps straight past any ward they raise after. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
     {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, either heals me or empowers my next strike. Either way, something good happens to me."},
     {key:'fizzwick',text:"Most duellists plan for consistency. I bring chaos in a bottle."},
+  ],
+  daveron:[
+    {key:'daveron',text:"I am Daveron. I do not need a horde — only a few who were the finest in life, and are finer still in death."},
+    {key:'daveron',text:"Raise Graveguard, in the Dark sector of my Protection wheel, raises one armoured graveguard — up to three at once. Each stands in front of my ward and soaks a great deal of damage, strikes you every round, and dispels can't touch it. A stronger cast raises a tougher guard."},
+    {key:'daveron',text:"Vanhal's Danse Macabre, in the Arcane sector, sets my dead dancing: for a few rounds every skeleton strikes harder. It needs a skeleton standing, and it is a buff, so a Dispel can stop the music."},
+    {key:'daveron',text:"Curse of the Years is my Dark curse. Time falls on you all at once: you take damage whatever you do, and unlike Agony, even Meditating won't escape it. Only a Cleanse will."},
   ],
   nyxara:[
     {key:'nyxara',text:"My magic doesn't care how strong you are — only how much of you is left."},
@@ -8340,6 +8390,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-korvath').addEventListener('click',()=>showWizardDetail('korvath'));
   document.getElementById('pick-fizzwick').addEventListener('click',()=>showWizardDetail('fizzwick'));
   document.getElementById('pick-nyxara').addEventListener('click',()=>showWizardDetail('nyxara'));
+  document.getElementById('pick-daveron').addEventListener('click',()=>showWizardDetail('daveron'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{
     document.getElementById('wizard-detail').classList.remove('active');

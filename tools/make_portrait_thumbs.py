@@ -32,7 +32,7 @@ MEDIUM = 720
 PIXEL_GRID = 64      # icon is redrawn as PIXEL_GRID x PIXEL_GRID "pixels"
 PIXEL_COLOURS = 24   # palette size per icon
 # Portraits already painted as pixel art: crop only, don't pixelate again.
-PIXEL_ART = {'sylvara', 'aurelia', 'mal', 'ponder', 'mary'}
+PIXEL_ART = {'sylvara', 'aurelia', 'mal', 'ponder', 'mary', 'daveron'}
 # pixelate() settings, and per-portrait overrides for art that blows out.
 PIXEL_DEFAULT = dict(median=7, colour=1.25, contrast=1.15, autocontrast=True)
 PIXEL_TUNE = {
@@ -44,6 +44,7 @@ PIXEL_TUNE = {
 FACES = {
     'aurelia':   (0.475, 0.21, 0.34),
     'cinder':    (0.52, 0.21, 0.32),
+    'daveron':   (0.50, 0.43, 0.62),   # already a close-up (cut from a mock-up)
     'durin':     (0.47, 0.24, 0.36),
     'eldrin':    (0.47, 0.25, 0.32),
     'emberic':   (0.44, 0.22, 0.32),
