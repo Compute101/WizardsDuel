@@ -39,7 +39,7 @@ const CHAR_FLAVOUR={
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
   fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
   daveron:'A necromancer guarded by a few elite graveguard. They soak your damage and dispels can\'t touch them, so batter through — and dispel Danse Macabre before it makes them deadly. Meditating won\'t escape Curse of the Years — cleanse it.',
-  frederick:'A furious horned necromancer who blasts through wards. Doom Bolt and Blue Fire each get part of their damage around a ward, and Infernal Gate swallows your next strike and burns you for it — so bait the Gate with a cheap strike first.',
+  frederick:'A furious dark battle-wizard who lives to deal damage, and blasts straight through wards. Doom Bolt and Blue Fire each get part of their damage around a ward, and Infernal Gate swallows your next strike and burns you for it — so bait the Gate with a cheap strike first.',
   nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
 };
 
