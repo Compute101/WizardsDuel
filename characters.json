@@ -1537,14 +1537,14 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "fire",
-          "cost": 4,
+          "cost": 6,
           "tier": 2,
           "effect": {
             "type": "absorbNext",
             "rounds": 2,
-            "retaliate": 6
+            "exit": "bluefire"
           },
-          "desc": "The next strike within 2 rounds misses, and its caster takes 6"
+          "desc": "Struck within 2 rounds: he steps through the Gate, untouchable for a round, then steps out on the far side casting a free Blue Fire"
         }
       },
       {

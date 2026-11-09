@@ -39,7 +39,7 @@ const CHAR_FLAVOUR={
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
   fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
   daveron:'A necromancer guarded by a few elite graveguard. They soak your damage and dispels can\'t touch them, so batter through — and dispel Danse Macabre before it makes them deadly. Meditating won\'t escape Curse of the Years — cleanse it.',
-  frederick:'A furious dark battle-wizard who lives to deal damage, and blasts straight through wards. Doom Bolt and Blue Fire each get part of their damage around a ward, and Infernal Gate swallows your next strike and burns you for it — so bait the Gate with a cheap strike first.',
+  frederick:'A furious dark battle-wizard who lives to deal damage, and blasts straight through wards. Doom Bolt and Blue Fire each get part of their damage around a ward, and Infernal Gate swallows your next strike: he vanishes for a round, then steps out behind you with a free Blue Fire. Bait the Gate with a cheap strike, then ward up while he is gone.',
   nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
 };
 
@@ -1742,10 +1742,12 @@ function battleLoop(ts){
   bx.save(); bx.translate(q.x,bOffY+q.y); drawBG(); bx.restore();
   fillSceneBands();
   bx.setTransform(1,0,0,1,q.x,bOffY+q.y);   // everything else draws in scene coordinates
+  drawPanSweep();   // Infernal Gate exit: the camera swings round behind the wizards
   // Wizard height: capped by width so shield bubbles stay (mostly) on screen on tall phones
   const many=PLAYERS.length>2, gy=wizFeetY();
   PLAYERS.forEach(w=>{
     const st=gs[w], hasFx=id=>st.effects.some(e=>e.id===id);
+    if(st.gate) return;   // gone through the Infernal Gate: off the screen until he steps out
     drawWiz(seatX(w)+(gs[w+'xOff']||0),gy,wizSize(w),seatCfg(w).col,seatFacesRight(w),gs[w+'anim'],
       hasWard(st),hasFx('ward'),w,hasFx('foresight'),wizVisuals(st));
     if(many){   // name tags, so everyone can tell the wizards apart
@@ -2969,12 +2971,47 @@ function vfxCtx(who,tgt,extra){
 function seatCfg(who){ return (gs&&gs[who]&&gs[who].cfg)||(who==='p1'?p1Cfg:p2Cfg); }
 function seatKey(who){ return (gs&&gs[who]&&gs[who].key)||(who==='p1'?p1Key:p2Key); }
 // 3–4 seats stand in a row across the arena, team-mates side by side
-function seatX(who){
-  if(PLAYERS.length<=2) return who==='p1'?bW*.25:bW*.75;
+// Where each seat stands. gs.seatAt swaps places (Frederick stepping out of the Infernal Gate on the far
+// side: seat → the seat whose spot it now takes); gs.pan slides everyone to their new spots (swapSides).
+function slotX(slot){
+  if(PLAYERS.length<=2) return slot==='p1'?bW*.25:bW*.75;
   const order=PLAYERS.slice().sort((a,b)=>String(seatTeam(a)).localeCompare(String(seatTeam(b)))||PLAYERS.indexOf(a)-PLAYERS.indexOf(b));
-  return bW*(0.13+0.74*order.indexOf(who)/(PLAYERS.length-1));
+  return bW*(0.13+0.74*order.indexOf(slot)/(PLAYERS.length-1));
 }
-function seatFacesRight(who){ return PLAYERS.length<=2?who==='p1':seatX(who)<bW*.5; }
+function seatX(who){
+  const base=slotX((gs&&gs.seatAt&&gs.seatAt[who])||who);
+  const p=gs&&gs.pan;
+  if(p&&p.from[who]!=null){
+    const k=Math.min(1,(Date.now()-p.start)/p.ms), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    return p.from[who]+(base-p.from[who])*e;
+  }
+  return base;
+}
+function seatFacesRight(who){ return seatX(who)<bW*.5; }
+// Two seats trade places: the camera swings round and they slide across (PAN_MS), then cb
+const PAN_MS=1100;
+function swapSides(a,b,cb){
+  const at=gs.seatAt||(gs.seatAt={});
+  const sa=at[a]||a, sb=at[b]||b;
+  const from={[a]:seatX(a),[b]:seatX(b)};
+  at[a]=sb; at[b]=sa;
+  if(simMode){ cb(); return; }
+  gs.pan={from,start:Date.now(),ms:PAN_MS};
+  setTimeout(()=>{ gs.pan=null; cb(); },PAN_MS);
+}
+// The camera swing: the scene dims towards the middle of the pan, with streaks sweeping across
+function drawPanSweep(){
+  const p=gs&&gs.pan; if(!p) return;
+  const k=Math.min(1,(Date.now()-p.start)/p.ms), a=Math.sin(k*Math.PI);
+  bx.save();
+  bx.fillStyle=`rgba(5,2,12,${.55*a})`; bx.fillRect(-bW,-bH,bW*3,bH*3);
+  bx.globalAlpha=.35*a; bx.strokeStyle='#ff9955'; bx.lineWidth=1.5;
+  for(let i=0;i<7;i++){
+    const y=bH*(.25+.08*i), x=((k*1.6+i*.37)%1)*bW*1.4-bW*.2;
+    bx.beginPath(); bx.moveTo(x,y); bx.lineTo(x+bW*.25,y); bx.stroke();
+  }
+  bx.restore();
+}
 // Teams and targets. A seat knocked out of a 3–4 seat duel is `out` and takes no further part.
 function seatTeam(who){ return (gs[who]&&gs[who].team)||who; }
 function activeSeats(){ return PLAYERS.filter(w=>gs[w]&&!gs[w].out); }
@@ -3006,7 +3043,7 @@ function protectTarget(who,action){
 }
 // The foe with the least HP (ties go to a random one, so no seat is everyone's default)
 function weakestFoe(who){
-  const foes=foesOf(who);
+  const foes=targetableFoes(who).length?targetableFoes(who):foesOf(who);
   if(foes.length<=1) return foes[0];
   const low=Math.min(...foes.map(w=>gs[w].hp)), tied=foes.filter(w=>gs[w].hp===low);
   return tied[Math.floor(_rng()*tied.length)];
@@ -3036,6 +3073,7 @@ function promptNextPicker(){
   if(!battleRunning||gameEnded) return;
   const who=activeSeats().find(w=>!gs.pending[w]);
   if(!who){ showReveal(); return; }
+  if(inGate(who)){ gs.pending[who]={type:'el',cat:'pass',ok:true,gate:true}; promptNextPicker(); return; }
   if(!isHumanSeat(who)){
     gs.pending[who]=aiChooseSync(who);
     promptNextPicker();
@@ -3183,8 +3221,39 @@ function resolveSimRound(){
 // Round-end effects on `who`: DoTs, regen, the foe's minions, durations, then mana income.
 // Callers defer win checks so simultaneous tick deaths resolve as a draw.
 function tickRound(who){
-  elemTickEffects(who);
+  // In the Infernal Gate this round: nothing reaches him, and his effects wait for him (income still comes)
+  const g=gs[who].gate;
+  if(!(g&&g.until>=gs.round-1)) elemTickEffects(who);
   gs[who].mana=Math.min(MAX_MANA,gs[who].mana+elemIncome(who));
+}
+
+// At the end of his round in the Infernal Gate the camera swings round, he and the foe who struck him trade
+// sides, and he steps out casting the Gate's exit spell (Blue Fire) at them for free, at the Gate's ring.
+function gateExits(done){
+  const out=activeSeats().filter(w=>gs[w].gate&&gs[w].gate.until<gs.round);
+  let i=0;
+  const step=()=>{
+    if(!battleRunning||gameEnded) return;
+    if(i>=out.length){ done(); return; }
+    const who=out[i++], g=gs[who].gate;
+    const tgt=foesOf(who).includes(g.target)?g.target:weakestFoe(who);
+    const sp=g.exit&&sigById(who,g.exit);
+    if(!tgt){ gs[who].gate=null; step(); return; }
+    swapSides(who,tgt,()=>{
+      gs[who].gate=null;
+      const x=seatX(who);
+      if(!simMode){
+        vfxRing(x,wizFeetY(),['#ff7733','#ff3300','#ffcc66'],24,{spd:1.6,lift:-1.2,sz:3});
+        vfxPhaseIn(x,wizMidY(who),['#ff7733','#cc2200','#ffffff'],22);
+        addFloat(x,bH*.3,'🌀 Out of the Gate!','#ff7733',15);
+      }
+      if(!sp){ combatTimeout(step,600); return; }
+      deferWinCheck=true; dmgSource=who;
+      const action={type:'el',cat:'damage',elem:sp.el.elem,tier:g.tier,target:tgt,sig:sp.id,ok:true,outcome:'cast'};
+      combatTimeout(()=>executeSignature(who,sp,action,()=>{ settleWin(); step(); }),simMode?0:450);
+    });
+  };
+  step();
 }
 
 function runRoundTicks(){
@@ -3207,7 +3276,7 @@ function endSimRound(){
   gs.round++;
   if(GAME_OPTIONS.longDuels==='draw'&&gs.round>GAME_OPTIONS.roundLimit){ timeUp(); return; }
   if(suddenDeathLevel()===1&&!simMode){ addFloat(bW*.5,bH*.22,'⚡ SUDDEN DEATH ⚡','#ff5566',22); flash('#ff3344'); }
-  if(simMode){ runRoundTicks(); return; }
+  if(simMode){ runRoundTicks(); if(battleRunning&&!gameEnded) gateExits(()=>{}); return; }
 
   const delay=Math.max(0,(gs.lastAnimEnd||0)-Date.now())+600;
   if(aiTid) clearTimeout(aiTid);
@@ -3217,7 +3286,7 @@ function endSimRound(){
     runRoundTicks();
     if(!battleRunning||gameEnded) return;
     // Give any tick numbers time to be read before the screen is handed over
-    aiTid=setTimeout(beginPickPhase,gs.floats.length>floatsBefore?1300:200);
+    gateExits(()=>{ aiTid=setTimeout(beginPickPhase,gs.floats.length>floatsBefore?1300:200); });
   },delay);
 }
 
@@ -3407,6 +3476,8 @@ function sigCost(who,sp,tier){ return hasFreeSpell(who)?0:Math.max(0,sigAtTier(s
 function sectorOk(who,cat,elem,tier){
   if(elemForbidden(who,elem)) return false;
   const sp=sigAt(who,cat,elem);
+  // Every foe is in the Gate: nothing aimed at a foe can be picked (Cleanse Self still can)
+  if(!targetableFoes(who).length&&(sp?['strike','curse'].includes(sp.el.kind)||!!(sp.el.action&&sp.el.action.type==='siphon'):cat!=='protect')) return false;
   return sp?!sigBlocked(who,sp,tier):elemCost(who,cat,tier)<=gs[who].mana;
 }
 // Why a signature spell can't be cast at this ring right now ('' = it can)
@@ -3444,6 +3515,17 @@ function phaseGain(who,n){
   if(n>0) addFloat(seatX(who),bH*.44,'🌀 +'+n+' Mana','#b8a0e8',12);
 }
 function isPhased(who){ return gs[who]&&gs[who].phasedRound===gs.round; }
+// Infernal Gate (Frederick): struck while the Gate is open, he steps through it. From then until the end of
+// the next round he is in the Gate: off the screen and untouchable. Anything aimed at him fizzles, round-end
+// damage passes him by, and he picks nothing. Then the screen pans, he and the foe swap sides, and he steps
+// out casting Blue Fire for free (gateExits). gs[who].gate = {until (last round in the Gate), target, tier}.
+function inGate(who){ const g=gs&&gs[who]&&gs[who].gate; return !!g&&gs.round<=g.until; }
+// Foes that can be aimed at right now (not in the Gate)
+function targetableFoes(who){ return foesOf(who).filter(w=>!inGate(w)); }
+function enterGate(who,striker,tier,exit){
+  gs[who].gate={until:gs.round+1,target:striker,tier:tier||2,exit};
+  if(!simMode) VFX.gateSlip(who,null);
+}
 // Meditate: skip your spell to gain mana on top of income, a bet that the foe won't strike this round.
 // It resolves after every Damage, so this round's mana burns can't touch it. Not two rounds in a row.
 // Income-drain curses (Time Drain, Corruption, Maggot Cloud) cut the gain too, as they cut Channel in Classic.
@@ -3455,7 +3537,7 @@ function canMeditate(who){
 }
 function actionPriority(action){ return action.cat==='phase'?0:ELEM_CATS[action.cat]?ELEM_CATS[action.cat].stage:4; }
 function describeElemAction(action,who){
-  if(action.cat==='pass') return {icon:'…',name:'Waits'};
+  if(action.cat==='pass') return action.gate?{icon:'🌀',name:'In the Gate'}:{icon:'…',name:'Waits'};
   if(action.cat==='meditate') return {icon:'🧘',name:'Meditate'};
   if(action.cat==='phase') return {icon:'🌀',name:'Phase Shift'};
   const cat=ELEM_CATS[action.cat];
@@ -3565,7 +3647,7 @@ function hitsAllFoes(who,action){
 function strikeTargets(who,action){
   const foes=foesOf(who);
   if(!hitsAllFoes(who,action)||!foes.includes(action.target)) return [action.target];
-  return [action.target].concat(foes.filter(w=>w!==action.target)).filter(w=>!isPhased(w));
+  return [action.target].concat(foes.filter(w=>w!==action.target)).filter(w=>!isPhased(w)&&!inGate(w));
 }
 // Extra projectiles, for show, toward every target after the first
 function fanOut(who,tgts,proj,col){
@@ -3575,7 +3657,7 @@ function fanOut(who,tgts,proj,col){
 
 // After the ritual: with more than one foe, the picker taps who the spell is aimed at
 function chooseTarget(who,action){
-  const foes=foesOf(who);
+  const foes=targetableFoes(who).length?targetableFoes(who):foesOf(who);
   const done=t=>{ action.target=t; commitPick(who,action); };
   if(action.self) done(who);
   else if(action.ok&&canShareProtection(who,action)&&alliesOf(who).length)
@@ -3698,6 +3780,7 @@ function agonyBites(who,action,agony){
 }
 function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
+  if(inGate(who)){ combatTimeout(cb,200); return; }   // stepped through the Infernal Gate: off the field
   const agonies=effectsOf(st,'agony');
   agonies.forEach(agony=>{
     if(st.hp<=0||!agonyBites(who,action,agony)) return;
@@ -3728,6 +3811,15 @@ function executeElemental(who,action,cb){
   if(action.cat==='phase'){
     addFloat(x,bH*.3,'🌀 Phase Shift','#b8a0e8',15); VFX.vanished(x);
     combatTimeout(cb,700); return;
+  }
+  // Aimed into the Infernal Gate: it fizzles. A spell that hits every foe goes on to the ones still here.
+  if(action.outcome==='cast'&&needsTarget(who,action)&&action.target!==who&&inGate(action.target)){
+    const rest=hitsAllFoes(who,action)?targetableFoes(who):[];
+    if(rest.length) action.target=rest[0];
+    else {
+      addFloat(seatX(action.target),bH*.3,'🌀 Into the Gate — fizzles','#ff7733',14);
+      anim(who,'cast',600); combatTimeout(cb,700); return;
+    }
   }
   // Aimed at a wizard who phased out: it misses and they gain what it cost. A Greater strike still hits
   // everyone else, and each phased foe gains their share of its cost.
@@ -4164,9 +4256,8 @@ function strikeMiss(who,r,o){
   if(r.miss==='dodge'){ addFloat(tx,bH*.28,'💫 Dodged!','#b8a0e8',15); VFX.dodged(tx); }
   else if(r.miss==='gate'){
     // Infernal Gate: the caster steps through, the strike finds nothing, and the gate's fire lashes the striker
-    addFloat(tx,bH*.28,'🌀 Through the Gate!','#ff7733',15); VFX.gateSlip(r.tgt,who);
-    const n=r.absorb.retaliate||0;
-    if(n>0&&who!==r.tgt){ const src=dmgSource; dmgSource=r.tgt; elemFloatDmg(who,n,'🔥','#ff7733'); dmgSource=src; }
+    addFloat(tx,bH*.28,'🌀 Through the Gate!','#ff7733',15);
+    if(who!==r.tgt) enterGate(r.tgt,who,r.absorb.tier,r.absorb.exit);
   }
   else {
     addFloat(tx,bH*.28,r.miss==='vanish'?'👻 Missed!':'🔮 Absorbed!','#ffcc44',15);
@@ -4328,7 +4419,7 @@ function elemIncome(who){
 // Which foe to aim at: the weakest-looking (HP plus ward), with some noise so it can't be read
 let GANG_AWARE_AI=true;   // the simulator switches it off to compare
 function aiPickTarget(who){
-  const foes=foesOf(who);
+  const foes=targetableFoes(who).length?targetableFoes(who):foesOf(who);
   if(foes.length<=1) return foes[0];
   const noise=aiDifficulty==='normal'?10:40;
   const score=Object.fromEntries(foes.map(w=>[w,gs[w].hp+(hasWard(gs[w])?gs[w].shieldHp:0)+_rng()*noise]));
@@ -7883,9 +7974,9 @@ function simMatch(k1,k2,ai){
   const picks={p1:{},p2:{}};
   while(!gameEnded&&gs.round<=SIM_MAX_ROUNDS){
     PLAYERS.forEach(w=>{
-      const a=elemAIChoose(w);
+      const a=inGate(w)?{type:'el',cat:'pass',ok:true,gate:true}:elemAIChoose(w);
       gs.pending[w]=a;
-      const key=a.sig||(a.self?'cleanse':a.cat);
+      const key=a.gate?'inGate':a.sig||(a.self?'cleanse':a.cat);
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
@@ -7908,7 +7999,7 @@ function simMatchN(seats,ai){
     battleRunning=true; gameEnded=false;
     const outRound={};
     while(!gameEnded&&gs.round<=SIM_MAX_ROUNDS){
-      activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
+      activeSeats().forEach(w=>{ gs.pending[w]=inGate(w)?{type:'el',cat:'pass',ok:true,gate:true}:elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
       gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
@@ -8137,7 +8228,7 @@ const TUTORIAL_CONVOS={
     {key:'frederick',text:"I am Frederick the Black, and I have run out of patience for every one of you. Stand still. This will be loud."},
     {key:'frederick',text:"Doom Bolt is my Dark strike — cheap, quick, and a small blast: part of it rolls around your ward and finds you anyway."},
     {key:'frederick',text:"Blue Fire is my Fire strike. It costs me dearly and I do not care. It hits hard, and its blast is far bigger — a ward will barely slow it."},
-    {key:'frederick',text:"Infernal Gate, in the Fire sector of my Protection wheel, opens a gate beneath me. Your next strike finds empty air, and the gate's fire burns you for trying. Strike me, then. I dare you."},
+    {key:'frederick',text:"Infernal Gate, in the Fire sector of my Protection wheel, opens a gate beneath me. Strike me and I step through it — gone, untouchable, for a whole round — and then I step out behind you with Blue Fire in my hand. Strike me, then. I dare you."},
   ],
   nyxara:[
     {key:'nyxara',text:"My magic doesn't care how strong you are — only how much of you is left."},
