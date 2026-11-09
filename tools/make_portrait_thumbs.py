@@ -37,6 +37,7 @@ PIXEL_ART = {'sylvara', 'aurelia', 'mal', 'ponder', 'mary'}
 PIXEL_DEFAULT = dict(median=7, colour=1.25, contrast=1.15, autocontrast=True)
 PIXEL_TUNE = {
     'thessaly': dict(median=5, colour=1.1, autocontrast=False),  # gold blew out
+    'emberic':  dict(median=5, colour=1.0, autocontrast=False),  # too orange
 }
 
 FACES = {
