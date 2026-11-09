@@ -1415,5 +1415,86 @@
         }
       }
     ]
+  },
+  "daveron": {
+    "name": "DAVERON",
+    "title": "The Gravelord",
+    "sprite": "sprites/daveron.png",
+    "col": "#b8283c",
+    "taunts": [
+      "My guard has stood watch for three hundred years. You will not get past them.",
+      "Dance, my dead. Dance, and let the living hear the music.",
+      "Every year you have lived is a debt. I have come to collect."
+    ],
+    "hp": 84,
+    "dmgMult": 1.0,
+    "forbidden": [
+      "fire"
+    ],
+    "spells": [
+      {
+        "id": "raisegraveguard",
+        "name": "Raise Graveguard",
+        "icon": "⚰️",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "dark",
+          "cost": 5,
+          "tier": 2,
+          "effect": {
+            "type": "minion",
+            "minion": "skeleton",
+            "kind": "minion",
+            "elite": true,
+            "look": 2,
+            "soak": 10,
+            "dmg": 4,
+            "elem": "dark",
+            "max": 3,
+            "raise": 1,
+            "rounds": null
+          },
+          "desc": "Raise 1 armoured graveguard (max 3): each soaks 10 damage in front of your ward and strikes for 4 a round; dispels can't touch them"
+        }
+      },
+      {
+        "id": "dansemacabre",
+        "name": "Vanhal's Danse Macabre",
+        "icon": "🎻",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "arcane",
+          "cost": 3,
+          "tier": 2,
+          "requires": "skeletons",
+          "effect": {
+            "type": "danse",
+            "bonus": 3,
+            "rounds": 3
+          },
+          "desc": "Needs a skeleton. 3 rounds: each of your skeletons strikes for 3 more"
+        }
+      },
+      {
+        "id": "curseyears",
+        "name": "Curse of the Years",
+        "icon": "⏳",
+        "el": {
+          "cat": "dispel",
+          "kind": "curse",
+          "elem": "dark",
+          "cost": 4,
+          "tier": 2,
+          "effect": {
+            "type": "agony",
+            "dmg": 6,
+            "rounds": 4
+          },
+          "desc": "4 rounds: foe takes 6 whatever they do (Meditate escapes it, unless Corrupted)"
+        }
+      }
+    ]
   }
 }
