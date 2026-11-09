@@ -219,5 +219,16 @@
       {"id": "eventhorizon", "name": "Event Horizon", "cat": "damage", "elem": "arcane", "ring": 3, "cost": 7, "kind": "strike", "pctHp": {"div": 2, "min": 4}, "recoil": 2,
        "text": "Arcane strike of half the foe's HP (round down, min 4). You take 2."}
     ]
+  },
+  "daveron": {
+    "hp": 18,
+    "spells": [
+      {"id": "raisegraveguard", "name": "Raise Graveguard", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "skeleton", "kind": "minion", "soak": 3, "dmg": 1, "max": 3, "raise": 1},
+       "text": "Raise 1 graveguard (max 3 on the table). Each has 3 HP and stands in front of your ward: damage (strikes and ticks) wears down the oldest graveguard first, and only what gets past them reaches your ward. Dispels can't touch them. Each graveguard still standing deals 1 to the foe at every round end."},
+      {"id": "dansemacabre", "name": "Vanhal's Danse Macabre", "cat": "protect", "elem": "arcane", "ring": 1, "cost": 2, "kind": "buff", "requires": "skeleton", "effect": {"type": "danse", "bonus": 1},
+       "text": "Needs a graveguard on the table. Until dispelled: each of your graveguard deals 1 more at every round end."},
+      {"id": "curseyears", "name": "Curse of the Years", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 4, "kind": "curse", "effect": {"type": "agony", "dmg": 2},
+       "text": "Until cleansed: the foe takes 2 at every round end, unless they Meditated that round (Corruption stops Meditate escaping it)."}
+    ]
   }
 }
