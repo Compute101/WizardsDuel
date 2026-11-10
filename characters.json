@@ -917,6 +917,7 @@
     "title": "The Festering",
     "sprite": "sprites/gretch.png",
     "spriteHeight": 1.5,
+    "spriteHeightMulti": 1.2,
     "col": "#55aa33",
     "taunts": [
       "The rot was already inside you. Gretch just let it out.",

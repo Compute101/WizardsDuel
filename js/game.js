@@ -645,7 +645,13 @@ const SPRITE_SCALE=1.2;   // battle sprite height relative to drawWiz's sz
 // A character's optional "spriteHeight" in characters.json scales its battle sprite (e.g. Durin
 // is a dwarf, so 0.72 of a man's height; Gretch is a hulking troggoth, 1.5). Feet stay on the
 // floor; only the drawn figure (and its auras / effects) changes.
-function seatSpriteHeight(who){ const c=who&&seatCfg(who); return (c&&c.spriteHeight)||1; }
+// An optional "spriteHeightMulti" replaces it in 3–4 wizard games, where seats are closer together
+// (Gretch drops from 1.5 to 1.2 so he doesn't swallow his neighbour).
+function seatSpriteHeight(who){
+  const c=who&&seatCfg(who); if(!c) return 1;
+  if(PLAYERS.length>2&&c.spriteHeightMulti) return c.spriteHeightMulti;
+  return c.spriteHeight||1;
+}
 // Optional "spriteWidth": stretches the battle sprite sideways (Durin is a stocky dwarf: 1.2).
 function seatSpriteWidth(who){ const c=who&&seatCfg(who); return (c&&c.spriteWidth)||1; }
 // Where the wizards stand and how big they are, in scene coordinates. Feet sit low on the arena
