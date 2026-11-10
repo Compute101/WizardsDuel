@@ -11,7 +11,6 @@
     ],
     "hp": 90,
     "dmgMult": 1.1,
-    "shieldCostMod": -1,
     "spells": [
       {
         "id": "shield",
@@ -44,7 +43,7 @@
             "extend": 1,
             "holdWard": true
           },
-          "desc": "3 rounds: strikers take 10, and your ward doesn't wear; a ward already up lasts 1 round longer (outer ring: 2)"
+          "desc": "3 rounds: strikers take 10"
         }
       },
       {
@@ -219,7 +218,7 @@
       "Time bends to my will. Your next attempt? Already foreseen.",
       "You're as predictable as sunrise. Surprise me next time."
     ],
-    "hp": 90,
+    "hp": 86,
     "dmgMult": 1.05,
     "spells": [
       {
@@ -638,7 +637,7 @@
       "The hexes were already written. Your fate merely confirmed them.",
       "Kneel before the dark, or be consumed by it. There is no third option."
     ],
-    "hp": 88,
+    "hp": 84,
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
@@ -710,7 +709,7 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 78,
+    "hp": 84,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -1151,7 +1150,7 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 90,
+    "hp": 86,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1434,7 +1433,7 @@
       "Dance, my dead. Dance, and let the living hear the music.",
       "Every year you have lived is a debt. I have come to collect."
     ],
-    "hp": 85,
+    "hp": 95,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"

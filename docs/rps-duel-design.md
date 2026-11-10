@@ -51,6 +51,9 @@ What was built, including choices made while building:
   the spell; only Ponder's Mana Siphon) are paid first and steal at once, so their target pays from
   what's left — if they can no longer afford their pick, it fails.
 - **Wards:** raising one replaces any existing ward. A ward stops damage in the same round it's raised.
+  Like tabletop mode, a ward has **no round timer and doesn't fade**: it lasts until strikes, ticks
+  and dispels wear it down (`ELEM_WARD_ROUNDS` 0, `ELEM_WARD_DECAY` 1; they were 3 rounds and 75% kept
+  each round).
   A ward **resists every element but its own**: other elements wear it down at 75%, while a strike in
   its own element **unravels** it at 150% (`ELEM_WARD_TAKE`). A dispel of its element does double.
 - **Damage over time** (poison, burns, vines, Plague, Singularity, Blizzard) hits a ward first at each
@@ -79,8 +82,8 @@ What was built, including choices made while building:
   (Empower, blades) are immune.
 - Every rider applies to signature strikes of that element too. `ELEM_RIDERS` switches each one off,
   for testing in the balance simulator.
-- **Character stats:** each character's HP and damage multiplier apply. Eldrin's wards cost 1 less
-  (`shieldCostMod` in `characters.json`). Character spells: see Phase 4.
+- **Character stats:** each character's HP and damage multiplier apply. (Eldrin's wards used to cost
+  1 less, `shieldCostMod` in `characters.json`; dropped when wards stopped expiring, see below.) Character spells: see Phase 4.
 - **AI:** a weighted mixed strategy. It dispels when you have a ward, and on Normal it matches your
   ward's element. It wards more when you can afford a strong hit or its HP is low. On Normal it strikes
   with your ward's own element when it can. It prefers wards in elements you can't cast (70% Normal,
@@ -109,7 +112,7 @@ Starting numbers (to be tuned):
 - **Piercing is removed** (Lightning, Radiant, Feint, Charge). Those spells get a mana-burn rider instead.
 - **Freeze** no longer skips a turn. Instead, next round you can't pick one category, and everyone can see which.
 - **Haste is removed.**
-- **Everyone gets Shields.** Eldrin's cost less.
+- **Everyone gets Shields.**
 
 **Damage types** (6, one wheel sector each): fire, ice, lightning, arcane, physical, dark/necrotic.
 
@@ -168,7 +171,7 @@ so each spell's numbers can be tuned there.
 | Character | Spell | Wheel | Sector | Kind | Mana (inner / middle / outer) | Effect (middle ring) |
 |---|---|---|---|---|---|---|
 | Eldrin | 🛡 Shield | 🛡 Protection | 🌀 Arcane | Ward | 5 / 9 / 14 | Arcane ward of 45 |
-| Eldrin | ⚡ Counter | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 3 rounds: strikers take 10; your ward doesn't wear; a ward already up lasts +1 round (outer +2) |
+| Eldrin | ⚡ Counter | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 3 rounds: strikers take 10 (its ward-bracing did nothing once wards stopped expiring) |
 | Eldrin | 🔰 Ward | 🛡 Protection | ❄️ Ice | Enchantment (self) | 1 / 2 / 3 | 3 rounds: immune to curses (and their wear on wards); the next dispel only removes the Ward |
 | Malachar | 💪 Empower | 🛡 Protection | 🔥 Fire | Enchantment (self) | 1 / 2 / 3 | Next strike +50% |
 | Malachar | 🩸 Blood Pact | 🛡 Protection | 💀 Dark | Instant | 0 | Lose 15 HP, gain 8 mana |
@@ -498,3 +501,17 @@ through `guardSpell` / `guardLow`.
   mana 84%. Gretch only, 80 games: heal 2 / cost 6 54.8% · heal 2 / cost 7 47.1% · heal 3 / cost 7
   56.1% · heal 3 / cost 8 41.7%. Whole roster at 200 games: **heal 2, 15 HP, cost 6** puts Gretch at
   53.7%, everyone 47.5–53.7% (heal 3 at cost 7: Gretch 56.3%). Totem about 24% of his picks.
+
+### Wards last until worn down (tabletop rules)
+Wards used to last 3 rounds and keep 75% of their HP at each round end. Like tabletop mode, they now
+have no timer and don't fade: a ward stays up until strikes, ticks and dispels wear it down, or a new
+ward replaces it. `ELEM_WARD_ROUNDS` 0 means no timer (`shield` then just marks a ward as up) and
+`ELEM_WARD_DECAY` 1 means no fading; setting them back restores the old wards. Eldrin's Counter loses
+its ward-bracing (`holdWard` / `extend` only act with a timer); it still retaliates.
+- First run (100 games a matchup): Eldrin 60–61%, Ponder 41–42%, Daveron 39–41%; the rest in band.
+  Games stay about 20.6 rounds long.
+- Changes: Eldrin's wards no longer cost 1 less (`shieldCostMod` dropped) · Ponder HP 78 → 84 ·
+  Daveron 85 → 95 · Thessaly 90 → 86 · Aurelia 90 → 86 · Mordant 88 → 84.
+- Result (200 games a matchup): everyone 45.7–54.8% (Eldrin 54.7, Thessaly 54.8, Valdris 45.7,
+  Sylvara 45.8, Gretch 51.0, Daveron 49.0, Ponder 49.5); games average 20.7 rounds.
+

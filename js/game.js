@@ -3174,9 +3174,9 @@ function endSimRound(){
   gs.myTurn=false; gs.busy=true;
   PLAYERS.forEach(w=>{
     const st=gs[w];
-    if(st.shield>0){ st.shield--; if(st.shield<=0){ st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null; } }
-    // Counter (holdWard) braces the ward: it doesn't wear away while Counter lasts
-    if(st.shield>0&&!effectsOf(st,'counter').some(e=>e.holdWard)) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
+    if(ELEM_WARD_ROUNDS&&st.shield>0){ st.shield--; if(st.shield<=0){ st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null; } }
+    // Counter (holdWard) braces the ward: it doesn't wear away while Counter lasts (only with fading wards)
+    if(ELEM_WARD_DECAY<1&&st.shield>0&&!effectsOf(st,'counter').some(e=>e.holdWard)) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
   });
   gs.round++;
   if(GAME_OPTIONS.longDuels==='draw'&&gs.round>GAME_OPTIONS.roundLimit){ timeUp(); return; }
@@ -3202,8 +3202,11 @@ function endSimRound(){
 // so a ward raised this round already stops this round's damage. See docs/rps-duel-design.md.
 const ELEM_START_MANA=6;
 const ELEM_INCOME=4;            // mana every seat gains at the end of each round
-const ELEM_WARD_ROUNDS=3;       // a ward lasts the round it is raised + 2 more
-const ELEM_WARD_DECAY=0.75;     // ward HP kept at each round end
+// Wards have no round timer and don't fade, as in tabletop mode: a ward lasts until strikes, ticks
+// and dispels wear it down, or a new ward replaces it. (Set a number of rounds here, and a decay
+// below 1, to bring back the old 3-round fading wards.)
+const ELEM_WARD_ROUNDS=0;       // 0: no timer. Otherwise a ward lasts the round it is raised + n−1 more
+const ELEM_WARD_DECAY=1;        // ward HP kept at each round end (1: no fading)
 // Element riders on strikes. Plain strikes never lock (hard locks are for signature spells); a
 // chance roll waits for the target's next pick, so neither side can plan around it.
 //   Lightning burns mana (even through a ward) · Ice frostbites and Dark dreads (a Damage / Protection
@@ -3457,7 +3460,7 @@ function openElemWheel(cat){
   selfBtn.textContent='✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
   const ruleText={
     damage:'A ward\'s own element unravels it · Lightning burns mana · Physical crushes wards · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
-    protect:'Wards last 3 rounds, fading each round · they resist other elements, but their own element unravels them',
+    protect:'Wards last until worn down or replaced · they resist other elements, but their own element unravels them',
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
   document.getElementById('wheel-rule').textContent=ruleText;
@@ -3880,7 +3883,7 @@ function executeSignature(who,sp,action,cb){
     // A buff that also raises a light ward (Blink) — never replaces a stronger ward already up
     if(el.ward&&!(hasWard(as)&&as.shieldHp>=el.ward)){ raiseWard(ally,el.elem,el.ward,0); as.wardSig=sp.id; }
     // A buff that holds up a ward already standing (Counter): it lasts longer
-    if(el.effect.extend&&hasWard(as)){ as.shield+=el.effect.extend; addFloat(seatX(ally),bH*.34,'🛡 Ward +'+el.effect.extend+' round'+(el.effect.extend>1?'s':''),wardCol(as),12); }
+    if(ELEM_WARD_ROUNDS&&el.effect.extend&&hasWard(as)){ as.shield+=el.effect.extend; addFloat(seatX(ally),bH*.34,'🛡 Ward +'+el.effect.extend+' round'+(el.effect.extend>1?'s':''),wardCol(as),12); }
     if(fx.self) fx.self(mine?ctx:actx); else { vfxPhaseIn(seatX(mine?who:ally),wizMidY(mine?who:ally),[e.col],14); anim(mine?who:ally,'shield',700); }
     combatTimeout(cb,900);
     return;
@@ -3928,7 +3931,7 @@ function executeSignature(who,sp,action,cb){
 function wardCol(st){ return st.shieldType?elemById(st.shieldType).col:'#4af0ff'; }
 function raiseWard(who,elem,power,retaliate){
   const st=gs[who], el=elemById(elem);
-  st.shield=ELEM_WARD_ROUNDS;
+  st.shield=ELEM_WARD_ROUNDS||1;   // with no timer, shield just marks a ward as up
   st.shieldHp=power; st.shieldType=elem; st.wardRetaliate=retaliate; st.wardSig=null;
   addFloat(seatX(who),bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
   VFX.wardRaise(seatX(who),el.col);
@@ -4441,7 +4444,7 @@ function elemAIChoose(who){
     if(e.type==='absorbNext'&&effectsOf(me,'dodge').length) v+=2;
     if(sp.el.ward&&buffsOf(me).length&&!hasWard(me)) v+=2;
     if(e.type==='warding'&&hasWard(me)&&!effectsOf(me,'warding').length) v+=2;
-    if(e.extend&&hasWard(me)) v+=2;   // Counter holds a standing ward up longer   // Ward takes the next dispel for the ward
+    if(ELEM_WARD_ROUNDS&&e.extend&&hasWard(me)) v+=2;   // Counter holds a standing ward up longer   // Ward takes the next dispel for the ward
     if(sp===siphon&&(siphonNow||cover.length)) v+=2;
     if(e.type==='enthral'&&(hasWard(me)||effectsOf(opp,'spellbind').length)) v+=2;
     if(e.type==='danse') v+=guardCount(me);   // more dancers, more worth it
@@ -4510,7 +4513,7 @@ function elemStatusTags(){
     if(hasFreeSpell(w)) tags.push(`<span class="status-tag ward">✨ ${name} FREE SPELL</span>`);
     if(hasWard(st)){
       const el=elemById(st.shieldType);
-      tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${st.shieldHp} (${st.shield})</span>`);
+      tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${st.shieldHp}${ELEM_WARD_ROUNDS?' ('+st.shield+')':''}</span>`);
     }
     (st.effects||[]).filter(e=>e.type!=='minion').forEach(e=>{
       tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.rounds!=null?' ('+e.rounds+')':''}</span>`);
@@ -7943,7 +7946,7 @@ const TUTORIAL_CONVOS={
     {key:'zacharius',text:"Every element carries an extra effect. Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
-    {key:'eldrin', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
+    {key:'eldrin', text:"A ward stays up until it's worn down — by strikes, by dispels, or by damage over time like poison, burns, vines and plague, which hit your ward first. Raising a new one replaces the old one."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],
@@ -7974,9 +7977,9 @@ const TUTORIAL_CONVOS={
     {key:'ponder',text:"On Hard, all twelve glyphs are active and a single wrong tap breaks the ritual. You are relying entirely on memory and focus. Good luck!"},
   ],
   eldrin:[
-    {key:'eldrin',text:"I am Eldrin — the Stalwart. My wards cost less than anyone else's. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
+    {key:'eldrin',text:"I am Eldrin — the Stalwart. My Shield is the strongest ward of all. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
     {key:'eldrin',text:"My Shield takes the Arcane sector of my Protection wheel — a far larger ward than most wizards can raise."},
-    {key:'eldrin',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds — and braces my Shield, so it lasts longer and stops wearing away. Ward, in the Ice sector, makes me immune to curses, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
+    {key:'eldrin',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds — strike into my Shield and you'll feel it. Ward, in the Ice sector, makes me immune to curses, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
     {key:'eldrin',text:"Dispels are my weakness. Keep a ward between your buffs and their unbinding, and I am very hard to wear down."},
   ],
   mal:[
