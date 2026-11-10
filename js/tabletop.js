@@ -71,9 +71,9 @@ const PRESETS={
   // Income is 1 lower, because spells never fizzle and no mana goes on retries.
   // Two ways to flick are being tried: 'chances' (5 goes at one pot) and 'cost' (flick what you paid).
   beginner:{flickMode:'chances', pot:0.12, squops:0},
-  // Flick Your Mana also flicks at least 4 times, and refunds a fizzled Lesser spell in full and a
-  // Normal one by half, so small spells aren't a wasted turn.
-  beginnerCost:{flickMode:'cost', pot:0.12, squops:0, minFlicks:4, fizzleRefund:[1,0.5,0]},
+  // Flick Your Mana refunds a fizzled Lesser spell in full and a Normal one by half, so small
+  // spells aren't a costly miss. (A 4-flick minimum was tried and made Lesser too good: minFlicks.)
+  beginnerCost:{flickMode:'cost', pot:0.12, squops:0, fizzleRefund:[1,0.5,0]},
 };
 const DEFAULTS=JSON.parse(JSON.stringify(RULES));
 function useRules(name){

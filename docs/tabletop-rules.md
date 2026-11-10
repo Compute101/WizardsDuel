@@ -88,8 +88,7 @@ There are two ways to flick, still being tried out. Agree which one before the g
 ### Flick Your Mana
 
 - Pay the spell's cost, then **flick every mana wink you paid**: 2 for a Lesser spell, 4 for Normal, 6 for Greater (a signature spell's card cost).
-- **Always flick at least 4 times.** For a Lesser spell (or any spell costing less than 4), pick your winks up and flick them again until you've had 4 flicks.
-- **If any of them pots, the spell is cast**, and **every wink you pot from the mana you paid comes back to your mana** (at most the spell's cost).
+- **If any of them pots, the spell is cast**, and **every wink you pot comes back to your mana.**
 - **No pot and the spell fizzles.** How much mana you get back depends on the level:
 
 | Level | Mana back when it fizzles |
@@ -99,7 +98,7 @@ There are two ways to flick, still being tried out. Agree which one before the g
 | Greater | none |
 
 - Signature spells and Cleanse use their level.
-- So a Lesser spell is a safe try, a Normal one a fair risk and a Greater one a big gamble. At 12%: Lesser and Normal go off about 2 times in 5 and Greater about 1 in 2.
+- So a Lesser spell is a safe try, a Normal one a fair risk and a Greater one a big gamble. At 12%: Lesser goes off about 1 time in 4, Normal about 2 in 5 and Greater about 1 in 2.
 - Example: a Normal Fire strike costs 4. You flick all 4 and pot 1: the strike is cast, and that wink goes back to your mana, so it cost you 3. If none had potted, you'd get 2 back.
 
 ### Optional: near misses
@@ -110,7 +109,7 @@ If you want fewer outright fizzles, agree before the game what counts as a **nea
 
 **Some wizards start with different HP** in Beginner rules, shown next to their HP in **Wizards** for each way of flicking. The simulator balanced them separately.
 
-In the simulator, about half of Five Chances spells and of Flick Your Mana spells go off (45%), and games last about 11 rounds. When you're potting about half your flicks, move up to the full rules (or keep Beginner rules and move your handicap line back).
+In the simulator, about half of Five Chances spells and two in five Flick Your Mana spells go off, and games last about 11 rounds. When you're potting about half your flicks, move up to the full rules (or keep Beginner rules and move your handicap line back).
 
 ## Wards (Protection)
 
@@ -186,7 +185,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Drain** | Damage | Dark | Normal | 4 | Dark strike of 5. Heal half the HP damage it deals (round down). |
 
 ### SYLVARA — The Verdant
-**HP 18** · Can't cast: Fire, Dark
+**HP 18** (Beginner: Five Chances **18**, Flick Your Mana **19**) · Can't cast: Fire, Dark
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -213,7 +212,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Frenzy** | Protection | Fire | Lesser | 2 | Until dispelled: your strikes deal +2, but each costs you 1 HP. |
 
 ### CINDER — The Volatile
-**HP 17** (Beginner: Five Chances **18**, Flick Your Mana **19**) · Can't cast: Ice
+**HP 17** (Beginner: Five Chances **18**, Flick Your Mana **20**) · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -231,7 +230,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Blizzard** | Dispel | Ice | Normal | 3 | Until cleansed: at every round end the foe takes 1 and loses 1 mana. |
 
 ### ZACHARIUS — The Conductor
-**HP 19** · Can't cast: Physical
+**HP 19** (Beginner: Five Chances **19**, Flick Your Mana **20**) · Can't cast: Physical
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -249,7 +248,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Radiant** | Damage | Arcane | Normal | 3 | Arcane strike of 3. The foe loses 2 mana. |
 
 ### MORDANT — The Defiler
-**HP 18** · Can't cast: Lightning
+**HP 18** (Beginner: Five Chances **18**, Flick Your Mana **17**) · Can't cast: Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -258,7 +257,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Corruption** | Dispel | Physical | Normal | 2 | Until cleansed: the foe gains 1 less mana each round (and from Meditate), and Meditate doesn't escape Agony. |
 
 ### PONDER — The Apprentice
-**HP 17** (Beginner: Five Chances **18**, Flick Your Mana **18**) · Can't cast: Dark, Fire
+**HP 17** (Beginner: Five Chances **18**, Flick Your Mana **19**) · Can't cast: Dark, Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -321,7 +320,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Spellbind** | Dispel | Dark | Normal | 2 | Until cleansed: the foe's most-cast category (Damage, Protection or Dispel) costs 3 more. |
 
 ### KORVATH — The Wyrmlord
-**HP 19** (Beginner: Five Chances **18**, Flick Your Mana **16**) · Can't cast: Ice
+**HP 19** (Beginner: Five Chances **18**, Flick Your Mana **15**) · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -339,7 +338,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Unstable Concoction** | Damage | Arcane | Normal | 4 | Arcane strike: roll a die and deal that much. On a 6, roll again and add it (keep going on 6s). |
 
 ### NYXARA — The Hollow
-**HP 18** (Beginner: Five Chances **17**, Flick Your Mana **17**) · Can't cast: Lightning
+**HP 18** (Beginner: Five Chances **17**, Flick Your Mana **16**) · Can't cast: Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -348,7 +347,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Event Horizon** | Damage | Arcane | Greater | 7 | Arcane strike of half the foe's HP (round down, min 4). You take 2. |
 
 ### DAVERON — The Gravelord
-**HP 18** (Beginner: Five Chances **16**, Flick Your Mana **18**) · Can't cast: Fire
+**HP 18** (Beginner: Five Chances **16**, Flick Your Mana **17**) · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
