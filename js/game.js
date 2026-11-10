@@ -1371,8 +1371,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   bx.restore();   // end of the aura oval
   // Ward orbiters on the far side, behind the sprite
   if(shielded>0) drawWardOrbiters(x,y-sz*.62,sz,state,'back',fShield,t);
-  // Bone Totem (Gretch): planted on the floor beside him, toward the foe, behind his sprite
-  drawBoneTotem(x,y,sz,who,flip,auraFade(who,'boneTotem',!!(state&&state.boneTotem>0)),t);
   // Minions keep the original (pre-WIZ_GROW) size and spacing, standing on the same floor
   const minionDir=flip?1:-1, msz=sz/seatSpriteHeight(who)/wizGrow(), mwy=y-msz*.5;
   // Simulacra (Mirel): ghostly wizard clones, same sprite/animation as the caster
@@ -1440,11 +1438,13 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   bx.restore();
   // Ward orbiters on the near side, in front of the sprite (x0: the fallback figure flips x)
   if(shielded>0) drawWardOrbiters(x0,y-sz*.62,sz,state,'front',fShield,t);
+  // Bone Totem (Gretch): planted on the floor beside him, toward the foe, in front of his sprite and ward
+  drawBoneTotem(x0,y,sz,who,flip,auraFade(who,'boneTotem',!!(state&&state.boneTotem>0)),t);
   // Skeletons stand in front of their master and his ward, so they're drawn last
   if(state&&state.skeletons&&state.skeletons.length) drawSkeletons(x,y,sz,who,flip,state.skeletons,t);
 }
 // Bone Totem (Gretch's regen buff): sprites/bonetotem.png planted on the floor on the foe's side of
-// him, behind his sprite. It rises out of the ground as it phases in (fade = auraFade), sways a little
+// him, in front of his sprite and ward. It rises out of the ground as it phases in (fade = auraFade), sways a little
 // and pulses with a sickly green glow. A missing file falls back to a bone-coloured skull circle.
 const boneTotemImg={img:new Image(),ready:false};
 boneTotemImg.img.onload=()=>{ boneTotemImg.ready=true; };
@@ -1455,7 +1455,7 @@ function drawBoneTotem(x,y,sz,who,flip,fade,t){
   const hsz=sz*SPRITE_SCALE, h=hsz*BONE_TOTEM_HEIGHT;   // sized from the caster's own drawn height
   const tx=x+(flip?1:-1)*hsz*BONE_TOTEM_DX;
   bx.save();
-  bx.globalAlpha*=fade;
+  bx.globalAlpha=fade;   // its own object: stays solid even while its caster is Vanished
   if(boneTotemImg.ready){
     const img=boneTotemImg.img, w=h*img.naturalWidth/img.naturalHeight, rise=(1-fade)*h*.25;
     const glow=0.5+0.5*Math.sin(t/520);
