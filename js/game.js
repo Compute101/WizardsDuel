@@ -32,7 +32,7 @@ const CHAR_FLAVOUR={
   ponder:"Young but fierce — vanish from sight and plunder your foe's magic.",
   durin:'The mountain endures. Outlast every spell — stone by stone.',
   weizan:'Build blades slowly. Release all at once. Dispel kills your investment — protect it.',
-  gretch:'Infect and drain. The totem heals you — guard it with a ward, or a Dispel will strip it.',
+  gretch:'Infect and drain. The Bone Totem heals you every round and soaks hits until it is smashed — Dispels can\'t touch it.',
   valdris:'His skeletons stand in front of his ward and soak your damage, and dispels can\'t touch them, so batter through with strikes. Cleanse Soul Tithe first, or each skeleton you kill costs you mana.',
   mirel:'Simulacra strike every round until dispelled. Bewitch turns the next strike against its caster.',
   thessaly:'Enthral calls their next move — guess right and it is lost, its mana yours. Spellbind taxes their favourite move — strike her over and over, and it is your strikes that cost more. Weave wards her, then turns strikes into mana denial.',
@@ -642,9 +642,16 @@ const SPRITE_CFG={
   animRows:{idle:0,cast:1,hit:2,shield:3,death:4},
 };
 const SPRITE_SCALE=1.2;   // battle sprite height relative to drawWiz's sz
-// A character's optional "spriteHeight" in characters.json shrinks its battle sprite (e.g. Durin
-// is a dwarf, so 0.72 of a man's height). Feet stay on the floor; only the drawn figure changes.
-function seatSpriteHeight(who){ const c=who&&seatCfg(who); return (c&&c.spriteHeight)||1; }
+// A character's optional "spriteHeight" in characters.json scales its battle sprite (e.g. Durin
+// is a dwarf, so 0.72 of a man's height; Gretch is a hulking troggoth, 1.5). Feet stay on the
+// floor; only the drawn figure (and its auras / effects) changes.
+// An optional "spriteHeightMulti" replaces it in 3–4 wizard games, where seats are closer together
+// (Gretch drops from 1.5 to 1.2 so he doesn't swallow his neighbour).
+function seatSpriteHeight(who){
+  const c=who&&seatCfg(who); if(!c) return 1;
+  if(PLAYERS.length>2&&c.spriteHeightMulti) return c.spriteHeightMulti;
+  return c.spriteHeight||1;
+}
 // Optional "spriteWidth": stretches the battle sprite sideways (Durin is a stocky dwarf: 1.2).
 function seatSpriteWidth(who){ const c=who&&seatCfg(who); return (c&&c.spriteWidth)||1; }
 // Where the wizards stand and how big they are, in scene coordinates. Feet sit low on the arena
@@ -1292,17 +1299,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     }
     bx.globalAlpha=1; bx.shadowBlur=0;
   }
-  // Bone Totem: small skull circle below wizard
-  if(state&&state.boneTotem>0){
-    const tx2=x, ty2=y+sz*.18;
-    bx.globalAlpha=0.8+0.15*Math.sin(t/400);
-    bx.fillStyle='#cccc88'; bx.shadowColor='#aa9944'; bx.shadowBlur=6;
-    bx.beginPath(); bx.arc(tx2,ty2,sz*.09,0,Math.PI*2); bx.fill();
-    bx.fillStyle='#553300'; bx.beginPath(); bx.arc(tx2,ty2,sz*.035,0,Math.PI*2); bx.fill();
-    bx.strokeStyle='#aa9944'; bx.lineWidth=1.5;
-    bx.beginPath(); bx.arc(tx2,ty2,sz*.13,0,Math.PI*2); bx.stroke();
-    bx.globalAlpha=1; bx.shadowBlur=0;
-  }
   // Enthralled: purple swirl rings
   if(state&&state.enthralled>0){
     for(let off=0;off<2;off++){
@@ -1448,8 +1444,39 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   bx.restore();
   // Ward orbiters on the near side, in front of the sprite (x0: the fallback figure flips x)
   if(shielded>0) drawWardOrbiters(x0,y-sz*.62,sz,state,'front',fShield,t);
+  // Bone Totem (Gretch): planted on the floor beside him, toward the foe, in front of his sprite and ward
+  drawBoneTotem(x0,y,sz,who,flip,auraFade(who,'boneTotem',!!(state&&state.boneTotem>0)),t);
   // Skeletons stand in front of their master and his ward, so they're drawn last
   if(state&&state.skeletons&&state.skeletons.length) drawSkeletons(x,y,sz,who,flip,state.skeletons,t);
+}
+// Bone Totem (Gretch's regen buff): sprites/bonetotem.png planted on the floor on the foe's side of
+// him, in front of his sprite and ward. It rises out of the ground as it phases in (fade = auraFade), sways a little
+// and pulses with a sickly green glow. A missing file falls back to a bone-coloured skull circle.
+const boneTotemImg={img:new Image(),ready:false};
+boneTotemImg.img.onload=()=>{ boneTotemImg.ready=true; };
+boneTotemImg.img.src='sprites/bonetotem.png';
+const BONE_TOTEM_HEIGHT=0.5, BONE_TOTEM_DX=0.18;   // in units of the caster's drawn height
+function drawBoneTotem(x,y,sz,who,flip,fade,t){
+  if(fade<=0) return;
+  const hsz=sz*SPRITE_SCALE, h=hsz*BONE_TOTEM_HEIGHT;   // sized from the caster's own drawn height
+  const tx=x+(flip?1:-1)*hsz*BONE_TOTEM_DX;
+  bx.save();
+  bx.globalAlpha=fade;   // its own object: stays solid even while its caster is Vanished
+  if(boneTotemImg.ready){
+    const img=boneTotemImg.img, w=h*img.naturalWidth/img.naturalHeight, rise=(1-fade)*h*.25;
+    const glow=0.5+0.5*Math.sin(t/520);
+    bx.translate(tx,y+rise);
+    bx.rotate(Math.sin(t/1400)*0.015);
+    bx.shadowColor=`rgba(85,170,51,${0.45+0.35*glow})`; bx.shadowBlur=10+8*glow;
+    if(!flip) bx.scale(-1,1);
+    bx.drawImage(img,-w/2,-h,w,h);
+  } else {
+    const r=h*.12, cy=y-r;
+    bx.fillStyle='#cccc88'; bx.shadowColor='#aa9944'; bx.shadowBlur=6;
+    bx.beginPath(); bx.arc(tx,cy,r,0,Math.PI*2); bx.fill();
+    bx.fillStyle='#553300'; bx.beginPath(); bx.arc(tx,cy,r*.4,0,Math.PI*2); bx.fill();
+  }
+  bx.restore();
 }
 // Skeletons (Valdris): one sprite per summon strength (see SKELETON_SPRITES), or a bone-coloured
 // circle if that art is missing. Up to five stand guard on the foe's side of their master
@@ -3147,9 +3174,14 @@ function endSimRound(){
   gs.myTurn=false; gs.busy=true;
   PLAYERS.forEach(w=>{
     const st=gs[w];
-    if(st.shield>0){ st.shield--; if(st.shield<=0){ st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null; } }
+    if(ELEM_WARD_ROUNDS&&st.shield>0){ st.shield--; if(st.shield<=0){ st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null; } }
     // Counter (holdWard) braces the ward: it doesn't wear away while Counter lasts
-    if(st.shield>0&&!effectsOf(st,'counter').some(e=>e.holdWard)) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
+    const braced=effectsOf(st,'counter').some(e=>e.holdWard);
+    if(ELEM_WARD_DECAY<1&&st.shield>0&&!braced) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
+    if(ELEM_WARD_WEAR&&hasWard(st)&&!braced){
+      st.shieldHp-=ELEM_WARD_WEAR;
+      if(st.shieldHp<=0){ st.shield=0; st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null; }
+    }
   });
   gs.round++;
   if(GAME_OPTIONS.longDuels==='draw'&&gs.round>GAME_OPTIONS.roundLimit){ timeUp(); return; }
@@ -3175,8 +3207,13 @@ function endSimRound(){
 // so a ward raised this round already stops this round's damage. See docs/rps-duel-design.md.
 const ELEM_START_MANA=6;
 const ELEM_INCOME=4;            // mana every seat gains at the end of each round
-const ELEM_WARD_ROUNDS=3;       // a ward lasts the round it is raised + 2 more
-const ELEM_WARD_DECAY=0.75;     // ward HP kept at each round end
+// Wards have no round timer, as in tabletop mode: a ward lasts until it runs out. Like the tabletop
+// ward losing 1 wink a round, it wears ELEM_WARD_WEAR HP at every round end (about one wink's worth),
+// and strikes, ticks and dispels wear it too. Counter (holdWard) stops the round-end wear.
+// (Set rounds to 3, decay to 0.75 and wear to 0 to bring back the old 3-round fading wards.)
+const ELEM_WARD_ROUNDS=0;       // 0: no timer. Otherwise a ward lasts the round it is raised + n−1 more
+const ELEM_WARD_DECAY=1;        // share of ward HP kept at each round end (1: none lost this way)
+const ELEM_WARD_WEAR=4;         // flat ward HP lost at each round end
 // Element riders on strikes. Plain strikes never lock (hard locks are for signature spells); a
 // chance roll waits for the target's next pick, so neither side can plan around it.
 //   Lightning burns mana (even through a ward) · Ice frostbites and Dark dreads (a Damage / Protection
@@ -3334,7 +3371,7 @@ function sigAtTier(sp,tier){
   if(el.arc) el.arc.dmg=n(el.arc.dmg);
   if(el.chance!=null) el.chance=pct(el.chance,1);
   const e=el.effect;
-  if(e&&e.soak&&e.elite){ e.soak=n(e.soak); e.dmg=n(e.dmg); }   // elite (Daveron's graveguard): the ring makes each one tougher, not more of them
+  if(e&&e.soak&&e.elite){ e.soak=n(e.soak); if(e.dmg) e.dmg=n(e.dmg); if(e.heal) e.heal=n(e.heal); }   // elite (Daveron's graveguard, Gretch's totem): the ring makes each one tougher, not more of them
   else if(e&&e.soak){ e.raise=Math.max(1,(e.raise||1)+tier-2); }
   else if(e){
     ['perRound','retaliate','dmg','n','bonus','burn','extra','steal'].forEach(k=>{ if(e[k]) e[k]=n(e[k]); });
@@ -3430,7 +3467,7 @@ function openElemWheel(cat){
   selfBtn.textContent='✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
   const ruleText={
     damage:'A ward\'s own element unravels it · Lightning burns mana · Physical crushes wards · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
-    protect:'Wards last 3 rounds, fading each round · they resist other elements, but their own element unravels them',
+    protect:'Wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · they resist other elements, but their own element unravels them',
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
   document.getElementById('wheel-rule').textContent=ruleText;
@@ -3853,7 +3890,7 @@ function executeSignature(who,sp,action,cb){
     // A buff that also raises a light ward (Blink) — never replaces a stronger ward already up
     if(el.ward&&!(hasWard(as)&&as.shieldHp>=el.ward)){ raiseWard(ally,el.elem,el.ward,0); as.wardSig=sp.id; }
     // A buff that holds up a ward already standing (Counter): it lasts longer
-    if(el.effect.extend&&hasWard(as)){ as.shield+=el.effect.extend; addFloat(seatX(ally),bH*.34,'🛡 Ward +'+el.effect.extend+' round'+(el.effect.extend>1?'s':''),wardCol(as),12); }
+    if(ELEM_WARD_ROUNDS&&el.effect.extend&&hasWard(as)){ as.shield+=el.effect.extend; addFloat(seatX(ally),bH*.34,'🛡 Ward +'+el.effect.extend+' round'+(el.effect.extend>1?'s':''),wardCol(as),12); }
     if(fx.self) fx.self(mine?ctx:actx); else { vfxPhaseIn(seatX(mine?who:ally),wizMidY(mine?who:ally),[e.col],14); anim(mine?who:ally,'shield',700); }
     combatTimeout(cb,900);
     return;
@@ -3901,7 +3938,7 @@ function executeSignature(who,sp,action,cb){
 function wardCol(st){ return st.shieldType?elemById(st.shieldType).col:'#4af0ff'; }
 function raiseWard(who,elem,power,retaliate){
   const st=gs[who], el=elemById(elem);
-  st.shield=ELEM_WARD_ROUNDS;
+  st.shield=ELEM_WARD_ROUNDS||1;   // with no timer, shield just marks a ward as up
   st.shieldHp=power; st.shieldType=elem; st.wardRetaliate=retaliate; st.wardSig=null;
   addFloat(seatX(who),bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
   VFX.wardRaise(seatX(who),el.col);
@@ -4209,10 +4246,16 @@ function elemTickEffects(who){
     elemHeal(who,e.perRound,e.icon);
     (TICK_VFX[e.id]||TICK_VFX.regen)(x,wizMidY(x));
   });
+  // Healing minions (Gretch's Bone Totem): heal their owner every round while they stand
+  effectsOf(st,'minion').filter(m=>m.heal).forEach(m=>{
+    if(st.hp<=0) return;
+    elemHeal(who,Math.round(m.heal*suddenDeathMult()),m.icon);
+    (TICK_VFX[m.id]||TICK_VFX.regen)(x,wizMidY(x));
+  });
   activeSeats().filter(o=>o!==who&&minionTarget(o)===who).forEach(owner=>{
     // Danse Macabre (Daveron): every skeleton strikes harder while it lasts
     const danse=effectsOf(gs[owner],'danse').reduce((a,e)=>a+e.bonus,0);
-    effectsOf(gs[owner],'minion').forEach(m=>{
+    effectsOf(gs[owner],'minion').filter(m=>m.dmg).forEach(m=>{   // a totem doesn't strike
       const el=elemById(m.elem||'physical');
       dmgSource=owner;
       const bonus=m.minion==='skeleton'?danse:0;
@@ -4408,7 +4451,7 @@ function elemAIChoose(who){
     if(e.type==='absorbNext'&&effectsOf(me,'dodge').length) v+=2;
     if(sp.el.ward&&buffsOf(me).length&&!hasWard(me)) v+=2;
     if(e.type==='warding'&&hasWard(me)&&!effectsOf(me,'warding').length) v+=2;
-    if(e.extend&&hasWard(me)) v+=2;   // Counter holds a standing ward up longer   // Ward takes the next dispel for the ward
+    if(ELEM_WARD_ROUNDS&&e.extend&&hasWard(me)) v+=2;   // Counter holds a standing ward up longer   // Ward takes the next dispel for the ward
     if(sp===siphon&&(siphonNow||cover.length)) v+=2;
     if(e.type==='enthral'&&(hasWard(me)||effectsOf(opp,'spellbind').length)) v+=2;
     if(e.type==='danse') v+=guardCount(me);   // more dancers, more worth it
@@ -4477,12 +4520,16 @@ function elemStatusTags(){
     if(hasFreeSpell(w)) tags.push(`<span class="status-tag ward">✨ ${name} FREE SPELL</span>`);
     if(hasWard(st)){
       const el=elemById(st.shieldType);
-      tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${st.shieldHp} (${st.shield})</span>`);
+      tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${st.shieldHp}${ELEM_WARD_ROUNDS?' ('+st.shield+')':''}</span>`);
     }
     (st.effects||[]).filter(e=>e.type!=='minion').forEach(e=>{
       tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.rounds!=null?' ('+e.rounds+')':''}</span>`);
     });
-    const minions=effectsOf(st,'minion');
+    // A totem shows its own HP (it's smashed, not dispelled)
+    effectsOf(st,'minion').filter(m=>m.minion==='totem').forEach(m=>{
+      tags.push(`<span class="status-tag regen">${m.icon} ${name} ${m.name.toUpperCase()} ${m.hp} HP</span>`);
+    });
+    const minions=effectsOf(st,'minion').filter(m=>m.minion!=='totem');
     if(minions.length) tags.push(`<span class="status-tag foresight">${minions.map(m=>m.icon).join('')} ${name} ×${minions.length}</span>`);
   });
   return tags;
@@ -7906,7 +7953,7 @@ const TUTORIAL_CONVOS={
     {key:'zacharius',text:"Every element carries an extra effect. Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
-    {key:'eldrin', text:"Wards last three rounds and fade a little each round. Raising a new one replaces the old one. Damage over time — poison, burns, vines, plague — hits your ward first too."},
+    {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Raising a new one replaces the old one."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],
@@ -7937,9 +7984,9 @@ const TUTORIAL_CONVOS={
     {key:'ponder',text:"On Hard, all twelve glyphs are active and a single wrong tap breaks the ritual. You are relying entirely on memory and focus. Good luck!"},
   ],
   eldrin:[
-    {key:'eldrin',text:"I am Eldrin — the Stalwart. My wards cost less than anyone else's. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
+    {key:'eldrin',text:"I am Eldrin — the Stalwart. My Shield is the strongest ward of all. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
     {key:'eldrin',text:"My Shield takes the Arcane sector of my Protection wheel — a far larger ward than most wizards can raise."},
-    {key:'eldrin',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds — and braces my Shield, so it lasts longer and stops wearing away. Ward, in the Ice sector, makes me immune to curses, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
+    {key:'eldrin',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds — and braces my Shield, so it stops wearing away. Ward, in the Ice sector, makes me immune to curses, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
     {key:'eldrin',text:"Dispels are my weakness. Keep a ward between your buffs and their unbinding, and I am very hard to wear down."},
   ],
   mal:[
@@ -8017,7 +8064,7 @@ const TUTORIAL_CONVOS={
   gretch:[
     {key:'gretch',text:"Heh. Come closer. My kit is about poison and drain — I infect you, starve you, and keep myself alive while you rot."},
     {key:'gretch',text:"Plague is a Dark curse — damage every round for a while. Maggot Cloud is a Physical curse — it drains mana now and slows your mana for a couple of rounds. Meditating won't save you."},
-    {key:'gretch',text:"Bone Totem, in the Dark sector of my Protection wheel, heals me every round. Protect it with a ward or a Dispel will strip it."},
+    {key:'gretch',text:"Bone Totem, in the Dark sector of my Protection wheel, plants a totem that heals me every round. It's bone and wood, not an enchantment — Dispels can't touch it. It stands in front of me and soaks hits until someone smashes it."},
     {key:'gretch',text:"Not elegant. Not subtle. Just results. Plague them, drain them, totem up, and let time finish the job."},
   ],
   valdris:[

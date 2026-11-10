@@ -409,9 +409,11 @@ function endRound(){
       if(!st.meditated||corrupt||e.inescapable) loseHp(w,e.dmg);   // Curse of the Years: no escape
     });
     fx(st,'regen').forEach(e=>heal(w,e.heal));
+    // Healing minions (Gretch's Bone Totem) heal their owner while they stand
+    minions(st).filter(m=>m.heal).forEach(m=>heal(w,m.heal));
     // Danse Macabre (Daveron): each of your skeletons deals its bonus more
     const danse=fx(st,'danse').reduce((a,e)=>a+e.bonus,0);
-    minions(st).forEach(m=>incoming(f,m.dmg+(m.minion==='skeleton'?danse:0),0));
+    minions(st).filter(m=>m.dmg).forEach(m=>incoming(f,m.dmg+(m.minion==='skeleton'?danse:0),0));   // a totem doesn't strike
   });
   // Sudden death
   const sd=RULES.suddenDeath;

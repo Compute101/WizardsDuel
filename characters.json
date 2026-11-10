@@ -11,7 +11,6 @@
     ],
     "hp": 90,
     "dmgMult": 1.1,
-    "shieldCostMod": -1,
     "spells": [
       {
         "id": "shield",
@@ -44,7 +43,7 @@
             "extend": 1,
             "holdWard": true
           },
-          "desc": "3 rounds: strikers take 10, and your ward doesn't wear; a ward already up lasts 1 round longer (outer ring: 2)"
+          "desc": "3 rounds: strikers take 10, and your ward doesn't wear"
         }
       },
       {
@@ -638,7 +637,7 @@
       "The hexes were already written. Your fate merely confirmed them.",
       "Kneel before the dark, or be consumed by it. There is no third option."
     ],
-    "hp": 88,
+    "hp": 84,
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
@@ -710,7 +709,7 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 78,
+    "hp": 84,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -915,7 +914,9 @@
   "gretch": {
     "name": "GRETCH",
     "title": "The Festering",
-    "sprite": "sprites/mage-dark.png",
+    "sprite": "sprites/gretch.png",
+    "spriteHeight": 1.5,
+    "spriteHeightMulti": 1.2,
     "col": "#55aa33",
     "taunts": [
       "The rot was already inside you. Gretch just let it out.",
@@ -974,14 +975,20 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "dark",
-          "cost": 4,
+          "cost": 6,
           "tier": 2,
           "effect": {
-            "type": "regen",
-            "perRound": 4,
-            "rounds": 4
+            "type": "minion",
+            "minion": "totem",
+            "kind": "minion",
+            "elite": true,
+            "soak": 15,
+            "heal": 2,
+            "max": 1,
+            "raise": 1,
+            "rounds": null
           },
-          "desc": "Heal 4 a round × 4"
+          "desc": "Plant a bone totem (one at a time): heals you 2 a round and soaks 15 damage in front of your ward until smashed; dispels can't touch it"
         }
       }
     ]
@@ -1143,7 +1150,7 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 90,
+    "hp": 86,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1426,7 +1433,7 @@
       "Dance, my dead. Dance, and let the living hear the music.",
       "Every year you have lived is a debt. I have come to collect."
     ],
-    "hp": 85,
+    "hp": 90,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
