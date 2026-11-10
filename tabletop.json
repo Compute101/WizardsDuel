@@ -13,7 +13,7 @@
   },
   "mal": {
     "hp": 17,
-    "rules": {"beginner": {"hp": 18}, "beginnerCost": {"hp": 19}},
+    "rules": {"beginner": {"hp": 18}, "beginnerCost": {"hp": 18}},
     "spells": [
       {"id": "empower", "name": "Empower", "cat": "protect", "elem": "fire", "ring": 1, "cost": 2, "kind": "buff", "effect": {"type": "empower", "double": true},
        "text": "Your next strike deals double damage."},
@@ -58,7 +58,7 @@
   },
   "cinder": {
     "hp": 17,
-    "rules": {"beginner": {"hp": 18}, "beginnerCost": {"hp": 20}},
+    "rules": {"beginner": {"hp": 18}, "beginnerCost": {"hp": 19}},
     "spells": [
       {"id": "fireball", "name": "Fireball", "cat": "damage", "elem": "fire", "ring": 1, "cost": 2, "kind": "strike", "dmg": 4,
        "text": "Fire strike of 4 (a Lesser strike is 2)."},
@@ -104,7 +104,6 @@
   },
   "mordant": {
     "hp": 18,
-    "rules": {"beginnerCost": {"hp": 17}},
     "spells": [
       {"id": "agony", "name": "Agony", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 4, "kind": "curse", "effect": {"type": "agony", "dmg": 2},
        "text": "Until cleansed: the foe takes 2 at every round end, unless they Meditated that round (Corruption stops Meditate escaping it)."},
@@ -232,7 +231,7 @@
   },
   "daveron": {
     "hp": 18,
-    "rules": {"beginner": {"hp": 16}, "beginnerCost": {"hp": 16}},
+    "rules": {"beginner": {"hp": 16}},
     "spells": [
       {"id": "raisegraveguard", "name": "Raise Graveguard", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "skeleton", "kind": "minion", "soak": 3, "dmg": 1, "max": 3, "raise": 1},
        "text": "Raise 1 graveguard (max 3 on the table). Each has 3 HP and stands in front of your ward: damage (strikes and ticks) wears down the oldest graveguard first, and only what gets past them reaches your ward. Dispels can't touch them. Each graveguard still standing deals 1 to the foe at every round end."},

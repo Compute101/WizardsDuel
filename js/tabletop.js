@@ -57,6 +57,10 @@ const RULES={
   //            that pots comes back to your mana. No pot and it fizzles.
   flickMode:'pot',
   chances:5,
+  minFlicks:0,                 // 'cost': flick at least this many times (pick your paid winks up and flick again)
+  // When a spell fizzles, this share of its cost comes back, by level (Lesser / Normal / Greater),
+  // rounded down. Signature spells use their card's level.
+  fizzleRefund:[0,0,0],
 };
 // Named rule sets. 'standard' is the rules above; the others override some of them. useRules(name)
 // switches (the simulator, balance tools and real play all read RULES).
@@ -67,7 +71,9 @@ const PRESETS={
   // Income is 1 lower, because spells never fizzle and no mana goes on retries.
   // Two ways to flick are being tried: 'chances' (5 goes at one pot) and 'cost' (flick what you paid).
   beginner:{flickMode:'chances', pot:0.12, squops:0},
-  beginnerCost:{flickMode:'cost', pot:0.12, squops:0},
+  // Flick Your Mana also flicks at least 4 times, and refunds a fizzled Lesser spell in full and a
+  // Normal one by half, so small spells aren't a wasted turn.
+  beginnerCost:{flickMode:'cost', pot:0.12, squops:0, minFlicks:4, fizzleRefund:[1,0.5,0]},
 };
 const DEFAULTS=JSON.parse(JSON.stringify(RULES));
 function useRules(name){
@@ -395,7 +401,12 @@ function flickCast(w,ring,given,paid){
     // given (real play): {potted:n}.
     let n=0;
     if(given) n=Math.max(0,Math.min(paid,given.potted|0));
-    else for(let i=0;i<paid;i++) if(rng()<potChance(w)) n++;
+    else {
+      // Only the first `paid` flicks can bring winks back; any extra (minFlicks) just help it cast
+      const tries=Math.max(paid,RULES.minFlicks);
+      for(let i=0;i<tries;i++) if(rng()<potChance(w)) n++;
+      n=Math.min(n,paid);
+    }
     st.potted+=n; gainMana(w,n);
     return n>0;
   }
@@ -442,7 +453,10 @@ function pay(w,a,flick){
   if(sp&&sp.action&&sp.action.type==='bloodpact'){ loseHp(w,sp.action.hp); gainMana(w,sp.action.hp); }
   if(cost>st.mana) return 'nomana';
   st.mana-=cost;
-  if(!flickCast(w,ringOf(st,a),flick,cost)) return 'fizzle';
+  if(!flickCast(w,ringOf(st,a),flick,cost)){
+    gainMana(w,Math.floor(cost*(RULES.fizzleRefund[ringOf(st,a)-1]||0)));
+    return 'fizzle';
+  }
   if(a.cat==='protect') fx(st,'candle').forEach(e=>loseHp(w,e.dmg));
   return 'cast';
 }
