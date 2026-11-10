@@ -1,11 +1,12 @@
 // Prints the tabletop matchup table (Markdown): each cell is the row wizard's win % against the
 // column wizard, from AI-vs-AI games on the tabletop rules, half on each side.
-// Usage:   node tools/tabletop_matchups.js [games per pairing, default 400] [ai: normal|easy]
+// Usage:   node tools/tabletop_matchups.js [games per pairing, default 400] [ai: normal|easy] [rules: standard|beginner]
 const path=require('path');
 const root=path.join(__dirname,'..');
 const TT=require(path.join(root,'js/tabletop.js'));
 TT.load(require(path.join(root,'characters.json')),require(path.join(root,'tabletop.json')));
 const N=Math.max(2,+process.argv[2]||400), ai=process.argv[3]||'normal';
+TT.useRules(process.argv[4]||'standard');
 const keys=Object.keys(TT.chars), m={}, tot={};
 keys.forEach(k=>{ m[k]={}; tot[k]={w:0,n:0}; });
 for(let i=0;i<keys.length;i++) for(let j=i+1;j<keys.length;j++){

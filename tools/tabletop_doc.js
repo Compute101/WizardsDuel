@@ -20,7 +20,8 @@ Object.values(chars).forEach(c=>{
   const notes=[];
   if(c.deathless) notes.push(`Deathless: when knocked to 0 HP, pay ${c.deathless} mana to stay on 1 HP`);
   if(c.forbidden.length) notes.push('Can\'t cast: '+c.forbidden.map(e=>ELEM[e]).join(', '));
-  out+=`### ${c.name} — ${c.title}\n**HP ${c.hp}**${notes.length?' · '+notes.join(' · '):''}\n\n`;
+  const beg=c.alt.beginner&&c.alt.beginner.hp;
+  out+=`### ${c.name} — ${c.title}\n**HP ${c.baseHp}**${beg?` (Beginner rules: **HP ${beg}**)`:''}${notes.length?' · '+notes.join(' · '):''}\n\n`;
   out+='| Spell | Type | Element | Level | Cost | Effect |\n|---|---|---|---|---|---|\n';
   c.spells.forEach(s=>{ out+=`| **${s.name}** | ${CAT[s.cat]} | ${ELEM[s.elem]} | ${RING[s.ring-1]} | ${s.cost} | ${s.text} |\n`; });
   out+='\n';
