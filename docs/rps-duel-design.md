@@ -51,9 +51,10 @@ What was built, including choices made while building:
   the spell; only Ponder's Mana Siphon) are paid first and steal at once, so their target pays from
   what's left — if they can no longer afford their pick, it fails.
 - **Wards:** raising one replaces any existing ward. A ward stops damage in the same round it's raised.
-  Like tabletop mode, a ward has **no round timer and doesn't fade**: it lasts until strikes, ticks
-  and dispels wear it down (`ELEM_WARD_ROUNDS` 0, `ELEM_WARD_DECAY` 1; they were 3 rounds and 75% kept
-  each round).
+  Like tabletop mode, a ward has **no round timer**: it lasts until it runs out. It loses a flat
+  **4 HP at every round end** (`ELEM_WARD_WEAR`, about one tabletop wink), and strikes, ticks and
+  dispels wear it too; Counter stops the round-end wear while it lasts. (It used to last 3 rounds and
+  keep 75% of its HP each round: `ELEM_WARD_ROUNDS` 0 and `ELEM_WARD_DECAY` 1 now.)
   A ward **resists every element but its own**: other elements wear it down at 75%, while a strike in
   its own element **unravels** it at 150% (`ELEM_WARD_TAKE`). A dispel of its element does double.
 - **Damage over time** (poison, burns, vines, Plague, Singularity, Blizzard) hits a ward first at each
@@ -171,7 +172,7 @@ so each spell's numbers can be tuned there.
 | Character | Spell | Wheel | Sector | Kind | Mana (inner / middle / outer) | Effect (middle ring) |
 |---|---|---|---|---|---|---|
 | Eldrin | 🛡 Shield | 🛡 Protection | 🌀 Arcane | Ward | 5 / 9 / 14 | Arcane ward of 45 |
-| Eldrin | ⚡ Counter | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 3 rounds: strikers take 10 (its ward-bracing did nothing once wards stopped expiring) |
+| Eldrin | ⚡ Counter | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 3 rounds: strikers take 10, and your ward doesn't wear at round end |
 | Eldrin | 🔰 Ward | 🛡 Protection | ❄️ Ice | Enchantment (self) | 1 / 2 / 3 | 3 rounds: immune to curses (and their wear on wards); the next dispel only removes the Ward |
 | Malachar | 💪 Empower | 🛡 Protection | 🔥 Fire | Enchantment (self) | 1 / 2 / 3 | Next strike +50% |
 | Malachar | 🩸 Blood Pact | 🛡 Protection | 💀 Dark | Instant | 0 | Lose 15 HP, gain 8 mana |
@@ -514,4 +515,12 @@ its ward-bracing (`holdWard` / `extend` only act with a timer); it still retalia
   Daveron 85 → 95 · Thessaly 90 → 86 · Aurelia 90 → 86 · Mordant 88 → 84.
 - Result (200 games a matchup): everyone 45.7–54.8% (Eldrin 54.7, Thessaly 54.8, Valdris 45.7,
   Sylvara 45.8, Gretch 51.0, Daveron 49.0, Ponder 49.5); games average 20.7 rounds.
+- **Revised:** wards still have no timer, but they now lose a flat 4 HP at every round end
+  (`ELEM_WARD_WEAR`), like the tabletop ward's 1 wink a round (a Normal tabletop ward is 8 winks to the
+  standard 35 HP, a Normal strike 4 to 15, so a wink is about 4 HP). A ward breaks when it reaches 0.
+  Counter's `holdWard` stops the wear again. From the numbers above (100 games): everyone 45.1–57.0%
+  (Daveron 57.0, Gretch 55.9, Aurelia 45.1), so Daveron went 95 → 90 HP and Aurelia back to 90.
+  Result at 200 games a matchup: everyone **47.0–54.5%** (Gretch 54.5, Daveron 53.3, Fizzwick 47.0),
+  games about 20.2 rounds. Net HP changes from the timed wards: Ponder 78 → 84, Daveron 85 → 90,
+  Thessaly 90 → 86, Mordant 88 → 84; Eldrin's wards no longer cost 1 less.
 

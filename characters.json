@@ -43,7 +43,7 @@
             "extend": 1,
             "holdWard": true
           },
-          "desc": "3 rounds: strikers take 10"
+          "desc": "3 rounds: strikers take 10, and your ward doesn't wear"
         }
       },
       {
@@ -218,7 +218,7 @@
       "Time bends to my will. Your next attempt? Already foreseen.",
       "You're as predictable as sunrise. Surprise me next time."
     ],
-    "hp": 86,
+    "hp": 90,
     "dmgMult": 1.05,
     "spells": [
       {
@@ -1433,7 +1433,7 @@
       "Dance, my dead. Dance, and let the living hear the music.",
       "Every year you have lived is a debt. I have come to collect."
     ],
-    "hp": 95,
+    "hp": 90,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
