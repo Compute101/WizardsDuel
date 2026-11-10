@@ -976,20 +976,20 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "dark",
-          "cost": 4,
+          "cost": 6,
           "tier": 2,
           "effect": {
             "type": "minion",
             "minion": "totem",
             "kind": "minion",
             "elite": true,
-            "soak": 6,
-            "heal": 5,
+            "soak": 15,
+            "heal": 2,
             "max": 1,
             "raise": 1,
             "rounds": null
           },
-          "desc": "Plant a bone totem (one at a time): heals you 5 a round and soaks 6 damage in front of your ward until smashed; dispels can't touch it"
+          "desc": "Plant a bone totem (one at a time): heals you 2 a round and soaks 15 damage in front of your ward until smashed; dispels can't touch it"
         }
       }
     ]

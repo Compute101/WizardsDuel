@@ -208,7 +208,7 @@ so each spell's numbers can be tuned there.
 | Weizan | 🧘 Iron Patience | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 1 / 2 / 3 | Take 30% less damage × 3 |
 | Gretch | ☠️ Plague | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 3 a round × 4 |
 | Gretch | 🪲 Maggot Cloud | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Drain 2 mana; −3 income and Meditate × 2 |
-| Gretch | 💀 Bone Totem | 🛡 Protection | 💀 Dark | Totem (soak minion, self) | 2 / 4 / 6 | One totem: 6 HP, heals 5 a round until smashed; dispels can't touch it |
+| Gretch | 💀 Bone Totem | 🛡 Protection | 💀 Dark | Totem (soak minion, self) | 4 / 6 / 10 | One totem: 15 HP, heals 2 a round until smashed; dispels can't touch it |
 | Valdris | 💀 Raise Dead | 🛡 Protection | 💀 Dark | Minions (self) | 3 / 5 / 8 | Raise 2 / 3 / 4 skeletons (max 5): each soaks 3 damage in front of the ward and strikes for 3 a round; dispels can't touch them |
 | Valdris | 🩸 Necrotic Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 40% of HP damage |
 | Valdris | 🪙 Soul Tithe | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: the foe loses 1 mana (2 at the outer ring) for each of your skeletons they kill |
@@ -484,12 +484,17 @@ a soak minion like the skeletons: `type:"minion"`, `minion:"totem"`, `kind:"mini
 touch it), one at a time (`max:1`), no round timer. It has `soak` HP and stands in front of the ward,
 wearing down first (strikes, arcane orbs and ticks), and heals its owner `heal` at every round end
 while it stands (`elemTickEffects`); with no `dmg` it never strikes. `elite:true` makes the ring scale
-its HP and heal (inner / middle / outer: 4 / 6 / 9 HP, heal 3 / 5 / 8). The AI keeps one up through
-`guardSpell` / `guardLow`.
+its HP and heal (now inner / middle / outer: 9 / 15 / 23 HP, heal 1 / 2 / 3). The AI keeps one up
+through `guardSpell` / `guardLow`.
 - Tuning (Normal AI, 60 games a matchup, Gretch only): heal 5 / 12 HP 84.5% · 4 / 6 46.2% ·
   4 / 7 55.8% · 3 / 8 53.1% · **5 / 6 50.9%** · 6 / 4 38.6%.
 - Whole roster at 200 games a matchup: Gretch 52.2% (51.0% before), everyone 45.6–53.6%. Totem is
   about 28% of his picks.
 - Tabletop mirrors it: one totem, 4 HP, heal 1 a round while it stands. Gretch 53.8% (52.5% before),
   everyone 46–54% (400 games).
-
+- Matched to tabletop: there the totem takes a whole Normal strike (4) to smash, but the first
+  standard version (6 HP) broke to any hit. Now it's 15 HP, a whole middle-ring strike, with less
+  heal and a higher cost. Soak is the strong part: 15 HP with no heal at all was 65%, heal 2 at 4
+  mana 84%. Gretch only, 80 games: heal 2 / cost 6 54.8% · heal 2 / cost 7 47.1% · heal 3 / cost 7
+  56.1% · heal 3 / cost 8 41.7%. Whole roster at 200 games: **heal 2, 15 HP, cost 6** puts Gretch at
+  53.7%, everyone 47.5–53.7% (heal 3 at cost 7: Gretch 56.3%). Totem about 24% of his picks.
