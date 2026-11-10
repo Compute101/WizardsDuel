@@ -393,7 +393,9 @@ function flickCast(w,ring,given,paid){
     // Beginner: up to RULES.chances flicks, and the first pot casts. given (real play): {cast:bool}.
     // Missed winks are picked up, so nothing builds up on the table.
     if(given) return !!given.cast;
-    for(let i=0;i<RULES.chances;i++) if(rng()<potChance(w)){ st.potted++; return true; }
+    // chances: a number, an array by level, or {budget:n} for n minus the spell's cost
+    const c=RULES.chances, tries=typeof c==='number'?c:Array.isArray(c)?c[ring-1]:Math.max(1,c.budget-paid);
+    for(let i=0;i<tries;i++){ st.flicks=(st.flicks||0)+1; if(rng()<potChance(w)){ st.potted++; return true; } }
     return false;
   }
   if(RULES.flickMode==='cost'){
