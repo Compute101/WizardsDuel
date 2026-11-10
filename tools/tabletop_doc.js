@@ -20,8 +20,11 @@ Object.values(chars).forEach(c=>{
   const notes=[];
   if(c.deathless) notes.push(`Deathless: when knocked to 0 HP, pay ${c.deathless} mana to stay on 1 HP`);
   if(c.forbidden.length) notes.push('Can\'t cast: '+c.forbidden.map(e=>ELEM[e]).join(', '));
-  const beg=c.alt.beginner&&c.alt.beginner.hp;
-  out+=`### ${c.name} — ${c.title}\n**HP ${c.baseHp}**${beg?` (Beginner rules: **HP ${beg}**)`:''}${notes.length?' · '+notes.join(' · '):''}\n\n`;
+  // Beginner HP, when a rule set changes it: Five Chances ('beginner') and Flick Your Mana ('beginnerCost')
+  const bh=r=>c.alt[r]&&c.alt[r].hp!=null?c.alt[r].hp:c.baseHp;
+  const beg=bh('beginner')!==c.baseHp||bh('beginnerCost')!==c.baseHp
+    ?` (Beginner: Five Chances **${bh('beginner')}**, Flick Your Mana **${bh('beginnerCost')}**)`:'';
+  out+=`### ${c.name} — ${c.title}\n**HP ${c.baseHp}**${beg}${notes.length?' · '+notes.join(' · '):''}\n\n`;
   out+='| Spell | Type | Element | Level | Cost | Effect |\n|---|---|---|---|---|---|\n';
   c.spells.forEach(s=>{ out+=`| **${s.name}** | ${CAT[s.cat]} | ${ELEM[s.elem]} | ${RING[s.ring-1]} | ${s.cost} | ${s.text} |\n`; });
   out+='\n';

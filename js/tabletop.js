@@ -50,13 +50,13 @@ const RULES={
   // 1 more every `every` rounds after that.
   suddenDeath:{round:8, dmg:1, every:3},
   maxRounds:40,                // the simulator calls it a timeout after this
-  // How the flick works. 'pot': pot `winks` winks to cast, paying retryCost after each miss (the
-  // rules above). 'surge' (Beginner rules): the spell always casts, you get one flick per wink, and
-  // each wink you pot is a surge worth one more wink of spell (see `surge`).
+  // How the flick works:
+  //  'pot'     pot `winks` winks to cast, paying retryCost after each miss (the rules above).
+  //  'chances' (Beginner) up to `chances` flicks; the first pot casts the spell, no pot and it fizzles.
+  //  'cost'    (Beginner) flick every mana wink you paid; one pot casts the spell, and every wink
+  //            that pots comes back to your mana. No pot and it fizzles.
   flickMode:'pot',
-  // Beginner surge: what one potted wink adds. A wink is worth 2 mana, so a surge is +2 damage or +4
-  // ward / dispel on a base spell; on a signature spell or a Cleanse you get the 2 mana back instead.
-  surge:{damage:2, protect:4, dispel:4, mana:2},
+  chances:5,
 };
 // Named rule sets. 'standard' is the rules above; the others override some of them. useRules(name)
 // switches (the simulator, balance tools and real play all read RULES).
@@ -65,7 +65,9 @@ const PRESETS={
   // Beginner rules, calibrated to a first-time player's baseline: 7 pots in 57 flicks (about 12%).
   // Spells never fizzle, there are no retries, and no squops: missed winks go back to your pile.
   // Income is 1 lower, because spells never fizzle and no mana goes on retries.
-  beginner:{flickMode:'surge', pot:0.12, squops:0, income:3},
+  // Two ways to flick are being tried: 'chances' (5 goes at one pot) and 'cost' (flick what you paid).
+  beginner:{flickMode:'chances', pot:0.12, squops:0},
+  beginnerCost:{flickMode:'cost', pot:0.12, squops:0},
 };
 const DEFAULTS=JSON.parse(JSON.stringify(RULES));
 function useRules(name){
@@ -224,7 +226,7 @@ function raiseWard(who,elem,hp,ret){
 
 function doProtect(who,a){
   const st=gs[who], sp=a.sig&&sigById(st,a.sig);
-  if(!sp){ raiseWard(who,a.elem,RULES.cats.protect.power[a.ring-1]+takeSurge(st,'protect')); return; }
+  if(!sp){ raiseWard(who,a.elem,RULES.cats.protect.power[a.ring-1]); return; }
   if(sp.kind==='ward'){
     let hp=sp.ward+(sp.perSkeleton||0)*minions(st,'skeleton').length;
     raiseWard(who,sp.elem,hp,sp.retaliate);
@@ -269,7 +271,7 @@ function doDispel(who,a){
     addEffect(t,e,who);
     return;
   }
-  const power=RULES.cats.dispel.power[a.ring-1]+takeSurge(st,'dispel');
+  const power=RULES.cats.dispel.power[a.ring-1];
   const warding=fx(ts,'warding');
   if(warding.length){ removeEffects(t,warding); return; }
   if(ts.ward){
@@ -296,7 +298,7 @@ function doDamage(who,a){
     else if(sp.pctHp) dmg=Math.max(sp.pctHp.min,Math.floor(ts.hp/sp.pctHp.div));
     else if(sp.perBlade){ const bl=minions(st,'blade'); dmg=sp.perBlade*bl.length; st.effects=st.effects.filter(e=>!bl.includes(e)); }
     else dmg=sp.dmg;
-  } else dmg=RULES.cats.damage.power[ring-1]+takeSurge(st,'damage');
+  } else dmg=RULES.cats.damage.power[ring-1];
   // The caster's boosts
   let burn=0;
   const emp=st.effects.find(e=>e.type==='empower'&&(!e.elem||e.elem===elem));
@@ -330,12 +332,12 @@ function doDamage(who,a){
 // picks: {p1:action, p2:action}. action: {cat:'damage'|'protect'|'dispel', elem, ring} or
 // {cat, sig:'spellId'} or {cat:'dispel', self:true, ring:1} (cleanse) or {cat:'meditate'} / {cat:'pass'}.
 // flicks (optional, for real play): {p1:{cast:true|false, missed:n}, ...} the tiddlywink results
-// (Beginner rules: {p1:{potted:n}, ...});
+// (Beginner rules: {p1:{cast:bool}} for 'chances', {p1:{potted:n}} for 'cost');
 // otherwise they are rolled from RULES.pot. squops (optional): {p1:winks squopped, ...}; otherwise
 // rolled from RULES.squop.
 function playRound(picks,flicks,squops){
   const W=['p1','p2'];
-  W.forEach(w=>{ gs[w].hpAtStart=gs[w].hp; gs[w].meditated=false; gs[w].potted=0; gs[w].surge=0; });
+  W.forEach(w=>{ gs[w].hpAtStart=gs[w].hp; gs[w].meditated=false; gs[w].potted=0; });
   const outcome={};
   // Quick spells (Mana Siphon) are paid and steal before anyone else pays
   const quick=w=>{ const sp=picks[w].sig&&sigById(gs[w],picks[w].sig); return !!(sp&&sp.quick); };
@@ -377,20 +379,25 @@ function squopPhase(given){
 }
 const potChance=w=>gs.pot&&gs.pot[w]!=null?gs.pot[w]:RULES.pot;
 const squopChance=w=>gs.squop&&gs.squop[w]!=null?gs.squop[w]:RULES.squop;
-// Beginner surge: the bonus a base spell gets from the winks potted for it (and it's used up)
-function takeSurge(st,cat){ const n=st.surge||0; st.surge=0; return n*RULES.surge[cat]; }
 // The flick: pot RULES.winks[ring] winks; after each miss, pay retryCost to go again or give up.
 // Returns true when the spell is cast. Missed winks are left on the table (gs.table).
-function flickCast(w,ring,given){
+function flickCast(w,ring,given,paid){
   const st=gs[w], need=RULES.winks[ring-1];
-  if(RULES.flickMode==='surge'){
-    // Beginner: one flick per wink, the spell casts anyway, and each pot is a surge.
-    // given (real play): {potted:n}. Missed winks go back to the bank, so nothing builds up on the table.
+  if(RULES.flickMode==='chances'){
+    // Beginner: up to RULES.chances flicks, and the first pot casts. given (real play): {cast:bool}.
+    // Missed winks are picked up, so nothing builds up on the table.
+    if(given) return !!given.cast;
+    for(let i=0;i<RULES.chances;i++) if(rng()<potChance(w)){ st.potted++; return true; }
+    return false;
+  }
+  if(RULES.flickMode==='cost'){
+    // Beginner: flick every mana wink paid; one pot casts, and potted winks come back to your mana.
+    // given (real play): {potted:n}.
     let n=0;
-    if(given) n=Math.max(0,Math.min(need,given.potted|0));
-    else for(let i=0;i<need;i++) if(rng()<potChance(w)) n++;
-    st.potted+=n; st.surge=n;
-    return true;
+    if(given) n=Math.max(0,Math.min(paid,given.potted|0));
+    else for(let i=0;i<paid;i++) if(rng()<potChance(w)) n++;
+    st.potted+=n; gainMana(w,n);
+    return n>0;
   }
   if(given){
     const retries=given.cast?given.missed:Math.max(0,given.missed-1);
@@ -435,9 +442,7 @@ function pay(w,a,flick){
   if(sp&&sp.action&&sp.action.type==='bloodpact'){ loseHp(w,sp.action.hp); gainMana(w,sp.action.hp); }
   if(cost>st.mana) return 'nomana';
   st.mana-=cost;
-  if(!flickCast(w,ringOf(st,a),flick)) return 'fizzle';
-  // A surge on a signature spell or a Cleanse comes back as mana
-  if(st.surge&&(sp||a.self)){ gainMana(w,st.surge*RULES.surge.mana); st.surge=0; }
+  if(!flickCast(w,ringOf(st,a),flick,cost)) return 'fizzle';
   if(a.cat==='protect') fx(st,'candle').forEach(e=>loseHp(w,e.dmg));
   return 'cast';
 }
