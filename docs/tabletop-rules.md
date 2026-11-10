@@ -122,7 +122,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 - **Heal:** never above your starting HP.
 - **Blast N:** up to N of the strike's damage goes around the foe's ward straight to HP. Skeletons still soak it first; the rest of the strike meets the ward as usual.
   - Example: Blue Fire (7, blast 3) hits a Fire ward of 8. 3 go straight to HP; the other 4 count as 6 against the Fire ward, which drops to 2.
-- **In the Gate** (Frederick's Infernal Gate): after the strike the Gate swallows, he skips his spell for the next round and can't be touched. No Damage, Dispel or curse can be picked against him (Cleanse, wards, buffs and Meditate still can), and nothing ticks on him: curses, minions and sudden death all wait. At the end of that round, after the ticks, the two players trade places at the table and he casts Blue Fire free (no mana, no flick). Keep a wink on his Gate card as a reminder.
+- **Teleport** (Frederick's Infernal Gate, a Protection card, so it resolves before any Dispel or Damage): he steps through the Gate. For the rest of that round nothing aimed at him lands (strikes, dispels and curses all fizzle) and nothing ticks on him. At round end, after the ticks, the players trade places at the table and he comes out in **Infernal Mantle**: his next strike ignores the foe's ward completely (skeletons still soak it). The Mantle is a buff, so a Dispel can strip it before he strikes. He can't cast the Gate two rounds running. Put a wink on his Gate card while the Mantle is on.
 
 ---
 
@@ -324,7 +324,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Doom Bolt** | Damage | Dark | Lesser | 2 | Dark strike of 3. Blast: 1 of it goes around a ward straight to HP. |
-| **Infernal Gate** | Protection | Fire | Normal | 5 | The next strike at you misses, and you step through the Gate. Next round you skip your spell and can't be touched: nothing can be aimed at you and nothing ticks on you. At that round's end, trade places at the table and cast Blue Fire free (no mana, no flick). |
+| **Infernal Gate** | Protection | Fire | Lesser | 2 | Teleport: nothing aimed at you this round lands, and nothing ticks on you. At round end, trade places at the table: you come out in Infernal Mantle, and your next strike ignores the foe's ward (a Dispel can strip the Mantle first). Not two rounds running. |
 | **Blue Fire** | Damage | Fire | Greater | 6 | Fire strike of 7. Big blast: 3 of it goes around a ward straight to HP. |
 
 <!-- characters:end -->

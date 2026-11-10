@@ -39,7 +39,7 @@ const CHAR_FLAVOUR={
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
   fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
   daveron:'A necromancer guarded by a few elite graveguard. They soak your damage and dispels can\'t touch them, so batter through — and dispel Danse Macabre before it makes them deadly. Meditating won\'t escape Curse of the Years — cleanse it.',
-  frederick:'A furious dark battle-wizard who lives to deal damage, and blasts straight through wards. Doom Bolt and Blue Fire each get part of their damage around a ward, and Infernal Gate swallows your next strike: he vanishes for a round, then steps out behind you with a free Blue Fire. Bait the Gate with a cheap strike, then ward up while he is gone.',
+  frederick:'A furious dark battle-wizard who lives to deal damage, and blasts straight through wards. Doom Bolt and Blue Fire each get part of their damage around a ward. Infernal Gate teleports him: whatever you aimed at him fizzles, and he comes out behind you in Infernal Mantle, ready to strike straight through your ward. Dispel the Mantle before he does.',
   nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
 };
 
@@ -1256,7 +1256,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.beginPath(); bx.arc(x,wy,sz*.72,0,Math.PI*2); bx.stroke();
   }
   if(state&&state.infernalGate>0){
-    // Infernal Gate: a burning ring of fire on the floor at his feet, flames licking up from its rim
+    // Infernal Mantle (out of the Infernal Gate): a burning ring of fire at his feet, flames licking up from its rim
     const rx=sz*.78, ry=sz*.15, gy=y+sz*.15;   // pre-squash numbers: this lands it on the floor under his feet
     bx.save();
     const g=bx.createRadialGradient(x,gy,0,x,gy,rx);
@@ -1700,7 +1700,7 @@ function refreshStatusBar(){
 const WIZ_VISUAL_BY_ID={timedrain:'timeDrain', counter:'counter', candle:'candle', blizzard:'blizzard',
   singularity:'voidCollapse', frostarmor:'frostArmor', dragonscales:'dragonScales', stonesoul:'stonesoul',
   galvanize:'charge', conductivity:'conductivity', agony:'agony', silence:'silence', corruption:'corruption',
-  vanish:'invisible', blink:'blink', infernalgate:'infernalGate', plague:'plague', maggotcloud:'maggotCloud', bonetotem:'boneTotem',
+  vanish:'invisible', blink:'blink', infernalmantle:'infernalGate', plague:'plague', maggotcloud:'maggotCloud', bonetotem:'boneTotem',
   enthral:'enthralled', arcaneweave:'arcaneWeave', curseyears:'yearsCurse', dansemacabre:'danse', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen', frostbite:'frozen', dread:'dread',
   warpaint:'resist', ironpatience:'resist', heal:'regen'};
 function wizVisuals(st){
@@ -3073,7 +3073,6 @@ function promptNextPicker(){
   if(!battleRunning||gameEnded) return;
   const who=activeSeats().find(w=>!gs.pending[w]);
   if(!who){ showReveal(); return; }
-  if(inGate(who)){ gs.pending[who]={type:'el',cat:'pass',ok:true,gate:true}; promptNextPicker(); return; }
   if(!isHumanSeat(who)){
     gs.pending[who]=aiChooseSync(who);
     promptNextPicker();
@@ -3227,8 +3226,8 @@ function tickRound(who){
   gs[who].mana=Math.min(MAX_MANA,gs[who].mana+elemIncome(who));
 }
 
-// At the end of his round in the Infernal Gate the camera swings round, he and the foe who struck him trade
-// sides, and he steps out casting the Gate's exit spell (Blue Fire) at them for free, at the Gate's ring.
+// At the end of his round in the Infernal Gate the camera swings round, he and a foe trade sides, and he
+// steps out behind them wreathed in Infernal Mantle (it lasts through the next round)
 function gateExits(done){
   const out=activeSeats().filter(w=>gs[w].gate&&gs[w].gate.until<gs.round);
   let i=0;
@@ -3236,8 +3235,7 @@ function gateExits(done){
     if(!battleRunning||gameEnded) return;
     if(i>=out.length){ done(); return; }
     const who=out[i++], g=gs[who].gate;
-    const tgt=foesOf(who).includes(g.target)?g.target:weakestFoe(who);
-    const sp=g.exit&&sigById(who,g.exit);
+    const tgt=weakestFoe(who);
     if(!tgt){ gs[who].gate=null; step(); return; }
     swapSides(who,tgt,()=>{
       gs[who].gate=null;
@@ -3247,10 +3245,9 @@ function gateExits(done){
         vfxPhaseIn(x,wizMidY(who),['#ff7733','#cc2200','#ffffff'],22);
         addFloat(x,bH*.3,'🌀 Out of the Gate!','#ff7733',15);
       }
-      if(!sp){ combatTimeout(step,600); return; }
-      deferWinCheck=true; dmgSource=who;
-      const action={type:'el',cat:'damage',elem:sp.el.elem,tier:g.tier,target:tgt,sig:sp.id,ok:true,outcome:'cast'};
-      combatTimeout(()=>executeSignature(who,sp,action,()=>{ settleWin(); step(); }),simMode?0:450);
+      addEffect(who,Object.assign({},INFERNAL_MANTLE),who);
+      if(!simMode) addFloat(x,bH*.22,'🔥 Infernal Mantle','#ff7733',13);
+      combatTimeout(step,simMode?0:700);
     });
   };
   step();
@@ -3476,8 +3473,6 @@ function sigCost(who,sp,tier){ return hasFreeSpell(who)?0:Math.max(0,sigAtTier(s
 function sectorOk(who,cat,elem,tier){
   if(elemForbidden(who,elem)) return false;
   const sp=sigAt(who,cat,elem);
-  // Every foe is in the Gate: nothing aimed at a foe can be picked (Cleanse Self still can)
-  if(!targetableFoes(who).length&&(sp?['strike','curse'].includes(sp.el.kind)||!!(sp.el.action&&sp.el.action.type==='siphon'):cat!=='protect')) return false;
   return sp?!sigBlocked(who,sp,tier):elemCost(who,cat,tier)<=gs[who].mana;
 }
 // Why a signature spell can't be cast at this ring right now ('' = it can)
@@ -3489,6 +3484,7 @@ function sigBlocked(who,sp,tier){
   if(el.requires==='skeletons'&&countMinions(st,'skeleton')===0) return 'Needs a skeleton';
   if(el.kind==='buff'&&el.effect.type==='minion'&&countMinions(st,el.effect.minion)>=el.effect.max) return 'Maximum reached';
   if(el.hpCost&&st.hp<=el.hpCost) return 'Not enough HP';
+  if(el.effect&&el.effect.type==='gate'&&st.lastGateRound===gs.round-1) return 'Not two rounds running';
   return '';
 }
 function elemCanPick(who,cat){
@@ -3515,17 +3511,21 @@ function phaseGain(who,n){
   if(n>0) addFloat(seatX(who),bH*.44,'🌀 +'+n+' Mana','#b8a0e8',12);
 }
 function isPhased(who){ return gs[who]&&gs[who].phasedRound===gs.round; }
-// Infernal Gate (Frederick): struck while the Gate is open, he steps through it. From then until the end of
-// the next round he is in the Gate: off the screen and untouchable. Anything aimed at him fizzles, round-end
-// damage passes him by, and he picks nothing. Then the screen pans, he and the foe swap sides, and he steps
-// out casting Blue Fire for free (gateExits). gs[who].gate = {until (last round in the Gate), target, tier}.
+// Infernal Gate (Frederick): a Protection spell, so it resolves before any Dispel or Damage. He steps
+// through the Gate and is gone for the rest of the round: off the screen and untouchable, so anything aimed
+// at him fizzles and nothing ticks on him. At round end the screen pans, he comes out on the far side, behind
+// the foe (they trade places), wreathed in Infernal Mantle (gateExits). gs[who].gate = {until: this round}.
 function inGate(who){ const g=gs&&gs[who]&&gs[who].gate; return !!g&&gs.round<=g.until; }
 // Foes that can be aimed at right now (not in the Gate)
 function targetableFoes(who){ return foesOf(who).filter(w=>!inGate(w)); }
-function enterGate(who,striker,tier,exit){
-  gs[who].gate={until:gs.round+1,target:striker,tier:tier||2,exit};
-  if(!simMode) VFX.gateSlip(who,null);
+function enterGate(who){
+  gs[who].gate={until:gs.round};
+  gs[who].lastGateRound=gs.round;
+  if(!simMode){ VFX.gateSlip(who,null); addFloat(seatX(who),bH*.3,'🌀 Into the Gate!','#ff7733',15); }
 }
+// Infernal Mantle: the hellfire he comes out of the Gate in. His next strike burns straight through the foe's
+// ward (an empower with pierce, so it's used up by that strike and a Dispel can strip it first).
+const INFERNAL_MANTLE={id:'infernalmantle',type:'empower',mult:1,pierce:true,kind:'buff',name:'Infernal Mantle',icon:'🔥',rounds:1};
 // Meditate: skip your spell to gain mana on top of income, a bet that the foe won't strike this round.
 // It resolves after every Damage, so this round's mana burns can't touch it. Not two rounds in a row.
 // Income-drain curses (Time Drain, Corruption, Maggot Cloud) cut the gain too, as they cut Channel in Classic.
@@ -3537,7 +3537,7 @@ function canMeditate(who){
 }
 function actionPriority(action){ return action.cat==='phase'?0:ELEM_CATS[action.cat]?ELEM_CATS[action.cat].stage:4; }
 function describeElemAction(action,who){
-  if(action.cat==='pass') return action.gate?{icon:'🌀',name:'In the Gate'}:{icon:'…',name:'Waits'};
+  if(action.cat==='pass') return {icon:'…',name:'Waits'};
   if(action.cat==='meditate') return {icon:'🧘',name:'Meditate'};
   if(action.cat==='phase') return {icon:'🌀',name:'Phase Shift'};
   const cat=ELEM_CATS[action.cat];
@@ -4002,6 +4002,12 @@ function executeSignature(who,sp,action,cb){
     combatTimeout(cb,900);
     return;
   }
+  if(el.kind==='buff'&&el.effect.type==='gate'){
+    if(fx.self) fx.self(ctx);
+    enterGate(who);
+    combatTimeout(cb,900);
+    return;
+  }
   if(el.kind==='buff'){
     const mine=el.effect.type==='minion';   // minions always serve their owner
     addEffect(mine?who:ally,effect({kind:el.effect.kind||'buff'}),who);
@@ -4139,7 +4145,7 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike,blast){
   dmg=soakMinions(tgt,dmg);
   if(blast&&hasWard(ts)&&dmg>0){
     around=Math.min(blast,dmg); dmg-=around;
-    addFloat(tx,bH*.18,'💥 Blast −'+around+' around the ward',col,12);
+    addFloat(tx,bH*.18,dmg>0?'💥 Blast −'+around+' around the ward':'🔥 −'+around+' through the ward',col,12);
   }
   if(hasWard(ts)&&dmg>0){
     // The ward loses only its take share of what it stops, so a resistant ward stops more.
@@ -4218,7 +4224,10 @@ function strikePrep(who,tgts,o){
   }
   const b={mult:seatCfg(who).dmgMult||1, bonus:0, burn:o.manaburn||0, emp:false};
   const emp=takeEffect(st,'empower',e=>!e.elem||e.elem===o.elem);
-  if(emp){ b.mult*=emp.mult; b.emp=true; addFloat(seatX(who),bH*.24,'💪 Empowered!','#ffcc44',11); }
+  if(emp){
+    b.mult*=emp.mult; b.emp=true; b.pierce=!!emp.pierce;
+    addFloat(seatX(who),bH*.24,emp.pierce?'🔥 Infernal Mantle — through the ward!':'💪 Empowered!',emp.pierce?'#ff7733':'#ffcc44',11);
+  }
   const frenzy=effectsOf(st,'frenzy')[0];
   if(frenzy){ b.mult*=frenzy.mult; elemFloatDmg(who,frenzy.selfDmg,'💢','#dd8822'); }
   const weave=effectsOf(st,'weave')[0];
@@ -4244,21 +4253,16 @@ function strikeResolve(who,tgt,o,b){
     const dodge=effectsOf(ts,'dodge')[0];
     if(dodge&&_rng()<dodge.pct) return {tgt,miss:'dodge'};
     const absorb=takeEffect(ts,'absorbNext');
-    if(absorb) return {tgt,miss:absorb.id==='vanish'?'vanish':absorb.id==='infernalgate'?'gate':'absorb',absorb};
+    if(absorb) return {tgt,miss:absorb.id==='vanish'?'vanish':'absorb'};
   }
   effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
   const resist=effectsOf(ts,'resist').filter(e=>!(e.magicOnly&&o.elem==='physical'))
     .reduce((m,e)=>Math.max(m,e.pct),0);
-  return {tgt,dmg:Math.round(dmg*(1-resist))};
+  return {tgt,dmg:Math.round(dmg*(1-resist)),pierce:b.pierce};
 }
 function strikeMiss(who,r,o){
   const tx=seatX(r.tgt);
   if(r.miss==='dodge'){ addFloat(tx,bH*.28,'💫 Dodged!','#b8a0e8',15); VFX.dodged(tx); }
-  else if(r.miss==='gate'){
-    // Infernal Gate: the caster steps through, the strike finds nothing, and the gate's fire lashes the striker
-    addFloat(tx,bH*.28,'🌀 Through the Gate!','#ff7733',15);
-    if(who!==r.tgt) enterGate(r.tgt,who,r.absorb.tier,r.absorb.exit);
-  }
   else {
     addFloat(tx,bH*.28,r.miss==='vanish'?'👻 Missed!':'🔮 Absorbed!','#ffcc44',15);
     if(r.miss==='vanish') VFX.vanished(tx); else VFX.absorbed(tx,elemById(o.elem).col);
@@ -4268,7 +4272,8 @@ function strikeMiss(who,r,o){
 // One hit of a strike's damage (the whole of it, or one orb's share of an arcane volley)
 function strikeChunk(who,r,o,dmg,wear){
   const el=elemById(o.elem);
-  return elemIncoming(r.tgt,dmg,o.elem,el.icon,el.col,true,wear,true,wear?0:o.blast);
+  // Infernal Mantle: the whole hit goes around the ward; otherwise a blast strike's blast does
+  return elemIncoming(r.tgt,dmg,o.elem,el.icon,el.col,true,wear,true,r.pierce?dmg:wear?0:o.blast);
 }
 // The element riders of a strike that reached HP (see ELEM_RIDERS). Signature strikes get them too,
 // except that one with its own DoT doesn't also scorch.
@@ -4511,6 +4516,9 @@ function elemAIChoose(who){
   // Cash in a pending strike boost (Empower, Galvanize, Frenzy, Arcane Weave)
   const boost=me.effects.find(e=>e.type==='empower'||e.type==='frenzy'||e.type==='weave');
   if(boost) w.damage+=0.9;
+  // Infernal Mantle burns through wards, but only until the end of this round: strike now
+  const mantle=me.effects.find(e=>e.pierce);
+  if(mantle) w.damage+=smart?1.5:0.6;
   // Curse-casters open the Dispel wheel for their hexes, not only to break wards
   const hexes=sigSpells(who,'dispel').filter(sp=>sp.el.kind==='curse'&&!sigBlocked(who,sp,1)&&aiSigSensible(who,sp,tgt)).length;
   if(hexes) w.dispel+=(smart?0.35:0.2)*hexes;
@@ -4579,6 +4587,9 @@ function elemAIChoose(who){
     if(sp===siphon&&(siphonNow||cover.length)) v+=2;
     if(e.type==='enthral'&&(hasWard(me)||effectsOf(opp,'spellbind').length)) v+=2;
     if(e.type==='danse') v+=guardCount(me);   // more dancers, more worth it
+    // Infernal Gate: worth opening when the foe can afford to strike; with the Mantle on, hit hardest
+    if(e.type==='gate'&&foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',2))) v+=1.5;
+    if(mantle&&sp.el.kind==='strike') v+=(sp.el.power||0)>=20?3:1;
     return v;
   };
   const combo=sigs.some(x=>sigWeight(x.sp)>1);
@@ -7974,9 +7985,9 @@ function simMatch(k1,k2,ai){
   const picks={p1:{},p2:{}};
   while(!gameEnded&&gs.round<=SIM_MAX_ROUNDS){
     PLAYERS.forEach(w=>{
-      const a=inGate(w)?{type:'el',cat:'pass',ok:true,gate:true}:elemAIChoose(w);
+      const a=elemAIChoose(w);
       gs.pending[w]=a;
-      const key=a.gate?'inGate':a.sig||(a.self?'cleanse':a.cat);
+      const key=a.sig||(a.self?'cleanse':a.cat);
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
@@ -7999,7 +8010,7 @@ function simMatchN(seats,ai){
     battleRunning=true; gameEnded=false;
     const outRound={};
     while(!gameEnded&&gs.round<=SIM_MAX_ROUNDS){
-      activeSeats().forEach(w=>{ gs.pending[w]=inGate(w)?{type:'el',cat:'pass',ok:true,gate:true}:elemAIChoose(w); });
+      activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
       gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
@@ -8228,7 +8239,7 @@ const TUTORIAL_CONVOS={
     {key:'frederick',text:"I am Frederick the Black, and I have run out of patience for every one of you. Stand still. This will be loud."},
     {key:'frederick',text:"Doom Bolt is my Dark strike — cheap, quick, and a small blast: part of it rolls around your ward and finds you anyway."},
     {key:'frederick',text:"Blue Fire is my Fire strike. It costs me dearly and I do not care. It hits hard, and its blast is far bigger — a ward will barely slow it."},
-    {key:'frederick',text:"Infernal Gate, in the Fire sector of my Protection wheel, opens a gate beneath me. Strike me and I step through it — gone, untouchable, for a whole round — and then I step out behind you with Blue Fire in my hand. Strike me, then. I dare you."},
+    {key:'frederick',text:"Infernal Gate, in the Fire sector of my Protection wheel, is my way out. I step through, and whatever you threw at me finds nothing. Then I step out behind you, wreathed in Infernal Mantle — and my next strike goes straight through your ward. Dispel it if you can."},
   ],
   nyxara:[
     {key:'nyxara',text:"My magic doesn't care how strong you are — only how much of you is left."},

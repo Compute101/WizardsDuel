@@ -96,9 +96,10 @@ const minions=(st,m)=>st.effects.filter(e=>e.type==='minion'&&(!m||e.minion===m)
 const sigById=(st,id)=>st.c.spells.find(s=>s.id===id);
 function log(s){ if(gs.verbose) gs.log.push('R'+gs.round+' '+s); }
 
-// Infernal Gate (Frederick): struck while it's up, he steps through. Until the end of the next round he's
-// in the Gate: he skips his spell, nothing can be aimed at him, nothing ticks on him; then he steps out
-// (the wizards trade places at the table) and casts the card's exit spell free. st.gate = {until, exit}.
+// Infernal Gate (Frederick): a Protection card, so it resolves before any Dispel or Damage. He steps through
+// the Gate: for the rest of the round nothing aimed at him lands and nothing ticks on him. At round end the
+// wizards trade places at the table and he comes out in Infernal Mantle: his next strike ignores the foe's
+// ward (until used, or a Dispel strips it). st.gate = {until: this round}. Not two rounds running.
 function inGate(w){ const g=gs[w].gate; return !!g&&gs.round<=g.until; }
 // Does this pick aim at the foe? (Cleanse, wards, buffs, heals and Meditate don't.)
 function aimsAtFoe(st,a){
@@ -211,6 +212,7 @@ function doProtect(who,a){
     return;
   }
   if(sp.kind==='instant'){ doInstant(who,sp); return; }
+  if(sp.effect&&sp.effect.type==='gate'){ st.gate={until:gs.round}; st.lastGate=gs.round; return; }
   const e=Object.assign({id:sp.id, kind:'buff', name:sp.name},sp.effect);
   addEffect(who,e,who);
   if(sp.ward) raiseWard(who,sp.elem,sp.ward);
@@ -279,6 +281,7 @@ function doDamage(who,a){
   // The caster's boosts
   let burn=0;
   const emp=st.effects.find(e=>e.type==='empower'&&(!e.elem||e.elem===elem));
+  const pierce=!!(emp&&emp.pierce);   // Infernal Mantle: this strike ignores the ward
   if(emp){ dmg=emp.double?dmg*2:dmg+emp.bonus; removeEffects(who,[emp]); }
   fx(st,'frenzy').forEach(e=>{ dmg+=e.bonus; loseHp(who,e.selfDmg); });
   const weave=fx(st,'weave')[0];
@@ -287,13 +290,13 @@ function doDamage(who,a){
   if(tgt===who){ incoming(who,dmg,0,true); return; }
   // Misses
   const abs=fx(ts,'absorbNext')[0];
-  if(abs){ removeEffects(tgt,[abs]); if(abs.exit) ts.gate={until:gs.round+1, exit:abs.exit}; return; }
+  if(abs){ removeEffects(tgt,[abs]); return; }
   if(fx(ts,'dodge').some(e=>rolls(e.roll))) return;
   dmg+=fx(ts,'vuln').reduce((s,e)=>s+e.n,0);
   const res=fx(ts,'resist').reduce((s,e)=>s+e.n,0);
   if(res) dmg=Math.max(1,dmg-res);
   const retaliate=fx(ts,'resist').concat(fx(ts,'counter')).reduce((s,e)=>s+(e.retaliate||0),0)+(ts.ward?ts.ward.ret:0);
-  const hp=incoming(tgt,dmg,wardAdj(ts,elem),false,sp&&sp.blast);
+  const hp=incoming(tgt,dmg,wardAdj(ts,elem),false,pierce?dmg:sp&&sp.blast);
   if(hp>0){
     if(sp&&sp.lifesteal) heal(who,Math.floor(hp/2));
     if(sp&&sp.dot) addEffect(tgt,{id:sp.id+'-dot', type:'dot', kind:'curse', name:sp.name, dmg:sp.dot.dmg, bypassWard:sp.dot.bypassWard},who);
@@ -438,13 +441,12 @@ function endRound(){
     W.forEach(w=>{ if(!inGate(w)) loseHp(w,n); });
   }
   if(checkOver()) return;
-  // Out of the Gate: trade places at the table, and cast the exit spell free (no cost, no flick)
+  // Out of the Gate: trade places at the table, wreathed in Infernal Mantle
   W.forEach(w=>{
     const g=gs[w].gate;
-    if(!g||g.until!==gs.round||gs.over) return;
+    if(!g||g.until!==gs.round) return;
     gs[w].gate=null;
-    const sp=sigById(gs[w],g.exit);
-    if(sp) doDamage(w,{cat:'damage',sig:sp.id});
+    addEffect(w,{id:'infernalmantle', type:'empower', kind:'buff', name:'Infernal Mantle', bonus:0, pierce:true},w);
   });
   if(checkOver()) return;
   W.forEach(w=>{
@@ -474,10 +476,10 @@ function checkOver(){
 function canPick(st,a){
   if(a.cat==='meditate') return canMeditate(st);
   if(a.cat==='pass') return true;
-  if(aimsAtFoe(st,a)&&inGate(foe(st.w))) return false;   // nothing can be aimed into the Gate
   if(locked(st,a.cat)) return false;
   if(a.elem&&!a.sig&&st.c.forbidden.includes(a.elem)) return false;
   const sp=a.sig&&sigById(st,a.sig);
+  if(sp&&sp.effect&&sp.effect.type==='gate'&&st.lastGate===gs.round-1) return false;   // not two rounds running
   if(sp&&sp.requires==='skeleton'&&!minions(st,'skeleton').length) return false;   // Danse Macabre needs a dancer
   return costOf(st,a)<=st.mana;
 }
@@ -501,6 +503,7 @@ function sigSensible(w,sp){
   if(sp.perSkeleton) return minions(st,'skeleton').length>0||!st.ward;
   if(e.type==='counter') return true;
   if(e.type==='absorbNext'||e.type==='dodge') return !fx(st,'absorbNext').length;
+  if(e.type==='gate') return !st.effects.some(f=>f.pierce)&&ts.mana>=costOf(ts,{cat:'damage',ring:1});
   if(sp.pctHp) return Math.floor(ts.hp/sp.pctHp.div)>=sp.pctHp.min||ts.hp<=sp.pctHp.min+1;
   return true;
 }
@@ -510,7 +513,6 @@ const guards=st=>st.effects.filter(e=>e.type==='minion'&&e.soak).length;
 const guardLow=st=>{ const g=guardSpell(st); return !!g&&guards(st)<=Math.floor(g.effect.max/2); };
 function aiChoose(w,level){
   const st=gs[w], ts=gs[foe(w)], smart=level!=='easy';
-  if(inGate(w)) return {cat:'pass'};   // in the Gate: no spell this round
   // Meditate when short of mana
   if(canMeditate(st)&&st.mana<costOf(st,{cat:'damage',ring:2})){
     let p=st.mana<costOf(st,{cat:'damage',ring:1})?0.5:0.25;
@@ -529,6 +531,7 @@ function aiChoose(w,level){
   const nCurses=curses(st).length;
   if(nCurses) w8.dispel+=smart?0.6+0.5*nCurses:0.4;
   if(st.effects.some(e=>e.type==='empower'||e.type==='frenzy'||e.type==='weave')) w8.damage+=0.9;
+  if(st.effects.some(e=>e.pierce)) w8.damage+=smart?1.2:0.5;   // Infernal Mantle: strike through their ward
   if(minions(st,'blade').length>=2) w8.damage+=0.6;
   const hexes=st.c.spells.filter(s=>s.cat==='dispel'&&s.kind==='curse'&&sigSensible(w,s)).length;
   w8.dispel+=(smart?0.35:0.2)*hexes;
@@ -571,6 +574,9 @@ function aiInCat(w,cat,smart){
   if(cat==='protect'&&dsp&&guards(st)&&!fx(st,'danse').length&&canPick(st,{cat,sig:dsp.id})&&rng()<(smart?0.35+0.15*guards(st):0.25)) return {cat,sig:dsp.id};
   if(cat==='protect'&&guardLow(st)&&canPick(st,{cat,sig:gsp.id})&&rng()<(smart?0.85:0.5)) return {cat,sig:gsp.id};
   const sigs=st.c.spells.filter(s=>s.cat===cat&&canPick(st,{cat,sig:s.id})&&sigSensible(w,s));
+  // Infernal Mantle on: put the biggest strike we can afford through their ward
+  if(cat==='damage'&&smart&&st.effects.some(e=>e.pierce)&&sigs.length&&rng()<0.8)
+    return {cat,sig:sigs.reduce((a,b)=>(b.dmg||0)>(a.dmg||0)?b:a).id};
   const idleDispel=cat==='dispel'&&!ts.ward&&!buffs(ts).length;
   if(sigs.length&&(idleDispel||rng()<(smart?0.5:0.3))){
     const sp=sigs[Math.floor(rng()*sigs.length)];
