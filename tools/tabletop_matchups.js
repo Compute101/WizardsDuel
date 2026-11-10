@@ -1,6 +1,6 @@
 // Prints the tabletop matchup table (Markdown): each cell is the row wizard's win % against the
 // column wizard, from AI-vs-AI games on the tabletop rules, half on each side.
-// Usage:   node tools/tabletop_matchups.js [games per pairing, default 400] [ai: normal|easy] [rules: standard|beginner|beginnerCost]
+// Usage:   node tools/tabletop_matchups.js [games per pairing, default 400] [ai: normal|easy] [rules: standard|beginner]
 const path=require('path');
 const root=path.join(__dirname,'..');
 const TT=require(path.join(root,'js/tabletop.js'));

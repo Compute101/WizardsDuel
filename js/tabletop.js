@@ -52,28 +52,20 @@ const RULES={
   maxRounds:40,                // the simulator calls it a timeout after this
   // How the flick works:
   //  'pot'     pot `winks` winks to cast, paying retryCost after each miss (the rules above).
-  //  'chances' (Beginner) up to `chances` flicks; the first pot casts the spell, no pot and it fizzles.
-  //  'cost'    (Beginner) flick every mana wink you paid; one pot casts the spell, and every wink
-  //            that pots comes back to your mana. No pot and it fizzles.
+  //  'chances' (Beginner) up to `chances` flicks; the first pot casts the spell, no pot and it
+  //            fizzles (the mana is lost). `chances` is a number, an array by level, or {budget:n}
+  //            for n minus the spell's cost, so cheaper spells get more flicks.
   flickMode:'pot',
   chances:5,
-  minFlicks:0,                 // 'cost': flick at least this many times (pick your paid winks up and flick again)
-  // When a spell fizzles, this share of its cost comes back, by level (Lesser / Normal / Greater),
-  // rounded down. Signature spells use their card's level.
-  fizzleRefund:[0,0,0],
 };
 // Named rule sets. 'standard' is the rules above; the others override some of them. useRules(name)
 // switches (the simulator, balance tools and real play all read RULES).
 const PRESETS={
   standard:{},
   // Beginner rules, calibrated to a first-time player's baseline: 7 pots in 57 flicks (about 12%).
-  // Spells never fizzle, there are no retries, and no squops: missed winks go back to your pile.
-  // Income is 1 lower, because spells never fizzle and no mana goes on retries.
-  // Two ways to flick are being tried: 'chances' (5 goes at one pot) and 'cost' (flick what you paid).
-  beginner:{flickMode:'chances', pot:0.12, squops:0},
-  // Flick Your Mana refunds a fizzled Lesser spell in full and a Normal one by half, so small
-  // spells aren't a costly miss. (A 4-flick minimum was tried and made Lesser too good: minFlicks.)
-  beginnerCost:{flickMode:'cost', pot:0.12, squops:0, fizzleRefund:[1,0.5,0]},
+  // Flick 10 minus the spell's cost (Lesser 8, Normal 6, Greater 4); the first pot casts it, no
+  // pot and it fizzles. No retries and no squops: missed winks are picked up.
+  beginner:{flickMode:'chances', chances:{budget:10}, pot:0.12, squops:0},
 };
 const DEFAULTS=JSON.parse(JSON.stringify(RULES));
 function useRules(name){
@@ -338,7 +330,7 @@ function doDamage(who,a){
 // picks: {p1:action, p2:action}. action: {cat:'damage'|'protect'|'dispel', elem, ring} or
 // {cat, sig:'spellId'} or {cat:'dispel', self:true, ring:1} (cleanse) or {cat:'meditate'} / {cat:'pass'}.
 // flicks (optional, for real play): {p1:{cast:true|false, missed:n}, ...} the tiddlywink results
-// (Beginner rules: {p1:{cast:bool}} for 'chances', {p1:{potted:n}} for 'cost');
+// (Beginner rules: {p1:{cast:bool}});
 // otherwise they are rolled from RULES.pot. squops (optional): {p1:winks squopped, ...}; otherwise
 // rolled from RULES.squop.
 function playRound(picks,flicks,squops){
@@ -398,20 +390,6 @@ function flickCast(w,ring,given,paid){
     for(let i=0;i<tries;i++){ st.flicks=(st.flicks||0)+1; if(rng()<potChance(w)){ st.potted++; return true; } }
     return false;
   }
-  if(RULES.flickMode==='cost'){
-    // Beginner: flick every mana wink paid; one pot casts, and potted winks come back to your mana.
-    // given (real play): {potted:n}.
-    let n=0;
-    if(given) n=Math.max(0,Math.min(paid,given.potted|0));
-    else {
-      // Only the first `paid` flicks can bring winks back; any extra (minFlicks) just help it cast
-      const tries=Math.max(paid,RULES.minFlicks);
-      for(let i=0;i<tries;i++) if(rng()<potChance(w)) n++;
-      n=Math.min(n,paid);
-    }
-    st.potted+=n; gainMana(w,n);
-    return n>0;
-  }
   if(given){
     const retries=given.cast?given.missed:Math.max(0,given.missed-1);
     loseMana(w,retries*RULES.retryCost);
@@ -455,10 +433,7 @@ function pay(w,a,flick){
   if(sp&&sp.action&&sp.action.type==='bloodpact'){ loseHp(w,sp.action.hp); gainMana(w,sp.action.hp); }
   if(cost>st.mana) return 'nomana';
   st.mana-=cost;
-  if(!flickCast(w,ringOf(st,a),flick,cost)){
-    gainMana(w,Math.floor(cost*(RULES.fizzleRefund[ringOf(st,a)-1]||0)));
-    return 'fizzle';
-  }
+  if(!flickCast(w,ringOf(st,a),flick,cost)) return 'fizzle';
   if(a.cat==='protect') fx(st,'candle').forEach(e=>loseHp(w,e.dmg));
   return 'cast';
 }

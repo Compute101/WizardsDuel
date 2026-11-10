@@ -13,7 +13,7 @@
   },
   "mal": {
     "hp": 17,
-    "rules": {"beginner": {"hp": 18}, "beginnerCost": {"hp": 18}},
+    "rules": {"beginner": {"hp": 18}},
     "spells": [
       {"id": "empower", "name": "Empower", "cat": "protect", "elem": "fire", "ring": 1, "cost": 2, "kind": "buff", "effect": {"type": "empower", "double": true},
        "text": "Your next strike deals double damage."},
@@ -25,7 +25,6 @@
   },
   "sylvara": {
     "hp": 18,
-    "rules": {"beginnerCost": {"hp": 19}},
     "spells": [
       {"id": "heal", "name": "Regen", "cat": "protect", "elem": "physical", "ring": 2, "cost": 3, "kind": "buff", "effect": {"type": "regen", "heal": 1},
        "text": "Until dispelled: heal 1 at every round end."},
@@ -59,7 +58,7 @@
   },
   "cinder": {
     "hp": 17,
-    "rules": {"beginner": {"hp": 18}, "beginnerCost": {"hp": 20}},
+    "rules": {"beginner": {"hp": 18}},
     "spells": [
       {"id": "fireball", "name": "Fireball", "cat": "damage", "elem": "fire", "ring": 1, "cost": 2, "kind": "strike", "dmg": 4,
        "text": "Fire strike of 4 (a Lesser strike is 2)."},
@@ -82,7 +81,6 @@
   },
   "zacharius": {
     "hp": 19,
-    "rules": {"beginnerCost": {"hp": 20}},
     "spells": [
       {"id": "galvanize", "name": "Galvanize", "cat": "protect", "elem": "lightning", "ring": 1, "cost": 2, "kind": "buff", "effect": {"type": "empower", "bonus": 4, "elem": "lightning"},
        "text": "Your next Lightning strike deals +4."},
@@ -94,7 +92,7 @@
   },
   "mary": {
     "hp": 17,
-    "rules": {"beginner": {"hp": 18}, "beginnerCost": {"hp": 18}},
+    "rules": {"beginner": {"hp": 18}},
     "spells": [
       {"id": "divineheal", "name": "Heal", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 5, "kind": "instant", "action": {"type": "heal", "n": 6},
        "text": "Heal 6."},
@@ -106,7 +104,6 @@
   },
   "mordant": {
     "hp": 18,
-    "rules": {"beginnerCost": {"hp": 17}},
     "spells": [
       {"id": "agony", "name": "Agony", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 4, "kind": "curse", "effect": {"type": "agony", "dmg": 2},
        "text": "Until cleansed: the foe takes 2 at every round end, unless they Meditated that round (Corruption stops Meditate escaping it)."},
@@ -118,7 +115,7 @@
   },
   "ponder": {
     "hp": 17,
-    "rules": {"beginner": {"hp": 18}, "beginnerCost": {"hp": 19}},
+    "rules": {"beginner": {"hp": 19}},
     "spells": [
       {"id": "vanish", "name": "Vanish", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "absorbNext"},
        "text": "The next strike at you misses."},
@@ -130,7 +127,6 @@
   },
   "durin": {
     "hp": 20,
-    "rules": {"beginner": {"hp": 19}, "beginnerCost": {"hp": 18}},
     "spells": [
       {"id": "stoneskin", "name": "Stoneskin", "cat": "protect", "elem": "physical", "ring": 2, "cost": 5, "kind": "ward", "ward": 9,
        "text": "Physical ward of 9."},
@@ -187,7 +183,7 @@
   },
   "thessaly": {
     "hp": 18,
-    "rules": {"beginner": {"hp": 19}, "beginnerCost": {"hp": 20}},
+    "rules": {"beginner": {"hp": 19}},
     "spells": [
       {"id": "enthral", "name": "Enthral", "cat": "dispel", "elem": "arcane", "ring": 1, "cost": 2, "kind": "curse", "effect": {"type": "enthral", "steal": 3},
        "text": "Secretly write down Damage, Protection or Dispel. If the foe's next pick is that, it's lost and you take up to 3 of the mana they paid."},
@@ -199,7 +195,7 @@
   },
   "korvath": {
     "hp": 19,
-    "rules": {"beginner": {"hp": 18}, "beginnerCost": {"hp": 15}},
+    "rules": {"beginner": {"hp": 18}},
     "spells": [
       {"id": "dragonscales", "name": "Dragon Scales", "cat": "protect", "elem": "fire", "ring": 2, "cost": 5, "kind": "buff", "effect": {"type": "resist", "n": 1, "retaliate": 1},
        "text": "Until dispelled: every hit on you deals 1 less (min 1), and strikers take 1."},
@@ -222,7 +218,7 @@
   },
   "nyxara": {
     "hp": 18,
-    "rules": {"beginner": {"hp": 17}, "beginnerCost": {"hp": 16}},
+    "rules": {"beginner": {"hp": 17}},
     "spells": [
       {"id": "singularity", "name": "Singularity", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 3, "kind": "curse", "effect": {"type": "dot", "dmg": 2},
        "text": "Until cleansed: a rift deals 2 to the foe at every round end."},
@@ -234,7 +230,7 @@
   },
   "daveron": {
     "hp": 18,
-    "rules": {"beginner": {"hp": 16}, "beginnerCost": {"hp": 17}},
+    "rules": {"beginner": {"hp": 16}},
     "spells": [
       {"id": "raisegraveguard", "name": "Raise Graveguard", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "skeleton", "kind": "minion", "soak": 3, "dmg": 1, "max": 3, "raise": 1},
        "text": "Raise 1 graveguard (max 3 on the table). Each has 3 HP and stands in front of your ward: damage (strikes and ticks) wears down the oldest graveguard first, and only what gets past them reaches your ward. Dispels can't touch them. Each graveguard still standing deals 1 to the foe at every round end."},
