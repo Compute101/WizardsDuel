@@ -1455,7 +1455,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
 const boneTotemImg={img:new Image(),ready:false};
 boneTotemImg.img.onload=()=>{ boneTotemImg.ready=true; };
 boneTotemImg.img.src='sprites/bonetotem.png';
-const BONE_TOTEM_HEIGHT=0.5, BONE_TOTEM_DX=0.3;   // in units of the caster's drawn height
+const BONE_TOTEM_HEIGHT=0.5, BONE_TOTEM_DX=0.18;   // in units of the caster's drawn height
 function drawBoneTotem(x,y,sz,who,flip,fade,t){
   if(fade<=0) return;
   const hsz=sz*SPRITE_SCALE, h=hsz*BONE_TOTEM_HEIGHT;   // sized from the caster's own drawn height
