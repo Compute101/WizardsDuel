@@ -32,7 +32,7 @@ const CHAR_FLAVOUR={
   ponder:"Young but fierce — vanish from sight and plunder your foe's magic.",
   durin:'The mountain endures. Outlast every spell — stone by stone.',
   weizan:'Build blades slowly. Release all at once. Dispel kills your investment — protect it.',
-  gretch:'Infect and drain. The totem heals you — guard it with a ward, or a Dispel will strip it.',
+  gretch:'Infect and drain. The Bone Totem heals you every round and soaks hits until it is smashed — Dispels can\'t touch it.',
   valdris:'His skeletons stand in front of his ward and soak your damage, and dispels can\'t touch them, so batter through with strikes. Cleanse Soul Tithe first, or each skeleton you kill costs you mana.',
   mirel:'Simulacra strike every round until dispelled. Bewitch turns the next strike against its caster.',
   thessaly:'Enthral calls their next move — guess right and it is lost, its mana yours. Spellbind taxes their favourite move — strike her over and over, and it is your strikes that cost more. Weave wards her, then turns strikes into mana denial.',
@@ -3361,7 +3361,7 @@ function sigAtTier(sp,tier){
   if(el.arc) el.arc.dmg=n(el.arc.dmg);
   if(el.chance!=null) el.chance=pct(el.chance,1);
   const e=el.effect;
-  if(e&&e.soak&&e.elite){ e.soak=n(e.soak); e.dmg=n(e.dmg); }   // elite (Daveron's graveguard): the ring makes each one tougher, not more of them
+  if(e&&e.soak&&e.elite){ e.soak=n(e.soak); if(e.dmg) e.dmg=n(e.dmg); if(e.heal) e.heal=n(e.heal); }   // elite (Daveron's graveguard, Gretch's totem): the ring makes each one tougher, not more of them
   else if(e&&e.soak){ e.raise=Math.max(1,(e.raise||1)+tier-2); }
   else if(e){
     ['perRound','retaliate','dmg','n','bonus','burn','extra','steal'].forEach(k=>{ if(e[k]) e[k]=n(e[k]); });
@@ -4236,10 +4236,16 @@ function elemTickEffects(who){
     elemHeal(who,e.perRound,e.icon);
     (TICK_VFX[e.id]||TICK_VFX.regen)(x,wizMidY(x));
   });
+  // Healing minions (Gretch's Bone Totem): heal their owner every round while they stand
+  effectsOf(st,'minion').filter(m=>m.heal).forEach(m=>{
+    if(st.hp<=0) return;
+    elemHeal(who,Math.round(m.heal*suddenDeathMult()),m.icon);
+    (TICK_VFX[m.id]||TICK_VFX.regen)(x,wizMidY(x));
+  });
   activeSeats().filter(o=>o!==who&&minionTarget(o)===who).forEach(owner=>{
     // Danse Macabre (Daveron): every skeleton strikes harder while it lasts
     const danse=effectsOf(gs[owner],'danse').reduce((a,e)=>a+e.bonus,0);
-    effectsOf(gs[owner],'minion').forEach(m=>{
+    effectsOf(gs[owner],'minion').filter(m=>m.dmg).forEach(m=>{   // a totem doesn't strike
       const el=elemById(m.elem||'physical');
       dmgSource=owner;
       const bonus=m.minion==='skeleton'?danse:0;
@@ -4509,7 +4515,11 @@ function elemStatusTags(){
     (st.effects||[]).filter(e=>e.type!=='minion').forEach(e=>{
       tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.rounds!=null?' ('+e.rounds+')':''}</span>`);
     });
-    const minions=effectsOf(st,'minion');
+    // A totem shows its own HP (it's smashed, not dispelled)
+    effectsOf(st,'minion').filter(m=>m.minion==='totem').forEach(m=>{
+      tags.push(`<span class="status-tag regen">${m.icon} ${name} ${m.name.toUpperCase()} ${m.hp} HP</span>`);
+    });
+    const minions=effectsOf(st,'minion').filter(m=>m.minion!=='totem');
     if(minions.length) tags.push(`<span class="status-tag foresight">${minions.map(m=>m.icon).join('')} ${name} ×${minions.length}</span>`);
   });
   return tags;
@@ -8044,7 +8054,7 @@ const TUTORIAL_CONVOS={
   gretch:[
     {key:'gretch',text:"Heh. Come closer. My kit is about poison and drain — I infect you, starve you, and keep myself alive while you rot."},
     {key:'gretch',text:"Plague is a Dark curse — damage every round for a while. Maggot Cloud is a Physical curse — it drains mana now and slows your mana for a couple of rounds. Meditating won't save you."},
-    {key:'gretch',text:"Bone Totem, in the Dark sector of my Protection wheel, heals me every round. Protect it with a ward or a Dispel will strip it."},
+    {key:'gretch',text:"Bone Totem, in the Dark sector of my Protection wheel, plants a totem that heals me every round. It's bone and wood, not an enchantment — Dispels can't touch it. It stands in front of me and soaks hits until someone smashes it."},
     {key:'gretch',text:"Not elegant. Not subtle. Just results. Plague them, drain them, totem up, and let time finish the job."},
   ],
   valdris:[

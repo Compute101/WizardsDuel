@@ -208,7 +208,7 @@ so each spell's numbers can be tuned there.
 | Weizan | 🧘 Iron Patience | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 1 / 2 / 3 | Take 30% less damage × 3 |
 | Gretch | ☠️ Plague | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 3 a round × 4 |
 | Gretch | 🪲 Maggot Cloud | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Drain 2 mana; −3 income and Meditate × 2 |
-| Gretch | 💀 Bone Totem | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 4 / 6 | Heal 4 a round × 4 |
+| Gretch | 💀 Bone Totem | 🛡 Protection | 💀 Dark | Totem (soak minion, self) | 2 / 4 / 6 | One totem: 6 HP, heals 5 a round until smashed; dispels can't touch it |
 | Valdris | 💀 Raise Dead | 🛡 Protection | 💀 Dark | Minions (self) | 3 / 5 / 8 | Raise 2 / 3 / 4 skeletons (max 5): each soaks 3 damage in front of the ward and strikes for 3 a round; dispels can't touch them |
 | Valdris | 🩸 Necrotic Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 40% of HP damage |
 | Valdris | 🪙 Soul Tithe | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: the foe loses 1 mana (2 at the outer ring) for each of your skeletons they kill |
@@ -477,3 +477,19 @@ so Heal went back up 19 → 21: Normal AI **44.4–55.8%**, one matchup under 25
 - no balance passes for 3–4 players: too many variables
 
 Also in place from earlier: per-seat `gs.pending`, `tickRound(who)`, tiered resolution, and paying up front.
+
+### Bone Totem rework (Gretch)
+The Bone Totem was a dispellable regen buff (4 a round × 4 = 16). It's a physical totem, so it is now
+a soak minion like the skeletons: `type:"minion"`, `minion:"totem"`, `kind:"minion"` (dispels can't
+touch it), one at a time (`max:1`), no round timer. It has `soak` HP and stands in front of the ward,
+wearing down first (strikes, arcane orbs and ticks), and heals its owner `heal` at every round end
+while it stands (`elemTickEffects`); with no `dmg` it never strikes. `elite:true` makes the ring scale
+its HP and heal (inner / middle / outer: 4 / 6 / 9 HP, heal 3 / 5 / 8). The AI keeps one up through
+`guardSpell` / `guardLow`.
+- Tuning (Normal AI, 60 games a matchup, Gretch only): heal 5 / 12 HP 84.5% · 4 / 6 46.2% ·
+  4 / 7 55.8% · 3 / 8 53.1% · **5 / 6 50.9%** · 6 / 4 38.6%.
+- Whole roster at 200 games a matchup: Gretch 52.2% (51.0% before), everyone 45.6–53.6%. Totem is
+  about 28% of his picks.
+- Tabletop mirrors it: one totem, 4 HP, heal 1 a round while it stands. Gretch 53.8% (52.5% before),
+  everyone 46–54% (400 games).
+

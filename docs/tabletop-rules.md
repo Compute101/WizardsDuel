@@ -250,7 +250,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 |---|---|---|---|---|---|
 | **Plague** | Dispel | Dark | Normal | 3 | Until cleansed: the foe takes 1 at every round end. |
 | **Maggot Cloud** | Dispel | Physical | Normal | 2 | The foe loses 3 mana now. Until cleansed, they gain 1 less mana each round (and from Meditate). |
-| **Bone Totem** | Protection | Dark | Normal | 4 | Until dispelled: heal 1 at every round end. |
+| **Bone Totem** | Protection | Dark | Normal | 4 | Plant a bone totem (one at a time). It has 4 HP and stands in front of your ward: damage (strikes and ticks) wears it down before anything reaches your ward. Dispels can't touch it. While it stands, heal 1 at every round end. |
 
 ### VALDRIS — The Undying
 **HP 16** · Can't cast: Fire

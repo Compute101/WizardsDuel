@@ -150,8 +150,8 @@
        "text": "Until cleansed: the foe takes 1 at every round end."},
       {"id": "maggotcloud", "name": "Maggot Cloud", "cat": "dispel", "elem": "physical", "ring": 2, "cost": 2, "kind": "curse", "drainNow": 3, "effect": {"type": "incomeDrain", "n": 1},
        "text": "The foe loses 3 mana now. Until cleansed, they gain 1 less mana each round (and from Meditate)."},
-      {"id": "bonetotem", "name": "Bone Totem", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "regen", "heal": 1},
-       "text": "Until dispelled: heal 1 at every round end."}
+      {"id": "bonetotem", "name": "Bone Totem", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "totem", "kind": "minion", "soak": 4, "heal": 1, "max": 1, "raise": 1},
+       "text": "Plant a bone totem (one at a time). It has 4 HP and stands in front of your ward: damage (strikes and ticks) wears it down before anything reaches your ward. Dispels can't touch it. While it stands, heal 1 at every round end."}
     ]
   },
   "valdris": {

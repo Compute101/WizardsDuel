@@ -979,11 +979,17 @@
           "cost": 4,
           "tier": 2,
           "effect": {
-            "type": "regen",
-            "perRound": 4,
-            "rounds": 4
+            "type": "minion",
+            "minion": "totem",
+            "kind": "minion",
+            "elite": true,
+            "soak": 6,
+            "heal": 5,
+            "max": 1,
+            "raise": 1,
+            "rounds": null
           },
-          "desc": "Heal 4 a round × 4"
+          "desc": "Plant a bone totem (one at a time): heals you 5 a round and soaks 6 damage in front of your ward until smashed; dispels can't touch it"
         }
       }
     ]
