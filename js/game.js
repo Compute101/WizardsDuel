@@ -642,8 +642,9 @@ const SPRITE_CFG={
   animRows:{idle:0,cast:1,hit:2,shield:3,death:4},
 };
 const SPRITE_SCALE=1.2;   // battle sprite height relative to drawWiz's sz
-// A character's optional "spriteHeight" in characters.json shrinks its battle sprite (e.g. Durin
-// is a dwarf, so 0.72 of a man's height). Feet stay on the floor; only the drawn figure changes.
+// A character's optional "spriteHeight" in characters.json scales its battle sprite (e.g. Durin
+// is a dwarf, so 0.72 of a man's height; Gretch is a hulking troggoth, 1.5). Feet stay on the
+// floor; only the drawn figure (and its auras / effects) changes.
 function seatSpriteHeight(who){ const c=who&&seatCfg(who); return (c&&c.spriteHeight)||1; }
 // Optional "spriteWidth": stretches the battle sprite sideways (Durin is a stocky dwarf: 1.2).
 function seatSpriteWidth(who){ const c=who&&seatCfg(who); return (c&&c.spriteWidth)||1; }
@@ -1448,10 +1449,10 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
 const boneTotemImg={img:new Image(),ready:false};
 boneTotemImg.img.onload=()=>{ boneTotemImg.ready=true; };
 boneTotemImg.img.src='sprites/bonetotem.png';
-const BONE_TOTEM_HEIGHT=0.58, BONE_TOTEM_DX=0.36;   // in units of the wizard's drawn height
+const BONE_TOTEM_HEIGHT=0.5, BONE_TOTEM_DX=0.3;   // in units of the caster's drawn height
 function drawBoneTotem(x,y,sz,who,flip,fade,t){
   if(fade<=0) return;
-  const hsz=sz*SPRITE_SCALE/seatSpriteHeight(who), h=hsz*BONE_TOTEM_HEIGHT;
+  const hsz=sz*SPRITE_SCALE, h=hsz*BONE_TOTEM_HEIGHT;   // sized from the caster's own drawn height
   const tx=x+(flip?1:-1)*hsz*BONE_TOTEM_DX;
   bx.save();
   bx.globalAlpha*=fade;
