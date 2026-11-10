@@ -120,6 +120,9 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 - **Every hit deals N less (min 1):** applies to strikes, after any +damage bonuses.
 - **Can't pick Damage next round:** a lock. A wizard can't be locked two rounds running.
 - **Heal:** never above your starting HP.
+- **Blast N:** up to N of the strike's damage goes around the foe's ward straight to HP. Skeletons still soak it first; the rest of the strike meets the ward as usual.
+  - Example: Blue Fire (7, blast 3) hits a Fire ward of 8. 3 go straight to HP; the other 4 count as 6 against the Fire ward, which drops to 2.
+- **In the Gate** (Frederick's Infernal Gate): after the strike the Gate swallows, he skips his spell for the next round and can't be touched. No Damage, Dispel or curse can be picked against him (Cleanse, wards, buffs and Meditate still can), and nothing ticks on him: curses, minions and sudden death all wait. At the end of that round, after the ticks, the two players trade places at the table and he casts Blue Fire free (no mana, no flick). Keep a wink on his Gate card as a reminder.
 
 ---
 
@@ -314,5 +317,14 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Raise Graveguard** | Protection | Dark | Normal | 4 | Raise 1 graveguard (max 3 on the table). Each has 3 HP and stands in front of your ward: damage (strikes and ticks) wears down the oldest graveguard first, and only what gets past them reaches your ward. Dispels can't touch them. Each graveguard still standing deals 1 to the foe at every round end. |
 | **Vanhal's Danse Macabre** | Protection | Arcane | Lesser | 2 | Needs a graveguard on the table. Until dispelled: each of your graveguard deals 1 more at every round end. |
 | **Curse of the Years** | Dispel | Dark | Normal | 4 | Until cleansed: the foe takes 2 at every round end, whatever they did. Unlike Agony, Meditating doesn't escape it. |
+
+### FREDERICK — The Black
+**HP 16** · Can't cast: Ice
+
+| Spell | Type | Element | Level | Cost | Effect |
+|---|---|---|---|---|---|
+| **Doom Bolt** | Damage | Dark | Lesser | 2 | Dark strike of 3. Blast: 1 of it goes around a ward straight to HP. |
+| **Infernal Gate** | Protection | Fire | Normal | 5 | The next strike at you misses, and you step through the Gate. Next round you skip your spell and can't be touched: nothing can be aimed at you and nothing ticks on you. At that round's end, trade places at the table and cast Blue Fire free (no mana, no flick). |
+| **Blue Fire** | Damage | Fire | Greater | 6 | Fire strike of 7. Big blast: 3 of it goes around a ward straight to HP. |
 
 <!-- characters:end -->

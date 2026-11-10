@@ -83,9 +83,9 @@ const clamp=v=>Math.max(0,Math.min(RULES.max,v));
 // ── State ──────────────────────────────────────────────────
 let gs=null;
 function newGame(k1,k2){
-  const seat=k=>({key:k, c:CHARS[k], hp:CHARS[k].hp, mana:RULES.startMana, ward:null, effects:[],
+  const seat=(k,w)=>({w, key:k, c:CHARS[k], hp:CHARS[k].hp, mana:RULES.startMana, ward:null, effects:[],
     medRound:-9, potted:0, catCounts:{}, lostLast:0, hpAtStart:0, used:{}, meditated:false});
-  gs={round:1, p1:seat(k1), p2:seat(k2), table:0, over:null, log:[]};
+  gs={round:1, p1:seat(k1,'p1'), p2:seat(k2,'p2'), table:0, over:null, log:[]};
   return gs;
 }
 const foe=w=>w==='p1'?'p2':'p1';
@@ -96,6 +96,17 @@ const minions=(st,m)=>st.effects.filter(e=>e.type==='minion'&&(!m||e.minion===m)
 const sigById=(st,id)=>st.c.spells.find(s=>s.id===id);
 function log(s){ if(gs.verbose) gs.log.push('R'+gs.round+' '+s); }
 
+// Infernal Gate (Frederick): struck while it's up, he steps through. Until the end of the next round he's
+// in the Gate: he skips his spell, nothing can be aimed at him, nothing ticks on him; then he steps out
+// (the wizards trade places at the table) and casts the card's exit spell free. st.gate = {until, exit}.
+function inGate(w){ const g=gs[w].gate; return !!g&&gs.round<=g.until; }
+// Does this pick aim at the foe? (Cleanse, wards, buffs, heals and Meditate don't.)
+function aimsAtFoe(st,a){
+  if(a.cat==='damage') return true;
+  if(a.cat!=='dispel'||a.self) return false;
+  const sp=a.sig&&sigById(st,a.sig);
+  return !sp||sp.kind==='curse'||!!(sp.action&&sp.action.type==='siphon');
+}
 function locked(st,cat){ return fx(st,'lock').some(e=>e.cat===cat&&e.from<gs.round); }
 function canMeditate(st){ return st.medRound!==gs.round-1&&st.mana<RULES.max; }
 function incomeDrain(st){ return fx(st,'incomeDrain').reduce((a,e)=>a+e.n,0); }
@@ -152,7 +163,8 @@ function gainMana(who,n){ gs[who].mana=clamp(gs[who].mana+n); }
 // Damage that meets soak minions, then the ward. adj: +n / −n against the ward (element match / off-element).
 // own: the damage is the target's own (a Bewitched self-hit), so the foe pays no Soul Tithe.
 // Returns the HP damage dealt.
-function incoming(who,dmg,adj,own){
+// blast: up to this much of the damage goes around the ward straight to HP (Frederick's strikes)
+function incoming(who,dmg,adj,own,blast){
   const st=gs[who];
   if(dmg<=0) return 0;
   // Soak minions (skeletons) stand in front of the ward, oldest first: each soaks damage up to its HP
@@ -171,13 +183,14 @@ function incoming(who,dmg,adj,own){
     if(!own&&dead.length) fx(gs[foe(who)],'tithe').forEach(e=>loseMana(foe(who),dead.length*e.n));
     if(dmg<=0) return 0;
   }
-  if(st.ward){
+  let around=0;
+  if(st.ward&&blast){ around=Math.min(blast,dmg); dmg-=around; }
+  if(st.ward&&dmg>0){
     const eff=Math.max(1,dmg+(adj||0));
-    if(eff<st.ward.hp){ st.ward.hp-=eff; return 0; }
-    const over=eff-st.ward.hp;
-    st.ward=null;
-    dmg=over;
+    if(eff<st.ward.hp){ st.ward.hp-=eff; dmg=0; }
+    else { const over=eff-st.ward.hp; st.ward=null; dmg=over; }
   }
+  dmg+=around;
   loseHp(who,dmg);
   return dmg;
 }
@@ -274,13 +287,13 @@ function doDamage(who,a){
   if(tgt===who){ incoming(who,dmg,0,true); return; }
   // Misses
   const abs=fx(ts,'absorbNext')[0];
-  if(abs){ removeEffects(tgt,[abs]); return; }
+  if(abs){ removeEffects(tgt,[abs]); if(abs.exit) ts.gate={until:gs.round+1, exit:abs.exit}; return; }
   if(fx(ts,'dodge').some(e=>rolls(e.roll))) return;
   dmg+=fx(ts,'vuln').reduce((s,e)=>s+e.n,0);
   const res=fx(ts,'resist').reduce((s,e)=>s+e.n,0);
   if(res) dmg=Math.max(1,dmg-res);
   const retaliate=fx(ts,'resist').concat(fx(ts,'counter')).reduce((s,e)=>s+(e.retaliate||0),0)+(ts.ward?ts.ward.ret:0);
-  const hp=incoming(tgt,dmg,wardAdj(ts,elem));
+  const hp=incoming(tgt,dmg,wardAdj(ts,elem),false,sp&&sp.blast);
   if(hp>0){
     if(sp&&sp.lifesteal) heal(who,Math.floor(hp/2));
     if(sp&&sp.dot) addEffect(tgt,{id:sp.id+'-dot', type:'dot', kind:'curse', name:sp.name, dmg:sp.dot.dmg, bypassWard:sp.dot.bypassWard},who);
@@ -316,7 +329,11 @@ function playRound(picks,flicks,squops){
   for(const cat of ['protect','dispel','damage']){
     const seats=W.filter(w=>outcome[w]==='cast'&&picks[w].cat===cat);
     if(rng()<0.5) seats.reverse();
-    seats.forEach(w=>{ if(!gs.over) (cat==='protect'?doProtect:cat==='dispel'?doDispel:doDamage)(w,picks[w]); });
+    seats.forEach(w=>{
+      if(gs.over||inGate(w)) return;                                    // he's gone through the Gate
+      if(aimsAtFoe(gs[w],picks[w])&&inGate(foe(w))&&!fx(gs[w],'bewitch').length) return;   // into the Gate: fizzles
+      (cat==='protect'?doProtect:cat==='dispel'?doDispel:doDamage)(w,picks[w]);
+    });
     if(checkOver()) return outcome;
   }
   W.forEach(w=>{ if(picks[w].cat==='meditate'&&outcome[w]==='cast') gainMana(w,Math.max(0,RULES.meditate-incomeDrain(gs[w]))); });
@@ -399,6 +416,7 @@ function endRound(){
   // Ticks: curses on you, then your buffs (regen) and minions
   W.forEach(w=>{
     const st=gs[w], f=foe(w);
+    if(inGate(w)){ fx(st,'regen').forEach(e=>heal(w,e.heal)); return; }   // nothing reaches him in the Gate
     fx(st,'dot').forEach(e=>{
       const n=e.ramp?e.ramp[Math.min(e.ramp.length-1,e.step++)]:e.dmg;
       if(e.bypassWard) loseHp(w,n); else incoming(w,n,0);
@@ -411,14 +429,23 @@ function endRound(){
     fx(st,'regen').forEach(e=>heal(w,e.heal));
     // Danse Macabre (Daveron): each of your skeletons deals its bonus more
     const danse=fx(st,'danse').reduce((a,e)=>a+e.bonus,0);
-    minions(st).forEach(m=>incoming(f,m.dmg+(m.minion==='skeleton'?danse:0),0));
+    if(!inGate(f)) minions(st).forEach(m=>incoming(f,m.dmg+(m.minion==='skeleton'?danse:0),0));
   });
   // Sudden death
   const sd=RULES.suddenDeath;
   if(sd&&gs.round>=sd.round){
     const n=sd.dmg+Math.floor((gs.round-sd.round)/sd.every);
-    W.forEach(w=>loseHp(w,n));
+    W.forEach(w=>{ if(!inGate(w)) loseHp(w,n); });
   }
+  if(checkOver()) return;
+  // Out of the Gate: trade places at the table, and cast the exit spell free (no cost, no flick)
+  W.forEach(w=>{
+    const g=gs[w].gate;
+    if(!g||g.until!==gs.round||gs.over) return;
+    gs[w].gate=null;
+    const sp=sigById(gs[w],g.exit);
+    if(sp) doDamage(w,{cat:'damage',sig:sp.id});
+  });
   if(checkOver()) return;
   W.forEach(w=>{
     const st=gs[w];
@@ -447,6 +474,7 @@ function checkOver(){
 function canPick(st,a){
   if(a.cat==='meditate') return canMeditate(st);
   if(a.cat==='pass') return true;
+  if(aimsAtFoe(st,a)&&inGate(foe(st.w))) return false;   // nothing can be aimed into the Gate
   if(locked(st,a.cat)) return false;
   if(a.elem&&!a.sig&&st.c.forbidden.includes(a.elem)) return false;
   const sp=a.sig&&sigById(st,a.sig);
@@ -482,6 +510,7 @@ const guards=st=>st.effects.filter(e=>e.type==='minion'&&e.soak).length;
 const guardLow=st=>{ const g=guardSpell(st); return !!g&&guards(st)<=Math.floor(g.effect.max/2); };
 function aiChoose(w,level){
   const st=gs[w], ts=gs[foe(w)], smart=level!=='easy';
+  if(inGate(w)) return {cat:'pass'};   // in the Gate: no spell this round
   // Meditate when short of mana
   if(canMeditate(st)&&st.mana<costOf(st,{cat:'damage',ring:2})){
     let p=st.mana<costOf(st,{cat:'damage',ring:1})?0.5:0.25;
