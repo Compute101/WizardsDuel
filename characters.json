@@ -915,7 +915,7 @@
   "gretch": {
     "name": "GRETCH",
     "title": "The Festering",
-    "sprite": "sprites/mage-dark.png",
+    "sprite": "sprites/gretch.png",
     "col": "#55aa33",
     "taunts": [
       "The rot was already inside you. Gretch just let it out.",
