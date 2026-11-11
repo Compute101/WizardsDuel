@@ -51,6 +51,10 @@ What was built, including choices made while building:
   the spell; only Ponder's Mana Siphon) are paid first and steal at once, so their target pays from
   what's left — if they can no longer afford their pick, it fails.
 - **Wards:** raising one replaces any existing ward. A ward stops damage in the same round it's raised.
+  Like tabletop mode, a ward has **no round timer**: it lasts until it runs out. It loses a flat
+  **4 HP at every round end** (`ELEM_WARD_WEAR`, about one tabletop wink), and strikes, ticks and
+  dispels wear it too; Counter stops the round-end wear while it lasts. (It used to last 3 rounds and
+  keep 75% of its HP each round: `ELEM_WARD_ROUNDS` 0 and `ELEM_WARD_DECAY` 1 now.)
   A ward **resists every element but its own**: other elements wear it down at 75%, while a strike in
   its own element **unravels** it at 150% (`ELEM_WARD_TAKE`). A dispel of its element does double.
 - **Damage over time** (poison, burns, vines, Plague, Singularity, Blizzard) hits a ward first at each
@@ -79,8 +83,8 @@ What was built, including choices made while building:
   (Empower, blades) are immune.
 - Every rider applies to signature strikes of that element too. `ELEM_RIDERS` switches each one off,
   for testing in the balance simulator.
-- **Character stats:** each character's HP and damage multiplier apply. Eldrin's wards cost 1 less
-  (`shieldCostMod` in `characters.json`). Character spells: see Phase 4.
+- **Character stats:** each character's HP and damage multiplier apply. (Eldrin's wards used to cost
+  1 less, `shieldCostMod` in `characters.json`; dropped when wards stopped expiring, see below.) Character spells: see Phase 4.
 - **AI:** a weighted mixed strategy. It dispels when you have a ward, and on Normal it matches your
   ward's element. It wards more when you can afford a strong hit or its HP is low. On Normal it strikes
   with your ward's own element when it can. It prefers wards in elements you can't cast (70% Normal,
@@ -109,7 +113,7 @@ Starting numbers (to be tuned):
 - **Piercing is removed** (Lightning, Radiant, Feint, Charge). Those spells get a mana-burn rider instead.
 - **Freeze** no longer skips a turn. Instead, next round you can't pick one category, and everyone can see which.
 - **Haste is removed.**
-- **Everyone gets Shields.** Eldrin's cost less.
+- **Everyone gets Shields.**
 
 **Damage types** (6, one wheel sector each): fire, ice, lightning, arcane, physical, dark/necrotic.
 
@@ -168,7 +172,7 @@ so each spell's numbers can be tuned there.
 | Character | Spell | Wheel | Sector | Kind | Mana (inner / middle / outer) | Effect (middle ring) |
 |---|---|---|---|---|---|---|
 | Eldrin | 🛡 Shield | 🛡 Protection | 🌀 Arcane | Ward | 5 / 9 / 14 | Arcane ward of 45 |
-| Eldrin | ⚡ Counter | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 3 rounds: strikers take 10; your ward doesn't wear; a ward already up lasts +1 round (outer +2) |
+| Eldrin | ⚡ Counter | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 3 rounds: strikers take 10, and your ward doesn't wear at round end |
 | Eldrin | 🔰 Ward | 🛡 Protection | ❄️ Ice | Enchantment (self) | 1 / 2 / 3 | 3 rounds: immune to curses (and their wear on wards); the next dispel only removes the Ward |
 | Malachar | 💪 Empower | 🛡 Protection | 🔥 Fire | Enchantment (self) | 1 / 2 / 3 | Next strike +50% |
 | Malachar | 🩸 Blood Pact | 🛡 Protection | 💀 Dark | Instant | 0 | Lose 15 HP, gain 8 mana |
@@ -208,7 +212,7 @@ so each spell's numbers can be tuned there.
 | Weizan | 🧘 Iron Patience | 🛡 Protection | 🌀 Arcane | Enchantment (self) | 1 / 2 / 3 | Take 30% less damage × 3 |
 | Gretch | ☠️ Plague | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 3 a round × 4 |
 | Gretch | 🪲 Maggot Cloud | ✦ Dispel | 👊 Physical | Curse (foe) | 2 / 3 / 5 | Drain 2 mana; −3 income and Meditate × 2 |
-| Gretch | 💀 Bone Totem | 🛡 Protection | 💀 Dark | Enchantment (self) | 2 / 4 / 6 | Heal 4 a round × 4 |
+| Gretch | 💀 Bone Totem | 🛡 Protection | 💀 Dark | Totem (soak minion, self) | 4 / 6 / 10 | One totem: 15 HP, heals 2 a round until smashed; dispels can't touch it |
 | Valdris | 💀 Raise Dead | 🛡 Protection | 💀 Dark | Minions (self) | 3 / 5 / 8 | Raise 2 / 3 / 4 skeletons (max 5): each soaks 3 damage in front of the ward and strikes for 3 a round; dispels can't touch them |
 | Valdris | 🩸 Necrotic Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 40% of HP damage |
 | Valdris | 🪙 Soul Tithe | ✦ Dispel | 💀 Dark | Curse (foe) | 2 / 3 / 5 | 4 rounds: the foe loses 1 mana (2 at the outer ring) for each of your skeletons they kill |
@@ -477,3 +481,46 @@ so Heal went back up 19 → 21: Normal AI **44.4–55.8%**, one matchup under 25
 - no balance passes for 3–4 players: too many variables
 
 Also in place from earlier: per-seat `gs.pending`, `tickRound(who)`, tiered resolution, and paying up front.
+
+### Bone Totem rework (Gretch)
+The Bone Totem was a dispellable regen buff (4 a round × 4 = 16). It's a physical totem, so it is now
+a soak minion like the skeletons: `type:"minion"`, `minion:"totem"`, `kind:"minion"` (dispels can't
+touch it), one at a time (`max:1`), no round timer. It has `soak` HP and stands in front of the ward,
+wearing down first (strikes, arcane orbs and ticks), and heals its owner `heal` at every round end
+while it stands (`elemTickEffects`); with no `dmg` it never strikes. `elite:true` makes the ring scale
+its HP and heal (now inner / middle / outer: 9 / 15 / 23 HP, heal 1 / 2 / 3). The AI keeps one up
+through `guardSpell` / `guardLow`.
+- Tuning (Normal AI, 60 games a matchup, Gretch only): heal 5 / 12 HP 84.5% · 4 / 6 46.2% ·
+  4 / 7 55.8% · 3 / 8 53.1% · **5 / 6 50.9%** · 6 / 4 38.6%.
+- Whole roster at 200 games a matchup: Gretch 52.2% (51.0% before), everyone 45.6–53.6%. Totem is
+  about 28% of his picks.
+- Tabletop mirrors it: one totem, 4 HP, heal 1 a round while it stands. Gretch 53.8% (52.5% before),
+  everyone 46–54% (400 games).
+- Matched to tabletop: there the totem takes a whole Normal strike (4) to smash, but the first
+  standard version (6 HP) broke to any hit. Now it's 15 HP, a whole middle-ring strike, with less
+  heal and a higher cost. Soak is the strong part: 15 HP with no heal at all was 65%, heal 2 at 4
+  mana 84%. Gretch only, 80 games: heal 2 / cost 6 54.8% · heal 2 / cost 7 47.1% · heal 3 / cost 7
+  56.1% · heal 3 / cost 8 41.7%. Whole roster at 200 games: **heal 2, 15 HP, cost 6** puts Gretch at
+  53.7%, everyone 47.5–53.7% (heal 3 at cost 7: Gretch 56.3%). Totem about 24% of his picks.
+
+### Wards last until worn down (tabletop rules)
+Wards used to last 3 rounds and keep 75% of their HP at each round end. Like tabletop mode, they now
+have no timer and don't fade: a ward stays up until strikes, ticks and dispels wear it down, or a new
+ward replaces it. `ELEM_WARD_ROUNDS` 0 means no timer (`shield` then just marks a ward as up) and
+`ELEM_WARD_DECAY` 1 means no fading; setting them back restores the old wards. Eldrin's Counter loses
+its ward-bracing (`holdWard` / `extend` only act with a timer); it still retaliates.
+- First run (100 games a matchup): Eldrin 60–61%, Ponder 41–42%, Daveron 39–41%; the rest in band.
+  Games stay about 20.6 rounds long.
+- Changes: Eldrin's wards no longer cost 1 less (`shieldCostMod` dropped) · Ponder HP 78 → 84 ·
+  Daveron 85 → 95 · Thessaly 90 → 86 · Aurelia 90 → 86 · Mordant 88 → 84.
+- Result (200 games a matchup): everyone 45.7–54.8% (Eldrin 54.7, Thessaly 54.8, Valdris 45.7,
+  Sylvara 45.8, Gretch 51.0, Daveron 49.0, Ponder 49.5); games average 20.7 rounds.
+- **Revised:** wards still have no timer, but they now lose a flat 4 HP at every round end
+  (`ELEM_WARD_WEAR`), like the tabletop ward's 1 wink a round (a Normal tabletop ward is 8 winks to the
+  standard 35 HP, a Normal strike 4 to 15, so a wink is about 4 HP). A ward breaks when it reaches 0.
+  Counter's `holdWard` stops the wear again. From the numbers above (100 games): everyone 45.1–57.0%
+  (Daveron 57.0, Gretch 55.9, Aurelia 45.1), so Daveron went 95 → 90 HP and Aurelia back to 90.
+  Result at 200 games a matchup: everyone **47.0–54.5%** (Gretch 54.5, Daveron 53.3, Fizzwick 47.0),
+  games about 20.2 rounds. Net HP changes from the timed wards: Ponder 78 → 84, Daveron 85 → 90,
+  Thessaly 90 → 86, Mordant 88 → 84; Eldrin's wards no longer cost 1 less.
+
