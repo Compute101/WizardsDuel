@@ -230,5 +230,16 @@
       {"id": "curseyears", "name": "Curse of the Years", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 4, "kind": "curse", "effect": {"type": "agony", "dmg": 2, "inescapable": true},
        "text": "Until cleansed: the foe takes 2 at every round end, whatever they did. Unlike Agony, Meditating doesn't escape it."}
     ]
+  },
+  "frederick": {
+    "hp": 16,
+    "spells": [
+      {"id": "doombolt", "name": "Doom Bolt", "cat": "damage", "elem": "dark", "ring": 1, "cost": 2, "kind": "strike", "dmg": 3, "blast": 1,
+       "text": "Dark strike of 3. Blast: 1 of it goes around a ward straight to HP."},
+      {"id": "infernalgate", "name": "Infernal Gate", "cat": "protect", "elem": "fire", "ring": 1, "cost": 2, "kind": "buff", "effect": {"type": "gate"},
+       "text": "Teleport: nothing aimed at you this round lands, and nothing ticks on you. At round end, trade places at the table: you come out in Infernal Mantle, and your next strike ignores the foe's ward (a Dispel can strip the Mantle first). Not two rounds running."},
+      {"id": "bluefire", "name": "Blue Fire", "cat": "damage", "elem": "fire", "ring": 3, "cost": 6, "kind": "strike", "dmg": 7, "blast": 3,
+       "text": "Fire strike of 7. Big blast: 3 of it goes around a ward straight to HP."}
+    ]
   }
 }
