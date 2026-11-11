@@ -97,7 +97,7 @@ function newState(){
   gs={
     round:1, myTurn:true, busy:false,
     p1anim:'idle', p2anim:'idle', p1xOff:0, p2xOff:0,
-    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], darkRituals:[], wardUnravels:[], siphons:[], fireballs:[], explosions:[], iceCrystals:[], iceShards:[], boulders:[], storms:[], counterArcs:[], quake:null,
+    parts:[], floats:[], projs:[], beams:[], manaBurnFires:[], shadowCircles:[], darkRituals:[], wardUnravels:[], siphons:[], plagueClouds:[], fireballs:[], explosions:[], iceCrystals:[], iceShards:[], boulders:[], storms:[], counterArcs:[], quake:null,
     pending:{},   // who → committed action {type:'el',cat,elem,tier,sig?,self?,target,ok}, hidden until reveal
     turnPlayer:'p1', lastAnimEnd:0,
   };
@@ -1275,19 +1275,6 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.strokeStyle=`rgba(200,160,255,${gv*4})`; bx.lineWidth=2;
     bx.shadowColor='#cc99ff'; bx.shadowBlur=8; bx.stroke(); bx.shadowBlur=0;
   }
-  // Plague: green toxic aura
-  if(state&&state.plague>0){
-    bx.globalAlpha=0.09+0.05*Math.sin(t/280); bx.fillStyle='#33bb22';
-    bx.beginPath(); bx.arc(x,wy,sz*.7,0,Math.PI*2); bx.fill(); bx.globalAlpha=1;
-    for(let i=0;i<4;i++){
-      const phase=((t/900+i*0.25)%1);
-      const px=x+Math.sin(t/400+i*1.7)*sz*.2, py=y-phase*sz*.85;
-      const alpha=phase<0.6?phase*1.2:Math.max(0,(1-phase)*3)*0.7;
-      bx.globalAlpha=alpha; bx.fillStyle='#44dd22'; bx.shadowColor='#33bb22'; bx.shadowBlur=4;
-      bx.beginPath(); bx.arc(px,py,sz*.022,0,Math.PI*2); bx.fill();
-    }
-    bx.globalAlpha=1; bx.shadowBlur=0;
-  }
   // Maggot Cloud: buzzing dark dots
   if(state&&state.maggotCloud>0){
     for(let i=0;i<6;i++){
@@ -1444,10 +1431,49 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   bx.restore();
   // Ward orbiters on the near side, in front of the sprite (x0: the fallback figure flips x)
   if(shielded>0) drawWardOrbiters(x0,y-sz*.62,sz,state,'front',fShield,t);
+  // Plague (Gretch's curse): miasma at the feet and bubbles rising over the body, in front of the sprite
+  drawPlagueAura(x0,y,sz,auraFade(who,'plague',!!(state&&state.plague>0)),t);
   // Bone Totem (Gretch): planted on the floor beside him, toward the foe, in front of his sprite and ward
   drawBoneTotem(x0,y,sz,who,flip,auraFade(who,'boneTotem',!!(state&&state.boneTotem>0)),t);
   // Skeletons stand in front of their master and his ward, so they're drawn last
   if(state&&state.skeletons&&state.skeletons.length) drawSkeletons(x,y,sz,who,flip,state.skeletons,t);
+}
+// Plague (Gretch's Dark curse) on a wizard: a sickly green glow over the body, toxic miasma pooling
+// round the feet, and bubbles that rise up the body and pop near the head. x, y: the wizard's feet.
+function drawPlagueAura(x,y,sz,fade,t){
+  if(fade<=0) return;
+  const h=sz*SPRITE_SCALE*1.04, wy=y-h*.5;   // the sprite's drawn height and middle
+  bx.save();
+  // Sickly glow over the body
+  const gl=bx.createRadialGradient(x,wy,h*.05,x,wy,h*.55);
+  gl.addColorStop(0,`rgba(120,200,40,${(.16+.06*Math.sin(t/300))*fade})`); gl.addColorStop(1,'rgba(120,200,40,0)');
+  bx.fillStyle=gl; bx.beginPath(); bx.ellipse(x,wy,h*.38,h*.55,0,0,Math.PI*2); bx.fill();
+  // Miasma pooling at the feet, slowly churning
+  for(let i=0;i<6;i++){
+    const ph=t/2200+i*1.1, fx=x+Math.sin(ph)*h*.26, fy=y-h*.03+Math.sin(ph*1.7)*h*.015, r=h*(.13+.03*Math.sin(ph*2.3));
+    const g=bx.createRadialGradient(fx,fy,0,fx,fy,r);
+    g.addColorStop(0,`rgba(95,165,30,${.42*fade})`); g.addColorStop(.6,`rgba(60,110,20,${.22*fade})`); g.addColorStop(1,'rgba(40,80,15,0)');
+    bx.fillStyle=g; bx.beginPath(); bx.ellipse(fx,fy,r*1.5,r*.6,0,0,Math.PI*2); bx.fill();
+  }
+  // Bubbles rising up the body, popping near the head
+  for(let i=0;i<8;i++){
+    const ph=(t/1700+i/8+orbNoise(i)*.3)%1;
+    const px=x+(orbNoise(i+7)-.5)*h*.42+Math.sin(t/450+i*2.3)*h*.03, py=y-h*.04-ph*h*.92;
+    const r=h*(.012+.018*ph+.008*orbNoise(i+3));
+    if(ph<.9){
+      const a=Math.min(1,ph*6)*fade;
+      bx.globalAlpha=a*.35; bx.fillStyle='#9be04a'; bx.beginPath(); bx.arc(px,py,r,0,Math.PI*2); bx.fill();
+      bx.globalAlpha=a*.9; bx.strokeStyle='#c8ff6a'; bx.lineWidth=1.5; bx.stroke();
+      bx.globalAlpha=a*.8; bx.fillStyle='#f0ffd0'; bx.beginPath(); bx.arc(px-r*.35,py-r*.35,r*.25,0,Math.PI*2); bx.fill();
+    } else {   // pop: a thin ring that spreads and fades, with a couple of droplets
+      const k=(ph-.9)/.1;
+      bx.globalAlpha=(1-k)*.8*fade; bx.strokeStyle='#c8ff6a'; bx.lineWidth=1;
+      bx.beginPath(); bx.arc(px,py,r*(1+k*1.6),0,Math.PI*2); bx.stroke();
+      bx.fillStyle='#9be04a';
+      for(const d of [-1,1]){ bx.beginPath(); bx.arc(px+d*r*(1+k*2),py+k*k*r*2,r*.2,0,Math.PI*2); bx.fill(); }
+    }
+  }
+  bx.restore();
 }
 // Bone Totem (Gretch's regen buff): sprites/bonetotem.png planted on the floor on the foe's side of
 // him, in front of his sprite and ward. It rises out of the ground as it phases in (fade = auraFade), sways a little
@@ -1514,7 +1540,10 @@ function tickParts(){
     p.x+=p.vx*fk; p.y+=p.vy*fk; if(!p.noGrav) p.vy+=.18*fk; p.life-=p.dec*fk;
     bx.globalAlpha=p.fin?p.life*Math.min(1,(1-p.life)/p.fin):p.life;   // p.fin: share of its life spent fading in
     bx.fillStyle=p.col; bx.shadowColor=p.col; bx.shadowBlur=8;
-    bx.beginPath(); bx.arc(p.x,p.y,p.sz,0,Math.PI*2); bx.fill(); bx.shadowBlur=0; bx.globalAlpha=1;
+    bx.beginPath(); bx.arc(p.x,p.y,p.sz,0,Math.PI*2);
+    if(p.ring){ bx.strokeStyle=p.col; bx.lineWidth=1.5; bx.stroke(); bx.globalAlpha*=.25; bx.fill(); }   // a bubble
+    else bx.fill();
+    bx.shadowBlur=0; bx.globalAlpha=1;
   });
 }
 
@@ -1761,7 +1790,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickDarkRituals(); tickWardUnravels(); tickSiphons(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickBoulders(); tickStorms(); tickCounterArcs(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickDarkRituals(); tickWardUnravels(); tickSiphons(); tickPlagueClouds(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickBoulders(); tickStorms(); tickCounterArcs(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
@@ -2646,6 +2675,78 @@ function tickSiphons(){
   bx.shadowBlur=0; bx.globalAlpha=1; bx.restore();
 }
 
+// Plague cast (Gretch): a toxic cloud of green miasma gathers in front of him, rolls across with a
+// buzz of flies and engulfs the target, swirling round them before it settles in. cb fires as the
+// first of it reaches the target (the curse lands then).
+const PLAGUE_GATHER_MS=450, PLAGUE_TRAVEL_MS=850, PLAGUE_ENGULF_MS=1000;
+const PLAGUE_COLS=[[95,165,30],[60,110,20],[140,205,45],[45,80,18]];
+function spawnPlagueCloud(who,tgt,cb){
+  if(simMode){ if(cb) cb(); return; }
+  const sx=seatX(who)+(seatX(tgt)>seatX(who)?1:-1)*wizSize(who)*.35, sy=wizMidY(who), ex=seatX(tgt), ey=wizMidY(tgt);
+  const ssz=wizSize(who), esz=wizSize(tgt), puffs=[];
+  for(let i=0;i<24;i++) puffs.push({delay:i*16+_rng()*120, ox:(_rng()-.5)*ssz*.6, oy:(_rng()-.5)*ssz*.5,
+    a:_rng()*Math.PI*2, orb:esz*(.18+_rng()*.3), spin:(_rng()<.5?-1:1)*(1.2+_rng()*1.4),
+    bend:-bH*(.03+_rng()*.1), lag:(_rng()-.5)*.25, r:esz*(.08+_rng()*.07), col:PLAGUE_COLS[i%4], wob:_rng()*6});
+  const flies=[]; for(let i=0;i<12;i++) flies.push({ph:_rng()*6.3, sp:3+_rng()*4, rx:.5+_rng()*.6, ry:.3+_rng()*.4});
+  gs.plagueClouds.push({sx,sy,ex,ey,esz,puffs,flies,start:Date.now(),cb,fired:false});
+}
+function tickPlagueClouds(){
+  if(!gs.plagueClouds||!gs.plagueClouds.length) return;
+  const now=Date.now(), G=PLAGUE_GATHER_MS, T=PLAGUE_TRAVEL_MS, E=PLAGUE_ENGULF_MS;
+  gs.plagueClouds=gs.plagueClouds.filter(c=>{
+    const el=now-c.start;
+    if(!c.fired&&el>=G+T){ c.fired=true; if(c.cb) c.cb(); }
+    return el<G+T+E+400;
+  });
+  bx.save();
+  gs.plagueClouds.forEach(c=>{
+    const el=now-c.start; let cx=0, cy=0, n=0;
+    c.puffs.forEach(p=>{
+      const t=el-p.delay; if(t<0) return;
+      let x, y, r=p.r, a;
+      if(t<G){   // gathering: drawn in from a loose spread, swelling
+        const g=t/G, e=g*g*(3-2*g);
+        x=c.sx+p.ox*(1-e*.7); y=c.sy+p.oy*(1-e*.7); r*=.4+.6*e; a=e*.8;
+      } else if(t<G+T){   // rolling across on a low arc, each puff a little ahead or behind
+        const k0=Math.min(1,Math.max(0,(t-G)/T+p.lag*.3)), k=k0*k0*(3-2*k0), u=1-k;
+        const x0=c.sx+p.ox*.3, y0=c.sy+p.oy*.3, mx=(x0+c.ex)/2, my=(y0+c.ey)/2+p.bend;
+        x=u*u*x0+2*u*k*mx+k*k*c.ex+Math.sin(p.wob+t/160)*c.esz*.05;
+        y=u*u*y0+2*u*k*my+k*k*c.ey+Math.cos(p.wob+t/190)*c.esz*.04;
+        r*=1+k*.4; a=.8;
+      } else {   // engulfing: swirling round the target, thinning out
+        const k=Math.min(1,(t-G-T)/E), ang=p.a+p.spin*k*3;
+        x=c.ex+Math.cos(ang)*p.orb*(1-.35*k); y=c.ey+Math.sin(ang)*p.orb*.55*(1-.35*k)+c.esz*.1*k;
+        r*=1.4+k*.6; a=.8*(1-k);
+      }
+      if(a<=0) return;
+      cx+=x; cy+=y; n++;
+      const [R,Gc,B]=p.col, g=bx.createRadialGradient(x,y,0,x,y,r);
+      g.addColorStop(0,`rgba(${R+40},${Gc+40},${B+10},${a*.65})`); g.addColorStop(.55,`rgba(${R},${Gc},${B},${a*.4})`); g.addColorStop(1,`rgba(${R},${Gc},${B},0)`);
+      bx.globalAlpha=1; bx.fillStyle=g; bx.beginPath(); bx.arc(x,y,r,0,Math.PI*2); bx.fill();
+    });
+    // Flies buzzing round the cloud's middle
+    if(n&&el<G+T+E*.7){
+      cx/=n; cy/=n;
+      const fa=Math.min(1,el/G)*(el>G+T?1-(el-G-T)/(E*.7):1);
+      bx.globalAlpha=fa*.9; bx.fillStyle='#1a2208';
+      c.flies.forEach(f=>{
+        const ang=f.ph+el/1000*f.sp;
+        const fx=cx+Math.cos(ang)*c.esz*.3*f.rx+Math.sin(el/37+f.ph)*2, fy=cy+Math.sin(ang*1.3)*c.esz*.22*f.ry+Math.cos(el/41+f.ph)*2;
+        bx.beginPath(); bx.arc(fx,fy,1.6,0,Math.PI*2); bx.fill();
+      });
+    }
+  });
+  bx.globalAlpha=1; bx.restore();
+}
+// A burst of toxic bubbles (Plague landing and ticking): rising rings that wobble and fade
+function vfxBubbles(x,y,n,o={}){
+  for(let i=0;i<n;i++){
+    const a=-Math.PI/2+(_rng()-.5)*2.2, spd=(o.spd||1.4)*(.5+_rng());
+    gs.parts.push({x:x+(_rng()-.5)*bH*(o.w||.08),y:y+(_rng()-.5)*bH*.04,col:o.col||'#b6f05a',ring:true,
+      vx:Math.cos(a)*spd*.6,vy:Math.sin(a)*spd,sz:2.5+_rng()*(o.sz||4),life:1,dec:o.dec||.018,noGrav:true});
+  }
+}
+
 // Ward unravelling (a dispel or curse wearing at a ward, drawn by tickWardUnravels): threads of
 // the ward's own colour and dispel pink peel off the bubble's edge and spiral outward, shedding
 // motes as they unwind. No flash, burst or hit animation, so it never reads as anyone being hurt.
@@ -2794,7 +2895,7 @@ const ELEM_IMPACT_VFX={
 // Damage-over-time ticks, by the effect that deals them (fallback: by element)
 const TICK_VFX={
   singularity:(x,y)=>vfxFountain(x,y,['#aa66ff','#6633aa','#6633aa'],14,{spread:.75,min:2,var:3.5,sz:3,dec:.026,decVar:.02,grav:true}),
-  plague:     (x,y)=>vfxDrift(x,y,['#44bb22'],8,{w:.05,lift:-1,dec:.02}),
+  plague:     (x,y)=>{ vfxBubbles(x,y,12,{w:.1}); vfxDrift(x,y,['#5fa51e','#3d6e12'],10,{w:.08,lift:-.6,sz:3,dec:.014}); vfxDrip(x,y,'#6fb52a',5,{vy:.8,vyVar:1.5}); },
   blizzard:   (x,y)=>vfxDrift(x,y,['#88ddff'],10,{spd:.6,lift:-1.8,dec:.016}),
   fire:       (x,y)=>vfxFountain(x,y,['#ff9900','#ff4400','#ff4400'],14,{spread:.75,min:2,var:3.5,sz:3,dec:.026,decVar:.02,grav:true}),
   dark:       (x,y)=>vfxFountain(x,y,['#88dd44','#55aa33','#55aa33'],14,{spread:.75,min:2,var:3.5,sz:3,dec:.026,decVar:.02,grav:true}),
@@ -2893,7 +2994,8 @@ const SPELL_VFX={
     hit:c=>{ flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
   ironpatience:{self:c=>{ vfxPhaseIn(c.cx,c.cy,['#888899','#888899','#ffffff'],16,{lift:0}); anim(c.who,'shield',700); }},
   // Gretch
-  plague:     {hit:c=>{ spawnParts(c.tx,c.ty,'#55aa33',16); spawnParts(c.tx,c.ty,'#aaddaa',5); anim(c.who,'cast',800); }},
+  plague:     {cast:(c,cb)=>{ anim(c.who,'cast',900); spawnPlagueCloud(c.who,c.tgt,cb); },
+    hit:c=>{ vfxBubbles(c.tx,c.ty,18,{w:.12,sz:5}); vfxDrift(c.tx,c.ty,['#5fa51e','#8fcf2a','#3d6e12'],16,{w:.12,lift:-.5,sz:3,dec:.012}); flash('#5fa51e'); anim(c.tgt,'hit',600); }},
   maggotcloud:{hit:c=>{ spawnParts(c.tx,c.ty,'#55aa33',14); spawnParts(c.tx,c.ty,'#aaddaa',5); anim(c.who,'cast',800); }},
   bonetotem:  {self:c=>{ vfxPhaseIn(c.cx,c.cy,['#55aa33','#55aa33','#aaddaa'],18); anim(c.who,'shield',700); }},
   // Valdris
@@ -3896,7 +3998,9 @@ function executeSignature(who,sp,action,cb){
     return;
   }
   if(el.kind==='curse'){
-    spawnProj(x,y,tx,wizMidY(tx),ELEM_PROJ[el.elem||'arcane'],e.col,()=>{
+    // A curse can have its own way across (SPELL_VFX[id].cast, e.g. Plague's toxic cloud); else a projectile
+    const send=fx.cast?(done=>fx.cast(ctx,done)):(done=>spawnProj(x,y,tx,wizMidY(tx),ELEM_PROJ[el.elem||'arcane'],e.col,done));
+    send(()=>{
       if(el.chance!=null&&_rng()>el.chance){ addFloat(tx,bH*.3,sigIcon(sp)+' Resisted','#cccccc',12); VFX.resisted(tx); }
       else {
         const eff=effect({kind:'curse'});
@@ -4771,7 +4875,7 @@ function resetTrainingRound(knockedOut){
     gs.p1=newSeat(p1Cfg,p1Key);
     gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
-    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
+    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.plagueClouds=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
     gs.pending={};
     const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
     addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
@@ -7860,7 +7964,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.plagueClouds=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
   battleRunning=false; simMode=false;
@@ -7882,7 +7986,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.plagueClouds=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
