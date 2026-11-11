@@ -10,9 +10,10 @@ const RING=['Lesser','Normal','Greater'];
 const ELEM={fire:'Fire',ice:'Ice',lightning:'Lightning',arcane:'Arcane',physical:'Physical',dark:'Dark'};
 const CAT={damage:'Damage',protect:'Protection',dispel:'Dispel'};
 
-let base='| Level | Winks to pot | Cost | Damage | Ward | Dispel |\n|---|---|---|---|---|---|\n';
+const budget=TT.PRESETS.beginner.chances.budget;   // Beginner rules: flick this minus the cost
+let base='| Level | Winks to pot | Beginner flicks | Cost | Damage | Ward | Dispel |\n|---|---|---|---|---|---|---|\n';
 [0,1,2].forEach(i=>{
-  base+=`| ${RING[i]} | ${R.winks[i]} | ${R.cats.damage.cost[i]} | ${R.cats.damage.power[i]} | ${R.cats.protect.power[i]} | ${R.cats.dispel.power[i]} |\n`;
+  base+=`| ${RING[i]} | ${R.winks[i]} | ${budget-R.cats.damage.cost[i]} | ${R.cats.damage.cost[i]} | ${R.cats.damage.power[i]} | ${R.cats.protect.power[i]} | ${R.cats.dispel.power[i]} |\n`;
 });
 
 let out='';

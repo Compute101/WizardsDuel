@@ -1,11 +1,12 @@
 # WizardsDuel — Tabletop Rules
 
 A simplified version of WizardsDuel for playing on a real table with counters, dice and tiddlywinks.
-The app's standard game is unchanged: this is a separate rule set.
+The app's standard game is unchanged: this is a separate rule set. There are the full rules, and **Beginner rules** for new flickers. You can also read these rules, and a tutorial, in the app: **🎲 Tabletop** on the title screen.
 
+<!-- dev:start (the app's rules screen leaves this out) -->
 - **Rules engine and simulator:** `js/tabletop.js`. Every number in this document comes from the `RULES` block there or from `tabletop.json`.
-- **Rule sets:** the full rules, and **Beginner rules** for new flickers (see **Beginner rules**).
 - **Balance passes:** open `tools/balance.html` and set **Mode** to **Tabletop** (or **Tabletop (Beginner)**). Keep every wizard within ±8% of 50%. After changing numbers, run `node tools/tabletop_doc.js` to regenerate the base-spell and character sections below.
+<!-- dev:end -->
 
 ---
 
@@ -44,11 +45,11 @@ When a wizard reaches 0 HP, the game ends straight away. If both fall at the sam
 Easy to remember: **every spell costs 2 mana per wink you have to pot.** **Damage equals the cost. Wards and Dispels are double the cost.**
 
 <!-- base-spells:start -->
-| Level | Winks to pot | Cost | Damage | Ward | Dispel |
-|---|---|---|---|---|---|
-| Lesser | 1 | 2 | 2 | 4 | 4 |
-| Normal | 2 | 4 | 4 | 8 | 8 |
-| Greater | 3 | 6 | 6 | 12 | 12 |
+| Level | Winks to pot | Beginner flicks | Cost | Damage | Ward | Dispel |
+|---|---|---|---|---|---|---|
+| Lesser | 1 | 8 | 2 | 2 | 4 | 4 |
+| Normal | 2 | 6 | 4 | 4 | 8 | 8 |
+| Greater | 3 | 4 | 6 | 6 | 12 | 12 |
 <!-- base-spells:end -->
 
 ## The flick
@@ -68,7 +69,10 @@ After the spells resolve, the players take turns squopping (landing a wink on to
 - **Each wink you squop is yours:** add it to your mana. Unsquopped winks stay where they are for next round.
 - **Who goes first:** the player with the closer handicap line. If the lines are the same, whoever potted more winks this round. If that's tied too, whoever has less HP.
 
-The simulator assumes a player pots **75%** of flicks from their handicap line and lands **40%** of squop attempts (`RULES.pot` and `RULES.squop` in `js/tabletop.js`). Change them once you know your real rates, then re-run the balance check.
+The simulator assumes a player pots **75%** of flicks from their handicap line and lands **40%** of squop attempts.
+<!-- dev:start -->
+(`RULES.pot` and `RULES.squop` in `js/tabletop.js`.) Change them once you know your real rates, then re-run the balance check.
+<!-- dev:end -->
 
 Flicking takes longer than the app's minigame, which is why tabletop games are tuned shorter. They average about 10 rounds in the simulator; the standard game averages about 20.
 
