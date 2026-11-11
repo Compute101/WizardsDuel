@@ -62,7 +62,8 @@ let retryCountdownId=null;
 let twoPlayerMode=false;
 // 3–4 wizard duels on one device: multiSetup is chosen on the setup screen, multiPicks on the character screen
 let multiMode=false, multiPicks=[];
-const multiSetup={n:4, format:'ffa', human:[true,true,false,false]};
+// aiPick 'random': AI seats get a random wizard (none picked twice); 'choose': the player picks them too
+const multiSetup={n:4, format:'ffa', human:[true,true,false,false], aiPick:'random'};
 let twoPlayerPhase=1; // 1=p1 picking, 2=p2 picking
 let matchRound=0;
 let p1MatchWins=0, p2MatchWins=0;
@@ -4464,14 +4465,36 @@ function elemIncome(who){
 
 // ── Elemental AI: a weighted mixed strategy so it can't be read every round ──
 // Would casting this signature spell do anything useful right now?
-// Which foe to aim at: the weakest-looking (HP plus ward), with some noise so it can't be read
+// Which foe to aim at: the weakest-looking (HP plus ward), with some noise so it can't be read.
+// Free-for-all is different: see ffaPickTarget.
 let GANG_AWARE_AI=true;   // the simulator switches it off to compare
 function aiPickTarget(who){
   const foes=targetableFoes(who).length?targetableFoes(who):foesOf(who);
   if(foes.length<=1) return foes[0];
+  if(isFreeForAll()) return ffaPickTarget(who,foes);
   const noise=aiDifficulty==='normal'?10:40;
   const score=Object.fromEntries(foes.map(w=>[w,gs[w].hp+(hasWard(gs[w])?gs[w].shieldHp:0)+_rng()*noise]));
   return foes.reduce((a,b)=>score[a]<=score[b]?a:b);
+}
+// Every wizard still standing fights alone (no team-mates left anywhere)
+function isFreeForAll(){ return activeSeats().length>2&&activeSeats().every(w=>alliesOf(w).length===0); }
+// Free-for-all: every AI chasing the weakest-looking wizard made them all gang up on one seat (usually
+// the player) and never fight each other. Instead each AI picks a weighted-random foe: a little more
+// often the weak ones, much more often one that can be finished off or that aimed at it last round
+// (a grudge), and less often a foe the others already went for (no pile-ons).
+const FFA_TARGET={finishAt:15, finish:2.5, grudge:2, pileOn:0.7};
+function ffaPickTarget(who,foes){
+  const eff=f=>Math.max(1,gs[f].hp+(hasWard(gs[f])?gs[f].shieldHp:0));
+  const avg=foes.reduce((a,f)=>a+eff(f),0)/foes.length, focus=gs.focus||{};
+  const w=foes.map(f=>{
+    let v=avg/eff(f);
+    if(gs[f].hp+(hasWard(gs[f])?gs[f].shieldHp:0)<=FFA_TARGET.finishAt) v*=FFA_TARGET.finish;
+    if((focus[who]||[]).includes(f)) v*=FFA_TARGET.grudge;
+    v/=1+FFA_TARGET.pileOn*(focus[f]||[]).filter(x=>x!==who).length;
+    return aiDifficulty==='normal'?v:Math.sqrt(v);   // Easy aims more at random
+  });
+  let r=_rng()*w.reduce((a,b)=>a+b,0);
+  return foes.find((f,i)=>(r-=w[i])<=0)||foes[foes.length-1];
 }
 // Soak minions (Valdris's skeletons): the signature spell that raises them, and how many stand
 function guardSpell(who){ return sigSpells(who,'protect').find(sp=>sp.el.effect&&sp.el.effect.type==='minion'&&sp.el.effect.soak); }
@@ -4895,6 +4918,19 @@ function renderMultiSetup(){
       `<button class="mo-opt${multiSetup.human[i]?'':' on'}" data-seat="${i}" data-human="0"${i===0?' disabled':''}>AI</button></div>`;
   }
   document.getElementById('mo-seats').innerHTML=html;
+  const anyAI=multiSetup.human.slice(0,multiSetup.n).some(h=>!h);
+  ov.querySelectorAll('[data-aipick]').forEach(b=>{
+    b.classList.toggle('on',b.dataset.aipick===multiSetup.aiPick);
+    b.disabled=!anyAI;
+  });
+}
+// Random AI wizards: fill every AI seat from the current pick up to the next player's seat
+function randomAISeat(i){ return multiSetup.aiPick==='random'&&!multiSetup.human[i]; }
+function fillRandomAISeats(){
+  while(multiPicks.length<multiSetup.n&&randomAISeat(multiPicks.length)){
+    const pool=Object.keys(CHAR_DEFS).filter(k=>!multiPicks.includes(k));
+    multiPicks.push(pool[Math.floor(Math.random()*pool.length)]);
+  }
 }
 function labelMultiPick(){
   const i=multiPicks.length, lbl=document.getElementById('char-player-label');
@@ -7870,6 +7906,7 @@ function pickCharacter(key){
   }
   if(multiMode){
     multiPicks.push(key);
+    fillRandomAISeats();
     if(multiPicks.length<multiSetup.n){ labelMultiPick(); return; }
     document.getElementById('char-player-label').style.display='none';
     startMultiBattle();
@@ -8493,6 +8530,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     if(b.dataset.n) multiSetup.n=+b.dataset.n;
     else if(b.dataset.format) multiSetup.format=b.dataset.format;
     else if(b.dataset.seat) multiSetup.human[+b.dataset.seat]=b.dataset.human==='1';
+    else if(b.dataset.aipick) multiSetup.aiPick=b.dataset.aipick;
     else return;
     renderMultiSetup();
   });
@@ -8579,6 +8617,8 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btn-pz-exit').addEventListener('click', exitTrainingToMenu);
   document.getElementById('btn-back').addEventListener('click',()=>{
     if(multiMode){
+      // Back past any random AI seats to the last wizard a player chose
+      while(multiPicks.length&&randomAISeat(multiPicks.length-1)) multiPicks.pop();
       if(multiPicks.length){ multiPicks.pop(); labelMultiPick(); return; }
       multiMode=false;
       document.getElementById('char-player-label').style.display='none';
