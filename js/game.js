@@ -62,7 +62,8 @@ let retryCountdownId=null;
 let twoPlayerMode=false;
 // 3–4 wizard duels on one device: multiSetup is chosen on the setup screen, multiPicks on the character screen
 let multiMode=false, multiPicks=[];
-const multiSetup={n:4, format:'ffa', human:[true,true,false,false]};
+// aiPick 'random': AI seats get a random wizard (none picked twice); 'choose': the player picks them too
+const multiSetup={n:4, format:'ffa', human:[true,true,false,false], aiPick:'random'};
 let twoPlayerPhase=1; // 1=p1 picking, 2=p2 picking
 let matchRound=0;
 let p1MatchWins=0, p2MatchWins=0;
@@ -3136,13 +3137,14 @@ function showReveal(){
   const btn=document.getElementById('rv-btn');
   cards.innerHTML=activeSeats().map(who=>{
     const cfg=seatCfg(who), act=gs.pending[who], d=describeAction(who,act);
+    const taunt=rivalTaunt(who,act);
     const label=!passPhone()?cfg.name:isHumanSeat(who)?'Player '+(PLAYERS.indexOf(who)+1):cfg.name+' (AI)';
     // With more than one foe, say who each spell is aimed at
     const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${hitsAllFoes(who,act)?'All foes':seatCfg(act.target).name}</span>`:
       act.ally&&act.ally!==who?`<span class="rv-aim">→ ${seatCfg(act.ally).name}</span>`:'';
     return `<div class="rv-card" style="--rv-col:${cfg.col}"><div class="rv-inner">`+
       `<div class="rv-face rv-back"><img class="rv-portrait" src="portraits/small/${seatKey(who)}.jpg" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
-      `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}<span class="rv-name">${label}</span></div>`+
+      `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}${taunt?`<span class="rv-taunt">⚔ “${taunt}”</span>`:''}<span class="rv-name">${label}</span></div>`+
       `</div></div>`;
   }).join('');
   overlay.classList.toggle('rv-quick',!passPhone());
@@ -3202,6 +3204,8 @@ function resolveSimRound(){
   seatsIn.forEach(w=>{ const a=acts[w]; if(needsTarget(w,a)&&a.target&&a.target!==w&&!hitsAllFoes(w,a)) (gs.focus[a.target]=gs.focus[a.target]||[]).push(w); });
   // How many aimed at each seat, round by round — what a wizard can read before betting on Phase Shift
   seatsIn.forEach(w=>{ (gs[w].aimHistory||(gs[w].aimHistory=[])).push((gs.focus[w]||[]).length); });
+  // Long grudges (Durin's aiStyle): every time a foe aims at you
+  seatsIn.forEach(w=>{ const g=gs[w].grudges||(gs[w].grudges={}); (gs.focus[w]||[]).forEach(f=>{ g[f]=(g[f]||0)+1; }); });
   // Quick spells (Mana Siphon) are paid and steal first, so their target pays from what's left
   const isQuick=w=>{ const a=acts[w], sp=a.sig&&sigById(w,a.sig); return !!(sp&&sp.el.quick); };
   seatsIn.filter(isQuick).forEach(w=>{ payForAction(w,acts[w]); if(acts[w].outcome==='cast') quickSteal(w,acts[w]); });
@@ -4464,14 +4468,66 @@ function elemIncome(who){
 
 // ── Elemental AI: a weighted mixed strategy so it can't be read every round ──
 // Would casting this signature spell do anything useful right now?
-// Which foe to aim at: the weakest-looking (HP plus ward), with some noise so it can't be read
+// Which foe to aim at: the weakest-looking (HP plus ward), with some noise so it can't be read.
+// Free-for-all is different: see ffaPickTarget.
 let GANG_AWARE_AI=true;   // the simulator switches it off to compare
 function aiPickTarget(who){
   const foes=targetableFoes(who).length?targetableFoes(who):foesOf(who);
   if(foes.length<=1) return foes[0];
+  if(isFreeForAll()) return ffaPickTarget(who,foes);
   const noise=aiDifficulty==='normal'?10:40;
   const score=Object.fromEntries(foes.map(w=>[w,gs[w].hp+(hasWard(gs[w])?gs[w].shieldHp:0)+_rng()*noise]));
   return foes.reduce((a,b)=>score[a]<=score[b]?a:b);
+}
+// Every wizard still standing fights alone (no team-mates left anywhere)
+function isFreeForAll(){ return activeSeats().length>2&&activeSeats().every(w=>alliesOf(w).length===0); }
+// Free-for-all: every AI chasing the weakest-looking wizard made them all gang up on one seat (usually
+// the player) and never fight each other. Instead each AI picks a weighted-random foe. Each wizard's
+// `aiStyle` (characters.json) sets the weights, its personality:
+//   weak     how much low HP + ward draws it (1 likes the weak, 0 doesn't care, −1 picks on the strong)
+//   finish   × for a foe at or below finishAt HP + ward (one it can knock out)
+//   grudge   × for a foe that aimed at it last round
+//   memory   × (1 + memory × times that foe ever aimed at it, up to 6): a long grudge
+//   rich     × (1 + rich × (mana/10 + buffs/2)): goes for the foe with the most to spend
+//   pileOn   ÷ (1 + pileOn × others who aimed at that foe last round): spreads the hits
+// Its `rivals` (characters.json, foe key → taunt) pull it toward those foes by RIVAL_PULL.
+const AI_STYLES={
+  default:    {weak:1,   finish:2.5, grudge:2,   pileOn:0.7},
+  vulture:    {weak:1.5, finish:5,   grudge:1.5, pileOn:0.4},              // Malachar, Frederick
+  grudge:     {weak:0.5, finish:2,   grudge:2,   pileOn:0.7, memory:0.6},  // Durin
+  chivalrous: {weak:-1,  finish:0.5, grudge:2,   pileOn:0.7},              // Eldrin, Mary
+  chaotic:    {weak:0,   finish:1,   grudge:1,   pileOn:0},                // Cinder, Fizzwick
+  calculating:{weak:0.5, finish:2.5, grudge:1.5, pileOn:0.7, rich:1},      // Thessaly, Zacharius
+};
+const FFA_FINISH_AT=15, RIVAL_PULL=2;
+function aiStyleOf(who){ return AI_STYLES[seatCfg(who).aiStyle]||AI_STYLES.default; }
+function isRival(who,foe){ const r=seatCfg(who).rivals; return !!(r&&foe&&r[seatKey(foe)]); }
+function ffaPickTarget(who,foes){
+  const S=aiStyleOf(who), focus=gs.focus||{}, grudges=gs[who].grudges||{};
+  const eff=f=>Math.max(1,gs[f].hp+(hasWard(gs[f])?gs[f].shieldHp:0));
+  const avg=foes.reduce((a,f)=>a+eff(f),0)/foes.length;
+  const w=foes.map(f=>{
+    let v=Math.pow(avg/eff(f),S.weak);
+    if(eff(f)<=FFA_FINISH_AT) v*=S.finish;
+    if((focus[who]||[]).includes(f)) v*=S.grudge;
+    if(S.memory) v*=1+S.memory*Math.min(6,grudges[f]||0);
+    if(S.rich) v*=1+S.rich*(gs[f].mana/10+buffsOf(gs[f]).length/2);
+    if(isRival(who,f)) v*=RIVAL_PULL;
+    v/=1+S.pileOn*(focus[f]||[]).filter(x=>x!==who).length;
+    return aiDifficulty==='normal'?v:Math.sqrt(v);   // Easy aims more at random
+  });
+  let r=_rng()*w.reduce((a,b)=>a+b,0);
+  return foes.find((f,i)=>(r-=w[i])<=0)||foes[foes.length-1];
+}
+// A rival's taunt for the reveal card, when a spell is aimed at one — not more than once every
+// RIVAL_TAUNT_GAP rounds per wizard, so it stays a treat
+const RIVAL_TAUNT_GAP=3;
+function rivalTaunt(who,act){
+  if(!act||!needsTarget(who,act)||!isRival(who,act.target)) return '';
+  const st=gs[who];
+  if(st.rivalTauntRound!=null&&gs.round-st.rivalTauntRound<RIVAL_TAUNT_GAP) return '';
+  st.rivalTauntRound=gs.round;
+  return seatCfg(who).rivals[seatKey(act.target)];
 }
 // Soak minions (Valdris's skeletons): the signature spell that raises them, and how many stand
 function guardSpell(who){ return sigSpells(who,'protect').find(sp=>sp.el.effect&&sp.el.effect.type==='minion'&&sp.el.effect.soak); }
@@ -4895,6 +4951,19 @@ function renderMultiSetup(){
       `<button class="mo-opt${multiSetup.human[i]?'':' on'}" data-seat="${i}" data-human="0"${i===0?' disabled':''}>AI</button></div>`;
   }
   document.getElementById('mo-seats').innerHTML=html;
+  const anyAI=multiSetup.human.slice(0,multiSetup.n).some(h=>!h);
+  ov.querySelectorAll('[data-aipick]').forEach(b=>{
+    b.classList.toggle('on',b.dataset.aipick===multiSetup.aiPick);
+    b.disabled=!anyAI;
+  });
+}
+// Random AI wizards: fill every AI seat from the current pick up to the next player's seat
+function randomAISeat(i){ return multiSetup.aiPick==='random'&&!multiSetup.human[i]; }
+function fillRandomAISeats(){
+  while(multiPicks.length<multiSetup.n&&randomAISeat(multiPicks.length)){
+    const pool=Object.keys(CHAR_DEFS).filter(k=>!multiPicks.includes(k));
+    multiPicks.push(pool[Math.floor(Math.random()*pool.length)]);
+  }
 }
 function labelMultiPick(){
   const i=multiPicks.length, lbl=document.getElementById('char-player-label');
@@ -7870,6 +7939,7 @@ function pickCharacter(key){
   }
   if(multiMode){
     multiPicks.push(key);
+    fillRandomAISeats();
     if(multiPicks.length<multiSetup.n){ labelMultiPick(); return; }
     document.getElementById('char-player-label').style.display='none';
     startMultiBattle();
@@ -8493,6 +8563,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     if(b.dataset.n) multiSetup.n=+b.dataset.n;
     else if(b.dataset.format) multiSetup.format=b.dataset.format;
     else if(b.dataset.seat) multiSetup.human[+b.dataset.seat]=b.dataset.human==='1';
+    else if(b.dataset.aipick) multiSetup.aiPick=b.dataset.aipick;
     else return;
     renderMultiSetup();
   });
@@ -8579,6 +8650,8 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btn-pz-exit').addEventListener('click', exitTrainingToMenu);
   document.getElementById('btn-back').addEventListener('click',()=>{
     if(multiMode){
+      // Back past any random AI seats to the last wizard a player chose
+      while(multiPicks.length&&randomAISeat(multiPicks.length-1)) multiPicks.pop();
       if(multiPicks.length){ multiPicks.pop(); labelMultiPick(); return; }
       multiMode=false;
       document.getElementById('char-player-label').style.display='none';

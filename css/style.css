@@ -1157,6 +1157,16 @@ body {
   letter-spacing: 1px;
 }
 
+/* A rival's taunt (characters.json `rivals`) */
+.rv-taunt {
+  font-size: 10px;
+  font-style: italic;
+  line-height: 1.25;
+  color: #ff9966;
+  padding: 0 6px;
+  text-align: center;
+}
+
 /* ── 3–4 WIZARD HUD ── */
 #mhud { display: none; }
 #hud.multi { display: none; }
