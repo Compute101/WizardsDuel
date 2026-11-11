@@ -4,6 +4,10 @@
     "title": "The Stalwart",
     "sprite": "sprites/eldrin.png",
     "col": "#4af0ff",
+    "aiStyle": "chivalrous",
+    "rivals": {
+      "mal": "Relentless? I am more patient."
+    },
     "taunts": [
       "Your spells shattered against my shield like waves on stone. Try again.",
       "I have endured far worse than you. Come back when you have.",
@@ -70,6 +74,10 @@
     "title": "The Relentless",
     "sprite": "sprites/mal.png",
     "col": "#ff4a6e",
+    "aiStyle": "vulture",
+    "rivals": {
+      "eldrin": "Your shield will break, Eldrin."
+    },
     "taunts": [
       "Pain is just power you haven't claimed yet. I claimed yours.",
       "I bled for that victory. Can you match my hunger?",
@@ -139,6 +147,9 @@
     "title": "The Verdant",
     "sprite": "sprites/sylvara.png",
     "col": "#44cc88",
+    "rivals": {
+      "gretch": "Your rot ends here, Gretch."
+    },
     "taunts": [
       "The forest reclaims the fallen. But even fallen seeds can bloom again.",
       "You tangled with nature itself. The vines always win.",
@@ -213,6 +224,9 @@
     "title": "The Radiant",
     "sprite": "sprites/aurelia.png",
     "col": "#ffcc44",
+    "rivals": {
+      "nyxara": "The light will fill your void."
+    },
     "taunts": [
       "I saw your defeat three moves before it happened. I always do.",
       "Time bends to my will. Your next attempt? Already foreseen.",
@@ -351,6 +365,10 @@
     "title": "The Volatile",
     "sprite": "sprites/cinder.png",
     "col": "#ff6600",
+    "aiStyle": "chaotic",
+    "rivals": {
+      "skadi": "Thaw, ice-witch!"
+    },
     "taunts": [
       "You thought the heat would break me? I am the heat.",
       "Roll the dice, fan the flames — and never, ever bet against fire.",
@@ -420,6 +438,9 @@
     "title": "The Permafrost",
     "sprite": "sprites/skadi.png",
     "col": "#88ddff",
+    "rivals": {
+      "cinder": "Your little flame gutters, Cinder."
+    },
     "taunts": [
       "The cold is patient. You are not. That is why you lost.",
       "You froze long before my blizzard reached you.",
@@ -491,6 +512,7 @@
     "title": "The Conductor",
     "sprite": "sprites/zacharius.png",
     "col": "#aaff44",
+    "aiStyle": "calculating",
     "taunts": [
       "I had already won before you cast your first spell. You simply hadn't realised it yet.",
       "Every joule of energy you wasted — I stored it, shaped it, and returned it. Against you.",
@@ -564,6 +586,11 @@
     "title": "The Devoted",
     "sprite": "sprites/mary.png",
     "col": "#f0d8a0",
+    "aiStyle": "chivalrous",
+    "rivals": {
+      "mordant": "Your hexes can't touch the faithful.",
+      "valdris": "Let the dead rest, Valdris."
+    },
     "taunts": [
       "The light does not yield. Neither do I.",
       "Your defeat was written before this duel began. I merely carried it out.",
@@ -779,6 +806,11 @@
     "spriteHeight": 0.72,
     "spriteWidth": 1.2,
     "col": "#b08040",
+    "aiStyle": "grudge",
+    "rivals": {
+      "gretch": "You're in my book of grudges, troggoth.",
+      "fizzwick": "Another goblin for the grudge list!"
+    },
     "taunts": [
       "Stone does not bend. Stone does not break. Neither does Durin.",
       "You threw everything you had at me. I barely felt it.",
@@ -998,6 +1030,9 @@
     "title": "The Undying",
     "sprite": "sprites/valdris.png",
     "col": "#8844cc",
+    "rivals": {
+      "daveron": "The dead are mine, Gravelord."
+    },
     "taunts": [
       "I have outlasted empires. Did you truly think you would be different?",
       "Death is not an ending. It is merely an inconvenience.",
@@ -1145,6 +1180,10 @@
     "title": "The Gilded",
     "sprite": "sprites/thessaly.png",
     "col": "#ddaa22",
+    "aiStyle": "calculating",
+    "rivals": {
+      "ponder": "Thief! Hand back what you pocketed."
+    },
     "taunts": [
       "I had already won before you cast your first spell. You simply hadn't realised it yet.",
       "You fought well. You just fought the wrong opponent.",
@@ -1287,6 +1326,7 @@
     "title": "The Concoctor",
     "sprite": "sprites/fizzwick.png",
     "col": "#99cc44",
+    "aiStyle": "chaotic",
     "taunts": [
       "Careful — I haven't tested that last batch on a live subject yet. You'll do nicely.",
       "Half of what's in my satchel is medicine. The other half is, well, also medicine. Different patient.",
@@ -1357,6 +1397,9 @@
     "title": "The Hollow",
     "sprite": "sprites/mage-dark.png",
     "col": "#6633aa",
+    "rivals": {
+      "aurelia": "Even your light falls into the dark."
+    },
     "taunts": [
       "Every star dies eventually. I simply help them along.",
       "You cling to your strength as if it makes you safe. The bigger they are, the more there is to take.",
@@ -1428,6 +1471,9 @@
     "title": "The Gravelord",
     "sprite": "sprites/daveron.png",
     "col": "#b8283c",
+    "rivals": {
+      "valdris": "Your rabble will kneel to my graveguard."
+    },
     "taunts": [
       "My guard has stood watch for three hundred years. You will not get past them.",
       "Dance, my dead. Dance, and let the living hear the music.",
@@ -1510,6 +1556,7 @@
     "title": "The Black",
     "sprite": "sprites/frederick.png",
     "col": "#8a4dff",
+    "aiStyle": "vulture",
     "taunts": [
       "ENOUGH! I will burn your name out of every book that ever held it!",
       "You DARE stand before me? I will drag you screaming through the Gate!",
