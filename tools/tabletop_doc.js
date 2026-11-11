@@ -10,9 +10,10 @@ const RING=['Lesser','Normal','Greater'];
 const ELEM={fire:'Fire',ice:'Ice',lightning:'Lightning',arcane:'Arcane',physical:'Physical',dark:'Dark'};
 const CAT={damage:'Damage',protect:'Protection',dispel:'Dispel'};
 
-let base='| Level | Winks to pot | Cost | Damage | Ward | Dispel |\n|---|---|---|---|---|---|\n';
+const budget=TT.PRESETS.beginner.chances.budget;   // Beginner rules: flick this minus the cost
+let base='| Level | Winks to pot | Beginner flicks | Cost | Damage | Ward | Dispel |\n|---|---|---|---|---|---|---|\n';
 [0,1,2].forEach(i=>{
-  base+=`| ${RING[i]} | ${R.winks[i]} | ${R.cats.damage.cost[i]} | ${R.cats.damage.power[i]} | ${R.cats.protect.power[i]} | ${R.cats.dispel.power[i]} |\n`;
+  base+=`| ${RING[i]} | ${R.winks[i]} | ${budget-R.cats.damage.cost[i]} | ${R.cats.damage.cost[i]} | ${R.cats.damage.power[i]} | ${R.cats.protect.power[i]} | ${R.cats.dispel.power[i]} |\n`;
 });
 
 let out='';
@@ -20,7 +21,8 @@ Object.values(chars).forEach(c=>{
   const notes=[];
   if(c.deathless) notes.push(`Deathless: when knocked to 0 HP, pay ${c.deathless} mana to stay on 1 HP`);
   if(c.forbidden.length) notes.push('Can\'t cast: '+c.forbidden.map(e=>ELEM[e]).join(', '));
-  out+=`### ${c.name} — ${c.title}\n**HP ${c.hp}**${notes.length?' · '+notes.join(' · '):''}\n\n`;
+  const beg=c.alt.beginner&&c.alt.beginner.hp;
+  out+=`### ${c.name} — ${c.title}\n**HP ${c.baseHp}**${beg?` (Beginner rules: **${beg}**)`:''}${notes.length?' · '+notes.join(' · '):''}\n\n`;
   out+='| Spell | Type | Element | Level | Cost | Effect |\n|---|---|---|---|---|---|\n';
   c.spells.forEach(s=>{ out+=`| **${s.name}** | ${CAT[s.cat]} | ${ELEM[s.elem]} | ${RING[s.ring-1]} | ${s.cost} | ${s.text} |\n`; });
   out+='\n';

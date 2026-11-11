@@ -1,10 +1,12 @@
 # WizardsDuel — Tabletop Rules
 
 A simplified version of WizardsDuel for playing on a real table with counters, dice and tiddlywinks.
-The app's standard game is unchanged: this is a separate rule set.
+The app's standard game is unchanged: this is a separate rule set. There are the full rules, and **Beginner rules** for new flickers. You can also read these rules, and a tutorial, in the app: **🎲 Tabletop** on the title screen.
 
+<!-- dev:start (the app's rules screen leaves this out) -->
 - **Rules engine and simulator:** `js/tabletop.js`. Every number in this document comes from the `RULES` block there or from `tabletop.json`.
-- **Balance passes:** open `tools/balance.html` and set **Mode** to **Tabletop**. Keep every wizard within ±8% of 50%. After changing numbers, run `node tools/tabletop_doc.js` to regenerate the base-spell and character sections below.
+- **Balance passes:** open `tools/balance.html` and set **Mode** to **Tabletop** (or **Tabletop (Beginner)**). Keep every wizard within ±8% of 50%. After changing numbers, run `node tools/tabletop_doc.js` to regenerate the base-spell and character sections below.
+<!-- dev:end -->
 
 ---
 
@@ -33,7 +35,7 @@ The app's standard game is unchanged: this is a separate rule set.
 3. **Pay.** Mana Siphon is a quick spell: it's paid and steals before anyone else pays. Then check curses that react to your pick (Enthral, then Silence). Then pay the spell's cost in mana winks. If you can't afford your spell, it's lost (you pay nothing).
 4. **Flick.** Pot the winks your spell needs, flicking the mana winks you just paid (see **The flick**).
 5. **Resolve, in this order:** every **Protection**, then every **Dispel**, then every **Damage**, then **Meditate**. Within a stage, both spells happen together.
-6. **Squops:** take turns squopping missed winks for mana (see **Squops**).
+6. **Squops:** take turns squopping missed winks for mana (see **Squops**). Beginner rules skip this.
 7. **Round end** (see below).
 
 When a wizard reaches 0 HP, the game ends straight away. If both fall at the same moment, it's a draw.
@@ -43,11 +45,11 @@ When a wizard reaches 0 HP, the game ends straight away. If both fall at the sam
 Easy to remember: **every spell costs 2 mana per wink you have to pot.** **Damage equals the cost. Wards and Dispels are double the cost.**
 
 <!-- base-spells:start -->
-| Level | Winks to pot | Cost | Damage | Ward | Dispel |
-|---|---|---|---|---|---|
-| Lesser | 1 | 2 | 2 | 4 | 4 |
-| Normal | 2 | 4 | 4 | 8 | 8 |
-| Greater | 3 | 6 | 6 | 12 | 12 |
+| Level | Winks to pot | Beginner flicks | Cost | Damage | Ward | Dispel |
+|---|---|---|---|---|---|---|
+| Lesser | 1 | 8 | 2 | 2 | 4 | 4 |
+| Normal | 2 | 6 | 4 | 4 | 8 | 8 |
+| Greater | 3 | 4 | 6 | 6 | 12 | 12 |
 <!-- base-spells:end -->
 
 ## The flick
@@ -67,9 +69,28 @@ After the spells resolve, the players take turns squopping (landing a wink on to
 - **Each wink you squop is yours:** add it to your mana. Unsquopped winks stay where they are for next round.
 - **Who goes first:** the player with the closer handicap line. If the lines are the same, whoever potted more winks this round. If that's tied too, whoever has less HP.
 
-The simulator assumes a player pots **75%** of flicks from their handicap line and lands **40%** of squop attempts (`RULES.pot` and `RULES.squop` in `js/tabletop.js`). Change them once you know your real rates, then re-run the balance check.
+The simulator assumes a player pots **75%** of flicks from their handicap line and lands **40%** of squop attempts.
+<!-- dev:start -->
+(`RULES.pot` and `RULES.squop` in `js/tabletop.js`.) Change them once you know your real rates, then re-run the balance check.
+<!-- dev:end -->
 
 Flicking takes longer than the app's minigame, which is why tabletop games are tuned shorter. They average about 10 rounds in the simulator; the standard game averages about 20.
+
+## Beginner rules
+
+For players still learning to flick. The full rules assume you pot about 3 flicks in 4; Beginner rules are calibrated to a first trial of **7 pots in 57 flicks (about 12%)**. Everything else in this rulebook stays the same, apart from these changes:
+
+- **Flick 10 minus the spell's cost.** Pay the cost, then take that many flicks. Cheaper spells get more chances: Lesser (cost 2) gets 8 flicks, Normal (4) gets 6 and Greater (6) gets 4. Signature cards and Cleanse use their own cost.
+- **Your first pot casts the spell.** Stop flicking.
+- **No pot and the spell fizzles.** The mana you paid is lost.
+- **No squops.** Missed winks are picked up, so nothing is left on the table (skip step 6 of the round).
+- **Some wizards have a different starting HP**, shown next to their HP in **Wizards**.
+
+At 12%, a Lesser spell goes off about 2 times in 3, a Normal one about half the time and a Greater one about 2 times in 5. In the simulator, about half of all spells go off, and games last about 11 rounds. When you're potting about half your flicks, move up to the full rules.
+
+### Optional: near misses
+
+If you want fewer outright fizzles, agree before the game what counts as a **near miss**: for example a wink that rests against the pot or is within a squidger's width of it. If a spell would fizzle but you made a near miss, it **sputters** instead: a Normal or Greater spell is cast one level lower, and a Lesser spell is cast at half power (round down; a Lesser ward or dispel of 4 becomes 2, a Lesser strike of 2 becomes 1). This rule isn't in the simulator's balance yet.
 
 ## Wards (Protection)
 
@@ -112,7 +133,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 1. **Ticks:** curses on each wizard (burns, poison, plague, Agony and similar), then their regeneration, then their minions strike the foe.
 2. **Sudden death:** from **round 8**, both wizards lose 1 HP at every round end, +1 more every 3 rounds after that (2 HP from round 11).
 3. **Wards wear** by 1 wink. A ward with no winks left is gone.
-4. **Income:** each wizard gains **4 mana** (less any curse that cuts income).
+4. **Income:** each wizard gains **4 mana**, less any curse that cuts income.
 
 ## Keywords
 
@@ -139,7 +160,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Ward** | Protection | Ice | Normal | 2 | Until dispelled: curses can't touch you. A dispel at you only removes this Ward. |
 
 ### MALACHAR — The Relentless
-**HP 17** · Can't cast: Arcane
+**HP 17** (Beginner rules: **18**) · Can't cast: Arcane
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -175,7 +196,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Frenzy** | Protection | Fire | Lesser | 2 | Until dispelled: your strikes deal +2, but each costs you 1 HP. |
 
 ### CINDER — The Volatile
-**HP 17** · Can't cast: Ice
+**HP 17** (Beginner rules: **18**) · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -202,7 +223,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Conductivity** | Dispel | Lightning | Normal | 2 | Until cleansed: every strike on the foe deals +1. |
 
 ### MARY — The Devoted
-**HP 17** · Can't cast: Dark, Fire
+**HP 17** (Beginner rules: **18**) · Can't cast: Dark, Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -220,7 +241,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Corruption** | Dispel | Physical | Normal | 2 | Until cleansed: the foe gains 1 less mana each round (and from Meditate), and Meditate doesn't escape Agony. |
 
 ### PONDER — The Apprentice
-**HP 17** · Can't cast: Dark, Fire
+**HP 17** (Beginner rules: **19**) · Can't cast: Dark, Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -247,7 +268,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Iron Patience** | Protection | Arcane | Normal | 2 | Until dispelled: every hit on you deals 1 less (min 1). |
 
 ### GRETCH — The Festering
-**HP 18** · Can't cast: Fire, Arcane
+**HP 18** (Beginner rules: **17**) · Can't cast: Fire, Arcane
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -256,7 +277,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Bone Totem** | Protection | Dark | Normal | 4 | Plant a bone totem (one at a time). It has 4 HP and stands in front of your ward: damage (strikes and ticks) wears it down before anything reaches your ward. Dispels can't touch it. While it stands, heal 1 at every round end. |
 
 ### VALDRIS — The Undying
-**HP 16** · Can't cast: Fire
+**HP 16** (Beginner rules: **13**) · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -274,7 +295,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Feint** | Damage | Arcane | Normal | 4 | Arcane strike of 4. The foe loses 2 mana. |
 
 ### THESSALY — The Gilded
-**HP 18**
+**HP 18** (Beginner rules: **19**)
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -283,7 +304,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Spellbind** | Dispel | Dark | Normal | 2 | Until cleansed: the foe's most-cast category (Damage, Protection or Dispel) costs 3 more. |
 
 ### KORVATH — The Wyrmlord
-**HP 19** · Can't cast: Ice
+**HP 19** (Beginner rules: **18**) · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -301,7 +322,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Unstable Concoction** | Damage | Arcane | Normal | 4 | Arcane strike: roll a die and deal that much. On a 6, roll again and add it (keep going on 6s). |
 
 ### NYXARA — The Hollow
-**HP 18** · Can't cast: Lightning
+**HP 18** (Beginner rules: **17**) · Can't cast: Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -310,7 +331,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Event Horizon** | Damage | Arcane | Greater | 7 | Arcane strike of half the foe's HP (round down, min 4). You take 2. |
 
 ### DAVERON — The Gravelord
-**HP 18** · Can't cast: Fire
+**HP 18** (Beginner rules: **16**) · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -319,7 +340,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Curse of the Years** | Dispel | Dark | Normal | 4 | Until cleansed: the foe takes 2 at every round end, whatever they did. Unlike Agony, Meditating doesn't escape it. |
 
 ### FREDERICK — The Black
-**HP 16** · Can't cast: Ice
+**HP 16** (Beginner rules: **17**) · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|

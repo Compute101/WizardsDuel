@@ -50,11 +50,44 @@ const RULES={
   // 1 more every `every` rounds after that.
   suddenDeath:{round:8, dmg:1, every:3},
   maxRounds:40,                // the simulator calls it a timeout after this
+  // How the flick works:
+  //  'pot'     pot `winks` winks to cast, paying retryCost after each miss (the rules above).
+  //  'chances' (Beginner) up to `chances` flicks; the first pot casts the spell, no pot and it
+  //            fizzles (the mana is lost). `chances` is a number, an array by level, or {budget:n}
+  //            for n minus the spell's cost, so cheaper spells get more flicks.
+  flickMode:'pot',
+  chances:5,
 };
+// Named rule sets. 'standard' is the rules above; the others override some of them. useRules(name)
+// switches (the simulator, balance tools and real play all read RULES).
+const PRESETS={
+  standard:{},
+  // Beginner rules, calibrated to a first-time player's baseline: 7 pots in 57 flicks (about 12%).
+  // Flick 10 minus the spell's cost (Lesser 8, Normal 6, Greater 4); the first pot casts it, no
+  // pot and it fizzles. No retries and no squops: missed winks are picked up.
+  beginner:{flickMode:'chances', chances:{budget:10}, pot:0.12, squops:0},
+};
+const DEFAULTS=JSON.parse(JSON.stringify(RULES));
+function useRules(name){
+  if(!PRESETS[name]) throw new Error('unknown rules: '+name);
+  Object.keys(RULES).forEach(k=>delete RULES[k]);
+  Object.assign(RULES,JSON.parse(JSON.stringify(DEFAULTS)),PRESETS[name]);
+  // Infinity doesn't survive JSON
+  RULES.cleanseCount=DEFAULTS.cleanseCount.map(n=>n==null?Infinity:n);
+  rulesName=name;
+  applyCharRules();
+  return RULES;
+}
+// A character can change its numbers under a named rule set: "rules":{"beginner":{"hp":17}} in
+// tabletop.json. Only HP for now.
+function applyCharRules(){
+  Object.values(CHARS).forEach(c=>{ const o=c.alt[rulesName]||{}; c.hp=Math.min(RULES.max,o.hp!=null?o.hp:c.baseHp); });
+}
 const ELEMENTS=['fire','ice','lightning','arcane','physical','dark'];
 const CATS=['protect','dispel','damage'];
 
 let CHARS={};   // key -> merged tabletop character
+let rulesName='standard';
 let rng=Math.random;
 
 // Merge characters.json (names, colours, forbidden) with tabletop.json (the counter numbers)
@@ -64,9 +97,10 @@ function load(chars,tt){
     if(k.startsWith('_')||!chars[k]) return;
     const c=chars[k], t=tt[k];
     CHARS[k]={key:k, name:c.name, title:c.title, col:c.col,
-      hp:Math.min(RULES.max,t.hp),
+      hp:Math.min(RULES.max,t.hp), baseHp:Math.min(RULES.max,t.hp), alt:t.rules||{},
       deathless:t.deathless||0, forbidden:t.forbidden||c.forbidden||[], spells:t.spells||[]};
   });
+  applyCharRules();
   return CHARS;
 }
 
@@ -311,7 +345,8 @@ function doDamage(who,a){
 // ── A round ────────────────────────────────────────────────
 // picks: {p1:action, p2:action}. action: {cat:'damage'|'protect'|'dispel', elem, ring} or
 // {cat, sig:'spellId'} or {cat:'dispel', self:true, ring:1} (cleanse) or {cat:'meditate'} / {cat:'pass'}.
-// flicks (optional, for real play): {p1:{cast:true|false, missed:n}, ...} the tiddlywink results;
+// flicks (optional, for real play): {p1:{cast:true|false, missed:n}, ...} the tiddlywink results
+// (Beginner rules: {p1:{cast:bool}});
 // otherwise they are rolled from RULES.pot. squops (optional): {p1:winks squopped, ...}; otherwise
 // rolled from RULES.squop.
 function playRound(picks,flicks,squops){
@@ -364,8 +399,17 @@ const potChance=w=>gs.pot&&gs.pot[w]!=null?gs.pot[w]:RULES.pot;
 const squopChance=w=>gs.squop&&gs.squop[w]!=null?gs.squop[w]:RULES.squop;
 // The flick: pot RULES.winks[ring] winks; after each miss, pay retryCost to go again or give up.
 // Returns true when the spell is cast. Missed winks are left on the table (gs.table).
-function flickCast(w,ring,given){
+function flickCast(w,ring,given,paid){
   const st=gs[w], need=RULES.winks[ring-1];
+  if(RULES.flickMode==='chances'){
+    // Beginner: up to RULES.chances flicks, and the first pot casts. given (real play): {cast:bool}.
+    // Missed winks are picked up, so nothing builds up on the table.
+    if(given) return !!given.cast;
+    // chances: a number, an array by level, or {budget:n} for n minus the spell's cost
+    const c=RULES.chances, tries=typeof c==='number'?c:Array.isArray(c)?c[ring-1]:Math.max(1,c.budget-paid);
+    for(let i=0;i<tries;i++){ st.flicks=(st.flicks||0)+1; if(rng()<potChance(w)){ st.potted++; return true; } }
+    return false;
+  }
   if(given){
     const retries=given.cast?given.missed:Math.max(0,given.missed-1);
     loseMana(w,retries*RULES.retryCost);
@@ -409,7 +453,7 @@ function pay(w,a,flick){
   if(sp&&sp.action&&sp.action.type==='bloodpact'){ loseHp(w,sp.action.hp); gainMana(w,sp.action.hp); }
   if(cost>st.mana) return 'nomana';
   st.mana-=cost;
-  if(!flickCast(w,ringOf(st,a),flick)) return 'fizzle';
+  if(!flickCast(w,ringOf(st,a),flick,cost)) return 'fizzle';
   if(a.cat==='protect') fx(st,'candle').forEach(e=>loseHp(w,e.dmg));
   return 'cast';
 }
@@ -635,7 +679,7 @@ function balance(games,ai){
     .sort((a,b)=>b.winRate-a.winRate);
 }
 
-const TT={RULES, ELEMENTS, load, newGame, playRound, aiChoose, simMatch, balance,
+const TT={RULES, PRESETS, useRules, get rulesName(){ return rulesName; }, ELEMENTS, load, newGame, playRound, aiChoose, simMatch, balance,
   get chars(){ return CHARS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
 if(typeof module!=='undefined'&&module.exports) module.exports=TT;
 else root.TT=TT;
