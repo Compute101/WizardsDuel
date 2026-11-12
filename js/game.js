@@ -8275,9 +8275,9 @@ const TUTORIAL_CONVOS={
   ],
   zacharius:[
     {key:'zacharius',text:"Zakkit won before you cast-cast your first spell, yes-yes! You just did not know it."},
-    {key:'zacharius',text:"Galvanize, in the Lightning sector of my Protection wheel, fills my next Lightning strike with warp-power. Much-much more power!"},
-    {key:'zacharius',text:"Chain Lightning is my Lightning strike. It burns mana like all lightning, and it may leap-jump for extra damage. Green and crackly, yes!"},
-    {key:'zacharius',text:"Conductivity is my Lightning curse — my rival takes extra damage from every strike for a few rounds. Then Zakkit's sums are very, very favourable. Yes-yes."},
+    {key:'zacharius',text:"Warp-Charge, in the Lightning sector of my Protection wheel, fills my next Lightning strike with warp-power. Much-much more power!"},
+    {key:'zacharius',text:"Warp Lightning is my Lightning strike. It burns mana like all lightning, and it may leap-jump for extra damage. Green and crackly, yes!"},
+    {key:'zacharius',text:"Warpstone Curse is my Lightning curse — my rival takes extra damage from every strike for a few rounds. Then Zakkit's sums are very, very favourable. Yes-yes."},
   ],
   mary:[
     {key:'mary',text:"I am a healer first, a combatant second. I endure and outlast through faith and restoration."},

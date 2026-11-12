@@ -513,6 +513,9 @@
     "sprite": "sprites/zacharius.png",
     "col": "#aaff44",
     "aiStyle": "calculating",
+    "rivals": {
+      "durin": "Stone-beard! Warp-fire melts dwarf-rock!"
+    },
     "taunts": [
       "Zakkit won before you cast-cast your first spell, yes-yes! You just did not know it, fool-thing.",
       "Every spark you waste, Zakkit hoards it, twists it, gives it back. Green-burning, yes!",
@@ -526,7 +529,7 @@
     "spells": [
       {
         "id": "galvanize",
-        "name": "Galvanize",
+        "name": "Warp-Charge",
         "icon": "🔋",
         "el": {
           "cat": "protect",
@@ -545,7 +548,7 @@
       },
       {
         "id": "chainlightning",
-        "name": "Chain Lightning",
+        "name": "Warp Lightning",
         "icon": "🌩️",
         "el": {
           "cat": "damage",
@@ -563,8 +566,8 @@
       },
       {
         "id": "conductivity",
-        "name": "Conductivity",
-        "icon": "💡",
+        "name": "Warpstone Curse",
+        "icon": "🟢",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -809,7 +812,8 @@
     "aiStyle": "grudge",
     "rivals": {
       "gretch": "You're in my book of grudges, troggoth.",
-      "fizzwick": "Another goblin for the grudge list!"
+      "fizzwick": "Another goblin for the grudge list!",
+      "zacharius": "Ratmen! Fetch the big grudge book!"
     },
     "taunts": [
       "Stone does not bend. Stone does not break. Neither does Durin.",
