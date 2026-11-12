@@ -3578,6 +3578,7 @@ function enterGate(who){
 // Infernal Mantle: the hellfire he comes out of the Gate in. His next strike burns straight through the foe's
 // ward (an empower with pierce, so it's used up by that strike and a Dispel can strip it first).
 const INFERNAL_MANTLE={id:'infernalmantle',type:'empower',mult:1,pierce:true,kind:'buff',name:'Infernal Mantle',icon:'🔥',rounds:1};   // rounds only with BUFF_TIMERS
+const TONIC_HURT=0.7;   // Volatile Tonic heals below this share of max HP, empowers at or above it
 // Vanish (Ponder): picking a Damage spell reveals him, before anything resolves that round
 function revealVanished(who){
   const veil=effectsOf(gs[who],'absorbNext').filter(e=>e.keep);
@@ -4109,7 +4110,8 @@ function executeSignature(who,sp,action,cb){
     addFloat(tx,bH*.42,'🌀 −'+n+' Mana','#88aaff',12); addFloat(x,bH*.42,'+'+n+' Mana','#88aaff',12);
   }
   else if(a.type==='tonic'){
-    ctx.healed=_rng()<0.5;
+    // Volatile Tonic reads the drinker: hurt (below TONIC_HURT of max HP) it heals, healthy it empowers
+    ctx.healed=as.hp<as.maxHp*TONIC_HURT;
     if(ctx.healed) elemHeal(ally,a.heal,'⚗️');
     else addEffect(ally,{id:sp.id,type:'empower',kind:'buff',name:'Empowered',icon:'💪',mult:a.mult,rounds:null},who);
   }
@@ -4576,7 +4578,9 @@ function aiSigSensible(who,sp,tgt=weakestFoe(who)){
   if(el.kind==='curse') return !active(ts,sp.id)&&!(el.effect.type==='lock'&&catLocked(tgt,el.effect.cat));
   if(el.kind==='instant'){
     const a=el.action;
-    if(a.type==='heal'||a.type==='tonic') return st.hp<st.maxHp*0.7;
+    if(a.type==='heal') return st.hp<st.maxHp*0.7;
+    // Hurt it heals; healthy it empowers the next strike, which is only worth it without a boost already
+    if(a.type==='tonic') return st.hp<st.maxHp*TONIC_HURT||!effectsOf(st,'empower').length;
     if(a.type==='bloodpact') return st.mana<6&&st.hp>40;
     if(a.type==='rewind') return (st.lastRoundLoss||0)>=10;
     if(a.type==='cleanse') return cleansableCurses(st).length>0;
@@ -8384,7 +8388,7 @@ const TUTORIAL_CONVOS={
   fizzwick:[
     {key:'fizzwick',text:"Heh — a satchel full of things that probably shouldn't mix. Sometimes I'm not sure what they'll do until it's too late."},
     {key:'fizzwick',text:"Caustic Bomb is my Dark strike. If it gets through to them, the poison is in their blood — it seeps straight past any ward they raise after. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
-    {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, either heals me or empowers my next strike. Either way, something good happens to me."},
+    {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, knows what I need: when I'm hurt it heals me, and when I'm healthy it empowers my next strike."},
     {key:'fizzwick',text:"Most duellists plan for consistency. I bring chaos in a bottle."},
   ],
   daveron:[

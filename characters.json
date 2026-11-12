@@ -1369,14 +1369,14 @@
           "cat": "protect",
           "kind": "instant",
           "elem": "physical",
-          "cost": 3,
+          "cost": 4,
           "tier": 1,
           "action": {
             "type": "tonic",
             "heal": 20,
             "mult": 1.5
           },
-          "desc": "50%: heal 20 · 50%: next strike +50%"
+          "desc": "Below 70% HP: heal 20 · otherwise: next strike +50%"
         }
       },
       {
