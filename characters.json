@@ -38,16 +38,16 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "lightning",
-          "cost": 3,
+          "cost": 4,
           "tier": 2,
           "effect": {
             "type": "counter",
-            "retaliate": 10,
+            "retaliate": 3,
             "rounds": 3,
             "extend": 1,
             "holdWard": true
           },
-          "desc": "3 rounds: strikers take 10, and your ward doesn't wear"
+          "desc": "Strikers take 3, and your ward doesn't wear"
         }
       },
       {
@@ -64,7 +64,7 @@
             "type": "warding",
             "rounds": 3
           },
-          "desc": "3 rounds: immune to curses; the next dispel only removes the Ward"
+          "desc": "Immune to curses; the next dispel only removes the Ward"
         }
       }
     ]
@@ -177,7 +177,7 @@
             "perRound": 5,
             "rounds": 5
           },
-          "desc": "Heal 5 a round for 5 rounds"
+          "desc": "Heal 5 a round until dispelled"
         }
       },
       {
@@ -249,7 +249,7 @@
             "type": "absorbNext",
             "rounds": 3
           },
-          "desc": "The next strike within 3 rounds does nothing"
+          "desc": "The next strike does nothing"
         }
       },
       {
@@ -318,10 +318,10 @@
           "tier": 2,
           "effect": {
             "type": "resist",
-            "pct": 0.33,
+            "pct": 0.15,
             "rounds": 3
           },
-          "desc": "Take 33% less damage × 3 rounds"
+          "desc": "Take 15% less damage"
         }
       },
       {
@@ -347,15 +347,15 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "fire",
-          "cost": 2,
+          "cost": 3,
           "tier": 2,
           "effect": {
             "type": "frenzy",
-            "mult": 1.4,
-            "selfDmg": 4,
+            "mult": 1.2,
+            "selfDmg": 6,
             "rounds": 2
           },
-          "desc": "2 rounds: strikes +40%, each costs 4 HP"
+          "desc": "Strikes +20%, each costs 6 HP"
         }
       }
     ]
@@ -479,11 +479,11 @@
           "tier": 2,
           "effect": {
             "type": "resist",
-            "pct": 0.3,
-            "retaliate": 4,
+            "pct": 0.2,
+            "retaliate": 3,
             "rounds": 3
           },
-          "desc": "3 rounds: −30% damage, strikers take 4"
+          "desc": "−20% damage, strikers take 3"
         }
       },
       {
@@ -611,7 +611,7 @@
           "cat": "protect",
           "kind": "instant",
           "elem": "arcane",
-          "cost": 6,
+          "cost": 5,
           "tier": 1,
           "action": {
             "type": "heal",
@@ -751,13 +751,13 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "arcane",
-          "cost": 3,
+          "cost": 4,
           "tier": 2,
           "effect": {
             "type": "absorbNext",
             "rounds": 2
           },
-          "desc": "The next strike within 2 rounds misses"
+          "desc": "The next strike misses"
         }
       },
       {
@@ -786,15 +786,15 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "lightning",
-          "cost": 4,
+          "cost": 5,
           "tier": 2,
           "effect": {
             "type": "dodge",
-            "pct": 0.45,
+            "pct": 0.22,
             "rounds": 3
           },
           "ward": 10,
-          "desc": "45% dodge × 3 rounds, plus a 10 HP Lightning ward"
+          "desc": "22% dodge, plus a 10 HP Lightning ward"
         }
       }
     ]
@@ -848,10 +848,10 @@
           "tier": 2,
           "effect": {
             "type": "resist",
-            "pct": 0.35,
+            "pct": 0.25,
             "rounds": 3
           },
-          "desc": "−35% damage × 3"
+          "desc": "−25% damage"
         }
       },
       {
@@ -935,10 +935,10 @@
           "tier": 2,
           "effect": {
             "type": "resist",
-            "pct": 0.3,
+            "pct": 0.22,
             "rounds": 3
           },
-          "desc": "Take 30% less damage × 3"
+          "desc": "Take 22% less damage"
         }
       }
     ]
@@ -1133,12 +1133,12 @@
           "effect": {
             "type": "minion",
             "minion": "simulacrum",
-            "dmg": 4,
+            "dmg": 2,
             "elem": "arcane",
             "max": 2,
             "rounds": 3
           },
-          "desc": "Simulacrum (max 2) for 3 rounds: 4 a round"
+          "desc": "Simulacrum (max 2): 2 a round"
         }
       },
       {
@@ -1218,7 +1218,7 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "arcane",
-          "cost": 4,
+          "cost": 3,
           "tier": 2,
           "effect": {
             "type": "weave",
@@ -1279,11 +1279,11 @@
           "tier": 2,
           "effect": {
             "type": "resist",
-            "pct": 0.25,
-            "retaliate": 4,
+            "pct": 0.12,
+            "retaliate": 3,
             "rounds": 3
           },
-          "desc": "3 rounds: −25% damage, strikers take 4"
+          "desc": "−12% damage, strikers take 3"
         }
       },
       {
@@ -1519,15 +1519,15 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "arcane",
-          "cost": 3,
+          "cost": 4,
           "tier": 2,
           "requires": "skeletons",
           "effect": {
             "type": "danse",
-            "bonus": 3,
+            "bonus": 2,
             "rounds": 3
           },
-          "desc": "Needs a skeleton. 3 rounds: each of your skeletons strikes for 3 more"
+          "desc": "Needs a skeleton. Each of your skeletons strikes for 2 more"
         }
       },
       {

@@ -78,9 +78,9 @@ What was built, including choices made while building:
   ring 3 × 2, `ELEM_SCORCH`). A strike with its own DoT (Wyrmfire Breath) doesn't also scorch.
 - **Physical:** **crushes** wards. A Physical strike wears an off-element ward at 100% instead of 75%
   (`ELEM_WARD_TAKE.crush`); a Physical ward still unravels at 150%. Strikes only, not minions or ticks.
-- **Arcane:** a middle-ring hit that reaches HP **unweaves** a round off the target's newest timed buff
-  (minion timers included); an outer-ring hit takes a round off every one. Buffs with no timer
-  (Empower, blades) are immune.
+- **Arcane:** a middle-ring hit that reaches HP **unweaves** the target's newest buff: it frays, and a
+  buff frayed twice (`ELEM_UNWEAVE_FRAYS`) unravels. An outer-ring hit frays every buff. (With
+  `BUFF_TIMERS` on, it takes a round off timed buffs instead.)
 - Every rider applies to signature strikes of that element too. `ELEM_RIDERS` switches each one off,
   for testing in the balance simulator.
 - **Character stats:** each character's HP and damage multiplier apply. (Eldrin's wards used to cost
@@ -145,8 +145,8 @@ so each spell's numbers can be tuned there.
   **Piercing is gone:** Radiant, Feint and Charge burn mana instead.
 - **Signature wards** are wards with a twist: Flame Shield hits back; Reinforce grows with skeletons;
   **Rewind** (Aurelia, replacing Haste) is an Arcane ward that also heals what you lost last round.
-- **Buffs** (Protection wheel) last a set number of rounds; minions and Empower-style buffs last until
-  used or removed. A foe's Dispel hits your ward first; with no ward up it strips your newest buff, and a
+- **Buffs** (Protection wheel) have no round timer, as in tabletop (`BUFF_TIMERS` false): they last until
+  dispelled, and Empower-style buffs until used. Curses keep their timers. A foe's Dispel hits your ward first; with no ward up it strips your newest buff, and a
   Greater (outer ring) dispel strips all of them — so wards protect your buffs.
 - **Curses** (Dispel wheel) resolve with Dispels. Besides the hex, each is a weak dispel: it hits the
   foe's ward with half a dispel's power for that ring (double vs a matching ward) but never strips

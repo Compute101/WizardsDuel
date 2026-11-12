@@ -3341,13 +3341,14 @@ const ELEM_WARD_WEAR=4;         // flat ward HP lost at each round end
 // chance roll waits for the target's next pick, so neither side can plan around it.
 //   Lightning burns mana (even through a ward) · Ice frostbites and Dark dreads (a Damage / Protection
 //   pick next round may be lost) · Fire scorches (a burn) · Physical crushes wards (no off-element
-//   resistance) · Arcane unweaves buffs (rounds off their timers).
+//   resistance) · Arcane unweaves buffs (frays them; twice frayed, a buff unravels).
 // The riders that need HP reached also need ELEM_RIDER_MIN_TIER or more. ELEM_RIDERS switches each off.
 const ELEM_RIDERS={frostbite:true, dread:true, scorch:true, crush:true, unweave:true};
 const ELEM_RIDER_MIN_TIER=2;
 const ELEM_CHILL_MIN_TIER=2;    // Ice Lance (el.chill) chills (a hard lock) at this strength or more
 const ELEM_RISK_PCT={frostbite:0.5, dread:0.5};   // chance the covered pick next round is lost
 const ELEM_SCORCH=[null,{dmg:2,rounds:2},{dmg:3,rounds:2}];   // burn by tier (inner ring: none)
+const ELEM_UNWEAVE_FRAYS=2;     // Arcane unweave: frays it takes to unravel an (untimed) buff
 const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or not
 const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
 const ELEM_DISPEL_ALL_TIER=3;
@@ -3397,6 +3398,11 @@ function sigName(sp){ return sp.el.name||sp.name; }
 function sigIcon(sp){ return sp.el.icon||sp.icon; }
 
 // ── Enchantments: st.effects = [{id,type,kind:'buff'|'curse',name,icon,rounds|null,...params}] ──
+// Buffs have no round timer, as in tabletop mode: a buff lasts until a Dispel strips it (or an Arcane
+// strike unweaves it), and a "next strike" buff until it's used. Curses keep their timers.
+// (Set BUFF_TIMERS true to bring back the old timed buffs; the `rounds` in characters.json are kept for it.)
+const BUFF_TIMERS=false;
+function untimedBuff(eff){ return !BUFF_TIMERS&&eff.kind==='buff'; }
 function effectsOf(st,type){ return (st&&st.effects||[]).filter(e=>e.type===type); }
 function takeEffect(st,type,pred){
   const i=(st.effects||[]).findIndex(e=>e.type===type&&(!pred||pred(e)));
@@ -3430,13 +3436,13 @@ function addEffect(who,eff,fromWho){
   if(eff.type==='minion'){
     const n=Math.min(eff.raise||1,(eff.max||Infinity)-countMinions(st,eff.minion));
     if(n<=0) return false;
-    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:fromWho},eff,eff.soak?{hp:eff.soak}:{}));
+    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:fromWho},eff,eff.soak?{hp:eff.soak}:{},untimedBuff(eff)?{rounds:null}:{}));
     syncMinionVisuals(st);
     addFloat(x,bH*.26,eff.icon+' '+eff.name+(n>1?' ×'+n:'')+'!','#88ffcc',13);
     return true;
   }
   st.effects=st.effects.filter(e=>e.id!==eff.id);
-  st.effects.push(Object.assign({from:fromWho},eff));
+  st.effects.push(Object.assign({from:fromWho},eff,untimedBuff(eff)?{rounds:null}:{}));
   addFloat(x,bH*.26,eff.icon+' '+eff.name+'!',eff.kind==='curse'?'#cc88ff':'#88ffcc',13);
   return true;
 }
@@ -3566,7 +3572,7 @@ function enterGate(who){
 }
 // Infernal Mantle: the hellfire he comes out of the Gate in. His next strike burns straight through the foe's
 // ward (an empower with pierce, so it's used up by that strike and a Dispel can strip it first).
-const INFERNAL_MANTLE={id:'infernalmantle',type:'empower',mult:1,pierce:true,kind:'buff',name:'Infernal Mantle',icon:'🔥',rounds:1};
+const INFERNAL_MANTLE={id:'infernalmantle',type:'empower',mult:1,pierce:true,kind:'buff',name:'Infernal Mantle',icon:'🔥',rounds:1};   // rounds only with BUFF_TIMERS
 // Meditate: skip your spell to gain mana on top of income, a bet that the foe won't strike this round.
 // It resolves after every Damage, so this round's mana burns can't touch it. Not two rounds in a row.
 // Income-drain curses (Time Drain, Corruption, Maggot Cloud) cut the gain too, as they cut Channel in Classic.
@@ -4334,15 +4340,30 @@ function elemStrikeRiders(who,tgt,o){
   if(o.elem==='fire'&&ELEM_RIDERS.scorch&&!o.dot)
     addEffect(tgt,Object.assign({id:'dot-scorch',type:'dot',kind:'curse',elem:'fire',name:'Scorched',icon:'🔥'},ELEM_SCORCH[Math.min(3,tier)-1]),who);
   if(o.elem==='arcane'&&ELEM_RIDERS.unweave&&tgt!==who){
-    // Middle ring: a round off the newest timed buff; outer ring: a round off every one
-    const timed=ts.effects.filter(e=>e.kind==='buff'&&e.rounds!=null&&e.rounds>0);
-    const hit=tier>=3?timed:timed.slice(-1);
+    if(BUFF_TIMERS){
+      // Middle ring: a round off the newest timed buff; outer ring: a round off every one
+      const timed=ts.effects.filter(e=>e.kind==='buff'&&e.rounds!=null&&e.rounds>0);
+      const hit=tier>=3?timed:timed.slice(-1);
+      if(hit.length){
+        hit.forEach(e=>e.rounds--);
+        const gone=hit.filter(e=>e.rounds<=0);
+        ts.effects=ts.effects.filter(e=>!gone.includes(e));
+        if(gone.length) syncMinionVisuals(ts);
+        addFloat(seatX(tgt),bH*.3,'🌀 Unweave: '+hit.map(e=>e.icon).join(' ')+' −1','#cc88ff',12);
+        VFX.stripped(seatX(tgt));
+      }
+      return;
+    }
+    // Untimed buffs fray instead: a middle-ring hit frays the newest buff, an outer-ring hit every
+    // one, and a buff frayed ELEM_UNWEAVE_FRAYS times unravels
+    const bs=buffsOf(ts);
+    const hit=tier>=3?bs:bs.slice(-1);
     if(hit.length){
-      hit.forEach(e=>e.rounds--);
-      const gone=hit.filter(e=>e.rounds<=0);
+      hit.forEach(e=>e.frayed=(e.frayed||0)+1);
+      const gone=hit.filter(e=>e.frayed>=ELEM_UNWEAVE_FRAYS);
       ts.effects=ts.effects.filter(e=>!gone.includes(e));
       if(gone.length) syncMinionVisuals(ts);
-      addFloat(seatX(tgt),bH*.3,'🌀 Unweave: '+hit.map(e=>e.icon).join(' ')+' −1','#cc88ff',12);
+      addFloat(seatX(tgt),bH*.3,'🌀 '+(gone.length?'Unwoven':'Frayed')+': '+hit.map(e=>e.icon).join(' '),'#cc88ff',12);
       VFX.stripped(seatX(tgt));
     }
   }
@@ -4609,13 +4630,15 @@ function elemAIChoose(who){
     if(_rng()<p) return {type:'el',cat:'meditate',ok:true};
   }
   const w={damage:1.0, protect:0.55, dispel:0.08};
-  if(oppWard){ w.dispel=smart?1.7:1.0; w.damage=0.5; }
-  else if(oppBuffs) w.dispel+=smart?0.9:0.4;
+  // Untimed buffs (BUFF_TIMERS off) never wear off by themselves, so stripping them is worth more
+  const buffPull=BUFF_TIMERS?0:Math.min(3,oppBuffs)*(smart?0.25:0.1);
+  if(oppWard){ w.dispel=(smart?1.7:1.0)+buffPull; w.damage=0.5; }
+  else if(oppBuffs) w.dispel+=(smart?0.9:0.4)+buffPull*2;
   if(myCurses) w.dispel+=0.5;
   // Cash in a pending strike boost (Empower, Galvanize, Frenzy, Arcane Weave)
   const boost=me.effects.find(e=>e.type==='empower'||e.type==='frenzy'||e.type==='weave');
   if(boost) w.damage+=0.9;
-  // Infernal Mantle burns through wards, but only until the end of this round: strike now
+  // Infernal Mantle burns through wards until it's used (or dispelled): strike now
   const mantle=me.effects.find(e=>e.pierce);
   if(mantle) w.damage+=smart?1.5:0.6;
   // Curse-casters open the Dispel wheel for their hexes, not only to break wards
@@ -4637,7 +4660,7 @@ function elemAIChoose(who){
   if(siphonNow) w.dispel+=0.6;
   // Last round of my miss/dodge cover: spend it on a Siphon or a strike — the foe's strike would be wasted
   const cover=me.effects.filter(e=>e.type==='dodge'||e.type==='absorbNext');
-  if(smart&&cover.length&&cover.every(e=>e.rounds===1)){
+  if(smart&&BUFF_TIMERS&&cover.length&&cover.every(e=>e.rounds===1)){
     w.protect*=0.3; w.damage+=0.5;
     if(siphon) w.dispel+=0.6;
   }
@@ -4757,7 +4780,7 @@ function elemStatusTags(){
       tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${st.shieldHp}${ELEM_WARD_ROUNDS?' ('+st.shield+')':''}</span>`);
     }
     (st.effects||[]).filter(e=>e.type!=='minion').forEach(e=>{
-      tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.rounds!=null?' ('+e.rounds+')':''}</span>`);
+      tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.rounds!=null?' ('+e.rounds+')':''}${e.frayed?' 🌀':''}</span>`);
     });
     // A totem shows its own HP (it's smashed, not dispelled)
     effectsOf(st,'minion').filter(m=>m.minion==='totem').forEach(m=>{
@@ -8200,7 +8223,7 @@ const TUTORIAL_CONVOS={
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
     {key:'zacharius',text:"Every element carries an extra effect. Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
-    {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
+    {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — it frays their newest buff, or every buff from the outer ring, and a buff frayed twice unravels. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
     {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Raising a new one replaces the old one."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
@@ -8208,7 +8231,7 @@ const TUTORIAL_CONVOS={
   enchant:[
     {key:'mary',   text:"Some wizards cast enchantments. Buffs — like Regen, War Paint or a skeleton servant — sit on the Protection wheel and last a while."},
     {key:'mordant',text:"Curses — like Silence, Plague or Agony — sit on the Dispel wheel. As well as their hex, every curse wears at the target's ward a little, like a weak dispel."},
-    {key:'ponder', text:"A Dispel against a rival with no ward strips their newest buff — or all of them, from the outer ring. If they have a ward, the dispel hits the ward instead. Wards protect your buffs!"},
+    {key:'ponder', text:"Buffs have no timer: they last until a Dispel strips them. A Dispel against a rival with no ward strips their newest buff — or all of them, from the outer ring. If they have a ward, the dispel hits the ward instead. Wards protect your buffs!"},
     {key:'mary',   text:"Cursed? Open the Dispel wheel and tap Cleanse Self. It removes your newest curse for very little mana — just one, so mind the order they land in."},
     {key:'sylvara',text:"Locks — like my Entangle or Skadi's Ice Lance — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
   ],
@@ -8234,7 +8257,7 @@ const TUTORIAL_CONVOS={
   eldrin:[
     {key:'eldrin',text:"I am Eldrin — the Stalwart. My Shield is the strongest ward of all. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
     {key:'eldrin',text:"My Shield takes the Arcane sector of my Protection wheel — a far larger ward than most wizards can raise."},
-    {key:'eldrin',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds — and braces my Shield, so it stops wearing away. Ward, in the Ice sector, makes me immune to curses, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
+    {key:'eldrin',text:"Counter, in the Lightning sector, punishes anyone who strikes me — and braces my Shield, so it stops wearing away. Ward, in the Ice sector, makes me immune to curses, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
     {key:'eldrin',text:"Dispels are my weakness. Keep a ward between your buffs and their unbinding, and I am very hard to wear down."},
   ],
   mal:[
@@ -8245,7 +8268,7 @@ const TUTORIAL_CONVOS={
   ],
   sylvara:[
     {key:'sylvara',text:"Hello! I'm Sylvara. I prefer patience and control over brute force — nature always wins in the end."},
-    {key:'sylvara',text:"Regen, in the Physical sector of my Protection wheel, heals me a little every round for several rounds. It's a buff, so keep a ward up to stop it being dispelled."},
+    {key:'sylvara',text:"Regen, in the Physical sector of my Protection wheel, heals me a little every round, for as long as it lasts. It's a buff, so keep a ward up to stop it being dispelled."},
     {key:'sylvara',text:"Entangle sits on my Dispel wheel. It's a curse with a good chance to stop my rival choosing Damage next round — and like every curse, it wears at their ward too."},
     {key:'sylvara',text:"Vine Whip is my Physical strike. If it gets through, the vines keep hurting them for a few rounds afterwards."},
   ],
@@ -8257,7 +8280,7 @@ const TUTORIAL_CONVOS={
   ],
   gnash:[
     {key:'gnash',text:"GNASH NOT WIZARD. Gnash warrior-mage! Gnash has lots of HP and very effective fists."},
-    {key:'gnash',text:"War Paint, Physical sector of Protection wheel — Gnash takes less damage for a few rounds. Frenzy, Fire sector — Gnash hits much harder for two rounds, but it hurts Gnash too."},
+    {key:'gnash',text:"War Paint, Physical sector of Protection wheel — Gnash takes less damage. Frenzy, Fire sector — Gnash hits harder, but every strike hurts Gnash too. Both last till someone dispels them."},
     {key:'gnash',text:"Savage Charge is Gnash's Physical strike. Big smash, and it burns their mana. Magic tricks? HAH."},
     {key:'gnash',text:"Little mage thinks Gnash simple? Gnash simple but Gnash EFFECTIVE."},
   ],
@@ -8293,13 +8316,13 @@ const TUTORIAL_CONVOS={
   ],
   ponder:[
     {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
-    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes the next strike miss me entirely. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Blink first, then Vanish: every strike I dodge leaves Vanish waiting for the next."},
+    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes the next strike miss me entirely. Blink, in the Lightning sector, gives me a chance to dodge every strike, behind a light ward. Blink first, then Vanish: every strike I dodge leaves Vanish waiting for the next."},
     {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. It's quick: I steal mana as the round begins, before my rival pays for their spell — if they can't afford it any more, it fails!"},
     {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
   ],
   durin:[
     {key:'durin',text:"I am Durin. I have more HP than anyone in the arena. When spells come, they barely scratch me."},
-    {key:'durin',text:"Stoneskin is my Physical ward — a sturdy one. Stonesoul, in the Arcane sector, cuts all damage I take for a few rounds — and I'll never touch Lightning, so warding in Lightning against me is safe."},
+    {key:'durin',text:"Stoneskin is my Physical ward — a sturdy one. Stonesoul, in the Arcane sector, cuts all damage I take until it's dispelled — and I'll never touch Lightning, so warding in Lightning against me is safe."},
     {key:'durin',text:"Rockfall is my Physical strike — a heavy one, with a long ritual."},
     {key:'durin',text:"I am slow. I am deliberate. And when I am ready... the mountain falls."},
   ],
@@ -8349,7 +8372,7 @@ const TUTORIAL_CONVOS={
   daveron:[
     {key:'daveron',text:"I am Daveron. I do not need a horde — only a few who were the finest in life, and are finer still in death."},
     {key:'daveron',text:"Raise Graveguard, in the Dark sector of my Protection wheel, raises one armoured graveguard — up to three at once. Each stands in front of my ward and soaks a great deal of damage, strikes you every round, and dispels can't touch it. A stronger cast raises a tougher guard."},
-    {key:'daveron',text:"Vanhal's Danse Macabre, in the Arcane sector, sets my dead dancing: for a few rounds every skeleton strikes harder. It needs a skeleton standing, and it is a buff, so a Dispel can stop the music."},
+    {key:'daveron',text:"Vanhal's Danse Macabre, in the Arcane sector, sets my dead dancing: every skeleton strikes harder. It needs a skeleton standing, and it is a buff, so a Dispel can stop the music."},
     {key:'daveron',text:"Curse of the Years is my Dark curse. Time falls on you all at once: you take damage whatever you do, and unlike Agony, even Meditating won't escape it. Only a Cleanse will."},
   ],
   frederick:[
