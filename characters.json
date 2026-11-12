@@ -42,13 +42,10 @@
           "tier": 2,
           "effect": {
             "type": "counter",
-            "timed": true,
-            "retaliate": 10,
-            "rounds": 3,
-            "extend": 1,
-            "holdWard": true
+            "retaliate": 5,
+            "rounds": 3
           },
-          "desc": "3 rounds: strikers take 10, and your ward doesn't wear"
+          "desc": "Strikers take 5"
         }
       },
       {
@@ -63,9 +60,12 @@
           "tier": 2,
           "effect": {
             "type": "warding",
-            "rounds": 3
+            "timed": true,
+            "rounds": 3,
+            "extend": 1,
+            "holdWard": true
           },
-          "desc": "Immune to curses; the next dispel only removes the Ward"
+          "desc": "3 rounds: immune to curses, your ward doesn't wear, and the next dispel only removes the Ward"
         }
       }
     ]

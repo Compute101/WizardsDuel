@@ -3298,8 +3298,8 @@ function endSimRound(){
   PLAYERS.forEach(w=>{
     const st=gs[w];
     if(ELEM_WARD_ROUNDS&&st.shield>0){ st.shield--; if(st.shield<=0){ st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null; } }
-    // Counter (holdWard) braces the ward: it doesn't wear away while Counter lasts
-    const braced=effectsOf(st,'counter').some(e=>e.holdWard);
+    // Eldrin's Ward (holdWard) braces the ward: it doesn't wear away while the Ward lasts
+    const braced=(st.effects||[]).some(e=>e.holdWard);
     if(ELEM_WARD_DECAY<1&&st.shield>0&&!braced) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
     if(ELEM_WARD_WEAR&&hasWard(st)&&!braced){
       st.shieldHp-=ELEM_WARD_WEAR;
@@ -3332,7 +3332,7 @@ const ELEM_START_MANA=6;
 const ELEM_INCOME=4;            // mana every seat gains at the end of each round
 // Wards have no round timer, as in tabletop mode: a ward lasts until it runs out. Like the tabletop
 // ward losing 1 wink a round, it wears ELEM_WARD_WEAR HP at every round end (about one wink's worth),
-// and strikes, ticks and dispels wear it too. Counter (holdWard) stops the round-end wear.
+// and strikes, ticks and dispels wear it too. Eldrin's Ward (holdWard) stops the round-end wear.
 // (Set rounds to 3, decay to 0.75 and wear to 0 to bring back the old 3-round fading wards.)
 const ELEM_WARD_ROUNDS=0;       // 0: no timer. Otherwise a ward lasts the round it is raised + n−1 more
 const ELEM_WARD_DECAY=1;        // share of ward HP kept at each round end (1: none lost this way)
@@ -3510,7 +3510,7 @@ function sigAtTier(sp,tier){
     if(e.pct) e.pct=pct(e.pct,0.7);
     if(e.mult) e.mult=mult(e.mult);
     if(['absorbNext','warding','bewitch'].includes(e.type)) e.rounds=Math.max(1,e.rounds+tier-2);
-    if(e.extend&&tier===3) e.extend++;   // Counter: the outer ring holds the ward one round longer
+    if(e.extend&&tier===3) e.extend++;   // Ward: the outer ring holds the ward one round longer
   }
   const a=el.action;
   if(a){ ['amt','mana','heal'].forEach(k=>{ if(a[k]) a[k]=n(a[k]); }); if(a.mult) a.mult=mult(a.mult); }
@@ -4062,7 +4062,7 @@ function executeSignature(who,sp,action,cb){
     addEffect(mine?who:ally,effect({kind:el.effect.kind||'buff'}),who);
     // A buff that also raises a light ward (Blink) — never replaces a stronger ward already up
     if(el.ward&&!(hasWard(as)&&as.shieldHp>=el.ward)){ raiseWard(ally,el.elem,el.ward,0); as.wardSig=sp.id; }
-    // A buff that holds up a ward already standing (Counter): it lasts longer
+    // A buff that holds up a ward already standing (Ward): it lasts longer
     if(ELEM_WARD_ROUNDS&&el.effect.extend&&hasWard(as)){ as.shield+=el.effect.extend; addFloat(seatX(ally),bH*.34,'🛡 Ward +'+el.effect.extend+' round'+(el.effect.extend>1?'s':''),wardCol(as),12); }
     if(fx.self) fx.self(mine?ctx:actx); else { vfxPhaseIn(seatX(mine?who:ally),wizMidY(mine?who:ally),[e.col],14); anim(mine?who:ally,'shield',700); }
     combatTimeout(cb,900);
@@ -4694,7 +4694,7 @@ function elemAIChoose(who){
     if(e.type==='absorbNext'&&effectsOf(me,'dodge').length) v+=2;
     if(sp.el.ward&&buffsOf(me).length&&!hasWard(me)) v+=2;
     if(e.type==='warding'&&hasWard(me)&&!effectsOf(me,'warding').length) v+=2;
-    if(ELEM_WARD_ROUNDS&&e.extend&&hasWard(me)) v+=2;   // Counter holds a standing ward up longer   // Ward takes the next dispel for the ward
+    if(ELEM_WARD_ROUNDS&&e.extend&&hasWard(me)) v+=2;   // Ward holds a standing ward up longer
     if(sp===siphon&&(siphonNow||cover.length)) v+=2;
     if(e.type==='enthral'&&(hasWard(me)||effectsOf(opp,'spellbind').length)) v+=2;
     if(e.type==='danse') v+=guardCount(me);   // more dancers, more worth it
@@ -8246,7 +8246,7 @@ const TUTORIAL_CONVOS={
   eldrin:[
     {key:'eldrin',text:"I am Eldrin — the Stalwart. My Shield is the strongest ward of all. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
     {key:'eldrin',text:"My Shield takes the Arcane sector of my Protection wheel — a far larger ward than most wizards can raise."},
-    {key:'eldrin',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds — and braces my Shield, so it stops wearing away. Ward, in the Ice sector, makes me immune to curses, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
+    {key:'eldrin',text:"Counter, in the Lightning sector, punishes anyone who strikes me, until it's dispelled. Ward, in the Ice sector, braces my Shield for a few rounds, so it stops wearing away. It makes me immune to curses too, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
     {key:'eldrin',text:"Dispels are my weakness. Keep a ward between your buffs and their unbinding, and I am very hard to wear down."},
   ],
   mal:[

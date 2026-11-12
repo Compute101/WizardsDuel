@@ -526,3 +526,10 @@ its ward-bracing (`holdWard` / `extend` only act with a timer); it still retalia
   games about 20.2 rounds. Net HP changes from the timed wards: Ponder 78 → 84, Daveron 85 → 90,
   Thessaly 90 → 86, Mordant 88 → 84; Eldrin's wards no longer cost 1 less.
 
+
+### Eldrin: the brace moves to Ward
+
+The ward-bracing (`holdWard`: the ward doesn't wear at round end) moved from Counter to Eldrin's Ward.
+Ward is a timed buff (`timed:true`, 3 rounds, 4 from the outer ring): immune to curses, the ward doesn't
+wear, and the next dispel only removes the Ward. Counter is untimed now: strikers take 5 until it's
+dispelled (was 10 for 3 rounds). Balance (100 games a pairing, Normal AI): Eldrin 50.3%, roster 44.0–56.2%.
