@@ -78,9 +78,9 @@ What was built, including choices made while building:
   ring 3 × 2, `ELEM_SCORCH`). A strike with its own DoT (Wyrmfire Breath) doesn't also scorch.
 - **Physical:** **crushes** wards. A Physical strike wears an off-element ward at 100% instead of 75%
   (`ELEM_WARD_TAKE.crush`); a Physical ward still unravels at 150%. Strikes only, not minions or ticks.
-- **Arcane:** a middle-ring hit that reaches HP **unweaves** the target's newest buff: it frays, and a
-  buff frayed twice (`ELEM_UNWEAVE_FRAYS`) unravels. An outer-ring hit frays every buff. (With
-  `BUFF_TIMERS` on, it takes a round off timed buffs instead.)
+- **Arcane:** a middle-ring hit that reaches HP **unweaves** the target's newest buff: a round off a
+  timed one, or it frays an untimed one, which unravels once frayed twice (`ELEM_UNWEAVE_FRAYS`). An
+  outer-ring hit does that to every buff.
 - Every rider applies to signature strikes of that element too. `ELEM_RIDERS` switches each one off,
   for testing in the balance simulator.
 - **Character stats:** each character's HP and damage multiplier apply. (Eldrin's wards used to cost
@@ -145,8 +145,10 @@ so each spell's numbers can be tuned there.
   **Piercing is gone:** Radiant, Feint and Charge burn mana instead.
 - **Signature wards** are wards with a twist: Flame Shield hits back; Reinforce grows with skeletons;
   **Rewind** (Aurelia, replacing Haste) is an Arcane ward that also heals what you lost last round.
-- **Buffs** (Protection wheel) have no round timer, as in tabletop (`BUFF_TIMERS` false): they last until
-  dispelled, and Empower-style buffs until used. Curses keep their timers. A foe's Dispel hits your ward first; with no ward up it strips your newest buff, and a
+- **Buffs** (Protection wheel): most have no round timer, as in tabletop: armour (resist buffs), Ward
+  and Arcane Weave last until dispelled, Empower-style buffs until used. Buffs that pay out every round
+  (Regen, Simulacrum, Danse Macabre) and short bursts (Frenzy, Blink, Counter) keep a timer
+  (`timed:true` on the effect). Curses keep their timers. A foe's Dispel hits your ward first; with no ward up it strips your newest buff, and a
   Greater (outer ring) dispel strips all of them — so wards protect your buffs.
 - **Curses** (Dispel wheel) resolve with Dispels. Besides the hex, each is a weak dispel: it hits the
   foe's ward with half a dispel's power for that ring (double vs a matching ward) but never strips
