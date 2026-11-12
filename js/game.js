@@ -3512,6 +3512,7 @@ function sigAtTier(sp,tier){
     if(e.pct) e.pct=pct(e.pct,0.7);
     if(e.mult) e.mult=mult(e.mult);
     if(['absorbNext','warding','bewitch'].includes(e.type)) e.rounds=Math.max(1,e.rounds+tier-2);
+    if(e.type==='absorbNext'&&!e.keep&&tier===3) e.charges=2;   // Foresight: the outer ring blocks two strikes
     if(e.extend&&tier===3) e.extend++;   // Ward: the outer ring holds the ward one round longer
   }
   const a=el.action;
@@ -4312,7 +4313,10 @@ function strikeResolve(who,tgt,o,b){
     // Dodge rolls first, so a dodged strike leaves Foresight waiting for the next one
     const dodge=effectsOf(ts,'dodge')[0];
     if(dodge&&_rng()<dodge.pct) return {tgt,miss:'dodge'};
-    const absorb=takeEffect(ts,'absorbNext',e=>!e.keep);
+    // Foresight: each blocked strike uses a charge (the outer ring has two)
+    const absorb=effectsOf(ts,'absorbNext').find(e=>!e.keep);
+    if(absorb&&!(absorb.charges>1)) takeEffect(ts,'absorbNext',e=>e===absorb);
+    else if(absorb) absorb.charges--;
     if(absorb) return {tgt,miss:absorb.id==='vanish'?'vanish':'absorb'};
   }
   effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
@@ -4784,7 +4788,7 @@ function elemStatusTags(){
       tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${st.shieldHp}${ELEM_WARD_ROUNDS?' ('+st.shield+')':''}</span>`);
     }
     (st.effects||[]).filter(e=>e.type!=='minion').forEach(e=>{
-      tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.rounds!=null?' ('+e.rounds+')':''}${e.frayed?' 🌀':''}</span>`);
+      tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.charges>1?' ×'+e.charges:''}${e.rounds!=null?' ('+e.rounds+')':''}${e.frayed?' 🌀':''}</span>`);
     });
     // A totem shows its own HP (it's smashed, not dispelled)
     effectsOf(st,'minion').filter(m=>m.minion==='totem').forEach(m=>{

@@ -251,7 +251,7 @@
             "type": "absorbNext",
             "rounds": 3
           },
-          "desc": "The next strike does nothing"
+          "desc": "The next strike does nothing (outer ring: the next two)"
         }
       },
       {
