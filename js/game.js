@@ -3199,6 +3199,8 @@ function resolveSimRound(){
   });
   // Phasing seats step out of the round before anything, even a quick spell, can reach them
   seatsIn.forEach(w=>{ if(acts[w].cat==='phase'){ gs[w].phasedRound=gs.round; gs[w].phasedCount=0; } });
+  // No striking from hiding: a Vanished wizard who picks Damage is revealed for the whole round
+  seatsIn.forEach(w=>{ if(acts[w].cat==='damage') revealVanished(w); });
   // Who aims at whom this round (a Greater strike at every foe isn't focusing on anyone); the AI reads it next round
   gs.focus={};
   seatsIn.forEach(w=>{ const a=acts[w]; if(needsTarget(w,a)&&a.target&&a.target!==w&&!hitsAllFoes(w,a)) (gs.focus[a.target]=gs.focus[a.target]||[]).push(w); });
@@ -3575,6 +3577,13 @@ function enterGate(who){
 // Infernal Mantle: the hellfire he comes out of the Gate in. His next strike burns straight through the foe's
 // ward (an empower with pierce, so it's used up by that strike and a Dispel can strip it first).
 const INFERNAL_MANTLE={id:'infernalmantle',type:'empower',mult:1,pierce:true,kind:'buff',name:'Infernal Mantle',icon:'🔥',rounds:1};   // rounds only with BUFF_TIMERS
+// Vanish (Ponder): picking a Damage spell reveals him, before anything resolves that round
+function revealVanished(who){
+  const veil=effectsOf(gs[who],'absorbNext').filter(e=>e.keep);
+  if(!veil.length) return;
+  gs[who].effects=gs[who].effects.filter(e=>!veil.includes(e));
+  if(!simMode) addFloat(seatX(who),bH*.3,'👻 Revealed!','#b8a0e8',14);
+}
 // Meditate: skip your spell to gain mana on top of income, a bet that the foe won't strike this round.
 // It resolves after every Damage, so this round's mana burns can't touch it. Not two rounds in a row.
 // Income-drain curses (Time Drain, Corruption, Maggot Cloud) cut the gain too, as they cut Channel in Classic.
@@ -4652,7 +4661,9 @@ function elemAIChoose(who){
   const siphonNow=smart&&siphon&&opp.mana>=elemCost(tgt,'damage',3);
   if(siphonNow) w.dispel+=0.6;
   // Last round of my miss/dodge cover: spend it on a Siphon or a strike — the foe's strike would be wasted
-  const cover=me.effects.filter(e=>e.type==='dodge'||e.type==='absorbNext');
+  const cover=me.effects.filter(e=>e.type==='dodge'||(e.type==='absorbNext'&&!e.keep));
+  // Vanished: a strike would reveal me, so siphon, ward up or rest instead
+  if(effectsOf(me,'absorbNext').some(e=>e.keep)){ w.damage*=smart?0.3:0.7; w.dispel+=smart?0.4:0.1; }
   if(smart&&cover.length&&cover.every(e=>e.rounds===1)){
     w.protect*=0.3; w.damage+=0.5;
     if(siphon) w.dispel+=0.6;
@@ -8309,7 +8320,7 @@ const TUTORIAL_CONVOS={
   ],
   ponder:[
     {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
-    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes every strike miss me entirely for two rounds — three from the outer ring. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Want to hit me while I'm Vanished? Dispel it first."},
+    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes every strike miss me entirely for two rounds — three from the outer ring. But I can't strike from hiding: pick Damage and I'm revealed that round. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Want to hit me while I'm Vanished? Dispel it first."},
     {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. It's quick: I steal mana as the round begins, before my rival pays for their spell — if they can't afford it any more, it fails!"},
     {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
   ],

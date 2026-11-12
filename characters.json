@@ -754,7 +754,7 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "arcane",
-          "cost": 3,
+          "cost": 2,
           "tier": 2,
           "effect": {
             "type": "absorbNext",
@@ -762,7 +762,7 @@
             "keep": true,
             "rounds": 2
           },
-          "desc": "2 rounds: every strike at you misses"
+          "desc": "2 rounds: every strike at you misses. Picking Damage reveals you"
         }
       },
       {

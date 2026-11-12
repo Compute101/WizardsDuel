@@ -541,3 +541,8 @@ strike at Ponder misses, and a miss doesn't use it up. It's checked before Blink
 Ticks, minion strikes, dispels and curses still reach him, and a Dispel can strip it. Foresight (also
 `absorbNext`, no `keep`) is still used up by the next strike. The AI cuts its Damage weight against a
 Vanished foe (×0.2 Normal, ×0.6 Easy) and adds to Dispel. Cost 3. Ponder 48.5%, roster 44.5–56.4%.
+
+No striking from hiding: if Ponder picks a Damage spell while Vanished, the Vanish drops as the round's picks
+resolve (`revealVanished`, called in `resolveSimRound` before any stage), so he's exposed for that whole round
+whatever order the strikes land in. Other picks (Protection, Dispel, Meditate) keep him hidden. The AI on his
+side rarely strikes while Vanished. Vanish cost 3→2 to make up for it: Ponder 49.9%, roster 42.7–57.0%.
