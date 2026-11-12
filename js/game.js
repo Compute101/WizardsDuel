@@ -4298,10 +4298,12 @@ function strikeResolve(who,tgt,o,b){
   if(o.pctHp) base=Math.max(base,Math.round(ts.hp*o.pctHp));   // Nyxara: a share of this target's HP
   let dmg=(base*b.mult+b.bonus)*suddenDeathMult();
   if(tgt!==who){
-    // Dodge rolls first, so a dodged strike leaves Vanish / Foresight waiting for the next one
+    // Vanish (keep:true): every strike misses while it lasts, and none uses it up
+    if(effectsOf(ts,'absorbNext').some(e=>e.keep)) return {tgt,miss:'vanish'};
+    // Dodge rolls first, so a dodged strike leaves Foresight waiting for the next one
     const dodge=effectsOf(ts,'dodge')[0];
     if(dodge&&_rng()<dodge.pct) return {tgt,miss:'dodge'};
-    const absorb=takeEffect(ts,'absorbNext');
+    const absorb=takeEffect(ts,'absorbNext',e=>!e.keep);
     if(absorb) return {tgt,miss:absorb.id==='vanish'?'vanish':'absorb'};
   }
   effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
@@ -4636,6 +4638,8 @@ function elemAIChoose(who){
   // Called shots (Enthral) are easiest while my ward invites a dispel, or a Spellbind already steers their pick
   const callShot=smart&&sigSpells(who,'dispel').some(sp=>sp.el.effect&&sp.el.effect.type==='enthral'&&!sigBlocked(who,sp,1)&&aiSigSensible(who,sp,tgt));
   if(callShot&&(hasWard(me)||effectsOf(opp,'spellbind').length)) w.dispel+=0.5;
+  // The foe has Vanished: strikes at them only miss, so dispel it or do something else
+  if(effectsOf(opp,'absorbNext').some(e=>e.keep)){ w.damage*=smart?0.2:0.6; w.dispel+=smart?0.6:0.2; }
   if(hasWard(me)&&me.shieldHp>=15) w.protect=0.2;
   else {
     if(foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',2))) w.protect+=0.35;
@@ -4691,7 +4695,7 @@ function elemAIChoose(who){
     if(!smart) return 1;
     const e=sp.el.effect||{};
     let v=1;
-    if(e.type==='absorbNext'&&effectsOf(me,'dodge').length) v+=2;
+    if(e.type==='absorbNext'&&!e.keep&&effectsOf(me,'dodge').length) v+=2;
     if(sp.el.ward&&buffsOf(me).length&&!hasWard(me)) v+=2;
     if(e.type==='warding'&&hasWard(me)&&!effectsOf(me,'warding').length) v+=2;
     if(ELEM_WARD_ROUNDS&&e.extend&&hasWard(me)) v+=2;   // Ward holds a standing ward up longer
@@ -8305,7 +8309,7 @@ const TUTORIAL_CONVOS={
   ],
   ponder:[
     {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
-    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes the next strike miss me entirely. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Blink first, then Vanish: every strike I dodge leaves Vanish waiting for the next."},
+    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes every strike miss me entirely for two rounds — three from the outer ring. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Want to hit me while I'm Vanished? Dispel it first."},
     {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. It's quick: I steal mana as the round begins, before my rival pays for their spell — if they can't afford it any more, it fails!"},
     {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
   ],

@@ -754,13 +754,15 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "arcane",
-          "cost": 4,
+          "cost": 3,
           "tier": 2,
           "effect": {
             "type": "absorbNext",
+            "timed": true,
+            "keep": true,
             "rounds": 2
           },
-          "desc": "The next strike misses"
+          "desc": "2 rounds: every strike at you misses"
         }
       },
       {

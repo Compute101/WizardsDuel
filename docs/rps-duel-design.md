@@ -533,3 +533,11 @@ The ward-bracing (`holdWard`: the ward doesn't wear at round end) moved from Cou
 Ward is a timed buff (`timed:true`, 3 rounds, 4 from the outer ring): immune to curses, the ward doesn't
 wear, and the next dispel only removes the Ward. Counter is untimed now: strikers take 5 until it's
 dispelled (was 10 for 3 rounds). Balance (100 games a pairing, Normal AI): Eldrin 50.3%, roster 44.0–56.2%.
+
+### Ponder: Vanish lasts, and isn't used up
+
+Vanish is a timed buff now (`timed:true`, 2 rounds, 1 / 2 / 3 by ring) with `keep:true`: while it lasts every
+strike at Ponder misses, and a miss doesn't use it up. It's checked before Blink's dodge in `strikeResolve`.
+Ticks, minion strikes, dispels and curses still reach him, and a Dispel can strip it. Foresight (also
+`absorbNext`, no `keep`) is still used up by the next strike. The AI cuts its Damage weight against a
+Vanished foe (×0.2 Normal, ×0.6 Easy) and adds to Dispel. Cost 3. Ponder 48.5%, roster 44.5–56.4%.
