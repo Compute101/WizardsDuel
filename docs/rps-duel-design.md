@@ -192,9 +192,9 @@ so each spell's numbers can be tuned there.
 | Skadi | 🧊 Ice Lance | ⚔️ Damage | ❄️ Ice | Strike | 4 / 6 / 10 | 18 ice; chills (middle ring and up) |
 | Skadi | 🛡️ Frost Armor | 🛡 Protection | ❄️ Ice | Enchantment (self) | 2 / 4 / 6 | 3 rounds: −30% damage, strikers take 4 |
 | Skadi | 🌨️ Blizzard | ✦ Dispel | ❄️ Ice | Curse (foe) | 2 / 4 / 6 | 4 a round + 1 mana drain × 4 |
-| Zacharius | 🔋 Galvanize | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 1 / 2 / 3 | Next Lightning strike +60% |
-| Zacharius | 🌩️ Chain Lightning | ⚔️ Damage | ⚡ Lightning | Strike | 3 / 5 / 8 | 14 lightning; 35% to arc for 8 more |
-| Zacharius | 💡 Conductivity | ✦ Dispel | ⚡ Lightning | Curse (foe) | 2 / 3 / 5 | Foe takes +35% damage × 3 rounds |
+| Zakkit | 🔋 Galvanize | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 1 / 2 / 3 | Next Lightning strike +60% |
+| Zakkit | 🌩️ Chain Lightning | ⚔️ Damage | ⚡ Lightning | Strike | 3 / 5 / 8 | 14 lightning; 35% to arc for 8 more |
+| Zakkit | 💡 Conductivity | ✦ Dispel | ⚡ Lightning | Curse (foe) | 2 / 3 / 5 | Foe takes +35% damage × 3 rounds |
 | Mary | 💛 Heal | 🛡 Protection | 🌀 Arcane | Instant | 4 / 6 / 10 | Heal 25 now |
 | Mary | ✨ Purge | ✦ Dispel | 🌀 Arcane | Instant | 1 / 2 / 3 | Remove your curses and heal 12 |
 | Mary | ☀️ Radiant | ⚔️ Damage | 🌀 Arcane | Strike | 2 / 4 / 6 | 12 holy; burns 2 mana |
@@ -271,7 +271,7 @@ matchups are worse than 25/75 (the worst is Malachar vs Gnash, 22%).
 | Nyxara | HP 78 → 86 · Gravity Well 25% → 30% of HP |
 | Aurelia | Foresight 4 → 3 mana |
 | Ponder | Mana Siphon 3 → 4 · Blink 40% → 45%; later Blink rolls before Vanish and adds a 10 HP ward, 3 → 4 mana, HP 85 → 78; the AI then learned to siphon foes who saved up, so Mana Siphon 2 → 3 mana |
-| Zacharius | Galvanize 3 → 2 mana |
+| Zakkit | Galvanize 3 → 2 mana |
 | Durin | Rockfall 20 → 22 |
 
 After the element riders (Frostbite, Dread, Scorch, Crush, Unweave), the wizards who can't cast
@@ -319,7 +319,7 @@ Signature elements are never forbidden. Fire is the most common ban, so a Fire w
 | Gnash | Arcane, Ice | no magic, just fury — and no patience |
 | Cinder | Ice | |
 | Skadi | Fire | |
-| Zacharius | Physical | stone grounds the storm |
+| Zakkit | Physical | stone grounds the storm |
 | Mary | Dark, Fire | a healer shuns dark and destruction |
 | Mordant | Lightning | |
 | Ponder | Dark, Fire | forbidden arts — and not trusted with fire yet |

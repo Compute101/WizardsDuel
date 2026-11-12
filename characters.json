@@ -508,15 +508,15 @@
     ]
   },
   "zacharius": {
-    "name": "ZACHARIUS",
-    "title": "The Conductor",
+    "name": "ZAKKIT",
+    "title": "The Warpstorm",
     "sprite": "sprites/zacharius.png",
     "col": "#aaff44",
     "aiStyle": "calculating",
     "taunts": [
-      "I had already won before you cast your first spell. You simply hadn't realised it yet.",
-      "Every joule of energy you wasted — I stored it, shaped it, and returned it. Against you.",
-      "The storm obeys me. Did you truly believe you wouldn't?"
+      "Zakkit won before you cast-cast your first spell, yes-yes! You just did not know it, fool-thing.",
+      "Every spark you waste, Zakkit hoards it, twists it, gives it back. Green-burning, yes!",
+      "The warpstorm obeys Zakkit! Squeal-squeal, man-thing, squeal!"
     ],
     "hp": 92,
     "dmgMult": 1.1,
