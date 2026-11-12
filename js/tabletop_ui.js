@@ -67,8 +67,8 @@ function convos(){
       {key:'cinder', text:"There's no free attack, so every spell is a choice: spend big now, or save for a bigger cast next round?"},
     ],
     flick:[
-      {key:'zacharius',text:`In the full rules, you flick from your handicap line and must pot ${R.winks[0]} wink for a Lesser spell, ${R.winks[1]} for Normal and ${R.winks[2]} for Greater.`},
-      {key:'zacharius',text:`Missed? Pay ${R.retryCost} more mana to go again, and your run carries on. Can't pay, or won't? The spell fizzles and its mana is lost.`},
+      {key:'zacharius',text:`In the full rules, you flick-flick from your handicap line and must pot ${R.winks[0]} wink for a Lesser spell, ${R.winks[1]} for Normal and ${R.winks[2]} for Greater.`},
+      {key:'zacharius',text:`Missed? Pay ${R.retryCost} more mana to go again, quick-quick, and your run carries on. Can't pay, or won't? The spell fizzles and its mana is lost-gone. Zakkit weeps.`},
       {key:'weizan', text:"Missed winks stay where they land, round after round. After the spells resolve, you take turns squopping them: landing a wink on top of one."},
       {key:'weizan', text:`You get ${R.squops} attempts each a round, and every wink you squop is yours: ${R.squopGain} mana each, whoever missed it. The closer handicap line goes first.`},
     ],
