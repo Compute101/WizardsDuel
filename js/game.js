@@ -4426,11 +4426,20 @@ function counterArc(from,to,n){
 }
 
 // Round-end effects on `who` (Elemental rules): DoTs, regen, the foe's minions, then durations tick down
+// Foresight (absorbNext without keep) also blocks a damage-over-time tick or a minion's strike, using a charge
+function foreseeBlock(who,icon){
+  const st=gs[who], f=effectsOf(st,'absorbNext').find(e=>!e.keep);
+  if(!f) return false;
+  if(f.charges>1) f.charges--; else st.effects=st.effects.filter(e=>e!==f);
+  if(!simMode){ addFloat(seatX(who),bH*.28,'🔮 '+(icon||'')+' Absorbed!','#ffcc44',13); VFX.absorbed(seatX(who),'#ffcc44'); }
+  return true;
+}
 function elemTickEffects(who){
   const st=gs[who], x=seatX(who);
   effectsOf(st,'dot').forEach(e=>{
     dmgSource=e.from;
     e.tick=(e.tick||0)+1;
+    if(foreseeBlock(who,e.icon)) return;
     const dmg=Math.round((e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg)*suddenDeathMult());
     // Ticks hit a ward first, like any damage — unless the effect seeps past wards (Caustic Bomb's poison)
     if(e.bypassWard||(!hasWard(st)&&!effectsOf(st,'minion').some(m=>m.soak))){
@@ -4460,6 +4469,7 @@ function elemTickEffects(who){
       const el=elemById(m.elem||'physical');
       dmgSource=owner;
       const bonus=m.minion==='skeleton'?danse:0;
+      if(foreseeBlock(who,m.icon)) return;
       elemIncoming(who,Math.round((m.dmg+bonus)*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
       if(bonus&&TICK_VFX.dansemacabre) TICK_VFX.dansemacabre(x,wizMidY(x));
       if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,wizMidY(x));
@@ -8281,7 +8291,7 @@ const TUTORIAL_CONVOS={
     {key:'sylvara',text:"Vine Whip is my Physical strike. If it gets through, the vines keep hurting them for a few rounds afterwards."},
   ],
   aurelia:[
-    {key:'aurelia',text:"I see three moves ahead. Foresight, in the Lightning sector of my Protection wheel, makes the next strike against me do nothing at all."},
+    {key:'aurelia',text:"I see three moves ahead. Foresight, in the Lightning sector of my Protection wheel, makes the next hits against me do nothing at all — strikes, lingering burns and poisons, even minions. Two of them, or three from the outer ring."},
     {key:'aurelia',text:"Time Drain is an Arcane curse on my Dispel wheel. My rival gains less mana each round for a while — and less from Meditate too. Stolen resources compound."},
     {key:'aurelia',text:"Rewind takes my Arcane ward sector. It raises a ward and also gives back the HP I lost last round — the past undone, and the future guarded."},
     {key:'aurelia',text:"I have already foreseen how this duel ends. I need only wait for you to arrive at the conclusion I have prepared."},

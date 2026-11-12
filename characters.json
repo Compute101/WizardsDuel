@@ -245,13 +245,13 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "lightning",
-          "cost": 6,
+          "cost": 5,
           "tier": 2,
           "effect": {
             "type": "absorbNext",
             "rounds": 3
           },
-          "desc": "The next 2 strikes do nothing (1 / 2 / 3 by ring)"
+          "desc": "The next 2 hits do nothing — strikes, DoT ticks or minions (1 / 2 / 3 by ring)"
         }
       },
       {
