@@ -245,13 +245,13 @@
           "cat": "protect",
           "kind": "buff",
           "elem": "lightning",
-          "cost": 4,
+          "cost": 6,
           "tier": 2,
           "effect": {
             "type": "absorbNext",
             "rounds": 3
           },
-          "desc": "The next strike does nothing (outer ring: the next two)"
+          "desc": "The next 2 strikes do nothing (1 / 2 / 3 by ring)"
         }
       },
       {

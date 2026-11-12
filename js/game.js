@@ -3512,7 +3512,7 @@ function sigAtTier(sp,tier){
     if(e.pct) e.pct=pct(e.pct,0.7);
     if(e.mult) e.mult=mult(e.mult);
     if(['absorbNext','warding','bewitch'].includes(e.type)) e.rounds=Math.max(1,e.rounds+tier-2);
-    if(e.type==='absorbNext'&&!e.keep&&tier===3) e.charges=2;   // Foresight: the outer ring blocks two strikes
+    if(e.type==='absorbNext'&&!e.keep) e.charges=tier;   // Foresight: blocks 1 / 2 / 3 strikes by ring
     if(e.extend&&tier===3) e.extend++;   // Ward: the outer ring holds the ward one round longer
   }
   const a=el.action;
@@ -4313,7 +4313,7 @@ function strikeResolve(who,tgt,o,b){
     // Dodge rolls first, so a dodged strike leaves Foresight waiting for the next one
     const dodge=effectsOf(ts,'dodge')[0];
     if(dodge&&_rng()<dodge.pct) return {tgt,miss:'dodge'};
-    // Foresight: each blocked strike uses a charge (the outer ring has two)
+    // Foresight: each blocked strike uses a charge (1 / 2 / 3 by ring)
     const absorb=effectsOf(ts,'absorbNext').find(e=>!e.keep);
     if(absorb&&!(absorb.charges>1)) takeEffect(ts,'absorbNext',e=>e===absorb);
     else if(absorb) absorb.charges--;
