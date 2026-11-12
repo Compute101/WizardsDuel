@@ -686,9 +686,9 @@
           "effect": {
             "type": "agony",
             "dmg": 7,
-            "rounds": 4
+            "rounds": 5
           },
-          "desc": "4 rounds: foe takes 7 whatever they do (Meditate escapes it, unless Corrupted)"
+          "desc": "5 rounds: foe takes 7 whatever they do (Meditate escapes it, unless Corrupted)"
         }
       },
       {
