@@ -3425,10 +3425,12 @@ const ELEM_WARD_WEAR=4;         // flat ward HP lost at each round end
 //             breaks the seal and stops there, unless it's a Greater one, which breaks the seal and then
 //             hits the ward as usual. Strikes ignore seals. A ward put on over a sealed one leaves the seal
 //             on the layer beneath, so you can seal, layer and seal again. Topping up keeps the seal.
-const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:true};
+//   sealSoak: dispel power a seal soaks before it breaks (0: any dispel breaks it for free). A dispel
+//             weaker than this leaves the seal standing; a Greater one goes on with what's left.
+const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:true, sealSoak:0};
 // Seal Ward. A character's sealCostMod (characters.json) changes the cost; sealAll seals every layer
 // at once (Eldrin's hook, now that everyone can brace a ward).
-const SEAL={cost:2};
+const SEAL={cost:1};
 let WARD_SEAL_AI=0.6;   // the AI's weight for sealing a healthy unsealed ward (Normal; half on Easy)
 let WARD_BOOST_AI_HP=25;   // the AI tops up its ward below this HP when boost is on (15 otherwise)
 let WARD_LAYER_AI=0.4;     // the AI's Protection weight with a healthy ward and room for another layer (0.2 without)
@@ -4345,10 +4347,14 @@ function elemWardDispel(tgt,elem,power,tier){
   while(hasWard(ts)&&power>0){
     // A seal takes the dispel; only a Greater one goes on to hit the ward behind it
     if(ts.wardSealed){
+      const soak=WARD_RULES.sealSoak||0;
+      if(power<soak){ addFloat(tx,bH*.3,'🔒 The seal holds','#ffd75a',14); VFX.wardUnravel(tx,'#ffd75a'); return; }
       ts.wardSealed=false; ts.wardStats.sealsBroken++;
       addFloat(tx,bH*.3,'🔒 SEAL BROKEN','#ffd75a',15);
       VFX.wardUnravel(tx,'#ffd75a');
       if(!(tier>=ELEM_DISPEL_ALL_TIER)) return;   // (curses hitting a ward pass no tier)
+      power-=soak;
+      if(power<=0) return;
     }
     const match=ts.shieldType===elem, mult=match?2:1;
     const dmg=power*mult, had=ts.shieldHp;

@@ -57,8 +57,10 @@ with the Beginner rules: about 12% of flicks pot, you flick 10 minus the spell's
     <option value="game">As in the game</option>
     <option value="off">Off (recast replaces)</option>
     <option value="noSeals">Boost + layers, no seals</option>
-    <option value="seals">Seals (cost 2)</option>
-    <option value="sealsCost1">Seals, cost 1</option>
+    <option value="seals">Seals (as in the game, cost 1)</option>
+    <option value="sealsCost2">Seals, cost 2</option>
+    <option value="sealSoak15">Seals soak 15 dispel power</option>
+    <option value="sealSoak30">Seals soak 30 dispel power</option>
     <option value="sealsCost3">Seals, cost 3</option>
     <option value="sealsShy">Seals, AI seals less</option>
     <option value="sealsKeen">Seals, AI seals more</option>
@@ -104,11 +106,13 @@ let mode=MODES.standard;
 // Ward rule presets for the standard game (WARD_RULES in js/game.js). Steps 2–3 (seals, layers) go here.
 // 'game' is whatever js/game.js ships with (captured on load). aiHp: the AI tops up a ward below this.
 const WARD_PRESETS={
-  off:    {boost:false, boostCap:1.5, seals:false, layers:1, aiHp:25, layerAi:0.4, dispelStrips:true, sealAi:0.6, sealCost:2},
+  off:    {boost:false, boostCap:1.5, seals:false, layers:1, aiHp:25, layerAi:0.4, dispelStrips:true, sealAi:0.6, sealCost:1, sealSoak:0},
   noSeals:{seals:false},   // boost + layers, no seals
   seals:  {seals:true},
+  sealsCost2:{seals:true, sealCost:2},
+  sealSoak15:{seals:true, sealSoak:15},   // a seal soaks an inner-ring dispel's worth of power
+  sealSoak30:{seals:true, sealSoak:30},
   sealsCost3:{seals:true, sealCost:3},
-  sealsCost1:{seals:true, sealCost:1},
   sealsShy:  {seals:true, sealAi:0.3},
   sealsKeen: {seals:true, sealAi:1.0},
   sealsMax:  {seals:true, sealAi:3.0},   // stress test: the AI seals at nearly every chance

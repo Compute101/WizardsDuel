@@ -561,12 +561,15 @@ balanced on its own before the next:
    it wards, picks its own ward's element 75% of the time (Normal; 40% Easy) unless the foe just used
    that element.
 2. **Seals (built, on).** 🔒 **Seal Ward** is a button on the Protection wheel, as Cleanse Self is on the
-   Dispel wheel: a Protection pick with `self:true` (`isSeal`), `SEAL.cost` 2 mana, cast with the
+   Dispel wheel: a Protection pick with `self:true` (`isSeal`), `SEAL.cost` 1 mana (the round spent is the real cost), cast with the
    inner-ring tile-match in the ward's element, resolved in the Protection stage (`executeSeal`). It
    seals the outer layer (`st.wardSealed`; a layer beneath keeps its own `sealed`).
    - A sealed layer doesn't wear at round end. Strikes ignore seals.
    - A dispel that meets a seal breaks it and stops (`elemWardDispel`); a Greater one breaks it and
      goes on into the ward, and on through the layers as before. Curses that hit wards only break seals.
+     `sealSoak` (off, 0) makes a seal soak that much dispel power first: weaker dispels bounce off and a
+     Greater one goes on with the rest. At 1 mana: seals 44.4–56.7%, soak 15 44.8–56.7%, soak 30
+     41.7–57.5% (Zakkit out of band).
    - Putting a ward on over a sealed one keeps the seal beneath (seal, layer, seal again). Topping up
      keeps the seal; a ward that replaces the outer layer at the limit comes unsealed.
    - Dread and locks on Protection cover it (it's a Protection pick); Enthral calling Protection takes it.
