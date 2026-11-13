@@ -515,6 +515,7 @@
     "name": "ZAKKIT",
     "title": "The Warpstorm",
     "sprite": "sprites/zakkit.png",
+    "spriteHeight": 0.72,
     "col": "#aaff44",
     "aiStyle": "calculating",
     "rivals": {
