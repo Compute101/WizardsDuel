@@ -3692,6 +3692,7 @@ function enterGate(who){
 const INFERNAL_MANTLE={id:'infernalmantle',type:'empower',mult:1,pierce:true,kind:'buff',name:'Infernal Mantle',icon:'🔥',rounds:1};   // rounds only with BUFF_TIMERS
 const TONIC_HURT=0.5;   // Volatile Tonic heals below this share of max HP, empowers at or above it (0.7 put Fizzwick at 54%)
 // Vanish (Ponder): picking a Damage spell reveals him, before anything resolves that round
+function isVanished(who){ return effectsOf(gs[who],'absorbNext').some(e=>e.keep); }
 function revealVanished(who){
   const veil=effectsOf(gs[who],'absorbNext').filter(e=>e.keep);
   if(!veil.length) return;
@@ -4230,6 +4231,10 @@ function executeSignature(who,sp,action,cb){
   }
   if(el.kind==='curse'){
     spawnProj(x,y,tx,wizMidY(tx),ELEM_PROJ[el.elem||'arcane'],e.col,()=>{
+      if(VANISH_STOPS_CURSES&&isVanished(tgt)){
+        if(!simMode){ addFloat(tx,bH*.3,'👻 '+sigName(sp)+' finds nothing','#b8a0e8',13); VFX.vanished(tx); }
+        combatTimeout(cb,700); return;
+      }
       if(el.chance!=null&&_rng()>el.chance){ addFloat(tx,bH*.3,sigIcon(sp)+' Resisted','#cccccc',12); VFX.resisted(tx); }
       else {
         const eff=effect({kind:'curse'});
@@ -4408,7 +4413,10 @@ function elemWardDispel(tgt,elem,power,tier){
     if(buffs.length) removeEffects(tgt,buffs,'✦ Dispelled');
   }
 }
-let VANISH_TAKES_DISPEL=true, VANISH_STOPS_MINIONS=false;
+// Vanish is a seal: a dispel at a Vanished wizard only strips the Vanish.
+// Vanish also turns curses aside: a curse aimed at a Vanished wizard finds nothing (VANISH_STOPS_CURSES).
+// Minion strikes are strikes (MINION_STRIKES_ARE_STRIKES): Vanish, dodge, Foresight, resist and vuln apply.
+let VANISH_TAKES_DISPEL=true, VANISH_STOPS_CURSES=true, MINION_STRIKES_ARE_STRIKES=true;
 function elemDispelHit(tgt,elem,power,tier){
   const ts=gs[tgt], tx=seatX(tgt);
   // Warding (Eldrin's Ward) takes the dispel in place of the ward and every other buff
@@ -4732,9 +4740,16 @@ function elemTickEffects(who){
       const el=elemById(m.elem||'physical');
       dmgSource=owner;
       const bonus=m.minion==='skeleton'?danse:0;
-      if(foreseeBlock(who,m.icon)) return;
-      if(VANISH_STOPS_MINIONS&&effectsOf(gs[who],'absorbNext').some(e=>e.keep)) return;   // experiment: Vanish hides him from minions too
-      elemIncoming(who,Math.round((m.dmg+bonus)*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
+      // A minion's strike is a strike: Vanish, Blink's dodge, Foresight, resistance and vulnerability all
+      // meet it as they meet the owner's own (strikeResolve). Retaliation and element riders don't.
+      if(MINION_STRIKES_ARE_STRIKES){
+        const r=strikeResolve(owner,who,{power:m.dmg+bonus,elem:m.elem||'physical'},{mult:1,bonus:0});
+        if(r.miss){ if(!simMode) strikeMiss(owner,r,{elem:m.elem||'physical'}); return; }
+        elemIncoming(who,r.dmg,m.elem||'physical',m.icon,el.col,true);
+      } else {
+        if(foreseeBlock(who,m.icon)) return;
+        elemIncoming(who,Math.round((m.dmg+bonus)*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
+      }
       if(bonus&&TICK_VFX.dansemacabre) TICK_VFX.dansemacabre(x,wizMidY(x));
       if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,wizMidY(x));
     });
@@ -4837,7 +4852,7 @@ function aiSigSensible(who,sp,tgt=weakestFoe(who)){
   const st=gs[who], ts=gs[tgt], el=sp.el;
   const active=(s,id)=>(s.effects||[]).some(e=>e.id===id);
   if(el.kind==='buff') return el.effect.type==='minion'||!active(st,sp.id);
-  if(el.kind==='curse') return !active(ts,sp.id)&&!(el.effect.type==='lock'&&catLocked(tgt,el.effect.cat));
+  if(el.kind==='curse') return !(VANISH_STOPS_CURSES&&isVanished(tgt))&&!active(ts,sp.id)&&!(el.effect.type==='lock'&&catLocked(tgt,el.effect.cat));
   if(el.kind==='instant'){
     const a=el.action;
     if(a.type==='heal') return st.hp<st.maxHp*0.7;
@@ -8721,7 +8736,7 @@ const TUTORIAL_CONVOS={
   ],
   ponder:[
     {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
-    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes every strike miss me entirely for two rounds — three from the outer ring. But I can't strike from hiding: pick Damage and I'm revealed that round. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Want to hit me while I'm Vanished? Dispel it first — but the Vanish takes that whole dispel, so my ward stays up."},
+    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes every strike miss me entirely for two rounds — three from the outer ring — even a skeleton's or a blade's, and no curse can find me. But I can't strike from hiding: pick Damage and I'm revealed that round. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Want to hit me while I'm Vanished? Dispel it first — but the Vanish takes that whole dispel, so my ward stays up."},
     {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. It's quick: I steal mana as the round begins, before my rival pays for their spell — if they can't afford it any more, it fails!"},
     {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
   ],
