@@ -50,7 +50,8 @@ What was built, including choices made while building:
   paid for, whatever the seat order. A failed ritual costs 1 mana instead. **Quick** spells (`quick` on
   the spell; only Ponder's Mana Siphon) are paid first and steal at once, so their target pays from
   what's left — if they can no longer afford their pick, it fails.
-- **Wards:** raising one replaces any existing ward. A ward stops damage in the same round it's raised.
+- **Wards:** recasting the element already up tops it up, and a ward in a new element goes on over it,
+  up to 2 layers (see "Layered wards" below). A ward stops damage in the same round it's raised.
   Like tabletop mode, a ward has **no round timer**: it lasts until it runs out. It loses a flat
   **4 HP at every round end** (`ELEM_WARD_WEAR`, about one tabletop wink), and strikes, ticks and
   dispels wear it too; Counter stops the round-end wear while it lasts. (It used to last 3 rounds and
@@ -546,3 +547,89 @@ No striking from hiding: if Ponder picks a Damage spell while Vanished, the Vani
 resolve (`revealVanished`, called in `resolveSimRound` before any stage), so he's exposed for that whole round
 whatever order the strikes land in. Other picks (Protection, Dispel, Meditate) keep him hidden. The AI on his
 side rarely strikes while Vanished. Vanish cost 3→2 to make up for it: Ponder 49.9%, roster 42.7–57.0%.
+
+### Layered wards
+The goal: wizards can build defences up in layers, like a real wizards' duel, while Dispel stays a
+counter and games don't stall. Built in steps, each behind a switch in `WARD_RULES` (`js/game.js`) and
+balanced on its own before the next:
+
+1. **Recast to boost (built, on).** Recasting a ward of the element already up tops it up instead of
+   replacing it: it gains the new cast's HP, up to `boostCap` (1.5) × that cast's HP, and never drops
+   below what's there (`wardBoostTo`). It keeps its signature twist (Flame Shield, Stoneskin, …); a
+   signature recast sets its own. A buff's light side-ward (Blink) never boosts. A ward in a different
+   element still replaces the old one. The AI tops up a ward below `WARD_BOOST_AI_HP` (25) HP and, when
+   it wards, picks its own ward's element 75% of the time (Normal; 40% Easy) unless the foe just used
+   that element.
+2. **Seals (built, on).** 🔒 **Seal Ward** is a button on the Protection wheel, as Cleanse Self is on the
+   Dispel wheel: a Protection pick with `self:true` (`isSeal`), `SEAL.cost` 1 mana (the round spent is the real cost), cast with the
+   inner-ring tile-match in the ward's element, resolved in the Protection stage (`executeSeal`). It
+   seals the outer layer (`st.wardSealed`; a layer beneath keeps its own `sealed`).
+   - A sealed layer doesn't wear at round end. Strikes ignore seals.
+   - A dispel that meets a seal breaks it and stops (`elemWardDispel`); a Greater one breaks it and
+     goes on into the ward, and on through the layers as before. Curses that hit wards only break seals.
+     `sealSoak` (on, 15) makes a seal soak that much dispel power first: weaker dispels bounce off (a
+     curse's ward hit can be too weak) and a Greater one goes on with the rest, so a seal costs a Greater
+     dispel 15 of its 50. At 1 mana: seals 44.4–56.7%, soak 15 44.8–56.7%, soak 30
+     41.7–57.5% (Zakkit out of band).
+   - Putting a ward on over a sealed one keeps the seal beneath (seal, layer, seal again). Topping up
+     keeps the seal; a ward that replaces the outer layer at the limit comes unsealed.
+   - Dread and locks on Protection cover it (it's a Protection pick); Enthral calling Protection takes it.
+   - **Eldrin** (`sealAll` in `characters.json`): his Seal Ward seals every layer at once. A character's
+     `sealCostMod` changes the cost (none use it). His Ward spell still braces and takes the next dispel.
+   - AI: seals an unsealed ward of at least `WARD_SEAL_AI_HP` (15) HP, weight `WARD_SEAL_AI` (1.0; half on
+     Easy; on Normal +0.3 over a layered stack, +0.3 below half HP; +0.2 with 45+ ward HP in all), and on
+     Normal it doesn't hold back to a lesser dispel against a sealed ward. The first version (25+ HP only,
+     weight 0.6, ×0.6 while a foe could afford a Greater dispel) sealed about 0.1–0.4 times a game: 79% of
+     AI picks have no ward up, 16% a ward under 25 HP, so it had a chance in only 4% of picks and took it
+     14% of the time. Now it takes about 30% of its chances and seals about 0.4–1.2 times a game. Win rates
+     barely moved between seal weights 0.5 and 1.6 (`sealsShy` / `sealsKeen`).
+   - Frederick crept to 57–59% with layers (his blast goes around every layer, and there are more of
+     them now): HP 93 → 90 put him at 54.6% (88: 52.4%). Roster after: 44.3–56.2%, about 21.4 rounds.
+   - Looks: a sealed layer gets a slowly turning ring of gold Arcana glyphs (`drawWardSeal`, `SEAL_GLYPHS`
+     ⊕ θ Φ ∞ Ω ✸, all text-only); sealing phases in gold motes; a broken seal unravels in gold threads
+     with 🔒 SEAL BROKEN. Labels: `🔒55 ‹🔒🔥35›`.
+3. **Layers (built, on, `layers:2`).** A ward in a new element goes on over the one already up while
+   there's room; at the limit it replaces the outer layer. Recasting either layer's element tops that
+   layer up. The outer layer is the old single-ward state (`shield` / `shieldHp` / `shieldType` /
+   `wardRetaliate` / `wardSig`), so everything that reads "the ward" (element matching, the AI,
+   retaliation, signature twists) reads the one you'd hit; the layers beneath sit in `st.wardInner`
+   (innermost first) and step out when it falls (`clearOuterWard`, from `breakWard`).
+   - Strikes, ticks and minions: what breaks the outer layer carries on into the next, on that layer's
+     own element rules (`elemIncoming` loops; an arcane volley's shared `wear` restarts per layer).
+   - Dispels: a lesser one stops at the layer it breaks. A Greater one (`ELEM_DISPEL_ALL_TIER`) carries
+     its leftover power into the next layer, and if it breaks a stack of 2+ with power to spare it strips
+     every buff too (`dispelStrips`), so buffs behind a stack stay reachable. Doing that behind a
+     *single* ward was tried first and moved balance a lot (Thessaly 40.5%, Mary and Frederick about
+     58–60%), so it's limited to real stacks.
+   - Round-end wear hits every layer (`ELEM_WARD_WEAR` each), so a stack costs upkeep; Eldrin's Ward
+     braces them all.
+   - Blast and Infernal Mantle go around every layer. Riders read the outer layer.
+   - AI: with a ward of at least `WARD_BOOST_AI_HP` and room for a layer, its Protection weight is
+     `WARD_LAYER_AI` (0.4, else 0.2) and it picks a new element; with a worn ward it tops up instead.
+   - Looks: each layer beneath gets its own orbiters on tighter rings (`WARD_INNER_SCALE`) and a thin
+     dashed ring in its colour drawn in front of the sprite (`drawInnerWardRings`). Labels read
+     `55 ‹🔥35›` (outer HP, then each layer beneath; `wardLabel`).
+
+Sim scaffolding: `tools/balance.html` has a **Wards** selector (presets in `WARD_PRESETS`) and a Wards
+table (raised, boosted, peak ward HP per game). `node tools/ward_compare.js 40 off,boost` runs the
+presets headless and prints the win rates side by side. At 40 games per matchup two runs of the
+same rules differ by up to about 3 points per character.
+
+Seals result (Normal AI, 60 games per matchup): boost + layers 43.7–55.8%; with seals 43.4–56.4% (one
+run had Weizan at 58.1%, another nobody outside the band; the 56–58% edge moves between Frederick and
+Weizan from run to run). The AI seals about 0.1–0.4 times a game; even an AI that seals at every chance
+(`sealsMax`) only gets to 0.7, since a ward has to survive a round with 25+ HP first, and stays in band.
+Eldrin with `sealAll`: 51.4 → 54.3% (the same with a seal 1 cheaper, so it stays at full cost). A human
+will likely seal more than the AI does: watch Eldrin and the ward-heavy wizards (Durin, Cinder, Mary)
+in play.
+
+Layers result (Normal AI, 60 games per matchup): off 42.4–56.0%, shipped rules (boost + 2 layers)
+44.0–54.9%, every character within ±8%, games 20.2 → 20.9 rounds. The AI layers about 0.1–0.8 times a
+game (Durin and Cinder most); 3 layers (`layers3` preset) played about the same as 2.
+
+Step 1 results (Normal AI, 40 games per matchup): off 43.9–57.0%, boost 42.6–56.9%, every character
+within ±8% for every cap tried (1×, 1.5×, 2×, except Durin 58.2% once at 2×) and AI threshold (15, 25,
+35 HP). Games 20.2 → 20.5 rounds. Topping up is rare, about 0.1–0.8 a game: most wards are dispelled
+or broken before they're worth recasting, so step 1 alone barely moves balance. Seals are where it
+will.
+

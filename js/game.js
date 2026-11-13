@@ -19,7 +19,7 @@ let p1Cfg, p2Cfg;
 
 // One-line pitch on the character detail screen (stats come from characters.json)
 const CHAR_FLAVOUR={
-  eldrin:'Outlast your foe with arcane endurance.',
+  eldrin:'Outlast your foe with arcane endurance. Your Seal Ward binds every layer of your wards at once.',
   mal:'Strike hard. Strike first. No mercy.',
   sylvara:"Sustain and control with nature's power.",
   aurelia:'Bend time — foresee attacks and drain your foe.',
@@ -92,6 +92,9 @@ let trainingPickPhase=null; // 'p1' or 'p2' — which side is being chosen
 function newSeat(cfg,key){
   return {key, cfg, hp:cfg.hp, maxHp:cfg.hp, mana:ELEM_START_MANA,
     shield:0, shieldHp:0, shieldType:null, wardRetaliate:0, wardSig:null,   // ward (shield = rounds left)
+    wardInner:[],   // layered wards beneath the outer one, innermost first: {hp,type,retaliate,sig,sealed}
+    wardSealed:false,   // the outer ward's seal (WARD_RULES.seals)
+    wardStats:{raised:0, boosted:0, layered:0, peak:0, sealed:0, sealsBroken:0},   // for the balance sim
     effects:[], usedSig:{}, lastElem:null, catCounts:{}, lastLockedRound:null, lastRoundLoss:0,
     blades:0, skeletons:[], simulacra:[]};   // minion counts mirrored for drawWiz
 }
@@ -818,6 +821,23 @@ const WARD_ORBIT_SPEED={physical:1/1500, ice:1/1150, dark:1/1300, fire:1/1000, l
 const DARK_ORBIT_RUNES=['☽','⊗','∇','Ω'];
 // Cheap deterministic noise (keeps the replay RNG untouched)
 function orbNoise(n){ const s=Math.sin(n*12.9898)*43758.5453; return s-Math.floor(s); }
+// Layered wards: each layer beneath the outer one orbits closer in (share of the outer ward's size)
+const WARD_INNER_SCALE=[.72,.52];
+// Each layer beneath is a thin, slowly turning dashed ring in its element's colour, drawn in front of
+// the sprite (a filled bubble that small would hide behind the wizard) in the same upright oval
+function drawInnerWardRings(x,y,sz,layers,fade,t){
+  bx.save();
+  bx.translate(x,y-sz*.62); bx.scale(AURA_SX,AURA_SY); bx.translate(-x,-(y-sz*.5));
+  layers.forEach((l,i)=>{
+    const ic=hexToRgb(l.wardCol), gv=.45+.2*Math.sin(t/340+i*1.7);
+    bx.globalAlpha=fade*gv;
+    bx.beginPath(); bx.arc(x,y-sz*.5,sz*.75*(WARD_INNER_SCALE[i]||.4),0,Math.PI*2);
+    bx.shadowColor=`rgb(${ic})`; bx.shadowBlur=8;
+    bx.strokeStyle=`rgb(${ic})`; bx.lineWidth=1.6; bx.setLineDash([8,6]);
+    bx.lineDashOffset=-(t/40)%14; bx.stroke();
+  });
+  bx.restore();
+}
 function wardOrbitCount(hp){ return hp>0?Math.min(WARD_ORBIT_MAX,Math.ceil(hp/10)):0; }
 // Point on ring `ring` at angle th around (cx,cy). z>0 = near side.
 function orbitPt(cx,cy,sz,ring,th){
@@ -1428,7 +1448,10 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   }
   bx.restore();   // end of the aura oval
   // Ward orbiters on the far side, behind the sprite
-  if(shielded>0) drawWardOrbiters(x,y-sz*.62,sz,state,'back',fShield,t);
+  if(shielded>0){
+    drawWardOrbiters(x,y-sz*.62,sz,state,'back',fShield,t);
+    if(state&&state.wardInner) state.wardInner.forEach((l,i)=>drawWardOrbiters(x,y-sz*.62,sz*(WARD_INNER_SCALE[i]||.4),l,'back',fShield,t+7000*(i+1)));
+  }
   // Minions keep the original (pre-WIZ_GROW) size and spacing, standing on the same floor
   const minionDir=flip?1:-1, msz=sz/seatSpriteHeight(who)/wizGrow(), mwy=y-msz*.5;
   // Simulacra (Mirel): ghostly wizard clones, same sprite/animation as the caster
@@ -1496,7 +1519,15 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   }
   bx.restore();
   // Ward orbiters on the near side, in front of the sprite (x0: the fallback figure flips x)
-  if(shielded>0) drawWardOrbiters(x0,y-sz*.62,sz,state,'front',fShield,t);
+  if(shielded>0){
+    if(state&&state.wardInner){
+      drawInnerWardRings(x0,y,sz,state.wardInner,fShield,t);
+      state.wardInner.forEach((l,i)=>{ if(l.sealed) drawWardSeal(x0,y,sz,WARD_INNER_SCALE[i]||.4,fShield,t+5000*(i+1)); });
+      state.wardInner.forEach((l,i)=>drawWardOrbiters(x0,y-sz*.62,sz*(WARD_INNER_SCALE[i]||.4),l,'front',fShield,t+7000*(i+1)));
+    }
+    drawWardOrbiters(x0,y-sz*.62,sz,state,'front',fShield,t);
+    if(state&&state.wardSealed) drawWardSeal(x0,y,sz,1.06,fShield,t);
+  }
   // Bone Totem (Gretch): planted on the floor beside him, toward the foe, in front of his sprite and ward
   drawBoneTotem(x0,y,sz,who,flip,auraFade(who,'boneTotem',!!(state&&state.boneTotem>0)),t);
   // Skeletons stand in front of their master and his ward, so they're drawn last
@@ -1771,6 +1802,10 @@ function wizVisuals(st){
     if(e.type==='dot'&&e.id.startsWith('dot-')) v[e.elem==='fire'?'burn':'poison']=1;   // strike riders
   });
   if(st.shieldType){ v.wardCol=wardCol(st); v.wardElem=st.shieldType; v.wardHp=st.shieldHp; }
+  // Layered wards beneath the outer one, outermost first: drawn as smaller bubbles inside it
+  if(st.shieldType&&st.wardInner&&st.wardInner.length)
+    v.wardInner=st.wardInner.slice().reverse().map(l=>({wardCol:elemById(l.type).col, wardElem:l.type, wardHp:l.hp, sealed:!!l.sealed}));
+  if(st.wardSealed) v.wardSealed=true;
   if(st.wardSig==='flameshield') v.flameShield=1;
   if(st.wardSig==='stoneskin'){ v.stoneskin=1; v.stoneskinHp=st.shieldHp; }
   return v;
@@ -1877,7 +1912,7 @@ function refreshMultiHUD(){
     card.querySelector('.mh-mana .mh-fill').style.width=(st.mana/MAX_MANA*100)+'%';
     card.querySelector('.mh-hpn').textContent='❤'+st.hp;
     card.querySelector('.mh-mn').textContent='✦'+st.mana;
-    card.querySelector('.mh-ward').textContent=hasWard(st)?'🛡'+st.shieldHp:'';
+    card.querySelector('.mh-ward').textContent=hasWard(st)?'🛡'+wardLabel(st):'';
   });
 }
 
@@ -3330,13 +3365,15 @@ function endSimRound(){
   gs.myTurn=false; gs.busy=true;
   PLAYERS.forEach(w=>{
     const st=gs[w];
-    if(ELEM_WARD_ROUNDS&&st.shield>0){ st.shield--; if(st.shield<=0){ st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null; } }
+    if(ELEM_WARD_ROUNDS&&st.shield>0){ st.shield--; if(st.shield<=0) clearAllWards(st); }
     // Eldrin's Ward (holdWard) braces the ward: it doesn't wear away while the Ward lasts
     const braced=(st.effects||[]).some(e=>e.holdWard);
     if(ELEM_WARD_DECAY<1&&st.shield>0&&!braced) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
     if(ELEM_WARD_WEAR&&hasWard(st)&&!braced){
-      st.shieldHp-=ELEM_WARD_WEAR;
-      if(st.shieldHp<=0){ st.shield=0; st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null; }
+      // Every layer wears, so stacking costs upkeep and a stack can't sit untouched for good
+      // A sealed layer doesn't wear
+      st.wardInner=(st.wardInner||[]).filter(l=>l.sealed||(l.hp-=ELEM_WARD_WEAR)>0);
+      if(!st.wardSealed){ st.shieldHp-=ELEM_WARD_WEAR; if(st.shieldHp<=0) clearOuterWard(st); }
     }
   });
   gs.round++;
@@ -3370,6 +3407,34 @@ const ELEM_INCOME=4;            // mana every seat gains at the end of each roun
 const ELEM_WARD_ROUNDS=0;       // 0: no timer. Otherwise a ward lasts the round it is raised + n−1 more
 const ELEM_WARD_DECAY=1;        // share of ward HP kept at each round end (1: none lost this way)
 const ELEM_WARD_WEAR=4;         // flat ward HP lost at each round end
+// Layered wards, built in steps behind switches so each can be balanced on its own
+// (docs/rps-duel-design.md, "Layered wards"). tools/balance.html and tools/ward_compare.js flip these.
+//   boost:    recasting a ward of the element already up tops it up instead of replacing it:
+//             it gains the new cast's HP, up to boostCap × that cast's HP (never below what's there)
+//   boostCap: the top-up ceiling, as a multiple of the recast's own HP (1: just refills to it)
+//   layers:   how many wards a wizard can stack (1: a new element replaces the ward). A new element
+//             goes on the outside; strikes, ticks and dispels hit the outermost first, and what breaks
+//             it carries on into the next. Only a Greater dispel carries on: a lesser one stops at the
+//             layer it breaks, and one that breaks every layer with power to spare strips buffs too.
+//             Every layer wears ELEM_WARD_WEAR at round end. Blast / Infernal Mantle go around them all.
+//   dispelStrips: a Greater dispel that breaks a stack of 2+ layers with power to spare strips buffs too
+//             (false: it stops at the wards)
+//   seals:    Seal Ward, a button on the Protection wheel like Cleanse Self on the Dispel wheel (a
+//             Protection pick, self:true, SEAL.cost mana; cast with the inner-ring tile-match in the ward's
+//             element): seals the outer ward. A sealed layer doesn't wear at round end. A dispel that meets a seal
+//             breaks the seal and stops there, unless it's a Greater one, which breaks the seal and then
+//             hits the ward as usual. Strikes ignore seals. A ward put on over a sealed one leaves the seal
+//             on the layer beneath, so you can seal, layer and seal again. Topping up keeps the seal.
+//   sealSoak: dispel power a seal soaks before it breaks (0: any dispel breaks it for free). A dispel
+//             weaker than this leaves the seal standing; a Greater one goes on with what's left.
+const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:true, sealSoak:15};
+// Seal Ward. A character's sealCostMod (characters.json) changes the cost; sealAll seals every layer
+// at once (Eldrin's hook, now that everyone can brace a ward).
+const SEAL={cost:1};
+let WARD_SEAL_AI=1.0;     // the AI's weight for sealing an unsealed ward (Normal; half on Easy)
+let WARD_SEAL_AI_HP=15;   // ...of at least this many HP (a seal stops the 4-a-round wear for 1 mana)
+let WARD_BOOST_AI_HP=25;   // the AI tops up its ward below this HP when boost is on (15 otherwise)
+let WARD_LAYER_AI=0.4;     // the AI's Protection weight with a healthy ward and room for another layer (0.2 without)
 // Element riders on strikes. Plain strikes never lock (hard locks are for signature spells); a
 // chance roll waits for the target's next pick, so neither side can plan around it.
 //   Lightning burns mana (even through a ward) · Ice frostbites and Dark dreads (a Damage / Protection
@@ -3572,6 +3637,7 @@ function sigBlocked(who,sp,tier){
 }
 function elemCanPick(who,cat){
   if(catLocked(who,cat)) return false;
+  if(cat==='protect'&&canSeal(who)) return true;   // Seal Ward
   if(cat==='dispel'&&elemCost(who,cat,1)<=gs[who].mana) return true;   // Cleanse Self
   return ELEMENTS.some(e=>sectorOk(who,cat,e.id,1));
 }
@@ -3636,7 +3702,7 @@ function describeElemAction(action,who){
     const sp=sigById(who,action.sig);
     return {icon:cat.icon+(sp?sigIcon(sp):'★'),name:ELEM_TIER_NAMES[(action.tier||2)-1]+(sp?sigName(sp):action.sig)};
   }
-  if(action.self) return {icon:'✦',name:'Cleanse Self'};
+  if(action.self) return isSeal(action)?{icon:'🔒',name:'Seal Ward'}:{icon:'✦',name:'Cleanse Self'};
   const el=elemById(action.elem);
   return {icon:cat.icon+el.icon,name:ELEM_TIER_NAMES[action.tier-1]+el.name+' '+cat.verb};
 }
@@ -3651,12 +3717,20 @@ function openElemWheel(cat){
   const c=ELEM_CATS[cat], st=gs[who];
   document.getElementById('wheel-title').textContent=c.icon+' '+c.name;
   document.getElementById('wheel-mana').textContent='Mana: '+st.mana;
+  // The wheel's own-self button: Cleanse Self on Dispel, Seal Ward on Protection (with seals on)
   const selfBtn=document.getElementById('wheel-self');
-  selfBtn.style.display=cat==='dispel'?'':'none';
-  selfBtn.textContent='✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
+  const sealing=cat==='protect'&&WARD_RULES.seals;
+  selfBtn.style.display=cat==='dispel'||sealing?'':'none';
+  selfBtn.textContent=sealing?'🔒 Seal Ward ('+sealCost(who)+' Mana)'+(sealTargetable(who)?'':' — no ward to seal'):
+    '✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
+  selfBtn.disabled=sealing&&!canSeal(who);
   const ruleText={
     damage:'A ward\'s own element unravels it · Lightning burns mana · Physical crushes wards · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
-    protect:'Wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · they resist other elements, but their own element unravels them',
+    protect:'Wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · they resist other elements, but their own element unravels them'+
+      (WARD_RULES.boost?' · recast your ward\'s element to top it up (to '+WARD_RULES.boostCap+'× that cast)':'')+
+      (WARD_RULES.layers>1?' · a new element goes on over it, up to '+WARD_RULES.layers+' layers':'')+
+      (WARD_RULES.seals?' · 🔒 a sealed ward doesn\'t wear, and a dispel only breaks the seal'+
+        (WARD_RULES.sealSoak?' (it soaks '+WARD_RULES.sealSoak+' power: weaker dispels bounce off, a Greater one goes on with the rest)':' (a Greater one goes on through)'):''),
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
   document.getElementById('wheel-rule').textContent=ruleText;
@@ -3716,7 +3790,8 @@ function castElemental(cat,elemId,tier,self){
   const who=gs.turnPlayer;
   const sp=self?null:sigAt(who,cat,elemId);
   if(sp){ castSignature(sp.id,tier); return; }
-  if(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)||(!self&&elemForbidden(who,elemId))) return;
+  const seal=self&&cat==='protect';
+  if(seal?!canSeal(who):(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)||(!self&&elemForbidden(who,elemId)))) return;
   const el=elemById(elemId);
   const spell={name:describeElemAction({cat,elem:elemId,tier,self}).name, icon:el.icon,
     element:elemId, col:el.col, tier, glyphs:cat==='damage'?ELEM_GLYPHS[elemId]:undefined};
@@ -3767,7 +3842,7 @@ function showTargetPicker(who,foes,cb,title='Choose a target'){
   ov.querySelector('.tg-title').textContent=title;
   ov.querySelector('.tg-list').innerHTML=foes.map(w=>{
     const st=gs[w], cfg=seatCfg(w), el=st.shieldType&&elemById(st.shieldType);
-    const ward=hasWard(st)?`<span class="tg-ward">🛡 ${el.icon} ${st.shieldHp}</span>`:'';
+    const ward=hasWard(st)?`<span class="tg-ward">🛡 ${el.icon} ${wardLabel(st)}</span>`:'';
     const ban=(cfg.forbidden||[]).map(id=>elemById(id).icon).join('');
     return `<button class="tg-foe" data-who="${w}" style="--tg-col:${cfg.col}">`+
       `<img src="portraits/small/${seatKey(w)}.jpg" alt=""><span class="tg-name">${cfg.name}${w===who?' (you)':''}</span>`+
@@ -3832,7 +3907,7 @@ function payForAction(who,action){
   if(action.cat==='pass') return;
   if(action.cat==='meditate'){ st.meditatedRound=gs.round; return; }
   const sp=action.sig?sigById(who,action.sig):null;
-  const cost=action.cat==='phase'?PHASE.cost:sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
+  const cost=action.cat==='phase'?PHASE.cost:isSeal(action)?sealCost(who):sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
   const silence=effectsOf(st,'silence')[0];
   const risk=effectsOf(st,'risk').find(e=>e.cat===action.cat);   // Frostbite / Dread
   if(risk) st.effects=st.effects.filter(e=>e!==risk);   // one roll, on the next pick it covers
@@ -3868,6 +3943,20 @@ function quickSteal(who,action){
 function agonyBites(who,action,agony){
   if(action.cat!=='meditate'||(agony&&agony.inescapable)) return true;
   return effectsOf(gs[who],'incomeDrain').some(e=>e.id==='corruption');
+}
+// Seal Ward: seals the outer ward (sealAll: every layer). It resolves with Protection, before any
+// Dispel or Damage this round, so the ward it was paid for is still there.
+function executeSeal(who){
+  const st=gs[who], x=seatX(who);
+  if(!hasWard(st)){ addFloat(x,bH*.3,'🔒 No ward to seal','#aaaacc',12); return; }
+  const all=!!seatCfg(who).sealAll;
+  let n=0;
+  if(!st.wardSealed){ st.wardSealed=true; n++; }
+  if(all) (st.wardInner||[]).forEach(l=>{ if(!l.sealed){ l.sealed=true; n++; } });
+  st.wardStats.sealed+=n;
+  addFloat(x,bH*.28,'🔒 '+(all&&wardLayers(st)>1?'Every ward sealed':'Ward sealed'),'#ffd75a',15);
+  vfxPhaseIn(x,wizMidY(x),['#ffd75a','#ffe9a8','#ffffff'],18);
+  anim(who,'shield',700);
 }
 function executeElemental(who,action,cb){
   const st=gs[who], x=seatX(who);
@@ -3931,6 +4020,7 @@ function executeElemental(who,action,cb){
   if(action.outcome==='silenced'){ showSilenceBlock(x,bH*.33); combatTimeout(cb,900); return; }
   if(action.outcome==='risked'){ showRiskBlock(x,bH*.33,action.riskId); combatTimeout(cb,900); return; }
   if(action.outcome==='nomana'){ addFloat(x,bH*.33,'Out of mana!','#ff8844',13); combatTimeout(cb,700); return; }
+  if(isSeal(action)){ executeSeal(who); combatTimeout(cb,900); return; }
   anim(who,'cast',600);
   st.catCounts[action.cat]=(st.catCounts[action.cat]||0)+1;   // what Spellbind binds, and what Enthral reads
   if(sp){
@@ -4083,8 +4173,7 @@ function executeSignature(who,sp,action,cb){
   if(el.kind==='ward'){
     let power=el.power;
     if(el.perSkeleton) power+=el.perSkeleton*countMinions(st,'skeleton');
-    raiseWard(ally,el.elem,power,el.retaliate||0);
-    as.wardSig=sp.id;
+    raiseWard(ally,el.elem,power,el.retaliate||0,false,sp.id);
     if(fx.self) fx.self(actx); else anim(ally,'shield',700);
     if(el.rewind){
       const back=Math.min(el.rewind,as.lastRoundLoss||0);
@@ -4103,7 +4192,7 @@ function executeSignature(who,sp,action,cb){
     const mine=el.effect.type==='minion';   // minions always serve their owner
     addEffect(mine?who:ally,effect({kind:el.effect.kind||'buff'}),who);
     // A buff that also raises a light ward (Blink) — never replaces a stronger ward already up
-    if(el.ward&&!(hasWard(as)&&as.shieldHp>=el.ward)){ raiseWard(ally,el.elem,el.ward,0); as.wardSig=sp.id; }
+    if(el.ward&&!(hasWard(as)&&as.shieldHp>=el.ward)){ raiseWard(ally,el.elem,el.ward,0,true,sp.id); }
     // A buff that holds up a ward already standing (Ward): it lasts longer
     if(ELEM_WARD_ROUNDS&&el.effect.extend&&hasWard(as)){ as.shield+=el.effect.extend; addFloat(seatX(ally),bH*.34,'🛡 Ward +'+el.effect.extend+' round'+(el.effect.extend>1?'s':''),wardCol(as),12); }
     if(fx.self) fx.self(mine?ctx:actx); else { vfxPhaseIn(seatX(mine?who:ally),wizMidY(mine?who:ally),[e.col],14); anim(mine?who:ally,'shield',700); }
@@ -4152,19 +4241,93 @@ function executeSignature(who,sp,action,cb){
 
 // A ward's bubble and its block / shatter sparks take its element's colour
 function wardCol(st){ return st.shieldType?elemById(st.shieldType).col:'#4af0ff'; }
-function raiseWard(who,elem,power,retaliate){
-  const st=gs[who], el=elemById(elem);
+// Layered wards (WARD_RULES.layers): the outer layer is shield / shieldHp / shieldType / wardRetaliate /
+// wardSig, exactly as a single ward always was, so every check of "the ward" reads the one you'd hit.
+// The layers beneath wait in st.wardInner (innermost first) and step out when the outer one falls.
+function wardLayers(st){ return hasWard(st)?1+(st.wardInner||[]).length:0; }
+function wardTotal(st){ return hasWard(st)?st.shieldHp+(st.wardInner||[]).reduce((a,l)=>a+l.hp,0):0; }
+function setOuterWard(st,l){
   st.shield=ELEM_WARD_ROUNDS||1;   // with no timer, shield just marks a ward as up
-  st.shieldHp=power; st.shieldType=elem; st.wardRetaliate=retaliate; st.wardSig=null;
-  addFloat(seatX(who),bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
-  VFX.wardRaise(seatX(who),el.col);
+  st.shieldHp=l.hp; st.shieldType=l.type; st.wardRetaliate=l.retaliate||0; st.wardSig=l.sig||null;
+  st.wardSealed=!!l.sealed;
+}
+// Takes the outer layer off; the next one in steps out. Returns that layer, or null if none was left.
+function clearOuterWard(st){
+  st.shield=0; st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null; st.wardSealed=false;
+  const next=st.wardInner&&st.wardInner.pop();
+  if(next) setOuterWard(st,next);
+  return next||null;
+}
+function clearAllWards(st){ st.wardInner=[]; clearOuterWard(st); }
+// e.g. "35" or "🔒35 ‹🔥20›" — the outer ward's HP, then each layer beneath it (🔒: sealed)
+function wardLabel(st){
+  // (word joiners keep each layer's label from wrapping in the middle)
+  const J='\u2060';
+  return (st.wardSealed?'🔒'+J:'')+st.shieldHp+(st.wardInner||[]).slice().reverse().map(l=>' ‹'+J+(l.sealed?'🔒'+J:'')+elemById(l.type).icon+J+l.hp+J+'›').join('');
+}
+function wardSealCount(st){ return hasWard(st)?(st.wardSealed?1:0)+(st.wardInner||[]).filter(l=>l.sealed).length:0; }
+function sealCost(who){ return Math.max(0,SEAL.cost+(seatCfg(who).sealCostMod||0)); }
+// Is there a ward to seal? (sealAll: any unsealed layer)
+function sealTargetable(who){
+  const st=gs[who];
+  if(!WARD_RULES.seals||!hasWard(st)) return false;
+  return !st.wardSealed||(!!seatCfg(who).sealAll&&(st.wardInner||[]).some(l=>!l.sealed));
+}
+function isSeal(action){ return action.cat==='protect'&&!!action.self; }
+function canSeal(who){ return sealTargetable(who)&&!catLocked(who,'protect')&&!hasFreeSpell(who)&&gs[who].mana>=sealCost(who); }
+// Draws the seal: a slowly turning ring of gold Arcana glyphs around a ward (scale: that layer's size)
+const SEAL_GLYPHS=['⊕','θ','Φ','∞','Ω','✸'];
+function drawWardSeal(x,y,sz,scale,fade,t){
+  bx.save();
+  bx.translate(x,y-sz*.62); bx.scale(AURA_SX,AURA_SY); bx.translate(-x,-(y-sz*.5));
+  const R=sz*.75*scale, cy=y-sz*.5, a0=spinAngle(t,24000), pulse=.7+.3*Math.sin(t/500);
+  bx.globalAlpha=fade*.55*pulse;
+  bx.strokeStyle='#ffd75a'; bx.lineWidth=1.2; bx.shadowColor='#ffcc44'; bx.shadowBlur=8;
+  bx.beginPath(); bx.arc(x,cy,R,0,Math.PI*2); bx.stroke();
+  bx.globalAlpha=fade*pulse;
+  bx.fillStyle='#ffe9a8'; bx.font=`bold ${Math.round(sz*.11*Math.max(.7,scale))}px serif`;
+  bx.textAlign='center'; bx.textBaseline='middle';
+  SEAL_GLYPHS.forEach((g,i)=>{
+    const a=a0+i/SEAL_GLYPHS.length*Math.PI*2;
+    bx.fillText(g,x+Math.cos(a)*R,cy+Math.sin(a)*R);
+  });
+  bx.restore();
+}
+// Topping up (WARD_RULES.boost): +the cast's HP, up to boostCap × it, never below what's there
+function wardBoostTo(hp,power){ return Math.max(hp,Math.min(hp+power,Math.round(power*WARD_RULES.boostCap))); }
+// noBoost: a buff's light side-ward (Blink) never tops up or layers, only raises (or replaces) the outer one
+// sig: a signature ward's id (its twist: Flame Shield, Stoneskin, …), set on whichever layer it lands on
+function raiseWard(who,elem,power,retaliate,noBoost,sig){
+  const st=gs[who], el=elemById(elem), ws=st.wardStats, x=seatX(who);
+  const inner=(st.wardInner||[]).find(l=>l.type===elem);
+  if(!noBoost&&WARD_RULES.boost&&hasWard(st)&&(st.shieldType===elem||inner)){
+    // Boost: the ward keeps its signature twist unless this recast brings its own
+    const l=st.shieldType===elem?null:inner, was=l?l.hp:st.shieldHp, now=wardBoostTo(was,power);
+    if(l){ l.hp=now; l.retaliate=Math.max(l.retaliate||0,retaliate||0); if(sig) l.sig=sig; }
+    else { st.shieldHp=now; st.wardRetaliate=Math.max(st.wardRetaliate||0,retaliate||0); if(sig) st.wardSig=sig; }
+    ws.boosted++; ws.peak=Math.max(ws.peak,wardTotal(st));
+    addFloat(x,bH*.28,'🛡 '+el.name+' Ward +'+(now-was)+' → '+now+(l?' (beneath)':''),el.col,14);
+    VFX.wardRaise(x,el.col);
+    return;
+  }
+  // A ward in a new element goes on over the one already up, while there's room for another layer;
+  // otherwise it replaces the outer layer
+  const over=!noBoost&&WARD_RULES.layers>1&&hasWard(st)&&wardLayers(st)<WARD_RULES.layers;
+  if(over){ st.wardInner.push({hp:st.shieldHp,type:st.shieldType,retaliate:st.wardRetaliate,sig:st.wardSig,sealed:st.wardSealed}); ws.layered++; }
+  const under=over&&elemById(st.wardInner[st.wardInner.length-1].type);
+  setOuterWard(st,{hp:power,type:elem,retaliate,sig});
+  ws.raised++; ws.peak=Math.max(ws.peak,wardTotal(st));
+  addFloat(x,bH*.28,'🛡 '+el.name+' Ward '+power+(under?' over '+under.icon:''),el.col,14);
+  VFX.wardRaise(x,el.col);
 }
 // unravel: a dispel took it down, so it comes apart in spiralling threads instead of shattering
+// With layers, the next ward in steps out (the bubble beneath takes over)
 function breakWard(st,x,unravel){
   const col=wardCol(st);
-  st.shield=0; st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null;
+  const next=clearOuterWard(st);
   addFloat(x,bH*.24,unravel?'🛡 UNRAVELLED!':'🛡 SHATTERED!',col,18);
   (unravel?VFX.wardUnravelled:VFX.wardShatter)(x,col);
+  if(next){ const el=elemById(next.type); addFloat(x,bH*.16,'🛡 '+el.icon+' '+el.name+' ward beneath holds '+next.hp,el.col,13); }
 }
 // Cleanse Self clears only the newest curse (so an older Agony can hide behind a fresh Silence);
 // all: Mary's Purge clears every one
@@ -4177,21 +4340,44 @@ function elemCleanse(who,all){
 }
 
 // A ward takes the hit first; strip enchantments only when there's no ward to protect them
-function elemWardDispel(tgt,elem,power){
+// Layers: a Greater dispel (tier ELEM_DISPEL_ALL_TIER) that breaks a layer carries what's left of its
+// power into the next one, and if it breaks the last with power to spare it strips every buff too.
+// A lesser dispel stops at the layer it breaks.
+function elemWardDispel(tgt,elem,power,tier){
   const ts=gs[tgt], tx=seatX(tgt);
-  const match=ts.shieldType===elem;
-  const dmg=power*(match?2:1);
-  ts.shieldHp-=dmg;
-  addFloat(tx,bH*.3,'✦ −'+dmg+' ward'+(match?' (matched!)':''),'#ffaaff',14);
-  if(ts.shieldHp<=0) breakWard(ts,tx,true);
-  else VFX.wardUnravel(tx,wardCol(ts));
+  const through=WARD_RULES.layers>1&&tier>=ELEM_DISPEL_ALL_TIER, stack=wardLayers(ts);
+  while(hasWard(ts)&&power>0){
+    // A seal takes the dispel; only a Greater one goes on to hit the ward behind it
+    if(ts.wardSealed){
+      const soak=WARD_RULES.sealSoak||0;
+      if(power<soak){ addFloat(tx,bH*.3,'🔒 The seal holds','#ffd75a',14); VFX.wardUnravel(tx,'#ffd75a'); return; }
+      ts.wardSealed=false; ts.wardStats.sealsBroken++;
+      addFloat(tx,bH*.3,'🔒 SEAL BROKEN','#ffd75a',15);
+      VFX.wardUnravel(tx,'#ffd75a');
+      if(!(tier>=ELEM_DISPEL_ALL_TIER)) return;   // (curses hitting a ward pass no tier)
+      power-=soak;
+      if(power<=0) return;
+    }
+    const match=ts.shieldType===elem, mult=match?2:1;
+    const dmg=power*mult, had=ts.shieldHp;
+    ts.shieldHp-=dmg;
+    addFloat(tx,bH*.3,'✦ −'+Math.min(dmg,had)+' ward'+(match?' (matched!)':''),'#ffaaff',14);
+    if(ts.shieldHp>0){ VFX.wardUnravel(tx,wardCol(ts)); return; }
+    breakWard(ts,tx,true);
+    if(!through) return;
+    power=Math.floor((dmg-had)/mult);
+  }
+  if(through&&power>0&&stack>1&&WARD_RULES.dispelStrips){
+    const buffs=buffsOf(ts);
+    if(buffs.length) removeEffects(tgt,buffs,'✦ Dispelled');
+  }
 }
 function elemDispelHit(tgt,elem,power,tier){
   const ts=gs[tgt], tx=seatX(tgt);
   // Warding (Eldrin's Ward) takes the dispel in place of the ward and every other buff
   const warding=effectsOf(ts,'warding');
   if(warding.length){ VFX.dispelHit(tx); removeEffects(tgt,warding,'✦ Ward takes the dispel'); return; }
-  if(hasWard(ts)){ elemWardDispel(tgt,elem,power); return; }
+  if(hasWard(ts)){ elemWardDispel(tgt,elem,power,tier); return; }
   VFX.dispelHit(tx);
   const buffs=buffsOf(ts);
   if(!buffs.length){ addFloat(tx,bH*.3,'✦ Nothing to dispel','#ffaaff',12); return; }
@@ -4239,7 +4425,8 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike,blast){
     around=Math.min(blast,dmg); dmg-=around;
     addFloat(tx,bH*.18,dmg>0?'💥 Blast −'+around+' around the ward':'🔥 −'+around+' through the ward',col,12);
   }
-  if(hasWard(ts)&&dmg>0){
+  // Layers: what breaks the outer ward carries on into the next one, on that ward's own element rules
+  while(hasWard(ts)&&dmg>0){
     // The ward loses only its take share of what it stops, so a resistant ward stops more.
     // Crush: a Physical strike (not ticks or minions) ignores an off-element ward's resistance.
     const take=ELEM_WARD_TAKE[ts.shieldType===elem?'match':strike&&elem==='physical'&&ELEM_RIDERS.crush?'crush':'off'];
@@ -4253,7 +4440,9 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike,blast){
     dmg-=blocked; warded=true;
     addFloat(tx,bH*.24,'🛡 −'+blocked+(take<1?' resisted':take>1?' unravels':' blocked'),wardCol(ts),12);
     VFX.wardBlock(tx,wardCol(ts));
-    if(ts.shieldHp<=0) breakWard(ts,tx);
+    if(ts.shieldHp>0) break;
+    breakWard(ts,tx);
+    if(wear){ wear.blocked=0; wear.worn=0; }   // a fresh layer wears from scratch
   }
   dmg+=around;
   if(dmg>0){
@@ -4544,7 +4733,7 @@ function aiPickTarget(who){
   if(foes.length<=1) return foes[0];
   if(isFreeForAll()) return ffaPickTarget(who,foes);
   const noise=aiDifficulty==='normal'?10:40;
-  const score=Object.fromEntries(foes.map(w=>[w,gs[w].hp+(hasWard(gs[w])?gs[w].shieldHp:0)+_rng()*noise]));
+  const score=Object.fromEntries(foes.map(w=>[w,gs[w].hp+wardTotal(gs[w])+_rng()*noise]));
   return foes.reduce((a,b)=>score[a]<=score[b]?a:b);
 }
 // Every wizard still standing fights alone (no team-mates left anywhere)
@@ -4572,7 +4761,7 @@ function aiStyleOf(who){ return AI_STYLES[seatCfg(who).aiStyle]||AI_STYLES.defau
 function isRival(who,foe){ const r=seatCfg(who).rivals; return !!(r&&foe&&r[seatKey(foe)]); }
 function ffaPickTarget(who,foes){
   const S=aiStyleOf(who), focus=gs.focus||{}, grudges=gs[who].grudges||{};
-  const eff=f=>Math.max(1,gs[f].hp+(hasWard(gs[f])?gs[f].shieldHp:0));
+  const eff=f=>Math.max(1,gs[f].hp+wardTotal(gs[f]));
   const avg=foes.reduce((a,f)=>a+eff(f),0)/foes.length;
   const w=foes.map(f=>{
     let v=Math.pow(avg/eff(f),S.weak);
@@ -4679,6 +4868,15 @@ function elemAIChoose(who){
     if(_rng()<p) return {type:'el',cat:'meditate',ok:true};
   }
   const w={damage:1.0, protect:0.55, dispel:0.08};
+  // Seal a ward that isn't sealed yet: more readily over a layered stack (a seal on each is the
+  // whole point), when hurt (the ward is all that stands between me and the foe), and on a big ward.
+  // No discount for a foe who can afford a Greater dispel: the seal soaks sealSoak of it.
+  if(sealTargetable(who)&&me.shieldHp>=WARD_SEAL_AI_HP){
+    w.seal=WARD_SEAL_AI*(smart?1:0.5);
+    if(smart&&wardLayers(me)>1) w.seal+=0.3;
+    if(smart&&me.hp<me.maxHp*0.5) w.seal+=0.3;
+    if(wardTotal(me)>=45) w.seal+=0.2;
+  }
   // Untimed buffs never wear off by themselves, so stripping them is worth more
   const buffPull=Math.min(3,buffsOf(opp).filter(e=>e.rounds==null).length)*(smart?0.25:0.1);
   if(oppWard){ w.dispel=(smart?1.7:1.0)+buffPull; w.damage=0.5; }
@@ -4698,7 +4896,10 @@ function elemAIChoose(who){
   if(callShot&&(hasWard(me)||effectsOf(opp,'spellbind').length)) w.dispel+=0.5;
   // The foe has Vanished: strikes at them only miss, so dispel it or do something else
   if(effectsOf(opp,'absorbNext').some(e=>e.keep)){ w.damage*=smart?0.2:0.6; w.dispel+=smart?0.6:0.2; }
-  if(hasWard(me)&&me.shieldHp>=15) w.protect=0.2;
+  // With ward boost on, a worn ward (under WARD_BOOST_AI_HP) is worth topping up rather than left alone
+  // With layers, a healthy ward with room for another layer still invites one (WARD_LAYER_AI)
+  const roomForLayer=wardLayers(me)<WARD_RULES.layers;
+  if(hasWard(me)&&me.shieldHp>=(WARD_RULES.boost?WARD_BOOST_AI_HP:15)) w.protect=roomForLayer?WARD_LAYER_AI:0.2;
   else {
     if(foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',2))) w.protect+=0.35;
     if(me.hp<me.maxHp*0.35) w.protect+=0.35;
@@ -4726,11 +4927,12 @@ function elemAIChoose(who){
   if(free) w.damage+=1.2;   // a free spell: make it a big strike
   // Bewitched: my next strike would hit me, so don't strike — cleanse it, or play around it
   if(effectsOf(me,'bewitch').length){ w.damage*=smart?0.15:0.6; w.dispel+=smart?0.8:0.3; }
-  const cats=Object.keys(w).filter(c=>elemCanPick(who,c)&&w[c]>0);
+  const cats=Object.keys(w).filter(c=>(c==='seal'?canSeal(who):elemCanPick(who,c))&&w[c]>0);
   if(!cats.length) return {type:'el',cat:'pass',ok:true};
   let r=_rng()*cats.reduce((sum,c)=>sum+w[c],0), cat=cats[0];
   for(const c of cats){ r-=w[c]; if(r<=0){ cat=c; break; } }
   const ok=_rng()<(smart?0.9:0.78);
+  if(cat==='seal') return {type:'el',cat:'protect',elem:me.shieldType,tier:1,self:true,target:who,ok};
   // Aiming at a wizard who can phase: if they usually do, hold off — hit someone else, or ward up instead
   let aimTgt=tgt;
   if(PHASE.smartAI&&phaseReady(tgt)&&(cat==='damage'||cat==='dispel')){
@@ -4800,6 +5002,13 @@ function elemAIChoose(who){
         else if(opp.lastElem&&roll<(smart?0.8:0.4)){ const off=plain.filter(x=>x.elem!==opp.lastElem); if(off.length) choice=pickFrom(off); }
       }
       else if(opp.lastElem&&has(opp.lastElem)&&!elemForbidden(tgt,opp.lastElem)&&roll<(smart?0.8:0.4)) choice=has(opp.lastElem);
+      // Layered wards, step 1: top up my own ward rather than throw it away — unless the foe just
+      // used its element (they're set up to unravel it)
+      // With room for another layer and a healthy ward, a new element (the pick above) layers instead
+      const same=WARD_RULES.boost&&hasWard(me)&&has(me.shieldType);
+      const layering=wardLayers(me)<WARD_RULES.layers&&me.shieldHp>=WARD_BOOST_AI_HP;
+      if(layering&&choice&&choice.elem===me.shieldType){ const off=plain.filter(x=>x.elem!==me.shieldType); if(off.length) choice=pickFrom(off); }
+      else if(same&&!layering&&opp.lastElem!==me.shieldType&&_rng()<(smart?0.75:0.4)) choice=same;
     }
   }
   else if(sectors.length) choice=sectors[Math.floor(_rng()*sectors.length)];   // anything beats waiting
@@ -4809,7 +5018,9 @@ function elemAIChoose(who){
   let tier=3;
   while(tier>1&&!sectorOk(who,cat,choice.elem,tier)) tier--;
   // Sometimes hold mana back — but not when ganged up on: big wards, and Greater strikes that hit them all
-  if(tier>1&&!free&&!(ganged&&cat!=='dispel')&&_rng()<0.4) tier--;
+  // (a sealed ward only falls to a Greater dispel, so don't hold back against one)
+  const sealedFoe=cat==='dispel'&&smart&&opp.wardSealed&&tier===3;
+  if(tier>1&&!free&&!sealedFoe&&!(ganged&&cat!=='dispel')&&_rng()<0.4) tier--;
   const elem=choice.elem;
   const pick=choice.sp?{type:'el',cat,elem,tier,sig:choice.sp.id,target:aimTgt,ok}:{type:'el',cat,elem,tier,self:false,target:aimTgt,ok};
   if(choice.sp&&choice.sp.el.effect&&choice.sp.el.effect.type==='enthral') pick.call=aiEnthralCall(who,aimTgt,smart);
@@ -4830,7 +5041,7 @@ function elemStatusTags(){
     if(hasFreeSpell(w)) tags.push(`<span class="status-tag ward">✨ ${name} FREE SPELL</span>`);
     if(hasWard(st)){
       const el=elemById(st.shieldType);
-      tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${st.shieldHp}${ELEM_WARD_ROUNDS?' ('+st.shield+')':''}</span>`);
+      tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${wardLabel(st)}${ELEM_WARD_ROUNDS?' ('+st.shield+')':''}</span>`);
     }
     (st.effects||[]).filter(e=>e.type!=='minion').forEach(e=>{
       tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.charges>1?' ×'+e.charges:''}${e.rounds!=null?' ('+e.rounds+')':''}${e.frayed?' 🌀':''}</span>`);
@@ -4938,7 +5149,7 @@ function eliminateSeats(){
   const down=activeSeats().filter(w=>gs[w].hp<=0);
   down.forEach((w,i)=>{
     const st=gs[w];
-    st.out=true; st.effects=[]; st.shield=0; st.shieldHp=0; st.shieldType=null;
+    st.out=true; st.effects=[]; st.wardInner=[]; st.wardSealed=false; st.shield=0; st.shieldHp=0; st.shieldType=null;
     syncMinionVisuals(st);
     gs[w+'anim']='death';
     (gs.outOrder||(gs.outOrder=[])).push({who:w,round:gs.round});
@@ -8170,11 +8381,22 @@ function startTrainingBattle(){
 // ── BALANCE SIMULATOR ──────────────────────────────────────
 // Used by tools/balance.html: AI vs AI duels on the real rules, resolved instantly.
 // Returns {winner:'p1'|'p2'|'draw'|'timeout', rounds, hp:{p1,p2}, picks:{p1:{key:count},p2:{…}}}
-// where pick keys are a signature spell id, or 'damage' / 'protect' / 'dispel' / 'cleanse' / 'meditate' / 'pass'.
+// where pick keys are a signature spell id, or 'damage' / 'protect' / 'dispel' / 'cleanse' / 'seal' / 'meditate' / 'pass'.
 const SIM_MAX_ROUNDS=60;
 // The tool page reads the game through an iframe, where only function declarations are visible
 function simInfo(){ return {options:GAME_OPTIONS, suddenDeath:SUDDEN_DEATH, chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE, bounty:ELEM_KO_BOUNTY, phase:PHASE,
-  setGangAware:v=>{ GANG_AWARE_AI=v; }}; }
+  setGangAware:v=>{ GANG_AWARE_AI=v; },
+  wardRules:{...WARD_RULES}, wardAiHp:WARD_BOOST_AI_HP, wardLayerAi:WARD_LAYER_AI,
+  wardSealAi:WARD_SEAL_AI, wardSealAiHp:WARD_SEAL_AI_HP, sealCost:SEAL.cost,
+  setWardRules:o=>{ const r={...o};
+    if(r.aiHp!=null) WARD_BOOST_AI_HP=r.aiHp; if(r.layerAi!=null) WARD_LAYER_AI=r.layerAi;
+    if(r.sealAi!=null) WARD_SEAL_AI=r.sealAi; if(r.sealAiHp!=null) WARD_SEAL_AI_HP=r.sealAiHp; if(r.sealCost!=null) SEAL.cost=r.sealCost;
+    // Character tweaks for this run only: undo the last run's first
+    (simInfo.undo||[]).forEach(([k,f,v])=>{ if(v===undefined) delete CHAR_DEFS[k][f]; else CHAR_DEFS[k][f]=v; });
+    simInfo.undo=[];
+    if(r.charMods) Object.entries(r.charMods).forEach(([k,m])=>Object.entries(m).forEach(([f,v])=>{
+      simInfo.undo.push([k,f,CHAR_DEFS[k][f]]); CHAR_DEFS[k][f]=v; }));
+    ['aiHp','layerAi','sealAi','sealAiHp','sealCost','charMods'].forEach(k=>delete r[k]); Object.assign(WARD_RULES,r); }}; }
 function simMatch(k1,k2,ai){
   simMode=true; simOutcome=null;
   twoPlayerMode=false; trainingMode=false;
@@ -8188,13 +8410,14 @@ function simMatch(k1,k2,ai){
     PLAYERS.forEach(w=>{
       const a=elemAIChoose(w);
       gs.pending[w]=a;
-      const key=a.sig||(a.self?'cleanse':a.cat);
+      const key=a.sig||(a.self?(a.cat==='protect'?'seal':'cleanse'):a.cat);
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
     gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
   }
-  const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
+  const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks,
+    wards:{p1:{...gs.p1.wardStats},p2:{...gs.p2.wardStats}}};
   battleRunning=false; simMode=false;
   return out;
 }
@@ -8285,7 +8508,7 @@ const TUTORIAL_CONVOS={
     {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements. Zakkit hates rocks."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
-    {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Raising a new one replaces the old one."},
+    {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel only breaks the seal. The seal soaks some of the dispel's power too, so even a Greater dispel comes through it weaker."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],
@@ -8570,9 +8793,12 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
   document.getElementById('wheel-svg').addEventListener('click',onWheelTap);
   document.getElementById('wheel-cancel').addEventListener('click',closeElemWheel);
-  document.getElementById('wheel-self').addEventListener('click',()=>{
+  document.getElementById('wheel-self').addEventListener('click',e=>{
+    if(e.currentTarget.disabled) return;
+    const cat=wheelCat;
     closeElemWheel();
-    castElemental('dispel','arcane',1,true);
+    if(cat==='protect') castElemental('protect',gs[gs.turnPlayer].shieldType,1,true);   // Seal Ward
+    else castElemental('dispel','arcane',1,true);
   });
   document.querySelectorAll('.diff-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{

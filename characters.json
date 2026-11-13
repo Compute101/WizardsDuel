@@ -15,6 +15,7 @@
     ],
     "hp": 90,
     "dmgMult": 1.1,
+    "sealAll": true,
     "spells": [
       {
         "id": "shield",
@@ -1574,7 +1575,7 @@
       "You DARE stand before me? I will drag you screaming through the Gate!",
       "Run, then! Hide! There is nowhere my fire cannot follow!"
     ],
-    "hp": 93,
+    "hp": 90,
     "dmgMult": 1.0,
     "forbidden": [
       "ice"
