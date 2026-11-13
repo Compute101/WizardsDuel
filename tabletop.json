@@ -1,7 +1,7 @@
 {
-  "_about": "Tabletop mode: every character's numbers in whole counters (max 20 each of HP, mana and ward). Names, colours and forbidden elements come from characters.json unless set here. Each spell's 'text' is its card text: keep it in step with the numbers. Rules: docs/tabletop-rules.md. Engine and simulator: js/tabletop.js. 'hp' is for the Normal rules (Beginner uses it too); 'rules' changes a character's numbers under another rule set (only HP so far): {\"advanced\": {\"hp\": 17}}.",
+  "_about": "Tabletop mode: every character's numbers in whole counters (max 12 HP, and 20 each of mana and ward). Names, colours and forbidden elements come from characters.json unless set here. Each spell's 'text' is its card text: keep it in step with the numbers. Rules: docs/tabletop-rules.md. Engine and simulator: js/tabletop.js. 'hp' is for the Normal rules (Beginner uses it too); 'rules' changes a character's numbers under another rule set (only HP so far): {\"advanced\": {\"hp\": 10}}.",
   "eldrin": {
-    "hp": 17,
+    "hp": 11,
     "spells": [
       {"id": "shield", "name": "Shield", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 4, "kind": "ward", "ward": 16,
        "text": "Arcane ward of 16 for 4 mana (a Greater ward is only 12, for 6)."},
@@ -12,8 +12,8 @@
     ]
   },
   "mal": {
-    "hp": 18,
-    "rules": {"advanced": {"hp": 17}},
+    "hp": 11,
+    "rules": {"advanced": {"hp": 10}},
     "spells": [
       {"id": "empower", "name": "Empower", "cat": "protect", "elem": "fire", "ring": 1, "cost": 2, "kind": "buff", "effect": {"type": "empower", "double": true},
        "text": "Your next strike deals double damage."},
@@ -24,7 +24,7 @@
     ]
   },
   "sylvara": {
-    "hp": 18,
+    "hp": 11,
     "spells": [
       {"id": "heal", "name": "Regen", "cat": "protect", "elem": "physical", "ring": 2, "cost": 3, "kind": "buff", "effect": {"type": "regen", "heal": 1},
        "text": "Until dispelled: heal 1 at every round end."},
@@ -35,7 +35,7 @@
     ]
   },
   "aurelia": {
-    "hp": 19,
+    "hp": 12,
     "spells": [
       {"id": "foresight", "name": "Foresight", "cat": "protect", "elem": "lightning", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "absorbNext"},
        "text": "The next strike at you does nothing."},
@@ -46,7 +46,7 @@
     ]
   },
   "gnash": {
-    "hp": 19,
+    "hp": 11,
     "spells": [
       {"id": "warpaint", "name": "War Paint", "cat": "protect", "elem": "physical", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "resist", "n": 1},
        "text": "Until dispelled: every hit on you deals 1 less (min 1)."},
@@ -57,8 +57,8 @@
     ]
   },
   "cinder": {
-    "hp": 18,
-    "rules": {"advanced": {"hp": 17}},
+    "hp": 11,
+    "rules": {"advanced": {"hp": 10}},
     "spells": [
       {"id": "fireball", "name": "Fireball", "cat": "damage", "elem": "fire", "ring": 1, "cost": 2, "kind": "strike", "dmg": 4,
        "text": "Fire strike of 4 (a Lesser strike is 2)."},
@@ -69,7 +69,7 @@
     ]
   },
   "skadi": {
-    "hp": 18,
+    "hp": 11,
     "spells": [
       {"id": "icelance", "name": "Ice Lance", "cat": "damage", "elem": "ice", "ring": 2, "cost": 5, "kind": "strike", "dmg": 5, "chill": true,
        "text": "Ice strike of 5. If it reaches HP, the foe can't pick Damage next round."},
@@ -80,7 +80,7 @@
     ]
   },
   "zakkit": {
-    "hp": 19,
+    "hp": 11,
     "spells": [
       {"id": "galvanize", "name": "Warp-Charge", "cat": "protect", "elem": "lightning", "ring": 1, "cost": 2, "kind": "buff", "effect": {"type": "empower", "bonus": 4, "elem": "lightning"},
        "text": "Your next Lightning strike deals +4."},
@@ -91,8 +91,7 @@
     ]
   },
   "mary": {
-    "hp": 18,
-    "rules": {"advanced": {"hp": 17}},
+    "hp": 11,
     "spells": [
       {"id": "divineheal", "name": "Heal", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 5, "kind": "instant", "action": {"type": "heal", "n": 6},
        "text": "Heal 6."},
@@ -103,7 +102,7 @@
     ]
   },
   "mordant": {
-    "hp": 18,
+    "hp": 11,
     "spells": [
       {"id": "agony", "name": "Agony", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 4, "kind": "curse", "effect": {"type": "agony", "dmg": 2},
        "text": "Until cleansed: the foe takes 2 at every round end, unless they Meditated that round (Corruption stops Meditate escaping it)."},
@@ -114,8 +113,8 @@
     ]
   },
   "ponder": {
-    "hp": 19,
-    "rules": {"advanced": {"hp": 17}},
+    "hp": 12,
+    "rules": {"advanced": {"hp": 10}},
     "spells": [
       {"id": "vanish", "name": "Vanish", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "absorbNext"},
        "text": "The next strike at you misses."},
@@ -126,7 +125,7 @@
     ]
   },
   "durin": {
-    "hp": 20,
+    "hp": 12,
     "spells": [
       {"id": "stoneskin", "name": "Stoneskin", "cat": "protect", "elem": "physical", "ring": 2, "cost": 5, "kind": "ward", "ward": 9,
        "text": "Physical ward of 9."},
@@ -137,7 +136,8 @@
     ]
   },
   "weizan": {
-    "hp": 19,
+    "hp": 11,
+    "rules": {"advanced": {"hp": 12}},
     "spells": [
       {"id": "conjureblade", "name": "Conjure Blade", "cat": "protect", "elem": "physical", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "minion", "minion": "blade", "dmg": 1, "max": 3},
        "text": "Conjure a blade (max 3). Until dispelled, each blade deals 1 to the foe at every round end."},
@@ -148,8 +148,7 @@
     ]
   },
   "gretch": {
-    "hp": 17,
-    "rules": {"advanced": {"hp": 18}},
+    "hp": 10,
     "spells": [
       {"id": "plague", "name": "Plague", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 3, "kind": "curse", "effect": {"type": "dot", "dmg": 1},
        "text": "Until cleansed: the foe takes 1 at every round end."},
@@ -160,8 +159,8 @@
     ]
   },
   "valdris": {
-    "hp": 13,
-    "rules": {"advanced": {"hp": 16}},
+    "hp": 7,
+    "rules": {"advanced": {"hp": 9}},
     "spells": [
       {"id": "raisedead", "name": "Raise Dead", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "skeleton", "kind": "minion", "soak": true, "dmg": 1, "max": 5, "raise": 3},
        "text": "Raise 3 skeletons (max 5 on the table). Each has 1 HP and stands in front of your ward: every point of damage (strikes and ticks) kills one skeleton before anything reaches your ward. Dispels can't touch them. Each skeleton still standing deals 1 to the foe at every round end."},
@@ -172,7 +171,7 @@
     ]
   },
   "mirel": {
-    "hp": 17,
+    "hp": 10,
     "spells": [
       {"id": "simulacrum", "name": "Simulacrum", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 5, "kind": "buff", "effect": {"type": "minion", "minion": "simulacrum", "dmg": 1, "max": 2},
        "text": "Summon a simulacrum (max 2). Until dispelled, each deals 1 to the foe at every round end."},
@@ -183,8 +182,8 @@
     ]
   },
   "thessaly": {
-    "hp": 19,
-    "rules": {"advanced": {"hp": 18}},
+    "hp": 12,
+    "rules": {"advanced": {"hp": 11}},
     "spells": [
       {"id": "enthral", "name": "Enthral", "cat": "dispel", "elem": "arcane", "ring": 1, "cost": 2, "kind": "curse", "effect": {"type": "enthral", "steal": 3},
        "text": "Secretly write down Damage, Protection or Dispel. If the foe's next pick is that, it's lost and you take up to 3 of the mana they paid."},
@@ -195,8 +194,7 @@
     ]
   },
   "korvath": {
-    "hp": 18,
-    "rules": {"advanced": {"hp": 19}},
+    "hp": 11,
     "spells": [
       {"id": "dragonscales", "name": "Dragon Scales", "cat": "protect", "elem": "fire", "ring": 2, "cost": 5, "kind": "buff", "effect": {"type": "resist", "n": 1, "retaliate": 1},
        "text": "Until dispelled: every hit on you deals 1 less (min 1), and strikers take 1."},
@@ -207,7 +205,7 @@
     ]
   },
   "fizzwick": {
-    "hp": 18,
+    "hp": 11,
     "spells": [
       {"id": "causticbomb", "name": "Caustic Bomb", "cat": "damage", "elem": "dark", "ring": 2, "cost": 3, "kind": "strike", "dmg": 3, "dot": {"dmg": 1, "bypassWard": true},
        "text": "Dark strike of 3. Until cleansed, poison deals 1 to the foe at every round end. If the strike reached HP, the poison ignores wards."},
@@ -218,8 +216,8 @@
     ]
   },
   "nyxara": {
-    "hp": 17,
-    "rules": {"advanced": {"hp": 18}},
+    "hp": 10,
+    "rules": {"advanced": {"hp": 12}},
     "spells": [
       {"id": "singularity", "name": "Singularity", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 3, "kind": "curse", "effect": {"type": "dot", "dmg": 2},
        "text": "Until cleansed: a rift deals 2 to the foe at every round end."},
@@ -230,8 +228,8 @@
     ]
   },
   "daveron": {
-    "hp": 16,
-    "rules": {"advanced": {"hp": 18}},
+    "hp": 8,
+    "rules": {"advanced": {"hp": 10}},
     "spells": [
       {"id": "raisegraveguard", "name": "Raise Graveguard", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "skeleton", "kind": "minion", "soak": 3, "dmg": 1, "max": 3, "raise": 1},
        "text": "Raise 1 graveguard (max 3 on the table). Each has 3 HP and stands in front of your ward: damage (strikes and ticks) wears down the oldest graveguard first, and only what gets past them reaches your ward. Dispels can't touch them. Each graveguard still standing deals 1 to the foe at every round end."},
@@ -242,8 +240,7 @@
     ]
   },
   "frederick": {
-    "hp": 17,
-    "rules": {"advanced": {"hp": 16}},
+    "hp": 10,
     "spells": [
       {"id": "doombolt", "name": "Doom Bolt", "cat": "damage", "elem": "dark", "ring": 1, "cost": 2, "kind": "strike", "dmg": 3, "blast": 1,
        "text": "Dark strike of 3. Blast: 1 of it goes around a ward straight to HP."},

@@ -1,6 +1,6 @@
 // ── TABLETOP MODE ──────────────────────────────────────────
 // The simplified rules for playing WizardsDuel on a real table with counters: HP, mana and wards are
-// whole counters (max 20 each), signature spells are fixed cards, and the casting minigame is a
+// whole counters (max 12 HP, 20 mana and ward), signature spells are fixed cards, and the casting minigame is a
 // tiddlywink flick. This file is the rules engine, a simple AI and the AI-vs-AI simulator that
 // tools/balance.html runs in Tabletop mode. The human-readable rules are docs/tabletop-rules.md —
 // keep the two in step. Character numbers live in tabletop.json.
@@ -14,7 +14,8 @@
 // ── Rules (all numbers in counters / mana) ─────────────────
 // As written, these are the Advanced rules; PRESETS below switches to Normal (the default) or Beginner.
 const RULES={
-  max:20,                      // max counters of HP, mana and ward
+  max:20,                      // max counters of mana and ward
+  maxHp:12,                    // max HP: both players share one colour of 25 health winks
   startMana:6,
   income:4,                    // mana each wizard gains at the end of every round
   meditate:3,                  // Meditate: skip your spell for this much mana (not two rounds running)
@@ -61,7 +62,7 @@ const RULES={
   squopGain:1,
   // Sudden death keeps games short: from this round, both wizards lose dmg HP at every round end,
   // 1 more every `every` rounds after that.
-  suddenDeath:{round:8, dmg:1, every:3},
+  suddenDeath:{round:15, dmg:1, every:3},
   maxRounds:40,                // the simulator calls it a timeout after this
   // How the flick works:
   //  'pot'     pot `winks` winks to cast, paying retryCost after each miss (the rules above).
@@ -117,7 +118,7 @@ function rulesOf(name){
 // A character's "hp" in tabletop.json is for the Normal rules (Beginner uses it too); it can change
 // it under a named rule set: "rules":{"advanced":{"hp":17}}. Only HP for now.
 function applyCharRules(){
-  Object.values(CHARS).forEach(c=>{ const o=c.alt[rulesName]||{}; c.hp=Math.min(RULES.max,o.hp!=null?o.hp:c.baseHp); });
+  Object.values(CHARS).forEach(c=>{ const o=c.alt[rulesName]||{}; c.hp=Math.min(RULES.maxHp,o.hp!=null?o.hp:c.baseHp); });
 }
 const ELEMENTS=['fire','ice','lightning','arcane','physical','dark'];
 const CATS=['protect','dispel','damage'];
@@ -133,7 +134,7 @@ function load(chars,tt){
     if(k.startsWith('_')||!chars[k]) return;
     const c=chars[k], t=tt[k];
     CHARS[k]={key:k, name:c.name, title:c.title, col:c.col, sealAll:!!c.sealAll, sealCostMod:c.sealCostMod||0,
-      hp:Math.min(RULES.max,t.hp), baseHp:Math.min(RULES.max,t.hp), alt:t.rules||{},
+      hp:Math.min(RULES.maxHp,t.hp), baseHp:Math.min(RULES.maxHp,t.hp), alt:t.rules||{},
       deathless:t.deathless||0, forbidden:t.forbidden||c.forbidden||[], spells:t.spells||[]};
   });
   applyCharRules();
