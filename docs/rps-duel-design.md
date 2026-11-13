@@ -560,9 +560,24 @@ balanced on its own before the next:
    element still replaces the old one. The AI tops up a ward below `WARD_BOOST_AI_HP` (25) HP and, when
    it wards, picks its own ward's element 75% of the time (Normal; 40% Easy) unless the foe just used
    that element.
-2. **Seals (not built; next).** A seal is its own Protection pick (about 2 mana). A sealed ward doesn't wear
-   at round end; a dispel breaks the seal instead of hurting the ward; strikes still hit it. Eldrin
-   needs a new hook (his seal free with his ward, or surviving the first dispel).
+2. **Seals (built, on).** 🔒 **Seal Ward** is a button on the Protection wheel, as Cleanse Self is on the
+   Dispel wheel: a Protection pick with `self:true` (`isSeal`), `SEAL.cost` 2 mana, cast with the
+   inner-ring tile-match in the ward's element, resolved in the Protection stage (`executeSeal`). It
+   seals the outer layer (`st.wardSealed`; a layer beneath keeps its own `sealed`).
+   - A sealed layer doesn't wear at round end. Strikes ignore seals.
+   - A dispel that meets a seal breaks it and stops (`elemWardDispel`); a Greater one breaks it and
+     goes on into the ward, and on through the layers as before. Curses that hit wards only break seals.
+   - Putting a ward on over a sealed one keeps the seal beneath (seal, layer, seal again). Topping up
+     keeps the seal; a ward that replaces the outer layer at the limit comes unsealed.
+   - Dread and locks on Protection cover it (it's a Protection pick); Enthral calling Protection takes it.
+   - **Eldrin** (`sealAll` in `characters.json`): his Seal Ward seals every layer at once. A character's
+     `sealCostMod` changes the cost (none use it). His Ward spell still braces and takes the next dispel.
+   - AI: seals a ward of at least `WARD_BOOST_AI_HP` that isn't sealed, weight `WARD_SEAL_AI` (0.6;
+     half on Easy, +0.2 with 45+ ward HP in all, ×0.6 while a foe can afford a Greater dispel), and on
+     Normal it doesn't hold back to a lesser dispel against a sealed ward.
+   - Looks: a sealed layer gets a slowly turning ring of gold Arcana glyphs (`drawWardSeal`, `SEAL_GLYPHS`
+     ⊕ θ Φ ∞ Ω ✸, all text-only); sealing phases in gold motes; a broken seal unravels in gold threads
+     with 🔒 SEAL BROKEN. Labels: `🔒55 ‹🔒🔥35›`.
 3. **Layers (built, on, `layers:2`).** A ward in a new element goes on over the one already up while
    there's room; at the limit it replaces the outer layer. Recasting either layer's element tops that
    layer up. The outer layer is the old single-ward state (`shield` / `shieldHp` / `shieldType` /
@@ -589,6 +604,14 @@ Sim scaffolding: `tools/balance.html` has a **Wards** selector (presets in `WARD
 table (raised, boosted, peak ward HP per game). `node tools/ward_compare.js 40 off,boost` runs the
 presets headless and prints the win rates side by side. At 40 games per matchup two runs of the
 same rules differ by up to about 3 points per character.
+
+Seals result (Normal AI, 60 games per matchup): boost + layers 43.7–55.8%; with seals 43.4–56.4% (one
+run had Weizan at 58.1%, another nobody outside the band; the 56–58% edge moves between Frederick and
+Weizan from run to run). The AI seals about 0.1–0.4 times a game; even an AI that seals at every chance
+(`sealsMax`) only gets to 0.7, since a ward has to survive a round with 25+ HP first, and stays in band.
+Eldrin with `sealAll`: 51.4 → 54.3% (the same with a seal 1 cheaper, so it stays at full cost). A human
+will likely seal more than the AI does: watch Eldrin and the ward-heavy wizards (Durin, Cinder, Mary)
+in play.
 
 Layers result (Normal AI, 60 games per matchup): off 42.4–56.0%, shipped rules (boost + 2 layers)
 44.0–54.9%, every character within ±8%, games 20.2 → 20.9 rounds. The AI layers about 0.1–0.8 times a

@@ -56,6 +56,15 @@ with the Beginner rules: about 12% of flicks pot, you flick 10 minus the spell's
   <label title="Standard mode only. Layered wards are built in steps (docs/rps-duel-design.md)">Wards <select id="wards">
     <option value="game">As in the game</option>
     <option value="off">Off (recast replaces)</option>
+    <option value="noSeals">Boost + layers, no seals</option>
+    <option value="seals">Seals (cost 2)</option>
+    <option value="sealsCost1">Seals, cost 1</option>
+    <option value="sealsCost3">Seals, cost 3</option>
+    <option value="sealsShy">Seals, AI seals less</option>
+    <option value="sealsKeen">Seals, AI seals more</option>
+    <option value="eldrinSealAll">Seals + Eldrin seals every layer</option>
+    <option value="eldrinSealCheap">Seals + Eldrin seals every layer for 1 less</option>
+    <option value="sealsMax">Seals, AI seals at every chance (stress)</option>
     <option value="layers1">Step 1 only: boost, no layers</option>
     <option value="layers2">Layers: 2</option>
     <option value="layers3">Layers: 3</option>
@@ -95,7 +104,16 @@ let mode=MODES.standard;
 // Ward rule presets for the standard game (WARD_RULES in js/game.js). Steps 2–3 (seals, layers) go here.
 // 'game' is whatever js/game.js ships with (captured on load). aiHp: the AI tops up a ward below this.
 const WARD_PRESETS={
-  off:    {boost:false, boostCap:1.5, seals:false, layers:1, aiHp:25, layerAi:0.4, dispelStrips:true},
+  off:    {boost:false, boostCap:1.5, seals:false, layers:1, aiHp:25, layerAi:0.4, dispelStrips:true, sealAi:0.6, sealCost:2},
+  noSeals:{seals:false},   // boost + layers, no seals
+  seals:  {seals:true},
+  sealsCost3:{seals:true, sealCost:3},
+  sealsCost1:{seals:true, sealCost:1},
+  sealsShy:  {seals:true, sealAi:0.3},
+  sealsKeen: {seals:true, sealAi:1.0},
+  sealsMax:  {seals:true, sealAi:3.0},   // stress test: the AI seals at nearly every chance
+  eldrinSealAll:{seals:true, charMods:{eldrin:{sealAll:true}}},   // Eldrin's hook: his seal binds every layer
+  eldrinSealCheap:{seals:true, charMods:{eldrin:{sealAll:true, sealCostMod:-1}}},
   layers1:{boost:true,  boostCap:1.5, seals:false, layers:1},   // step 1 only: boost, no layering
   layers2:{boost:true,  boostCap:1.5, seals:false, layers:2},
   layers3:{boost:true,  boostCap:1.5, seals:false, layers:3},
@@ -145,7 +163,7 @@ function run(){
   keys.forEach(a=>keys.forEach(b=>{ if(a!==b) jobs.push([a,b]); }));
   const per=games/2;
   const stats={};
-  keys.forEach(k=>stats[k]={w:0,l:0,d:0,t:0,rounds:0,games:0,picks:{},vs:{},wards:{raised:0,boosted:0,layered:0,peak:0}});
+  keys.forEach(k=>stats[k]={w:0,l:0,d:0,t:0,rounds:0,games:0,picks:{},vs:{},wards:{raised:0,boosted:0,layered:0,peak:0,sealed:0,sealsBroken:0}});
   const btn=document.getElementById('run'); btn.disabled=true;
   document.getElementById('copy').disabled=true;
   const t0=performance.now();
@@ -182,7 +200,8 @@ function record(s,opp,r,seat){
   else { if(r.winner==='draw') s.d++; else s.t++; vs.w+=0.5; }
   Object.entries(r.picks[seat]).forEach(([k,n])=>{ s.picks[k]=(s.picks[k]||0)+n; });
   const w=r.wards&&r.wards[seat];   // standard mode only
-  if(w){ s.wards.raised+=w.raised; s.wards.boosted+=w.boosted; s.wards.layered+=w.layered||0; s.wards.peak+=w.peak; }
+  if(w){ s.wards.raised+=w.raised; s.wards.boosted+=w.boosted; s.wards.layered+=w.layered||0; s.wards.peak+=w.peak;
+    s.wards.sealed+=w.sealed||0; s.wards.sealsBroken+=w.sealsBroken||0; }
 }
 const winRate=s=>(s.w+0.5*(s.d+s.t))/s.games;
 
@@ -239,9 +258,9 @@ function render({stats,keys,games,ai,band,mode:m,wards}){
   if(m==='standard'){
     html+=`<h2>Wards</h2><p class="note">Per game: wards raised fresh, wards topped up by a recast of the same element
       (only with a boost rule on), wards put on over another (only with layers), and the highest total ward HP reached.</p><table><tr><th class="name">Character</th>
-      <th>Raised</th><th>Boosted</th><th>Layered</th><th>Peak HP</th></tr>`;
+      <th>Raised</th><th>Boosted</th><th>Layered</th><th>Sealed</th><th>Seals broken on them</th><th>Peak HP</th></tr>`;
     sorted.forEach(k=>{ const s=stats[k], g=s.games||1;
-      html+=`<tr><td class="name">${name(k)}</td><td>${(s.wards.raised/g).toFixed(2)}</td><td>${(s.wards.boosted/g).toFixed(2)}</td><td>${(s.wards.layered/g).toFixed(2)}</td><td>${(s.wards.peak/g).toFixed(0)}</td></tr>`; });
+      html+=`<tr><td class="name">${name(k)}</td><td>${(s.wards.raised/g).toFixed(2)}</td><td>${(s.wards.boosted/g).toFixed(2)}</td><td>${(s.wards.layered/g).toFixed(2)}</td><td>${(s.wards.sealed/g).toFixed(2)}</td><td>${(s.wards.sealsBroken/g).toFixed(2)}</td><td>${(s.wards.peak/g).toFixed(0)}</td></tr>`; });
     html+='</table>';
   }
   document.getElementById('results').innerHTML=html;
@@ -260,7 +279,7 @@ window.runBalance=(games,ai,m,wards)=>{
   setMode(m||'standard');
   setWards(wards||'game');
   const keys=Object.keys(CHARS), stats={};
-  keys.forEach(k=>stats[k]={w:0,l:0,d:0,t:0,rounds:0,games:0,picks:{},vs:{},wards:{raised:0,boosted:0,layered:0,peak:0}});
+  keys.forEach(k=>stats[k]={w:0,l:0,d:0,t:0,rounds:0,games:0,picks:{},vs:{},wards:{raised:0,boosted:0,layered:0,peak:0,sealed:0,sealsBroken:0}});
   keys.forEach(a=>keys.forEach(b=>{ if(a===b) return;
     for(let g=0;g<games/2;g++){ const r=mode.simMatch(a,b,ai||'normal'); record(stats[a],b,r,'p1'); record(stats[b],a,r,'p2'); } }));
   last={stats,keys,games,ai:ai||'normal',band:+document.getElementById('band').value,mode:m||'standard',wards:typeof wards==='string'?wards:'custom'};

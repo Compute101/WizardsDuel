@@ -1017,6 +1017,7 @@ body {
 .wl-row.off { color: rgba(255,255,255,0.3); }
 #wheel-rule { font-size: 10px; line-height: 1.5; color: rgba(255,255,255,0.5); max-width: 320px; }
 #wheel-self { margin-top: 4px; }
+#wheel-self:disabled { opacity: .45; cursor: default; }
 #wheel-sig { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 6px; }
 .wsig-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #f0cc6a; margin-top: 4px; }
 .wsig-row {

@@ -15,6 +15,7 @@
     ],
     "hp": 90,
     "dmgMult": 1.1,
+    "sealAll": true,
     "spells": [
       {
         "id": "shield",
