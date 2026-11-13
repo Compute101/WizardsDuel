@@ -1,7 +1,7 @@
 // Layered-wards scaffolding: runs the standard-game balance sim headless (Playwright + tools/balance.html)
 // once per ward-rule preset and prints each character's win rate side by side, plus ward use.
 //
-//   node tools/ward_compare.js [gamesPerMatchup=40] [presets=off,boost] [ai=normal]
+//   node tools/ward_compare.js [gamesPerMatchup=40] [presets=off,layers1,game] [ai=normal]
 //
 // Presets are the WARD_PRESETS names in tools/balance.html (game, off, boost, boost1, boost2, …).
 // The first preset is the baseline the others are compared with. Two runs of the same rules differ by
@@ -11,7 +11,7 @@ const http=require('http'), fs=require('fs'), path=require('path');
 const {chromium}=require('playwright');
 
 const games=+(process.argv[2]||40);
-const presets=(process.argv[3]||'off,boost').split(',');
+const presets=(process.argv[3]||'off,layers1,game').split(',');
 const ai=process.argv[4]||'normal';
 const root=path.join(__dirname,'..');
 const TYPES={'.html':'text/html','.js':'text/javascript','.json':'application/json','.css':'text/css',
@@ -43,15 +43,15 @@ const server=http.createServer((req,res)=>{
   const by=p=>Object.fromEntries(runs[p].map(r=>[r.key,r]));
   const idx=Object.fromEntries(presets.map(p=>[p,by(p)]));
   const order=base.slice().sort((a,b)=>b.winRate-a.winRate).map(r=>r.key);
-  console.log(`\n${games} games per matchup, AI ${ai}. Win % (Δ vs ${presets[0]}) · boosts per game\n`);
-  console.log(pad('Character',12)+presets.map(p=>pad(p,22)).join(''));
+  console.log(`\n${games} games per matchup, AI ${ai}. Win % (Δ vs ${presets[0]}) · boosts / layers per game\n`);
+  console.log(pad('Character',12)+presets.map(p=>pad(p,24)).join(''));
   order.forEach(k=>{
     let line=pad(idx[presets[0]][k].name,12);
     presets.forEach((p,i)=>{
       const r=idx[p][k], wr=(r.winRate*100).toFixed(1);
       const d=i?` (${r.winRate>=idx[presets[0]][k].winRate?'+':''}${((r.winRate-idx[presets[0]][k].winRate)*100).toFixed(1)})`:'';
       const flag=Math.abs(r.winRate-0.5)>0.08?'!':' ';
-      line+=pad(`${flag}${wr}${d} ·${r.wards.boosted.toFixed(1)}`,22);
+      line+=pad(`${flag}${wr}${d} ·${r.wards.boosted.toFixed(1)}/${(r.wards.layered||0).toFixed(1)}`,24);
     });
     console.log(line);
   });

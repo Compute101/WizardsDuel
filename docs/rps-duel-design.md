@@ -50,8 +50,8 @@ What was built, including choices made while building:
   paid for, whatever the seat order. A failed ritual costs 1 mana instead. **Quick** spells (`quick` on
   the spell; only Ponder's Mana Siphon) are paid first and steal at once, so their target pays from
   what's left — if they can no longer afford their pick, it fails.
-- **Wards:** raising one in a new element replaces any existing ward; recasting the element already up
-  tops it up instead (see "Layered wards" below). A ward stops damage in the same round it's raised.
+- **Wards:** recasting the element already up tops it up, and a ward in a new element goes on over it,
+  up to 2 layers (see "Layered wards" below). A ward stops damage in the same round it's raised.
   Like tabletop mode, a ward has **no round timer**: it lasts until it runs out. It loses a flat
   **4 HP at every round end** (`ELEM_WARD_WEAR`, about one tabletop wink), and strikes, ticks and
   dispels wear it too; Counter stops the round-end wear while it lasts. (It used to last 3 rounds and
@@ -548,7 +548,7 @@ resolve (`revealVanished`, called in `resolveSimRound` before any stage), so he'
 whatever order the strikes land in. Other picks (Protection, Dispel, Meditate) keep him hidden. The AI on his
 side rarely strikes while Vanished. Vanish cost 3→2 to make up for it: Ponder 49.9%, roster 42.7–57.0%.
 
-### Layered wards (in progress)
+### Layered wards
 The goal: wizards can build defences up in layers, like a real wizards' duel, while Dispel stays a
 counter and games don't stall. Built in steps, each behind a switch in `WARD_RULES` (`js/game.js`) and
 balanced on its own before the next:
@@ -560,18 +560,39 @@ balanced on its own before the next:
    element still replaces the old one. The AI tops up a ward below `WARD_BOOST_AI_HP` (25) HP and, when
    it wards, picks its own ward's element 75% of the time (Normal; 40% Easy) unless the foe just used
    that element.
-2. **Seals (not built).** A seal is its own Protection pick (about 2 mana). A sealed ward doesn't wear
+2. **Seals (not built; next).** A seal is its own Protection pick (about 2 mana). A sealed ward doesn't wear
    at round end; a dispel breaks the seal instead of hurting the ward; strikes still hit it. Eldrin
    needs a new hook (his seal free with his ward, or surviving the first dispel).
-3. **A second layer (not built).** At most 2 wards in different elements; strikes and dispels hit the
-   outer one first. Open questions: does `blast` / Infernal Mantle go through one layer or both; how
-   buffs stay reachable (a Greater dispel always takes a buff too, or Arcane unweave frays through
-   wards); which layer the element riders read.
+3. **Layers (built, on, `layers:2`).** A ward in a new element goes on over the one already up while
+   there's room; at the limit it replaces the outer layer. Recasting either layer's element tops that
+   layer up. The outer layer is the old single-ward state (`shield` / `shieldHp` / `shieldType` /
+   `wardRetaliate` / `wardSig`), so everything that reads "the ward" (element matching, the AI,
+   retaliation, signature twists) reads the one you'd hit; the layers beneath sit in `st.wardInner`
+   (innermost first) and step out when it falls (`clearOuterWard`, from `breakWard`).
+   - Strikes, ticks and minions: what breaks the outer layer carries on into the next, on that layer's
+     own element rules (`elemIncoming` loops; an arcane volley's shared `wear` restarts per layer).
+   - Dispels: a lesser one stops at the layer it breaks. A Greater one (`ELEM_DISPEL_ALL_TIER`) carries
+     its leftover power into the next layer, and if it breaks a stack of 2+ with power to spare it strips
+     every buff too (`dispelStrips`), so buffs behind a stack stay reachable. Doing that behind a
+     *single* ward was tried first and moved balance a lot (Thessaly 40.5%, Mary and Frederick about
+     58–60%), so it's limited to real stacks.
+   - Round-end wear hits every layer (`ELEM_WARD_WEAR` each), so a stack costs upkeep; Eldrin's Ward
+     braces them all.
+   - Blast and Infernal Mantle go around every layer. Riders read the outer layer.
+   - AI: with a ward of at least `WARD_BOOST_AI_HP` and room for a layer, its Protection weight is
+     `WARD_LAYER_AI` (0.4, else 0.2) and it picks a new element; with a worn ward it tops up instead.
+   - Looks: each layer beneath gets its own orbiters on tighter rings (`WARD_INNER_SCALE`) and a thin
+     dashed ring in its colour drawn in front of the sprite (`drawInnerWardRings`). Labels read
+     `55 ‹🔥35›` (outer HP, then each layer beneath; `wardLabel`).
 
 Sim scaffolding: `tools/balance.html` has a **Wards** selector (presets in `WARD_PRESETS`) and a Wards
 table (raised, boosted, peak ward HP per game). `node tools/ward_compare.js 40 off,boost` runs the
 presets headless and prints the win rates side by side. At 40 games per matchup two runs of the
 same rules differ by up to about 3 points per character.
+
+Layers result (Normal AI, 60 games per matchup): off 42.4–56.0%, shipped rules (boost + 2 layers)
+44.0–54.9%, every character within ±8%, games 20.2 → 20.9 rounds. The AI layers about 0.1–0.8 times a
+game (Durin and Cinder most); 3 layers (`layers3` preset) played about the same as 2.
 
 Step 1 results (Normal AI, 40 games per matchup): off 43.9–57.0%, boost 42.6–56.9%, every character
 within ±8% for every cap tried (1×, 1.5×, 2×, except Durin 58.2% once at 2×) and AI threshold (15, 25,
