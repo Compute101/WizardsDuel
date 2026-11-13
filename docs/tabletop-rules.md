@@ -30,6 +30,7 @@ The app's standard game is unchanged: this is a separate rule set. There are the
    - **Damage**, **Protection** or **Dispel**, plus an **element** and a **level**: **Lesser**, **Normal** or **Greater**. You can't use elements your wizard can't cast.
    - One of your wizard's **signature spells**. Each card has its own cost and level.
    - **Cleanse:** a Dispel at yourself that removes your curses (see **Buffs and curses**).
+   - **Seal Ward:** a Protection at yourself that seals your ward (see **Seals**).
    - **Meditate:** skip your spell and gain 3 mana. You can't Meditate two rounds running.
 2. **Reveal** both picks.
 3. **Pay.** Mana Siphon is a quick spell: it's paid and steals before anyone else pays. Then check curses that react to your pick (Enthral, then Silence). Then pay the spell's cost in mana winks. If you can't afford your spell, it's lost (you pay nothing).
@@ -94,20 +95,33 @@ If you want fewer outright fizzles, agree before the game what counts as a **nea
 
 ## Wards (Protection)
 
-- A ward is a pile of ward winks. Casting a new ward replaces the old one.
-- **Strikes hit the ward first.** If the ward runs out, the rest goes to HP.
+- A ward is a pile of ward winks. Remember (or mark) each pile's element.
+- **Top up:** casting a ward in the element of a pile you already have adds its winks to that pile, up to **one and a half times** the new ward (Lesser 6, Normal 12, Greater 18). It never makes the pile smaller.
+  - Example: your Fire ward is down to 3 and you cast a Normal Fire ward (8). It becomes 11. Cast another and it stays at 12.
+- **Layers:** casting a ward in a **new** element puts a second pile **on the outside** of the first. You can have **2 piles** at most; a third new element replaces the outer pile. All your piles together hold at most 20 winks.
+- **Strikes hit the outer pile first.** If it runs out, the rest carries on into the pile beneath (with that pile's own +2), then to HP.
 - A strike in **the ward's own element** counts **+2** against the ward.
   - Example: a Normal Fire strike (4) hits a Fire ward of 5. It counts as 6, so the ward breaks and 1 goes through to HP.
-- A ward **lasts until it runs out**. It loses **1 wink at every round end**, and strikes and dispels take it down.
+- A ward **lasts until it runs out**. Every pile loses **1 wink at every round end** (unless it's sealed), and strikes and dispels take it down.
 - Ticks (burns, poison, minions) also hit the ward first.
 - **Skeletons stand in front of the ward.** Each skeleton has 1 HP: every point of damage (strikes and ticks) kills one skeleton before anything reaches the ward. Only what gets past the skeletons meets the ward, and the ward's +2 element bonus applies only to that.
   - Example: a Normal Fire strike (4) hits 3 skeletons and a Fire ward of 5. 3 skeletons fall, the last 1 counts as 3 against the ward, and the ward drops to 2.
 - **Graveguard** (Daveron's elite skeletons) work the same way but have **3 HP each**: damage wears down the oldest graveguard first, and each one falls when its HP runs out. Keep a die or extra winks by each one to track its HP.
   - Example: a Normal Fire strike (4) hits 2 graveguard (3 HP each) and a Fire ward of 5. The first graveguard falls (3), the second drops to 2 HP (1), and nothing reaches the ward.
 
+## Seals
+
+- **Seal Ward** is a Protection you cast at yourself: **1 mana** and a Lesser flick (1 wink). It seals your **outer** ward pile. Put a coin or a spare wink of another colour on the pile to mark it.
+- A sealed pile **doesn't wear** at round end.
+- A Dispel that meets a seal **only breaks the seal**, whatever its level, even a Greater one. So a sealed ward takes **two** Dispels: a cheap one for the seal, then one for the ward.
+- Strikes ignore seals: they hit the pile as usual. A seal goes when its pile does.
+- Putting a new pile on over a sealed one leaves the seal on the pile beneath, so you can seal, layer and seal again. Topping up a pile keeps its seal.
+
 ## Dispels
 
-- A Dispel hits the foe's **ward** if they have one, removing ward winks equal to its power. A Dispel in **the ward's own element** counts **+2**, the same as a strike.
+- A Dispel hits the foe's **outer ward pile** if they have one, removing ward winks equal to its power. A Dispel in **the pile's own element** counts **+2**, the same as a strike. If the pile is sealed, it only breaks the seal.
+- A Lesser or Normal Dispel stops at the pile it breaks. A **Greater** Dispel carries what's left into the next pile (a seal there stops it), and if it breaks **both** piles with power to spare, it removes **every** buff too.
+  - Example: a Greater Arcane Dispel (12) meets a Fire pile of 5 over an Arcane pile of 9. The Fire pile breaks with 7 to spare, which counts as 9 against the Arcane pile, and that breaks too.
 - With no ward up, it removes the foe's **newest buff**. A **Greater** Dispel removes **every** buff.
 - Curses are Dispel-type signature spells. They land on the foe even through a ward.
 
@@ -132,7 +146,7 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 
 1. **Ticks:** curses on each wizard (burns, poison, plague, Agony and similar), then their regeneration, then their minions strike the foe.
 2. **Sudden death:** from **round 8**, both wizards lose 1 HP at every round end, +1 more every 3 rounds after that (2 HP from round 11).
-3. **Wards wear** by 1 wink. A ward with no winks left is gone.
+3. **Wards wear:** every unsealed pile loses 1 wink. A pile with no winks left is gone.
 4. **Income:** each wizard gains **4 mana**, less any curse that cuts income.
 
 ## Keywords
@@ -151,12 +165,12 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 
 <!-- characters:start -->
 ### ELDRIN — The Stalwart
-**HP 18**
+**HP 17** · Seal Ward seals every one of your ward piles at once
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Shield** | Protection | Arcane | Normal | 5 | Arcane ward of 14, for a Normal flick (a Greater ward is 12 and needs 3 winks). |
-| **Counter** | Protection | Lightning | Normal | 2 | Until dispelled: anyone who strikes you takes 3, and your ward doesn't wear down. |
+| **Shield** | Protection | Arcane | Normal | 4 | Arcane ward of 16 for 4 mana and a Normal flick (a Greater ward is 12 for 6 mana and 3 winks). |
+| **Counter** | Protection | Lightning | Normal | 2 | Until dispelled: anyone who strikes you takes 4, and your wards don't wear down. |
 | **Ward** | Protection | Ice | Normal | 2 | Until dispelled: curses can't touch you. A dispel at you only removes this Ward. |
 
 ### MALACHAR — The Relentless

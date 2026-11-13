@@ -27,6 +27,18 @@ const RULES={
   },
   wardWear:1,                  // a ward loses this many counters at every round end; it lasts until it runs out
   wardMatch:2,                 // a strike or dispel in the ward's own element counts this much more against it
+  // Layered wards and seals (the standard game's WARD_RULES, in counters):
+  //  boost:    a ward in the element of one already up tops that one up instead: + the new ward's winks,
+  //            up to boostCap × them (Lesser 6, Normal 12, Greater 18), never fewer than it has
+  //  layers:   up to this many wards at once, each its own pile; a new element goes on the outside.
+  //            Strikes and ticks hit the outer pile first, and what breaks it carries on into the next.
+  //            A Lesser or Normal dispel stops at the pile it breaks; a Greater one carries on, and if
+  //            it breaks 2+ piles with power to spare (dispelStrips) it strips every buff too.
+  //            Every pile wears at round end. All the piles together hold at most `max` winks.
+  //  seals:    Seal Ward (a Protection pick at yourself, Lesser flick, sealCost mana) seals the outer
+  //            pile: a sealed pile doesn't wear, and a dispel that meets a seal only breaks the seal,
+  //            whatever its level. Strikes ignore seals. A pile put on over a sealed one keeps it.
+  wards:{boost:true, boostCap:1.5, layers:2, seals:true, sealCost:1, dispelStrips:true},
   dispelAllRing:3,
   // Cleanse (a Dispel at yourself): Lesser removes 1 curse, Normal 2, Greater all of them; it costs
   // 1 mana per level, and the usual 1 / 2 / 3 winks to pot.
@@ -96,7 +108,7 @@ function load(chars,tt){
   Object.keys(tt).forEach(k=>{
     if(k.startsWith('_')||!chars[k]) return;
     const c=chars[k], t=tt[k];
-    CHARS[k]={key:k, name:c.name, title:c.title, col:c.col,
+    CHARS[k]={key:k, name:c.name, title:c.title, col:c.col, sealAll:!!c.sealAll, sealCostMod:c.sealCostMod||0,
       hp:Math.min(RULES.max,t.hp), baseHp:Math.min(RULES.max,t.hp), alt:t.rules||{},
       deathless:t.deathless||0, forbidden:t.forbidden||c.forbidden||[], spells:t.spells||[]};
   });
@@ -117,7 +129,8 @@ const clamp=v=>Math.max(0,Math.min(RULES.max,v));
 // ── State ──────────────────────────────────────────────────
 let gs=null;
 function newGame(k1,k2){
-  const seat=(k,w)=>({w, key:k, c:CHARS[k], hp:CHARS[k].hp, mana:RULES.startMana, ward:null, effects:[],
+  const seat=(k,w)=>({w, key:k, c:CHARS[k], hp:CHARS[k].hp, mana:RULES.startMana, ward:null, wardInner:[],
+    wardStats:{raised:0, boosted:0, layered:0, sealed:0, sealsBroken:0}, effects:[],
     medRound:-9, potted:0, catCounts:{}, lostLast:0, hpAtStart:0, used:{}, meditated:false});
   gs={round:1, p1:seat(k1,'p1'), p2:seat(k2,'p2'), table:0, over:null, log:[]};
   return gs;
@@ -149,7 +162,7 @@ function mostUsedCat(st){ return ['damage','protect','dispel'].reduce((a,c)=>(st
 function costOf(st,a){
   if(a.cat==='meditate'||a.cat==='pass') return 0;
   const sp=a.sig&&sigById(st,a.sig);
-  let c=sp?sp.cost:a.self?RULES.cleanseCost[a.ring-1]:RULES.cats[a.cat].cost[a.ring-1];
+  let c=sp?sp.cost:isSeal(a)?sealCost(st):a.self?RULES.cleanseCost[a.ring-1]:RULES.cats[a.cat].cost[a.ring-1];
   if(!sp) c=Math.max(1,c);
   c+=fx(st,'spellbind').filter(e=>e.cat===a.cat).reduce((s,e)=>s+e.extra,0);
   return c;
@@ -199,7 +212,8 @@ function gainMana(who,n){ gs[who].mana=clamp(gs[who].mana+n); }
 // own: the damage is the target's own (a Bewitched self-hit), so the foe pays no Soul Tithe.
 // Returns the HP damage dealt.
 // blast: up to this much of the damage goes around the ward straight to HP (Frederick's strikes)
-function incoming(who,dmg,adj,own,blast){
+// elem: the strike's element, so each ward pile it meets counts its own +2 (instead of adj)
+function incoming(who,dmg,adj,own,blast,elem){
   const st=gs[who];
   if(dmg<=0) return 0;
   // Soak minions (skeletons) stand in front of the ward, oldest first: each soaks damage up to its HP
@@ -220,10 +234,13 @@ function incoming(who,dmg,adj,own,blast){
   }
   let around=0;
   if(st.ward&&blast){ around=Math.min(blast,dmg); dmg-=around; }
-  if(st.ward&&dmg>0){
-    const eff=Math.max(1,dmg+(adj||0));
-    if(eff<st.ward.hp){ st.ward.hp-=eff; dmg=0; }
-    else { const over=eff-st.ward.hp; st.ward=null; dmg=over; }
+  // Layered wards: what breaks the outer pile carries on into the next (with that pile's own +2)
+  while(st.ward&&dmg>0){
+    const a=elem!=null?wardAdj(st,elem):(adj||0), eff=Math.max(1,dmg+a);
+    if(eff<st.ward.hp){ st.ward.hp-=eff; dmg=0; break; }
+    const over=eff-st.ward.hp;
+    dropOuterWard(st);
+    dmg=st.ward?Math.max(0,over-a):over;
   }
   dmg+=around;
   loseHp(who,dmg);
@@ -231,13 +248,54 @@ function incoming(who,dmg,adj,own,blast){
 }
 function wardAdj(st,elem){ return st.ward&&st.ward.elem===elem?RULES.wardMatch:0; }
 
+// ── Wards: piles of ward winks, outer first (st.ward), the rest beneath (st.wardInner, innermost first)
+const wardRules=()=>RULES.wards||{};
+function wardLayers(st){ return st.ward?1+st.wardInner.length:0; }
+function wardTotal(st){ return st.ward?st.ward.hp+st.wardInner.reduce((a,l)=>a+l.hp,0):0; }
+function dropOuterWard(st){ st.ward=st.wardInner.pop()||null; }
+const isSeal=a=>a.cat==='protect'&&!!a.self;
+function sealCost(st){ return Math.max(0,(wardRules().sealCost||1)+(st.c.sealCostMod||0)); }
+// Something to seal: the outer pile, or (sealAll: Eldrin) any pile beneath
+function canSeal(st){
+  if(!wardRules().seals||!st.ward) return false;
+  return !st.ward.sealed||(st.c.sealAll&&st.wardInner.some(l=>!l.sealed));
+}
+function doSeal(who){
+  const st=gs[who];
+  if(!st.ward) return;
+  const piles=st.c.sealAll?[st.ward].concat(st.wardInner):[st.ward];
+  piles.forEach(l=>{ if(!l.sealed){ l.sealed=true; st.wardStats.sealed++; } });
+}
+
 // ── Casting ────────────────────────────────────────────────
-function raiseWard(who,elem,hp,ret){
-  gs[who].ward={hp:Math.min(RULES.max,hp), elem, ret:ret||0};
+// noBoost: a buff's light side-ward (Blink, Arcane Weave) never tops up or layers: it replaces the outer pile
+function raiseWard(who,elem,hp,ret,noBoost){
+  const st=gs[who], R=wardRules();
+  const room=()=>Math.max(0,RULES.max-wardTotal(st));
+  const same=st.ward&&(st.ward.elem===elem?st.ward:st.wardInner.find(l=>l.elem===elem));
+  if(!noBoost&&R.boost&&same){
+    const to=Math.max(same.hp,Math.min(same.hp+hp,Math.round(hp*R.boostCap)));
+    same.hp=Math.min(to,same.hp+room());
+    same.ret=Math.max(same.ret||0,ret||0);
+    st.wardStats.boosted++;
+    return;
+  }
+  if(!noBoost&&st.ward&&wardLayers(st)<(R.layers||1)){
+    st.wardInner.push(st.ward);
+    st.ward=null;
+    st.wardStats.layered++;
+  }
+  // A new outer pile (or one replacing the outer pile), within the 20-wink limit
+  const under=wardTotal(st)-(st.ward?st.ward.hp:0);
+  const n=Math.min(hp,RULES.max-under);
+  st.ward=n>0?{hp:n, elem, ret:ret||0, sealed:false}:null;
+  if(!st.ward) dropOuterWard(st);
+  st.wardStats.raised++;
 }
 
 function doProtect(who,a){
   const st=gs[who], sp=a.sig&&sigById(st,a.sig);
+  if(isSeal(a)){ doSeal(who); return; }
   if(!sp){ raiseWard(who,a.elem,RULES.cats.protect.power[a.ring-1]); return; }
   if(sp.kind==='ward'){
     let hp=sp.ward+(sp.perSkeleton||0)*minions(st,'skeleton').length;
@@ -249,7 +307,7 @@ function doProtect(who,a){
   if(sp.effect&&sp.effect.type==='gate'){ st.gate={until:gs.round}; st.lastGate=gs.round; return; }
   const e=Object.assign({id:sp.id, kind:'buff', name:sp.name},sp.effect);
   addEffect(who,e,who);
-  if(sp.ward) raiseWard(who,sp.elem,sp.ward);
+  if(sp.ward&&!(st.ward&&st.ward.hp>=sp.ward)) raiseWard(who,sp.elem,sp.ward,0,true);   // never over a stronger ward
 }
 function doInstant(who,sp){
   const st=gs[who], x=sp.action;
@@ -288,8 +346,21 @@ function doDispel(who,a){
   const warding=fx(ts,'warding');
   if(warding.length){ removeEffects(t,warding); return; }
   if(ts.ward){
-    ts.ward.hp-=power+wardAdj(ts,a.elem);
-    if(ts.ward.hp<=0) ts.ward=null;
+    // A seal stops the whole dispel: it breaks the seal and goes no further. A Greater dispel that
+    // breaks a pile carries on into the next; a Lesser or Normal one stops at the pile it breaks.
+    const R=wardRules(), through=(R.layers||1)>1&&a.ring>=RULES.dispelAllRing, stack=wardLayers(ts);
+    let p=power;
+    while(ts.ward&&p>0){
+      if(ts.ward.sealed){ ts.ward.sealed=false; ts.wardStats.sealsBroken++; return; }
+      const adj=wardAdj(ts,a.elem), hit=p+adj, had=ts.ward.hp;
+      ts.ward.hp-=hit;
+      if(ts.ward.hp>0) return;
+      dropOuterWard(ts);
+      if(!through) return;
+      p=Math.max(0,hit-had-adj);
+    }
+    // Broke a whole stack with power to spare: the buffs behind it go too
+    if(through&&p>0&&stack>1&&R.dispelStrips){ const b=buffs(ts); if(b.length) removeEffects(t,b); }
     return;
   }
   const b=buffs(ts);
@@ -330,7 +401,7 @@ function doDamage(who,a){
   const res=fx(ts,'resist').reduce((s,e)=>s+e.n,0);
   if(res) dmg=Math.max(1,dmg-res);
   const retaliate=fx(ts,'resist').concat(fx(ts,'counter')).reduce((s,e)=>s+(e.retaliate||0),0)+(ts.ward?ts.ward.ret:0);
-  const hp=incoming(tgt,dmg,wardAdj(ts,elem),false,pierce?dmg:sp&&sp.blast);
+  const hp=incoming(tgt,dmg,0,false,pierce?dmg:sp&&sp.blast,elem);
   if(hp>0){
     if(sp&&sp.lifesteal) heal(who,Math.floor(hp/2));
     if(sp&&sp.dot) addEffect(tgt,{id:sp.id+'-dot', type:'dot', kind:'curse', name:sp.name, dmg:sp.dot.dmg, bypassWard:sp.dot.bypassWard},who);
@@ -454,7 +525,7 @@ function pay(w,a,flick){
   if(cost>st.mana) return 'nomana';
   st.mana-=cost;
   if(!flickCast(w,ringOf(st,a),flick,cost)) return 'fizzle';
-  if(a.cat==='protect') fx(st,'candle').forEach(e=>loseHp(w,e.dmg));
+  if(a.cat==='protect'&&!isSeal(a)) fx(st,'candle').forEach(e=>loseHp(w,e.dmg));   // a seal isn't a new ward
   return 'cast';
 }
 
@@ -497,10 +568,11 @@ function endRound(){
   if(checkOver()) return;
   W.forEach(w=>{
     const st=gs[w];
-    // Wards wear down, and last until they run out
-    if(st.ward){
-      if(!fx(st,'counter').some(e=>e.holdWard)) st.ward.hp-=RULES.wardWear;
-      if(st.ward.hp<=0) st.ward=null;
+    // Wards wear down, every pile, and last until they run out. A sealed pile doesn't wear;
+    // Eldrin's Counter braces them all.
+    if(st.ward&&!fx(st,'counter').some(e=>e.holdWard)){
+      st.wardInner=st.wardInner.filter(l=>l.sealed||(l.hp-=RULES.wardWear)>0);
+      if(!st.ward.sealed){ st.ward.hp-=RULES.wardWear; if(st.ward.hp<=0) dropOuterWard(st); }
     }
     // Timed enchantments run down
     // Buffs and curses have no timers: they last until a Dispel or Cleanse removes them, or (for
@@ -523,6 +595,7 @@ function canPick(st,a){
   if(a.cat==='meditate') return canMeditate(st);
   if(a.cat==='pass') return true;
   if(locked(st,a.cat)) return false;
+  if(isSeal(a)) return canSeal(st)&&sealCost(st)<=st.mana;
   if(a.elem&&!a.sig&&st.c.forbidden.includes(a.elem)) return false;
   const sp=a.sig&&sigById(st,a.sig);
   if(sp&&sp.effect&&sp.effect.type==='gate'&&st.lastGate===gs.round-1) return false;   // not two rounds running
@@ -581,7 +654,8 @@ function aiChoose(w,level){
   if(minions(st,'blade').length>=2) w8.damage+=0.6;
   const hexes=st.c.spells.filter(s=>s.cat==='dispel'&&s.kind==='curse'&&sigSensible(w,s)).length;
   w8.dispel+=(smart?0.35:0.2)*hexes;
-  if(st.ward&&st.ward.hp>=4) w8.protect=0.2;
+  // A healthy ward with room for another pile still invites one; a sealable one invites a seal
+  if(st.ward&&st.ward.hp>=4) w8.protect=wardLayers(st)<(wardRules().layers||1)?AI_WARDS.layer:0.2;
   else {
     if(ts.mana>=costOf(ts,{cat:'damage',ring:2})) w8.protect+=0.35;
     if(st.hp<st.c.hp*0.35) w8.protect+=0.35;
@@ -591,7 +665,12 @@ function aiChoose(w,level){
   const tg=guards(ts);
   if(tg){ w8.damage+=(smart?0.25:0.1)*tg; if(!ts.ward) w8.dispel*=0.5; }
   if(fx(st,'bewitch').length){ w8.damage*=smart?0.15:0.6; w8.dispel+=smart?0.8:0.3; }
-  const cats=CATS.filter(c=>!locked(st,c)&&w8[c]>0);
+  if(canSeal(st)&&st.ward.hp>=AI_WARDS.sealHp&&!locked(st,'protect')){
+    w8.seal=AI_WARDS.seal*(smart?1:0.5);
+    if(smart&&wardLayers(st)>1) w8.seal+=0.3;
+    if(smart&&st.hp<st.c.hp*0.5) w8.seal+=0.3;
+  }
+  const cats=CATS.concat(w8.seal?['seal']:[]).filter(c=>(c==='seal'||!locked(st,c))&&w8[c]>0);
   // Pick a category, then a spell in it that we can afford; fall back through the others
   const pickW=list=>{ let r=rng()*list.reduce((s,c)=>s+w8[c],0); for(const c of list){ r-=w8[c]; if(r<=0) return c; } return list[0]; };
   let left=cats.slice();
@@ -604,8 +683,13 @@ function aiChoose(w,level){
   if(canMeditate(st)) return {cat:'meditate'};
   return {cat:'pass'};
 }
+// The AI's ward play (sim knobs, like the standard game's WARD_LAYER_AI / WARD_SEAL_AI):
+// layer: Protection weight with a healthy ward and room for another pile; seal / sealHp: Seal Ward's
+// weight and the least winks on the outer pile worth sealing; boostHp: top up the outer pile below this
+const AI_WARDS={layer:0.4, seal:1.0, sealHp:4, boostHp:6};
 function aiInCat(w,cat,smart){
   const st=gs[w], ts=gs[foe(w)];
+  if(cat==='seal') return canPick(st,{cat:'protect',self:true,ring:1})?{cat:'protect',self:true,ring:1}:null;
   // Cleanse a curse
   const nc=curses(st).length;
   if(cat==='dispel'&&nc&&canPick(st,{cat,self:true,ring:1})&&rng()<(smart?(!ts.ward&&!buffs(ts).length?0.9:0.6):0.5)){
@@ -638,6 +722,15 @@ function aiInCat(w,cat,smart){
     const safe=elems.filter(e=>ts.c.forbidden.includes(e));
     if(safe.length&&rng()<0.7) elem=safe[Math.floor(rng()*safe.length)];
   }
+  // Wards up: a worn one gets topped up; a healthy one with room for another pile gets a new element over it
+  if(cat==='protect'&&st.ward){
+    const R=wardRules(), mine=[st.ward.elem].concat(st.wardInner.map(l=>l.elem));
+    const room=wardLayers(st)<(R.layers||1);
+    if(room&&st.ward.hp>=AI_WARDS.boostHp){ const off=elems.filter(e=>!mine.includes(e)); if(off.length&&mine.includes(elem)) elem=off[Math.floor(rng()*off.length)]; }
+    else if(R.boost&&elems.includes(st.ward.elem)&&rng()<(smart?0.75:0.4)) elem=st.ward.elem;
+  }
+  // A sealed ward: any dispel only breaks the seal, so break it with the cheapest
+  if(cat==='dispel'&&smart&&ts.ward&&ts.ward.sealed&&canPick(st,{cat,elem,ring:1})) return {cat,elem,ring:1};
   let ring=3;
   while(ring>1&&!canPick(st,{cat,elem,ring})) ring--;
   if(!canPick(st,{cat,elem,ring})) return null;
@@ -658,10 +751,11 @@ function simMatch(k1,k2,ai){
   const picks={p1:{},p2:{}};
   while(!gs.over&&gs.round<=RULES.maxRounds){
     const a={p1:aiChoose('p1',ai), p2:aiChoose('p2',ai)};
-    ['p1','p2'].forEach(w=>{ const k=a[w].sig||(a[w].self?'cleanse':a[w].cat); picks[w][k]=(picks[w][k]||0)+1; });
+    ['p1','p2'].forEach(w=>{ const k=a[w].sig||(a[w].self?(a[w].cat==='protect'?'seal':'cleanse'):a[w].cat); picks[w][k]=(picks[w][k]||0)+1; });
     playRound(a);
   }
-  return {winner:gs.over||'timeout', rounds:gs.over?gs.round:gs.round-1, hp:{p1:gs.p1.hp,p2:gs.p2.hp}, picks};
+  return {winner:gs.over||'timeout', rounds:gs.over?gs.round:gs.round-1, hp:{p1:gs.p1.hp,p2:gs.p2.hp}, picks,
+    wards:{p1:{...gs.p1.wardStats}, p2:{...gs.p2.wardStats}}};
 }
 // Every ordered pair, `games` per matchup (half on each side). Returns [{key,name,winRate,rounds}], strongest first.
 function balance(games,ai){
@@ -679,7 +773,7 @@ function balance(games,ai){
     .sort((a,b)=>b.winRate-a.winRate);
 }
 
-const TT={RULES, PRESETS, useRules, get rulesName(){ return rulesName; }, ELEMENTS, load, newGame, playRound, aiChoose, simMatch, balance,
+const TT={RULES, PRESETS, useRules, AI_WARDS, get rulesName(){ return rulesName; }, ELEMENTS, load, newGame, playRound, aiChoose, simMatch, balance,
   get chars(){ return CHARS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
 if(typeof module!=='undefined'&&module.exports) module.exports=TT;
 else root.TT=TT;

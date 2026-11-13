@@ -622,6 +622,10 @@ table (raised, boosted, peak ward HP per game). `node tools/ward_compare.js 40 o
 presets headless and prints the win rates side by side. At 40 games per matchup two runs of the
 same rules differ by up to about 3 points per character.
 
+Tabletop mode has the same rules in winks (`RULES.wards` in `js/tabletop.js`; see CLAUDE.md and the
+rulebook's Wards / Seals / Dispels sections), with Eldrin made frail there too (HP 18 → 17, Shield and
+Counter strengthened to match).
+
 Seals result (Normal AI, 60 games per matchup): boost + layers 43.7–55.8%; with seals 43.4–56.4% (one
 run had Weizan at 58.1%, another nobody outside the band; the 56–58% edge moves between Frederick and
 Weizan from run to run). The AI seals about 0.1–0.4 times a game; even an AI that seals at every chance

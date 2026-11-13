@@ -81,9 +81,10 @@ function convos(){
       {key:'ponder', text:"When you're potting about half your flicks, move up to the full rules!"},
     ],
     wards:[
-      {key:'eldrin', text:`A ward is a pile of ward winks, and a new ward replaces the old one. Strikes hit the ward first; what's left over goes to HP. A strike in the ward's own element counts +${R.wardMatch} against it.`},
-      {key:'durin',  text:`A ward lasts until it runs out. It loses ${R.wardWear} wink at every round end, and strikes, dispels and ticks wear it down too.`},
-      {key:'ponder', text:`A Dispel tears ward winks off equal to its power, +${R.wardMatch} in the ward's own element. With no ward up, it removes the foe's newest buff, and a Greater Dispel removes every buff.`},
+      {key:'eldrin', text:`A ward is a pile of ward winks. Cast the same element again and it tops up, to half again what that cast gives. A new element goes on the outside as a second pile, ${R.wards.layers} at most. Strikes hit the outer pile first, and what breaks it carries on into the next, then to HP. A strike in a pile's own element counts +${R.wardMatch} against it.`},
+      {key:'durin',  text:`A ward lasts until it runs out. Every pile loses ${R.wardWear} wink at every round end, and strikes, dispels and ticks wear it down too.`},
+      {key:'eldrin', text:`Seal Ward is a Protection you cast at yourself for ${R.wards.sealCost} mana and one wink: it seals your outer pile. A sealed pile doesn't wear, and a Dispel that meets a seal only breaks the seal, even a Greater one. Mine seal every pile at once.`},
+      {key:'ponder', text:`A Dispel tears winks off the outer pile equal to its power, +${R.wardMatch} in the pile's own element. A Lesser or Normal one stops at the pile it breaks; a Greater one carries on into the next. With no ward up, it removes the foe's newest buff, and a Greater Dispel removes every buff.`},
       {key:'valdris',text:"My skeletons stand in front of my ward. Each has 1 HP, so every point of damage kills one before anything reaches the ward. Dispels can't touch them."},
       {key:'daveron',text:"My graveguard are the same, but tougher: damage wears down the oldest first. Keep a die by each to track its HP."},
     ],
@@ -96,7 +97,7 @@ function convos(){
     roundend:[
       {key:'gnash',  text:"At the round end, curses tick first (burns, poison, plague, Agony), then regeneration, then minions strike the foe."},
       {key:'korvath',text:`From round ${sd.round} it's sudden death: both wizards lose ${sd.dmg} HP every round end, and ${sd.dmg} more every ${sd.every} rounds after that. Nobody hides forever.`},
-      {key:'gnash',  text:`Then wards wear by ${R.wardWear} wink, and each wizard gains ${R.income} mana, less any curse that cuts income.`},
+      {key:'gnash',  text:`Then every unsealed ward pile wears by ${R.wardWear} wink, and each wizard gains ${R.income} mana, less any curse that cuts income.`},
       {key:'korvath',text:"Games are short: about 11 rounds. Make every flick count!"},
     ],
   };
