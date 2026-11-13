@@ -74,7 +74,7 @@ The flick replaces the app's glyph minigames. Beginner and Normal rules use this
 - **No pot and the spell fizzles.** The mana you paid is lost.
 - **Pick up the winks you missed.** Nothing is left on the table between rounds.
 
-At 12%, a Lesser spell goes off about 2 times in 3, a Normal one about half the time and a Greater one about 2 times in 5. In the simulator, about half of all spells go off, and games last about 8 or 9 rounds (the standard game averages about 20, which is why tabletop games are tuned shorter).
+At 12%, a Lesser spell goes off about 2 times in 3, a Normal one about half the time and a Greater one about 2 times in 5. In the simulator, about half of all spells go off, and games last about 9 or 10 rounds (the standard game averages about 20, which is why tabletop games are tuned shorter).
 
 ### Optional: near misses
 
@@ -112,7 +112,7 @@ There are no round counters. **Buffs last until a Dispel removes them**, and **c
 ## Round end
 
 1. **Ticks:** curses on each wizard (burns, poison, plague, Agony and similar), then their regeneration, then their minions strike the foe.
-2. **Sudden death:** from **round 8**, both wizards lose 1 HP at every round end, +1 more every 3 rounds after that (2 HP from round 11).
+2. **Sudden death:** from **round 10**, both wizards lose 1 HP at every round end, +1 more every 3 rounds after that (2 HP from round 13).
 3. **Wards wear:** every ward loses 1 wink (in Normal rules, not a sealed one). A ward with no winks left is gone.
 4. **Income:** each wizard gains **4 mana**, less any curse that cuts income.
 
@@ -193,7 +193,7 @@ After the spells resolve, before the round end, the players take turns squopping
 - **Each wink you squop is yours:** add it to your mana. Unsquopped winks stay where they are for next round.
 - **Who goes first:** the player with the closer handicap line. If the lines are the same, whoever potted more winks this round. If that's tied too, whoever has less HP.
 
-The simulator assumes an Advanced player pots **75%** of flicks from their handicap line and lands **40%** of squop attempts. Advanced games average about 8 rounds.
+The simulator assumes an Advanced player pots **75%** of flicks from their handicap line and lands **40%** of squop attempts. Advanced games average about 9 rounds.
 <!-- dev:start -->
 (`RULES.pot` and `RULES.squop` in `js/tabletop.js`.) Change them once you know your real rates, then re-run the balance check.
 <!-- dev:end -->

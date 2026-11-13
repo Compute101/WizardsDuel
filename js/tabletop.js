@@ -62,7 +62,7 @@ const RULES={
   squopGain:1,
   // Sudden death keeps games short: from this round, both wizards lose dmg HP at every round end,
   // 1 more every `every` rounds after that.
-  suddenDeath:{round:8, dmg:1, every:3},
+  suddenDeath:{round:10, dmg:1, every:3},
   maxRounds:40,                // the simulator calls it a timeout after this
   // How the flick works:
   //  'pot'     pot `winks` winks to cast, paying retryCost after each miss (the rules above).
