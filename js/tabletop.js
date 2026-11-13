@@ -12,6 +12,7 @@
 'use strict';
 
 // ── Rules (all numbers in counters / mana) ─────────────────
+// As written, these are the Advanced rules; PRESETS below switches to Normal (the default) or Beginner.
 const RULES={
   max:20,                      // max counters of HP, mana and ward
   startMana:6,
@@ -64,34 +65,57 @@ const RULES={
   maxRounds:40,                // the simulator calls it a timeout after this
   // How the flick works:
   //  'pot'     pot `winks` winks to cast, paying retryCost after each miss (the rules above).
-  //  'chances' (Beginner) up to `chances` flicks; the first pot casts the spell, no pot and it
+  //  'chances' (Beginner and Normal) up to `chances` flicks; the first pot casts the spell, no pot and it
   //            fizzles (the mana is lost). `chances` is a number, an array by level, or {budget:n}
   //            for n minus the spell's cost, so cheaper spells get more flicks.
   flickMode:'pot',
   chances:5,
 };
-// Named rule sets. 'standard' is the rules above; the others override some of them. useRules(name)
-// switches (the simulator, balance tools and real play all read RULES).
+// Named rule sets, from fewest rules to most. The RULES block above is the Advanced rules; the others
+// override some of it. useRules(name) switches (the simulator, balance tools and real play all read
+// RULES). The default is 'normal'.
+//  beginner  the Normal flick, with fewer rules to learn: one ward at a time (a new ward replaces it;
+//            no top-ups, layers or seals), no +2 for a ward's own element, and one Cleanse that
+//            clears every curse.
+//  normal    calibrated to a first-time player's flicking: 7 pots in 57 flicks (about 12%). Flick 10
+//            minus the spell's cost (Lesser 8, Normal 6, Greater 4); the first pot casts it, no pot
+//            and it fizzles. No retries and no squops: missed winks are picked up. Every other rule.
+//  advanced  for expert flickers (about 3 pots in 4): pot 1 / 2 / 3 winks by level, pay to retry
+//            after a miss, and squop the missed winks left on the table for mana.
 const PRESETS={
-  standard:{},
-  // Beginner rules, calibrated to a first-time player's baseline: 7 pots in 57 flicks (about 12%).
-  // Flick 10 minus the spell's cost (Lesser 8, Normal 6, Greater 4); the first pot casts it, no
-  // pot and it fizzles. No retries and no squops: missed winks are picked up.
-  beginner:{flickMode:'chances', chances:{budget:10}, pot:0.12, squops:0},
+  beginner:{flickMode:'chances', chances:{budget:10}, pot:0.12, squops:0,
+    wardMatch:0, wards:{boost:false, layers:1, seals:false, dispelStrips:false},
+    cleanseCost:[2,2,2], cleanseCount:[Infinity,Infinity,Infinity]},
+  normal:{flickMode:'chances', chances:{budget:10}, pot:0.12, squops:0},
+  advanced:{},
 };
+const RULE_SETS=['beginner','normal','advanced'];   // the order players learn them in
 const DEFAULTS=JSON.parse(JSON.stringify(RULES));
 function useRules(name){
-  if(!PRESETS[name]) throw new Error('unknown rules: '+name);
+  if(name==='standard') name='advanced';   // the old name for these rules
+  const P=PRESETS[name];
+  if(!P) throw new Error('unknown rules: '+name);
   Object.keys(RULES).forEach(k=>delete RULES[k]);
-  Object.assign(RULES,JSON.parse(JSON.stringify(DEFAULTS)),PRESETS[name]);
+  Object.assign(RULES,JSON.parse(JSON.stringify(DEFAULTS)));
   // Infinity doesn't survive JSON
   RULES.cleanseCount=DEFAULTS.cleanseCount.map(n=>n==null?Infinity:n);
+  Object.keys(P).forEach(k=>{
+    const v=P[k];
+    RULES[k]=Array.isArray(v)?v.slice():v&&typeof v==='object'?Object.assign({},DEFAULTS[k],v):v;
+  });
   rulesName=name;
   applyCharRules();
   return RULES;
 }
-// A character can change its numbers under a named rule set: "rules":{"beginner":{"hp":17}} in
-// tabletop.json. Only HP for now.
+// A copy of a rule set's numbers, without switching the current rules (for the tutorial)
+function rulesOf(name){
+  const cur=rulesName, out=JSON.parse(JSON.stringify(useRules(name)));
+  out.cleanseCount=RULES.cleanseCount.slice();
+  useRules(cur);
+  return out;
+}
+// A character's "hp" in tabletop.json is for the Normal rules (Beginner uses it too); it can change
+// it under a named rule set: "rules":{"advanced":{"hp":17}}. Only HP for now.
 function applyCharRules(){
   Object.values(CHARS).forEach(c=>{ const o=c.alt[rulesName]||{}; c.hp=Math.min(RULES.max,o.hp!=null?o.hp:c.baseHp); });
 }
@@ -99,7 +123,7 @@ const ELEMENTS=['fire','ice','lightning','arcane','physical','dark'];
 const CATS=['protect','dispel','damage'];
 
 let CHARS={};   // key -> merged tabletop character
-let rulesName='standard';
+let rulesName='normal';
 let rng=Math.random;
 
 // Merge characters.json (names, colours, forbidden) with tabletop.json (the counter numbers)
@@ -417,7 +441,7 @@ function doDamage(who,a){
 // picks: {p1:action, p2:action}. action: {cat:'damage'|'protect'|'dispel', elem, ring} or
 // {cat, sig:'spellId'} or {cat:'dispel', self:true, ring:1} (cleanse) or {cat:'meditate'} / {cat:'pass'}.
 // flicks (optional, for real play): {p1:{cast:true|false, missed:n}, ...} the tiddlywink results
-// (Beginner rules: {p1:{cast:bool}});
+// (Beginner and Normal rules: {p1:{cast:bool}});
 // otherwise they are rolled from RULES.pot. squops (optional): {p1:winks squopped, ...}; otherwise
 // rolled from RULES.squop.
 function playRound(picks,flicks,squops){
@@ -473,7 +497,7 @@ const squopChance=w=>gs.squop&&gs.squop[w]!=null?gs.squop[w]:RULES.squop;
 function flickCast(w,ring,given,paid){
   const st=gs[w], need=RULES.winks[ring-1];
   if(RULES.flickMode==='chances'){
-    // Beginner: up to RULES.chances flicks, and the first pot casts. given (real play): {cast:bool}.
+    // Beginner and Normal: up to RULES.chances flicks, and the first pot casts. given (real play): {cast:bool}.
     // Missed winks are picked up, so nothing builds up on the table.
     if(given) return !!given.cast;
     // chances: a number, an array by level, or {budget:n} for n minus the spell's cost
@@ -773,7 +797,9 @@ function balance(games,ai){
     .sort((a,b)=>b.winRate-a.winRate);
 }
 
-const TT={RULES, PRESETS, useRules, AI_WARDS, get rulesName(){ return rulesName; }, ELEMENTS, load, newGame, playRound, aiChoose, simMatch, balance,
+useRules('normal');
+
+const TT={RULES, PRESETS, RULE_SETS, useRules, rulesOf, AI_WARDS, get rulesName(){ return rulesName; }, ELEMENTS, load, newGame, playRound, aiChoose, simMatch, balance,
   get chars(){ return CHARS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
 if(typeof module!=='undefined'&&module.exports) module.exports=TT;
 else root.TT=TT;

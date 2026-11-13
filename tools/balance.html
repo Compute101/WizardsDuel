@@ -46,11 +46,13 @@ characters, on both sides of the board. Characters far from 50% overall are flag
 matchup is expected; a bad <em>character</em> is not. Results reflect how the AI plays them, not a skilled human.</p>
 
 <p class="sub"><b>Tabletop</b> mode runs the counters-and-tiddlywinks rules instead (<code>js/tabletop.js</code>,
-numbers in <code>tabletop.json</code>, rules in <code>docs/tabletop-rules.md</code>). <b>Tabletop (Beginner)</b> is the same
-with the Beginner rules: about 12% of flicks pot, you flick 10 minus the spell's cost, and there are no squops. Each mode is balanced on its own.</p>
+numbers in <code>tabletop.json</code>, rules in <code>docs/tabletop-rules.md</code>), in one of its three rule sets.
+<b>Normal</b> (the default): about 12% of flicks pot, you flick 10 minus the spell's cost, and there are no squops.
+<b>Beginner</b>: the same flick with fewer rules (one ward at a time, no element bonus against wards, no seals, one Cleanse).
+<b>Advanced</b>: about 75% of flicks pot, a wink per level, retries and squops. Each mode is balanced on its own.</p>
 
 <div class="bar">
-  <label>Mode <select id="mode"><option value="standard">Standard</option><option value="tabletop">Tabletop</option><option value="beginner">Tabletop (Beginner)</option></select></label>
+  <label>Mode <select id="mode"><option value="standard">Standard</option><option value="beginner">Tabletop (Beginner)</option><option value="tabletop">Tabletop (Normal)</option><option value="advanced">Tabletop (Advanced)</option></select></label>
   <label>Games per matchup <input id="games" type="number" value="40" min="2" step="2"></label>
   <label>AI <select id="ai"><option value="normal">Normal</option><option value="easy">Easy</option></select></label>
   <label title="Standard mode only. Layered wards are built in steps (docs/rps-duel-design.md)">Wards <select id="wards">
@@ -102,7 +104,8 @@ let last=null;
 // The two rule sets: the standard game (in the iframe) and tabletop mode (js/tabletop.js)
 const MODES={
   standard:{simMatch:(a,b,ai)=>G.simMatch(a,b,ai), chars:()=>STD_CHARS, maxRounds:()=>G.simInfo().maxRounds},
-  tabletop:{simMatch:(a,b,ai)=>TT.simMatch(a,b,ai), chars:()=>TT.chars, maxRounds:()=>TT.RULES.maxRounds, rules:'standard'},
+  tabletop:{simMatch:(a,b,ai)=>TT.simMatch(a,b,ai), chars:()=>TT.chars, maxRounds:()=>TT.RULES.maxRounds, rules:'normal'},
+  advanced:{simMatch:(a,b,ai)=>TT.simMatch(a,b,ai), chars:()=>TT.chars, maxRounds:()=>TT.RULES.maxRounds, rules:'advanced'},
   beginner:{simMatch:(a,b,ai)=>TT.simMatch(a,b,ai), chars:()=>TT.chars, maxRounds:()=>TT.RULES.maxRounds, rules:'beginner'},
 };
 let mode=MODES.standard;
@@ -227,7 +230,7 @@ function render({stats,keys,games,ai,band,mode:m,wards}){
   const name=k=>CHARS[k].name;
   const sorted=keys.slice().sort((a,b)=>winRate(stats[b])-winRate(stats[a]));
   const lim=band/100;
-  let html=`<h2>Overall win rate — ${m==='tabletop'?'Tabletop':m==='beginner'?'Tabletop Beginner':'Standard'} rules</h2><p class="note">${games} games per matchup (half on each side), AI ${ai}.
+  let html=`<h2>Overall win rate — ${m==='tabletop'?'Tabletop Normal':m==='beginner'?'Tabletop Beginner':m==='advanced'?'Tabletop Advanced':'Standard'} rules</h2><p class="note">${games} games per matchup (half on each side), AI ${ai}.
     ${m==='standard'?`Wards: <b>${wards||'game'}</b>. `:''}Draws and ${mode.maxRounds()}-round timeouts count as half a win. Flagged when more than ${band}% from 50%.</p>
     <table><tr><th class="name">Character</th><th>Win %</th><th></th><th>W</th><th>L</th><th>Draw</th><th>Timeout</th>
     <th>Avg rounds</th><th>HP</th><th>Worst matchup</th><th>Best matchup</th></tr>`;
@@ -291,7 +294,7 @@ function resultsText(){
     .map(k=>`${CHARS[k].name}\t${(winRate(stats[k])*100).toFixed(1)}%\tavg ${(stats[k].rounds/stats[k].games).toFixed(1)} rounds`).join('\n');
 }
 // Headless use (e.g. from a test script): run synchronously and return the stats
-// mode: 'standard' (default), 'tabletop' or 'beginner'
+// mode: 'standard' (default), or tabletop 'beginner', 'tabletop' (Normal) or 'advanced'
 // wards (standard only): a WARD_PRESETS name or a WARD_RULES object; default 'game' (as shipped)
 window.runBalance=(games,ai,m,wards)=>{
   setMode(m||'standard');

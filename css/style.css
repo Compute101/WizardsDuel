@@ -1505,6 +1505,15 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .tt-tab.active { color: #f0cc6a; background: rgba(138,58,170,0.45); border-color: #c9a84c; }
+/* Tutorial stages: Beginner → Normal → Advanced */
+#tt-stages { display: flex; gap: 6px; padding: 6px 14px 0; flex-shrink: 0; }
+.tt-stage {
+  flex: 1; font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  color: rgba(240,204,106,0.55); background: transparent; border: none;
+  border-bottom: 2px solid rgba(201,168,76,0.15); padding: 6px 2px; cursor: pointer; white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.tt-stage.active { color: #f0cc6a; border-bottom-color: #c9a84c; }
 .tt-card-title { font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: #f0cc6a; }
 .tt-card-sub { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: rgba(201,168,76,0.6); margin: 2px 0 4px; }
 .tt-loading { font-family: 'Cinzel', serif; font-size: 12px; color: rgba(240,204,106,0.6); text-align: center; padding: 30px 0; }

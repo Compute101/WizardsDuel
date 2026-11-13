@@ -4,7 +4,8 @@
 // so they stay in step with the engine:
 //  - the rulebook is docs/tabletop-rules.md, rendered here (blocks between <!-- dev:start --> and
 //    <!-- dev:end --> are for developers and left out);
-//  - the tutorial's numbers come from TT.RULES / TT.PRESETS (js/tabletop.js), and the wizard cards
+//  - the tutorial runs in three stages, Beginner → Normal → Advanced (the rule sets in TT.PRESETS);
+//    its numbers come from TT.rulesOf (js/tabletop.js), and the wizard cards
 //    from tabletop.json.
 // It only reads the tabletop rules; it never changes the standard game.
 (function(){
@@ -12,7 +13,7 @@
 
 let loaded=null;            // Promise: everything fetched and TT loaded
 let rulesSections=[];       // [{id, title, html}]
-let tab='tutorial', topic='welcome';
+let tab='tutorial', topic='welcome', stage='beginner';
 
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const ELEM={fire:'Fire',ice:'Ice',lightning:'Lightning',arcane:'Arcane',physical:'Physical',dark:'Dark'};
@@ -21,92 +22,169 @@ const LEVEL=['Lesser','Normal','Greater'];
 const list=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
 
 // ── Tutorial ───────────────────────────────────────────────
-const TOPICS=[
-  {id:'welcome',  label:'Welcome'},
-  {id:'kit',      label:'Kit & Setup'},
-  {id:'round',    label:'A Round'},
-  {id:'spells',   label:'Spell Levels'},
-  {id:'flick',    label:'The Flick'},
-  {id:'beginner', label:'Beginner Rules'},
-  {id:'wards',    label:'Wards & Dispels'},
-  {id:'curses',   label:'Buffs & Curses'},
-  {id:'roundend', label:'Round End'},
+// Three stages, learnt in order: Beginner (the fewest rules), Normal (every rule, the same flick) and
+// Advanced (the flick for tiddlywinks masters). Each stage only teaches what's new in it.
+const STAGES=[
+  {id:'beginner', label:'🌱 Beginner', topics:[
+    {id:'welcome',  label:'Welcome'},
+    {id:'kit',      label:'Kit & Setup'},
+    {id:'round',    label:'A Round'},
+    {id:'spells',   label:'Spell Levels'},
+    {id:'flick',    label:'The Flick'},
+    {id:'wards',    label:'Wards & Dispels'},
+    {id:'curses',   label:'Buffs & Curses'},
+    {id:'roundend', label:'Round End'},
+    {id:'next',     label:'Next: Normal'},
+  ]},
+  {id:'normal', label:'🪄 Normal', topics:[
+    {id:'n-new',     label:"What's New"},
+    {id:'n-elem',    label:'Elements'},
+    {id:'n-layers',  label:'Layered Wards'},
+    {id:'n-seals',   label:'Seals'},
+    {id:'n-dispel',  label:'Greater Dispels'},
+    {id:'n-cleanse', label:'Cleanse'},
+    {id:'n-sputter', label:'Near Misses'},
+    {id:'n-next',    label:'Next: Advanced'},
+  ]},
+  {id:'advanced', label:'🏆 Advanced', topics:[
+    {id:'a-new',    label:"What's New"},
+    {id:'a-flick',  label:'Pot Every Wink'},
+    {id:'a-squops', label:'Squops'},
+    {id:'a-lines',  label:'Handicap Lines'},
+  ]},
 ];
+const stageOf=t=>STAGES.find(s=>s.topics.some(x=>x.id===t));
 // Built after TT has loaded, so the numbers are the engine's
 function convos(){
-  // Copies of the two rule sets' numbers, without switching TT's current rules
-  const R=TT.RULES, B=Object.assign({},R,TT.PRESETS.beginner);
-  const c=R.cats, budget=B.chances.budget;
+  // Each rule set's numbers, without switching TT's current rules
+  const B=TT.rulesOf('beginner'), N=TT.rulesOf('normal'), A=TT.rulesOf('advanced');
+  const c=N.cats, budget=N.chances.budget;
   const flicks=i=>budget-c.damage.cost[i];
-  const odds=n=>1-Math.pow(1-B.pot,n);
-  const sd=R.suddenDeath;
+  const pct=p=>Math.round(p*100);
+  const odds=n=>1-Math.pow(1-N.pot,n);
+  const sd=N.suddenDeath, bCleanse=B.cleanseCost[0];
+  const advHp=Object.values(TT.chars).filter(ch=>ch.alt.advanced&&ch.alt.advanced.hp!==ch.baseHp).length;
   return {
+    // ── Beginner ──
     welcome:[
       {key:'eldrin', text:"Welcome to the table, mage. Tabletop is WizardsDuel played with real counters: the same secret picks of Damage, Protection and Dispel, but you cast by flicking tiddlywinks into a pot."},
       {key:'sylvara',text:"Your health, your mana and your ward are piles of winks. When you cast, you flick the very mana you just spent. Pot it and the spell goes off!"},
-      {key:'ponder', text:"New to flicking? So am I! There are Beginner rules for players who don't pot much yet. Tap the topics above to learn the game, or a portrait below to see that wizard's spell cards."},
+      {key:'ponder', text:"There are three ways to play, and you learn them in order. Beginner has the fewest rules. Normal adds the rest. Advanced is for tiddlywinks masters who pot nearly every flick."},
+      {key:'ponder', text:"Start here, with 🌱 Beginner. Tap the topics above in turn, or a portrait below to see that wizard's spell cards."},
       {key:'eldrin', text:"Everything here comes from the rulebook, in the 📖 Rulebook tab. Keep it open at the table."},
     ],
     kit:[
-      {key:'durin',  text:`You'll need tiddlywinks in three colours, up to ${R.max} of each per player: red for health, blue for mana and white for your ward. Plus a pot, a squidger each and a six-sided die.`},
+      {key:'durin',  text:`You'll need tiddlywinks in three colours, up to ${N.max} of each per player: red for health, blue for mana and white for your ward. Plus a pot, a squidger each and a six-sided die.`},
       {key:'durin',  text:"And a way to pick in secret: a dial, or face-down cards for Damage, Protection, Dispel and Meditate, with a note of the element and level. Mark each buff and curse with a token or its card."},
-      {key:'gnash',  text:`Setup is quick. Take as many health winks as your wizard's HP (it's on their card below) and ${R.startMana} mana. Nobody can ever hold more than ${R.max} health, mana or ward winks.`},
+      {key:'gnash',  text:`Setup is quick. Take as many health winks as your wizard's HP (it's on their card below) and ${N.startMana} mana. Nobody can ever hold more than ${N.max} health, mana or ward winks.`},
       {key:'gnash',  text:"Then agree where each of you flicks from: your handicap line. A better flicker stands further back, so it's a fair fight."},
     ],
     round:[
       {key:'eldrin', text:"Each round, pick in secret: Damage, Protection or Dispel, with an element and a level (Lesser, Normal or Greater). Or one of your signature spells, a Cleanse to clear your curses, or Meditate."},
-      {key:'skadi',  text:`Meditate skips your spell for ${R.meditate} mana. You can't do it two rounds running.`},
+      {key:'skadi',  text:`Meditate skips your spell for ${N.meditate} mana. You can't do it two rounds running.`},
       {key:'eldrin', text:"Reveal together, then pay your spell's cost in mana winks and flick for it. If you can't afford your spell, it's lost and you pay nothing."},
       {key:'sylvara',text:"Then it all resolves in order: every Protection first, then every Dispel, then every Damage, then Meditate. A ward raised this round already blocks this round's strikes."},
-      {key:'sylvara',text:"Last come squops (full rules only) and the round end. The moment a wizard reaches 0 HP, the game is over. If both fall together, it's a draw."},
+      {key:'sylvara',text:"Then comes the round end. The moment a wizard reaches 0 HP, the game is over. If both fall together, it's a draw."},
     ],
     spells:[
-      {key:'ponder', text:"Here's the rule to remember: every spell costs 2 mana for each wink you'd have to pot. Damage equals the cost. Wards and Dispels are double the cost."},
+      {key:'ponder', text:"Here's the rule to remember: every spell costs 2 mana for each level. Damage equals the cost. Wards and Dispels are double the cost."},
       {key:'cinder', text:[0,1,2].map(i=>`${LEVEL[i]}: ${c.damage.cost[i]} mana for ${c.damage.power[i]} damage, or a ${c.protect.power[i]} ward or dispel.`).join(' ')},
-      {key:'ponder', text:"Signature spells are fixed cards with their own cost and level. Tap a portrait below to read a wizard's cards."},
+      {key:'ponder', text:"In Beginner rules the element is just for show (and some wizards can't cast some elements). Signature spells are fixed cards with their own cost and level. Tap a portrait below to read a wizard's cards."},
       {key:'cinder', text:"There's no free attack, so every spell is a choice: spend big now, or save for a bigger cast next round?"},
     ],
     flick:[
-      {key:'zakkit',text:`In the full rules, you flick-flick from your handicap line and must pot ${R.winks[0]} wink for a Lesser spell, ${R.winks[1]} for Normal and ${R.winks[2]} for Greater.`},
-      {key:'zakkit',text:`Missed? Pay ${R.retryCost} more mana to go again, quick-quick, and your run carries on. Can't pay, or won't? The spell fizzles and its mana is lost-gone. Zakkit weeps.`},
-      {key:'weizan', text:"Missed winks stay where they land, round after round. After the spells resolve, you take turns squopping them: landing a wink on top of one."},
-      {key:'weizan', text:`You get ${R.squops} attempts each a round, and every wink you squop is yours: ${R.squopGain} mana each, whoever missed it. The closer handicap line goes first.`},
-    ],
-    beginner:[
-      {key:'ponder', text:`Beginner rules are for new flickers. They're tuned to a first trial of 7 pots in 57 flicks, about ${Math.round(B.pot*100)}%.`},
-      {key:'ponder', text:`Pay your spell's cost, then flick ${budget} minus the cost. A Lesser spell gets ${flicks(0)} flicks, Normal ${flicks(1)} and Greater ${flicks(2)}. Signature cards and Cleanse use their own cost.`},
+      {key:'zakkit', text:`Pay your spell's cost, then flick ${budget} minus the cost, quick-quick! A Lesser spell gets ${flicks(0)} flicks, Normal ${flicks(1)} and Greater ${flicks(2)}. Signature cards and Cleanse use their own cost.`},
       {key:'fizzwick',text:"Your first pot casts the spell, so stop flicking. No pot at all, and the spell fizzles: the mana you paid is lost."},
-      {key:'fizzwick',text:`At ${Math.round(B.pot*100)}%, a Lesser spell goes off about ${Math.round(odds(flicks(0))*100)}% of the time, Normal ${Math.round(odds(flicks(1))*100)}% and Greater ${Math.round(odds(flicks(2))*100)}%. Small spells are safe, big ones a gamble.`},
-      {key:'ponder', text:"There are no squops: pick up the winks you missed. A few wizards also start with different HP in Beginner rules; their cards below show it."},
-      {key:'ponder', text:"When you're potting about half your flicks, move up to the full rules!"},
+      {key:'fizzwick',text:`It's tuned for new flickers, who pot about ${pct(N.pot)}% of flicks: 7 pots in 57 on our first try. At that rate a Lesser spell goes off about ${pct(odds(flicks(0)))}% of the time, Normal ${pct(odds(flicks(1)))}% and Greater ${pct(odds(flicks(2)))}%. Small spells are safe, big ones a gamble.`},
+      {key:'zakkit', text:"Pick up the winks you missed: nothing stays on the table between rounds."},
     ],
     wards:[
-      {key:'eldrin', text:`A ward is a pile of ward winks. Cast the same element again and it tops up, to half again what that cast gives. A new element goes on the outside as a second pile, ${R.wards.layers} at most. Strikes hit the outer pile first, and what breaks it carries on into the next, then to HP. A strike in a pile's own element counts +${R.wardMatch} against it.`},
-      {key:'durin',  text:`A ward lasts until it runs out. Every pile loses ${R.wardWear} wink at every round end, and strikes, dispels and ticks wear it down too.`},
-      {key:'eldrin', text:`Seal Ward is a Protection you cast at yourself for ${R.wards.sealCost} mana and one wink: it seals your outer pile. A sealed pile doesn't wear, and a Dispel that meets a seal only breaks the seal, even a Greater one. Mine seal every pile at once.`},
-      {key:'ponder', text:`A Dispel tears winks off the outer pile equal to its power, +${R.wardMatch} in the pile's own element. A Lesser or Normal one stops at the pile it breaks; a Greater one carries on into the next. With no ward up, it removes the foe's newest buff, and a Greater Dispel removes every buff.`},
+      {key:'eldrin', text:"A ward is a pile of ward winks. Strikes hit it first, and only what breaks through reaches your HP."},
+      {key:'eldrin', text:"In Beginner rules you have one ward at a time: cast a new one and it replaces the old."},
+      {key:'durin',  text:`A ward lasts until it runs out. It loses ${N.wardWear} wink at every round end, and strikes, dispels and ticks wear it down too.`},
+      {key:'ponder', text:"A Dispel tears winks off the foe's ward equal to its power. With no ward up, it removes the foe's newest buff, and a Greater Dispel removes every buff."},
       {key:'valdris',text:"My skeletons stand in front of my ward. Each has 1 HP, so every point of damage kills one before anything reaches the ward. Dispels can't touch them."},
       {key:'daveron',text:"My graveguard are the same, but tougher: damage wears down the oldest first. Keep a die by each to track its HP."},
     ],
     curses:[
       {key:'mordant',text:"Curses are Dispel-type signature spells, and they land even through a ward. Nothing has a round timer: a curse stays until the cursed wizard Cleanses."},
-      {key:'mary',   text:`Cleanse is a Dispel at yourself. It costs ${list(R.cleanseCost.map(String))} mana for a Lesser, Normal or Greater cast, and removes 1 curse, 2 curses or all of them.`},
+      {key:'mary',   text:`Cleanse is a Dispel at yourself. In Beginner rules it costs ${bCleanse} mana and clears every curse on you.`},
       {key:'gretch', text:"Buffs stay until a Dispel removes them. \"Next strike\" and \"next pick\" effects, like Empower or Enthral, go as soon as they're used."},
       {key:'mary',   text:"\"Can't pick Damage next round\" lasts that one round only, and nobody can be locked two rounds running."},
     ],
     roundend:[
       {key:'gnash',  text:"At the round end, curses tick first (burns, poison, plague, Agony), then regeneration, then minions strike the foe."},
       {key:'korvath',text:`From round ${sd.round} it's sudden death: both wizards lose ${sd.dmg} HP every round end, and ${sd.dmg} more every ${sd.every} rounds after that. Nobody hides forever.`},
-      {key:'gnash',  text:`Then every unsealed ward pile wears by ${R.wardWear} wink, and each wizard gains ${R.income} mana, less any curse that cuts income.`},
+      {key:'gnash',  text:`Then every ward wears by ${N.wardWear} wink, and each wizard gains ${N.income} mana, less any curse that cuts income.`},
       {key:'korvath',text:"Games are short: about 11 rounds. Make every flick count!"},
+    ],
+    next:[
+      {key:'ponder', text:"That's the whole Beginner game! Play a few duels until picking, paying and flicking feel easy."},
+      {key:'eldrin', text:"Then move up to 🪄 Normal. You flick exactly the same way, so it doesn't ask for better flicking, just a few more rules: elements that matter, layered and sealed wards, and Cleanse by level."},
+    ],
+    // ── Normal ──
+    'n-new':[
+      {key:'eldrin', text:"Normal rules are the full game. The flick is the same as Beginner, so nothing here needs better aim."},
+      {key:'ponder', text:"What's new: a ward's own element counts against it, wards top up and stack in layers, you can seal a ward, Greater Dispels break through layers, and Cleanse comes in three levels."},
+      {key:'eldrin', text:"Everything else, from the spell levels to the round end, is just as you learnt it."},
+    ],
+    'n-elem':[
+      {key:'cinder', text:`Now elements matter. A strike in a ward's own element counts +${N.wardMatch} against it: my Normal Fire strike of ${c.damage.power[1]} takes ${c.damage.power[1]+N.wardMatch} off a Fire ward.`},
+      {key:'skadi',  text:`Dispels work the same way: +${N.wardMatch} against a ward of their own element. So pick your ward's element where the foe can't follow: I can't cast Fire, so a Fire ward is safe from me.`},
+    ],
+    'n-layers':[
+      {key:'eldrin', text:`Cast a ward in the same element as one you have and it tops up, to at most half again what that cast gives (Lesser ${Math.round(c.protect.power[0]*N.wards.boostCap)}, Normal ${Math.round(c.protect.power[1]*N.wards.boostCap)}, Greater ${Math.round(c.protect.power[2]*N.wards.boostCap)}). It never makes the pile smaller.`},
+      {key:'eldrin', text:`Cast a new element and it goes on the outside as a second pile, ${N.wards.layers} at most. All your piles together hold at most ${N.max} winks.`},
+      {key:'durin',  text:"Strikes hit the outer pile first, and what breaks it carries on into the next (with that pile's own +2), then to HP. Every pile wears at round end."},
+    ],
+    'n-seals':[
+      {key:'eldrin', text:`Seal Ward is a Protection you cast at yourself for ${N.wards.sealCost} mana: it seals your outer pile. Put a coin on it.`},
+      {key:'eldrin', text:"A sealed pile doesn't wear, and a Dispel that meets a seal only breaks the seal, even a Greater one. So a sealed ward takes two Dispels. Mine seal every pile at once."},
+      {key:'gnash',  text:"Seals don't stop strikes. Just hit it harder!"},
+    ],
+    'n-dispel':[
+      {key:'ponder', text:"A Lesser or Normal Dispel stops at the pile it breaks. A Greater one carries what's left into the next pile (a seal there stops it)."},
+      {key:'ponder', text:"And if a Greater Dispel breaks both piles with power to spare, it strips every buff too."},
+    ],
+    'n-cleanse':[
+      {key:'mary',   text:`Cleanse now has levels, like any spell: ${list(N.cleanseCost.map(String))} mana for a Lesser, Normal or Greater cast, removing 1 curse, 2 curses or all of them. You choose which.`},
+      {key:'mordant',text:"So pile them on. A wizard with three of my curses needs a Greater Cleanse, or several rounds of small ones."},
+    ],
+    'n-sputter':[
+      {key:'fizzwick',text:"An optional rule, if fizzles annoy you: agree before the game what counts as a near miss, like a wink resting against the pot."},
+      {key:'fizzwick',text:"If a spell would fizzle but you made a near miss, it sputters instead: a Normal or Greater spell is cast one level lower, a Lesser one at half power. Use it in Beginner rules too, if you like."},
+    ],
+    'n-next':[
+      {key:'weizan', text:"Normal rules are the game most tables will always play. That's fine: there's no shame in it."},
+      {key:'weizan', text:`But if you ever pot about ${pct(A.pot)}% of your flicks, three in every four, you've become a master of tiddlywinks. Then move on to 🏆 Advanced.`},
+    ],
+    // ── Advanced ──
+    'a-new':[
+      {key:'korvath',text:"Advanced rules keep every Normal rule, but change the flick for players who almost never miss."},
+      {key:'korvath',text:`You pot one wink per level, pay to retry after a miss, and the winks you miss stay on the table for squops.`+(advHp?' A few wizards start with different HP; their cards below show it.':'')},
+    ],
+    'a-flick':[
+      {key:'zakkit', text:`Flick-flick from your handicap line, and pot ${A.winks[0]} wink for a Lesser spell, ${A.winks[1]} for Normal and ${A.winks[2]} for Greater.`},
+      {key:'zakkit', text:`Missed? Pay ${A.retryCost} more mana to go again, and your run carries on. Can't pay, or won't? The spell fizzles and its mana is lost-gone. Zakkit weeps.`},
+      {key:'zakkit', text:"Missed winks stay where they land, round after round."},
+    ],
+    'a-squops':[
+      {key:'weizan', text:"After the spells resolve, you take turns squopping the missed winks on the table: landing a wink on top of one."},
+      {key:'weizan', text:`You get ${A.squops} attempts each a round, and every wink you squop is yours: ${A.squopGain} mana each, whoever missed it.`},
+      {key:'weizan', text:"The closer handicap line goes first; if they're level, whoever potted more this round; then whoever has less HP."},
+    ],
+    'a-lines':[
+      {key:'gnash',  text:"Handicap lines matter most here. A beginner might flick from 15 cm, a regular from 25 cm and an expert from 35 cm."},
+      {key:'gnash',  text:"Move the lines between games until wins even out. Then nobody can blame their squidger!"},
     ],
   };
 }
 // A wizard's guide: their HP and every card, in their own voice
 function cardConvo(k){
   const ch=TT.chars[k], msgs=[];
-  const beg=ch.alt.beginner&&ch.alt.beginner.hp;
-  msgs.push({key:k, text:`At the table I start with ${ch.baseHp} HP`+(beg&&beg!==ch.baseHp?` (${beg} in Beginner rules)`:'')+'. '
+  const adv=ch.alt.advanced&&ch.alt.advanced.hp, beg=ch.alt.beginner&&ch.alt.beginner.hp;
+  const other=[beg&&beg!==ch.baseHp?`${beg} in Beginner rules`:'', adv&&adv!==ch.baseHp?`${adv} in Advanced rules`:''].filter(Boolean);
+  msgs.push({key:k, text:`At the table I start with ${ch.baseHp} HP`+(other.length?` (${other.join(', ')})`:'')+'. '
     +(ch.forbidden.length?`I can't cast ${list(ch.forbidden.map(e=>ELEM[e]))}.`:'I can cast every element.')});
   ch.spells.forEach(s=>msgs.push({key:k, title:s.name,
     sub:`${CAT[s.cat]} · ${ELEM[s.elem]} · ${LEVEL[s.ring-1]} · ${s.cost} mana`, text:s.text}));
@@ -188,6 +266,7 @@ function buildModal(){
     <div id="tt-panel">
       <div id="tt-header"><div class="tut-title-text">🎲 Tabletop</div><button class="tut-close-btn" id="tt-close">✕</button></div>
       <div id="tt-tabs"><button class="tt-tab" data-tab="tutorial">🎓 Tutorial</button><button class="tt-tab" data-tab="rules">📖 Rulebook</button></div>
+      <div id="tt-stages"></div>
       <div id="tt-topic-bar"></div>
       <div id="tt-chars"><div class="tut-chars-label">★ Wizard Cards ★</div><div id="tt-char-bar"></div></div>
       <div id="tt-convo"></div>
@@ -200,7 +279,7 @@ function buildModal(){
 }
 function setTab(t){
   tab=t;
-  topic=t==='rules'?rulesSections[0].id:'welcome';
+  topic=t==='rules'?rulesSections[0].id:STAGES.find(s=>s.id===stage).topics[0].id;
   render();
 }
 function chip(id,label,active,onClick){
@@ -212,6 +291,16 @@ function render(){
   m.querySelectorAll('.tt-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   const bar=m.querySelector('#tt-topic-bar'); bar.innerHTML='';
   const rules=tab==='rules';
+  const stages=m.querySelector('#tt-stages'); stages.innerHTML=''; stages.style.display=rules?'none':'';
+  // The tutorial's stage: the one the shown topic is in (a wizard's cards keep the last stage)
+  if(!rules){
+    if(stageOf(topic)) stage=stageOf(topic).id;
+    STAGES.forEach(s=>{
+      const b=el('button',{className:'tt-stage'+(s.id===stage?' active':'')}); b.textContent=s.label;
+      b.addEventListener('click',()=>{ stage=s.id; topic=s.topics[0].id; render(); });
+      stages.appendChild(b);
+    });
+  }
   m.querySelector('#tt-chars').style.display=rules?'none':'';
   m.querySelector('#tt-convo').style.display=rules?'none':'';
   m.querySelector('#tt-rules').style.display=rules?'':'none';
@@ -219,7 +308,7 @@ function render(){
     rulesSections.forEach(s=>bar.appendChild(chip(s.id,s.title,s.id===topic,()=>{ topic=s.id; render(); })));
     renderRules();
   } else {
-    TOPICS.forEach(t=>bar.appendChild(chip(t.id,t.label,t.id===topic,()=>{ topic=t.id; render(); })));
+    STAGES.find(s=>s.id===stage).topics.forEach(t=>bar.appendChild(chip(t.id,t.label,t.id===topic,()=>{ topic=t.id; render(); })));
     renderCharBar(); renderConvo();
   }
   const act=bar.querySelector('.active'); if(act&&act.scrollIntoView) act.scrollIntoView({block:'nearest',inline:'nearest'});
@@ -273,7 +362,7 @@ function load(){
   if(loaded) return loaded;
   const get=(u,json)=>fetch(u).then(r=>{ if(!r.ok) throw new Error(u+' '+r.status); return json?r.json():r.text(); });
   loaded=Promise.all([get('characters.json',true),get('tabletop.json',true),get('docs/tabletop-rules.md')])
-    .then(([chars,tt,md])=>{ TT.load(chars,tt); TT.useRules('standard'); rulesSections=parseRulebook(md); })
+    .then(([chars,tt,md])=>{ TT.load(chars,tt); TT.useRules('normal'); rulesSections=parseRulebook(md); })
     .catch(err=>{ loaded=null; throw err; });
   return loaded;
 }
