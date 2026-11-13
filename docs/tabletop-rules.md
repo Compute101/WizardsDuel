@@ -97,14 +97,15 @@ If you want fewer outright fizzles, agree before the game what counts as a **nea
 - With no ward up, it removes the foe's **newest buff**. A **Greater** Dispel removes **every** buff.
 - Curses are Dispel-type signature spells. They land on the foe even through a ward.
 - **Vanish takes a dispel like a seal:** a Dispel at a wizard with Vanish only removes the Vanish. Their ward and other buffs stay.
-- **Vanish turns a curse aside:** a curse at a wizard with Vanish removes the Vanish instead of landing.
+- **A curse can't find a Vanished wizard:** it fizzles, and the Vanish stays. Curses already on them still work.
 
 ## Buffs and curses
 
 There are no round counters. **Buffs last until a Dispel removes them**, and **curses last until the cursed wizard Cleanses**.
 
 - **Cleanse** is a Dispel at yourself: **2 mana** (8 flicks), and it removes **all** your curses. (Normal rules give it levels, see **Normal rules**.)
-- "Next strike" and "next pick" effects (Empower, Foresight, Vanish, Bewitch, Enthral and similar) go as soon as they're used.
+- "Next strike" and "next pick" effects (Empower, Foresight, Bewitch, Enthral and similar) go as soon as they're used.
+- **Vanish** (Ponder) is the one buff with a timer: it lasts the round it's cast and the next, so put a wink on the card. While it lasts every strike at him misses (minions' too) and curses can't find him, but if he picks Damage he's revealed for that whole round and the Vanish is gone.
 - "Can't pick Damage next round" lasts for that one round only.
 - Skeletons and graveguard aren't buffs: a Dispel never removes them, only damage does. Danse Macabre *is* a buff, so a Dispel can stop it.
 - Casting a buff or curse that's already in play does nothing extra; minions (blades, skeletons, simulacra) stack up to their card's max.
@@ -112,7 +113,7 @@ There are no round counters. **Buffs last until a Dispel removes them**, and **c
 ## Round end
 
 1. **Ticks:** curses on each wizard (burns, poison, plague, Agony and similar), then their regeneration, then their minions strike the foe.
-   - **A minion's strike is a strike.** Whatever makes a strike miss or hit softer meets it too: Vanish and Foresight (used up), Blink's dodge roll, Stonesoul-type resistance and Warpstone-type extra damage. Retaliation (Counter, a ward's "strikers take") doesn't answer a minion.
+   - **A minion's strike is a strike.** Whatever makes a strike miss or hit softer meets it too: Vanish, Foresight (used up), Blink's dodge roll, Stonesoul-type resistance and Warpstone-type extra damage. Retaliation (Counter, a ward's "strikers take") doesn't answer a minion.
 2. **Sudden death:** from **round 8**, both wizards lose 1 HP at every round end, +1 more every 3 rounds after that (2 HP from round 11).
 3. **Wards wear:** every ward loses 1 wink (in Normal rules, not a sealed one). A ward with no winks left is gone.
 4. **Income:** each wizard gains **4 mana**, less any curse that cuts income.
@@ -299,7 +300,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Vanish** | Protection | Arcane | Normal | 2 | The next strike (a minion's too) or curse at you misses. A dispel at you only removes the Vanish. |
+| **Vanish** | Protection | Arcane | Normal | 2 | This round and the next: every strike at you misses (minions' too) and curses can't find you. Picking Damage reveals you. A dispel at you only removes the Vanish. Put a wink on this card while it lasts. |
 | **Mana Siphon** | Dispel | Arcane | Lesser | 2 | Quick: before anyone pays, steal 4 mana from the foe. |
 | **Blink** | Protection | Lightning | Normal | 3 | Until dispelled: roll a die for each strike at you (minions' too), on 4+ it misses. Plus a Lightning ward of 3. |
 

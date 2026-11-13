@@ -214,7 +214,7 @@ function addEffect(who,eff,from){
     return true;
   }
   st.effects=st.effects.filter(e=>e.id!==eff.id);
-  st.effects.push(Object.assign({from:gs.round, by:from},eff));
+  st.effects.push(Object.assign({from:gs.round, by:from},eff,eff.type==='vanish'?{until:gs.round+1}:{}));
   return true;
 }
 function removeEffects(who,list){
@@ -352,9 +352,11 @@ function doInstant(who,sp){
 function curseHarm(e){
   return {agony:5, dot:4, silence:4, incomeDrain:3, vuln:3, spellbind:3, candle:2, bewitch:2, lock:1, enthral:1}[e.type]||1;
 }
-// A strike at ts misses: the next-strike shields (Vanish, Foresight) are used up first, then dodge rolls
+// A strike at w misses: Vanish, then Foresight (used up), then dodge rolls
 function strikeMisses(w){
-  const ts=gs[w], abs=fx(ts,'absorbNext')[0];
+  const ts=gs[w];
+  if(vanishOf(ts)) return true;   // not used up
+  const abs=fx(ts,'absorbNext')[0];
   if(abs){ removeEffects(w,[abs]); return true; }
   return fx(ts,'dodge').some(e=>rolls(e.roll));
 }
@@ -363,7 +365,9 @@ function hitAdjust(ts,dmg){
   const res=fx(ts,'resist').reduce((s,e)=>s+e.n,0);
   return res?Math.max(1,dmg-res):dmg;
 }
-const vanishOf=st=>st.effects.find(e=>e.id==='vanish');
+// Vanish (Ponder): this round and the next, every strike at him misses (minions' too) and curses find
+// nothing. Picking Damage reveals him (playRound); a dispel only removes it (doDispel).
+const vanishOf=st=>st.effects.find(e=>e.type==='vanish');
 function doDispel(who,a){
   const st=gs[who], t=foe(who), ts=gs[t], sp=a.sig&&sigById(st,a.sig);
   if(a.self){   // Cleanse: the worst curses first (a player picks which)
@@ -372,9 +376,8 @@ function doDispel(who,a){
   }
   if(sp){
     if(sp.kind==='instant'){ if(!sp.quick) doInstant(who,sp); return; }
-    // A curse. Vanish turns it aside and is used up
-    const v=RULES.strikes.vanishCurses&&vanishOf(ts);
-    if(v){ removeEffects(t,[v]); log(ts.key+"'s Vanish turns "+sp.name+' aside'); return; }
+    // A curse: it can't find a Vanished wizard
+    if(RULES.strikes.vanishCurses&&vanishOf(ts)){ log(sp.name+' finds nothing: '+ts.key+' has Vanished'); return; }
     if(sp.drainNow) loseMana(t,sp.drainNow);
     if(sp.roll&&!rolls(sp.roll)) return;
     const e=Object.assign({id:sp.id, kind:'curse', name:sp.name},sp.effect);
@@ -475,6 +478,8 @@ function playRound(picks,flicks,squops){
       loseMana(foe(w),n); gainMana(w,n);
     }
   });
+  // No striking from hiding: picking Damage reveals a Vanished wizard for the whole round
+  W.forEach(w=>{ if(picks[w].cat==='damage'){ const v=vanishOf(gs[w]); if(v) removeEffects(w,[v]); } });
   // Stages: every Protection, then every Dispel, then every Damage, then Meditate
   for(const cat of ['protect','dispel','damage']){
     const seats=W.filter(w=>outcome[w]==='cast'&&picks[w].cat===cat);
@@ -606,6 +611,8 @@ function endRound(){
     W.forEach(w=>{ if(!inGate(w)) loseHp(w,n); });
   }
   if(checkOver()) return;
+  // Vanish lasts this round and the next
+  W.forEach(w=>{ const v=vanishOf(gs[w]); if(v&&v.until<=gs.round) removeEffects(w,[v]); });
   // Out of the Gate: trade places at the table, wreathed in Infernal Mantle
   W.forEach(w=>{
     const g=gs[w].gate;
@@ -670,6 +677,7 @@ function sigSensible(w,sp){
   if(sp.rewind) return st.lostLast>=3||!st.ward;
   if(sp.perSkeleton) return minions(st,'skeleton').length>0||!st.ward;
   if(e.type==='counter') return true;
+  if(e.type==='vanish') return !vanishOf(st);
   if(e.type==='absorbNext'||e.type==='dodge') return !fx(st,'absorbNext').length;
   if(e.type==='gate') return !st.effects.some(f=>f.pierce)&&ts.mana>=costOf(ts,{cat:'damage',ring:1});
   if(sp.pctHp) return Math.floor(ts.hp/sp.pctHp.div)>=sp.pctHp.min||ts.hp<=sp.pctHp.min+1;
@@ -714,6 +722,13 @@ function aiChoose(w,level){
   const tg=guards(ts);
   if(tg){ w8.damage+=(smart?0.25:0.1)*tg; if(!ts.ward) w8.dispel*=0.5; }
   if(fx(st,'bewitch').length){ w8.damage*=smart?0.15:0.6; w8.dispel+=smart?0.8:0.3; }
+  // A Vanished foe: strikes only miss, so dispel the Vanish or do something else
+  if(vanishOf(ts)){ w8.damage*=smart?0.2:0.6; w8.dispel+=smart?0.6:0.2; }
+  // Vanished myself: a strike reveals me, so hold off, except in its last round (a foe facing a Vanish
+  // rarely picks a strike, so the reveal seldom costs anything then)
+  const veil=vanishOf(st);
+  if(veil&&smart&&veil.until<=gs.round) w8.damage+=0.8;
+  else if(veil){ w8.damage*=smart?0.3:0.7; w8.dispel+=smart?0.4:0.1; }
   if(canSeal(st)&&st.ward.hp>=AI_WARDS.sealHp&&!locked(st,'protect')){
     w8.seal=AI_WARDS.seal*(smart?1:0.5);
     if(smart&&wardLayers(st)>1) w8.seal+=0.3;

@@ -117,8 +117,8 @@
     "hp": 19,
     "rules": {"advanced": {"hp": 17}},
     "spells": [
-      {"id": "vanish", "name": "Vanish", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "absorbNext"},
-       "text": "The next strike (a minion's too) or curse at you misses. A dispel at you only removes the Vanish."},
+      {"id": "vanish", "name": "Vanish", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "vanish"},
+       "text": "This round and the next: every strike at you misses (minions' too) and curses can't find you. Picking Damage reveals you. A dispel at you only removes the Vanish. Put a wink on this card while it lasts."},
       {"id": "manasiphon", "name": "Mana Siphon", "cat": "dispel", "elem": "arcane", "ring": 1, "cost": 2, "kind": "instant", "quick": true, "action": {"type": "siphon", "n": 4},
        "text": "Quick: before anyone pays, steal 4 mana from the foe."},
       {"id": "blink", "name": "Blink", "cat": "protect", "elem": "lightning", "ring": 2, "cost": 3, "kind": "buff", "ward": 3, "effect": {"type": "dodge", "roll": 4},

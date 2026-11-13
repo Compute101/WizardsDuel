@@ -3507,17 +3507,6 @@ function sigIcon(sp){ return sp.el.icon||sp.icon; }
 // (Set BUFF_TIMERS true to give every buff its `rounds` back, as before.)
 const BUFF_TIMERS=false;
 function untimedBuff(eff){ return !BUFF_TIMERS&&eff.kind==='buff'&&!eff.timed; }
-// Permanent curses (CURSE_TIMERS false, as in tabletop mode): the hexes in PERMANENT_CURSES last until
-// Cleanse Self clears them (Bewitch until the next strike). Every other curse keeps its timer.
-// Off for now: an experiment (sim, Normal AI, 150 games a matchup: 40.3–58.5%).
-// Left off the list: Income drains (Time Drain, Corruption, Maggot Cloud) starve the foe of the mana to
-// cleanse them (Gretch 75%); Silence and the Agony-type curses (Agony, Curse of the Years) made Mordant
-// unbeatable (88%); one-shots (Entangle, Enthral) and strike riders (Chilled, Frostbite / Dread, Scorched,
-// signature DoTs) are short by design.
-let CURSE_TIMERS=true;
-let PERMANENT_CURSES=['candle','blizzard','conductivity','plague','soultithe','bewitch','spellbind','singularity'];
-function untimedCurse(eff){ return !CURSE_TIMERS&&eff.kind==='curse'&&PERMANENT_CURSES.includes(eff.id); }
-function untimed(eff){ return untimedBuff(eff)||untimedCurse(eff); }
 function effectsOf(st,type){ return (st&&st.effects||[]).filter(e=>e.type===type); }
 function takeEffect(st,type,pred){
   const i=(st.effects||[]).findIndex(e=>e.type===type&&(!pred||pred(e)));
@@ -3557,7 +3546,7 @@ function addEffect(who,eff,fromWho){
     return true;
   }
   st.effects=st.effects.filter(e=>e.id!==eff.id);
-  st.effects.push(Object.assign({from:fromWho},eff,untimed(eff)?{rounds:null}:{}));
+  st.effects.push(Object.assign({from:fromWho},eff,untimedBuff(eff)?{rounds:null}:{}));
   addFloat(x,bH*.26,eff.icon+' '+eff.name+'!',eff.kind==='curse'?'#cc88ff':'#88ffcc',13);
   return true;
 }
@@ -4998,10 +4987,6 @@ function elemAIChoose(who){
   if(oppWard){ w.dispel=(smart?1.7:1.0)+buffPull; w.damage=0.5; }
   else if(oppBuffs) w.dispel+=(smart?0.9:0.4)+buffPull*2;
   if(myCurses) w.dispel+=0.5;
-  // Curses with no timer never wear off: the longer they're left, the more they cost, so cleanse them
-  const lasting=cleansableCurses(me).filter(e=>e.rounds==null);
-  const curseHarm=lasting.reduce((a,e)=>a+(CURSE_HARM[e.type]||1),0);
-  if(curseHarm) w.dispel+=Math.min(6,curseHarm)*(smart?0.3:0.12);
   // Cash in a pending strike boost (Empower, Galvanize, Frenzy, Arcane Weave)
   const boost=me.effects.find(e=>e.type==='empower'||e.type==='frenzy'||e.type==='weave');
   if(boost) w.damage+=0.9;
@@ -5081,7 +5066,6 @@ function elemAIChoose(who){
     return {type:'el',cat,elem:'arcane',tier,self:true,target:who,ok};
   };
   if(cleanseOk&&((smart&&effectsOf(me,'bewitch').length)||(!oppWard&&!oppBuffs))&&_rng()<0.7) return cleanse();
-  if(cleanseOk&&curseHarm>=(smart?2:4)&&_rng()<Math.min(0.9,0.25*curseHarm)) return cleanse();
   // Combos: a pending miss behind a dodge survives the strikes it dodges (Blink, then Vanish),
   // and a buff that raises a ward shields the buffs already up from Dispel (Vanish, then Blink)
   const sigWeight=sp=>{
