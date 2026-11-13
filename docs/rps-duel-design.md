@@ -78,9 +78,9 @@ What was built, including choices made while building:
   ring 3 × 2, `ELEM_SCORCH`). A strike with its own DoT (Wyrmfire Breath) doesn't also scorch.
 - **Physical:** **crushes** wards. A Physical strike wears an off-element ward at 100% instead of 75%
   (`ELEM_WARD_TAKE.crush`); a Physical ward still unravels at 150%. Strikes only, not minions or ticks.
-- **Arcane:** a middle-ring hit that reaches HP **unweaves** a round off the target's newest timed buff
-  (minion timers included); an outer-ring hit takes a round off every one. Buffs with no timer
-  (Empower, blades) are immune.
+- **Arcane:** a middle-ring hit that reaches HP **unweaves** the target's newest buff: a round off a
+  timed one, or it frays an untimed one, which unravels once frayed twice (`ELEM_UNWEAVE_FRAYS`). An
+  outer-ring hit does that to every buff.
 - Every rider applies to signature strikes of that element too. `ELEM_RIDERS` switches each one off,
   for testing in the balance simulator.
 - **Character stats:** each character's HP and damage multiplier apply. (Eldrin's wards used to cost
@@ -145,8 +145,10 @@ so each spell's numbers can be tuned there.
   **Piercing is gone:** Radiant, Feint and Charge burn mana instead.
 - **Signature wards** are wards with a twist: Flame Shield hits back; Reinforce grows with skeletons;
   **Rewind** (Aurelia, replacing Haste) is an Arcane ward that also heals what you lost last round.
-- **Buffs** (Protection wheel) last a set number of rounds; minions and Empower-style buffs last until
-  used or removed. A foe's Dispel hits your ward first; with no ward up it strips your newest buff, and a
+- **Buffs** (Protection wheel): most have no round timer, as in tabletop: armour (resist buffs), Ward
+  and Arcane Weave last until dispelled, Empower-style buffs until used. Buffs that pay out every round
+  (Regen, Simulacrum, Danse Macabre) and short bursts (Frenzy, Blink, Counter) keep a timer
+  (`timed:true` on the effect). Curses keep their timers. A foe's Dispel hits your ward first; with no ward up it strips your newest buff, and a
   Greater (outer ring) dispel strips all of them — so wards protect your buffs.
 - **Curses** (Dispel wheel) resolve with Dispels. Besides the hex, each is a weak dispel: it hits the
   foe's ward with half a dispel's power for that ring (double vs a matching ward) but never strips
@@ -524,3 +526,23 @@ its ward-bracing (`holdWard` / `extend` only act with a timer); it still retalia
   games about 20.2 rounds. Net HP changes from the timed wards: Ponder 78 → 84, Daveron 85 → 90,
   Thessaly 90 → 86, Mordant 88 → 84; Eldrin's wards no longer cost 1 less.
 
+
+### Eldrin: the brace moves to Ward
+
+The ward-bracing (`holdWard`: the ward doesn't wear at round end) moved from Counter to Eldrin's Ward.
+Ward is a timed buff (`timed:true`, 3 rounds, 4 from the outer ring): immune to curses, the ward doesn't
+wear, and the next dispel only removes the Ward. Counter is untimed now: strikers take 5 until it's
+dispelled (was 10 for 3 rounds). Balance (100 games a pairing, Normal AI): Eldrin 50.3%, roster 44.0–56.2%.
+
+### Ponder: Vanish lasts, and isn't used up
+
+Vanish is a timed buff now (`timed:true`, 2 rounds, 1 / 2 / 3 by ring) with `keep:true`: while it lasts every
+strike at Ponder misses, and a miss doesn't use it up. It's checked before Blink's dodge in `strikeResolve`.
+Ticks, minion strikes, dispels and curses still reach him, and a Dispel can strip it. Foresight (also
+`absorbNext`, no `keep`) is still used up by the next strike. The AI cuts its Damage weight against a
+Vanished foe (×0.2 Normal, ×0.6 Easy) and adds to Dispel. Cost 3. Ponder 48.5%, roster 44.5–56.4%.
+
+No striking from hiding: if Ponder picks a Damage spell while Vanished, the Vanish drops as the round's picks
+resolve (`revealVanished`, called in `resolveSimRound` before any stage), so he's exposed for that whole round
+whatever order the strikes land in. Other picks (Protection, Dispel, Meditate) keep him hidden. The AI on his
+side rarely strikes while Vanished. Vanish cost 3→2 to make up for it: Ponder 49.9%, roster 42.7–57.0%.

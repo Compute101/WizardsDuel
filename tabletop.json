@@ -79,7 +79,7 @@
        "text": "Until cleansed: at every round end the foe takes 1 and loses 1 mana."}
     ]
   },
-  "zacharius": {
+  "zakkit": {
     "hp": 19,
     "spells": [
       {"id": "galvanize", "name": "Warp-Charge", "cat": "protect", "elem": "lightning", "ring": 1, "cost": 2, "kind": "buff", "effect": {"type": "empower", "bonus": 4, "elem": "lightning"},

@@ -26,7 +26,7 @@ const CHAR_FLAVOUR={
   gnash:'Blood and bone. No magic — just fury.',
   cinder:'Roll the dice. Fan the flames. Win big or burn together.',
   skadi:'Glacial patience. Frozen fury. Every strike against her has a price.',
-  zacharius:'Hoard the warpstorm, then unleash it all at once. Let the fool-things come to you, yes-yes.',
+  zakkit:'Hoard the warpstorm, then unleash it all at once. Let the fool-things come to you, yes-yes.',
   mary:'Faith is the only shield that never breaks.',
   mordant:'The hex is already written. You just haven\'t felt it yet.',
   ponder:"Young but fierce — vanish from sight and plunder your foe's magic.",
@@ -48,7 +48,7 @@ let diffName='normal';
 let aiDifficulty='normal';
 
 // ── ARCADE ─────────────────────────────────────────────────
-const ARCADE_BOSSES=['gnash','zacharius','mal','mordant']; // fixed final-4 in arcade mode
+const ARCADE_BOSSES=['gnash','zakkit','mal','mordant']; // fixed final-4 in arcade mode
 let tournamentQueue=[];   // ordered opponent keys
 let tournamentIndex=0;    // index of current opponent in queue
 
@@ -228,7 +228,7 @@ function fillSceneBands(){
 function drawBG(){
   ({eldrin:drawBG_moonlight,mal:drawBG_hellfire,sylvara:drawBG_forest,
     aurelia:drawBG_dawn,gnash:drawBG_storm,ponder:drawBG_astral,
-    skadi:drawBG_winter,cinder:drawBG_embers,zacharius:drawBG_arc,mary:drawBG_holy,mordant:drawBG_abyss,
+    skadi:drawBG_winter,cinder:drawBG_embers,zakkit:drawBG_arc,mary:drawBG_holy,mordant:drawBG_abyss,
     durin:drawBG_stone}[p2Key]||drawBG_moonlight)();
 }
 
@@ -2897,7 +2897,7 @@ const SPELL_VFX={
         vx:Math.cos(a)*0.6+(_rng()-.5)*0.8,vy:Math.sin(a)*0.6-1-_rng()*2,sz:1.5+_rng()*2.5,life:1,dec:.012,noGrav:true});
     }
     spawnParts(c.tx,c.ty,'#88ddff',12); spawnParts(c.tx,c.ty,'#aaeeff',6); anim(c.who,'cast',800); }},
-  // Zakkit (key zacharius)
+  // Zakkit
   galvanize:{self:c=>{ vfxPhaseIn(c.cx,c.cy,['#88ffcc','#aaff44','#aaff44','#ffffff'],18); anim(c.who,'shield',700); }},
   chainlightning:{hit:c=>{ vfxRing(c.tx,c.ty,['#ffffff','#aaff44'],14,{r:.05,ry:.03,spd:1.5,sz:2,dec:.022}); spawnBeam(c.cx,c.cy,c.tx,c.ty,c.col); spawnParts(c.tx,c.ty,c.col,18); flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
   conductivity:{hit:c=>{ vfxDrift(c.tx,c.ty,['#88ffcc','#aaff44'],14,{w:.06,lift:-1.2}); spawnParts(c.tx,c.ty,c.col,10); anim(c.who,'cast',800); }},
@@ -3199,6 +3199,8 @@ function resolveSimRound(){
   });
   // Phasing seats step out of the round before anything, even a quick spell, can reach them
   seatsIn.forEach(w=>{ if(acts[w].cat==='phase'){ gs[w].phasedRound=gs.round; gs[w].phasedCount=0; } });
+  // No striking from hiding: a Vanished wizard who picks Damage is revealed for the whole round
+  seatsIn.forEach(w=>{ if(acts[w].cat==='damage') revealVanished(w); });
   // Who aims at whom this round (a Greater strike at every foe isn't focusing on anyone); the AI reads it next round
   gs.focus={};
   seatsIn.forEach(w=>{ const a=acts[w]; if(needsTarget(w,a)&&a.target&&a.target!==w&&!hitsAllFoes(w,a)) (gs.focus[a.target]=gs.focus[a.target]||[]).push(w); });
@@ -3298,8 +3300,8 @@ function endSimRound(){
   PLAYERS.forEach(w=>{
     const st=gs[w];
     if(ELEM_WARD_ROUNDS&&st.shield>0){ st.shield--; if(st.shield<=0){ st.shieldHp=0; st.shieldType=null; st.wardRetaliate=0; st.wardSig=null; } }
-    // Counter (holdWard) braces the ward: it doesn't wear away while Counter lasts
-    const braced=effectsOf(st,'counter').some(e=>e.holdWard);
+    // Eldrin's Ward (holdWard) braces the ward: it doesn't wear away while the Ward lasts
+    const braced=(st.effects||[]).some(e=>e.holdWard);
     if(ELEM_WARD_DECAY<1&&st.shield>0&&!braced) st.shieldHp=Math.max(1,Math.round(st.shieldHp*ELEM_WARD_DECAY));
     if(ELEM_WARD_WEAR&&hasWard(st)&&!braced){
       st.shieldHp-=ELEM_WARD_WEAR;
@@ -3332,7 +3334,7 @@ const ELEM_START_MANA=6;
 const ELEM_INCOME=4;            // mana every seat gains at the end of each round
 // Wards have no round timer, as in tabletop mode: a ward lasts until it runs out. Like the tabletop
 // ward losing 1 wink a round, it wears ELEM_WARD_WEAR HP at every round end (about one wink's worth),
-// and strikes, ticks and dispels wear it too. Counter (holdWard) stops the round-end wear.
+// and strikes, ticks and dispels wear it too. Eldrin's Ward (holdWard) stops the round-end wear.
 // (Set rounds to 3, decay to 0.75 and wear to 0 to bring back the old 3-round fading wards.)
 const ELEM_WARD_ROUNDS=0;       // 0: no timer. Otherwise a ward lasts the round it is raised + n−1 more
 const ELEM_WARD_DECAY=1;        // share of ward HP kept at each round end (1: none lost this way)
@@ -3341,13 +3343,14 @@ const ELEM_WARD_WEAR=4;         // flat ward HP lost at each round end
 // chance roll waits for the target's next pick, so neither side can plan around it.
 //   Lightning burns mana (even through a ward) · Ice frostbites and Dark dreads (a Damage / Protection
 //   pick next round may be lost) · Fire scorches (a burn) · Physical crushes wards (no off-element
-//   resistance) · Arcane unweaves buffs (rounds off their timers).
+//   resistance) · Arcane unweaves buffs (frays them; twice frayed, a buff unravels).
 // The riders that need HP reached also need ELEM_RIDER_MIN_TIER or more. ELEM_RIDERS switches each off.
 const ELEM_RIDERS={frostbite:true, dread:true, scorch:true, crush:true, unweave:true};
 const ELEM_RIDER_MIN_TIER=2;
 const ELEM_CHILL_MIN_TIER=2;    // Ice Lance (el.chill) chills (a hard lock) at this strength or more
 const ELEM_RISK_PCT={frostbite:0.5, dread:0.5};   // chance the covered pick next round is lost
 const ELEM_SCORCH=[null,{dmg:2,rounds:2},{dmg:3,rounds:2}];   // burn by tier (inner ring: none)
+const ELEM_UNWEAVE_FRAYS=2;     // Arcane unweave: frays it takes to unravel an (untimed) buff
 const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or not
 const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
 const ELEM_DISPEL_ALL_TIER=3;
@@ -3397,6 +3400,13 @@ function sigName(sp){ return sp.el.name||sp.name; }
 function sigIcon(sp){ return sp.el.icon||sp.icon; }
 
 // ── Enchantments: st.effects = [{id,type,kind:'buff'|'curse',name,icon,rounds|null,...params}] ──
+// Most buffs have no round timer, as in tabletop mode: they last until a Dispel strips them (or an
+// Arcane strike unweaves them), and a "next strike" buff until it's used. A buff whose effect has
+// `timed:true` keeps its `rounds`: the ones that pay out every round (Regen, Simulacrum, Danse Macabre)
+// and the short bursts (Frenzy, Blink, Counter). Curses keep their timers.
+// (Set BUFF_TIMERS true to give every buff its `rounds` back, as before.)
+const BUFF_TIMERS=false;
+function untimedBuff(eff){ return !BUFF_TIMERS&&eff.kind==='buff'&&!eff.timed; }
 function effectsOf(st,type){ return (st&&st.effects||[]).filter(e=>e.type===type); }
 function takeEffect(st,type,pred){
   const i=(st.effects||[]).findIndex(e=>e.type===type&&(!pred||pred(e)));
@@ -3430,13 +3440,13 @@ function addEffect(who,eff,fromWho){
   if(eff.type==='minion'){
     const n=Math.min(eff.raise||1,(eff.max||Infinity)-countMinions(st,eff.minion));
     if(n<=0) return false;
-    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:fromWho},eff,eff.soak?{hp:eff.soak}:{}));
+    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:fromWho},eff,eff.soak?{hp:eff.soak}:{},untimedBuff(eff)?{rounds:null}:{}));
     syncMinionVisuals(st);
     addFloat(x,bH*.26,eff.icon+' '+eff.name+(n>1?' ×'+n:'')+'!','#88ffcc',13);
     return true;
   }
   st.effects=st.effects.filter(e=>e.id!==eff.id);
-  st.effects.push(Object.assign({from:fromWho},eff));
+  st.effects.push(Object.assign({from:fromWho},eff,untimedBuff(eff)?{rounds:null}:{}));
   addFloat(x,bH*.26,eff.icon+' '+eff.name+'!',eff.kind==='curse'?'#cc88ff':'#88ffcc',13);
   return true;
 }
@@ -3502,7 +3512,8 @@ function sigAtTier(sp,tier){
     if(e.pct) e.pct=pct(e.pct,0.7);
     if(e.mult) e.mult=mult(e.mult);
     if(['absorbNext','warding','bewitch'].includes(e.type)) e.rounds=Math.max(1,e.rounds+tier-2);
-    if(e.extend&&tier===3) e.extend++;   // Counter: the outer ring holds the ward one round longer
+    if(e.type==='absorbNext'&&!e.keep) e.charges=tier;   // Foresight: blocks 1 / 2 / 3 strikes by ring
+    if(e.extend&&tier===3) e.extend++;   // Ward: the outer ring holds the ward one round longer
   }
   const a=el.action;
   if(a){ ['amt','mana','heal'].forEach(k=>{ if(a[k]) a[k]=n(a[k]); }); if(a.mult) a.mult=mult(a.mult); }
@@ -3566,7 +3577,15 @@ function enterGate(who){
 }
 // Infernal Mantle: the hellfire he comes out of the Gate in. His next strike burns straight through the foe's
 // ward (an empower with pierce, so it's used up by that strike and a Dispel can strip it first).
-const INFERNAL_MANTLE={id:'infernalmantle',type:'empower',mult:1,pierce:true,kind:'buff',name:'Infernal Mantle',icon:'🔥',rounds:1};
+const INFERNAL_MANTLE={id:'infernalmantle',type:'empower',mult:1,pierce:true,kind:'buff',name:'Infernal Mantle',icon:'🔥',rounds:1};   // rounds only with BUFF_TIMERS
+const TONIC_HURT=0.5;   // Volatile Tonic heals below this share of max HP, empowers at or above it (0.7 put Fizzwick at 54%)
+// Vanish (Ponder): picking a Damage spell reveals him, before anything resolves that round
+function revealVanished(who){
+  const veil=effectsOf(gs[who],'absorbNext').filter(e=>e.keep);
+  if(!veil.length) return;
+  gs[who].effects=gs[who].effects.filter(e=>!veil.includes(e));
+  if(!simMode) addFloat(seatX(who),bH*.3,'👻 Revealed!','#b8a0e8',14);
+}
 // Meditate: skip your spell to gain mana on top of income, a bet that the foe won't strike this round.
 // It resolves after every Damage, so this round's mana burns can't touch it. Not two rounds in a row.
 // Income-drain curses (Time Drain, Corruption, Maggot Cloud) cut the gain too, as they cut Channel in Classic.
@@ -4054,7 +4073,7 @@ function executeSignature(who,sp,action,cb){
     addEffect(mine?who:ally,effect({kind:el.effect.kind||'buff'}),who);
     // A buff that also raises a light ward (Blink) — never replaces a stronger ward already up
     if(el.ward&&!(hasWard(as)&&as.shieldHp>=el.ward)){ raiseWard(ally,el.elem,el.ward,0); as.wardSig=sp.id; }
-    // A buff that holds up a ward already standing (Counter): it lasts longer
+    // A buff that holds up a ward already standing (Ward): it lasts longer
     if(ELEM_WARD_ROUNDS&&el.effect.extend&&hasWard(as)){ as.shield+=el.effect.extend; addFloat(seatX(ally),bH*.34,'🛡 Ward +'+el.effect.extend+' round'+(el.effect.extend>1?'s':''),wardCol(as),12); }
     if(fx.self) fx.self(mine?ctx:actx); else { vfxPhaseIn(seatX(mine?who:ally),wizMidY(mine?who:ally),[e.col],14); anim(mine?who:ally,'shield',700); }
     combatTimeout(cb,900);
@@ -4091,7 +4110,8 @@ function executeSignature(who,sp,action,cb){
     addFloat(tx,bH*.42,'🌀 −'+n+' Mana','#88aaff',12); addFloat(x,bH*.42,'+'+n+' Mana','#88aaff',12);
   }
   else if(a.type==='tonic'){
-    ctx.healed=_rng()<0.5;
+    // Volatile Tonic reads the drinker: hurt (below TONIC_HURT of max HP) it heals, healthy it empowers
+    ctx.healed=as.hp<as.maxHp*TONIC_HURT;
     if(ctx.healed) elemHeal(ally,a.heal,'⚗️');
     else addEffect(ally,{id:sp.id,type:'empower',kind:'buff',name:'Empowered',icon:'💪',mult:a.mult,rounds:null},who);
   }
@@ -4290,10 +4310,15 @@ function strikeResolve(who,tgt,o,b){
   if(o.pctHp) base=Math.max(base,Math.round(ts.hp*o.pctHp));   // Nyxara: a share of this target's HP
   let dmg=(base*b.mult+b.bonus)*suddenDeathMult();
   if(tgt!==who){
-    // Dodge rolls first, so a dodged strike leaves Vanish / Foresight waiting for the next one
+    // Vanish (keep:true): every strike misses while it lasts, and none uses it up
+    if(effectsOf(ts,'absorbNext').some(e=>e.keep)) return {tgt,miss:'vanish'};
+    // Dodge rolls first, so a dodged strike leaves Foresight waiting for the next one
     const dodge=effectsOf(ts,'dodge')[0];
     if(dodge&&_rng()<dodge.pct) return {tgt,miss:'dodge'};
-    const absorb=takeEffect(ts,'absorbNext');
+    // Foresight: each blocked strike uses a charge (1 / 2 / 3 by ring)
+    const absorb=effectsOf(ts,'absorbNext').find(e=>!e.keep);
+    if(absorb&&!(absorb.charges>1)) takeEffect(ts,'absorbNext',e=>e===absorb);
+    else if(absorb) absorb.charges--;
     if(absorb) return {tgt,miss:absorb.id==='vanish'?'vanish':'absorb'};
   }
   effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
@@ -4334,15 +4359,17 @@ function elemStrikeRiders(who,tgt,o){
   if(o.elem==='fire'&&ELEM_RIDERS.scorch&&!o.dot)
     addEffect(tgt,Object.assign({id:'dot-scorch',type:'dot',kind:'curse',elem:'fire',name:'Scorched',icon:'🔥'},ELEM_SCORCH[Math.min(3,tier)-1]),who);
   if(o.elem==='arcane'&&ELEM_RIDERS.unweave&&tgt!==who){
-    // Middle ring: a round off the newest timed buff; outer ring: a round off every one
-    const timed=ts.effects.filter(e=>e.kind==='buff'&&e.rounds!=null&&e.rounds>0);
-    const hit=tier>=3?timed:timed.slice(-1);
+    // Middle ring: the newest buff; outer ring: every one. A timed buff loses a round; an untimed one
+    // frays, and unravels once frayed ELEM_UNWEAVE_FRAYS times ("next strike" buffs too). With
+    // BUFF_TIMERS on, buffs with no timer at all (Empower, blades) are immune, as before.
+    const bs=buffsOf(ts).filter(e=>e.rounds!=null?e.rounds>0:!BUFF_TIMERS);
+    const hit=tier>=3?bs:bs.slice(-1);
     if(hit.length){
-      hit.forEach(e=>e.rounds--);
-      const gone=hit.filter(e=>e.rounds<=0);
+      hit.forEach(e=>{ if(e.rounds!=null) e.rounds--; else e.frayed=(e.frayed||0)+1; });
+      const gone=hit.filter(e=>e.rounds!=null?e.rounds<=0:e.frayed>=ELEM_UNWEAVE_FRAYS);
       ts.effects=ts.effects.filter(e=>!gone.includes(e));
       if(gone.length) syncMinionVisuals(ts);
-      addFloat(seatX(tgt),bH*.3,'🌀 Unweave: '+hit.map(e=>e.icon).join(' ')+' −1','#cc88ff',12);
+      addFloat(seatX(tgt),bH*.3,'🌀 Unweave: '+hit.map(e=>e.icon+(e.rounds!=null?' −1':'')).join(' '),'#cc88ff',12);
       VFX.stripped(seatX(tgt));
     }
   }
@@ -4401,11 +4428,20 @@ function counterArc(from,to,n){
 }
 
 // Round-end effects on `who` (Elemental rules): DoTs, regen, the foe's minions, then durations tick down
+// Foresight (absorbNext without keep) also blocks a damage-over-time tick or a minion's strike, using a charge
+function foreseeBlock(who,icon){
+  const st=gs[who], f=effectsOf(st,'absorbNext').find(e=>!e.keep);
+  if(!f) return false;
+  if(f.charges>1) f.charges--; else st.effects=st.effects.filter(e=>e!==f);
+  if(!simMode){ addFloat(seatX(who),bH*.28,'🔮 '+(icon||'')+' Absorbed!','#ffcc44',13); VFX.absorbed(seatX(who),'#ffcc44'); }
+  return true;
+}
 function elemTickEffects(who){
   const st=gs[who], x=seatX(who);
   effectsOf(st,'dot').forEach(e=>{
     dmgSource=e.from;
     e.tick=(e.tick||0)+1;
+    if(foreseeBlock(who,e.icon)) return;
     const dmg=Math.round((e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg)*suddenDeathMult());
     // Ticks hit a ward first, like any damage — unless the effect seeps past wards (Caustic Bomb's poison)
     if(e.bypassWard||(!hasWard(st)&&!effectsOf(st,'minion').some(m=>m.soak))){
@@ -4435,6 +4471,7 @@ function elemTickEffects(who){
       const el=elemById(m.elem||'physical');
       dmgSource=owner;
       const bonus=m.minion==='skeleton'?danse:0;
+      if(foreseeBlock(who,m.icon)) return;
       elemIncoming(who,Math.round((m.dmg+bonus)*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
       if(bonus&&TICK_VFX.dansemacabre) TICK_VFX.dansemacabre(x,wizMidY(x));
       if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,wizMidY(x));
@@ -4541,7 +4578,9 @@ function aiSigSensible(who,sp,tgt=weakestFoe(who)){
   if(el.kind==='curse') return !active(ts,sp.id)&&!(el.effect.type==='lock'&&catLocked(tgt,el.effect.cat));
   if(el.kind==='instant'){
     const a=el.action;
-    if(a.type==='heal'||a.type==='tonic') return st.hp<st.maxHp*0.7;
+    if(a.type==='heal') return st.hp<st.maxHp*0.7;
+    // Hurt it heals; healthy it empowers the next strike, which is only worth it without a boost already
+    if(a.type==='tonic') return st.hp<st.maxHp*TONIC_HURT||!effectsOf(st,'empower').length;
     if(a.type==='bloodpact') return st.mana<6&&st.hp>40;
     if(a.type==='rewind') return (st.lastRoundLoss||0)>=10;
     if(a.type==='cleanse') return cleansableCurses(st).length>0;
@@ -4609,13 +4648,15 @@ function elemAIChoose(who){
     if(_rng()<p) return {type:'el',cat:'meditate',ok:true};
   }
   const w={damage:1.0, protect:0.55, dispel:0.08};
-  if(oppWard){ w.dispel=smart?1.7:1.0; w.damage=0.5; }
-  else if(oppBuffs) w.dispel+=smart?0.9:0.4;
+  // Untimed buffs never wear off by themselves, so stripping them is worth more
+  const buffPull=Math.min(3,buffsOf(opp).filter(e=>e.rounds==null).length)*(smart?0.25:0.1);
+  if(oppWard){ w.dispel=(smart?1.7:1.0)+buffPull; w.damage=0.5; }
+  else if(oppBuffs) w.dispel+=(smart?0.9:0.4)+buffPull*2;
   if(myCurses) w.dispel+=0.5;
   // Cash in a pending strike boost (Empower, Galvanize, Frenzy, Arcane Weave)
   const boost=me.effects.find(e=>e.type==='empower'||e.type==='frenzy'||e.type==='weave');
   if(boost) w.damage+=0.9;
-  // Infernal Mantle burns through wards, but only until the end of this round: strike now
+  // Infernal Mantle burns through wards until it's used (or dispelled): strike now
   const mantle=me.effects.find(e=>e.pierce);
   if(mantle) w.damage+=smart?1.5:0.6;
   // Curse-casters open the Dispel wheel for their hexes, not only to break wards
@@ -4624,6 +4665,8 @@ function elemAIChoose(who){
   // Called shots (Enthral) are easiest while my ward invites a dispel, or a Spellbind already steers their pick
   const callShot=smart&&sigSpells(who,'dispel').some(sp=>sp.el.effect&&sp.el.effect.type==='enthral'&&!sigBlocked(who,sp,1)&&aiSigSensible(who,sp,tgt));
   if(callShot&&(hasWard(me)||effectsOf(opp,'spellbind').length)) w.dispel+=0.5;
+  // The foe has Vanished: strikes at them only miss, so dispel it or do something else
+  if(effectsOf(opp,'absorbNext').some(e=>e.keep)){ w.damage*=smart?0.2:0.6; w.dispel+=smart?0.6:0.2; }
   if(hasWard(me)&&me.shieldHp>=15) w.protect=0.2;
   else {
     if(foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',2))) w.protect+=0.35;
@@ -4636,7 +4679,9 @@ function elemAIChoose(who){
   const siphonNow=smart&&siphon&&opp.mana>=elemCost(tgt,'damage',3);
   if(siphonNow) w.dispel+=0.6;
   // Last round of my miss/dodge cover: spend it on a Siphon or a strike — the foe's strike would be wasted
-  const cover=me.effects.filter(e=>e.type==='dodge'||e.type==='absorbNext');
+  const cover=me.effects.filter(e=>e.type==='dodge'||(e.type==='absorbNext'&&!e.keep));
+  // Vanished: a strike would reveal me, so siphon, ward up or rest instead
+  if(effectsOf(me,'absorbNext').some(e=>e.keep)){ w.damage*=smart?0.3:0.7; w.dispel+=smart?0.4:0.1; }
   if(smart&&cover.length&&cover.every(e=>e.rounds===1)){
     w.protect*=0.3; w.damage+=0.5;
     if(siphon) w.dispel+=0.6;
@@ -4679,10 +4724,10 @@ function elemAIChoose(who){
     if(!smart) return 1;
     const e=sp.el.effect||{};
     let v=1;
-    if(e.type==='absorbNext'&&effectsOf(me,'dodge').length) v+=2;
+    if(e.type==='absorbNext'&&!e.keep&&effectsOf(me,'dodge').length) v+=2;
     if(sp.el.ward&&buffsOf(me).length&&!hasWard(me)) v+=2;
     if(e.type==='warding'&&hasWard(me)&&!effectsOf(me,'warding').length) v+=2;
-    if(ELEM_WARD_ROUNDS&&e.extend&&hasWard(me)) v+=2;   // Counter holds a standing ward up longer   // Ward takes the next dispel for the ward
+    if(ELEM_WARD_ROUNDS&&e.extend&&hasWard(me)) v+=2;   // Ward holds a standing ward up longer
     if(sp===siphon&&(siphonNow||cover.length)) v+=2;
     if(e.type==='enthral'&&(hasWard(me)||effectsOf(opp,'spellbind').length)) v+=2;
     if(e.type==='danse') v+=guardCount(me);   // more dancers, more worth it
@@ -4757,7 +4802,7 @@ function elemStatusTags(){
       tags.push(`<span class="status-tag ward">🛡 ${name} ${el.icon} ${el.name.toUpperCase()} WARD ${st.shieldHp}${ELEM_WARD_ROUNDS?' ('+st.shield+')':''}</span>`);
     }
     (st.effects||[]).filter(e=>e.type!=='minion').forEach(e=>{
-      tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.rounds!=null?' ('+e.rounds+')':''}</span>`);
+      tags.push(`<span class="status-tag ${e.kind==='curse'?'timedrain':'regen'}">${e.icon} ${name} ${e.name.toUpperCase()}${e.charges>1?' ×'+e.charges:''}${e.rounds!=null?' ('+e.rounds+')':''}${e.frayed?' 🌀':''}</span>`);
     });
     // A totem shows its own HP (it's smashed, not dispelled)
     effectsOf(st,'minion').filter(m=>m.minion==='totem').forEach(m=>{
@@ -8143,19 +8188,19 @@ function simMatchN(seats,ai){
 // ── TUTORIAL ─────────────────────────────────────────────────────────────────
 const CHAR_COLORS_TUT={
   eldrin:'#4af0ff',mal:'#ff4a6e',sylvara:'#44cc88',aurelia:'#ffcc44',
-  gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zacharius:'#aaff44',
+  gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zakkit:'#aaff44',
   mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040',
   weizan:'#aabbee',gretch:'#55aa33',valdris:'#8899cc',mirel:'#cc88ff',thessaly:'#ffdd88',
   korvath:'#cc6622',fizzwick:'#99cc44',nyxara:'#6633aa',daveron:'#b8283c',frederick:'#8a4dff'
 };
 const CHAR_NAMES_TUT={
   eldrin:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
-  gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zakkit',
+  gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zakkit:'Zakkit',
   mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin',
   weizan:'Weizan',gretch:'Gretch',valdris:'Valdris',mirel:'Mirel',thessaly:'Thessaly',
   korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara',daveron:'Daveron',frederick:'Frederick'
 };
-const CHAR_KEYS_TUT=['eldrin','mal','sylvara','aurelia','gnash','cinder','skadi','zacharius','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara','daveron','frederick'];
+const CHAR_KEYS_TUT=['eldrin','mal','sylvara','aurelia','gnash','cinder','skadi','zakkit','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara','daveron','frederick'];
 
 // Character guides describe each spell's effect and wheel sector rather than exact numbers,
 // which live in characters.json and are shown on the wheel itself.
@@ -8198,9 +8243,9 @@ const TUTORIAL_CONVOS={
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
     {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too. With more than one rival, an outer-ring strike hits every one of them."},
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
-    {key:'zacharius',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements. Zakkit hates rocks."},
+    {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements. Zakkit hates rocks."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
-    {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
+    {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
     {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Raising a new one replaces the old one."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
@@ -8208,7 +8253,7 @@ const TUTORIAL_CONVOS={
   enchant:[
     {key:'mary',   text:"Some wizards cast enchantments. Buffs — like Regen, War Paint or a skeleton servant — sit on the Protection wheel and last a while."},
     {key:'mordant',text:"Curses — like Silence, Plague or Agony — sit on the Dispel wheel. As well as their hex, every curse wears at the target's ward a little, like a weak dispel."},
-    {key:'ponder', text:"A Dispel against a rival with no ward strips their newest buff — or all of them, from the outer ring. If they have a ward, the dispel hits the ward instead. Wards protect your buffs!"},
+    {key:'ponder', text:"Most buffs have no timer: they last until a Dispel strips them. The ones that pay out every round, and the short bursts, show their rounds left. A Dispel against a rival with no ward strips their newest buff — or all of them, from the outer ring. If they have a ward, the dispel hits the ward instead. Wards protect your buffs!"},
     {key:'mary',   text:"Cursed? Open the Dispel wheel and tap Cleanse Self. It removes your newest curse for very little mana — just one, so mind the order they land in."},
     {key:'sylvara',text:"Locks — like my Entangle or Skadi's Ice Lance — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
   ],
@@ -8234,7 +8279,7 @@ const TUTORIAL_CONVOS={
   eldrin:[
     {key:'eldrin',text:"I am Eldrin — the Stalwart. My Shield is the strongest ward of all. Endurance is my philosophy: I make you spend, and spend, until you have nothing left."},
     {key:'eldrin',text:"My Shield takes the Arcane sector of my Protection wheel — a far larger ward than most wizards can raise."},
-    {key:'eldrin',text:"Counter, in the Lightning sector, punishes anyone who strikes me for a few rounds — and braces my Shield, so it stops wearing away. Ward, in the Ice sector, makes me immune to curses, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
+    {key:'eldrin',text:"Counter, in the Lightning sector, punishes anyone who strikes me, until it's dispelled. Ward, in the Ice sector, braces my Shield for a few rounds, so it stops wearing away. It makes me immune to curses too, and the next dispel thrown at me only breaks the Ward — my Shield stays up."},
     {key:'eldrin',text:"Dispels are my weakness. Keep a ward between your buffs and their unbinding, and I am very hard to wear down."},
   ],
   mal:[
@@ -8250,14 +8295,14 @@ const TUTORIAL_CONVOS={
     {key:'sylvara',text:"Vine Whip is my Physical strike. If it gets through, the vines keep hurting them for a few rounds afterwards."},
   ],
   aurelia:[
-    {key:'aurelia',text:"I see three moves ahead. Foresight, in the Lightning sector of my Protection wheel, makes the next strike against me do nothing at all."},
+    {key:'aurelia',text:"I see three moves ahead. Foresight, in the Lightning sector of my Protection wheel, makes the next hits against me do nothing at all — strikes, lingering burns and poisons, even minions. Two of them, or three from the outer ring."},
     {key:'aurelia',text:"Time Drain is an Arcane curse on my Dispel wheel. My rival gains less mana each round for a while — and less from Meditate too. Stolen resources compound."},
     {key:'aurelia',text:"Rewind takes my Arcane ward sector. It raises a ward and also gives back the HP I lost last round — the past undone, and the future guarded."},
     {key:'aurelia',text:"I have already foreseen how this duel ends. I need only wait for you to arrive at the conclusion I have prepared."},
   ],
   gnash:[
     {key:'gnash',text:"GNASH NOT WIZARD. Gnash warrior-mage! Gnash has lots of HP and very effective fists."},
-    {key:'gnash',text:"War Paint, Physical sector of Protection wheel — Gnash takes less damage for a few rounds. Frenzy, Fire sector — Gnash hits much harder for two rounds, but it hurts Gnash too."},
+    {key:'gnash',text:"War Paint, Physical sector of Protection wheel — Gnash takes less damage, until someone dispels it. Frenzy, Fire sector — Gnash hits much harder for two rounds, but it hurts Gnash too."},
     {key:'gnash',text:"Savage Charge is Gnash's Physical strike. Big smash, and it burns their mana. Magic tricks? HAH."},
     {key:'gnash',text:"Little mage thinks Gnash simple? Gnash simple but Gnash EFFECTIVE."},
   ],
@@ -8273,11 +8318,11 @@ const TUTORIAL_CONVOS={
     {key:'skadi',text:"Frost Armor, in the Ice sector of my Protection wheel, cuts the damage I take and hurts anyone who strikes me."},
     {key:'skadi',text:"Blizzard is my Ice curse. Damage every round and a steady drain on their mana. By the end they have no mana and no hope."},
   ],
-  zacharius:[
-    {key:'zacharius',text:"Zakkit won before you cast-cast your first spell, yes-yes! You just did not know it."},
-    {key:'zacharius',text:"Warp-Charge, in the Lightning sector of my Protection wheel, fills my next Lightning strike with warp-power. Much-much more power!"},
-    {key:'zacharius',text:"Warp Lightning is my Lightning strike. It burns mana like all lightning, and it may leap-jump for extra damage. Green and crackly, yes!"},
-    {key:'zacharius',text:"Warpstone Curse is my Lightning curse — my rival takes extra damage from every strike for a few rounds. Then Zakkit's sums are very, very favourable. Yes-yes."},
+  zakkit:[
+    {key:'zakkit',text:"Zakkit won before you cast-cast your first spell, yes-yes! You just did not know it."},
+    {key:'zakkit',text:"Warp-Charge, in the Lightning sector of my Protection wheel, fills my next Lightning strike with warp-power. Much-much more power!"},
+    {key:'zakkit',text:"Warp Lightning is my Lightning strike. It burns mana like all lightning, and it may leap-jump for extra damage. Green and crackly, yes!"},
+    {key:'zakkit',text:"Warpstone Curse is my Lightning curse — my rival takes extra damage from every strike for a few rounds. Then Zakkit's sums are very, very favourable. Yes-yes."},
   ],
   mary:[
     {key:'mary',text:"I am a healer first, a combatant second. I endure and outlast through faith and restoration."},
@@ -8293,13 +8338,13 @@ const TUTORIAL_CONVOS={
   ],
   ponder:[
     {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
-    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes the next strike miss me entirely. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Blink first, then Vanish: every strike I dodge leaves Vanish waiting for the next."},
+    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes every strike miss me entirely for two rounds — three from the outer ring. But I can't strike from hiding: pick Damage and I'm revealed that round. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Want to hit me while I'm Vanished? Dispel it first."},
     {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. It's quick: I steal mana as the round begins, before my rival pays for their spell — if they can't afford it any more, it fails!"},
     {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
   ],
   durin:[
     {key:'durin',text:"I am Durin. I have more HP than anyone in the arena. When spells come, they barely scratch me."},
-    {key:'durin',text:"Stoneskin is my Physical ward — a sturdy one. Stonesoul, in the Arcane sector, cuts all damage I take for a few rounds — and I'll never touch Lightning, so warding in Lightning against me is safe."},
+    {key:'durin',text:"Stoneskin is my Physical ward — a sturdy one. Stonesoul, in the Arcane sector, cuts all damage I take until it's dispelled — and I'll never touch Lightning, so warding in Lightning against me is safe."},
     {key:'durin',text:"Rockfall is my Physical strike — a heavy one, with a long ritual."},
     {key:'durin',text:"I am slow. I am deliberate. And when I am ready... the mountain falls."},
   ],
@@ -8322,7 +8367,7 @@ const TUTORIAL_CONVOS={
     {key:'valdris',text:"Cut through my dead, and you may yet reach me. Leave them standing, and they will grind you to dust."},
   ],
   mirel:[
-    {key:'mirel',text:"Nothing you see is real. I am Mirel. Simulacrum, in the Arcane sector of my Protection wheel, creates a copy of me that strikes my rival every round. I can have two."},
+    {key:'mirel',text:"Nothing you see is real. I am Mirel. Simulacrum, in the Arcane sector of my Protection wheel, creates a copy of me that strikes my rival every round until it fades, three rounds on. I can have two."},
     {key:'mirel',text:"Bewitch is my Arcane curse. The next strike my rival makes rebounds onto themselves. Every attack becomes a gamble."},
     {key:'mirel',text:"Feint is my Arcane strike. It burns my rival's mana as it lands."},
     {key:'mirel',text:"My simulacra can be dispelled — that is the counterplay. So I keep a ward up, and let my copies do the work."},
@@ -8343,7 +8388,7 @@ const TUTORIAL_CONVOS={
   fizzwick:[
     {key:'fizzwick',text:"Heh — a satchel full of things that probably shouldn't mix. Sometimes I'm not sure what they'll do until it's too late."},
     {key:'fizzwick',text:"Caustic Bomb is my Dark strike. If it gets through to them, the poison is in their blood — it seeps straight past any ward they raise after. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
-    {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, either heals me or empowers my next strike. Either way, something good happens to me."},
+    {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, knows what I need: when I'm badly hurt it heals me, and otherwise it empowers my next strike."},
     {key:'fizzwick',text:"Most duellists plan for consistency. I bring chaos in a bottle."},
   ],
   daveron:[
@@ -8681,7 +8726,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-gnash').addEventListener('click',()=>showWizardDetail('gnash'));
   document.getElementById('pick-skadi').addEventListener('click',()=>showWizardDetail('skadi'));
   document.getElementById('pick-cinder').addEventListener('click',()=>showWizardDetail('cinder'));
-  document.getElementById('pick-zacharius').addEventListener('click',()=>showWizardDetail('zacharius'));
+  document.getElementById('pick-zakkit').addEventListener('click',()=>showWizardDetail('zakkit'));
   document.getElementById('pick-mary').addEventListener('click',()=>showWizardDetail('mary'));
   document.getElementById('pick-mordant').addEventListener('click',()=>showWizardDetail('mordant'));
   document.getElementById('pick-ponder').addEventListener('click',()=>showWizardDetail('ponder'));
