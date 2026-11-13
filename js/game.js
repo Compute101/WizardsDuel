@@ -3431,7 +3431,8 @@ const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:t
 // Seal Ward. A character's sealCostMod (characters.json) changes the cost; sealAll seals every layer
 // at once (Eldrin's hook, now that everyone can brace a ward).
 const SEAL={cost:1};
-let WARD_SEAL_AI=0.6;   // the AI's weight for sealing a healthy unsealed ward (Normal; half on Easy)
+let WARD_SEAL_AI=1.0;     // the AI's weight for sealing an unsealed ward (Normal; half on Easy)
+let WARD_SEAL_AI_HP=15;   // ...of at least this many HP (a seal stops the 4-a-round wear for 1 mana)
 let WARD_BOOST_AI_HP=25;   // the AI tops up its ward below this HP when boost is on (15 otherwise)
 let WARD_LAYER_AI=0.4;     // the AI's Protection weight with a healthy ward and room for another layer (0.2 without)
 // Element riders on strikes. Plain strikes never lock (hard locks are for signature spells); a
@@ -4867,12 +4868,14 @@ function elemAIChoose(who){
     if(_rng()<p) return {type:'el',cat:'meditate',ok:true};
   }
   const w={damage:1.0, protect:0.55, dispel:0.08};
-  // Seal a healthy ward that isn't sealed yet (more readily when it's the only thing between me and the
-  // foe's strikes, and less while the foe has a Greater dispel's worth of mana)
-  if(sealTargetable(who)&&me.shieldHp>=WARD_BOOST_AI_HP){
+  // Seal a ward that isn't sealed yet: more readily over a layered stack (a seal on each is the
+  // whole point), when hurt (the ward is all that stands between me and the foe), and on a big ward.
+  // No discount for a foe who can afford a Greater dispel: the seal soaks sealSoak of it.
+  if(sealTargetable(who)&&me.shieldHp>=WARD_SEAL_AI_HP){
     w.seal=WARD_SEAL_AI*(smart?1:0.5);
+    if(smart&&wardLayers(me)>1) w.seal+=0.3;
+    if(smart&&me.hp<me.maxHp*0.5) w.seal+=0.3;
     if(wardTotal(me)>=45) w.seal+=0.2;
-    if(smart&&foesOf(who).some(f=>gs[f].mana>=elemCost(f,'dispel',3))) w.seal*=0.6;
   }
   // Untimed buffs never wear off by themselves, so stripping them is worth more
   const buffPull=Math.min(3,buffsOf(opp).filter(e=>e.rounds==null).length)*(smart?0.25:0.1);
@@ -8384,16 +8387,16 @@ const SIM_MAX_ROUNDS=60;
 function simInfo(){ return {options:GAME_OPTIONS, suddenDeath:SUDDEN_DEATH, chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE, bounty:ELEM_KO_BOUNTY, phase:PHASE,
   setGangAware:v=>{ GANG_AWARE_AI=v; },
   wardRules:{...WARD_RULES}, wardAiHp:WARD_BOOST_AI_HP, wardLayerAi:WARD_LAYER_AI,
-  wardSealAi:WARD_SEAL_AI, sealCost:SEAL.cost,
+  wardSealAi:WARD_SEAL_AI, wardSealAiHp:WARD_SEAL_AI_HP, sealCost:SEAL.cost,
   setWardRules:o=>{ const r={...o};
     if(r.aiHp!=null) WARD_BOOST_AI_HP=r.aiHp; if(r.layerAi!=null) WARD_LAYER_AI=r.layerAi;
-    if(r.sealAi!=null) WARD_SEAL_AI=r.sealAi; if(r.sealCost!=null) SEAL.cost=r.sealCost;
+    if(r.sealAi!=null) WARD_SEAL_AI=r.sealAi; if(r.sealAiHp!=null) WARD_SEAL_AI_HP=r.sealAiHp; if(r.sealCost!=null) SEAL.cost=r.sealCost;
     // Character tweaks for this run only: undo the last run's first
     (simInfo.undo||[]).forEach(([k,f,v])=>{ if(v===undefined) delete CHAR_DEFS[k][f]; else CHAR_DEFS[k][f]=v; });
     simInfo.undo=[];
     if(r.charMods) Object.entries(r.charMods).forEach(([k,m])=>Object.entries(m).forEach(([f,v])=>{
       simInfo.undo.push([k,f,CHAR_DEFS[k][f]]); CHAR_DEFS[k][f]=v; }));
-    ['aiHp','layerAi','sealAi','sealCost','charMods'].forEach(k=>delete r[k]); Object.assign(WARD_RULES,r); }}; }
+    ['aiHp','layerAi','sealAi','sealAiHp','sealCost','charMods'].forEach(k=>delete r[k]); Object.assign(WARD_RULES,r); }}; }
 function simMatch(k1,k2,ai){
   simMode=true; simOutcome=null;
   twoPlayerMode=false; trainingMode=false;

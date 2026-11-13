@@ -576,9 +576,15 @@ balanced on its own before the next:
    - Dread and locks on Protection cover it (it's a Protection pick); Enthral calling Protection takes it.
    - **Eldrin** (`sealAll` in `characters.json`): his Seal Ward seals every layer at once. A character's
      `sealCostMod` changes the cost (none use it). His Ward spell still braces and takes the next dispel.
-   - AI: seals a ward of at least `WARD_BOOST_AI_HP` that isn't sealed, weight `WARD_SEAL_AI` (0.6;
-     half on Easy, +0.2 with 45+ ward HP in all, ×0.6 while a foe can afford a Greater dispel), and on
-     Normal it doesn't hold back to a lesser dispel against a sealed ward.
+   - AI: seals an unsealed ward of at least `WARD_SEAL_AI_HP` (15) HP, weight `WARD_SEAL_AI` (1.0; half on
+     Easy; on Normal +0.3 over a layered stack, +0.3 below half HP; +0.2 with 45+ ward HP in all), and on
+     Normal it doesn't hold back to a lesser dispel against a sealed ward. The first version (25+ HP only,
+     weight 0.6, ×0.6 while a foe could afford a Greater dispel) sealed about 0.1–0.4 times a game: 79% of
+     AI picks have no ward up, 16% a ward under 25 HP, so it had a chance in only 4% of picks and took it
+     14% of the time. Now it takes about 30% of its chances and seals about 0.4–1.2 times a game. Win rates
+     barely moved between seal weights 0.5 and 1.6 (`sealsShy` / `sealsKeen`).
+   - Frederick crept to 57–59% with layers (his blast goes around every layer, and there are more of
+     them now): HP 93 → 90 put him at 54.6% (88: 52.4%). Roster after: 44.3–56.2%, about 21.4 rounds.
    - Looks: a sealed layer gets a slowly turning ring of gold Arcana glyphs (`drawWardSeal`, `SEAL_GLYPHS`
      ⊕ θ Φ ∞ Ω ✸, all text-only); sealing phases in gold motes; a broken seal unravels in gold threads
      with 🔒 SEAL BROKEN. Labels: `🔒55 ‹🔒🔥35›`.

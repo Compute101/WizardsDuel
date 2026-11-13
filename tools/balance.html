@@ -65,6 +65,7 @@ with the Beginner rules: about 12% of flicks pot, you flick 10 minus the spell's
     <option value="sealsCost3">Seals, cost 3</option>
     <option value="sealsShy">Seals, AI seals less</option>
     <option value="sealsKeen">Seals, AI seals more</option>
+    <option value="sealsOld">Seals, first seal AI (25+ HP only)</option>
     <option value="eldrinSealAll">Seals + Eldrin seals every layer</option>
     <option value="eldrinSealCheap">Seals + Eldrin seals every layer for 1 less</option>
     <option value="sealsMax">Seals, AI seals at every chance (stress)</option>
@@ -107,7 +108,7 @@ let mode=MODES.standard;
 // Ward rule presets for the standard game (WARD_RULES in js/game.js). Steps 2–3 (seals, layers) go here.
 // 'game' is whatever js/game.js ships with (captured on load). aiHp: the AI tops up a ward below this.
 const WARD_PRESETS={
-  off:    {boost:false, boostCap:1.5, seals:false, layers:1, aiHp:25, layerAi:0.4, dispelStrips:true, sealAi:0.6, sealCost:1, sealSoak:0},
+  off:    {boost:false, boostCap:1.5, seals:false, layers:1, aiHp:25, layerAi:0.4, dispelStrips:true, sealAi:1.0, sealAiHp:15, sealCost:1, sealSoak:0},
   noSeals:{seals:false},   // boost + layers, no seals
   seals:  {seals:true},
   sealsCost2:{seals:true, sealCost:2},
@@ -115,8 +116,11 @@ const WARD_PRESETS={
   sealSoak15:{seals:true, sealSoak:15},   // a seal soaks an inner-ring dispel's worth of power (in the game)
   sealSoak30:{seals:true, sealSoak:30},
   sealsCost3:{seals:true, sealCost:3},
-  sealsShy:  {seals:true, sealAi:0.3},
-  sealsKeen: {seals:true, sealAi:1.0},
+  sealsShy:  {seals:true, sealAi:0.5},
+  sealsKeen: {seals:true, sealAi:1.6},
+  sealsOld:  {seals:true, sealAi:0.6, sealAiHp:25},   // the first seal AI: only 25+ HP wards, weight 0.6
+  fredHp90:  {charMods:{frederick:{hp:90}}},
+  fredHp88:  {charMods:{frederick:{hp:88}}},
   sealsMax:  {seals:true, sealAi:3.0},   // stress test: the AI seals at nearly every chance
   eldrinSealAll:{seals:true, charMods:{eldrin:{sealAll:true}}},   // Eldrin's hook: his seal binds every layer
   eldrinSealCheap:{seals:true, charMods:{eldrin:{sealAll:true, sealCostMod:-1}}},
@@ -134,7 +138,8 @@ const WARD_PRESETS={
 };
 function setWards(w){
   if(!G) return;
-  if(!WARD_PRESETS.game) WARD_PRESETS.game={...G.simInfo().wardRules, aiHp:G.simInfo().wardAiHp};
+  if(!WARD_PRESETS.game){ const i=G.simInfo();
+    WARD_PRESETS.game={...i.wardRules, aiHp:i.wardAiHp, layerAi:i.wardLayerAi, sealAi:i.wardSealAi, sealAiHp:i.wardSealAiHp, sealCost:i.sealCost}; }
   const p=typeof w==='string'?WARD_PRESETS[w]:w;
   if(p) G.simInfo().setWardRules({...WARD_PRESETS.game,...p});
 }
