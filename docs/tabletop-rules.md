@@ -24,7 +24,9 @@ Both Beginner and Normal use the same flick, tuned for new flickers: **7 pots in
 
 ## What you need
 
-- Tiddlywinks in three colours, up to 20 of each per player: **HP** (red), **Mana** (blue), **Ward** (white). The counters are the winks: you cast spells by flicking your mana winks.
+- Tiddlywinks in three colours: **HP** (red), **Mana** (blue), **Ward** (white). The counters are the winks: you cast spells by flicking your mana winks.
+  - **HP:** 25 red winks cover both players, since nobody ever has more than 12.
+  - **Mana and wards:** about 25 of each, shared between you, is enough for most games. If a pile runs out, use spare winks of another colour.
 - A pot, and a squidger each.
 - A six-sided die (d6).
 - A way to pick secretly: a dial, or face-down cards for Damage / Protection / Dispel / Meditate plus a note of the element and level.
@@ -32,8 +34,8 @@ Both Beginner and Normal use the same flick, tuned for new flickers: **7 pots in
 
 ## Setup
 
-- Each player picks a wizard and takes **HP winks equal to that wizard's HP** (16–20), plus **6 mana**.
-- Nobody can ever hold more than **20** HP, mana or ward winks.
+- Each player picks a wizard and takes **HP winks equal to that wizard's HP** (8–12), plus **6 mana**.
+- Nobody can ever hold more than **12** HP winks, or more than **20** mana or ward winks.
 - Agree where each player flicks from: their **handicap line**. A better flicker stands further back.
 
 ## A round
@@ -72,7 +74,7 @@ The flick replaces the app's glyph minigames. Beginner and Normal rules use this
 - **No pot and the spell fizzles.** The mana you paid is lost.
 - **Pick up the winks you missed.** Nothing is left on the table between rounds.
 
-At 12%, a Lesser spell goes off about 2 times in 3, a Normal one about half the time and a Greater one about 2 times in 5. In the simulator, about half of all spells go off, and games last about 11 rounds (the standard game averages about 20, which is why tabletop games are tuned shorter).
+At 12%, a Lesser spell goes off about 2 times in 3, a Normal one about half the time and a Greater one about 2 times in 5. In the simulator, about half of all spells go off, and games last about 8 or 9 rounds (the standard game averages about 20, which is why tabletop games are tuned shorter).
 
 ### Optional: near misses
 
@@ -191,7 +193,7 @@ After the spells resolve, before the round end, the players take turns squopping
 - **Each wink you squop is yours:** add it to your mana. Unsquopped winks stay where they are for next round.
 - **Who goes first:** the player with the closer handicap line. If the lines are the same, whoever potted more winks this round. If that's tied too, whoever has less HP.
 
-The simulator assumes an Advanced player pots **75%** of flicks from their handicap line and lands **40%** of squop attempts. Advanced games average about 11 rounds.
+The simulator assumes an Advanced player pots **75%** of flicks from their handicap line and lands **40%** of squop attempts. Advanced games average about 8 rounds.
 <!-- dev:start -->
 (`RULES.pot` and `RULES.squop` in `js/tabletop.js`.) Change them once you know your real rates, then re-run the balance check.
 <!-- dev:end -->
@@ -202,7 +204,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 
 <!-- characters:start -->
 ### ELDRIN — The Stalwart
-**HP 17** · Normal rules: Seal Ward seals every one of your ward piles at once
+**HP 11** · Normal rules: Seal Ward seals every one of your ward piles at once
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -211,7 +213,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Ward** | Protection | Ice | Normal | 2 | Until dispelled: curses can't touch you. A dispel at you only removes this Ward. |
 
 ### MALACHAR — The Relentless
-**HP 18** (Advanced rules: **17**) · Can't cast: Arcane
+**HP 11** (Advanced rules: **10**) · Can't cast: Arcane
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -220,7 +222,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Drain** | Damage | Dark | Normal | 4 | Dark strike of 5. Heal half the HP damage it deals (round down). |
 
 ### SYLVARA — The Verdant
-**HP 18** · Can't cast: Fire, Dark
+**HP 11** · Can't cast: Fire, Dark
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -229,7 +231,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Vine Whip** | Damage | Physical | Normal | 3 | Physical strike of 3. Until cleansed, vines deal 1 to the foe at every round end. |
 
 ### AURELIA — The Radiant
-**HP 19**
+**HP 12**
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -238,7 +240,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Rewind** | Protection | Arcane | Normal | 6 | Arcane ward of 7, and heal the HP you lost last round (max 5). |
 
 ### GNASH — The Feral
-**HP 19** · Can't cast: Arcane, Ice
+**HP 11** · Can't cast: Arcane, Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -247,7 +249,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Frenzy** | Protection | Fire | Lesser | 2 | Until dispelled: your strikes deal +2, but each costs you 1 HP. |
 
 ### CINDER — The Volatile
-**HP 18** (Advanced rules: **17**) · Can't cast: Ice
+**HP 11** (Advanced rules: **10**) · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -256,7 +258,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Candle** | Dispel | Fire | Normal | 2 | Until cleansed: the foe takes 2 each time they cast Protection or Meditate. |
 
 ### SKADI — The Permafrost
-**HP 18** · Can't cast: Fire
+**HP 11** · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -265,7 +267,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Blizzard** | Dispel | Ice | Normal | 3 | Until cleansed: at every round end the foe takes 1 and loses 1 mana. |
 
 ### ZAKKIT — The Warpstorm
-**HP 19** · Can't cast: Physical
+**HP 11** · Can't cast: Physical
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -274,7 +276,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Warpstone Curse** | Dispel | Lightning | Normal | 2 | Until cleansed: every strike on the foe deals +1. |
 
 ### MARY — The Devoted
-**HP 18** (Advanced rules: **17**) · Can't cast: Dark, Fire
+**HP 11** · Can't cast: Dark, Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -283,7 +285,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Radiant** | Damage | Arcane | Normal | 3 | Arcane strike of 3. The foe loses 2 mana. |
 
 ### MORDANT — The Defiler
-**HP 18** · Can't cast: Lightning
+**HP 11** · Can't cast: Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -292,7 +294,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Corruption** | Dispel | Physical | Normal | 2 | Until cleansed: the foe gains 1 less mana each round (and from Meditate), and Meditate doesn't escape Agony. |
 
 ### PONDER — The Apprentice
-**HP 19** (Advanced rules: **17**) · Can't cast: Dark, Fire
+**HP 12** (Advanced rules: **10**) · Can't cast: Dark, Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -301,7 +303,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Blink** | Protection | Lightning | Normal | 3 | Until dispelled: roll a die for each strike at you, on 4+ it misses. Plus a Lightning ward of 3. |
 
 ### DURIN — The Stoneheart
-**HP 20** · Can't cast: Lightning
+**HP 12** · Can't cast: Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -310,7 +312,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Rockfall** | Damage | Physical | Greater | 5 | Physical strike of 7. |
 
 ### WEIZAN — The Bladecaller
-**HP 19** · Can't cast: Dark
+**HP 11** (Advanced rules: **12**) · Can't cast: Dark
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -319,7 +321,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Iron Patience** | Protection | Arcane | Normal | 2 | Until dispelled: every hit on you deals 1 less (min 1). |
 
 ### GRETCH — The Festering
-**HP 17** (Advanced rules: **18**) · Can't cast: Fire, Arcane
+**HP 10** · Can't cast: Fire, Arcane
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -328,7 +330,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Bone Totem** | Protection | Dark | Normal | 4 | Plant a bone totem (one at a time). It has 4 HP and stands in front of your ward: damage (strikes and ticks) wears it down before anything reaches your ward. Dispels can't touch it. While it stands, heal 1 at every round end. |
 
 ### VALDRIS — The Undying
-**HP 13** (Advanced rules: **16**) · Can't cast: Fire
+**HP 8** (Advanced rules: **9**) · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -337,7 +339,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Soul Tithe** | Dispel | Dark | Lesser | 2 | Until cleansed: the foe loses 1 mana for each of your skeletons they kill. |
 
 ### MIREL — The Deceiver
-**HP 17** · Can't cast: Physical, Fire
+**HP 10** · Can't cast: Physical, Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -346,7 +348,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Feint** | Damage | Arcane | Normal | 4 | Arcane strike of 4. The foe loses 2 mana. |
 
 ### THESSALY — The Gilded
-**HP 19** (Advanced rules: **18**)
+**HP 12** (Advanced rules: **11**)
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -355,7 +357,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Spellbind** | Dispel | Dark | Normal | 2 | Until cleansed: the foe's most-cast category (Damage, Protection or Dispel) costs 3 more. |
 
 ### KORVATH — The Wyrmlord
-**HP 18** (Advanced rules: **19**) · Can't cast: Ice
+**HP 11** · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -364,7 +366,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Ancient Wrath** | Damage | Physical | Greater | 7 | Physical strike of 9. Once per game. |
 
 ### FIZZWICK — The Concoctor
-**HP 18**
+**HP 11**
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -373,7 +375,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Unstable Concoction** | Damage | Arcane | Normal | 4 | Arcane strike: roll a die and deal that much. On a 6, roll again and add it (keep going on 6s). |
 
 ### NYXARA — The Hollow
-**HP 17** (Advanced rules: **18**) · Can't cast: Lightning
+**HP 10** (Advanced rules: **12**) · Can't cast: Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -382,7 +384,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Event Horizon** | Damage | Arcane | Greater | 7 | Arcane strike of half the foe's HP (round down, min 4). You take 2. |
 
 ### DAVERON — The Gravelord
-**HP 16** (Advanced rules: **18**) · Can't cast: Fire
+**HP 9** (Advanced rules: **10**) · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -391,7 +393,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Curse of the Years** | Dispel | Dark | Normal | 4 | Until cleansed: the foe takes 2 at every round end, whatever they did. Unlike Agony, Meditating doesn't escape it. |
 
 ### FREDERICK — The Black
-**HP 17** (Advanced rules: **16**) · Can't cast: Ice
+**HP 10** · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|

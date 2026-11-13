@@ -74,9 +74,9 @@ function convos(){
       {key:'eldrin', text:"Everything here comes from the rulebook, in the 📖 Rulebook tab. Keep it open at the table."},
     ],
     kit:[
-      {key:'durin',  text:`You'll need tiddlywinks in three colours, up to ${N.max} of each per player: red for health, blue for mana and white for your ward. Plus a pot, a squidger each and a six-sided die.`},
+      {key:'durin',  text:`You'll need tiddlywinks in three colours: red for health, blue for mana and white for your ward. 25 red winks do for both of you, since nobody has more than ${N.maxHp} health; about 25 blue and 25 white, shared, is enough for most games. Plus a pot, a squidger each and a six-sided die.`},
       {key:'durin',  text:"And a way to pick in secret: a dial, or face-down cards for Damage, Protection, Dispel and Meditate, with a note of the element and level. Mark each buff and curse with a token or its card."},
-      {key:'gnash',  text:`Setup is quick. Take as many health winks as your wizard's HP (it's on their card below) and ${N.startMana} mana. Nobody can ever hold more than ${N.max} health, mana or ward winks.`},
+      {key:'gnash',  text:`Setup is quick. Take as many health winks as your wizard's HP (it's on their card below) and ${N.startMana} mana. Nobody can ever hold more than ${N.maxHp} health winks, or more than ${N.max} mana or ward winks.`},
       {key:'gnash',  text:"Then agree where each of you flicks from: your handicap line. A better flicker stands further back, so it's a fair fight."},
     ],
     round:[
@@ -116,7 +116,7 @@ function convos(){
       {key:'gnash',  text:"At the round end, curses tick first (burns, poison, plague, Agony), then regeneration, then minions strike the foe."},
       {key:'korvath',text:`From round ${sd.round} it's sudden death: both wizards lose ${sd.dmg} HP every round end, and ${sd.dmg} more every ${sd.every} rounds after that. Nobody hides forever.`},
       {key:'gnash',  text:`Then every ward wears by ${N.wardWear} wink, and each wizard gains ${N.income} mana, less any curse that cuts income.`},
-      {key:'korvath',text:"Games are short: about 11 rounds. Make every flick count!"},
+      {key:'korvath',text:"Games are short: about 8 or 9 rounds. Make every flick count!"},
     ],
     next:[
       {key:'ponder', text:"That's the whole Beginner game! Play a few duels until picking, paying and flicking feel easy."},
