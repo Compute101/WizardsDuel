@@ -228,17 +228,26 @@ function fillSceneBands(){
   if(below>0) bx.drawImage(bc,0,bOffY+bH-1,bW,1,0,bOffY+bH,bW,below);
 }
 
-// Painted arena backdrop (backgrounds/<ARENA_BG>.jpg). null, or an image that hasn't loaded,
-// falls back to the procedural per-opponent backgrounds below.
-const ARENA_BG='library';
+// Painted arena backdrops (backgrounds/<name>.jpg). Each character's `arena` in characters.json
+// names its home ground; a duel is fought on the opponent's (p2Key), like the old procedural
+// backgrounds. A character with no `arena` uses ARENA_DEFAULT; null there, or an image that
+// hasn't loaded yet, falls back to the procedural per-opponent backgrounds below.
+const ARENA_DEFAULT='library';   // 'library' (gothic library) or 'ruins' (moonlit ruined streets)
 const ARENA_DIM=0.22;   // dark wash over the painting so wizards and spell effects stand out
-const arenaImg={img:new Image(),ready:false};
-if(ARENA_BG){ arenaImg.img.onload=()=>{arenaImg.ready=true;}; arenaImg.img.src='backgrounds/'+ARENA_BG+'.jpg'; }
-function arenaBgActive(){ return !!(ARENA_BG&&arenaImg.ready); }
+const arenaImgs={};     // name -> {img, ready}, loaded on first use
+function arenaName(key){ return (CHAR_DEFS&&CHAR_DEFS[key]&&CHAR_DEFS[key].arena)||ARENA_DEFAULT; }
+function arenaFor(key){
+  const name=arenaName(key); if(!name) return null;
+  let a=arenaImgs[name];
+  if(!a){ a=arenaImgs[name]={img:new Image(),ready:false};
+    a.img.onload=()=>{a.ready=true;}; a.img.src='backgrounds/'+name+'.jpg'; }
+  return a;
+}
+function arenaBgActive(){ const a=arenaFor(p2Key); return !!(a&&a.ready); }
 // Cover the whole canvas, floor kept at the bottom of the scene (where the wizards stand);
 // any band above or below the scene fades into the room's darkness instead of being stretched.
 function drawArenaImage(){
-  const im=arenaImg.img, iw=im.naturalWidth, ih=im.naturalHeight;
+  const im=arenaFor(p2Key).img, iw=im.naturalWidth, ih=im.naturalHeight;
   const top=-bOffY, bot=bc.height-bOffY;
   bx.fillStyle='#07040c'; bx.fillRect(0,top,bW,bot-top);
   const s=Math.max(bW/iw,bH/ih), dw=iw*s, dh=ih*s;
@@ -9101,6 +9110,6 @@ window.addEventListener('DOMContentLoaded', ()=>{
   // Load character data — must complete before a character can be picked
   fetch('characters.json')
     .then(r=>r.json())
-    .then(data=>{ CHAR_DEFS=data; p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key]; loadSprites(); })
+    .then(data=>{ CHAR_DEFS=data; p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key]; loadSprites(); Object.keys(CHAR_DEFS).forEach(arenaFor); })
     .catch(err=>console.error('Failed to load characters.json:', err));
 });

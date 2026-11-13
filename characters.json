@@ -3,6 +3,7 @@
     "name": "ELDRIN",
     "title": "The Stalwart",
     "sprite": "sprites/eldrin.png",
+    "arena": "library",
     "col": "#4af0ff",
     "aiStyle": "chivalrous",
     "rivals": {
@@ -75,6 +76,7 @@
     "name": "MALACHAR",
     "title": "The Relentless",
     "sprite": "sprites/mal.png",
+    "arena": "ruins",
     "col": "#ff4a6e",
     "aiStyle": "vulture",
     "rivals": {
@@ -148,6 +150,7 @@
     "name": "SYLVARA",
     "title": "The Verdant",
     "sprite": "sprites/sylvara.png",
+    "arena": "library",
     "col": "#44cc88",
     "rivals": {
       "gretch": "Your rot ends here, Gretch."
@@ -226,6 +229,7 @@
     "name": "AURELIA",
     "title": "The Radiant",
     "sprite": "sprites/aurelia.png",
+    "arena": "library",
     "col": "#ffcc44",
     "rivals": {
       "nyxara": "The light will fill your void."
@@ -296,6 +300,7 @@
     "name": "GNASH",
     "title": "The Feral",
     "sprite": "sprites/gnash.png",
+    "arena": "ruins",
     "col": "#dd8822",
     "taunts": [
       "Hah! You tickled Gnash. Come back and try harder!",
@@ -368,6 +373,7 @@
     "name": "CINDER",
     "title": "The Volatile",
     "sprite": "sprites/cinder.png",
+    "arena": "ruins",
     "col": "#ff6600",
     "aiStyle": "chaotic",
     "rivals": {
@@ -441,6 +447,7 @@
     "name": "SKADI",
     "title": "The Permafrost",
     "sprite": "sprites/skadi.png",
+    "arena": "library",
     "col": "#88ddff",
     "rivals": {
       "cinder": "Your little flame gutters, Cinder."
@@ -515,6 +522,7 @@
     "name": "ZAKKIT",
     "title": "The Warpstorm",
     "sprite": "sprites/zakkit.png",
+    "arena": "ruins",
     "spriteHeight": 0.72,
     "col": "#aaff44",
     "aiStyle": "calculating",
@@ -593,6 +601,7 @@
     "name": "MARY",
     "title": "The Devoted",
     "sprite": "sprites/mary.png",
+    "arena": "library",
     "col": "#f0d8a0",
     "aiStyle": "chivalrous",
     "rivals": {
@@ -666,6 +675,7 @@
     "name": "MORDANT",
     "title": "The Defiler",
     "sprite": "sprites/mordant.png",
+    "arena": "ruins",
     "col": "#9944cc",
     "taunts": [
       "Every prayer you offered was silence. Every mercy, weakness.",
@@ -738,6 +748,7 @@
     "name": "PONDER",
     "title": "The Apprentice",
     "sprite": "sprites/ponder.png",
+    "arena": "library",
     "col": "#9988cc",
     "taunts": [
       "I— I won? Oh! Well... don't think I'll go easy on you next time!",
@@ -814,6 +825,7 @@
     "name": "DURIN",
     "title": "The Stoneheart",
     "sprite": "sprites/durin.png",
+    "arena": "ruins",
     "spriteHeight": 0.72,
     "spriteWidth": 1.2,
     "col": "#b08040",
@@ -886,6 +898,7 @@
     "name": "WEIZAN",
     "title": "The Bladecaller",
     "sprite": "sprites/weizan.png",
+    "arena": "library",
     "col": "#66aa88",
     "taunts": [
       "Steel remembers every hand that has held it. Mine remembered yours.",
@@ -959,6 +972,7 @@
     "name": "GRETCH",
     "title": "The Festering",
     "sprite": "sprites/gretch.png",
+    "arena": "ruins",
     "spriteHeight": 1.5,
     "spriteHeightMulti": 1.2,
     "col": "#55aa33",
@@ -1041,6 +1055,7 @@
     "name": "VALDRIS",
     "title": "The Undying",
     "sprite": "sprites/valdris.png",
+    "arena": "ruins",
     "col": "#8844cc",
     "rivals": {
       "daveron": "The dead are mine, Gravelord."
@@ -1119,6 +1134,7 @@
     "name": "MIREL",
     "title": "The Deceiver",
     "sprite": "sprites/mirel.png",
+    "arena": "library",
     "col": "#b86ef4",
     "taunts": [
       "You were fighting my shadow the entire time. I was never even there.",
@@ -1192,6 +1208,7 @@
     "name": "THESSALY",
     "title": "The Gilded",
     "sprite": "sprites/thessaly.png",
+    "arena": "library",
     "col": "#ddaa22",
     "aiStyle": "calculating",
     "rivals": {
@@ -1268,6 +1285,7 @@
     "name": "KORVATH",
     "title": "The Wyrmlord",
     "sprite": "sprites/mage-dark.png",
+    "arena": "ruins",
     "col": "#cc6622",
     "taunts": [
       "My ancestors burned kingdoms to ash. You are not even a kingdom.",
@@ -1338,6 +1356,7 @@
     "name": "FIZZWICK",
     "title": "The Concoctor",
     "sprite": "sprites/fizzwick.png",
+    "arena": "library",
     "col": "#99cc44",
     "aiStyle": "chaotic",
     "taunts": [
@@ -1409,6 +1428,7 @@
     "name": "NYXARA",
     "title": "The Hollow",
     "sprite": "sprites/mage-dark.png",
+    "arena": "ruins",
     "col": "#6633aa",
     "rivals": {
       "aurelia": "Even your light falls into the dark."
@@ -1483,6 +1503,7 @@
     "name": "DAVERON",
     "title": "The Gravelord",
     "sprite": "sprites/daveron.png",
+    "arena": "ruins",
     "col": "#b8283c",
     "rivals": {
       "valdris": "Your rabble will kneel to my graveguard."
@@ -1569,6 +1590,7 @@
     "name": "FREDERICK",
     "title": "The Black",
     "sprite": "sprites/frederick.png",
+    "arena": "ruins",
     "col": "#8a4dff",
     "aiStyle": "vulture",
     "taunts": [
