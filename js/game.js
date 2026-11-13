@@ -4841,7 +4841,7 @@ function aiSigSensible(who,sp,tgt=weakestFoe(who)){
     if(a.type==='heal') return st.hp<st.maxHp*0.7;
     // Hurt it heals; healthy it empowers the next strike, which is only worth it without a boost already
     if(a.type==='tonic') return st.hp<st.maxHp*TONIC_HURT||!effectsOf(st,'empower').length;
-    if(a.type==='bloodpact') return st.mana<6&&st.hp>40;
+    if(a.type==='bloodpact') return st.mana<6&&st.hp>st.maxHp*0.5;
     if(a.type==='rewind') return (st.lastRoundLoss||0)>=10;
     if(a.type==='cleanse') return cleansableCurses(st).length>0;
     if(a.type==='siphon') return ts.mana>=3;
@@ -5192,7 +5192,7 @@ function timeUp(){
   else endGame('draw');
 }
 // 3–4 seats: whoever lands a knock-out claims a bounty, so allies race each other for the kill
-const ELEM_KO_BOUNTY={hp:20, mana:5};
+const ELEM_KO_BOUNTY={hp:12, mana:5};
 // 3–4 seats: knock out every seat at 0 HP; the duel ends when one team (or nobody) is left
 function eliminateSeats(){
   dmgSource=null;

@@ -178,7 +178,7 @@ so each spell's numbers can be tuned there.
 | Eldrin | ⚡ Counter | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 3 rounds: strikers take 10, and your ward doesn't wear at round end |
 | Eldrin | 🔰 Ward | 🛡 Protection | ❄️ Ice | Enchantment (self) | 1 / 2 / 3 | 3 rounds: immune to curses (and their wear on wards); the next dispel only removes the Ward |
 | Malachar | 💪 Empower | 🛡 Protection | 🔥 Fire | Enchantment (self) | 1 / 2 / 3 | Next strike +50% |
-| Malachar | 🩸 Blood Pact | 🛡 Protection | 💀 Dark | Instant | 0 | Lose 15 HP, gain 8 mana |
+| Malachar | 🩸 Blood Pact | 🛡 Protection | 💀 Dark | Instant | 0 | Lose 9 HP, gain 8 mana |
 | Malachar | 💀 Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 45% of HP damage |
 | Sylvara | 💚 Regen | 🛡 Protection | 👊 Physical | Enchantment (self) | 2 / 4 / 6 | Heal 5 a round for 5 rounds |
 | Sylvara | 🌿 Entangle | ✦ Dispel | 👊 Physical | Curse (foe) | 1 / 2 / 3 | 55%: foe can't pick Damage next round |
@@ -422,7 +422,7 @@ Free-for-all first; teams (2v2) are supported by the same code. Seats with the s
   strikes hitting every foe, damage falloff on a focused wizard and extra mana for the focused wizard
   were all tried; none moved that, so only the first was kept. Two wizards simply beat one.
 - In 4 seats ganging barely pays: two allies go from 25% to ~29% each while the wizard left out gets ~38%.
-- **Knock-out bounty** (`ELEM_KO_BOUNTY`, +20 HP +5 mana): whoever dealt the most damage to a wizard in
+- **Knock-out bounty** (`ELEM_KO_BOUNTY`, +12 HP +5 mana; was +20 before the HP cut): whoever dealt the most damage to a wizard in
   the round they fell (damage in a round is simultaneous, so not whoever hit last) claims it. In a 3-seat
   alliance the ally who lands the kill then wins the final duel 71% of the time, so allies race each
   other for it. Credit by "last hit" gave the last seat in resolution order a big edge, hence "most".
@@ -644,3 +644,19 @@ within ±8% for every cap tried (1×, 1.5×, 2×, except Durin 58.2% once at 2×
 or broken before they're worth recasting, so step 1 alone barely moves balance. Seals are where it
 will.
 
+
+## HP in proportion with tabletop
+
+The standard game's wizards had about 8× their tabletop HP, while strikes are only about 3.75× (a
+middle-ring strike is 15 against a Normal tabletop strike of 4), so a duel took about twice as many hits
+as at the table (about 22 rounds against 10–11). Every wizard's HP was scaled ×0.6 (the same factor
+tabletop HP took for the winks), leaving strikes, wards, heals and costs alone. Flat numbers sized
+against HP went with it: Blood Pact costs 9 HP (was 15), the 3–4 seat knock-out bounty heals 12 (was
+20), and the AI's Blood Pact check is half its max HP (was a flat 40).
+
+Uniform scales tried (Normal AI): ×1 22 rounds · ×0.7 15 · ×0.6 13 · ×0.55 7 · ×0.5 7.5. Below about
+×0.6 games collapse to a few rounds and 4–7 wizards fall outside ±8%, so ×0.6 it is. Fixes after the
+cut (60–80 games a matchup): Mordant 58.1% → Agony back to 4 rounds (absolute curse damage is worth
+more against smaller pools); Nyxara 41.5% (her strike takes a share of the target's HP, so it shrank
+with them) → HP 59; Mary 55, Fizzwick 54, Sylvara 58, Ponder 53 (low edge); Frederick 52, Durin 63
+(high edge). Result: 44.8–55.6%, about 13.3 rounds.

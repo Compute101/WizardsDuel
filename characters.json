@@ -14,7 +14,7 @@
       "I have endured far worse than you. Come back when you have.",
       "The stalwart does not fall. Will you prove the same?"
     ],
-    "hp": 82,
+    "hp": 49,
     "dmgMult": 1.1,
     "sealAll": true,
     "spells": [
@@ -87,7 +87,7 @@
       "I bled for that victory. Can you match my hunger?",
       "Relentless. That's the only lesson worth learning. Come back."
     ],
-    "hp": 80,
+    "hp": 48,
     "dmgMult": 1.1,
     "forbidden": [
       "arcane"
@@ -125,8 +125,8 @@
             "type": "bloodpact",
             "mana": 8
           },
-          "desc": "Lose 15 HP, gain 8 mana",
-          "hpCost": 15
+          "desc": "Lose 9 HP, gain 8 mana",
+          "hpCost": 9
         }
       },
       {
@@ -160,7 +160,7 @@
       "You tangled with nature itself. The vines always win.",
       "My roots run deeper than your courage. Try growing some."
     ],
-    "hp": 92,
+    "hp": 58,
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
@@ -239,7 +239,7 @@
       "Time bends to my will. Your next attempt? Already foreseen.",
       "You're as predictable as sunrise. Surprise me next time."
     ],
-    "hp": 82,
+    "hp": 49,
     "dmgMult": 1.05,
     "spells": [
       {
@@ -307,7 +307,7 @@
       "Gnash not done smashing. Where you going? COME BACK.",
       "Little mage runs away? Gnash will wait. Gnash ALWAYS waits."
     ],
-    "hp": 110,
+    "hp": 66,
     "dmgMult": 1.05,
     "forbidden": [
       "arcane",
@@ -384,7 +384,7 @@
       "Roll the dice, fan the flames — and never, ever bet against fire.",
       "Still smouldering. Still standing. Come back when you're ready to burn."
     ],
-    "hp": 83,
+    "hp": 50,
     "dmgMult": 1.15,
     "forbidden": [
       "ice"
@@ -457,7 +457,7 @@
       "You froze long before my blizzard reached you.",
       "The permafrost claims all things eventually. Even stubborn wizards."
     ],
-    "hp": 88,
+    "hp": 53,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -534,7 +534,7 @@
       "Every spark you waste, Zakkit hoards it, twists it, gives it back. Green-burning, yes!",
       "The warpstorm obeys Zakkit! Squeal-squeal, man-thing, squeal!"
     ],
-    "hp": 92,
+    "hp": 55,
     "dmgMult": 1.1,
     "forbidden": [
       "physical"
@@ -613,7 +613,7 @@
       "Your defeat was written before this duel began. I merely carried it out.",
       "Kneel before the radiance, or be consumed by it. There is no third option."
     ],
-    "hp": 85,
+    "hp": 55,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -682,7 +682,7 @@
       "The hexes were already written. Your fate merely confirmed them.",
       "Kneel before the dark, or be consumed by it. There is no third option."
     ],
-    "hp": 84,
+    "hp": 50,
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
@@ -701,9 +701,9 @@
           "effect": {
             "type": "agony",
             "dmg": 7,
-            "rounds": 5
+            "rounds": 4
           },
-          "desc": "5 rounds: foe takes 7 whatever they do (Meditate escapes it, unless Corrupted)"
+          "desc": "4 rounds: foe takes 7 whatever they do (Meditate escapes it, unless Corrupted)"
         }
       },
       {
@@ -755,7 +755,7 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 84,
+    "hp": 53,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -840,7 +840,7 @@
       "You threw everything you had at me. I barely felt it.",
       "The mountain endures all things. So too shall I."
     ],
-    "hp": 110,
+    "hp": 63,
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
@@ -905,7 +905,7 @@
       "You counted the blades. You forgot to count the one behind you.",
       "The patient sword outlasts the hasty one. Always."
     ],
-    "hp": 94,
+    "hp": 56,
     "dmgMult": 1.0,
     "forbidden": [
       "dark"
@@ -981,7 +981,7 @@
       "You called it ugly. Gretch calls it efficient.",
       "The swamp takes all things. Even stubborn little wizards."
     ],
-    "hp": 85,
+    "hp": 51,
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
@@ -1065,7 +1065,7 @@
       "Death is not an ending. It is merely an inconvenience.",
       "Kneel before the undying, or be consumed by it. There is no third option."
     ],
-    "hp": 80,
+    "hp": 48,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -1141,7 +1141,7 @@
       "Which one was real? Wrong answer — they all were.",
       "Deception is not dishonesty. It is simply a more elegant form of truth."
     ],
-    "hp": 85,
+    "hp": 51,
     "dmgMult": 1.0,
     "forbidden": [
       "physical",
@@ -1219,7 +1219,7 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 86,
+    "hp": 52,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1292,7 +1292,7 @@
       "Strike me. My scales have tasted dragonfire and grown harder for it.",
       "I have one wrath left in me. You have already wasted my patience earning it."
     ],
-    "hp": 98,
+    "hp": 59,
     "dmgMult": 1.05,
     "forbidden": [
       "ice"
@@ -1364,7 +1364,7 @@
       "Half of what's in my satchel is medicine. The other half is, well, also medicine. Different patient.",
       "Don't worry about the smell. That's normal. Probably."
     ],
-    "hp": 85,
+    "hp": 54,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1438,7 +1438,7 @@
       "You cling to your strength as if it makes you safe. The bigger they are, the more there is to take.",
       "Don't struggle. The void doesn't hate you. It just... empties."
     ],
-    "hp": 90,
+    "hp": 59,
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
@@ -1513,7 +1513,7 @@
       "Dance, my dead. Dance, and let the living hear the music.",
       "Every year you have lived is a debt. I have come to collect."
     ],
-    "hp": 90,
+    "hp": 54,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -1598,7 +1598,7 @@
       "You DARE stand before me? I will drag you screaming through the Gate!",
       "Run, then! Hide! There is nowhere my fire cannot follow!"
     ],
-    "hp": 90,
+    "hp": 52,
     "dmgMult": 1.0,
     "forbidden": [
       "ice"
