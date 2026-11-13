@@ -510,10 +510,10 @@
       }
     ]
   },
-  "zacharius": {
+  "zakkit": {
     "name": "ZAKKIT",
     "title": "The Warpstorm",
-    "sprite": "sprites/zacharius.png",
+    "sprite": "sprites/zakkit.png",
     "col": "#aaff44",
     "aiStyle": "calculating",
     "rivals": {
@@ -819,7 +819,7 @@
     "rivals": {
       "gretch": "You're in my book of grudges, troggoth.",
       "fizzwick": "Another goblin for the grudge list!",
-      "zacharius": "Ratmen! Fetch the big grudge book!"
+      "zakkit": "Ratmen! Fetch the big grudge book!"
     },
     "taunts": [
       "Stone does not bend. Stone does not break. Neither does Durin.",

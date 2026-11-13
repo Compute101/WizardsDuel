@@ -54,7 +54,7 @@ const CHAR_DISPLAY={
     stats:[['❤ HP','88'],['🧊 Ice Lance','28 dmg / 35% freeze'],['🛡️ Frost Armor','30% resist + 8 retaliate / 4T'],['🌨️ Blizzard','5 dmg + 3 mana drain / turn × 5T']],
     flavour:'Glacial patience. Frozen fury. Every strike against her has a price.'
   },
-  zacharius:{
+  zakkit:{
     stats:[['❤ HP','86'],['🔋 Galvanize','4 mana → 8 charge; discharge on phys hit'],['🌩️ Chain Lightning','24 dmg + 35% arc 10 more (costs 8 charge)'],['💡 Conductivity','+35% dmg taken / 3T']],
     flavour:'Store the storm. Spend it wisely. Let them come to you.'
   },
@@ -2571,7 +2571,7 @@ function aiDecideEasy(who){
     if(hasDebuff&&canPurge) chosen=canPurge;
     else if(ai.hp<ai.maxHp*0.60&&canHeal) chosen=canHeal;
   }
-  if(aiKey==='zacharius'){
+  if(aiKey==='zakkit'){
     const chainReady=charSpells.find(s=>s.id==='chainlightning');
     const canGalvanize=charSpells.find(s=>s.id==='galvanize');
     const canConductivity=charSpells.find(s=>s.id==='conductivity');
@@ -2766,7 +2766,7 @@ function aiDecideNormal(who){
     else if(canIceLance) chosen=canIceLance;
     else if(ai.mana<4&&ai.hp>ai.maxHp*0.45&&_rng()<0.65) forceChannel=true;
   }
-  if(aiKey==='zacharius'&&!chosen){
+  if(aiKey==='zakkit'&&!chosen){
     const chainReady=charSpells.find(s=>s.id==='chainlightning');
     const canGalvanize=charSpells.find(s=>s.id==='galvanize');
     const canConductivity=charSpells.find(s=>s.id==='conductivity');
