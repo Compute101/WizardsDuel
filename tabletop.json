@@ -118,11 +118,11 @@
     "rules": {"advanced": {"hp": 17}},
     "spells": [
       {"id": "vanish", "name": "Vanish", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "absorbNext"},
-       "text": "The next strike at you misses."},
+       "text": "The next strike (a minion's too) or curse at you misses. A dispel at you only removes the Vanish."},
       {"id": "manasiphon", "name": "Mana Siphon", "cat": "dispel", "elem": "arcane", "ring": 1, "cost": 2, "kind": "instant", "quick": true, "action": {"type": "siphon", "n": 4},
        "text": "Quick: before anyone pays, steal 4 mana from the foe."},
       {"id": "blink", "name": "Blink", "cat": "protect", "elem": "lightning", "ring": 2, "cost": 3, "kind": "buff", "ward": 3, "effect": {"type": "dodge", "roll": 4},
-       "text": "Until dispelled: roll a die for each strike at you, on 4+ it misses. Plus a Lightning ward of 3."}
+       "text": "Until dispelled: roll a die for each strike at you (minions' too), on 4+ it misses. Plus a Lightning ward of 3."}
     ]
   },
   "durin": {

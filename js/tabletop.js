@@ -41,6 +41,10 @@ const RULES={
   //            whatever its level. Strikes ignore seals. A pile put on over a sealed one keeps it.
   wards:{boost:true, boostCap:1.5, layers:2, seals:true, sealCost:1, dispelStrips:true},
   dispelAllRing:3,
+  // Strikes, as in the app: a minion's strike is a strike (Vanish, Foresight, Blink's dodge, Stonesoul-type
+  // resist and Warpstone-type vuln meet it; retaliation doesn't), Vanish turns a curse aside (used up), and a
+  // dispel at a Vanished wizard only removes the Vanish, like a seal.
+  strikes:{minions:true, vanishCurses:true, vanishDispel:true},
   // Cleanse (a Dispel at yourself): Lesser removes 1 curse, Normal 2, Greater all of them; it costs
   // 1 mana per level, and the usual 1 / 2 / 3 winks to pot.
   cleanseCost:[1,2,3],
@@ -348,6 +352,18 @@ function doInstant(who,sp){
 function curseHarm(e){
   return {agony:5, dot:4, silence:4, incomeDrain:3, vuln:3, spellbind:3, candle:2, bewitch:2, lock:1, enthral:1}[e.type]||1;
 }
+// A strike at ts misses: the next-strike shields (Vanish, Foresight) are used up first, then dodge rolls
+function strikeMisses(w){
+  const ts=gs[w], abs=fx(ts,'absorbNext')[0];
+  if(abs){ removeEffects(w,[abs]); return true; }
+  return fx(ts,'dodge').some(e=>rolls(e.roll));
+}
+function hitAdjust(ts,dmg){
+  dmg+=fx(ts,'vuln').reduce((s,e)=>s+e.n,0);
+  const res=fx(ts,'resist').reduce((s,e)=>s+e.n,0);
+  return res?Math.max(1,dmg-res):dmg;
+}
+const vanishOf=st=>st.effects.find(e=>e.id==='vanish');
 function doDispel(who,a){
   const st=gs[who], t=foe(who), ts=gs[t], sp=a.sig&&sigById(st,a.sig);
   if(a.self){   // Cleanse: the worst curses first (a player picks which)
@@ -356,7 +372,9 @@ function doDispel(who,a){
   }
   if(sp){
     if(sp.kind==='instant'){ if(!sp.quick) doInstant(who,sp); return; }
-    // A curse
+    // A curse. Vanish turns it aside and is used up
+    const v=RULES.strikes.vanishCurses&&vanishOf(ts);
+    if(v){ removeEffects(t,[v]); log(ts.key+"'s Vanish turns "+sp.name+' aside'); return; }
     if(sp.drainNow) loseMana(t,sp.drainNow);
     if(sp.roll&&!rolls(sp.roll)) return;
     const e=Object.assign({id:sp.id, kind:'curse', name:sp.name},sp.effect);
@@ -369,6 +387,9 @@ function doDispel(who,a){
   const power=RULES.cats.dispel.power[a.ring-1];
   const warding=fx(ts,'warding');
   if(warding.length){ removeEffects(t,warding); return; }
+  // Vanish works like a seal: the dispel only removes it, and the ward and other buffs stay
+  const veil=RULES.strikes.vanishDispel&&vanishOf(ts);
+  if(veil){ removeEffects(t,[veil]); return; }
   if(ts.ward){
     // A seal stops the whole dispel: it breaks the seal and goes no further. A Greater dispel that
     // breaks a pile carries on into the next; a Lesser or Normal one stops at the pile it breaks.
@@ -418,12 +439,8 @@ function doDamage(who,a){
   if(sp&&sp.recoil) loseHp(who,sp.recoil);
   if(tgt===who){ incoming(who,dmg,0,true); return; }
   // Misses
-  const abs=fx(ts,'absorbNext')[0];
-  if(abs){ removeEffects(tgt,[abs]); return; }
-  if(fx(ts,'dodge').some(e=>rolls(e.roll))) return;
-  dmg+=fx(ts,'vuln').reduce((s,e)=>s+e.n,0);
-  const res=fx(ts,'resist').reduce((s,e)=>s+e.n,0);
-  if(res) dmg=Math.max(1,dmg-res);
+  if(strikeMisses(tgt)) return;
+  dmg=hitAdjust(ts,dmg);
   const retaliate=fx(ts,'resist').concat(fx(ts,'counter')).reduce((s,e)=>s+(e.retaliate||0),0)+(ts.ward?ts.ward.ret:0);
   const hp=incoming(tgt,dmg,0,false,pierce?dmg:sp&&sp.blast,elem);
   if(hp>0){
@@ -573,7 +590,14 @@ function endRound(){
     minions(st).filter(m=>m.heal).forEach(m=>heal(w,m.heal));
     // Danse Macabre (Daveron): each of your skeletons deals its bonus more
     const danse=fx(st,'danse').reduce((a,e)=>a+e.bonus,0);
-    if(!inGate(f)) minions(st).filter(m=>m.dmg).forEach(m=>incoming(f,m.dmg+(m.minion==='skeleton'?danse:0),0));   // a totem doesn't strike; nothing reaches him in the Gate
+    // A totem doesn't strike; nothing reaches him in the Gate. Each minion's strike is a strike (RULES.strikes)
+    if(!inGate(f)) minions(st).filter(m=>m.dmg).forEach(m=>{
+      if(gs[f].hp<=0) return;
+      const d=m.dmg+(m.minion==='skeleton'?danse:0);
+      if(!RULES.strikes.minions){ incoming(f,d,0); return; }
+      if(strikeMisses(f)) return;
+      incoming(f,hitAdjust(gs[f],d),0);
+    });
   });
   // Sudden death
   const sd=RULES.suddenDeath;
@@ -634,6 +658,7 @@ function sigSensible(w,sp){
   if(sp.kind==='buff'&&st.effects.some(f=>f.id===sp.id)) return false;
   if(sp.kind==='curse'){
     if(fx(ts,'warding').length) return false;
+    if(RULES.strikes.vanishCurses&&vanishOf(ts)) return false;   // it would only use up the Vanish
     if(ts.effects.some(f=>f.id===sp.id)) return false;
     if(e.type==='agony'&&!e.inescapable&&ts.mana<3) return true;
   }
