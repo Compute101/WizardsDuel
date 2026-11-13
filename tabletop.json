@@ -159,7 +159,7 @@
     ]
   },
   "valdris": {
-    "hp": 8,
+    "hp": 7,
     "rules": {"advanced": {"hp": 9}},
     "spells": [
       {"id": "raisedead", "name": "Raise Dead", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "skeleton", "kind": "minion", "soak": true, "dmg": 1, "max": 5, "raise": 3},
@@ -228,7 +228,7 @@
     ]
   },
   "daveron": {
-    "hp": 9,
+    "hp": 8,
     "rules": {"advanced": {"hp": 10}},
     "spells": [
       {"id": "raisegraveguard", "name": "Raise Graveguard", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "skeleton", "kind": "minion", "soak": 3, "dmg": 1, "max": 3, "raise": 1},

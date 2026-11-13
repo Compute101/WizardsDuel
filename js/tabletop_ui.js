@@ -116,7 +116,7 @@ function convos(){
       {key:'gnash',  text:"At the round end, curses tick first (burns, poison, plague, Agony), then regeneration, then minions strike the foe."},
       {key:'korvath',text:`From round ${sd.round} it's sudden death: both wizards lose ${sd.dmg} HP every round end, and ${sd.dmg} more every ${sd.every} rounds after that. Nobody hides forever.`},
       {key:'gnash',  text:`Then every ward wears by ${N.wardWear} wink, and each wizard gains ${N.income} mana, less any curse that cuts income.`},
-      {key:'korvath',text:"Games are short: about 9 or 10 rounds. Make every flick count!"},
+      {key:'korvath',text:"Games are short: about 10 or 11 rounds. Make every flick count!"},
     ],
     next:[
       {key:'ponder', text:"That's the whole Beginner game! Play a few duels until picking, paying and flicking feel easy."},
