@@ -225,7 +225,38 @@ function fillSceneBands(){
   if(below>0) bx.drawImage(bc,0,bOffY+bH-1,bW,1,0,bOffY+bH,bW,below);
 }
 
+// Painted arena backdrop (backgrounds/<ARENA_BG>.jpg). null, or an image that hasn't loaded,
+// falls back to the procedural per-opponent backgrounds below.
+const ARENA_BG='library';
+const ARENA_DIM=0.22;   // dark wash over the painting so wizards and spell effects stand out
+const arenaImg={img:new Image(),ready:false};
+if(ARENA_BG){ arenaImg.img.onload=()=>{arenaImg.ready=true;}; arenaImg.img.src='backgrounds/'+ARENA_BG+'.jpg'; }
+function arenaBgActive(){ return !!(ARENA_BG&&arenaImg.ready); }
+// Cover the whole canvas, floor kept at the bottom of the scene (where the wizards stand);
+// any band above or below the scene fades into the room's darkness instead of being stretched.
+function drawArenaImage(){
+  const im=arenaImg.img, iw=im.naturalWidth, ih=im.naturalHeight;
+  const top=-bOffY, bot=bc.height-bOffY;
+  bx.fillStyle='#07040c'; bx.fillRect(0,top,bW,bot-top);
+  const s=Math.max(bW/iw,bH/ih), dw=iw*s, dh=ih*s;
+  const dx=(bW-dw)/2, dy=bH-dh;
+  bx.drawImage(im,dx,dy,dw,dh);
+  bx.fillStyle=`rgba(6,3,14,${ARENA_DIM})`; bx.fillRect(0,top,bW,bot-top);
+  if(dy>top){   // band above the painting
+    const g=bx.createLinearGradient(0,dy,0,dy+bH*.12);
+    g.addColorStop(0,'rgba(7,4,12,1)'); g.addColorStop(1,'rgba(7,4,12,0)');
+    bx.fillStyle=g; bx.fillRect(0,dy,bW,bH*.12);
+  }
+  if(bot>bH){   // band below the scene: the floor sinks into shadow
+    const g=bx.createLinearGradient(0,bH-bH*.06,0,bH);
+    g.addColorStop(0,'rgba(7,4,12,0)'); g.addColorStop(1,'rgba(7,4,12,1)');
+    bx.fillStyle=g; bx.fillRect(0,bH-bH*.06,bW,bH*.06);
+  }
+  seatRunes();
+}
+
 function drawBG(){
+  if(arenaBgActive()){ drawArenaImage(); return; }
   ({eldrin:drawBG_moonlight,mal:drawBG_hellfire,sylvara:drawBG_forest,
     aurelia:drawBG_dawn,gnash:drawBG_storm,ponder:drawBG_astral,
     skadi:drawBG_winter,cinder:drawBG_embers,zakkit:drawBG_arc,mary:drawBG_holy,mordant:drawBG_abyss,
@@ -1768,7 +1799,7 @@ function battleLoop(ts){
   bx.setTransform(1,0,0,1,0,0);
   const q=quakeOffset();
   bx.save(); bx.translate(q.x,bOffY+q.y); drawBG(); bx.restore();
-  fillSceneBands();
+  if(!arenaBgActive()) fillSceneBands();
   bx.setTransform(1,0,0,1,q.x,bOffY+q.y);   // everything else draws in scene coordinates
   drawPanSweep();   // Infernal Gate exit: the camera swings round behind the wizards
   // Wizard height: capped by width so shield bubbles stay (mostly) on screen on tall phones
