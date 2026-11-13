@@ -4408,11 +4408,16 @@ function elemWardDispel(tgt,elem,power,tier){
     if(buffs.length) removeEffects(tgt,buffs,'✦ Dispelled');
   }
 }
+let VANISH_TAKES_DISPEL=true, VANISH_STOPS_MINIONS=false;
 function elemDispelHit(tgt,elem,power,tier){
   const ts=gs[tgt], tx=seatX(tgt);
   // Warding (Eldrin's Ward) takes the dispel in place of the ward and every other buff
   const warding=effectsOf(ts,'warding');
   if(warding.length){ VFX.dispelHit(tx); removeEffects(tgt,warding,'✦ Ward takes the dispel'); return; }
+  // Vanish works like a seal: it takes the whole dispel (Greater too), and the ward and other buffs behind
+  // it are untouched. Losing it costs little: he'd have given it up to strike soon enough.
+  const veil=VANISH_TAKES_DISPEL&&effectsOf(ts,'absorbNext').filter(e=>e.keep);
+  if(veil&&veil.length){ VFX.dispelHit(tx); removeEffects(tgt,veil,'✦ Vanish takes the dispel'); return; }
   if(hasWard(ts)){ elemWardDispel(tgt,elem,power,tier); return; }
   VFX.dispelHit(tx);
   const buffs=buffsOf(ts);
@@ -4728,6 +4733,7 @@ function elemTickEffects(who){
       dmgSource=owner;
       const bonus=m.minion==='skeleton'?danse:0;
       if(foreseeBlock(who,m.icon)) return;
+      if(VANISH_STOPS_MINIONS&&effectsOf(gs[who],'absorbNext').some(e=>e.keep)) return;   // experiment: Vanish hides him from minions too
       elemIncoming(who,Math.round((m.dmg+bonus)*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
       if(bonus&&TICK_VFX.dansemacabre) TICK_VFX.dansemacabre(x,wizMidY(x));
       if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,wizMidY(x));
@@ -4852,10 +4858,12 @@ function aiSigSensible(who,sp,tgt=weakestFoe(who)){
 //  · Vanished: cleanse lasting curses; raise Blink's ward over the Vanish when a foe could dispel it (the
 //    ward takes the dispel); siphon a foe who has saved up; or rest. Never strike (it reveals him).
 //  · a foe with a strike boost up (Empower, Infernal Mantle, Frenzy, Weave): Vanish before it lands
-// Experiment, all off: the names of the lines to use (cleanseUnder, blinkOver, siphonUnder, restUnder,
-// vanishToCleanse, vanishBoost, strikeLast, strikeAny), or null for every one. Sim (Ponder overall, permanent
-// curses): none 34.9%, all 28.8%; alone: vanishBoost +1.5, cleanseUnder +0.7, blinkOver −3.6, vanishToCleanse −2.2.
-let COMBO_LINES=[];
+// The lines in use (null: every one). Sim, Ponder's whole roster, both seats, 200 games a foe, curse timers on,
+// Vanish taking dispels: none 38.3%; vanishBoost + strikeLast 42.7%; + cleanseUnder 42.9% (neutral, kept: it's
+// what Vanish is for). Tried and left out: blinkOver −3.6, vanishToCleanse −2.2, siphonUnder −1.5, restUnder −0.6,
+// strikeAny (worse than strikeLast), a siphon timed to deny the foe's best spell (−8.5: he does nothing else),
+// siphoning only a foe with 6+ mana (−3.6).
+let COMBO_LINES=['cleanseUnder','vanishBoost','strikeLast'];
 function aiComboPick(who,tgt){
   const on=n=>!COMBO_LINES||COMBO_LINES.includes(n);
   const me=gs[who], opp=gs[tgt];
@@ -5013,7 +5021,7 @@ function elemAIChoose(who){
   // Strike from hiding: picks are secret, and a foe facing a Vanish rarely picks a strike, so the reveal
   // seldom costs anything (strikeLast: only in the Vanish's last round; strikeAny: any round of it)
   const veilOn=effectsOf(me,'absorbNext').find(e=>e.keep);
-  const hideStrike=smart&&veilOn&&COMBO_LINES&&(COMBO_LINES.includes('strikeAny')||(COMBO_LINES.includes('strikeLast')&&veilOn.rounds<=1));
+  const hideStrike=smart&&veilOn&&(!COMBO_LINES||COMBO_LINES.includes('strikeAny')||(COMBO_LINES.includes('strikeLast')&&veilOn.rounds<=1));
   if(hideStrike) w.damage+=0.8;
   else if(veilOn){ w.damage*=smart?0.3:0.7; w.dispel+=smart?0.4:0.1; }
   if(smart&&cover.length&&cover.every(e=>e.rounds===1)){
@@ -8713,7 +8721,7 @@ const TUTORIAL_CONVOS={
   ],
   ponder:[
     {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
-    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes every strike miss me entirely for two rounds — three from the outer ring. But I can't strike from hiding: pick Damage and I'm revealed that round. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Want to hit me while I'm Vanished? Dispel it first."},
+    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes every strike miss me entirely for two rounds — three from the outer ring. But I can't strike from hiding: pick Damage and I'm revealed that round. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Want to hit me while I'm Vanished? Dispel it first — but the Vanish takes that whole dispel, so my ward stays up."},
     {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. It's quick: I steal mana as the round begins, before my rival pays for their spell — if they can't afford it any more, it fails!"},
     {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
   ],

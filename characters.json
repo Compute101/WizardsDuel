@@ -766,7 +766,7 @@
             "keep": true,
             "rounds": 2
           },
-          "desc": "2 rounds: every strike at you misses. Picking Damage reveals you"
+          "desc": "2 rounds: every strike at you misses. Picking Damage reveals you. A dispel only strips the Vanish"
         }
       },
       {
