@@ -574,7 +574,9 @@ balanced on its own before the next:
      Greater dispel going on through (50 power, 100 matched, against wards of 20 / 35 / 55 after a 15
      soak), a seal only meant "cast Greater", and a ward that took two rounds and more mana to raise and
      seal fell to one. Sim (60 games): Greater goes through 43.6–56.3%; seals block 43.5–57.4%, about
-     22 rounds (+0.6). Eldrin 56.5–57.4% (57.1% without `sealAll`, so it's not the perk; HP 86 → 52.2%). At 1 mana: seals 44.4–56.7%, soak 15 44.8–56.7%, soak 30
+     22 rounds (+0.6). Eldrin 56.5–57.4% (57.1% without `sealAll`, so it's not the perk). He's an elf, so he
+     should be frail: HP 90 → 82 (86: 52.2%, 84: 50.8%, 82: 48.4%, 80: 45.9%), level with Aurelia near the
+     bottom of the roster's HP. Roster after: 43.5–56.9%. His tabletop HP (18) is unchanged. At 1 mana: seals 44.4–56.7%, soak 15 44.8–56.7%, soak 30
      41.7–57.5% (Zakkit out of band).
    - Putting a ward on over a sealed one keeps the seal beneath (seal, layer, seal again). Topping up
      keeps the seal; a ward that replaces the outer layer at the limit comes unsealed.
