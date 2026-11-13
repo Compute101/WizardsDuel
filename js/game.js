@@ -4949,9 +4949,17 @@ function eliminateSeats(){
     const top=Object.keys(by).filter(src=>by[src]===most&&most>0&&gs[src]&&!gs[src].out);
     const k=top.length?top[Math.floor(_rng()*top.length)]:null, ks=k&&gs[k];
     if(!ks||ks.out||ks.hp<=0||!ELEM_KO_BOUNTY.hp&&!ELEM_KO_BOUNTY.mana) return;
+    const hp0=ks.hp, mana0=ks.mana;
     ks.hp=Math.min(ks.maxHp,ks.hp+ELEM_KO_BOUNTY.hp); ks.mana=Math.min(MAX_MANA,ks.mana+ELEM_KO_BOUNTY.mana);
     (gs.koBy||(gs.koBy={}))[w]=k;
-    addFloat(seatX(k),bH*.26,'🏆 Bounty +'+ELEM_KO_BOUNTY.hp+' HP +'+ELEM_KO_BOUNTY.mana+' Mana','#f0cc6a',12);
+    // Name the fallen wizard so the reward isn't mistaken for whatever spell was resolving
+    const kx=seatX(k), gain=[ks.hp>hp0?'+'+(ks.hp-hp0)+' HP':'', ks.mana>mana0?'+'+(ks.mana-mana0)+' Mana':''].filter(Boolean).join(' ');
+    addFloat(kx,bH*.2,'🏆 KO\'d '+seatCfg(w).name+'!','#f0cc6a',15);
+    if(gain) addFloat(kx,bH*.27,'Bounty: '+gain,'#f0cc6a',12);
+    if(!simMode){
+      vfxRing(kx,wizFeetY(),['#f0cc6a','#fff2b0','#ffffff'],22,{r:.09,ry:.025,spd:.6,lift:-.6,out:true,noGrav:true,dec:.015});
+      vfxFountain(kx,wizMidY(kx),['#f0cc6a','#ffe27a','#ffffff'],18,{spread:.5,min:.8,var:1.6,w:.08,lift:-.3,sz:2.5,dec:.012});
+    }
   });
   const teams=[...new Set(activeSeats().map(seatTeam))];
   if(teams.length>1) return;
