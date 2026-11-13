@@ -567,9 +567,14 @@ balanced on its own before the next:
    - A sealed layer doesn't wear at round end. Strikes ignore seals.
    - A dispel that meets a seal breaks it and stops (`elemWardDispel`); a Greater one breaks it and
      goes on into the ward, and on through the layers as before. Curses that hit wards only break seals.
-     `sealSoak` (on, 15) makes a seal soak that much dispel power first: weaker dispels bounce off (a
-     curse's ward hit can be too weak) and a Greater one goes on with the rest, so a seal costs a Greater
-     dispel 15 of its 50. At 1 mana: seals 44.4–56.7%, soak 15 44.8–56.7%, soak 30
+     `sealSoak` (15) is the least dispel power that breaks a seal: weaker hits (a curse's ward hit) bounce
+     off. `sealBlocks` (on): a seal stops the whole dispel, Greater included: it breaks the seal and goes
+     no further, so a sealed ward takes two dispels, a cheap one for the seal, then one for the ward.
+     The AI breaks a seal with its cheapest ring that's strong enough. Playtesting showed why: with a
+     Greater dispel going on through (50 power, 100 matched, against wards of 20 / 35 / 55 after a 15
+     soak), a seal only meant "cast Greater", and a ward that took two rounds and more mana to raise and
+     seal fell to one. Sim (60 games): Greater goes through 43.6–56.3%; seals block 43.5–57.4%, about
+     22 rounds (+0.6). Eldrin 56.5–57.4% (57.1% without `sealAll`, so it's not the perk; HP 86 → 52.2%). At 1 mana: seals 44.4–56.7%, soak 15 44.8–56.7%, soak 30
      41.7–57.5% (Zakkit out of band).
    - Putting a ward on over a sealed one keeps the seal beneath (seal, layer, seal again). Topping up
      keeps the seal; a ward that replaces the outer layer at the limit comes unsealed.
