@@ -20,6 +20,7 @@ let out='';
 Object.values(chars).forEach(c=>{
   const notes=[];
   if(c.deathless) notes.push(`Deathless: when knocked to 0 HP, pay ${c.deathless} mana to stay on 1 HP`);
+  if(c.sealAll) notes.push('Seal Ward seals every one of your ward piles at once');
   if(c.forbidden.length) notes.push('Can\'t cast: '+c.forbidden.map(e=>ELEM[e]).join(', '));
   const beg=c.alt.beginner&&c.alt.beginner.hp;
   out+=`### ${c.name} — ${c.title}\n**HP ${c.baseHp}**${beg?` (Beginner rules: **${beg}**)`:''}${notes.length?' · '+notes.join(' · '):''}\n\n`;

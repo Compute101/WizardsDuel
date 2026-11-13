@@ -1,12 +1,12 @@
 {
   "_about": "Tabletop mode: every character's numbers in whole counters (max 20 each of HP, mana and ward). Names, colours and forbidden elements come from characters.json unless set here. Each spell's 'text' is its card text: keep it in step with the numbers. Rules: docs/tabletop-rules.md. Engine and simulator: js/tabletop.js. 'rules' changes a character's numbers under a named rule set (only HP so far): {\"beginner\": {\"hp\": 17}}.",
   "eldrin": {
-    "hp": 18,
+    "hp": 17,
     "spells": [
-      {"id": "shield", "name": "Shield", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 5, "kind": "ward", "ward": 14,
-       "text": "Arcane ward of 14, for a Normal flick (a Greater ward is 12 and needs 3 winks)."},
-      {"id": "counter", "name": "Counter", "cat": "protect", "elem": "lightning", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "counter", "retaliate": 3, "holdWard": true},
-       "text": "Until dispelled: anyone who strikes you takes 3, and your ward doesn't wear down."},
+      {"id": "shield", "name": "Shield", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 4, "kind": "ward", "ward": 16,
+       "text": "Arcane ward of 16 for 4 mana and a Normal flick (a Greater ward is 12 for 6 mana and 3 winks)."},
+      {"id": "counter", "name": "Counter", "cat": "protect", "elem": "lightning", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "counter", "retaliate": 4, "holdWard": true},
+       "text": "Until dispelled: anyone who strikes you takes 4, and your wards don't wear down."},
       {"id": "ward", "name": "Ward", "cat": "protect", "elem": "ice", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "warding"},
        "text": "Until dispelled: curses can't touch you. A dispel at you only removes this Ward."}
     ]

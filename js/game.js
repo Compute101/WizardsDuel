@@ -3426,8 +3426,11 @@ const ELEM_WARD_WEAR=4;         // flat ward HP lost at each round end
 //             hits the ward as usual. Strikes ignore seals. A ward put on over a sealed one leaves the seal
 //             on the layer beneath, so you can seal, layer and seal again. Topping up keeps the seal.
 //   sealSoak: dispel power a seal soaks before it breaks (0: any dispel breaks it for free). A dispel
-//             weaker than this leaves the seal standing; a Greater one goes on with what's left.
-const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:true, sealSoak:15};
+//             weaker than this (a curse's ward hit) leaves the seal standing.
+//   sealBlocks: a seal stops the whole dispel, whatever its ring: it breaks the seal and goes no further,
+//             so a sealed ward takes two dispels (a cheap one for the seal, then one for the ward).
+//             false: a Greater dispel breaks the seal and goes on with what sealSoak leaves it.
+const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:true, sealSoak:15, sealBlocks:true};
 // Seal Ward. A character's sealCostMod (characters.json) changes the cost; sealAll seals every layer
 // at once (Eldrin's hook, now that everyone can brace a ward).
 const SEAL={cost:1};
@@ -3730,7 +3733,7 @@ function openElemWheel(cat){
       (WARD_RULES.boost?' · recast your ward\'s element to top it up (to '+WARD_RULES.boostCap+'× that cast)':'')+
       (WARD_RULES.layers>1?' · a new element goes on over it, up to '+WARD_RULES.layers+' layers':'')+
       (WARD_RULES.seals?' · 🔒 a sealed ward doesn\'t wear, and a dispel only breaks the seal'+
-        (WARD_RULES.sealSoak?' (it soaks '+WARD_RULES.sealSoak+' power: weaker dispels bounce off, a Greater one goes on with the rest)':' (a Greater one goes on through)'):''),
+        (WARD_RULES.sealBlocks?', even a Greater one — it takes a second dispel for the ward':WARD_RULES.sealSoak?' (it soaks '+WARD_RULES.sealSoak+' power: weaker dispels bounce off, a Greater one goes on with the rest)':' (a Greater one goes on through)'):''),
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
   document.getElementById('wheel-rule').textContent=ruleText;
@@ -4354,7 +4357,7 @@ function elemWardDispel(tgt,elem,power,tier){
       ts.wardSealed=false; ts.wardStats.sealsBroken++;
       addFloat(tx,bH*.3,'🔒 SEAL BROKEN','#ffd75a',15);
       VFX.wardUnravel(tx,'#ffd75a');
-      if(!(tier>=ELEM_DISPEL_ALL_TIER)) return;   // (curses hitting a ward pass no tier)
+      if(WARD_RULES.sealBlocks||!(tier>=ELEM_DISPEL_ALL_TIER)) return;   // (curses hitting a ward pass no tier)
       power-=soak;
       if(power<=0) return;
     }
@@ -5018,9 +5021,14 @@ function elemAIChoose(who){
   let tier=3;
   while(tier>1&&!sectorOk(who,cat,choice.elem,tier)) tier--;
   // Sometimes hold mana back — but not when ganged up on: big wards, and Greater strikes that hit them all
-  // (a sealed ward only falls to a Greater dispel, so don't hold back against one)
-  const sealedFoe=cat==='dispel'&&smart&&opp.wardSealed&&tier===3;
-  if(tier>1&&!free&&!sealedFoe&&!(ganged&&cat!=='dispel')&&_rng()<0.4) tier--;
+  // A sealed ward: with sealBlocks, any dispel only breaks the seal, so break it with the cheapest ring
+  // that's strong enough; without, only a Greater one gets through, so don't hold back
+  const sealedFoe=cat==='dispel'&&smart&&opp.wardSealed&&!choice.sp;
+  if(sealedFoe&&WARD_RULES.sealBlocks){
+    const p=ELEM_CATS.dispel.power, t=[1,2,3].find(t=>p[t-1]>=(WARD_RULES.sealSoak||0)&&sectorOk(who,cat,choice.elem,t));
+    if(t) tier=t;
+  }
+  else if(tier>1&&!free&&!(sealedFoe&&tier===3)&&!(ganged&&cat!=='dispel')&&_rng()<0.4) tier--;
   const elem=choice.elem;
   const pick=choice.sp?{type:'el',cat,elem,tier,sig:choice.sp.id,target:aimTgt,ok}:{type:'el',cat,elem,tier,self:false,target:aimTgt,ok};
   if(choice.sp&&choice.sp.el.effect&&choice.sp.el.effect.type==='enthral') pick.call=aiEnthralCall(who,aimTgt,smart);
@@ -8508,7 +8516,7 @@ const TUTORIAL_CONVOS={
     {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements. Zakkit hates rocks."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
-    {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel only breaks the seal. The seal soaks some of the dispel's power too, so even a Greater dispel comes through it weaker."},
+    {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],
