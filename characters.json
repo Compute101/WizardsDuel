@@ -1376,7 +1376,7 @@
             "heal": 20,
             "mult": 1.5
           },
-          "desc": "Below 70% HP: heal 20 · otherwise: next strike +50%"
+          "desc": "Below half HP: heal 20 · otherwise: next strike +50%"
         }
       },
       {

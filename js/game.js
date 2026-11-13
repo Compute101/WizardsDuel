@@ -3578,7 +3578,7 @@ function enterGate(who){
 // Infernal Mantle: the hellfire he comes out of the Gate in. His next strike burns straight through the foe's
 // ward (an empower with pierce, so it's used up by that strike and a Dispel can strip it first).
 const INFERNAL_MANTLE={id:'infernalmantle',type:'empower',mult:1,pierce:true,kind:'buff',name:'Infernal Mantle',icon:'🔥',rounds:1};   // rounds only with BUFF_TIMERS
-const TONIC_HURT=0.7;   // Volatile Tonic heals below this share of max HP, empowers at or above it
+const TONIC_HURT=0.5;   // Volatile Tonic heals below this share of max HP, empowers at or above it (0.7 put Fizzwick at 54%)
 // Vanish (Ponder): picking a Damage spell reveals him, before anything resolves that round
 function revealVanished(who){
   const veil=effectsOf(gs[who],'absorbNext').filter(e=>e.keep);
@@ -8388,7 +8388,7 @@ const TUTORIAL_CONVOS={
   fizzwick:[
     {key:'fizzwick',text:"Heh — a satchel full of things that probably shouldn't mix. Sometimes I'm not sure what they'll do until it's too late."},
     {key:'fizzwick',text:"Caustic Bomb is my Dark strike. If it gets through to them, the poison is in their blood — it seeps straight past any ward they raise after. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
-    {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, knows what I need: when I'm hurt it heals me, and when I'm healthy it empowers my next strike."},
+    {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, knows what I need: when I'm badly hurt it heals me, and otherwise it empowers my next strike."},
     {key:'fizzwick',text:"Most duellists plan for consistency. I bring chaos in a bottle."},
   ],
   daveron:[
