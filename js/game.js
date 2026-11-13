@@ -92,6 +92,7 @@ let trainingPickPhase=null; // 'p1' or 'p2' — which side is being chosen
 function newSeat(cfg,key){
   return {key, cfg, hp:cfg.hp, maxHp:cfg.hp, mana:ELEM_START_MANA,
     shield:0, shieldHp:0, shieldType:null, wardRetaliate:0, wardSig:null,   // ward (shield = rounds left)
+    wardStats:{raised:0, boosted:0, peak:0},   // for the balance sim
     effects:[], usedSig:{}, lastElem:null, catCounts:{}, lastLockedRound:null, lastRoundLoss:0,
     blades:0, skeletons:[], simulacra:[]};   // minion counts mirrored for drawWiz
 }
@@ -3370,6 +3371,14 @@ const ELEM_INCOME=4;            // mana every seat gains at the end of each roun
 const ELEM_WARD_ROUNDS=0;       // 0: no timer. Otherwise a ward lasts the round it is raised + n−1 more
 const ELEM_WARD_DECAY=1;        // share of ward HP kept at each round end (1: none lost this way)
 const ELEM_WARD_WEAR=4;         // flat ward HP lost at each round end
+// Layered wards, built in steps behind switches so each can be balanced on its own
+// (docs/rps-duel-design.md, "Layered wards"). tools/balance.html and tools/ward_compare.js flip these.
+//   boost:    recasting a ward of the element already up tops it up instead of replacing it:
+//             it gains the new cast's HP, up to boostCap × that cast's HP (never below what's there)
+//   boostCap: the top-up ceiling, as a multiple of the recast's own HP (1: just refills to it)
+//   seals / layers: steps 2 and 3, not built yet (must stay false / 1)
+const WARD_RULES={boost:true, boostCap:1.5, seals:false, layers:1};
+let WARD_BOOST_AI_HP=25;   // the AI tops up its ward below this HP when boost is on (15 otherwise)
 // Element riders on strikes. Plain strikes never lock (hard locks are for signature spells); a
 // chance roll waits for the target's next pick, so neither side can plan around it.
 //   Lightning burns mana (even through a ward) · Ice frostbites and Dark dreads (a Damage / Protection
@@ -3656,7 +3665,8 @@ function openElemWheel(cat){
   selfBtn.textContent='✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
   const ruleText={
     damage:'A ward\'s own element unravels it · Lightning burns mana · Physical crushes wards · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
-    protect:'Wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · they resist other elements, but their own element unravels them',
+    protect:'Wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · they resist other elements, but their own element unravels them'+
+      (WARD_RULES.boost?' · recast your ward\'s element to top it up (to '+WARD_RULES.boostCap+'× that cast)':''),
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
   document.getElementById('wheel-rule').textContent=ruleText;
@@ -4103,7 +4113,7 @@ function executeSignature(who,sp,action,cb){
     const mine=el.effect.type==='minion';   // minions always serve their owner
     addEffect(mine?who:ally,effect({kind:el.effect.kind||'buff'}),who);
     // A buff that also raises a light ward (Blink) — never replaces a stronger ward already up
-    if(el.ward&&!(hasWard(as)&&as.shieldHp>=el.ward)){ raiseWard(ally,el.elem,el.ward,0); as.wardSig=sp.id; }
+    if(el.ward&&!(hasWard(as)&&as.shieldHp>=el.ward)){ raiseWard(ally,el.elem,el.ward,0,true); as.wardSig=sp.id; }
     // A buff that holds up a ward already standing (Ward): it lasts longer
     if(ELEM_WARD_ROUNDS&&el.effect.extend&&hasWard(as)){ as.shield+=el.effect.extend; addFloat(seatX(ally),bH*.34,'🛡 Ward +'+el.effect.extend+' round'+(el.effect.extend>1?'s':''),wardCol(as),12); }
     if(fx.self) fx.self(mine?ctx:actx); else { vfxPhaseIn(seatX(mine?who:ally),wizMidY(mine?who:ally),[e.col],14); anim(mine?who:ally,'shield',700); }
@@ -4152,10 +4162,25 @@ function executeSignature(who,sp,action,cb){
 
 // A ward's bubble and its block / shatter sparks take its element's colour
 function wardCol(st){ return st.shieldType?elemById(st.shieldType).col:'#4af0ff'; }
-function raiseWard(who,elem,power,retaliate){
-  const st=gs[who], el=elemById(elem);
+// Would a ward of this element and power top up the one already up (WARD_RULES.boost)?
+function wardBoostable(st,elem){ return WARD_RULES.boost&&hasWard(st)&&st.shieldType===elem; }
+function wardBoostTo(st,power){ return Math.max(st.shieldHp,Math.min(st.shieldHp+power,Math.round(power*WARD_RULES.boostCap))); }
+// noBoost: a buff's light side-ward (Blink) never tops up a ward, only raises one
+function raiseWard(who,elem,power,retaliate,noBoost){
+  const st=gs[who], el=elemById(elem), ws=st.wardStats;
+  if(!noBoost&&wardBoostable(st,elem)){
+    // Boost: the ward keeps its signature twist (a signature recast sets its own afterwards)
+    const was=st.shieldHp;
+    st.shieldHp=wardBoostTo(st,power);
+    st.wardRetaliate=Math.max(st.wardRetaliate||0,retaliate||0);
+    ws.boosted++; ws.peak=Math.max(ws.peak,st.shieldHp);
+    addFloat(seatX(who),bH*.28,'🛡 '+el.name+' Ward +'+(st.shieldHp-was)+' → '+st.shieldHp,el.col,14);
+    VFX.wardRaise(seatX(who),el.col);
+    return;
+  }
   st.shield=ELEM_WARD_ROUNDS||1;   // with no timer, shield just marks a ward as up
   st.shieldHp=power; st.shieldType=elem; st.wardRetaliate=retaliate; st.wardSig=null;
+  ws.raised++; ws.peak=Math.max(ws.peak,power);
   addFloat(seatX(who),bH*.28,'🛡 '+el.name+' Ward '+power,el.col,14);
   VFX.wardRaise(seatX(who),el.col);
 }
@@ -4698,7 +4723,8 @@ function elemAIChoose(who){
   if(callShot&&(hasWard(me)||effectsOf(opp,'spellbind').length)) w.dispel+=0.5;
   // The foe has Vanished: strikes at them only miss, so dispel it or do something else
   if(effectsOf(opp,'absorbNext').some(e=>e.keep)){ w.damage*=smart?0.2:0.6; w.dispel+=smart?0.6:0.2; }
-  if(hasWard(me)&&me.shieldHp>=15) w.protect=0.2;
+  // With ward boost on, a worn ward (under WARD_BOOST_AI_HP) is worth topping up rather than left alone
+  if(hasWard(me)&&me.shieldHp>=(WARD_RULES.boost?WARD_BOOST_AI_HP:15)) w.protect=0.2;
   else {
     if(foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',2))) w.protect+=0.35;
     if(me.hp<me.maxHp*0.35) w.protect+=0.35;
@@ -4800,6 +4826,10 @@ function elemAIChoose(who){
         else if(opp.lastElem&&roll<(smart?0.8:0.4)){ const off=plain.filter(x=>x.elem!==opp.lastElem); if(off.length) choice=pickFrom(off); }
       }
       else if(opp.lastElem&&has(opp.lastElem)&&!elemForbidden(tgt,opp.lastElem)&&roll<(smart?0.8:0.4)) choice=has(opp.lastElem);
+      // Layered wards, step 1: top up my own ward rather than throw it away — unless the foe just
+      // used its element (they're set up to unravel it)
+      const same=WARD_RULES.boost&&hasWard(me)&&has(me.shieldType);
+      if(same&&opp.lastElem!==me.shieldType&&_rng()<(smart?0.75:0.4)) choice=same;
     }
   }
   else if(sectors.length) choice=sectors[Math.floor(_rng()*sectors.length)];   // anything beats waiting
@@ -8174,7 +8204,8 @@ function startTrainingBattle(){
 const SIM_MAX_ROUNDS=60;
 // The tool page reads the game through an iframe, where only function declarations are visible
 function simInfo(){ return {options:GAME_OPTIONS, suddenDeath:SUDDEN_DEATH, chars:CHAR_DEFS, maxRounds:SIM_MAX_ROUNDS, wardTake:ELEM_WARD_TAKE, bounty:ELEM_KO_BOUNTY, phase:PHASE,
-  setGangAware:v=>{ GANG_AWARE_AI=v; }}; }
+  setGangAware:v=>{ GANG_AWARE_AI=v; },
+  wardRules:{...WARD_RULES}, wardAiHp:WARD_BOOST_AI_HP, setWardRules:o=>{ if(o.aiHp!=null) WARD_BOOST_AI_HP=o.aiHp; const r={...o}; delete r.aiHp; Object.assign(WARD_RULES,r); }}; }
 function simMatch(k1,k2,ai){
   simMode=true; simOutcome=null;
   twoPlayerMode=false; trainingMode=false;
@@ -8194,7 +8225,8 @@ function simMatch(k1,k2,ai){
     resolveSimRound();
     gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
   }
-  const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks};
+  const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks,
+    wards:{p1:{...gs.p1.wardStats},p2:{...gs.p2.wardStats}}};
   battleRunning=false; simMode=false;
   return out;
 }
@@ -8285,7 +8317,7 @@ const TUTORIAL_CONVOS={
     {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements. Zakkit hates rocks."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
-    {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Raising a new one replaces the old one."},
+    {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Raising a ward in a new element replaces the old one, but recasting the same element tops it up — up to half again what that cast gives."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],

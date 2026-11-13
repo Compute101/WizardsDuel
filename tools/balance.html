@@ -53,6 +53,15 @@ with the Beginner rules: about 12% of flicks pot, you flick 10 minus the spell's
   <label>Mode <select id="mode"><option value="standard">Standard</option><option value="tabletop">Tabletop</option><option value="beginner">Tabletop (Beginner)</option></select></label>
   <label>Games per matchup <input id="games" type="number" value="40" min="2" step="2"></label>
   <label>AI <select id="ai"><option value="normal">Normal</option><option value="easy">Easy</option></select></label>
+  <label title="Standard mode only. Layered wards are built in steps (docs/rps-duel-design.md)">Wards <select id="wards">
+    <option value="game">As in the game</option>
+    <option value="off">Off (recast replaces)</option>
+    <option value="boost">Step 1: recast boosts (cap 1.5×)</option>
+    <option value="boost1">Step 1: recast boosts (cap 1×, refill only)</option>
+    <option value="boost2">Step 1: recast boosts (cap 2×)</option>
+    <option value="boostLazy">Step 1, AI tops up below 15 HP</option>
+    <option value="boostKeen">Step 1, AI tops up below 35 HP</option>
+  </select></label>
   <label>Flag outside <input id="band" type="number" value="8" min="1" max="40">% of 50%</label>
   <button id="run" disabled>Loading game…</button>
   <button id="copy" disabled>Copy results</button>
@@ -77,6 +86,22 @@ const MODES={
   beginner:{simMatch:(a,b,ai)=>TT.simMatch(a,b,ai), chars:()=>TT.chars, maxRounds:()=>TT.RULES.maxRounds, rules:'beginner'},
 };
 let mode=MODES.standard;
+// Ward rule presets for the standard game (WARD_RULES in js/game.js). Steps 2–3 (seals, layers) go here.
+// 'game' is whatever js/game.js ships with (captured on load). aiHp: the AI tops up a ward below this.
+const WARD_PRESETS={
+  off:    {boost:false, boostCap:1.5, seals:false, layers:1, aiHp:25},
+  boost:  {boost:true,  boostCap:1.5, seals:false, layers:1},
+  boost1: {boost:true,  boostCap:1,   seals:false, layers:1},
+  boost2: {boost:true,  boostCap:2,   seals:false, layers:1},
+  boostLazy:{boost:true, boostCap:1.5, seals:false, layers:1, aiHp:15},   // AI only tops up below 15 (as before boost)
+  boostKeen:{boost:true, boostCap:1.5, seals:false, layers:1, aiHp:35},
+};
+function setWards(w){
+  if(!G) return;
+  if(!WARD_PRESETS.game) WARD_PRESETS.game={...G.simInfo().wardRules, aiHp:G.simInfo().wardAiHp};
+  const p=typeof w==='string'?WARD_PRESETS[w]:w;
+  if(p) G.simInfo().setWardRules({...WARD_PRESETS.game,...p});
+}
 function setMode(m){ mode=MODES[m]||MODES.standard; if(mode.rules) TT.useRules(mode.rules); CHARS=mode.chars(); }
 TT_READY=Promise.all(['../characters.json','../tabletop.json'].map(u=>fetch(u).then(r=>r.json())))
   .then(([chars,tt])=>TT.load(chars,tt));
@@ -100,13 +125,15 @@ function run(){
   const games=Math.max(2,+document.getElementById('games').value|0);
   const ai=document.getElementById('ai').value;
   setMode(document.getElementById('mode').value);
+  const wardsSel=document.getElementById('wards').value;
+  setWards(wardsSel);
   const keys=Object.keys(CHARS);
   // Every ordered pair, so each character plays both seats
   const jobs=[];
   keys.forEach(a=>keys.forEach(b=>{ if(a!==b) jobs.push([a,b]); }));
   const per=games/2;
   const stats={};
-  keys.forEach(k=>stats[k]={w:0,l:0,d:0,t:0,rounds:0,games:0,picks:{},vs:{}});
+  keys.forEach(k=>stats[k]={w:0,l:0,d:0,t:0,rounds:0,games:0,picks:{},vs:{},wards:{raised:0,boosted:0,peak:0}});
   const btn=document.getElementById('run'); btn.disabled=true;
   document.getElementById('copy').disabled=true;
   const t0=performance.now();
@@ -127,7 +154,7 @@ function run(){
       btn.disabled=false; document.getElementById('copy').disabled=false;
       document.getElementById('progress').textContent=
         `Done: ${jobs.length*per} duels in ${((performance.now()-t0)/1000).toFixed(1)} s`;
-      last={stats,keys,games,ai,band:+document.getElementById('band').value,mode:document.getElementById('mode').value};
+      last={stats,keys,games,ai,band:+document.getElementById('band').value,mode:document.getElementById('mode').value,wards:wardsSel};
       render(last);
     }
   };
@@ -142,15 +169,17 @@ function record(s,opp,r,seat){
   else if(r.winner===other) s.l++;
   else { if(r.winner==='draw') s.d++; else s.t++; vs.w+=0.5; }
   Object.entries(r.picks[seat]).forEach(([k,n])=>{ s.picks[k]=(s.picks[k]||0)+n; });
+  const w=r.wards&&r.wards[seat];   // standard mode only
+  if(w){ s.wards.raised+=w.raised; s.wards.boosted+=w.boosted; s.wards.peak+=w.peak; }
 }
 const winRate=s=>(s.w+0.5*(s.d+s.t))/s.games;
 
-function render({stats,keys,games,ai,band,mode:m}){
+function render({stats,keys,games,ai,band,mode:m,wards}){
   const name=k=>CHARS[k].name;
   const sorted=keys.slice().sort((a,b)=>winRate(stats[b])-winRate(stats[a]));
   const lim=band/100;
   let html=`<h2>Overall win rate — ${m==='tabletop'?'Tabletop':m==='beginner'?'Tabletop Beginner':'Standard'} rules</h2><p class="note">${games} games per matchup (half on each side), AI ${ai}.
-    Draws and ${mode.maxRounds()}-round timeouts count as half a win. Flagged when more than ${band}% from 50%.</p>
+    ${m==='standard'?`Wards: <b>${wards||'game'}</b>. `:''}Draws and ${mode.maxRounds()}-round timeouts count as half a win. Flagged when more than ${band}% from 50%.</p>
     <table><tr><th class="name">Character</th><th>Win %</th><th></th><th>W</th><th>L</th><th>Draw</th><th>Timeout</th>
     <th>Avg rounds</th><th>HP</th><th>Worst matchup</th><th>Best matchup</th></tr>`;
   sorted.forEach(k=>{
@@ -194,6 +223,15 @@ function render({stats,keys,games,ai,band,mode:m}){
       `<span class="pick">${sigIds.includes(id)?'★ ':''}${sigName(id)} <b>${(n/total*100).toFixed(0)}%</b></span>`).join('')}</td></tr>`;
   });
   html+='</table>';
+
+  if(m==='standard'){
+    html+=`<h2>Wards</h2><p class="note">Per game: wards raised fresh, wards topped up by a recast of the same element
+      (only with a boost rule on), and the highest ward HP reached.</p><table><tr><th class="name">Character</th>
+      <th>Raised</th><th>Boosted</th><th>Peak HP</th></tr>`;
+    sorted.forEach(k=>{ const s=stats[k], g=s.games||1;
+      html+=`<tr><td class="name">${name(k)}</td><td>${(s.wards.raised/g).toFixed(2)}</td><td>${(s.wards.boosted/g).toFixed(2)}</td><td>${(s.wards.peak/g).toFixed(0)}</td></tr>`; });
+    html+='</table>';
+  }
   document.getElementById('results').innerHTML=html;
 }
 
@@ -205,15 +243,18 @@ function resultsText(){
 }
 // Headless use (e.g. from a test script): run synchronously and return the stats
 // mode: 'standard' (default), 'tabletop' or 'beginner'
-window.runBalance=(games,ai,m)=>{
+// wards (standard only): a WARD_PRESETS name or a WARD_RULES object; default 'game' (as shipped)
+window.runBalance=(games,ai,m,wards)=>{
   setMode(m||'standard');
+  setWards(wards||'game');
   const keys=Object.keys(CHARS), stats={};
-  keys.forEach(k=>stats[k]={w:0,l:0,d:0,t:0,rounds:0,games:0,picks:{},vs:{}});
+  keys.forEach(k=>stats[k]={w:0,l:0,d:0,t:0,rounds:0,games:0,picks:{},vs:{},wards:{raised:0,boosted:0,peak:0}});
   keys.forEach(a=>keys.forEach(b=>{ if(a===b) return;
     for(let g=0;g<games/2;g++){ const r=mode.simMatch(a,b,ai||'normal'); record(stats[a],b,r,'p1'); record(stats[b],a,r,'p2'); } }));
-  last={stats,keys,games,ai:ai||'normal',band:+document.getElementById('band').value,mode:m||'standard'};
+  last={stats,keys,games,ai:ai||'normal',band:+document.getElementById('band').value,mode:m||'standard',wards:typeof wards==='string'?wards:'custom'};
   render(last);
   return keys.map(k=>({key:k,name:CHARS[k].name,winRate:winRate(stats[k]),rounds:stats[k].rounds/stats[k].games,
+    wards:Object.fromEntries(Object.entries(stats[k].wards).map(([x,n])=>[x,n/stats[k].games])),
     draws:stats[k].d,timeouts:stats[k].t,picks:stats[k].picks,
     vs:Object.fromEntries(Object.entries(stats[k].vs).map(([o,v])=>[o,v.w/v.n]))}));
 };

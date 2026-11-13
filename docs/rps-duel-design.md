@@ -50,7 +50,8 @@ What was built, including choices made while building:
   paid for, whatever the seat order. A failed ritual costs 1 mana instead. **Quick** spells (`quick` on
   the spell; only Ponder's Mana Siphon) are paid first and steal at once, so their target pays from
   what's left — if they can no longer afford their pick, it fails.
-- **Wards:** raising one replaces any existing ward. A ward stops damage in the same round it's raised.
+- **Wards:** raising one in a new element replaces any existing ward; recasting the element already up
+  tops it up instead (see "Layered wards" below). A ward stops damage in the same round it's raised.
   Like tabletop mode, a ward has **no round timer**: it lasts until it runs out. It loses a flat
   **4 HP at every round end** (`ELEM_WARD_WEAR`, about one tabletop wink), and strikes, ticks and
   dispels wear it too; Counter stops the round-end wear while it lasts. (It used to last 3 rounds and
@@ -546,3 +547,35 @@ No striking from hiding: if Ponder picks a Damage spell while Vanished, the Vani
 resolve (`revealVanished`, called in `resolveSimRound` before any stage), so he's exposed for that whole round
 whatever order the strikes land in. Other picks (Protection, Dispel, Meditate) keep him hidden. The AI on his
 side rarely strikes while Vanished. Vanish cost 3→2 to make up for it: Ponder 49.9%, roster 42.7–57.0%.
+
+### Layered wards (in progress)
+The goal: wizards can build defences up in layers, like a real wizards' duel, while Dispel stays a
+counter and games don't stall. Built in steps, each behind a switch in `WARD_RULES` (`js/game.js`) and
+balanced on its own before the next:
+
+1. **Recast to boost (built, on).** Recasting a ward of the element already up tops it up instead of
+   replacing it: it gains the new cast's HP, up to `boostCap` (1.5) × that cast's HP, and never drops
+   below what's there (`wardBoostTo`). It keeps its signature twist (Flame Shield, Stoneskin, …); a
+   signature recast sets its own. A buff's light side-ward (Blink) never boosts. A ward in a different
+   element still replaces the old one. The AI tops up a ward below `WARD_BOOST_AI_HP` (25) HP and, when
+   it wards, picks its own ward's element 75% of the time (Normal; 40% Easy) unless the foe just used
+   that element.
+2. **Seals (not built).** A seal is its own Protection pick (about 2 mana). A sealed ward doesn't wear
+   at round end; a dispel breaks the seal instead of hurting the ward; strikes still hit it. Eldrin
+   needs a new hook (his seal free with his ward, or surviving the first dispel).
+3. **A second layer (not built).** At most 2 wards in different elements; strikes and dispels hit the
+   outer one first. Open questions: does `blast` / Infernal Mantle go through one layer or both; how
+   buffs stay reachable (a Greater dispel always takes a buff too, or Arcane unweave frays through
+   wards); which layer the element riders read.
+
+Sim scaffolding: `tools/balance.html` has a **Wards** selector (presets in `WARD_PRESETS`) and a Wards
+table (raised, boosted, peak ward HP per game). `node tools/ward_compare.js 40 off,boost` runs the
+presets headless and prints the win rates side by side. At 40 games per matchup two runs of the
+same rules differ by up to about 3 points per character.
+
+Step 1 results (Normal AI, 40 games per matchup): off 43.9–57.0%, boost 42.6–56.9%, every character
+within ±8% for every cap tried (1×, 1.5×, 2×, except Durin 58.2% once at 2×) and AI threshold (15, 25,
+35 HP). Games 20.2 → 20.5 rounds. Topping up is rare, about 0.1–0.8 a game: most wards are dispelled
+or broken before they're worth recasting, so step 1 alone barely moves balance. Seals are where it
+will.
+
