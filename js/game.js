@@ -3507,16 +3507,16 @@ function sigIcon(sp){ return sp.el.icon||sp.icon; }
 // (Set BUFF_TIMERS true to give every buff its `rounds` back, as before.)
 const BUFF_TIMERS=false;
 function untimedBuff(eff){ return !BUFF_TIMERS&&eff.kind==='buff'&&!eff.timed; }
-// Permanent curses (CURSE_TIMERS false, as in tabletop mode): a hex lasts until Cleanse Self clears it.
-// Off for now: an experiment (sim, Normal AI, 100 games a matchup: 42.3–57.1%, as balanced as with timers).
-// Some curses keep their timers either way: the one-shots (a lock blocks one pick, Enthral springs on the next
-// payment, the Frostbite / Dread rolls), strike riders (Scorched, signature DoTs: `timed:true`), and
-// TIMED_CURSE_TYPES. Untimed, Income drains starve the foe of the mana to cleanse them (Gretch 75%),
-// and Silence and Agony made Mordant unbeatable (88%). Bewitch lasts until the next strike.
+// Permanent curses (CURSE_TIMERS false, as in tabletop mode): the hexes in PERMANENT_CURSES last until
+// Cleanse Self clears them (Bewitch until the next strike). Every other curse keeps its timer.
+// Off for now: an experiment (sim, Normal AI, 150 games a matchup: 40.3–58.5%).
+// Left off the list: Income drains (Time Drain, Corruption, Maggot Cloud) starve the foe of the mana to
+// cleanse them (Gretch 75%); Silence and the Agony-type curses (Agony, Curse of the Years) made Mordant
+// unbeatable (88%); one-shots (Entangle, Enthral) and strike riders (Chilled, Frostbite / Dread, Scorched,
+// signature DoTs) are short by design.
 let CURSE_TIMERS=true;
-const ONE_SHOT_CURSES=['lock','enthral','risk'];
-let TIMED_CURSE_TYPES=['incomeDrain','silence','agony'];
-function untimedCurse(eff){ return !CURSE_TIMERS&&eff.kind==='curse'&&!eff.timed&&!ONE_SHOT_CURSES.includes(eff.type)&&!TIMED_CURSE_TYPES.includes(eff.type); }
+let PERMANENT_CURSES=['candle','blizzard','conductivity','plague','soultithe','bewitch','spellbind','singularity'];
+function untimedCurse(eff){ return !CURSE_TIMERS&&eff.kind==='curse'&&PERMANENT_CURSES.includes(eff.id); }
 function untimed(eff){ return untimedBuff(eff)||untimedCurse(eff); }
 function effectsOf(st,type){ return (st&&st.effects||[]).filter(e=>e.type===type); }
 function takeEffect(st,type,pred){
@@ -4613,7 +4613,7 @@ function elemStrikeRiders(who,tgt,o){
   if(o.elem==='ice') risk('frostbite','damage','Frostbitten','🥶');
   if(o.elem==='dark') risk('dread','protect','Dread','😱');
   if(o.elem==='fire'&&ELEM_RIDERS.scorch&&!o.dot)
-    addEffect(tgt,Object.assign({id:'dot-scorch',type:'dot',kind:'curse',timed:true,elem:'fire',name:'Scorched',icon:'🔥'},ELEM_SCORCH[Math.min(3,tier)-1]),who);
+    addEffect(tgt,Object.assign({id:'dot-scorch',type:'dot',kind:'curse',elem:'fire',name:'Scorched',icon:'🔥'},ELEM_SCORCH[Math.min(3,tier)-1]),who);
   if(o.elem==='arcane'&&ELEM_RIDERS.unweave&&tgt!==who){
     // Middle ring: the newest buff; outer ring: every one. A timed buff loses a round; an untimed one
     // frays, and unravels once frayed ELEM_UNWEAVE_FRAYS times ("next strike" buffs too). With
@@ -4643,7 +4643,7 @@ function strikeFinish(who,r,o,b,hit){
       const heal=Math.round(hit.hp*o.lifesteal);
       if(heal>0){ elemHeal(who,heal,'🩸'); VFX.lifesteal(who,tgt,heal,o.siphon); }
     }
-    if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',timed:true,elem:o.elem,name:o.name||el.name,icon:el.icon},o.dot),who);
+    if(o.dot) addEffect(tgt,Object.assign({id:'dot-'+(o.name||o.elem),type:'dot',kind:'curse',elem:o.elem,name:o.name||el.name,icon:el.icon},o.dot),who);
     elemStrikeRiders(who,tgt,o);
   }
   if(burn>0){
