@@ -4844,6 +4844,60 @@ function aiSigSensible(who,sp,tgt=weakestFoe(who)){
   }
   return true;
 }
+// Combo lines for a kit built around Vanish (every strike at him misses while it lasts): Ponder's.
+// Vanish only stops strikes. Curses still land, ticks still bite and a Dispel strips it, so the AI plays
+// it as a window to do the things that would otherwise cost him a free hit:
+//  · not Vanished, with a lasting curse on and a foe who can strike: Vanish (middle ring or better, so it
+//    lasts into next round), then cleanse under it
+//  · Vanished: cleanse lasting curses; raise Blink's ward over the Vanish when a foe could dispel it (the
+//    ward takes the dispel); siphon a foe who has saved up; or rest. Never strike (it reveals him).
+//  · a foe with a strike boost up (Empower, Infernal Mantle, Frenzy, Weave): Vanish before it lands
+// Experiment, all off: the names of the lines to use (cleanseUnder, blinkOver, siphonUnder, restUnder,
+// vanishToCleanse, vanishBoost, strikeLast, strikeAny), or null for every one. Sim (Ponder overall, permanent
+// curses): none 34.9%, all 28.8%; alone: vanishBoost +1.5, cleanseUnder +0.7, blinkOver −3.6, vanishToCleanse −2.2.
+let COMBO_LINES=[];
+function aiComboPick(who,tgt){
+  const on=n=>!COMBO_LINES||COMBO_LINES.includes(n);
+  const me=gs[who], opp=gs[tgt];
+  const vanishSp=sigSpells(who,'protect').find(sp=>sp.el.effect&&sp.el.effect.type==='absorbNext'&&sp.el.effect.keep);
+  if(!vanishSp) return null;
+  const blinkSp=sigSpells(who,'protect').find(sp=>sp.el.effect&&sp.el.effect.type==='dodge');
+  const siphonSp=sigSpells(who,'dispel').find(sp=>sp.el.action&&sp.el.action.type==='siphon');
+  const ok=_rng()<0.9;
+  const canSig=(sp,tier)=>sp&&elemCanPick(who,sp.el.cat)&&!sigBlocked(who,sp,tier);
+  const bestTier=(sp,lo)=>[3,2,1].find(t=>t>=lo&&canSig(sp,t));
+  const sig=(sp,tier)=>({type:'el',cat:sp.el.cat,elem:sp.el.elem,tier,sig:sp.id,target:tgt,ok});
+  const foes=foesOf(who);
+  const foeCanStrike=foes.some(f=>gs[f].mana>=elemCost(f,'damage',2));
+  const foeCanDispel=foes.some(f=>gs[f].mana>=elemCost(f,'dispel',1));
+  const foeBoost=foes.some(f=>gs[f].effects.some(e=>['empower','frenzy','weave'].includes(e.type)));
+  // Curses worth a turn: lasting ones, or with a round or more still to run
+  const lasting=cleansableCurses(me).filter(e=>e.rounds==null||e.rounds>=2);
+  const harm=lasting.reduce((a,e)=>a+(CURSE_HARM[e.type]||1),0);
+  const cleanse=()=>{
+    if(!elemCanPick(who,'dispel')) return null;
+    let tier=Math.min(3,lasting.length);
+    while(tier>1&&elemCost(who,'dispel',tier)>me.mana) tier--;
+    return elemCost(who,'dispel',tier)<=me.mana?{type:'el',cat:'dispel',elem:'arcane',tier,self:true,target:who,ok}:null;
+  };
+  if(effectsOf(me,'absorbNext').some(e=>e.keep)){
+    const c=harm>=2&&cleanse();
+    if(on('cleanseUnder')&&c&&_rng()<0.85) return c;
+    const bt=blinkSp&&bestTier(blinkSp,1);
+    if(on('blinkOver')&&bt&&!hasWard(me)&&foeCanDispel&&_rng()<0.5) return sig(blinkSp,bt);
+    const st=siphonSp&&opp.mana>=3&&bestTier(siphonSp,1);
+    if(on('siphonUnder')&&st&&_rng()<0.6) return sig(siphonSp,Math.min(2,st));
+    if(on('restUnder')&&canMeditate(who)&&meditateGain(who)>0&&!effectsOf(me,'candle').length&&me.mana<8&&_rng()<0.5)
+      return {type:'el',cat:'meditate',ok:true};
+    return null;
+  }
+  const vt=bestTier(vanishSp,2);
+  if(!vt) return null;
+  const vtier=Math.min(2,vt);   // the middle ring is enough to cleanse under; keep the rest for the Cleanse
+  if(on('vanishToCleanse')&&harm>=2&&foeCanStrike&&_rng()<0.7) return sig(vanishSp,vtier);
+  if(on('vanishBoost')&&foeBoost&&_rng()<0.6) return sig(vanishSp,vtier);
+  return null;
+}
 // Enthral's call: read the foe's next pick from the same pressures that steer the AI's own picks.
 // Easy guesses at random; Normal leans toward the likeliest pick without becoming predictable.
 function aiEnthralCall(who,tgt,smart){
@@ -4893,6 +4947,9 @@ function elemAIChoose(who){
   const agonyOn=effectsOf(me,'agony').find(e=>!agonyBites(who,{cat:'meditate'},e));
   if(agonyOn&&canMeditate(who)&&_rng()<(smart?0.7:0.35))
     return {type:'el',cat:'meditate',ok:true};
+  // Combo lines for a kit built around Vanish (Ponder): see aiComboPick
+  const comboPick=smart?aiComboPick(who,tgt):null;
+  if(comboPick) return comboPick;
   if(canMeditate(who)&&medGain>0&&me.mana<elemCost(who,'damage',2)){
     let p=(me.mana<elemCost(who,'damage',1)?0.4:0.2)*medGain/MEDITATE.gain;
     if(!foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',1))) p+=0.3;
@@ -4953,7 +5010,12 @@ function elemAIChoose(who){
   // Last round of my miss/dodge cover: spend it on a Siphon or a strike — the foe's strike would be wasted
   const cover=me.effects.filter(e=>e.type==='dodge'||(e.type==='absorbNext'&&!e.keep));
   // Vanished: a strike would reveal me, so siphon, ward up or rest instead
-  if(effectsOf(me,'absorbNext').some(e=>e.keep)){ w.damage*=smart?0.3:0.7; w.dispel+=smart?0.4:0.1; }
+  // Strike from hiding: picks are secret, and a foe facing a Vanish rarely picks a strike, so the reveal
+  // seldom costs anything (strikeLast: only in the Vanish's last round; strikeAny: any round of it)
+  const veilOn=effectsOf(me,'absorbNext').find(e=>e.keep);
+  const hideStrike=smart&&veilOn&&COMBO_LINES&&(COMBO_LINES.includes('strikeAny')||(COMBO_LINES.includes('strikeLast')&&veilOn.rounds<=1));
+  if(hideStrike) w.damage+=0.8;
+  else if(veilOn){ w.damage*=smart?0.3:0.7; w.dispel+=smart?0.4:0.1; }
   if(smart&&cover.length&&cover.every(e=>e.rounds===1)){
     w.protect*=0.3; w.damage+=0.5;
     if(siphon) w.dispel+=0.6;
