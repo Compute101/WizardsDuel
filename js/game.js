@@ -3472,6 +3472,7 @@ const ELEM_CATS={
   damage: {name:'Damage',     verb:'Strike', icon:'⚔️', cost:[3,5,8],  power:[8,15,26],  stage:3, unit:'dmg'},
 };
 const ELEM_TIER_NAMES=['Lesser ','','Greater '];
+const CLEANSE_NAMES=['Lesser Cleanse','Cleanse','Greater Cleanse'];   // clears 1 / 2 / every curse
 const ELEM_STAGE_BANNERS={1:'🛡 Protection',2:'✦ Dispel',3:'⚔️ Damage'};
 
 // Casting minigame per element
@@ -3705,7 +3706,7 @@ function describeElemAction(action,who){
     const sp=sigById(who,action.sig);
     return {icon:cat.icon+(sp?sigIcon(sp):'★'),name:ELEM_TIER_NAMES[(action.tier||2)-1]+(sp?sigName(sp):action.sig)};
   }
-  if(action.self) return isSeal(action)?{icon:'🔒',name:'Seal Ward'}:{icon:'✦',name:'Cleanse Self'};
+  if(action.self) return isSeal(action)?{icon:'🔒',name:'Seal Ward'}:{icon:'✦',name:CLEANSE_NAMES[(action.tier||1)-1]};
   const el=elemById(action.elem);
   return {icon:cat.icon+el.icon,name:ELEM_TIER_NAMES[action.tier-1]+el.name+' '+cat.verb};
 }
@@ -3723,10 +3724,24 @@ function openElemWheel(cat){
   // The wheel's own-self button: Cleanse Self on Dispel, Seal Ward on Protection (with seals on)
   const selfBtn=document.getElementById('wheel-self');
   const sealing=cat==='protect'&&WARD_RULES.seals;
-  selfBtn.style.display=cat==='dispel'||sealing?'':'none';
-  selfBtn.textContent=sealing?'🔒 Seal Ward ('+sealCost(who)+' Mana)'+(sealTargetable(who)?'':' — no ward to seal'):
-    '✦ Cleanse Self ('+elemCost(who,'dispel',1)+' Mana)';
+  selfBtn.style.display=sealing?'':'none';
+  selfBtn.textContent=sealing?'🔒 Seal Ward ('+sealCost(who)+' Mana)'+(sealTargetable(who)?'':' — no ward to seal'):'';
   selfBtn.disabled=sealing&&!canSeal(who);
+  // Cleanse Self, one button per ring: 1 curse, 2 curses, all of them
+  const cl=document.getElementById('wheel-cleanse');
+  cl.style.display=cat==='dispel'?'':'none';
+  if(cat==='dispel'){
+    const n=cursesOf(st).length;
+    cl.innerHTML='<div class="wheel-cleanse-label">✦ Cleanse Self'+(n?' · '+n+' curse'+(n>1?'s':'')+' on you':' · no curses on you')+'</div>';
+    ['1 curse','2 curses','All curses'].forEach((lbl,i)=>{
+      const tier=i+1, cost=elemCost(who,'dispel',tier), b=document.createElement('button');
+      b.className='btn wheel-cleanse-btn'; b.dataset.tier=tier;
+      b.innerHTML=lbl+'<span>'+cost+' Mana</span>';
+      b.disabled=cost>st.mana||catLocked(who,'dispel');
+      b.title=CLEANSE_NAMES[i];
+      cl.appendChild(b);
+    });
+  }
   const ruleText={
     damage:'A ward\'s own element unravels it · Lightning burns mana · Physical crushes wards · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
     protect:'Wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · they resist other elements, but their own element unravels them'+
@@ -4052,7 +4067,7 @@ function executeWheel(who,action,cb){
     return;
   }
   if(action.self){
-    elemCleanse(who,false);
+    elemCleanse(who,false,action.tier);
     combatTimeout(cb,800);
     return;
   }
@@ -4332,10 +4347,17 @@ function breakWard(st,x,unravel){
   (unravel?VFX.wardUnravelled:VFX.wardShatter)(x,col);
   if(next){ const el=elemById(next.type); addFloat(x,bH*.16,'🛡 '+el.icon+' '+el.name+' ward beneath holds '+next.hp,el.col,13); }
 }
-// Cleanse Self clears only the newest curse (so an older Agony can hide behind a fresh Silence);
-// all: Mary's Purge clears every one
-function elemCleanse(who,all){
-  const st=gs[who], curses=all?cursesOf(st):cursesOf(st).slice(-1);
+// Cleanse Self comes in the wheel's three rings, like the tabletop Cleanse: the inner ring clears 1
+// curse, the middle 2, the outer every one (CLEANSE_COUNT), for that ring's Dispel cost. The worst go
+// first (CURSE_HARM; ties: the newest). all: Mary's Purge clears every one.
+const CLEANSE_COUNT=[1,2,Infinity];
+const CURSE_HARM={agony:5, dot:4, silence:4, incomeDrain:3, vuln:3, spellbind:3, tithe:2, candle:2, bewitch:2, risk:1, lock:1, enthral:0};
+function cursesWorstFirst(st){
+  const c=cursesOf(st);
+  return c.map((e,i)=>({e,i})).sort((a,b)=>(CURSE_HARM[b.e.type]||1)-(CURSE_HARM[a.e.type]||1)||b.i-a.i).map(x=>x.e);
+}
+function elemCleanse(who,all,tier){
+  const st=gs[who], curses=all?cursesOf(st):cursesWorstFirst(st).slice(0,CLEANSE_COUNT[(tier||1)-1]);
   if(curses.length) removeEffects(who,curses,'✦ Cleansed');
   else addFloat(seatX(who),bH*.28,'✦ Nothing to cleanse','#ffaaff',13);
   VFX.cleanse(seatX(who));
@@ -4952,8 +4974,13 @@ function elemAIChoose(who){
   const plain=sectors.filter(x=>!x.sp);
   const sigs=sectors.filter(x=>x.sp&&aiSigSensible(who,x.sp,tgt));
   const cleanseOk=cat==='dispel'&&myCurses&&elemCost(who,'dispel',1)<=me.mana;
-  if(cleanseOk&&((smart&&effectsOf(me,'bewitch').length)||(!oppWard&&!oppBuffs))&&_rng()<0.7)
-    return {type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok};
+  // Cleanse at the ring that clears what's on us (1 / 2 / all), or the biggest we can afford
+  const cleanse=()=>{
+    let tier=smart?Math.min(3,cursesOf(me).length):1;
+    while(tier>1&&elemCost(who,'dispel',tier)>me.mana) tier--;
+    return {type:'el',cat,elem:'arcane',tier,self:true,target:who,ok};
+  };
+  if(cleanseOk&&((smart&&effectsOf(me,'bewitch').length)||(!oppWard&&!oppBuffs))&&_rng()<0.7) return cleanse();
   // Combos: a pending miss behind a dodge survives the strikes it dodges (Blink, then Vanish),
   // and a buff that raises a ward shields the buffs already up from Dispel (Vanish, then Blink)
   const sigWeight=sp=>{
@@ -5016,7 +5043,7 @@ function elemAIChoose(who){
   }
   else if(sectors.length) choice=sectors[Math.floor(_rng()*sectors.length)];   // anything beats waiting
   if(cat==='damage'&&boost&&boost.elem){ const s=sectors.find(x=>x.elem===boost.elem); if(s) choice=s; }
-  if(!choice) return cleanseOk?{type:'el',cat,elem:'arcane',tier:1,self:true,target:who,ok}:{type:'el',cat:'pass',ok:true};
+  if(!choice) return cleanseOk?cleanse():{type:'el',cat:'pass',ok:true};
 
   let tier=3;
   while(tier>1&&!sectorOk(who,cat,choice.elem,tier)) tier--;
@@ -8515,7 +8542,7 @@ const TUTORIAL_CONVOS={
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
     {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements. Zakkit hates rocks."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
-    {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
+    {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, the worst first."},
     {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
@@ -8524,7 +8551,7 @@ const TUTORIAL_CONVOS={
     {key:'mary',   text:"Some wizards cast enchantments. Buffs — like Regen, War Paint or a skeleton servant — sit on the Protection wheel and last a while."},
     {key:'mordant',text:"Curses — like Silence, Plague or Agony — sit on the Dispel wheel. As well as their hex, every curse wears at the target's ward a little, like a weak dispel."},
     {key:'ponder', text:"Most buffs have no timer: they last until a Dispel strips them. The ones that pay out every round, and the short bursts, show their rounds left. A Dispel against a rival with no ward strips their newest buff — or all of them, from the outer ring. If they have a ward, the dispel hits the ward instead. Wards protect your buffs!"},
-    {key:'mary',   text:"Cursed? Open the Dispel wheel and tap Cleanse Self. It removes your newest curse for very little mana — just one, so mind the order they land in."},
+    {key:'mary',   text:"Cursed? Open the Dispel wheel and pick a Cleanse Self button: 1 curse, 2 curses or all of them, at that ring's Dispel cost. It always clears the worst first."},
     {key:'sylvara',text:"Locks — like my Entangle or Skadi's Ice Lance — stop you choosing one category next round. They can't land two rounds in a row, so you'll always get a turn free."},
   ],
   alphabet:[
@@ -8806,7 +8833,12 @@ window.addEventListener('DOMContentLoaded', ()=>{
     const cat=wheelCat;
     closeElemWheel();
     if(cat==='protect') castElemental('protect',gs[gs.turnPlayer].shieldType,1,true);   // Seal Ward
-    else castElemental('dispel','arcane',1,true);
+  });
+  document.getElementById('wheel-cleanse').addEventListener('click',e=>{
+    const b=e.target.closest('.wheel-cleanse-btn');
+    if(!b||b.disabled) return;
+    closeElemWheel();
+    castElemental('dispel','arcane',+b.dataset.tier,true);   // Cleanse Self at that ring
   });
   document.querySelectorAll('.diff-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
