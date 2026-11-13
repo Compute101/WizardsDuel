@@ -1018,6 +1018,12 @@ body {
 #wheel-rule { font-size: 10px; line-height: 1.5; color: rgba(255,255,255,0.5); max-width: 320px; }
 #wheel-self { margin-top: 4px; }
 #wheel-self:disabled { opacity: .45; cursor: default; }
+/* Cleanse Self: one button per ring (1 curse / 2 curses / all) */
+#wheel-cleanse { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 4px; }
+.wheel-cleanse-label { flex-basis: 100%; text-align: center; font-size: 11px; color: #ffaaff; letter-spacing: 1px; }
+.wheel-cleanse-btn { flex: 1; min-width: 0; padding: 6px 4px; font-size: 11px; line-height: 1.3; }
+.wheel-cleanse-btn span { display: block; font-size: 10px; opacity: .75; }
+.wheel-cleanse-btn:disabled { opacity: .45; cursor: default; }
 #wheel-sig { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 6px; }
 .wsig-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #f0cc6a; margin-top: 4px; }
 .wsig-row {
