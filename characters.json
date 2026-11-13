@@ -840,7 +840,7 @@
       "You threw everything you had at me. I barely felt it.",
       "The mountain endures all things. So too shall I."
     ],
-    "hp": 110,
+    "hp": 105,
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"

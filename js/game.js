@@ -3463,6 +3463,7 @@ const ELEM_LIGHTNING_BURN=[1,2,3]; // mana burned by Lightning per tier, ward or
 const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's next pick
 const ELEM_DISPEL_ALL_TIER=3;
 const ELEM_CURSE_DISPEL=0.5;
+let ELEM_DISPEL_MATCH=1.5;      // a dispel in the ward's own element hits it this many times harder
 // Share of a strike's damage a ward loses: match = a strike in the ward's own element, off = any other element
 const ELEM_WARD_TAKE={match:1.5, off:0.75, crush:1};   // wards resist other elements; their own unravels them; Physical strikes crush through the resistance
 
@@ -3477,7 +3478,7 @@ const ELEMENTS=[
 const ELEM_CATS={
   //       cost / power per tier (inner, middle, outer ring); stage = resolution order
   protect:{name:'Protection', verb:'Ward',   icon:'🛡', cost:[5,8,12], power:[20,35,55], stage:1, unit:'ward HP'},
-  dispel: {name:'Dispel',     verb:'Dispel', icon:'✦',  cost:[1,2,4],  power:[15,30,50], stage:2, unit:'vs ward'},
+  dispel: {name:'Dispel',     verb:'Dispel', icon:'✦',  cost:[1,2,4],  power:[15,24,40], stage:2, unit:'vs ward'},
   damage: {name:'Damage',     verb:'Strike', icon:'⚔️', cost:[3,5,8],  power:[8,15,26],  stage:3, unit:'dmg'},
 };
 const ELEM_TIER_NAMES=['Lesser ','','Greater '];
@@ -3758,7 +3759,7 @@ function openElemWheel(cat){
       (WARD_RULES.layers>1?' · a new element goes on over it, up to '+WARD_RULES.layers+' layers':'')+
       (WARD_RULES.seals?' · 🔒 a sealed ward doesn\'t wear, and a dispel only breaks the seal'+
         (WARD_RULES.sealBlocks?', even a Greater one — it takes a second dispel for the ward':WARD_RULES.sealSoak?' (it soaks '+WARD_RULES.sealSoak+' power: weaker dispels bounce off, a Greater one goes on with the rest)':' (a Greater one goes on through)'):''),
-    dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
+    dispel:'Breaks wards (half again vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
   // The rules, ring costs and signature spell text live behind the ⓘ button (wheel-help), keeping the wheel uncluttered
   document.getElementById('wheel-help-title').textContent=c.icon+' '+c.name;
@@ -4398,8 +4399,8 @@ function elemWardDispel(tgt,elem,power,tier){
       power-=soak;
       if(power<=0) return;
     }
-    const match=ts.shieldType===elem, mult=match?2:1;
-    const dmg=power*mult, had=ts.shieldHp;
+    const match=ts.shieldType===elem, mult=match?ELEM_DISPEL_MATCH:1;
+    const dmg=Math.round(power*mult), had=ts.shieldHp;
     ts.shieldHp-=dmg;
     addFloat(tx,bH*.3,'✦ −'+Math.min(dmg,had)+' ward'+(match?' (matched!)':''),'#ffaaff',14);
     if(ts.shieldHp>0){ VFX.wardUnravel(tx,wardCol(ts)); return; }
@@ -8554,7 +8555,7 @@ const TUTORIAL_CONVOS={
   wheel:[
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
     {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too. With more than one rival, an outer-ring strike hits every one of them."},
-    {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
+    {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element hits it half again as hard. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
     {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements. Zakkit hates rocks."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, the worst first."},
