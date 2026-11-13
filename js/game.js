@@ -26,7 +26,7 @@ const CHAR_FLAVOUR={
   gnash:'Blood and bone. No magic — just fury.',
   cinder:'Roll the dice. Fan the flames. Win big or burn together.',
   skadi:'Glacial patience. Frozen fury. Every strike against her has a price.',
-  zacharius:'Store the storm. Spend it wisely. Let them come to you.',
+  zacharius:'Hoard the warpstorm, then unleash it all at once. Let the fool-things come to you, yes-yes.',
   mary:'Faith is the only shield that never breaks.',
   mordant:'The hex is already written. You just haven\'t felt it yet.',
   ponder:"Young but fierce — vanish from sight and plunder your foe's magic.",
@@ -2897,7 +2897,7 @@ const SPELL_VFX={
         vx:Math.cos(a)*0.6+(_rng()-.5)*0.8,vy:Math.sin(a)*0.6-1-_rng()*2,sz:1.5+_rng()*2.5,life:1,dec:.012,noGrav:true});
     }
     spawnParts(c.tx,c.ty,'#88ddff',12); spawnParts(c.tx,c.ty,'#aaeeff',6); anim(c.who,'cast',800); }},
-  // Zacharius
+  // Zakkit (key zacharius)
   galvanize:{self:c=>{ vfxPhaseIn(c.cx,c.cy,['#88ffcc','#aaff44','#aaff44','#ffffff'],18); anim(c.who,'shield',700); }},
   chainlightning:{hit:c=>{ vfxRing(c.tx,c.ty,['#ffffff','#aaff44'],14,{r:.05,ry:.03,spd:1.5,sz:2,dec:.022}); spawnBeam(c.cx,c.cy,c.tx,c.ty,c.col); spawnParts(c.tx,c.ty,c.col,18); flash(c.col); vfxStrikeAnim(c.who,c.tgt); }},
   conductivity:{hit:c=>{ vfxDrift(c.tx,c.ty,['#88ffcc','#aaff44'],14,{w:.06,lift:-1.2}); spawnParts(c.tx,c.ty,c.col,10); anim(c.who,'cast',800); }},
@@ -4534,7 +4534,7 @@ const AI_STYLES={
   grudge:     {weak:0.5, finish:2,   grudge:2,   pileOn:0.7, memory:0.6},  // Durin
   chivalrous: {weak:-1,  finish:0.5, grudge:2,   pileOn:0.7},              // Eldrin, Mary
   chaotic:    {weak:0,   finish:1,   grudge:1,   pileOn:0},                // Cinder, Fizzwick
-  calculating:{weak:0.5, finish:2.5, grudge:1.5, pileOn:0.7, rich:1},      // Thessaly, Zacharius
+  calculating:{weak:0.5, finish:2.5, grudge:1.5, pileOn:0.7, rich:1},      // Thessaly, Zakkit
 };
 const FFA_FINISH_AT=15, RIVAL_PULL=2;
 function aiStyleOf(who){ return AI_STYLES[seatCfg(who).aiStyle]||AI_STYLES.default; }
@@ -8195,7 +8195,7 @@ const CHAR_COLORS_TUT={
 };
 const CHAR_NAMES_TUT={
   eldrin:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
-  gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zacharius',
+  gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zacharius:'Zakkit',
   mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin',
   weizan:'Weizan',gretch:'Gretch',valdris:'Valdris',mirel:'Mirel',thessaly:'Thessaly',
   korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara',daveron:'Daveron',frederick:'Frederick'
@@ -8243,7 +8243,7 @@ const TUTORIAL_CONVOS={
     {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Physical and Dark — and three rings."},
     {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too. With more than one rival, an outer-ring strike hits every one of them."},
     {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
-    {key:'zacharius',text:"Every element carries an extra effect. Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements."},
+    {key:'zacharius',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements. Zakkit hates rocks."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, one at a time."},
     {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Raising a new one replaces the old one."},
@@ -8319,10 +8319,10 @@ const TUTORIAL_CONVOS={
     {key:'skadi',text:"Blizzard is my Ice curse. Damage every round and a steady drain on their mana. By the end they have no mana and no hope."},
   ],
   zacharius:[
-    {key:'zacharius',text:"I had already won before you cast your first spell. You simply hadn't realised it yet."},
-    {key:'zacharius',text:"Galvanize, in the Lightning sector of my Protection wheel, charges my next Lightning strike with far more power."},
-    {key:'zacharius',text:"Chain Lightning is my Lightning strike. It burns mana like all lightning, and it may arc for extra damage."},
-    {key:'zacharius',text:"Conductivity is my Lightning curse — my rival takes extra damage from every strike for a few rounds. Then the mathematics are no longer in your favour."},
+    {key:'zacharius',text:"Zakkit won before you cast-cast your first spell, yes-yes! You just did not know it."},
+    {key:'zacharius',text:"Warp-Charge, in the Lightning sector of my Protection wheel, fills my next Lightning strike with warp-power. Much-much more power!"},
+    {key:'zacharius',text:"Warp Lightning is my Lightning strike. It burns mana like all lightning, and it may leap-jump for extra damage. Green and crackly, yes!"},
+    {key:'zacharius',text:"Warpstone Curse is my Lightning curse — my rival takes extra damage from every strike for a few rounds. Then Zakkit's sums are very, very favourable. Yes-yes."},
   ],
   mary:[
     {key:'mary',text:"I am a healer first, a combatant second. I endure and outlast through faith and restoration."},

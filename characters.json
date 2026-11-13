@@ -511,15 +511,18 @@
     ]
   },
   "zacharius": {
-    "name": "ZACHARIUS",
-    "title": "The Conductor",
+    "name": "ZAKKIT",
+    "title": "The Warpstorm",
     "sprite": "sprites/zacharius.png",
     "col": "#aaff44",
     "aiStyle": "calculating",
+    "rivals": {
+      "durin": "Stone-beard! Warp-fire melts dwarf-rock!"
+    },
     "taunts": [
-      "I had already won before you cast your first spell. You simply hadn't realised it yet.",
-      "Every joule of energy you wasted — I stored it, shaped it, and returned it. Against you.",
-      "The storm obeys me. Did you truly believe you wouldn't?"
+      "Zakkit won before you cast-cast your first spell, yes-yes! You just did not know it, fool-thing.",
+      "Every spark you waste, Zakkit hoards it, twists it, gives it back. Green-burning, yes!",
+      "The warpstorm obeys Zakkit! Squeal-squeal, man-thing, squeal!"
     ],
     "hp": 92,
     "dmgMult": 1.1,
@@ -529,7 +532,7 @@
     "spells": [
       {
         "id": "galvanize",
-        "name": "Galvanize",
+        "name": "Warp-Charge",
         "icon": "🔋",
         "el": {
           "cat": "protect",
@@ -548,7 +551,7 @@
       },
       {
         "id": "chainlightning",
-        "name": "Chain Lightning",
+        "name": "Warp Lightning",
         "icon": "🌩️",
         "el": {
           "cat": "damage",
@@ -566,8 +569,8 @@
       },
       {
         "id": "conductivity",
-        "name": "Conductivity",
-        "icon": "💡",
+        "name": "Warpstone Curse",
+        "icon": "🟢",
         "el": {
           "cat": "dispel",
           "kind": "curse",
@@ -815,7 +818,8 @@
     "aiStyle": "grudge",
     "rivals": {
       "gretch": "You're in my book of grudges, troggoth.",
-      "fizzwick": "Another goblin for the grudge list!"
+      "fizzwick": "Another goblin for the grudge list!",
+      "zacharius": "Ratmen! Fetch the big grudge book!"
     },
     "taunts": [
       "Stone does not bend. Stone does not break. Neither does Durin.",

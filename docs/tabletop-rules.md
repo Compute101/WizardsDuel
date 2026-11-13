@@ -213,14 +213,14 @@ Cleanse costs **1 mana per level**, and you pot the usual winks for the level:
 | **Frost Armor** | Protection | Ice | Normal | 3 | Until dispelled: every hit on you deals 1 less (min 1), and strikers take 1. |
 | **Blizzard** | Dispel | Ice | Normal | 3 | Until cleansed: at every round end the foe takes 1 and loses 1 mana. |
 
-### ZACHARIUS — The Conductor
+### ZAKKIT — The Warpstorm
 **HP 19** · Can't cast: Physical
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Galvanize** | Protection | Lightning | Lesser | 2 | Your next Lightning strike deals +4. |
-| **Chain Lightning** | Damage | Lightning | Normal | 4 | Lightning strike of 4. Roll a die: on 3+ it arcs for 2 more. |
-| **Conductivity** | Dispel | Lightning | Normal | 2 | Until cleansed: every strike on the foe deals +1. |
+| **Warp-Charge** | Protection | Lightning | Lesser | 2 | Your next Lightning strike deals +4. |
+| **Warp Lightning** | Damage | Lightning | Normal | 4 | Lightning strike of 4. Roll a die: on 3+ it arcs for 2 more. |
+| **Warpstone Curse** | Dispel | Lightning | Normal | 2 | Until cleansed: every strike on the foe deals +1. |
 
 ### MARY — The Devoted
 **HP 17** (Beginner rules: **18**) · Can't cast: Dark, Fire
