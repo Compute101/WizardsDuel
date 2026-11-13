@@ -3741,7 +3741,7 @@ function openElemWheel(cat){
   cl.style.display=cat==='dispel'?'':'none';
   if(cat==='dispel'){
     const n=cursesOf(st).length;
-    cl.innerHTML='<div class="wheel-cleanse-label">✦ Cleanse Self'+(n?' · '+n+' curse'+(n>1?'s':'')+' on you':' · no curses on you')+'</div>';
+    cl.innerHTML='<div class="wheel-cleanse-label">✦ Cleanse Self'+(n?' ('+n+' curse'+(n>1?'s':'')+')':'')+'</div>';
     ['1 curse','2 curses','All curses'].forEach((lbl,i)=>{
       const tier=i+1, cost=elemCost(who,'dispel',tier), b=document.createElement('button');
       b.className='btn wheel-cleanse-btn'; b.dataset.tier=tier;
@@ -3760,7 +3760,9 @@ function openElemWheel(cat){
         (WARD_RULES.sealBlocks?', even a Greater one — it takes a second dispel for the ward':WARD_RULES.sealSoak?' (it soaks '+WARD_RULES.sealSoak+' power: weaker dispels bounce off, a Greater one goes on with the rest)':' (a Greater one goes on through)'):''),
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
-  document.getElementById('wheel-rule').textContent=ruleText;
+  // The rules, ring costs and signature spell text live behind the ⓘ button (wheel-help), keeping the wheel uncluttered
+  document.getElementById('wheel-help-title').textContent=c.icon+' '+c.name;
+  document.getElementById('wheel-rule').innerHTML='<ul>'+ruleText.split(' · ').map(r=>'<li>'+r[0].toUpperCase()+r.slice(1)+'</li>').join('')+'</ul>';
   document.getElementById('wheel-legend').innerHTML=[0,1,2].map(t=>{
     const cost=elemCost(who,cat,t+1), off=cost>st.mana;
     return `<div class="wl-row${off?' off':''}"><span>${['Inner','Middle','Outer'][t]}</span><span>${cost} Mana</span><span>${c.power[t]} ${c.unit}</span></div>`;
@@ -3779,7 +3781,10 @@ function openElemWheel(cat){
   buildWheelSvg(who,cat);
   document.getElementById('wheel-overlay').classList.add('active');
 }
+function openWheelHelp(){ document.getElementById('wheel-help').classList.add('active'); }
+function closeWheelHelp(){ document.getElementById('wheel-help').classList.remove('active'); }
 function closeElemWheel(){
+  closeWheelHelp();
   document.getElementById('wheel-overlay').classList.remove('active');
   wheelCat=null;
 }
@@ -3797,7 +3802,8 @@ function buildWheelSvg(who,cat){
       const off=!sectorOk(who,cat,el.id,t+1);
       const d=`M${pt(r0,a0)} L${pt(r1,a0)} A${r1} ${r1} 0 0 1 ${pt(r1,a1)} L${pt(r0,a1)} A${r0} ${r0} 0 0 0 ${pt(r0,a0)} Z`;
       html+=`<path class="wseg${off?' off':''}${sp?' sig':''}" d="${d}" data-elem="${el.id}" data-tier="${t+1}" `+
-        `style="fill:${off?'#2a2a33':el.col};fill-opacity:${off?0.5:[0.22,0.42,0.68][t]}"/>`;
+        `style="fill:${off?'#2a2a33':el.col};fill-opacity:${off?0.5:[0.22,0.42,0.68][t]}">`+
+        `<title>${ELEM_TIER_NAMES[t]}${sp?sigName(sp):el.name} · ${sp?sigCost(who,sp,t+1):elemCost(who,cat,t+1)} Mana</title></path>`;
     });
     const label=banned?'⛔ '+el.name:sp?'★'+sigName(sp).split(' ')[0]:el.name;
     html+=`<text class="wicon${banned?' wicon-banned':''}" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${sp?sigIcon(sp):el.icon}</text>`;
@@ -8837,6 +8843,9 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
   document.getElementById('wheel-svg').addEventListener('click',onWheelTap);
   document.getElementById('wheel-cancel').addEventListener('click',closeElemWheel);
+  document.getElementById('wheel-info').addEventListener('click',openWheelHelp);
+  document.getElementById('wheel-help-close').addEventListener('click',closeWheelHelp);
+  document.getElementById('wheel-help').addEventListener('click',e=>{ if(e.target.id==='wheel-help') closeWheelHelp(); });
   document.getElementById('wheel-self').addEventListener('click',e=>{
     if(e.currentTarget.disabled) return;
     const cat=wheelCat;
