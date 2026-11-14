@@ -768,3 +768,14 @@ vs stock / his own fortress vs stock): 8 taper 2 45.4 / 43.3 / 53.8 · 7 flat 53
 (his fortress gain about +8, like the others). Adopted: Agony 8 → 6 → 4 → 2, Mordant HP 47 → 52.
 Daveron's Curse of the Years fell to 42% meeting wards, so it has `bypassWard` (no ward stops the
 years; it was already inescapable). Balance run (80 games a matchup): 45.4–53.0%, about 17 rounds.
+
+### Magic hits wards
+
+Every curse and tick now meets skeletons and wards first: Curse of the Years and Caustic Bomb's poison
+lost `bypassWard` (the engine switch stays, unused). Frederick's `blast` and Infernal Mantle `pierce` still
+go around wards: those are strike mechanics and his identity. Daveron fell to 42.2% (his inescapable
+curse now meets wards), so his graveguard got tougher: middle-ring soak 10 → 11 (60 games a matchup:
+11 → 52.2%, 12 → 56.7%, 14 → 67.9%, 18 → 85.8%; three undispellable elite skeletons compound fast, so
+move this a point at a time). Valdris and Gretch needed nothing; Fizzwick held at about 51% without the
+seeping poison. Ponder 55 → 57 and Malachar 48 → 50 HP (bottom of the roster). Result (80 games a
+matchup): 46.0–55.3%, about 17 rounds.

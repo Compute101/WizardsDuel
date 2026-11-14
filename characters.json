@@ -88,7 +88,7 @@
       "I bled for that victory. Can you match my hunger?",
       "Relentless. That's the only lesson worth learning. Come back."
     ],
-    "hp": 48,
+    "hp": 50,
     "dmgMult": 1.1,
     "forbidden": [
       "arcane"
@@ -759,7 +759,7 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 55,
+    "hp": 57,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -1096,7 +1096,7 @@
             "raise": 3,
             "rounds": null
           },
-          "desc": "Raise 3 skeletons (max 5): each soaks 3 damage in front of your ward and strikes for 3 a round; dispels can't touch them"
+          "desc": "Raise 3 skeletons (max 5): each soaks 11 damage in front of your ward and strikes for 3 a round; dispels can't touch them"
         }
       },
       {
@@ -1383,11 +1383,10 @@
           "cost": 4,
           "power": 8,
           "tier": 2,
-          "desc": "8 + poison 5 a round × 3 — if it reaches HP, the poison seeps past wards",
+          "desc": "8 + poison 5 a round × 3 (if it reaches HP)",
           "dot": {
             "dmg": 5,
-            "rounds": 3,
-            "bypassWard": true
+            "rounds": 3
           }
         }
       },
@@ -1541,14 +1540,14 @@
             "kind": "minion",
             "elite": true,
             "look": 2,
-            "soak": 10,
+            "soak": 11,
             "dmg": 4,
             "elem": "dark",
             "max": 3,
             "raise": 1,
             "rounds": null
           },
-          "desc": "Raise 1 armoured graveguard (max 3): each soaks 10 damage in front of your ward and strikes for 4 a round; dispels can't touch them"
+          "desc": "Raise 1 armoured graveguard (max 3): each soaks 18 damage in front of your ward and strikes for 4 a round; dispels can't touch them"
         }
       },
       {
@@ -1585,10 +1584,9 @@
             "type": "agony",
             "dmg": 4,
             "rounds": 4,
-            "inescapable": true,
-            "bypassWard": true
+            "inescapable": true
           },
-          "desc": "4 rounds: foe takes 4 a round — no ward stops the years, and even Meditate doesn't escape it"
+          "desc": "4 rounds: foe takes 4 a round (a ward takes it first) — even Meditate doesn't escape it"
         }
       }
     ]
