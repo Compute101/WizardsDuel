@@ -9,6 +9,8 @@ const BUFF_TILE_GLYPHS={
   flameshield: [0,4,7,8],   // ϟ Ω ✸ ⊕ — bolt, arch, burst, solar ward
   frostarmor:  [10,11,2,6], // θ Φ ∇ ☽ — crystal, axis, cold descent, frost moon
   stoneskin:   [1,2,3,8],   // Δ ∇ Ψ ⊕ — stone layers, fork, binding
+  airward:     [1,0,7,11],  // Δ ϟ ✸ Φ — rising, gust, burst, axis
+  waterward:   [2,5,4,11],  // ∇ ∞ Ω Φ — descent, flow, depths, tide
   warpaint:    [0,3,9,7],   // ϟ Ψ ⊗ ✸ — bolt, trident, X-slash, burst
 };
 
@@ -844,7 +846,7 @@ function auraFade(who,key,on){
 // so losing HP removes the last orbiter without the others jumping. Objects on the far side of
 // a ring are drawn behind the sprite ('back' layer), the near side in front ('front' layer).
 const WARD_ORBIT_MAX=9, WARD_ORBIT_TILTS=[0,-1.05,1.05];
-const WARD_ORBIT_SPEED={earth:1/1500, ice:1/1150, dark:1/1300, fire:1/1000, lightning:1/330, arcane:1/1250};
+const WARD_ORBIT_SPEED={air:1/600, water:1/1400, earth:1/1500, ice:1/1150, dark:1/1300, fire:1/1000, lightning:1/330, arcane:1/1250};
 const DARK_ORBIT_RUNES=['☽','⊗','∇','Ω'];
 // Cheap deterministic noise (keeps the replay RNG untouched)
 function orbNoise(n){ const s=Math.sin(n*12.9898)*43758.5453; return s-Math.floor(s); }
@@ -977,6 +979,20 @@ function drawWardOrbiters(x,cy,sz,state,layer,fade,t){
         bx.lineTo(p.x+Math.cos(fa)*fr,p.y+Math.sin(fa)*fr); bx.stroke();
       }
       bx.shadowBlur=0;
+    } else if(elem==='air'){
+      // A wisp of wind: a short pale arc trailing along its path
+      const r=sz*.07*depth;
+      bx.strokeStyle='rgba(220,255,248,.85)'; bx.lineWidth=1.6*depth; bx.lineCap='round';
+      bx.beginPath(); bx.arc(p.x,p.y,r,ang-dir*.4,ang+dir*1.9,dir<0); bx.stroke();
+      bx.fillStyle='rgba(200,244,236,.6)'; bx.beginPath(); bx.arc(p.x,p.y,1.3*depth,0,6.28); bx.fill();
+    } else if(elem==='water'){
+      // A droplet, pointed the way it travels
+      const r=sz*.045*depth;
+      bx.save(); bx.translate(p.x,p.y); bx.rotate(ang+Math.PI/2);
+      const g=bx.createRadialGradient(-r*.3,r*.2,r*.1,0,r*.3,r*1.3);
+      g.addColorStop(0,'#e0f0ff'); g.addColorStop(.5,'#5aa8ff'); g.addColorStop(1,'#1d5fb8');
+      bx.fillStyle=g; bx.beginPath(); bx.moveTo(0,-r*1.5); bx.quadraticCurveTo(r*1.1,r*.2,0,r*1.05); bx.quadraticCurveTo(-r*1.1,r*.2,0,-r*1.5); bx.fill();
+      bx.restore();
     } else if(elem==='arcane'){
       // Glowing blue sphere, pulsing
       const pulse=.8+.3*Math.sin(t/240+i*1.6), r=sz*.05*depth*pulse;
@@ -1820,7 +1836,7 @@ const WIZ_VISUAL_BY_ID={timedrain:'timeDrain', counter:'counter', candle:'candle
   galvanize:'charge', conductivity:'conductivity', agony:'agony', silence:'silence', corruption:'corruption',
   vanish:'invisible', blink:'blink', infernalmantle:'infernalGate', plague:'plague', maggotcloud:'maggotCloud', bonetotem:'boneTotem',
   enthral:'enthralled', arcaneweave:'arcaneWeave', curseyears:'yearsCurse', dansemacabre:'danse', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen', frostbite:'frozen', dread:'dread',
-  warpaint:'resist', ironpatience:'resist', heal:'regen'};
+  warpaint:'resist', ironpatience:'resist', heal:'regen', drenched:'drenched'};
 function wizVisuals(st){
   const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra};
   st.effects.forEach(e=>{
@@ -1879,7 +1895,7 @@ function battleLoop(ts){
       bx.globalAlpha=1;
     }
   });
-  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickDarkRituals(); tickWardUnravels(); tickSiphons(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickBoulders(); tickStorms(); tickCounterArcs(); tickParts(); tickFloats();
+  tickProjs(); tickBeams(); tickManaBurnFire(); tickShadowCircles(); tickDarkRituals(); tickWardUnravels(); tickSiphons(); tickFireballs(); tickExplosions(); tickIceCrystals(); tickIceShards(); tickBoulders(); tickStorms(); tickElemFx(); tickCounterArcs(); tickParts(); tickFloats();
   if(!gs.myTurn&&!gs.busy&&!passPhone()){
     bx.fillStyle=`rgba(${hexToRgb(p2Cfg.col)},0.7)`; bx.font='bold 10px Cinzel,serif';
     bx.textAlign='center'; bx.fillText((PLAYERS.length>2?'RIVALS ARE':p2Cfg.name+' IS')+' CASTING…',bW*.5,bH*.08);
@@ -2384,6 +2400,94 @@ function tickIceShards(){
     bx.strokeStyle='#ffffff'; bx.lineWidth=Math.max(1,p.L*.05); bx.stroke();
     bx.restore();
   });
+}
+
+// ── AIR AND WATER STRIKES (Phase 2), drawn by tickElemFx ───
+// Air: a cyclone spins up around the target, tightens, and the damage lands at its peak; then it blows apart.
+// Water: a wall of water rises beside the target, curls over and crashes down on them in a splash.
+// Both scale with the damage (elemFxScale). gs.elemFx holds them; a Drenched wizard also drips water here.
+const CYCLONE_FORM_MS=900, CYCLONE_FADE_MS=450, WAVE_RISE_MS=650, WAVE_CURL_MS=300, WAVE_FADE_MS=500;
+function elemFxScale(dmg){ return .75+Math.min(.6,Math.max(1,dmg)/45); }
+function spawnCyclone(who,tgt,dmg,cb){
+  if(simMode){ if(cb) cb(); return; }
+  gs.elemFx=gs.elemFx||[];
+  const sz=wizSize(tgt), s=elemFxScale(dmg);
+  anim(who,'cast',CYCLONE_FORM_MS);
+  gs.elemFx.push({type:'cyclone',x:seatX(tgt),feet:wizFeetY(),h:sz*1.05*s,w:sz*.42*s,s,start:Date.now(),cb,fired:false,
+    spin:Math.random()<.5?-1:1,
+    streaks:Array.from({length:Math.round(10+s*6)},(_,i)=>({u:Math.random(),a:Math.random()*6.28,len:.6+Math.random()*1.1})),
+    motes:Array.from({length:Math.round(14+s*8)},()=>({u:Math.random(),a:Math.random()*6.28,r:.3+Math.random()*.9}))});
+}
+function spawnWave(who,tgt,dmg,cb){
+  if(simMode){ if(cb) cb(); return; }
+  gs.elemFx=gs.elemFx||[];
+  const sz=wizSize(tgt), s=elemFxScale(dmg), dir=seatX(tgt)>seatX(who)?1:-1;   // crashes away from the caster
+  anim(who,'cast',WAVE_RISE_MS+WAVE_CURL_MS);
+  gs.elemFx.push({type:'wave',x:seatX(tgt),feet:wizFeetY(),H:sz*.85*s,W:sz*.62*s,s,dir,start:Date.now(),cb,fired:false});
+}
+function tickElemFx(){
+  const now=Date.now();
+  gs.elemFx=(gs.elemFx||[]).filter(f=>!f.fired||now-f.start<(f.type==='cyclone'?CYCLONE_FORM_MS+CYCLONE_FADE_MS:WAVE_RISE_MS+WAVE_CURL_MS+WAVE_FADE_MS));
+  gs.elemFx.forEach(f=>{
+    const age=now-f.start;
+    bx.save();
+    if(f.type==='cyclone'){
+      const form=Math.min(1,age/CYCLONE_FORM_MS), fade=f.fired?Math.max(0,1-(age-CYCLONE_FORM_MS)/CYCLONE_FADE_MS):1;
+      const burst=f.fired?(age-CYCLONE_FORM_MS)/CYCLONE_FADE_MS:0;
+      const spinA=spinAngle(now,Math.max(180,520-form*300))*f.spin;
+      // funnel: wide at the top, tight at the feet; it tightens as it forms
+      f.streaks.forEach(k=>{
+        const yy=f.feet-k.u*f.h, rw=f.w*(.35+k.u*.9)*(1.3-form*.3)*(1+burst*1.6);
+        const a0=k.a+spinA*(1+k.u*.4);
+        bx.globalAlpha=.55*fade*(.4+.6*form); bx.strokeStyle=k.u>.5?'#e8fffa':'#9fe8dc'; bx.lineWidth=1.2+f.s*.8;
+        bx.beginPath();
+        for(let j=0;j<=10;j++){ const a=a0+j/10*k.len; const px=f.x+Math.cos(a)*rw, py=yy+Math.sin(a)*rw*.22; j?bx.lineTo(px,py):bx.moveTo(px,py); }
+        bx.stroke();
+      });
+      f.motes.forEach(m=>{
+        const a=m.a+spinA*1.6, yy=f.feet-m.u*f.h*.9, rw=f.w*m.r*(1+burst*2);
+        bx.globalAlpha=.7*fade; bx.fillStyle='#c8f4ec';
+        bx.beginPath(); bx.arc(f.x+Math.cos(a)*rw,yy+Math.sin(a)*rw*.22,1.4+f.s,0,6.28); bx.fill();
+      });
+      if(!f.fired&&age>=CYCLONE_FORM_MS){ f.fired=true; spawnParts(f.x,f.feet-f.h*.45,'#e8fffa',Math.round(10+f.s*8)); if(f.cb) f.cb(); }
+    } else if(f.type==='wave'){
+      // height rises, then the crest curls over the target, then it all collapses in spray
+      const rise=Math.min(1,age/WAVE_RISE_MS), curl=Math.max(0,Math.min(1,(age-WAVE_RISE_MS)/WAVE_CURL_MS));
+      const fall=f.fired?Math.min(1,(age-WAVE_RISE_MS-WAVE_CURL_MS)/WAVE_FADE_MS):0;
+      const h=f.H*rise*(1-fall*.9), x0=f.x-f.dir*f.W*.85, x1=f.x+f.dir*f.W*.35;   // starts behind (caster side) and reaches over them
+      const crestX=x0+(x1-x0)*(.35+.65*curl), crestY=f.feet-h;
+      const g=bx.createLinearGradient(0,crestY,0,f.feet);
+      g.addColorStop(0,'rgba(150,210,255,.62)'); g.addColorStop(.45,'rgba(50,130,235,.42)'); g.addColorStop(1,'rgba(20,70,170,.3)');
+      bx.globalAlpha=1-fall; bx.fillStyle=g;
+      bx.beginPath(); bx.moveTo(x0-f.dir*f.W*.2,f.feet);
+      bx.quadraticCurveTo(x0,crestY+h*.25,crestX-f.dir*f.W*.15,crestY);
+      bx.quadraticCurveTo(crestX+f.dir*f.W*.25,crestY+h*.08*curl,crestX+f.dir*f.W*.2*(1+curl),crestY+h*.35*curl);   // the curling lip
+      bx.quadraticCurveTo(crestX,crestY+h*.5,x1,f.feet);
+      bx.closePath(); bx.fill();
+      // swell lines inside the water, following its curve
+      bx.save(); bx.clip();
+      bx.strokeStyle='rgba(210,235,255,.35)'; bx.lineWidth=1.4;
+      for(let b=1;b<=4;b++){ const yb=crestY+h*b/5; bx.beginPath();
+        for(let j=0;j<=10;j++){ const u=j/10, px=x0+(x1-x0)*u*(1+curl*.3)-f.dir*f.W*.2, py=yb+Math.sin(u*7+age/120+b)*3*f.s; j?bx.lineTo(px,py):bx.moveTo(px,py); }
+        bx.stroke(); }
+      bx.restore();
+      // foam along the crest
+      bx.strokeStyle='rgba(235,248,255,.9)'; bx.lineWidth=2+f.s*1.5; bx.lineCap='round'; bx.beginPath();
+      for(let j=0;j<=8;j++){ const u=j/8, px=crestX-f.dir*f.W*.15+u*f.dir*f.W*.35*(1+curl), py=crestY+Math.sin(u*9+age/90)*2+u*h*.3*curl; j?bx.lineTo(px,py):bx.moveTo(px,py); }
+      bx.stroke();
+      if(!f.fired&&age>=WAVE_RISE_MS+WAVE_CURL_MS){
+        f.fired=true;
+        for(let j=0;j<Math.round(18+f.s*14);j++) gs.parts.push({x:f.x+(Math.random()-.5)*f.W,y:f.feet-f.H*.4*Math.random(),col:Math.random()<.5?'#5aa8ff':'#e0f0ff',
+          vx:(Math.random()-.5)*5,vy:-2-Math.random()*4,sz:2+Math.random()*3,life:1,dec:.02+Math.random()*.02});
+        if(f.s>1.1) gs.quake={start:Date.now(),ms:260,amp:3};
+        if(f.cb) f.cb();
+      }
+    }
+    bx.restore();
+  });
+  // Drenched wizards drip
+  if(!simMode) PLAYERS.forEach(w=>{ const st=gs[w]; if(st&&!st.out&&effectsOf(st,'drenched').length&&Math.random()<.18)
+    gs.parts.push({x:seatX(w)+(Math.random()-.5)*wizSize(w)*.4,y:wizMidY(w)-wizSize(w)*.2,col:'#5aa8ff',vx:(Math.random()-.5)*.3,vy:1+Math.random()*1.5,sz:1.6+Math.random()*1.6,life:1,dec:.025}); });
 }
 
 // Lightning Strike (plain Lightning damage off the wheel), drawn by tickStorms: no projectile.
@@ -2931,6 +3035,8 @@ const ELEM_IMPACT_VFX={
   arcane:   (c,n)=>{ spawnParts(c.tx,c.ty,'#4499ff',n); spawnParts(c.tx,c.ty,'#ddeeff',6); flash('#4499ff'); },
   earth:    (c,n,dmg)=>{ spawnBoulderImpact(c.tx,c.ty,dmg!=null?dmg:(n>30?30:15)); spawnParts(c.tx,c.ty,'#d0a060',Math.round(n*.5)); flash('#d0a060'); },
   dark:     (c,n)=>{ spawnParts(c.tx,c.ty,'#cc44ff',n); flash('#cc44ff'); },   // the ritual circle (spawnDarkRitual) already burned out
+  air:      (c,n)=>{ spawnParts(c.tx,c.ty,'#e8fffa',n); spawnParts(c.tx,c.ty,'#9fe8dc',Math.round(n*.5)); flash('#c8f4ec'); },
+  water:    (c,n)=>{ spawnParts(c.tx,c.ty,'#5aa8ff',n); spawnParts(c.tx,c.ty,'#e0f0ff',Math.round(n*.5)); flash('#3a8cff'); },
 };
 
 // Damage-over-time ticks, by the effect that deals them (fallback: by element)
@@ -3406,8 +3512,14 @@ function endSimRound(){
       // A sealed layer doesn't wear
       // (innerWear false: only the outer layer wears; the ones beneath wait untouched)
       // Bedrock (a holdWear signature ward) doesn't wear either
-      if(WARD_RULES.innerWear!==false) st.wardInner=(st.wardInner||[]).filter(l=>l.sealed||sigHoldsWear(l.sig)||(l.hp-=ELEM_WARD_WEAR)>0);
-      if(!st.wardSealed&&!sigHoldsWear(st.wardSig)){ st.shieldHp-=ELEM_WARD_WEAR; if(st.shieldHp<=0) clearOuterWard(st); }
+      // A Water ward ebbs and flows: it regains its tide (up to what it was raised with) instead of wearing
+      const tide=ELEM_WARD_TRAITS.tide;
+      if(WARD_RULES.innerWear!==false) st.wardInner=(st.wardInner||[]).filter(l=>{
+        if(l.type==='water'&&tide){ l.hp=Math.min(l.top||l.hp,l.hp+tide); return true; }
+        return l.sealed||sigHoldsWear(l.sig)||(l.hp-=ELEM_WARD_WEAR)>0;
+      });
+      if(st.shieldType==='water'&&tide) st.shieldHp=Math.min(st.wardTop||st.shieldHp,st.shieldHp+tide);
+      else if(!st.wardSealed&&!sigHoldsWear(st.wardSig)){ st.shieldHp-=ELEM_WARD_WEAR; if(st.shieldHp<=0) clearOuterWard(st); }
     }
   });
   gs.round++;
@@ -3478,7 +3590,14 @@ let WARD_LAYER_AI=0.4;     // the AI's Protection weight with a healthy ward and
 //   pick next round may be lost) · Fire scorches (a burn) · Physical crushes wards (no off-element
 //   resistance) · Arcane unweaves buffs (frays them; twice frayed, a buff unravels).
 // The riders that need HP reached also need ELEM_RIDER_MIN_TIER or more. ELEM_RIDERS switches each off.
-const ELEM_RIDERS={frostbite:true, dread:true, scorch:true, crush:true, unweave:true};
+const ELEM_RIDERS={frostbite:true, dread:true, scorch:true, crush:true, unweave:true, gust:true, drench:true};
+// Air and Water (Phase 2). Gust: an Air strike blows over minion screens (skeletons, graveguard, totems
+// don't soak it). Drench: a Water strike that lands leaves the target Drenched (DRENCH): their next Lightning
+// strike taken hits harder, their next Fire strike taken is doused.
+const DRENCH={rounds:2, lightning:1.3, fire:0.7};
+// Ward traits: an Air ward may turn a magic strike aside (deflect, a chance per strike, outer layer only);
+// a Water ward ebbs and flows: at round end it regains `tide` (up to what it was raised with) instead of wearing
+const ELEM_WARD_TRAITS={deflect:0.2, tide:2};
 const ELEM_RIDER_MIN_TIER=2;
 const ELEM_CHILL_MIN_TIER=2;    // Ice Lance (el.chill) chills (a hard lock) at this strength or more
 const ELEM_RISK_PCT={frostbite:0.5, dread:0.5};   // chance the covered pick next round is lost
@@ -3489,16 +3608,23 @@ const ELEM_LOCK_ROUNDS=2;       // a lock applied this round blocks the target's
 const ELEM_DISPEL_ALL_TIER=3;
 const ELEM_CURSE_DISPEL=0.5;
 // Share of a strike's damage a ward loses: match = a strike in the ward's own element, off = any other element
-const ELEM_WARD_TAKE={match:1.5, off:0.75, crush:1};   // magic wards resist other elements, their own unravels them; crush: a physical blow against a guard
+const ELEM_WARD_TAKE={opposed:1.5, off:0.75, crush:1};   // magic wards resist every element but their opposite, which unravels them; crush: a physical hit
 
+// Eight elements: the classical four (Fire, Air, Water, Earth) and Lightning, Ice, Arcane, Dark.
+// Ordered so each sits across the wheel from its opposite (index + 4): Fire ↔ Water, Air ↔ Earth,
+// Lightning ↔ Ice, Arcane ↔ Dark. A ward's opposite element unravels it (strikes ELEM_WARD_TAKE.opposed,
+// dispels WARD_RULES.dispelMatch); every other element, its own included, is resisted (off).
 const ELEMENTS=[
   {id:'fire',      name:'Fire',      icon:'🔥', col:'#ff6622'},
-  {id:'ice',       name:'Ice',       icon:'❄️', col:'#88ddff'},
+  {id:'air',       name:'Air',       icon:'💨', col:'#c8f4ec'},
   {id:'lightning', name:'Lightning', icon:'⚡', col:'#ffee44'},
   {id:'arcane',    name:'Arcane',    icon:'🌀', col:'#cc88ff'},
+  {id:'water',     name:'Water',     icon:'🌊', col:'#3a8cff'},
   {id:'earth',     name:'Earth',     icon:'🪨', col:'#d0a060'},
+  {id:'ice',       name:'Ice',       icon:'❄️', col:'#88ddff'},
   {id:'dark',      name:'Dark',      icon:'💀', col:'#9944cc'},
 ];
+function opposedElem(id){ const i=ELEMENTS.findIndex(e=>e.id===id); return i<0?null:ELEMENTS[(i+ELEMENTS.length/2)%ELEMENTS.length].id; }
 const ELEM_CATS={
   //       cost / power per tier (inner, middle, outer ring); stage = resolution order
   protect:{name:'Protection', verb:'Ward',   icon:'🛡', cost:[5,8,12], power:[25,45,70], stage:1, unit:'ward HP'},
@@ -3511,18 +3637,20 @@ const ELEM_STAGE_BANNERS={1:'🛡 Protection',2:'✦ Dispel',3:'⚔️ Damage'};
 
 // Casting minigame per element
 const ELEM_MINIGAME={fire:launchPatternEcho, ice:launchIcePattern, lightning:launchLightningPattern,
-  arcane:launchArcanePattern, earth:launchRockfallPattern, dark:launchShadowCirclePattern};
-const ELEM_GLYPHS={earth:[1,2,3,8], dark:[6,9,2,4]};   // Δ ∇ Ψ ⊕ (stone) / ☽ ⊗ ∇ Ω (necromancy)
+  arcane:launchArcanePattern, earth:launchRockfallPattern, dark:launchShadowCirclePattern,
+  air:launchGalePattern, water:launchTidePattern};
+// Δ ∇ Ψ ⊕ (stone) / ☽ ⊗ ∇ Ω (necromancy) / Δ ϟ ✸ Φ (rising, gust, burst, axis) / ∇ ∞ Ω Φ (descent, flow, depths, tide)
+const ELEM_GLYPHS={earth:[1,2,3,8], dark:[6,9,2,4], air:[1,0,7,11], water:[2,5,4,11]};
 const ELEM_WARD_THEME={fire:'flameshield', ice:'frostarmor', lightning:'shield',
-  arcane:'foresight', earth:'stoneskin', dark:'warpaint'};
-const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane', earth:'physical', dark:'dark'};
+  arcane:'foresight', earth:'stoneskin', dark:'warpaint', air:'airward', water:'waterward'};
+const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane', earth:'physical', dark:'dark', air:'air', water:'water'};
 
 // Elements a character can't cast at all (characters.json "forbidden"): their sectors are locked
 // on every wheel. Never one of the character's own signature sectors.
 // A banned element can't be cast in any category (bans are magic only: every wizard can Attack, Guard and Grapple)
 function elemForbidden(who,elem,cat){ return (seatCfg(who).forbidden||[]).includes(elem); }
 function foesCantCast(who,elem){ return foesOf(who).every(w=>elemForbidden(w,elem)); }
-function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS[3]; }
+function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS.find(e=>e.id==='arcane'); }
 // ── ACTIONS: plain physical moves anyone can make, wizard or not (docs/rps-duel-design.md, "Plan of record:
 // Actions and Magic"). Free, no minigame, no element, and they last only the round they're made — melee,
 // not magic. They answer each other like rock-paper-scissors (ACT_RULES):
@@ -4246,6 +4374,13 @@ function executeWheel(who,action,cb){
     spawnStormCloud(who,tgt,dmg,land);
     return;
   }
+  if(action.cat==='damage'&&(action.elem==='air'||action.elem==='water')){
+    // Air Strike: a cyclone around each target; Water Strike: a wave that crashes over them
+    const dmg=previewStrikeDmg(who,action.elem,power), fx=action.elem==='air'?spawnCyclone:spawnWave;
+    tgts.slice(1).forEach(t=>fx(who,t,dmg,()=>{}));
+    fx(who,tgt,dmg,land);
+    return;
+  }
   if(action.cat==='damage'&&action.elem==='dark'){
     // Dark Strike: no projectile — a ritual circle of runes spins around each target, stops,
     // glows and burns out, and the damage lands as it burns
@@ -4409,7 +4544,7 @@ function sigHoldsWear(id){
 function setOuterWard(st,l){
   st.shield=ELEM_WARD_ROUNDS||1;   // with no timer, shield just marks a ward as up
   st.shieldHp=l.hp; st.shieldType=l.type; st.wardRetaliate=l.retaliate||0; st.wardSig=l.sig||null;
-  st.wardSealed=!!l.sealed;
+  st.wardSealed=!!l.sealed; st.wardTop=l.top||l.hp;   // wardTop: what it was raised with (a Water ward's tide)
 }
 // Takes the outer layer off; the next one in steps out. Returns that layer, or null if none was left.
 function clearOuterWard(st){
@@ -4464,8 +4599,8 @@ function raiseWard(who,elem,power,retaliate,noBoost,sig){
   if(!noBoost&&WARD_RULES.boost&&hasWard(st)&&(st.shieldType===elem||inner)){
     // Boost: the ward keeps its signature twist unless this recast brings its own
     const l=st.shieldType===elem?null:inner, was=l?l.hp:st.shieldHp, now=wardBoostTo(was,power);
-    if(l){ l.hp=now; l.retaliate=Math.max(l.retaliate||0,retaliate||0); if(sig) l.sig=sig; }
-    else { st.shieldHp=now; st.wardRetaliate=Math.max(st.wardRetaliate||0,retaliate||0); if(sig) st.wardSig=sig; }
+    if(l){ l.hp=now; l.top=Math.max(l.top||0,now); l.retaliate=Math.max(l.retaliate||0,retaliate||0); if(sig) l.sig=sig; }
+    else { st.shieldHp=now; st.wardTop=Math.max(st.wardTop||0,now); st.wardRetaliate=Math.max(st.wardRetaliate||0,retaliate||0); if(sig) st.wardSig=sig; }
     ws.boosted++; ws.peak=Math.max(ws.peak,wardTotal(st));
     addFloat(x,bH*.28,'🛡 '+el.name+' Ward +'+(now-was)+' → '+now+(l?' (beneath)':''),el.col,14);
     VFX.wardRaise(x,el.col);
@@ -4475,7 +4610,7 @@ function raiseWard(who,elem,power,retaliate,noBoost,sig){
   // otherwise it replaces the outer layer
   const over=!noBoost&&WARD_RULES.layers>1&&hasWard(st)&&layersOfKind(st,'magic')<WARD_RULES.layers;
   // stackSeal false: a stack can't hold a seal, so a layer over a sealed ward breaks the seal
-  if(over){ st.wardInner.push({hp:st.shieldHp,type:st.shieldType,retaliate:st.wardRetaliate,sig:st.wardSig,sealed:st.wardSealed&&WARD_RULES.stackSeal!==false}); ws.layered++; }
+  if(over){ st.wardInner.push({hp:st.shieldHp,type:st.shieldType,retaliate:st.wardRetaliate,sig:st.wardSig,sealed:st.wardSealed&&WARD_RULES.stackSeal!==false,top:st.wardTop}); ws.layered++; }
   const under=over&&elemById(st.wardInner[st.wardInner.length-1].type);
   setOuterWard(st,{hp:power,type:elem,retaliate,sig});
   ws.raised++; ws.peak=Math.max(ws.peak,wardTotal(st));
@@ -4495,7 +4630,7 @@ function breakWard(st,x,unravel){
 // curse, the middle 2, the outer every one (CLEANSE_COUNT), for that ring's Dispel cost. The worst go
 // first (CURSE_HARM; ties: the newest). all: Mary's Purge clears every one.
 const CLEANSE_COUNT=[1,2,Infinity];
-const CURSE_HARM={agony:5, dot:4, silence:4, incomeDrain:3, vuln:3, spellbind:3, tithe:2, candle:2, bewitch:2, risk:1, lock:1, enthral:0};
+const CURSE_HARM={agony:5, dot:4, silence:4, incomeDrain:3, vuln:3, spellbind:3, tithe:2, candle:2, bewitch:2, risk:1, lock:1, drenched:1, enthral:0};
 function cursesWorstFirst(st){
   const c=cursesOf(st);
   return c.map((e,i)=>({e,i})).sort((a,b)=>(CURSE_HARM[b.e.type]||1)-(CURSE_HARM[a.e.type]||1)||b.i-a.i).map(x=>x.e);
@@ -4536,10 +4671,10 @@ function elemWardDispel(tgt,elem,power,tier){
       power-=soak;
       if(power<=0) return;
     }
-    const match=L.type===elem, mult=(match?(WARD_RULES.dispelMatch??2):1)*(layersOfKind(ts,'magic')>1&&WARD_RULES.stackDispel!==false?(WARD_RULES.stackTake??1):1);   // a dispel in the ward's element counts extra; a stack resists
+    const match=L.type===opposedElem(elem), mult=(match?(WARD_RULES.dispelMatch??2):1)*(layersOfKind(ts,'magic')>1&&WARD_RULES.stackDispel!==false?(WARD_RULES.stackTake??1):1);   // a dispel of the ward's opposite element counts extra; a stack resists
     const dmg=power*mult, had=L.hp;
     L.hp=had-dmg;
-    addFloat(tx,bH*.3,'✦ −'+Math.min(dmg,had)+' ward'+(match?' (matched!)':''),'#ffaaff',14);
+    addFloat(tx,bH*.3,'✦ −'+Math.min(dmg,had)+' ward'+(match?' (opposed!)':''),'#ffaaff',14);
     if(L.hp>0){ VFX.wardUnravel(tx,col); return; }
     dropLayer(ts,li,tx,true);
     if(!through) return;
@@ -4640,7 +4775,9 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike,blast,kind){
   const ts=gs[tgt], tx=seatX(tgt);
   kind=kind||'magic';
   let warded=false, around=0;
-  dmg=soakMinions(tgt,dmg);
+  if(strike&&elem==='air'&&ELEM_RIDERS.gust&&effectsOf(ts,'minion').some(m=>m.soak)){
+    if(!(wear&&wear.gustNoted)){ if(wear) wear.gustNoted=true; addFloat(tx,bH*.2,'💨 Gusts over the screen','#c8f4ec',11); }
+  } else dmg=soakMinions(tgt,dmg);
   if(kind==='physical') dmg=soakSkin(tgt,dmg);
   if(blast&&hasWardOfKind(ts,kind)&&dmg>0){
     around=Math.min(blast,dmg); dmg-=around;
@@ -4660,7 +4797,7 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike,blast,kind){
     // The ward loses only its take share of what it stops, so a resistant ward stops more. A magic ward
     // resists other elements and unravels to its own; a Physical ward takes physical blows as they come.
     // Bulwark (stackTake < 1): a ward with another layer in the stack wears less from each hit.
-    const take=(kind==='physical'?ELEM_WARD_TAKE.crush:ELEM_WARD_TAKE[type===elem?'match':'off'])*(layersOfKind(ts,kind)>1?(WARD_RULES.stackTake??1):1);
+    const take=(kind==='physical'?ELEM_WARD_TAKE.crush:ELEM_WARD_TAKE[type===opposedElem(elem)?'opposed':'off'])*(layersOfKind(ts,kind)>1?(WARD_RULES.stackTake??1):1);
     const blocked=Math.min(dmg,Math.floor(hp/take));
     if(wear){
       wear.blocked+=blocked;
@@ -4781,6 +4918,11 @@ function strikeResolve(who,tgt,o,b){
   }
   // A Guard this round turns aside a physical strike (and counters an Attack, in strikeMiss)
   if(strikeKind(o)==='physical'&&isGuarding(tgt)) return {tgt,miss:'guard'};
+  // An Air ward may turn a magic strike aside (b.pierce burns straight through it)
+  if(tgt!==who&&strikeKind(o)!=='physical'&&!b.pierce&&hasWard(ts)&&ts.shieldType==='air'&&_rng()<ELEM_WARD_TRAITS.deflect) return {tgt,miss:'deflect'};
+  // Drenched: the next Lightning strike conducts, the next Fire strike is doused (either uses it up)
+  const wet=(o.elem==='lightning'||o.elem==='fire')&&strikeKind(o)!=='physical'&&effectsOf(ts,'drenched')[0];
+  if(wet){ dmg*=DRENCH[o.elem]; ts.effects=ts.effects.filter(e=>e!==wet); b.drenchHit=o.elem; }
   effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
   // magicOnly resists skip blows; physOnly ones (Stonesoul, Iron Patience, Dragon Scales: physical defence) skip magic
   const resist=effectsOf(ts,'resist').filter(e=>!(e.magicOnly&&strikeKind(o)==='physical')&&!(e.physOnly&&strikeKind(o)!=='physical'))
@@ -4797,6 +4939,7 @@ function strikeMiss(who,r,o){
     }
     anim(who,'cast',600); return;
   }
+  if(r.miss==='deflect'){ addFloat(tx,bH*.28,'💨 Deflected!','#c8f4ec',15); spawnParts(tx,wizMidY(r.tgt),'#e8fffa',12); anim(who,'cast',600); return; }
   if(r.miss==='dodge'){ addFloat(tx,bH*.28,'💫 Dodged!','#b8a0e8',15); VFX.dodged(tx); }
   else {
     addFloat(tx,bH*.28,r.miss==='vanish'?'👻 Missed!':'🔮 Absorbed!','#ffcc44',15);
@@ -4826,6 +4969,8 @@ function elemStrikeRiders(who,tgt,o){
   };
   if(o.elem==='ice') risk('frostbite','damage','Frostbitten','🥶');
   if(o.elem==='dark') risk('dread','protect','Dread','😱');
+  if(o.elem==='water'&&ELEM_RIDERS.drench&&tgt!==who&&!effectsOf(ts,'drenched').length)
+    addEffect(tgt,{id:'drenched',type:'drenched',kind:'curse',name:'Drenched',icon:'💧',rounds:DRENCH.rounds},who);
   if(o.elem==='fire'&&ELEM_RIDERS.scorch&&!o.dot)
     addEffect(tgt,Object.assign({id:'dot-scorch',type:'dot',kind:'curse',elem:'fire',name:'Scorched',icon:'🔥'},ELEM_SCORCH[Math.min(3,tier)-1]),who);
   if(o.elem==='arcane'&&ELEM_RIDERS.unweave&&tgt!==who){
@@ -5115,7 +5260,7 @@ function aiFortress(who,smart){
   if(!els.length) return null;
   const kindEls=els.filter(e=>wardKind(e)===aiWantWardKind(who,aiPickTarget(who)));
   if(kindEls.length) els=kindEls;
-  const safe=els.filter(e=>foesCantCast(who,e)), off=els.filter(e=>e!==opp.lastElem);
+  const safe=els.filter(e=>foesCantCast(who,opposedElem(e))), off=els.filter(e=>opposedElem(e)!==opp.lastElem);
   els=safe.length?safe:off.length?off:els;
   const elem=els[Math.floor(_rng()*els.length)];
   let tier=3; while(tier>2&&!sectorOk(who,'protect',elem,tier)) tier--;
@@ -5340,9 +5485,8 @@ function elemAIChoose(who){
     const pickFrom=list=>list[Math.floor(_rng()*list.length)];
     const has=id=>plain.find(x=>x.elem===id);
     choice=pickFrom(plain);
-    if(cat==='dispel'&&oppWard&&has(opp.shieldType)&&_rng()<(smart?0.8:0.4)) choice=has(opp.shieldType);
+    if(cat==='dispel'&&oppWard&&has(opposedElem(opp.shieldType))&&_rng()<(smart?0.8:0.4)) choice=has(opposedElem(opp.shieldType));
     // Strike with whichever element the foe's ward takes more from
-    const matchHurts=ELEM_WARD_TAKE.match>ELEM_WARD_TAKE.off;
     if(cat==='damage'&&oppWard&&smart){
       // A ward stops only its own kind: strike through a hole if there is one
       const holeP=!hasWardOfKind(opp,'physical'), holeM=!hasWardOfKind(opp,'magic');
@@ -5350,26 +5494,23 @@ function elemAIChoose(who){
       if(holeP&&phys.length&&_rng()<0.85) choice=pickFrom(phys);
       else if(holeM&&mag.length&&_rng()<0.85) choice=pickFrom(mag);
       else {
-        const best=matchHurts?plain.filter(x=>x.elem===opp.shieldType):plain.filter(x=>x.elem!==opp.shieldType);
+        const best=plain.filter(x=>x.elem===opposedElem(opp.shieldType));   // the ward's opposite unravels it
         if(best.length) choice=pickFrom(best);
       }
     }
     if(cat==='protect'){
       const roll=_rng();
-      if(matchHurts||ELEM_WARD_TAKE.match===ELEM_WARD_TAKE.off){
-        // A ward in an element the foe can't cast can't be unravelled or matched by their dispels
-        const safe=plain.filter(x=>foesCantCast(who,x.elem));
-        if(safe.length&&roll<(smart?0.7:0.25)) choice=pickFrom(safe);
-        else if(opp.lastElem&&roll<(smart?0.8:0.4)){ const off=plain.filter(x=>x.elem!==opp.lastElem); if(off.length) choice=pickFrom(off); }
-      }
-      else if(opp.lastElem&&has(opp.lastElem)&&!elemForbidden(tgt,opp.lastElem)&&roll<(smart?0.8:0.4)) choice=has(opp.lastElem);
+      // A ward whose opposite the foe can't cast can't be unravelled by them; else avoid the one they just used
+      const safe=plain.filter(x=>foesCantCast(who,opposedElem(x.elem)));
+      if(safe.length&&roll<(smart?0.7:0.25)) choice=pickFrom(safe);
+      else if(opp.lastElem&&roll<(smart?0.8:0.4)){ const off=plain.filter(x=>opposedElem(x.elem)!==opp.lastElem); if(off.length) choice=pickFrom(off); }
       // Layered wards, step 1: top up my own ward rather than throw it away — unless the foe just
       // used its element (they're set up to unravel it)
       // With room for another layer and a healthy ward, a new element (the pick above) layers instead
       const same=WARD_RULES.boost&&hasWard(me)&&has(me.shieldType);
       const layering=layersOfKind(me,'magic')<WARD_RULES.layers&&wardHpOfKind(me,'magic')>=WARD_BOOST_AI_HP;
       if(layering&&choice&&choice.elem===me.shieldType){ const off=plain.filter(x=>x.elem!==me.shieldType); if(off.length) choice=pickFrom(off); }
-      else if(same&&!layering&&opp.lastElem!==me.shieldType&&_rng()<(smart?0.75:0.4)) choice=same;
+      else if(same&&!layering&&opp.lastElem!==opposedElem(me.shieldType)&&_rng()<(smart?0.75:0.4)) choice=same;
       // Physical or magic: raise (or layer) the kind of ward the foe's damage calls for
       if(smart&&choice&&!(choice===same&&!layering)){
         const want=aiWantWardKind(who,tgt);
@@ -5688,7 +5829,7 @@ function resetTrainingRound(knockedOut){
     gs.p1=newSeat(p1Cfg,p1Key);
     gs.p2=newSeat(p2Cfg,p2Key);
     gs.p1anim='idle'; gs.p2anim='idle';
-    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
+    gs.parts=[]; gs.floats=[]; gs.projs=[]; gs.beams=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.elemFx=[]; gs.counterArcs=[]; gs.quake=null;
     gs.pending={};
     const winner=knockedOut==='p1'?p2Cfg.name:p1Cfg.name;
     addFloat(bW*.5,bH*.35,'✨ '+winner+' wins — Reset!','#f0cc6a',14);
@@ -6581,6 +6722,240 @@ function launchPatternEcho(spell,cb){
   function frame(){if(done)return;draw();mazeRAF=requestAnimationFrame(frame);}
   showScreen('puzzle-screen');
   mazeRAF=requestAnimationFrame(frame);
+}
+
+// ── PUZZLES: GALE (Air) and TIDE (Water) ───────────────────
+// Both follow the Inferno reference (launchPatternEcho): watch MG_WATCH_MS while the white sequence glyphs
+// (coloured glow, order badge) move among noise glyphs, then repeat them on the 3×4 Arcana keyboard within
+// MG_INPUT_S, ending through mgEnd. mgGlyphGame runs the shared part (timer, input, keyboard, slots, end);
+// each element supplies its scenery and how its glyphs move (opts.drawWatch / opts.drawInputBg).
+const MG_ALPHA_GLOW=['#ccffff','#ff9944','#44aaff','#aaff88','#ff4444','#44ffcc','#aaddff','#ffff55','#ffee77','#ff44aa','#88ff88','#dd88ff'];
+function mgGlyphGame(spell,cb,opts){
+  let done=false;
+  document.getElementById('pztitle').textContent=opts.title;
+  document.getElementById('pzspell').textContent=spell.icon+' Casting: '+spell.name;
+  setDpadVisible(false);
+  const SPELL_IDX=spell.glyphs||opts.canon;
+  const TS=72,GAP=6,PAD=10, cw=PAD*2+TS*3+GAP*2, ch=380;
+  mc.width=cw; mc.height=ch;
+  mc.style.width=Math.min(cw,(window.innerWidth||360)-32)+'px'; mc.style.height='auto';
+  const tileAreaH=TS*4+GAP*3, tileTop=ch-PAD-tileAreaH;
+  const tPos=Array.from({length:12},(_,i)=>({x:PAD+(i%3)*(TS+GAP), y:tileTop+Math.floor(i/3)*(TS+GAP)}));
+  const seq=mgSeq(spell,opts.canon,SPELL_IDX), playerSeq=[];
+  let phase='watch', timeLeft=MG_INPUT_S, watchDone=false;
+  const timerEl=document.getElementById('pztimer');
+  timerEl.textContent='—'; timerEl.classList.remove('urgent');
+  const startTime=Date.now();
+  const game={cw,ch,seq,SPELL_IDX,startTime,
+    // spawn times spread over the watch, the last one at the halfway mark (MG_GLYPH_MS on screen at least)
+    spawnAt:(()=>{ const d=300, iv=mgSpawnInterval(seq.length,d,MG_GLYPH_MS); return seq.map((_,i)=>d+i*iv); })()};
+  const state=opts.init?opts.init(game):{};
+
+  function startTimer(){
+    if(mazeTid) clearInterval(mazeTid);
+    mazeTid=setInterval(()=>{
+      if(done) return;
+      timeLeft--; timerEl.textContent=timeLeft;
+      if(timeLeft<=2) timerEl.classList.add('urgent');
+      if(timeLeft<=0) finish(false,'timeout');
+    },1000);
+  }
+  function onPointer(e){
+    if(done||phase!=='input') return;
+    e.preventDefault();
+    const rect=mc.getBoundingClientRect(), sx=mc.width/rect.width, sy=mc.height/rect.height;
+    const px=(e.clientX-rect.left)*sx, py=(e.clientY-rect.top)*sy;
+    for(let ai=0;ai<12;ai++){
+      const tp=tPos[ai];
+      if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
+        if(!SPELL_IDX.includes(ai)){ if(diffName==='hard') finish(false,'forbidden',ai); return; }
+        if(ai!==seq[playerSeq.length]){ finish(false,'wrong',ai); return; }
+        playerSeq.push(ai);
+        if(playerSeq.length===seq.length) finish(true);
+        return;
+      }
+    }
+  }
+  mc.addEventListener('pointerdown',onPointer);
+  function cleanup(){
+    mc.removeEventListener('pointerdown',onPointer);
+    setDpadVisible(true);
+    if(mazeTid){ clearInterval(mazeTid); mazeTid=null; }
+    if(mazeRAF){ cancelAnimationFrame(mazeRAF); mazeRAF=null; }
+  }
+  function finish(ok,reason,wrongAi){
+    if(done) return; done=true; cleanup(); draw();
+    mgEnd(ok,{cw,ch,seq,playerSeq,tPos,TS,tileTop,reason,wrongAi},cb);
+  }
+  // A sequence glyph: white, its own coloured glow, and its order badge
+  game.drawSeqGlyph=(ai,i,x,y,alpha,rot)=>{
+    if(alpha<=0.01) return;
+    mx.save(); mx.globalAlpha=alpha; mx.translate(x,y); mx.rotate(rot||0);
+    mx.shadowColor=MG_ALPHA_GLOW[ai]; mx.shadowBlur=32; mx.fillStyle='#ffffff';
+    mx.font='bold 40px serif'; mx.textAlign='center'; mx.textBaseline='middle';
+    mx.fillText(MG_SYMS[ai],0,0); mx.restore();
+    mx.save(); mx.globalAlpha=alpha; mx.shadowColor=opts.badge; mx.shadowBlur=10; mx.fillStyle=opts.badge;
+    mx.font='bold 11px Cinzel,serif'; mx.textAlign='center'; mx.textBaseline='middle';
+    mx.fillText(i+1,x+22,y-22); mx.restore();
+  };
+  function draw(){
+    const t=Date.now(), elapsed=t-startTime;
+    opts.drawBg(game,state,t);
+    if(phase==='watch'&&!watchDone&&elapsed>=MG_WATCH_MS){ watchDone=true; phase='input'; timerEl.textContent=timeLeft; startTimer(); }
+    if(phase==='watch'){
+      opts.drawWatch(game,state,t,elapsed);
+      mx.globalAlpha=1; mx.shadowBlur=0;
+      mx.fillStyle=opts.badge; mx.font='bold 10px Cinzel,serif'; mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText(opts.watchText,cw/2,4);
+    }
+    if(phase==='input'){
+      if(opts.drawInputBg) opts.drawInputBg(game,state,t);
+      const isHard=diffName==='hard';
+      for(let ai=0;ai<12;ai++){
+        const tp=tPos[ai], si=SPELL_IDX.indexOf(ai), isSpell=si!==-1;
+        let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
+        if(isHard){ bgCol='#2d1a3d'; bgDark='#100820'; strokeCol='#44285888'; textCol='#7755aa'; blur=4; textAlpha=1; }
+        else if(isSpell){ const k=opts.keyCols[si]; bgCol=k.col; bgDark=opts.keyDark; strokeCol=k.col+'88'; textCol=k.lit; blur=8; textAlpha=1; }
+        else { bgCol='#0f0f0f'; bgDark='#050505'; strokeCol='#1e1e1e'; textCol='#2a2a2a'; blur=0; textAlpha=0.35; }
+        mx.save(); mx.shadowColor=bgCol; mx.shadowBlur=blur;
+        const tg=mx.createRadialGradient(tp.x+TS/2,tp.y+TS/2,3,tp.x+TS/2,tp.y+TS/2,TS*.6);
+        tg.addColorStop(0,bgCol); tg.addColorStop(1,bgDark);
+        mx.fillStyle=tg; mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.fill(); mx.shadowBlur=0;
+        mx.strokeStyle=strokeCol; mx.lineWidth=1.2; mx.beginPath(); mx.roundRect(tp.x,tp.y,TS,TS,5); mx.stroke();
+        mx.globalAlpha=textAlpha; mx.fillStyle=textCol; mx.font=`bold ${Math.round(TS*.42)}px serif`;
+        mx.textAlign='center'; mx.textBaseline='middle'; mx.fillText(MG_SYMS[ai],tp.x+TS/2,tp.y+TS/2);
+        mx.restore();
+      }
+      mx.fillStyle=opts.badge; mx.font='bold 10px Cinzel,serif'; mx.textAlign='center'; mx.textBaseline='top';
+      mx.fillText(`Repeat the sequence: ${playerSeq.length}/${seq.length}`,cw/2,4);
+      mgDrawSlots(seq,playerSeq,cw,tileTop);
+    }
+  }
+  function frame(){ if(done) return; draw(); mazeRAF=requestAnimationFrame(frame); }
+  showScreen('puzzle-screen');
+  mazeRAF=requestAnimationFrame(frame);
+}
+
+// Air: runes ride gusts in from the left, loop once in an eddy mid-screen, and blow away right.
+// Noise glyphs streak sideways on the wind; thin wind lines curl across a pale sky.
+const GALE_TRAVEL_MS=MG_GLYPH_MS*1.15;   // left edge to right edge
+function launchGalePattern(spell,cb){
+  mgGlyphGame(spell,cb,{
+    title:'Gale of Runes', watchText:'Catch the white runes on the wind!', badge:'#e8fff8', canon:[1,0,7,11], keyDark:'#061a1c',
+    keyCols:[{col:'#5fb8b0',lit:'#e8fff8'},{col:'#4aa0a8',lit:'#d8fbff'},{col:'#7ac8c0',lit:'#ffffff'},{col:'#3f8c96',lit:'#c8f4ec'}],
+    init:g=>({
+      gusts:Array.from({length:9},()=>({y:Math.random()*g.ch,len:40+Math.random()*90,spd:.18+Math.random()*.25,ph:Math.random()*6.28,x:Math.random()*g.cw})),
+      noise:Array.from({length:38},()=>({x:Math.random()*g.cw,y:Math.random()*g.ch,spd:.08+Math.random()*.18,ai:Math.floor(Math.random()*12),sz:9+Math.random()*12,ph:Math.random()*6.28,a:.12+Math.random()*.22})),
+      rows:g.seq.map((_,i)=>g.ch*(.24+.5*((i+.5)/g.seq.length))+(Math.random()-.5)*18),
+      last:Date.now()}),
+    drawBg:(g,s,t)=>{
+      const bg=mx.createLinearGradient(0,0,0,g.ch);
+      bg.addColorStop(0,'#123236'); bg.addColorStop(.55,'#0a2024'); bg.addColorStop(1,'#040d10');
+      mx.fillStyle=bg; mx.fillRect(0,0,g.cw,g.ch);
+      const dt=Math.min(50,t-s.last); s.last=t;
+      // wind lines: thin curved streaks drifting right
+      mx.save(); mx.lineCap='round';
+      s.gusts.forEach(w=>{
+        w.x+=w.spd*dt; if(w.x-w.len>g.cw){ w.x=-10; w.y=Math.random()*g.ch; }
+        mx.strokeStyle='rgba(200,244,236,.16)'; mx.lineWidth=1.4; mx.beginPath();
+        for(let k=0;k<=12;k++){ const px=w.x-w.len+k/12*w.len, py=w.y+Math.sin(px/38+w.ph+t/700)*5; k?mx.lineTo(px,py):mx.moveTo(px,py); }
+        mx.stroke();
+      });
+      mx.restore();
+    },
+    drawWatch:(g,s,t,el)=>{
+      const dt=16;
+      // noise runes blown sideways along wavy paths
+      mx.save(); mx.textAlign='center'; mx.textBaseline='middle';
+      s.noise.forEach(f=>{
+        f.x+=f.spd*dt; if(f.x>g.cw+20){ f.x=-20; f.y=Math.random()*g.ch; f.ai=Math.floor(Math.random()*12); }
+        const yy=f.y+Math.sin(f.x/30+f.ph)*8;
+        mx.globalAlpha=f.a*(.6+.4*Math.abs(Math.sin(t/600+f.ph))); mx.fillStyle='#7aa8a4'; mx.shadowColor='#9fe8dc'; mx.shadowBlur=5;
+        mx.font=`bold ${f.sz}px serif`; mx.fillText(MG_SYMS[f.ai],f.x,yy);
+      });
+      mx.restore();
+      // sequence runes: across on a gust, one eddy loop in the middle
+      g.seq.forEach((ai,i)=>{
+        const age=el-g.spawnAt[i];
+        if(age<0) return;
+        const u=age/GALE_TRAVEL_MS;
+        if(u>1.05) return;
+        let x=-20+u*(g.cw+40), y=s.rows[i]+Math.sin(u*9+i)*7;
+        const L0=.38, L1=.62;   // the eddy: a full small loop
+        if(u>L0&&u<L1){ const a=(u-L0)/(L1-L0)*Math.PI*2; x=-20+L0*(g.cw+40)+((u-L0)/(L1-L0))*(L1-L0)*(g.cw+40)+Math.sin(a)*22; y+= -Math.cos(a)*22+22; }
+        const alpha=Math.min(1,age/300)*Math.min(1,(1.05-u)/.12);
+        g.drawSeqGlyph(ai,i,x,y,alpha,Math.sin(t/500+i)*.18);
+      });
+    },
+    drawInputBg:(g,s,t)=>{
+      mx.save(); mx.textAlign='center'; mx.textBaseline='middle';
+      s.noise.slice(0,12).forEach(f=>{ f.x+=f.spd*6; if(f.x>g.cw+20) f.x=-20;
+        mx.globalAlpha=f.a*.22; mx.fillStyle='#7aa8a4'; mx.font=`${f.sz}px serif`; mx.fillText(MG_SYMS[f.ai],f.x,f.y); });
+      mx.restore();
+    },
+  });
+}
+
+// Water: runes surface through ripples, bob on the swell while waves wash them sideways, then sink.
+// Noise glyphs drift deep in the current; wave bands roll across the surface.
+const TIDE_RISE_MS=500, TIDE_SINK_MS=500;
+function launchTidePattern(spell,cb){
+  mgGlyphGame(spell,cb,{
+    title:'Tide of Runes', watchText:'Watch the white runes surface!', badge:'#9fd0ff', canon:[2,5,4,11], keyDark:'#020a1c',
+    keyCols:[{col:'#1d5fb8',lit:'#9fd0ff'},{col:'#2a78c8',lit:'#cfe6ff'},{col:'#14468c',lit:'#7fb8ff'},{col:'#3a8cff',lit:'#e0f0ff'}],
+    init:g=>{
+      const surf=g.ch*.42;
+      return {surf, ripples:[],
+        noise:Array.from({length:30},()=>({x:Math.random()*g.cw,y:surf+30+Math.random()*(g.ch-surf-40),spd:(Math.random()<.5?-1:1)*(.02+Math.random()*.06),ai:Math.floor(Math.random()*12),sz:10+Math.random()*12,ph:Math.random()*6.28,a:.1+Math.random()*.2})),
+        cols:g.seq.map((_,i)=>Math.max(30,Math.min(g.cw-30,g.cw*((i+.5)/g.seq.length)+(Math.random()-.5)*20))),
+        surfaced:g.seq.map(()=>false), last:Date.now()};
+    },
+    drawBg:(g,s,t)=>{
+      const bg=mx.createLinearGradient(0,0,0,g.ch);
+      bg.addColorStop(0,'#0a1a33'); bg.addColorStop(.42,'#0a2a55'); bg.addColorStop(1,'#020814');
+      mx.fillStyle=bg; mx.fillRect(0,0,g.cw,g.ch);
+      // rolling wave bands
+      mx.save();
+      [[s.surf,'rgba(120,180,255,.35)',2],[s.surf+26,'rgba(90,150,240,.18)',1.4],[s.surf+64,'rgba(60,120,220,.12)',1.2]].forEach(([y0,col,lw],k)=>{
+        mx.strokeStyle=col; mx.lineWidth=lw; mx.beginPath();
+        for(let x=0;x<=g.cw;x+=6){ const y=y0+Math.sin(x/34+t/(520+k*160)+k)*(4-k)+Math.sin(x/13-t/400)*1.2; x?mx.lineTo(x,y):mx.moveTo(x,y); }
+        mx.stroke();
+      });
+      // ripple rings where runes broke the surface
+      s.ripples=s.ripples.filter(r=>t-r.t<1200);
+      s.ripples.forEach(r=>{ const u=(t-r.t)/1200; mx.strokeStyle=`rgba(180,220,255,${.6*(1-u)})`; mx.lineWidth=1.5;
+        mx.beginPath(); mx.ellipse(r.x,r.y,8+u*46,(8+u*46)*.28,0,0,Math.PI*2); mx.stroke(); });
+      mx.restore();
+    },
+    drawWatch:(g,s,t,el)=>{
+      const dt=16;
+      mx.save(); mx.textAlign='center'; mx.textBaseline='middle';
+      s.noise.forEach(f=>{ f.x+=f.spd*dt; if(f.x>g.cw+20) f.x=-20; if(f.x<-20) f.x=g.cw+20;
+        mx.globalAlpha=f.a*(.6+.4*Math.abs(Math.sin(t/800+f.ph))); mx.fillStyle='#1e4f9a'; mx.shadowColor='#3a8cff'; mx.shadowBlur=6;
+        mx.font=`bold ${f.sz}px serif`; mx.fillText(MG_SYMS[f.ai],f.x,f.y+Math.sin(t/900+f.ph)*5); });
+      mx.restore();
+      g.seq.forEach((ai,i)=>{
+        const age=el-g.spawnAt[i];
+        if(age<0) return;
+        const hold=MG_GLYPH_MS, life=TIDE_RISE_MS+hold+TIDE_SINK_MS;
+        if(age>life) return;
+        const floatY=s.surf-14;
+        let y, alpha;
+        if(age<TIDE_RISE_MS){ const u=age/TIDE_RISE_MS; y=g.ch-10-(g.ch-10-floatY)*(1-Math.pow(1-u,2)); alpha=u; }
+        else if(age<TIDE_RISE_MS+hold){
+          if(!s.surfaced[i]){ s.surfaced[i]=true; s.ripples.push({x:s.cols[i],y:s.surf,t}); }
+          y=floatY+Math.sin((age-TIDE_RISE_MS)/330+i)*6; alpha=1;
+        } else { const u=(age-TIDE_RISE_MS-hold)/TIDE_SINK_MS; y=floatY+u*60; alpha=1-u; }
+        const x=s.cols[i]+Math.sin(age/600+i*1.7)*16;   // washed sideways by the waves
+        g.drawSeqGlyph(ai,i,x,y,alpha,Math.sin(age/700+i)*.15);
+      });
+    },
+    drawInputBg:(g,s,t)=>{
+      mx.save(); mx.textAlign='center'; mx.textBaseline='middle';
+      s.noise.slice(0,10).forEach(f=>{ mx.globalAlpha=f.a*.25; mx.fillStyle='#1e4f9a'; mx.font=`${f.sz}px serif`; mx.fillText(MG_SYMS[f.ai],f.x,f.y); });
+      mx.restore();
+    },
+  });
 }
 
 // ── PUZZLE: ROCKFALL PATTERN (Physical) ────────────────────
@@ -8789,7 +9164,7 @@ function simMatch(k1,k2,ai){
       picks[w][key]=(picks[w][key]||0)+1;
     });
     resolveSimRound();
-    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
+    gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.elemFx=[]; gs.counterArcs=[]; gs.quake=null;
   }
   const out={winner:simOutcome||'timeout',rounds:gs.round-1,hp:{p1:gs.p1.hp,p2:gs.p2.hp},picks,
     wards:{p1:{...gs.p1.wardStats},p2:{...gs.p2.wardStats}}};
@@ -8812,7 +9187,7 @@ function simMatchN(seats,ai){
       activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
       resolveSimRound();
       PLAYERS.forEach(w=>{ if(gs[w].out&&outRound[w]==null) outRound[w]=gs.round-1; });
-      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.counterArcs=[]; gs.quake=null;
+      gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.elemFx=[]; gs.counterArcs=[]; gs.quake=null;
     }
     return {winner:simOutcome||'timeout',rounds:gs.round-1,outRound,koBy:gs.koBy||{},
       hp:Object.fromEntries(PLAYERS.map(w=>[w,gs[w].hp]))};
