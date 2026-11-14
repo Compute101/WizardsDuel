@@ -708,3 +708,28 @@ Rule switches tried (all in `WARD_RULES`, defaults keep today's rules):
 - `stackTake` (Bulwark: a ward with a layer beneath wears this share from each strike and dispel):
   0.6 → eager 49.7, readStrike 49.9, sealOnly 50.6, fortress 55.8; **0.4 → eager 52.2, readStrike 53.8,
   sealOnly 51.6, fortress 57.3**. The first rule where layers themselves pay. Not adopted yet.
+
+### Adopted: Bulwark 0.5, and fortress wizards
+
+`WARD_RULES.stackTake` 0.5: a ward with another layer beneath it loses half as much from each strike and
+dispel. Head to head at 0.5 (8 games a matchup): eager 50.4, readStrike 50.1, sealOnly 51.7,
+**fortress 55.1** (the layers now add about 3.4 points over sealing alone). Bulwark 0.4 was stronger
+(fortress 57.3) but makes a stack nearly 2.5× its HP.
+
+Banning more elements doesn't help layering. Bringing every wizard to 2 banned elements (non-signature,
+spread evenly): readStrike 51.3, sealOnly 52.5, fortress 54.2; to 3: 49.5 / 51.8 / 55.8, with fewer
+layers (fewer elements to layer in). Bans stay a balancing lever, not a ward lever.
+
+Fortress is an AI personality, `aiWard:"fortress"` in `characters.json` (`aiFortress` / `AI_FORTRESS` in
+`js/game.js`, checked before the usual weights): seal an unsealed 15+ HP ward (70%), and over a sealed
+ward raise a middle- or outer-ring ward of a new element (70%), preferring an element the foe can't cast.
+Confirmed with `KEEN=… node tools/layer_strats.js stock,fortress 30` (Bulwark 0.5): Skadi +10.3,
+Fizzwick +10.2, Sylvara +9.6, Malachar +9.1, Nyxara +9.0, Eldrin +7.6, Mordant +7.3, Gretch +6.7,
+Mirel +6.3, Gnash +6.1, Korvath +5.4, Cinder +1.4. Given to the walls-and-patience wizards: Eldrin,
+Sylvara, Skadi, Korvath, Nyxara. Mordant was dropped from it: hexes ticking behind a sealed Bulwark put
+him at 59–63% even at 42 HP with Agony 6.
+
+HP after (80 games a matchup): Eldrin 46, Skadi 48, Korvath 55, Nyxara 53, Ponder 55, Mirel 53,
+Zakkit 60, Mary 57, Fizzwick 57, Gretch 56, Valdris 53. Result: 45.8–55.3%, about 17.2 rounds (was
+14.8: sealed stacks last). Fortress wizards seal 3.6–6 times a game and layer about once; the rest
+seal about once. To shorten games, lower `AI_FORTRESS` or raise ward wear.

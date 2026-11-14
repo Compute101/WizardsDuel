@@ -14,7 +14,8 @@
       "I have endured far worse than you. Come back when you have.",
       "The stalwart does not fall. Will you prove the same?"
     ],
-    "hp": 49,
+    "hp": 46,
+    "aiWard": "fortress",
     "dmgMult": 1.1,
     "sealAll": true,
     "spells": [
@@ -161,6 +162,7 @@
       "My roots run deeper than your courage. Try growing some."
     ],
     "hp": 61,
+    "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
@@ -457,7 +459,8 @@
       "You froze long before my blizzard reached you.",
       "The permafrost claims all things eventually. Even stubborn wizards."
     ],
-    "hp": 51,
+    "hp": 48,
+    "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -534,7 +537,7 @@
       "Every spark you waste, Zakkit hoards it, twists it, gives it back. Green-burning, yes!",
       "The warpstorm obeys Zakkit! Squeal-squeal, man-thing, squeal!"
     ],
-    "hp": 58,
+    "hp": 60,
     "dmgMult": 1.1,
     "forbidden": [
       "physical"
@@ -613,7 +616,7 @@
       "Your defeat was written before this duel began. I merely carried it out.",
       "Kneel before the radiance, or be consumed by it. There is no third option."
     ],
-    "hp": 55,
+    "hp": 57,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -755,7 +758,7 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 53,
+    "hp": 55,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -981,7 +984,7 @@
       "You called it ugly. Gretch calls it efficient.",
       "The swamp takes all things. Even stubborn little wizards."
     ],
-    "hp": 53,
+    "hp": 56,
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
@@ -1065,7 +1068,7 @@
       "Death is not an ending. It is merely an inconvenience.",
       "Kneel before the undying, or be consumed by it. There is no third option."
     ],
-    "hp": 51,
+    "hp": 53,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -1141,7 +1144,7 @@
       "Which one was real? Wrong answer — they all were.",
       "Deception is not dishonesty. It is simply a more elegant form of truth."
     ],
-    "hp": 51,
+    "hp": 53,
     "dmgMult": 1.0,
     "forbidden": [
       "physical",
@@ -1292,7 +1295,8 @@
       "Strike me. My scales have tasted dragonfire and grown harder for it.",
       "I have one wrath left in me. You have already wasted my patience earning it."
     ],
-    "hp": 59,
+    "hp": 55,
+    "aiWard": "fortress",
     "dmgMult": 1.05,
     "forbidden": [
       "ice"
@@ -1364,7 +1368,7 @@
       "Half of what's in my satchel is medicine. The other half is, well, also medicine. Different patient.",
       "Don't worry about the smell. That's normal. Probably."
     ],
-    "hp": 54,
+    "hp": 57,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1438,7 +1442,8 @@
       "You cling to your strength as if it makes you safe. The bigger they are, the more there is to take.",
       "Don't struggle. The void doesn't hate you. It just... empties."
     ],
-    "hp": 59,
+    "hp": 53,
+    "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
