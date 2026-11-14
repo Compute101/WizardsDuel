@@ -209,6 +209,12 @@ Made harder than the others on purpose (Dispels were too easy). The sequence gly
 
 ---
 
+## Player profiles
+`js/profiles.js` (loaded before `js/game.js`): named profiles saved on the device (localStorage `wd-profiles`). The title screen's chip (`#btn-profile`) opens `#profile-overlay`: create / switch / rename / delete, and a stats page (rank and XP bar, W-L-D and win rate, streaks, a "Wizards defeated" portrait grid, nemesis, by mode, your wizards, against, head to head, encounters, recent 25 matches). First visit asks for a name.
+- **Seats:** `Profiles.setSeats({p1:id,…})` when a mode starts: Arcade / Encounter use the active profile; 2 Player and 3–4 Wizards ask who plays each extra player seat (`Profiles.choosePlayers`, Guest = no stats). `playerLabel(who)` shows the profile name in hand-offs, reveal cards and 2 Player titles.
+- **Recording:** `recordDuel` (from `endGame`; every 2 Player round counts as a game) and `recordMulti` (from `showMultiEnd`; Encounter by band, 3–4 Wizards with place; a loss counts only against the winners). Training and the sim never record. The XP / rank-up / first-win line under the result is `#ovprof` (`Profiles.showSummary`).
+- **Progression:** XP (`Profiles.XP`: win 100, draw 40, loss 25, +50 for a first win over a wizard, Arcade +15 × stage and +300 for a clear, Encounter win +60) climbs `RANKS` (Novice → Grand Archmage).
+
 ## Tabletop mode
 A separate, simplified rule set for playing on a real table. **It never touches the standard game:** `js/game.js` doesn't use it (the app loads it only for the Tabletop rules screen), and the standard game stays the default.
 - **Counters are tiddlywinks:** HP, mana and wards are whole counters. HP is capped at 12 (`RULES.maxHp`) so both players can share one colour of 25 health winks; mana and ward stay at 20 (`RULES.max`).
@@ -301,6 +307,7 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 | Balance simulator (AI-vs-AI win rates) | `tools/balance.html`, `simMatch` in `js/game.js` | whole file |
 | Encounter fighters and balance | `fighters.json`, `BANDS` in `js/game.js`, `tools/encounter_sim.js` | whole files |
 | Tabletop mode (rules, engine, AI, sim) | `js/tabletop.js`, `tabletop.json`, `docs/tabletop-rules.md` | whole files |
+| Player profiles (stats, ranks, UI) | `js/profiles.js` | whole file |
 | Puzzle screen HTML | `index.html` | ~242 |
 | Canvas styling | `css/style.css` | ~530–560 |
 

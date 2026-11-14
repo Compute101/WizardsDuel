@@ -3433,7 +3433,7 @@ function showReveal(){
   cards.innerHTML=activeSeats().map(who=>{
     const cfg=seatCfg(who), act=gs.pending[who], d=describeAction(who,act);
     const taunt=rivalTaunt(who,act);
-    const label=!passPhone()?cfg.name:isHumanSeat(who)?'Player '+(PLAYERS.indexOf(who)+1):cfg.name+' (AI)';
+    const label=!passPhone()?cfg.name:isHumanSeat(who)?playerLabel(who):cfg.name+' (AI)';
     // With more than one foe, say who each spell is aimed at
     const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${hitsAllFoes(who,act)?'All foes':seatCfg(act.target).name}</span>`:
       act.ally&&act.ally!==who?`<span class="rv-aim">→ ${seatCfg(act.ally).name}</span>`:'';
@@ -6108,6 +6108,7 @@ function showMultiEnd(team){
   gameEnded=true;
   gs.myTurn=false; gs.busy=true;
   const winners=team?PLAYERS.filter(w=>seatTeam(w)===team):[];
+  recordMulti(team,winners);
   const names=ws=>ws.map(w=>seatCfg(w).name).join(' & ');
   if(encounterBand){
     // An encounter: victory or defeat for the wizard, and who fell
@@ -6204,7 +6205,8 @@ function fillRandomAISeats(){
 function labelMultiPick(){
   const i=multiPicks.length, lbl=document.getElementById('char-player-label');
   const team=multiSetup.format==='2v2'?' · Team '+(i<2?'A':'B'):'';
-  lbl.textContent='Wizard '+(i+1)+(multiSetup.human[i]?'':' (AI)')+team+': Choose';
+  const who=hasProfiles()&&multiSetup.human[i]&&Profiles.nameOf('p'+(i+1));
+  lbl.textContent=(who||'Wizard '+(i+1))+(multiSetup.human[i]?'':' (AI)')+team+': Choose';
   lbl.style.display='';
 }
 function checkWin(){
@@ -6263,9 +6265,47 @@ function resetTrainingRound(knockedOut){
   },950);
 }
 
+// ── PROFILE STATS (js/profiles.js) ──
+// Who sits in each seat comes from Profiles.seats (set when a mode starts); guests and AI seats aren't recorded.
+const hasProfiles=()=>typeof Profiles!=='undefined';
+function playerLabel(who){ return (hasProfiles()&&Profiles.nameOf(who))||'Player '+(PLAYERS.indexOf(who)+1); }
+// A 1v1 duel (Arcade or 2 Player): won is true / false / 'draw' from p1's side
+function recordDuel(won){
+  if(!hasProfiles()) return;
+  if(trainingMode||simMode){ Profiles.showSummary([]); return; }
+  const ids=Profiles.seats, rounds=gs.round||0;
+  const res=w=>won==='draw'?'draw':(w==='p1')===!!won?'win':'loss';
+  const mode=twoPlayerMode?'versus':tournamentQueue.length?'arcade':'duel';
+  const out=['p1','p2'].filter(w=>ids[w]&&(w==='p1'||twoPlayerMode)).map(w=>{
+    const foe=w==='p1'?'p2':'p1';
+    const o={mode, char:w==='p1'?p1Key:p2Key, result:res(w), rounds, foes:[{char:w==='p1'?p2Key:p1Key, pid:twoPlayerMode?ids[foe]:null}]};
+    if(mode==='arcade'){ o.arcadeStage=tournamentIndex+1; o.arcadeClear=won===true&&tournamentIndex>=tournamentQueue.length-1; }
+    return Profiles.recordGame(ids[w],o);
+  });
+  Profiles.showSummary(out);
+}
+// A 3–4 wizard duel or an Encounter: team is the winning team (null for a draw)
+function recordMulti(team,winners){
+  if(!hasProfiles()) return;
+  if(simMode){ Profiles.showSummary([]); return; }
+  const ids=Profiles.seats, rounds=gs.round||0;
+  const out=PLAYERS.filter(w=>ids[w]&&isHumanSeat(w)).map(w=>{
+    const result=!team?'draw':seatTeam(w)===team?'win':'loss';
+    if(encounterBand) return Profiles.recordGame(ids[w],{mode:'encounter', char:seatKey(w), result:gs.timeUp&&result==='loss'?'draw':result, rounds, band:encounterBand.id, foes:[]});
+    // A loss counts against the winners only, not the others who fell too
+    const foes=PLAYERS.filter(f=>seatTeam(f)!==seatTeam(w)&&(result!=='loss'||winners.includes(f))).map(f=>({char:seatKey(f), pid:ids[f]||null}));
+    // Place: the winners share 1st; everyone else by when they fell
+    const order=(gs.outOrder||[]).slice().reverse().map(o=>o.who).filter(x=>!winners.includes(x));
+    const place=result==='win'?1:winners.length+order.indexOf(w)+1;
+    return Profiles.recordGame(ids[w],{mode:'multi', char:seatKey(w), result, rounds, foes, place:place>0?place:null});
+  });
+  Profiles.showSummary(out);
+}
+
 function endGame(won){
   if(gameEnded) return;
   gameEnded=true;
+  recordDuel(won);
   const isDraw=won==='draw';
   gs.myTurn=false; gs.busy=true;
   if(isDraw){ gs.p1anim='death'; gs.p2anim='death'; }
@@ -6286,13 +6326,13 @@ function endGame(won){
         document.getElementById('ovtitle').style.color='#ff8844';
       } else {
         document.getElementById('ovtitle').textContent=
-          isMatchOver?'Player '+winnerNum+' Wins the Match!':'Player '+winnerNum+' Wins Round '+matchRound+'!';
+          isMatchOver?playerLabel('p'+winnerNum)+' Wins the Match!':playerLabel('p'+winnerNum)+' Wins Round '+matchRound+'!';
         document.getElementById('ovtitle').style.color=winnerCfg.col;
       }
       const p1s='★'.repeat(Math.min(2,p1MatchWins))+'☆'.repeat(Math.max(0,2-p1MatchWins));
       const p2s='★'.repeat(Math.min(2,p2MatchWins))+'☆'.repeat(Math.max(0,2-p2MatchWins));
       document.getElementById('ovdesc').textContent=
-        p1Cfg.name+' (P1): '+p1s+'  vs  '+p2Cfg.name+' (P2): '+p2s;
+        p1Cfg.name+' ('+playerLabel('p1')+'): '+p1s+'  vs  '+p2Cfg.name+' ('+playerLabel('p2')+'): '+p2s;
       continueBtn.textContent=isMatchOver?'Back to Title':'Fight Round '+(matchRound+1)+' →';
       document.getElementById('overlay').classList.add('active');
       return;
@@ -9426,7 +9466,7 @@ function pickCharacter(key){
       p1Key=key; p1Cfg=CHAR_DEFS[key];
       twoPlayerPhase=2;
       const lbl=document.getElementById('char-player-label');
-      lbl.textContent='Player 2: Choose Your Wizard';
+      lbl.textContent=playerLabel('p2')+': Choose Your Wizard';
       lbl.style.display='';
       return;
     } else {
@@ -9449,6 +9489,7 @@ function pickCharacter(key){
   const bossList=ARCADE_BOSSES.filter(k=>k!==key);
   tournamentQueue=[...earlyFoes,...bossList];
   tournamentIndex=0;
+  if(hasProfiles()) Profiles.arcadeRun(Profiles.seats.p1);
   p2Key=tournamentQueue[0];
   p2Cfg=CHAR_DEFS[p2Key];
   showBracket(false);
@@ -9491,7 +9532,7 @@ function startTwoPlayerBattle(){
 function showHandoffOverlay(toPlayer, callback){
   const cfg=seatCfg(toPlayer);
   const num=PLAYERS.indexOf(toPlayer)+1;
-  document.getElementById('handoff-player-num').textContent='Player '+num;
+  document.getElementById('handoff-player-num').textContent=playerLabel(toPlayer);
   document.getElementById('handoff-char-name').textContent=cfg.name.toUpperCase();
   const portrait=document.getElementById('handoff-portrait');
   portrait.src='portraits/small/'+seatKey(toPlayer)+'.jpg';
@@ -10049,8 +10090,10 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btn-duel-back').addEventListener('click',()=>{
     duelOverlay.style.display='none';
   });
+  const activeId=()=>hasProfiles()&&Profiles.active()?Profiles.active().id:null;
   document.getElementById('btn-duel-arcade').addEventListener('click',()=>{
     duelOverlay.style.display='none';
+    if(hasProfiles()) Profiles.setSeats({p1:activeId()});
     trainingMode=false; twoPlayerMode=false; twoPlayerPhase=1;
     document.getElementById('char-player-label').style.display='none';
     showScreen('char-screen');
@@ -10083,6 +10126,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     const b=e.target.closest('[data-band]');
     if(!b) return;
     encounterBand=bandById(b.dataset.band);
+    if(hasProfiles()) Profiles.setSeats({p1:activeId()});
     document.getElementById('encounter-overlay').classList.remove('show');
     trainingMode=false; twoPlayerMode=false; multiMode=false; multiPicks=[];
     const lbl=document.getElementById('char-player-label');
@@ -10115,17 +10159,34 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
   document.getElementById('btn-multi-go').addEventListener('click',()=>{
     document.getElementById('multi-overlay').classList.remove('show');
-    trainingMode=false; twoPlayerMode=false; multiMode=true; multiPicks=[];
-    labelMultiPick();
-    showScreen('char-screen');
+    const go=()=>{
+      trainingMode=false; twoPlayerMode=false; multiMode=true; multiPicks=[];
+      labelMultiPick();
+      showScreen('char-screen');
+    };
+    if(!hasProfiles()){ go(); return; }
+    // Every player seat after the first says who's playing it (seat 1 is the active profile)
+    const extra=[];
+    for(let i=1;i<multiSetup.n;i++) if(multiSetup.human[i]) extra.push(i);
+    Profiles.choosePlayers(extra.map(i=>'Wizard '+(i+1)),ids=>{
+      const map={p1:activeId()};
+      extra.forEach((i,j)=>map['p'+(i+1)]=ids[j]);
+      Profiles.setSeats(map);
+      go();
+    },()=>document.getElementById('multi-overlay').classList.add('show'));
   });
   document.getElementById('btn-duel-2player').addEventListener('click',()=>{
     duelOverlay.style.display='none';
-    trainingMode=false; twoPlayerMode=true; twoPlayerPhase=1;
-    const lbl=document.getElementById('char-player-label');
-    lbl.textContent='Player 1: Choose Your Wizard';
-    lbl.style.display='';
-    showScreen('char-screen');
+    const go=()=>{
+      trainingMode=false; twoPlayerMode=true; twoPlayerPhase=1;
+      const lbl=document.getElementById('char-player-label');
+      lbl.textContent=playerLabel('p1')+': Choose Your Wizard';
+      lbl.style.display='';
+      showScreen('char-screen');
+    };
+    if(!hasProfiles()){ go(); return; }
+    Profiles.choosePlayers(['Player 2'],ids=>{ Profiles.setSeats({p1:activeId(), p2:ids[0]}); go(); },
+      ()=>{ duelOverlay.style.display='flex'; });
   });
 
   document.getElementById('btn-practice').addEventListener('click',()=>{
@@ -10208,7 +10269,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     } else if(twoPlayerMode&&twoPlayerPhase===2){
       twoPlayerPhase=1;
       const lbl=document.getElementById('char-player-label');
-      lbl.textContent='Player 1: Choose Your Wizard';
+      lbl.textContent=playerLabel('p1')+': Choose Your Wizard';
     } else {
       twoPlayerMode=false; twoPlayerPhase=1;
       document.getElementById('char-player-label').style.display='none';
