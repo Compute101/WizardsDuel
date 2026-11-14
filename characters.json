@@ -14,7 +14,7 @@
       "I have endured far worse than you. Come back when you have.",
       "The stalwart does not fall. Will you prove the same?"
     ],
-    "hp": 46,
+    "hp": 52,
     "aiWard": "fortress",
     "dmgMult": 1.1,
     "sealAll": true,
@@ -161,7 +161,7 @@
       "You tangled with nature itself. The vines always win.",
       "My roots run deeper than your courage. Try growing some."
     ],
-    "hp": 69,
+    "hp": 59,
     "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
@@ -176,7 +176,7 @@
         "el": {
           "cat": "protect",
           "kind": "buff",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 3,
           "tier": 2,
           "effect": {
@@ -195,7 +195,7 @@
         "el": {
           "cat": "dispel",
           "kind": "curse",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 2,
           "tier": 2,
           "effect": {
@@ -212,13 +212,14 @@
         "name": "Vine Whip",
         "icon": "🌱",
         "el": {
+          "dmgKind": "physical",
           "cat": "damage",
           "kind": "strike",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 4,
           "power": 10,
           "tier": 2,
-          "desc": "10 physical + vines 3 a round × 3 (physical too: only a Physical ward stops them)",
+          "desc": "10 physical + vines 3 a round × 3 (real vines: a Guard stops them, a ward doesn't)",
           "dot": {
             "dmg": 3,
             "rounds": 3,
@@ -242,7 +243,8 @@
       "Time bends to my will. Your next attempt? Already foreseen.",
       "You're as predictable as sunrise. Surprise me next time."
     ],
-    "hp": 49,
+    "hp": 57,
+    "phys": {"atk": 4, "guard": 14},
     "dmgMult": 1.05,
     "spells": [
       {
@@ -310,7 +312,8 @@
       "Gnash not done smashing. Where you going? COME BACK.",
       "Little mage runs away? Gnash will wait. Gnash ALWAYS waits."
     ],
-    "hp": 63,
+    "hp": 55,
+    "phys": {"atk": 6, "guard": 20},
     "dmgMult": 1.05,
     "forbidden": [
       "arcane",
@@ -324,7 +327,7 @@
         "el": {
           "cat": "protect",
           "kind": "buff",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 3,
           "tier": 2,
           "effect": {
@@ -340,13 +343,14 @@
         "name": "Savage Charge",
         "icon": "⚔️",
         "el": {
+          "dmgKind": "physical",
           "cat": "damage",
           "kind": "strike",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 5,
           "power": 16,
           "tier": 2,
-          "desc": "16 physical; burns 2 mana",
+          "desc": "16 physical — a charge, not a spell: a Guard stops it, a ward doesn't; burns 2 mana",
           "manaburn": 2
         }
       },
@@ -387,7 +391,7 @@
       "Roll the dice, fan the flames — and never, ever bet against fire.",
       "Still smouldering. Still standing. Come back when you're ready to burn."
     ],
-    "hp": 56,
+    "hp": 54,
     "dmgMult": 1.15,
     "forbidden": [
       "ice"
@@ -539,9 +543,10 @@
       "The warpstorm obeys Zakkit! Squeal-squeal, man-thing, squeal!"
     ],
     "hp": 65,
+    "phys": {"atk": 4, "guard": 14},
     "dmgMult": 1.1,
     "forbidden": [
-      "physical"
+      "earth"
     ],
     "spells": [
       {
@@ -617,7 +622,7 @@
       "Your defeat was written before this duel began. I merely carried it out.",
       "Kneel before the radiance, or be consumed by it. There is no third option."
     ],
-    "hp": 57,
+    "hp": 61,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -686,7 +691,7 @@
       "The hexes were already written. Your fate merely confirmed them.",
       "Kneel before the dark, or be consumed by it. There is no third option."
     ],
-    "hp": 56,
+    "hp": 53,
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
@@ -736,7 +741,7 @@
         "el": {
           "cat": "dispel",
           "kind": "curse",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 3,
           "tier": 2,
           "effect": {
@@ -760,7 +765,8 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 54,
+    "hp": 70,
+    "phys": {"atk": 4, "guard": 14},
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -798,9 +804,9 @@
           "tier": 1,
           "action": {
             "type": "siphon",
-            "amt": 3
+            "amt": 5
           },
-          "desc": "Steal 3 mana as the round begins, before they pay",
+          "desc": "Steal 5 mana as the round begins, before they pay",
           "quick": true
         }
       },
@@ -845,7 +851,8 @@
       "You threw everything you had at me. I barely felt it.",
       "The mountain endures all things. So too shall I."
     ],
-    "hp": 66,
+    "hp": 60,
+    "phys": {"atk": 6, "guard": 20},
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
@@ -856,13 +863,14 @@
         "name": "Stoneskin",
         "icon": "🧱",
         "el": {
+          "guard": true,
           "cat": "protect",
           "kind": "ward",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 6,
           "power": 40,
           "tier": 2,
-          "desc": "Physical ward of 40"
+          "desc": "Skin of stone: a Guard of 40 against blows (it doesn't stop magic, and dispels can't touch it)"
         }
       },
       {
@@ -877,10 +885,11 @@
           "tier": 2,
           "effect": {
             "type": "resist",
+              "physOnly": true,
             "pct": 0.25,
             "rounds": 3
           },
-          "desc": "−25% damage"
+          "desc": "−25% damage from blows (physical defence)"
         }
       },
       {
@@ -890,7 +899,7 @@
         "el": {
           "cat": "damage",
           "kind": "strike",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 6,
           "power": 22,
           "tier": 3,
@@ -910,7 +919,8 @@
       "You counted the blades. You forgot to count the one behind you.",
       "The patient sword outlasts the hasty one. Always."
     ],
-    "hp": 55,
+    "hp": 51,
+    "phys": {"atk": 6, "guard": 18},
     "dmgMult": 1.0,
     "forbidden": [
       "dark"
@@ -923,14 +933,14 @@
         "el": {
           "cat": "protect",
           "kind": "buff",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 2,
           "tier": 2,
           "effect": {
             "type": "minion",
             "minion": "blade",
             "dmg": 4,
-            "elem": "physical",
+            "elem": "earth",
             "max": 3,
             "rounds": null
           },
@@ -942,13 +952,14 @@
         "name": "Bladestorm",
         "icon": "💫",
         "el": {
+          "dmgKind": "physical",
           "cat": "damage",
           "kind": "strike",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 2,
           "power": 0,
           "tier": 2,
-          "desc": "Launch all blades: 10 each",
+          "desc": "Launch all blades: 10 each (steel: a Guard stops them, a ward doesn't)",
           "perBlade": 10,
           "requires": "blades"
         }
@@ -965,10 +976,11 @@
           "tier": 2,
           "effect": {
             "type": "resist",
+              "physOnly": true,
             "pct": 0.22,
             "rounds": 3
           },
-          "desc": "Take 22% less damage"
+          "desc": "Take 22% less damage from blows (physical defence)"
         }
       }
     ]
@@ -986,7 +998,8 @@
       "You called it ugly. Gretch calls it efficient.",
       "The swamp takes all things. Even stubborn little wizards."
     ],
-    "hp": 53,
+    "hp": 58,
+    "phys": {"atk": 6, "guard": 18},
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
@@ -1018,7 +1031,7 @@
         "el": {
           "cat": "dispel",
           "kind": "curse",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 3,
           "tier": 2,
           "effect": {
@@ -1146,10 +1159,11 @@
       "Which one was real? Wrong answer — they all were.",
       "Deception is not dishonesty. It is simply a more elegant form of truth."
     ],
-    "hp": 53,
+    "hp": 56,
+    "phys": {"atk": 4, "guard": 14},
     "dmgMult": 1.0,
     "forbidden": [
-      "physical",
+      "earth",
       "fire"
     ],
     "spells": [
@@ -1224,7 +1238,7 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 54,
+    "hp": 59,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1297,7 +1311,8 @@
       "Strike me. My scales have tasted dragonfire and grown harder for it.",
       "I have one wrath left in me. You have already wasted my patience earning it."
     ],
-    "hp": 55,
+    "hp": 47,
+    "phys": {"atk": 6, "guard": 18},
     "aiWard": "fortress",
     "dmgMult": 1.05,
     "forbidden": [
@@ -1316,11 +1331,12 @@
           "tier": 2,
           "effect": {
             "type": "resist",
+              "physOnly": true,
             "pct": 0.12,
             "retaliate": 3,
             "rounds": 3
           },
-          "desc": "−12% damage, strikers take 3"
+          "desc": "−12% damage from blows (physical defence), strikers take 3"
         }
       },
       {
@@ -1346,13 +1362,14 @@
         "name": "Ancient Wrath",
         "icon": "💥",
         "el": {
+          "dmgKind": "physical",
           "cat": "damage",
           "kind": "strike",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 9,
           "power": 35,
           "tier": 3,
-          "desc": "35 physical — once per duel",
+          "desc": "35 physical — claws and bulk, not magic: a Guard stops it — once per duel",
           "oncePerDuel": true
         }
       }
@@ -1371,6 +1388,7 @@
       "Don't worry about the smell. That's normal. Probably."
     ],
     "hp": 57,
+    "phys": {"atk": 4, "guard": 14},
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1378,13 +1396,14 @@
         "name": "Caustic Bomb",
         "icon": "🧪",
         "el": {
+          "dmgKind": "physical",
           "cat": "damage",
           "kind": "strike",
           "elem": "dark",
           "cost": 4,
           "power": 8,
           "tier": 2,
-          "desc": "8 + poison 5 a round × 3 — if it reaches HP, the poison seeps past wards (it's not magic)",
+          "desc": "8 physical (a thrown bomb: a Guard stops it) + poison 5 a round × 3 — if it reaches HP, the poison seeps past every defence",
           "dot": {
             "dmg": 5,
             "rounds": 3,
@@ -1399,7 +1418,7 @@
         "el": {
           "cat": "protect",
           "kind": "instant",
-          "elem": "physical",
+          "elem": "earth",
           "cost": 4,
           "tier": 1,
           "action": {
@@ -1520,7 +1539,8 @@
       "Dance, my dead. Dance, and let the living hear the music.",
       "Every year you have lived is a debt. I have come to collect."
     ],
-    "hp": 53,
+    "hp": 50,
+    "phys": {"atk": 5, "guard": 18},
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -1605,7 +1625,8 @@
       "You DARE stand before me? I will drag you screaming through the Gate!",
       "Run, then! Hide! There is nowhere my fire cannot follow!"
     ],
-    "hp": 50,
+    "hp": 56,
+    "phys": {"atk": 5, "guard": 15},
     "dmgMult": 1.0,
     "forbidden": [
       "ice"

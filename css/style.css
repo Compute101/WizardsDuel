@@ -1032,6 +1032,10 @@ body {
 #wheel-svg .wname { font-size: 9px; font-family: 'Cinzel', serif; font-weight: 700; fill: #fff; opacity: 0.85; }
 #wheel-svg .wcentre { fill: #140c26; stroke: #c9a84c; stroke-width: 1.5; }
 #wheel-svg .wcentre-ico { font-size: 24px; fill: #f0cc6a; }
+#wheel-svg .whub { cursor: pointer; }
+#wheel-svg .whub:hover .wcentre { fill: #2a1c48; stroke: #f0cc6a; stroke-width: 2.5; }
+#wheel-svg .whub-name { font-size: 10px; fill: #e8dcc0; letter-spacing: .5px; }
+#wheel-svg .whub text { pointer-events: none; }
 #wheel-legend { width: 100%; font-size: 11px; }
 .wl-row {
   display: grid;

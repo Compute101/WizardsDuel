@@ -135,7 +135,8 @@ function load(chars,tt){
     const c=chars[k], t=tt[k];
     CHARS[k]={key:k, name:c.name, title:c.title, col:c.col, sealAll:!!c.sealAll, sealCostMod:c.sealCostMod||0,
       hp:Math.min(RULES.maxHp,t.hp), baseHp:Math.min(RULES.maxHp,t.hp), alt:t.rules||{},
-      deathless:t.deathless||0, forbidden:t.forbidden||c.forbidden||[], spells:t.spells||[]};
+      deathless:t.deathless||0, forbidden:(t.forbidden||c.forbidden||[]).map(e=>e==='earth'?'physical':e),   // the app's Earth is tabletop's Physical (until tabletop moves to eight elements)
+      spells:t.spells||[]};
   });
   applyCharRules();
   return CHARS;

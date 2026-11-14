@@ -862,3 +862,29 @@ Tidecaster (original name and look if ever published).
 3. Minions as bodies: targeting minions, bodyguard minions, the Command button.
 4. Non-wizard enemies (soldiers, archers, knights): Actions only, balanced with the sim.
 5. Tabletop mirror: magic uses winks, Actions just go off.
+
+### Phase 1 built: Actions and the Earth rename
+
+- Physical → Earth (`earth`, 🪨, magic); bans magic-only; tabletop maps `earth` bans back to its own
+  `physical` until Phase 5.
+- Actions in each wheel's centre (`ACTIONS`, `executeAction`, `castAction`): Attack (physical, the
+  character's `phys.atk`), Guard (a `guard` layer of `phys.guard` HP: one at most, beneath the magic wards,
+  not sealable, dispels and curses can't touch it, wears like a ward), Grapple (`GRAPPLE_MULT` 2 × atk off
+  a Guard; nothing else). Free, no minigame, never fizzle, silence or risk.
+- Signatures re-sorted: `dmgKind:"physical"` on Savage Charge, Ancient Wrath, Caustic Bomb, Bladestorm,
+  Vine Whip (and its vines); Stoneskin `guard:true` (a 40 Guard); Stonesoul, Iron Patience, Dragon Scales
+  `physOnly` resists; Frost Armor resists both.
+- `phys` stats: default 5 / 15; Gnash, Durin 6 / 20; Korvath, Gretch, Weizan 6 / 18; Daveron 5 / 18;
+  Frederick 5 / 15; Zakkit, Mirel, Ponder, Fizzwick, Aurelia 4 / 14. A wider spread (brutes 7–8 attack)
+  put Korvath and Gnash at 61–67%: a free Attack every round makes the attack stat count for a lot.
+- AI (`aiPhysAction`, `AI_ACTIONS`): Attack through a magic ward with no Guard (65%) or when it can't
+  afford a strike; Guard by the foe's `physThreat` and readily (75%) behind a lone magic ward, plus a
+  Protection weight for it; Grapple a Guard. Fixes found on the way: a Vanished wizard never Attacks
+  (it reveals him) and nobody Attacks into Vanish; Mana Siphon is skipped at the mana cap (Ponder spammed it
+  at 20 mana).
+- Free Actions weaken mana denial: Ponder fell to 23–28% (Mana Siphon matters less when a starved foe can
+  still Attack). Mana Siphon steals 5 (was 3) and Ponder's HP is 70 for now; his kit wants a rethink.
+- HP after: Ponder 70, Korvath 47, Sylvara 59, Gnash 55, Durin 60, Weizan 51, Cinder 54, Eldrin 52,
+  Aurelia 57, Thessaly 59, Mary 61, Gretch 58, Mirel 56, Daveron 50, Mordant 53, Frederick 56.
+- Result (80 games a matchup, twice): 45.4–55.0% and 45.4–54.1%, about 15.5 rounds. Picks: Attack 8%,
+  Guard 12.5%, Grapple 7%, wheel Damage 15%, Protection 10.5%, Dispel 12%, Seal 9%, signatures 22.5%.
