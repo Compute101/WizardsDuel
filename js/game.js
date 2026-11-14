@@ -3439,7 +3439,7 @@ const ELEM_WARD_WEAR=4;         // flat ward HP lost at each round end
 //   sealBlocks: a seal stops the whole dispel, whatever its ring: it breaks the seal and goes no further,
 //             so a sealed ward takes two dispels (a cheap one for the seal, then one for the ward).
 //             false: a Greater dispel breaks the seal and goes on with what sealSoak leaves it.
-const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:true, sealSoak:15, sealBlocks:true};
+const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:true, sealSoak:10, sealBlocks:true};
 // Seal Ward. A character's sealCostMod (characters.json) changes the cost; sealAll seals every layer
 // at once (Eldrin's hook, now that everyone can brace a ward).
 const SEAL={cost:1};
@@ -3476,8 +3476,8 @@ const ELEMENTS=[
 ];
 const ELEM_CATS={
   //       cost / power per tier (inner, middle, outer ring); stage = resolution order
-  protect:{name:'Protection', verb:'Ward',   icon:'🛡', cost:[5,8,12], power:[20,35,55], stage:1, unit:'ward HP'},
-  dispel: {name:'Dispel',     verb:'Dispel', icon:'✦',  cost:[1,2,4],  power:[15,30,50], stage:2, unit:'vs ward'},
+  protect:{name:'Protection', verb:'Ward',   icon:'🛡', cost:[5,8,12], power:[25,45,70], stage:1, unit:'ward HP'},
+  dispel: {name:'Dispel',     verb:'Dispel', icon:'✦',  cost:[1,2,4],  power:[10,20,35], stage:2, unit:'vs ward'},
   damage: {name:'Damage',     verb:'Strike', icon:'⚔️', cost:[3,5,8],  power:[8,15,26],  stage:3, unit:'dmg'},
 };
 const ELEM_TIER_NAMES=['Lesser ','','Greater '];

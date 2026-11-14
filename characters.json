@@ -160,7 +160,7 @@
       "You tangled with nature itself. The vines always win.",
       "My roots run deeper than your courage. Try growing some."
     ],
-    "hp": 58,
+    "hp": 61,
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
@@ -457,7 +457,7 @@
       "You froze long before my blizzard reached you.",
       "The permafrost claims all things eventually. Even stubborn wizards."
     ],
-    "hp": 53,
+    "hp": 51,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -534,7 +534,7 @@
       "Every spark you waste, Zakkit hoards it, twists it, gives it back. Green-burning, yes!",
       "The warpstorm obeys Zakkit! Squeal-squeal, man-thing, squeal!"
     ],
-    "hp": 55,
+    "hp": 58,
     "dmgMult": 1.1,
     "forbidden": [
       "physical"
@@ -682,7 +682,7 @@
       "The hexes were already written. Your fate merely confirmed them.",
       "Kneel before the dark, or be consumed by it. There is no third option."
     ],
-    "hp": 50,
+    "hp": 47,
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
@@ -981,7 +981,7 @@
       "You called it ugly. Gretch calls it efficient.",
       "The swamp takes all things. Even stubborn little wizards."
     ],
-    "hp": 51,
+    "hp": 53,
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
@@ -1065,7 +1065,7 @@
       "Death is not an ending. It is merely an inconvenience.",
       "Kneel before the undying, or be consumed by it. There is no third option."
     ],
-    "hp": 48,
+    "hp": 51,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -1513,7 +1513,7 @@
       "Dance, my dead. Dance, and let the living hear the music.",
       "Every year you have lived is a debt. I have come to collect."
     ],
-    "hp": 54,
+    "hp": 57,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"

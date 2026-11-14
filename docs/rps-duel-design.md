@@ -660,3 +660,22 @@ cut (60–80 games a matchup): Mordant 58.1% → Agony back to 4 rounds (absolut
 more against smaller pools); Nyxara 41.5% (her strike takes a share of the target's HP, so it shrank
 with them) → HP 59; Mary 55, Fizzwick 54, Sylvara 58, Ponder 53 (low edge); Frederick 52, Durin 63
 (high edge). Result: 44.8–55.6%, about 13.3 rounds.
+
+## Bigger wards, smaller dispels
+
+Wards felt poor value for their mana (a middle ward, 8 mana for 35 HP, was mostly undone by a 2-mana
+dispel of 30), so the AI seldom layered them (0.17 layers a game). Wheel wards went 20 / 35 / 55 →
+**25 / 45 / 70** (costs unchanged, 5 / 8 / 12) and dispels 15 / 30 / 50 → **10 / 20 / 35** (1 / 2 / 4).
+Dispels stay the more efficient answer to a ward: about 9–10 power a mana against 5–6 ward HP a mana,
+so a middle dispel takes 44% of a middle ward for a quarter of its cost (89% if matched, ×2), and it
+takes two to clear one. `WARD_RULES.sealSoak` follows the curse ward hit (half a middle dispel): 15 → 10.
+Signature wards were left alone.
+
+Options tried (Normal AI, 30 games a matchup; range / outside ±8% / rounds / layers a game):
+base 44.7–54.7 / 0 / 13.2 / 0.17 · wards 25/45/70 + dispels 12/24/40: 43.7–57.9 / 0 / 14.4 / 0.22 ·
+30/50/80 + 12/24/40: 39.9–58.6 / 3 / 15.2 / 0.27 · **25/45/70 + 10/20/35: 43.7–57.6 / 0 / 14.8 / 0.24** ·
+30/55/85 + 10/20/35: 40.6–60.2 / 4 / 15.7 / 0.31. Bigger wards lifted Mordant (curses go around wards)
+to about 58% in every option and pushed down the minion casters (who don't use wheel wards) and Sylvara.
+HP after: Mordant 50 → 47, Sylvara 58 → 61, Zakkit 55 → 58, Valdris 48 → 51, Daveron 54 → 57,
+Gretch 51 → 53, Skadi 53 → 51. Result (80 games a matchup): 45.9–55.4%, about 14.8 rounds; Protection
+and Dispel picks each about 30% / 28%, peak ward 27 → 36 HP, seals about 0.4 → 0.7 a game.
