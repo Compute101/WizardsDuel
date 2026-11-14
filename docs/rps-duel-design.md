@@ -939,3 +939,10 @@ Undertow (55%: the foe can't pick Protection next round, cost 2). HP 58, atk 3, 
 she was 45.6–47.3%; at 58, 49.7% (roster 46.5–53.3%, 80 games a matchup). Picks: Summon Fathom 20%,
 Undertow 13%, Blood in the Water 9%. Art: the artist's sprite sheet (Nerissa and Fathom, cut into `sprites/nerissa.png` and `sprites/fathom.png`) and portrait.
 Also: Cinder's Fireball icon 🎱 → 🔥.
+
+Nerissa in tabletop: HP 10 (Advanced 12). Summon Fathom (Normal, 3 mana): a shark minion, 4 HP, bites 1 at
+every round end, one at a time. Blood in the Water (Normal, 4 mana): Water strike of 3, bleeds 1 until
+cleansed. Undertow (Lesser, 2 mana): 4+ on a die, the foe can't pick Protection next round. Tried (Advanced,
+150–250 games): Fathom 3 HP 32.4% · Advanced HP 12 40.5% · Fathom 4 HP 45.6% · bite 4 40.8% · Fathom 4 +
+bite 4 51.1% (but 55–56% in Beginner / Normal) · Fathom 4 + Advanced HP 11 47.9% · **Fathom 4 + Advanced HP
+12 51.8%**. Final (300 games): Beginner 52.9%, Normal 52.3%, Advanced 51.1%.

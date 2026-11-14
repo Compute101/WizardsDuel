@@ -7,7 +7,7 @@ const TT=require(path.join(root,'js/tabletop.js'));
 const chars=TT.load(require(path.join(root,'characters.json')),require(path.join(root,'tabletop.json')));
 const R=TT.RULES;
 const RING=['Lesser','Normal','Greater'];
-const ELEM={fire:'Fire',ice:'Ice',lightning:'Lightning',arcane:'Arcane',physical:'Physical',dark:'Dark'};
+const ELEM={fire:'Fire',ice:'Ice',lightning:'Lightning',arcane:'Arcane',physical:'Physical',dark:'Dark',water:'Water',air:'Air'};
 const CAT={damage:'Damage',protect:'Protection',dispel:'Dispel'};
 
 // Base spells are the same in every rule set; Beginner and Normal flick budget minus the cost,

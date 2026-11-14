@@ -249,5 +249,17 @@
       {"id": "bluefire", "name": "Blue Fire", "cat": "damage", "elem": "fire", "ring": 3, "cost": 6, "kind": "strike", "dmg": 7, "blast": 3,
        "text": "Fire strike of 7. Big blast: 3 of it goes around a ward straight to HP."}
     ]
+    },
+  "nerissa": {
+    "hp": 10,
+    "rules": {"advanced": {"hp": 12}},
+    "spells": [
+      {"id": "fathom", "name": "Summon Fathom", "cat": "protect", "elem": "water", "ring": 2, "cost": 3, "kind": "buff", "effect": {"type": "minion", "minion": "shark", "kind": "minion", "soak": 4, "dmg": 1, "max": 1, "raise": 1},
+       "text": "Fathom, your shark familiar, swims to your side (one at a time). He has 4 HP and stands in front of your ward: damage (strikes and ticks) wears him down before anything reaches your ward. Dispels can't touch him. While he swims, he bites the foe for 1 at every round end."},
+      {"id": "bloodinwater", "name": "Blood in the Water", "cat": "damage", "elem": "water", "ring": 2, "cost": 4, "kind": "strike", "dmg": 3, "dot": {"dmg": 1},
+       "text": "Fathom bites: a Water strike of 3. Until cleansed, the foe bleeds 1 at every round end."},
+      {"id": "undertow", "name": "Undertow", "cat": "dispel", "elem": "water", "ring": 1, "cost": 2, "kind": "curse", "roll": 4, "effect": {"type": "lock", "cat": "protect"},
+       "text": "Roll a die: on 4+ the foe is dragged under and can't pick Protection next round."}
+    ]
   }
 }

@@ -401,4 +401,13 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Infernal Gate** | Protection | Fire | Lesser | 2 | Teleport: nothing aimed at you this round lands, and nothing ticks on you. At round end, trade places at the table: you come out in Infernal Mantle, and your next strike ignores the foe's ward (a Dispel can strip the Mantle first). Not two rounds running. |
 | **Blue Fire** | Damage | Fire | Greater | 6 | Fire strike of 7. Big blast: 3 of it goes around a ward straight to HP. |
 
+### NERISSA — of the Deep
+**HP 10** (Advanced rules: **12**) · Can't cast: Fire
+
+| Spell | Type | Element | Level | Cost | Effect |
+|---|---|---|---|---|---|
+| **Summon Fathom** | Protection | Water | Normal | 3 | Fathom, your shark familiar, swims to your side (one at a time). He has 4 HP and stands in front of your ward: damage (strikes and ticks) wears him down before anything reaches your ward. Dispels can't touch him. While he swims, he bites the foe for 1 at every round end. |
+| **Blood in the Water** | Damage | Water | Normal | 4 | Fathom bites: a Water strike of 3. Until cleansed, the foe bleeds 1 at every round end. |
+| **Undertow** | Dispel | Water | Lesser | 2 | Roll a die: on 4+ the foe is dragged under and can't pick Protection next round. |
+
 <!-- characters:end -->
