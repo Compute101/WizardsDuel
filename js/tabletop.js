@@ -42,6 +42,10 @@ const RULES={
   //            whatever its level. Strikes ignore seals. A pile put on over a sealed one keeps it.
   wards:{boost:true, boostCap:1.5, layers:2, seals:true, sealCost:1, dispelStrips:true},
   dispelAllRing:3,
+  // Strikes, as in the app: a minion's strike is a strike (Vanish, Foresight, Blink's dodge, Stonesoul-type
+  // resist and Warpstone-type vuln meet it; retaliation doesn't), Vanish turns a curse aside (used up), and a
+  // dispel at a Vanished wizard only removes the Vanish, like a seal.
+  strikes:{minions:true, vanishCurses:true, vanishDispel:true},
   // Cleanse (a Dispel at yourself): Lesser removes 1 curse, Normal 2, Greater all of them; it costs
   // 1 mana per level, and the usual 1 / 2 / 3 winks to pot.
   cleanseCost:[1,2,3],
@@ -212,7 +216,7 @@ function addEffect(who,eff,from){
     return true;
   }
   st.effects=st.effects.filter(e=>e.id!==eff.id);
-  st.effects.push(Object.assign({from:gs.round, by:from},eff));
+  st.effects.push(Object.assign({from:gs.round, by:from},eff,eff.type==='vanish'?{until:gs.round+1}:{}));
   return true;
 }
 function removeEffects(who,list){
@@ -350,6 +354,22 @@ function doInstant(who,sp){
 function curseHarm(e){
   return {agony:5, dot:4, silence:4, incomeDrain:3, vuln:3, spellbind:3, candle:2, bewitch:2, lock:1, enthral:1}[e.type]||1;
 }
+// A strike at w misses: Vanish, then Foresight (used up), then dodge rolls
+function strikeMisses(w){
+  const ts=gs[w];
+  if(vanishOf(ts)) return true;   // not used up
+  const abs=fx(ts,'absorbNext')[0];
+  if(abs){ removeEffects(w,[abs]); return true; }
+  return fx(ts,'dodge').some(e=>rolls(e.roll));
+}
+function hitAdjust(ts,dmg){
+  dmg+=fx(ts,'vuln').reduce((s,e)=>s+e.n,0);
+  const res=fx(ts,'resist').reduce((s,e)=>s+e.n,0);
+  return res?Math.max(1,dmg-res):dmg;
+}
+// Vanish (Ponder): this round and the next, every strike at him misses (minions' too) and curses find
+// nothing. Picking Damage reveals him (playRound); a dispel only removes it (doDispel).
+const vanishOf=st=>st.effects.find(e=>e.type==='vanish');
 function doDispel(who,a){
   const st=gs[who], t=foe(who), ts=gs[t], sp=a.sig&&sigById(st,a.sig);
   if(a.self){   // Cleanse: the worst curses first (a player picks which)
@@ -358,7 +378,8 @@ function doDispel(who,a){
   }
   if(sp){
     if(sp.kind==='instant'){ if(!sp.quick) doInstant(who,sp); return; }
-    // A curse
+    // A curse: it can't find a Vanished wizard
+    if(RULES.strikes.vanishCurses&&vanishOf(ts)){ log(sp.name+' finds nothing: '+ts.key+' has Vanished'); return; }
     if(sp.drainNow) loseMana(t,sp.drainNow);
     if(sp.roll&&!rolls(sp.roll)) return;
     const e=Object.assign({id:sp.id, kind:'curse', name:sp.name},sp.effect);
@@ -371,6 +392,9 @@ function doDispel(who,a){
   const power=RULES.cats.dispel.power[a.ring-1];
   const warding=fx(ts,'warding');
   if(warding.length){ removeEffects(t,warding); return; }
+  // Vanish works like a seal: the dispel only removes it, and the ward and other buffs stay
+  const veil=RULES.strikes.vanishDispel&&vanishOf(ts);
+  if(veil){ removeEffects(t,[veil]); return; }
   if(ts.ward){
     // A seal stops the whole dispel: it breaks the seal and goes no further. A Greater dispel that
     // breaks a pile carries on into the next; a Lesser or Normal one stops at the pile it breaks.
@@ -420,12 +444,8 @@ function doDamage(who,a){
   if(sp&&sp.recoil) loseHp(who,sp.recoil);
   if(tgt===who){ incoming(who,dmg,0,true); return; }
   // Misses
-  const abs=fx(ts,'absorbNext')[0];
-  if(abs){ removeEffects(tgt,[abs]); return; }
-  if(fx(ts,'dodge').some(e=>rolls(e.roll))) return;
-  dmg+=fx(ts,'vuln').reduce((s,e)=>s+e.n,0);
-  const res=fx(ts,'resist').reduce((s,e)=>s+e.n,0);
-  if(res) dmg=Math.max(1,dmg-res);
+  if(strikeMisses(tgt)) return;
+  dmg=hitAdjust(ts,dmg);
   const retaliate=fx(ts,'resist').concat(fx(ts,'counter')).reduce((s,e)=>s+(e.retaliate||0),0)+(ts.ward?ts.ward.ret:0);
   const hp=incoming(tgt,dmg,0,false,pierce?dmg:sp&&sp.blast,elem);
   if(hp>0){
@@ -460,6 +480,8 @@ function playRound(picks,flicks,squops){
       loseMana(foe(w),n); gainMana(w,n);
     }
   });
+  // No striking from hiding: picking Damage reveals a Vanished wizard for the whole round
+  W.forEach(w=>{ if(picks[w].cat==='damage'){ const v=vanishOf(gs[w]); if(v) removeEffects(w,[v]); } });
   // Stages: every Protection, then every Dispel, then every Damage, then Meditate
   for(const cat of ['protect','dispel','damage']){
     const seats=W.filter(w=>outcome[w]==='cast'&&picks[w].cat===cat);
@@ -575,7 +597,14 @@ function endRound(){
     minions(st).filter(m=>m.heal).forEach(m=>heal(w,m.heal));
     // Danse Macabre (Daveron): each of your skeletons deals its bonus more
     const danse=fx(st,'danse').reduce((a,e)=>a+e.bonus,0);
-    if(!inGate(f)) minions(st).filter(m=>m.dmg).forEach(m=>incoming(f,m.dmg+(m.minion==='skeleton'?danse:0),0));   // a totem doesn't strike; nothing reaches him in the Gate
+    // A totem doesn't strike; nothing reaches him in the Gate. Each minion's strike is a strike (RULES.strikes)
+    if(!inGate(f)) minions(st).filter(m=>m.dmg).forEach(m=>{
+      if(gs[f].hp<=0) return;
+      const d=m.dmg+(m.minion==='skeleton'?danse:0);
+      if(!RULES.strikes.minions){ incoming(f,d,0); return; }
+      if(strikeMisses(f)) return;
+      incoming(f,hitAdjust(gs[f],d),0);
+    });
   });
   // Sudden death
   const sd=RULES.suddenDeath;
@@ -584,6 +613,8 @@ function endRound(){
     W.forEach(w=>{ if(!inGate(w)) loseHp(w,n); });
   }
   if(checkOver()) return;
+  // Vanish lasts this round and the next
+  W.forEach(w=>{ const v=vanishOf(gs[w]); if(v&&v.until<=gs.round) removeEffects(w,[v]); });
   // Out of the Gate: trade places at the table, wreathed in Infernal Mantle
   W.forEach(w=>{
     const g=gs[w].gate;
@@ -636,6 +667,7 @@ function sigSensible(w,sp){
   if(sp.kind==='buff'&&st.effects.some(f=>f.id===sp.id)) return false;
   if(sp.kind==='curse'){
     if(fx(ts,'warding').length) return false;
+    if(RULES.strikes.vanishCurses&&vanishOf(ts)) return false;   // it would only use up the Vanish
     if(ts.effects.some(f=>f.id===sp.id)) return false;
     if(e.type==='agony'&&!e.inescapable&&ts.mana<3) return true;
   }
@@ -647,6 +679,7 @@ function sigSensible(w,sp){
   if(sp.rewind) return st.lostLast>=3||!st.ward;
   if(sp.perSkeleton) return minions(st,'skeleton').length>0||!st.ward;
   if(e.type==='counter') return true;
+  if(e.type==='vanish') return !vanishOf(st);
   if(e.type==='absorbNext'||e.type==='dodge') return !fx(st,'absorbNext').length;
   if(e.type==='gate') return !st.effects.some(f=>f.pierce)&&ts.mana>=costOf(ts,{cat:'damage',ring:1});
   if(sp.pctHp) return Math.floor(ts.hp/sp.pctHp.div)>=sp.pctHp.min||ts.hp<=sp.pctHp.min+1;
@@ -691,6 +724,13 @@ function aiChoose(w,level){
   const tg=guards(ts);
   if(tg){ w8.damage+=(smart?0.25:0.1)*tg; if(!ts.ward) w8.dispel*=0.5; }
   if(fx(st,'bewitch').length){ w8.damage*=smart?0.15:0.6; w8.dispel+=smart?0.8:0.3; }
+  // A Vanished foe: strikes only miss, so dispel the Vanish or do something else
+  if(vanishOf(ts)){ w8.damage*=smart?0.2:0.6; w8.dispel+=smart?0.6:0.2; }
+  // Vanished myself: a strike reveals me, so hold off, except in its last round (a foe facing a Vanish
+  // rarely picks a strike, so the reveal seldom costs anything then)
+  const veil=vanishOf(st);
+  if(veil&&smart&&veil.until<=gs.round) w8.damage+=0.8;
+  else if(veil){ w8.damage*=smart?0.3:0.7; w8.dispel+=smart?0.4:0.1; }
   if(canSeal(st)&&st.ward.hp>=AI_WARDS.sealHp&&!locked(st,'protect')){
     w8.seal=AI_WARDS.seal*(smart?1:0.5);
     if(smart&&wardLayers(st)>1) w8.seal+=0.3;
