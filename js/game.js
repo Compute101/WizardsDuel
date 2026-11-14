@@ -3597,7 +3597,7 @@ const ELEM_RIDERS={frostbite:true, dread:true, scorch:true, crush:true, unweave:
 const DRENCH={rounds:2, lightning:1.3, fire:0.7};
 // Ward traits: an Air ward may turn a magic strike aside (deflect, a chance per strike, outer layer only);
 // a Water ward ebbs and flows: at round end it regains `tide` (up to what it was raised with) instead of wearing
-const ELEM_WARD_TRAITS={deflect:0.2, tide:2};
+const ELEM_WARD_TRAITS={deflect:0.2, tide:1};
 const ELEM_RIDER_MIN_TIER=2;
 const ELEM_CHILL_MIN_TIER=2;    // Ice Lance (el.chill) chills (a hard lock) at this strength or more
 const ELEM_RISK_PCT={frostbite:0.5, dread:0.5};   // chance the covered pick next round is lost
@@ -3937,14 +3937,14 @@ function openElemWheel(cat){
     });
   }
   const ruleText={
-    damage:'Every spell is magic, Earth included: a ward stops it · ⚔️ Attack (the centre) is a free blow: wards don\'t stop it, Ironskin soaks it, and a foe who Guards that round blocks it and counters · it hits harder into a Grapple · some signature strikes are physical too (charges, blades, claws, vines, bombs) · a ward\'s own element unravels it · Lightning burns mana · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
-    protect:'Wards stop magic, never blows · Ironskin (the button below) soaks blows until it\'s used up or dispelled · 🛡 Guard (the centre, free) lasts this round only: it blocks blows aimed at you and counters an Attack, but a Grapple gets through · wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · wards resist other elements, but their own element unravels them'+
+    damage:'Every spell is magic, Earth included: a ward stops it · ⚔️ Attack (the centre) is a free blow: wards don\'t stop it, Ironskin soaks it, and a foe who Guards that round blocks it and counters · it hits harder into a Grapple · some signature strikes are physical too (charges, blades, claws, vines, bombs) · a ward\'s opposite element (across the wheel) unravels it · Lightning burns mana · Air gusts over minions · Water drenches (next Lightning harder, next Fire doused) · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
+    protect:'Wards stop magic, never blows · Ironskin (the button below) soaks blows until it\'s used up or dispelled · 🛡 Guard (the centre, free) lasts this round only: it blocks blows aimed at you and counters an Attack, but a Grapple gets through · wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · wards resist every element but their opposite, which unravels them · an Air ward may deflect a spell; a Water ward ebbs and flows (regains '+ELEM_WARD_TRAITS.tide+' a round instead of wearing)'+
       (WARD_RULES.boost?' · recast your ward\'s element to top it up (to '+WARD_RULES.boostCap+'× that cast)':'')+
       (WARD_RULES.layers>1?' · a new element goes on over it, up to '+WARD_RULES.layers+' layers'+
         (WARD_RULES.stackTake<1?' · 🏰 Bulwark: a ward with another beneath it loses only '+Math.round(WARD_RULES.stackTake*100)+'% from each strike'+(WARD_RULES.stackDispel?' and dispel':' (dispels still cut it as usual)'):''):'')+
       (WARD_RULES.seals?' · 🔒 a sealed ward doesn\'t wear, and a dispel only breaks the seal'+
         (WARD_RULES.sealBlocks?', even a Greater one — it takes a second dispel for the ward':WARD_RULES.sealSoak?' (it soaks '+WARD_RULES.sealSoak+' power: weaker dispels bounce off, a Greater one goes on with the rest)':' (a Greater one goes on through)'):''),
-    dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards · 🤼 Grapple (the centre, free) is a blow that gets through a Guard; against anything else it does half an Attack, and an Attack aimed at you catches it',
+    dispel:'Breaks wards (double from the opposite element, across the wheel) · with no ward up, strips an enchantment · curses also weaken wards · 🤼 Grapple (the centre, free) is a blow that gets through a Guard; against anything else it does half an Attack, and an Attack aimed at you catches it',
   }[cat];
   // The rules, ring costs and signature spell text live behind the ⓘ button (wheel-help), keeping the wheel uncluttered
   document.getElementById('wheel-help-title').textContent=c.icon+' '+c.name;
@@ -3993,7 +3993,8 @@ function buildWheelSvg(who,cat){
     });
     const label=banned?'⛔ '+el.name:sp?'★'+sigName(sp).split(' ')[0]:el.name;
     html+=`<text class="wicon${banned?' wicon-banned':''}" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${sp?sigIcon(sp):el.icon}</text>`;
-    html+=`<text class="wname${banned?' wname-banned':sp?' wname-sig':''}" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${label}</text>`;
+    const fs=label.length>9?7:label.length>7?8:9;   // eight sectors are narrow: long names shrink to stay off the icons
+    html+=`<text class="wname${banned?' wname-banned':sp?' wname-sig':''}" style="font-size:${fs}px" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${label}</text>`;
   });
   // The centre is the category's free Action (Attack / Guard / Grapple)
   const act=ACTIONS[cat], ph=physOf(who), stat=cat==='damage'?ph.atk+' dmg; a Guard blocks and counters it':cat==='protect'?'this round: block blows, counter an Attack':'beats a Guard; '+Math.max(1,Math.round(ph.atk*ACT_RULES.grappleOther))+' dmg otherwise';
@@ -9252,10 +9253,10 @@ const TUTORIAL_CONVOS={
     {key:'ponder', text:"Think they're all coming for you? Tap 🌀 Phase. Everything aimed at you that round misses, and you soak up the mana they spent on it. Catch two or more spells and your next spell is free — any ring! Guess wrong and you've lost your turn and 4 mana."},
   ],
   wheel:[
-    {key:'ponder', text:"Pick a category and a wheel appears. It has six elements — Fire, Ice, Lightning, Arcane, Earth and Dark — and three rings. In the middle sits a plain action anyone can take, wizard or not: Attack on the Damage wheel, Guard on Protection, Grapple on Dispel. They cost nothing."},
+    {key:'ponder', text:"Pick a category and a wheel appears. It has eight elements — Fire, Air, Lightning, Arcane, Water, Earth, Ice and Dark — and three rings. Each sits across the wheel from its opposite. In the middle sits a plain action anyone can take, wizard or not: Attack on the Damage wheel, Guard on Protection, Grapple on Dispel. They cost nothing."},
     {key:'ponder', text:"Tap closer to the edge for a stronger spell. The inner ring is cheap and weak, the outer ring is costly and powerful, and it's a longer casting ritual too. With more than one rival, an outer-ring strike hits every one of them."},
-    {key:'skadi',  text:"The element matters. A ward resists every element but its own — its own element unravels it, and a dispel of its element does double. So ward in an element your rival can't cast: some wizards are barred from whole elements."},
-    {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Earth is plain magic, yes — a conjured rock is still a spell, so a ward stops it. Zakkit hates rocks anyway."},
+    {key:'skadi',  text:"The element matters. A ward resists every element but its opposite, across the wheel — Fire and Water, Air and Earth, Lightning and Ice, Arcane and Dark. Its opposite unravels it, and a dispel of the opposite does double. So ward in an element whose opposite your rival can't cast: some wizards are barred from whole elements."},
+    {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Air gusts right over skeletons and totems, and an Air ward may blow a spell aside. Water drenches them — the next Lightning bites harder, the next Fire fizzles — and a Water ward ebbs and flows instead of wearing away. Earth is plain magic: a conjured rock is still a spell. Zakkit hates rocks anyway."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, the worst first."},
     {key:'eldrin', text:"Magic and blows are different things. A ward, in any element, stops magic — and a fist, a blade or a skeleton's sword walks straight through it. Against blows, cast Ironskin — the button under the Protection wheel: it soaks blows until it's used up or dispelled. Or Guard, in the middle of the wheel, for one round: you block their blows and counter an Attack, though a Grapple gets through. A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — burns, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike wears it only half as much — though a dispel still cuts it as usual. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
@@ -9272,7 +9273,7 @@ const TUTORIAL_CONVOS={
   alphabet:[
     {key:'sylvara',text:"Every casting ritual uses symbols from the Arcane Alphabet — twelve sacred glyphs that form the language of magic itself."},
     {key:'ponder', text:"The twelve glyphs are: ϟ Δ ∇ Ψ Ω ∞ ☽ ✸ ⊕ ⊗ θ Φ. Each element's ritual draws upon four of them."},
-    {key:'sylvara',text:"Fire uses ϟ Δ ⊕ Ω, Lightning uses Ψ ∇ ⊗ ✸, Ice uses θ Φ ☽ ∞, Earth uses Δ ∇ Ψ ⊕, and Dark uses ☽ ⊗ ∇ Ω. The symbols have meaning — they are not random."},
+    {key:'sylvara',text:"Fire uses ϟ Δ ⊕ Ω, Air uses Δ ϟ ✸ Φ, Lightning uses Ψ ∇ ⊗ ✸, Water uses ∇ ∞ Ω Φ, Ice uses θ Φ ☽ ∞, Earth uses Δ ∇ Ψ ⊕, and Dark uses ☽ ⊗ ∇ Ω. The symbols have meaning — they are not random."},
     {key:'ponder', text:"Arcane is special — it shares a glyph with the other elements, because Arcane is the force beneath all magic. That makes it the hardest set to memorise!"},
     {key:'sylvara',text:"Dispel also draws one glyph from each element: ∞, ⊕, ∇ and θ. A universal unbinding built from universal symbols."},
   ],

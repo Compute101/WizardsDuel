@@ -910,3 +910,22 @@ Durin's third signature: **Bedrock** (Earth Protection sector, freed when Stones
 An Earth ward of 40 for 7 mana (`holdWear`) that never wears away at round end; strikes and dispels break it
 as usual, and topping it up with a plain Earth ward keeps the hold. Stoneskin's rock-coat visual. About 9%
 of his picks; Durin HP 68 → 65, 49.5% (roster 44.8–54.0%, 80 games a matchup). Tabletop keeps his old cards.
+
+### Phase 2 built: Air and Water
+
+- Eight elements in `ELEMENTS`, opposites across the wheel (Fire ↔ Water, Air ↔ Earth, Lightning ↔ Ice,
+  Arcane ↔ Dark). The opposite unravels a ward (strikes ×1.5, dispels ×2); every other element, a ward's
+  own included, is resisted (×0.75). Before, a ward's own element unravelled it.
+- Air: strikes gust over minion screens; an outer Air ward deflects a magic strike 20% of the time.
+  Water: strikes Drench (2 rounds: the next Lightning strike ×1.3, the next Fire ×0.7, either uses it up);
+  a Water ward regains 1 a round (up to what it was raised with) instead of wearing. Tide 2 gave 18.3-round
+  games and made Water the go-to ward.
+- Minigames: Gale of Runes (Air) and Tide of Runes (Water) on a shared `mgGlyphGame` runner. Glyphs: Air
+  `Δ ϟ ✸ Φ`, Water `∇ ∞ Ω Φ` (each shares at most two with any other set).
+- Visuals: a cyclone (Air) and a crashing wave (Water); wind-wisp and droplet ward orbiters; Drenched drips.
+- Sim (2 games a matchup): wheel strikes Air 17%, Water 15% (nobody is banned from them yet); wards Water
+  27% (eight wizards are banned from Fire, its opposite), Air and Ice 15%.
+- HP: Skadi 55 (Ice now falls to Lightning: she was 41–42%), Ponder 66, Gretch 61 (Air gusts over his totem),
+  Mary 60, Sylvara 66, Durin 61, Fizzwick 53, Mirel 51, Korvath 44, Gnash 55, Frederick 51, Nyxara 60.
+  Result (80 games a matchup): 46.8–53.6%, about 17.8 rounds.
+- Still to do: the water wizard (a Tidecaster-inspired original), Air / Water bans for some wizards, tabletop.

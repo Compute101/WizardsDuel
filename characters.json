@@ -161,7 +161,7 @@
       "You tangled with nature itself. The vines always win.",
       "My roots run deeper than your courage. Try growing some."
     ],
-    "hp": 63,
+    "hp": 66,
     "skin": {
       "id": "barkskin",
       "name": "Barkskin",
@@ -324,7 +324,7 @@
       "Gnash not done smashing. Where you going? COME BACK.",
       "Little mage runs away? Gnash will wait. Gnash ALWAYS waits."
     ],
-    "hp": 58,
+    "hp": 55,
     "phys": {
       "atk": 6
     },
@@ -478,7 +478,7 @@
       "You froze long before my blizzard reached you.",
       "The permafrost claims all things eventually. Even stubborn wizards."
     ],
-    "hp": 51,
+    "hp": 55,
     "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
@@ -638,7 +638,7 @@
       "Your defeat was written before this duel began. I merely carried it out.",
       "Kneel before the radiance, or be consumed by it. There is no third option."
     ],
-    "hp": 61,
+    "hp": 60,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -781,7 +781,7 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 62,
+    "hp": 66,
     "phys": {
       "atk": 3
     },
@@ -869,7 +869,7 @@
       "You threw everything you had at me. I barely felt it.",
       "The mountain endures all things. So too shall I."
     ],
-    "hp": 65,
+    "hp": 61,
     "phys": {
       "atk": 6
     },
@@ -1030,7 +1030,7 @@
       "You called it ugly. Gretch calls it efficient.",
       "The swamp takes all things. Even stubborn little wizards."
     ],
-    "hp": 58,
+    "hp": 61,
     "phys": {
       "atk": 6
     },
@@ -1193,7 +1193,7 @@
       "Which one was real? Wrong answer — they all were.",
       "Deception is not dishonesty. It is simply a more elegant form of truth."
     ],
-    "hp": 54,
+    "hp": 51,
     "phys": {
       "atk": 3
     },
@@ -1347,7 +1347,7 @@
       "Strike me. My scales have tasted dragonfire and grown harder for it.",
       "I have one wrath left in me. You have already wasted my patience earning it."
     ],
-    "hp": 47,
+    "hp": 44,
     "phys": {
       "atk": 6
     },
@@ -1425,7 +1425,7 @@
       "Half of what's in my satchel is medicine. The other half is, well, also medicine. Different patient.",
       "Don't worry about the smell. That's normal. Probably."
     ],
-    "hp": 54,
+    "hp": 53,
     "phys": {
       "atk": 3
     },
@@ -1503,7 +1503,7 @@
       "You cling to your strength as if it makes you safe. The bigger they are, the more there is to take.",
       "Don't struggle. The void doesn't hate you. It just... empties."
     ],
-    "hp": 58,
+    "hp": 60,
     "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
@@ -1667,7 +1667,7 @@
       "You DARE stand before me? I will drag you screaming through the Gate!",
       "Run, then! Hide! There is nowhere my fire cannot follow!"
     ],
-    "hp": 53,
+    "hp": 51,
     "phys": {
       "atk": 5
     },
