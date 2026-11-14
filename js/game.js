@@ -3440,7 +3440,7 @@ const ELEM_WARD_WEAR=4;         // flat ward HP lost at each round end
 //   sealBlocks: a seal stops the whole dispel, whatever its ring: it breaks the seal and goes no further,
 //             so a sealed ward takes two dispels (a cheap one for the seal, then one for the ward).
 //             false: a Greater dispel breaks the seal and goes on with what sealSoak leaves it.
-const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:true, sealSoak:10, sealBlocks:true, innerWear:true, dispelMatch:2, layerDiscount:0, stackGuard:false, stackSeal:true, stackTake:0.5};
+const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:true, sealSoak:10, sealBlocks:true, innerWear:true, dispelMatch:2, layerDiscount:0, stackGuard:false, stackSeal:true, stackTake:0.5, stackDispel:false};
 // Seal Ward. A character's sealCostMod (characters.json) changes the cost; sealAll seals every layer
 // at once (Eldrin's hook, now that everyone can brace a ward).
 const SEAL={cost:1};
@@ -3760,7 +3760,7 @@ function openElemWheel(cat){
     protect:'Wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · they resist other elements, but their own element unravels them'+
       (WARD_RULES.boost?' · recast your ward\'s element to top it up (to '+WARD_RULES.boostCap+'× that cast)':'')+
       (WARD_RULES.layers>1?' · a new element goes on over it, up to '+WARD_RULES.layers+' layers'+
-        (WARD_RULES.stackTake<1?' · 🏰 Bulwark: a ward with another beneath it loses only '+Math.round(WARD_RULES.stackTake*100)+'% from each strike and dispel':''):'')+
+        (WARD_RULES.stackTake<1?' · 🏰 Bulwark: a ward with another beneath it loses only '+Math.round(WARD_RULES.stackTake*100)+'% from each strike'+(WARD_RULES.stackDispel?' and dispel':' (dispels still cut it as usual)'):''):'')+
       (WARD_RULES.seals?' · 🔒 a sealed ward doesn\'t wear, and a dispel only breaks the seal'+
         (WARD_RULES.sealBlocks?', even a Greater one — it takes a second dispel for the ward':WARD_RULES.sealSoak?' (it soaks '+WARD_RULES.sealSoak+' power: weaker dispels bounce off, a Greater one goes on with the rest)':' (a Greater one goes on through)'):''),
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
@@ -4001,8 +4001,10 @@ function executeElemental(who,action,cb){
   if(inGate(who)){ combatTimeout(cb,200); return; }   // stepped through the Infernal Gate: off the field
   const agonies=effectsOf(st,'agony');
   agonies.forEach(agony=>{
+    const bite=agony.dmg;
+    if(agony.taper) agony.dmg=Math.max(1,agony.dmg-agony.taper);   // a tapering curse eases every round, bitten or escaped
     if(st.hp<=0||!agonyBites(who,action,agony)) return;
-    dmgSource=agony.from; elemFloatDmg(who,agony.dmg,agony.icon+' '+agony.name,'#9944cc'); if(TICK_VFX[agony.id]) TICK_VFX[agony.id](x,wizMidY(x)); else VFX.agony(x); dmgSource=who;
+    dmgSource=agony.from; elemFloatDmg(who,bite,agony.icon+' '+agony.name,'#9944cc'); if(TICK_VFX[agony.id]) TICK_VFX[agony.id](x,wizMidY(x)); else VFX.agony(x); dmgSource=who;
   });
   if(agonies.length&&st.hp<=0){ combatTimeout(cb,700); return; }   // Agony knocked them out before they could act
   if(action.enthral){ showEnthral(who,action); if(action.outcome==='enthralled'){ anim(who,'cast',600); combatTimeout(cb,1000); return; } }
@@ -4410,7 +4412,7 @@ function elemWardDispel(tgt,elem,power,tier){
       power-=soak;
       if(power<=0) return;
     }
-    const match=ts.shieldType===elem, mult=(match?(WARD_RULES.dispelMatch??2):1)*(wardLayers(ts)>1?(WARD_RULES.stackTake??1):1);   // a dispel in the ward's element counts extra; a stack resists
+    const match=ts.shieldType===elem, mult=(match?(WARD_RULES.dispelMatch??2):1)*(wardLayers(ts)>1&&WARD_RULES.stackDispel!==false?(WARD_RULES.stackTake??1):1);   // a dispel in the ward's element counts extra; a stack resists
     const dmg=power*mult, had=ts.shieldHp;
     ts.shieldHp-=dmg;
     addFloat(tx,bH*.3,'✦ −'+Math.min(dmg,had)+' ward'+(match?' (matched!)':''),'#ffaaff',14);
@@ -4890,6 +4892,8 @@ const AI_FORTRESS={seal:0.7, layer:0.7, minHp:15};
 function aiFortress(who,smart){
   const me=gs[who];
   if(seatCfg(who).aiWard!=='fortress'||!hasWard(me)||catLocked(who,'protect')) return null;
+  // Cursed with something worth a Cleanse: let the usual logic weigh cleansing first
+  if(cleansableCurses(me).length&&me.mana>=elemCost(who,'dispel',1)&&_rng()<0.6) return null;
   const rate=smart?1:0.5, ok=_rng()<(smart?0.9:0.78);
   if(!me.wardSealed&&me.shieldHp>=AI_FORTRESS.minHp&&canSeal(who)&&_rng()<AI_FORTRESS.seal*rate)
     return {type:'el',cat:'protect',elem:me.shieldType,tier:1,self:true,target:who,ok};
@@ -8598,7 +8602,7 @@ const TUTORIAL_CONVOS={
     {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements. Zakkit hates rocks."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, the worst first."},
-    {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike and dispel wears it only half as much. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
+    {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike wears it only half as much — though a dispel still cuts it as usual. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],

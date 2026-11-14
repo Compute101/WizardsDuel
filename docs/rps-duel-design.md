@@ -733,3 +733,26 @@ HP after (80 games a matchup): Eldrin 46, Skadi 48, Korvath 55, Nyxara 53, Ponde
 Zakkit 60, Mary 57, Fizzwick 57, Gretch 56, Valdris 53. Result: 45.8–55.3%, about 17.2 rounds (was
 14.8: sealed stacks last). Fortress wizards seal 3.6–6 times a game and layer about once; the rest
 seal about once. To shorten games, lower `AI_FORTRESS` or raise ward wear.
+
+### Mordant against walls: tapering Agony
+
+Worry: Mordant playing fortress. Head to head (`KEEN=mordant`, 30–60 games a matchup; `OPP=fortress` makes
+the other seat fortress too). Weakening one of his curses (Silence 30%, Silence 2 rounds, Corruption −2,
+Agony 5) moved his stock and fortress play by the same amount: fortress still added about 12 points. The
+real issue is a counter: Agony goes around wards, so a foe who turtles eats it for 20+ rounds. Stock
+Mordant vs fortressing foes: 61–64%.
+
+Fixes adopted:
+- Agony tapers (`taper` on an `agony` effect: the bite drops by that much every round, bitten or
+  escaped, to a minimum of 1): **8 → 6 → 4 → 2** (was 7 × 4). Tried (stock Mordant vs fortress foes /
+  vs stock): 7 flat 59.8 / 54.4 · 8 taper 2 53.6 / 50.7 · 7 taper 2 55.3 / 44.8 · 6 taper 2 50.2 / 42.3 ·
+  10 taper 3 (fortress Mordant 66) · 7 flat 3 rounds 52.5 / 48.1.
+- The fortress AI (`aiFortress`, and the test strategy) hands over to the usual logic 60% of the time
+  when it carries a curse it can afford to cleanse; before, a fortress wizard never cleansed.
+- Bulwark resists strikes only (`stackDispel:false`): a dispel cuts a stacked ward as usual, so dispels
+  stay the efficient answer to wards. Head to head (8 games a matchup): fortress 53.7 (was 55.1 with
+  dispels halved too), sealOnly 50.7, readStrike 49.1.
+
+Still open: Mordant playing fortress himself beats the stock AI 58.6% and fortressing foes about 65%
+(other wizards gain 6–10 from fortress). Balance run after (80 games a matchup): 44.6–55.1%, about 16.9
+rounds, Mordant 50.7%.

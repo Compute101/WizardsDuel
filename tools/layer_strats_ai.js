@@ -21,6 +21,8 @@ window.__strat=function(who,s,orig){
   const me=gs[who], f=foesOf(who)[0], opp=gs[f];
   const strikeReady=opp.mana>=elemCost(f,'damage',2);
   const L=(minT,maxT)=>window.__layerAct(who,minT,maxT);
+  // like the game's aiFortress: a cursed wizard weighs a Cleanse first
+  if(/^fortress/.test(s)&&cleansableCurses(me).length&&me.mana>=elemCost(who,'dispel',1)&&_rng()<0.6) return orig(who);
   switch(s){
     case 'stock': return orig(who);
     case 'never': { const a=orig(who); if(a.cat==='protect'&&!a.self&&!a.sig&&hasWard(me)&&a.elem!==me.shieldType){

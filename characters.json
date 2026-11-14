@@ -703,10 +703,11 @@
           "tier": 2,
           "effect": {
             "type": "agony",
-            "dmg": 7,
+            "dmg": 8,
+            "taper": 2,
             "rounds": 4
           },
-          "desc": "4 rounds: foe takes 7 whatever they do (Meditate escapes it, unless Corrupted)"
+          "desc": "4 rounds: foe takes 8, then 6, 4, 2, whatever they do (Meditate escapes it, unless Corrupted)"
         }
       },
       {
