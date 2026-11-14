@@ -980,3 +980,7 @@ Agreed: an **Encounter** mode (your wizard alone against a band of 2–3 fighter
 - The archer HP cliff: an outer-ring strike does 26. At 26 HP each archer dies to one (Skirmishers 56–60% for the wizard); at 27 she survives on 1 (42–45%).
 - Results (`node tools/encounter_sim.js 30`, every wizard × 30 games a band): Patrol 48.0% (about 12 rounds), Skirmishers 42–45% (about 6.5), Warband 50.1% (about 7). Wizards spread widely: Durin (Stoneskin soaks 30) and Malachar (lifesteal) win about 90%+, while Mirel, Mordant and Aurelia win 10–30%. Wizards weren't built for this, and the spread is part of picking a wizard for a fight.
 - Open: Ironskin is about half the wizard AI's picks against bands (re-skin, strike, re-skin). If that feels samey in play, fighters could get a skin-breaker (a Knight's mace, or an armour-piercing shot), as planned for later fighters. Real art can replace the placeholders.
+
+## Merge note: main's Dispel nerf
+
+Main nerfed Dispel to 15 / 24 / 40 with a 1.5× matching bonus (Durin HP 110 → 105) against the pre-Phase-1 numbers. When this branch merged main, it had already cut dispels further (10 / 20 / 35; "Bigger wards, smaller dispels") and moved the bonus to a ward's opposite element (×2), with every HP scaled ×0.6. The nerf's aim (dispels too strong against wards) is already covered, so this branch's numbers were kept.
