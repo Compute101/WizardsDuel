@@ -57,7 +57,7 @@ What was built, including choices made while building:
   dispels wear it too; Counter stops the round-end wear while it lasts. (It used to last 3 rounds and
   keep 75% of its HP each round: `ELEM_WARD_ROUNDS` 0 and `ELEM_WARD_DECAY` 1 now.)
   A ward **resists every element but its own**: other elements wear it down at 75%, while a strike in
-  its own element **unravels** it at 150% (`ELEM_WARD_TAKE`). A dispel of its element does double.
+  its own element **unravels** it at 150% (`ELEM_WARD_TAKE`). A dispel of its element does 1.5× (`ELEM_DISPEL_MATCH`; was double).
 - **Damage over time** (poison, burns, vines, Plague, Singularity, Blizzard) hits a ward first at each
   tick, using the ward's element rules, just as minions do. The one exception is Fizzwick's Caustic Bomb:
   if the bomb itself reaches HP, its poison seeps past wards (`bypassWard` on the spell's `dot`).
@@ -104,11 +104,11 @@ Starting numbers (to be tuned):
 | Ring | Damage (cost → dmg) | Shield (cost → shield HP) | Dispel (cost → shield dmg) |
 |---|---|---|---|
 | Inner  | 3 → 8  | 5 → 20  | 1 → 15 |
-| Middle | 5 → 15 | 8 → 35  | 2 → 30 |
-| Outer  | 8 → 26 | 12 → 55 | 4 → 50 |
+| Middle | 5 → 15 | 8 → 35  | 2 → 24 (was 30) |
+| Outer  | 8 → 26 | 12 → 55 | 4 → 40 (was 50) |
 
 - **Shields** take half damage from their chosen type, last **3 rounds**, and **decay** each round.
-- **Dispels** deal double to a shield of the matching type.
+- **Dispels** deal 1.5× to a shield of the matching type (was double).
 - **Resolution stages** replace `ACTION_PRIORITY`: start-of-round → all Protection → all Dispel → all Damage → end-of-round.
 - **Mana**: fixed income every round (about +4). **Channel is removed** (Meditate later brought back a riskier version), and so are free (0-cost) spells.
 - **Piercing is removed** (Lightning, Radiant, Feint, Charge). Those spells get a mana-burn rider instead.
@@ -152,7 +152,7 @@ so each spell's numbers can be tuned there.
   (`timed:true` on the effect). Curses keep their timers. A foe's Dispel hits your ward first; with no ward up it strips your newest buff, and a
   Greater (outer ring) dispel strips all of them — so wards protect your buffs.
 - **Curses** (Dispel wheel) resolve with Dispels. Besides the hex, each is a weak dispel: it hits the
-  foe's ward with half a dispel's power for that ring (double vs a matching ward) but never strips
+  foe's ward with half a dispel's power for that ring (1.5× vs a matching ward) but never strips
   buffs (`ELEM_CURSE_DISPEL`). **Cleanse Self** removes only your newest curse; Mary's Purge removes every curse on you. Silence can
   block a Cleanse Self like any other spell.
 - **Locks** (Ice Lance's chill, Entangle) come only from signature spells. They block one category
