@@ -116,6 +116,7 @@ function newState(){
   seats.forEach(st=>{
     gs[st.who]=newSeat(st.cfg||defOf(st.key),st.key);
     gs[st.who].team=st.team||st.who;
+    addStartingMinions(st.who);
     if(gs[st.who+'anim']==null){ gs[st.who+'anim']='idle'; gs[st.who+'xOff']=0; }
   });
 }
@@ -1588,6 +1589,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   drawBoneTotem(x0,y,sz,who,flip,auraFade(who,'boneTotem',!!(state&&state.boneTotem>0)),t);
   // Skeletons stand in front of their master and his ward, so they're drawn last
   if(state&&state.skeletons&&state.skeletons.length) drawSkeletons(x,y,sz,who,flip,state.skeletons,t);
+  if(state&&state.guards>0) drawBodyguards(x,y,sz,who,flip,state.guards,t);
 }
 // Bone Totem (Gretch's regen buff): sprites/bonetotem.png planted on the floor on the foe's side of
 // him, in front of his sprite and ward. It rises out of the ground as it phases in (fade = auraFade), sways a little
@@ -1644,6 +1646,31 @@ function drawSkeletons(x,y,sz,who,flip,skels,t){
     bx.beginPath(); bx.arc(sx,cy,r,0,Math.PI*2); bx.fill();
     bx.fillStyle='#333'; bx.font=`${Math.round(r*.8)}px serif`;
     bx.textAlign='center'; bx.fillText('💀',sx,cy+r*.3);
+    bx.globalAlpha=1; bx.shadowBlur=0;
+  });
+}
+
+// Bodyguards (Thessaly's hired swords): the encounter soldier's still, smaller, standing in front of
+// her on the foe's side like skeletons do (same slots), facing the way she faces.
+const BODYGUARD_HEIGHT=0.7;   // fraction of the master's drawn height
+const bodyguardImg={img:new Image(),ready:false};
+bodyguardImg.img.onload=()=>{ bodyguardImg.ready=true; };
+bodyguardImg.img.src='sprites/soldier.png';
+function drawBodyguards(x,y,sz,who,flip,n,t){
+  const dir=flip?1:-1, hsz=sz*SPRITE_SCALE/seatSpriteHeight(who);
+  const slots=[[0.62,-.05,.92],[0.32,0,1]].slice(0,Math.min(n,2));   // the far one first, so the near one overlaps it
+  slots.forEach(([dx,dy,sc],i)=>{
+    const sx=x+dir*hsz*dx, fy=y+dy*hsz, h=hsz*BODYGUARD_HEIGHT*sc;
+    if(bodyguardImg.ready){
+      const bob=Math.sin(t/520+i*2.1)*hsz*.003;
+      bx.save(); bx.globalAlpha=0.98;
+      drawSprite(bodyguardImg.img,'idle',0,sx,fy+bob,h,flip);
+      bx.restore();
+      return;
+    }
+    const r=h*.18, cy=fy-h*.5;
+    bx.globalAlpha=0.9; bx.fillStyle='#b8c0cc'; bx.shadowColor='#ddaa22'; bx.shadowBlur=5;
+    bx.beginPath(); bx.arc(sx,cy,r,0,Math.PI*2); bx.fill();
     bx.globalAlpha=1; bx.shadowBlur=0;
   });
 }
@@ -1915,7 +1942,7 @@ const WIZ_VISUAL_BY_ID={timedrain:'timeDrain', counter:'counter', candle:'candle
   enthral:'enthralled', arcaneweave:'arcaneWeave', curseyears:'yearsCurse', dansemacabre:'danse', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen', frostbite:'frozen', dread:'dread',
   warpaint:'resist', ironpatience:'resist', heal:'regen', drenched:'drenched'};
 function wizVisuals(st){
-  const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra, shark:st.shark};
+  const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra, shark:st.shark, guards:st.guards};
   st.effects.forEach(e=>{
     const k=WIZ_VISUAL_BY_ID[e.id];
     if(k) v[k]=e.type==='weave'?e.charges:(e.rounds||1);
@@ -3140,6 +3167,7 @@ const MINION_VFX={
   skeleton:(x,y)=>vfxDrift(x,y,['#9966cc'],6,{spd:1,lift:-.5,dec:.022,grav:true}),
   simulacrum:(x,y)=>spawnParts(x,y,'#b86ef4',10),
   shark:(x,y)=>vfxDrift(x,y,['#5aa8ff','#d8ecff'],6,{spd:1,lift:-.5,dec:.022,grav:true}),
+  guard:(x,y)=>spawnParts(x,y,'#d8dde6',8),
 };
 
 // Each signature spell's own look, ported from its original effect.
@@ -3834,7 +3862,7 @@ function fighterAIChoose(who){
 // — they stand in front of `ward` (their master, or an ally in team games), intercepting every hit on them
 // (magic and physical) before any ward, and don't strike. Strikes, Attacks and Grapples can be aimed at one
 // body (action.minion = its uid): the hit lands on it alone, with no ward and no riders.
-const MINION_NAMES={skeleton:'Skeleton', totem:'Bone Totem', shark:'Fathom'};
+const MINION_NAMES={skeleton:'Skeleton', totem:'Bone Totem', shark:'Fathom', guard:'Bodyguard'};
 const MINION_STANCE_DEFAULT='guard';
 let MINION_BRACE=0.5;   // a guarding body loses this share of each hit it intercepts (they brace behind their shields)
 let minionUid=0;
@@ -3858,6 +3886,17 @@ function minionsFall(owner,dead){
     const lost=Math.min(gs[killer].mana,n);
     if(lost>0){ gs[killer].mana-=lost; addFloat(seatX(killer),bH*.42,'🪙 Tithe −'+lost+' Mana','#aa88ff',12); }
   }
+}
+// Bodies a wizard brings to the duel (`bodyguards` in characters.json: Thessaly's two hired guards).
+// Plain soak minions, the same as a summoned body: they guard or attack by the owner's stance, can be
+// targeted, dispels can't touch them, and once they fall they're gone for the rest of the duel.
+function addStartingMinions(who){
+  const st=gs[who], bg=st.cfg&&st.cfg.bodyguards;
+  if(!bg) return;
+  for(let i=0;i<(bg.count||1);i++) st.effects.push({id:'bodyguard', type:'minion', kind:'minion', minion:'guard',
+    name:bg.name||'Bodyguard', icon:bg.icon||'💂', soak:bg.soak, hp:bg.soak, dmg:bg.dmg||0, max:bg.count||1,
+    rounds:null, from:who, uid:++minionUid});
+  syncMinionVisuals(st);
 }
 // Can this pick be aimed at a single body? Attacks, Grapples and damage spells that hit for a number
 function canTargetMinion(who,action){
@@ -3939,6 +3978,7 @@ function syncMinionVisuals(st){
   st.skeletons=effectsOf(st,'minion').filter(e=>e.minion==='skeleton').map(e=>({tier:e.look||e.tier||2}));
   st.simulacra=effectsOf(st,'minion').filter(e=>e.minion==='simulacrum').map(()=>({}));
   st.shark=countMinions(st,'shark');
+  st.guards=countMinions(st,'guard');
 }
 function addEffect(who,eff,fromWho){
   const st=gs[who], x=seatX(who);
@@ -9868,6 +9908,7 @@ const TUTORIAL_CONVOS={
     {key:'thessaly',text:"Enthral is my Arcane curse. I secretly call your next move — Damage, Protection or Dispel. Choose what I called and your spell is lost, its mana mine. Choose otherwise and I misread you. Nobody cleanses it in time: it springs the moment you cast."},
     {key:'thessaly',text:"Spellbind is my Dark curse — whatever you cast most often costs more for a while. Lean on one move and I'll make you pay for it."},
     {key:'thessaly',text:"Arcane Weave, in the Arcane sector of my Protection wheel, raises a light ward, then empowers my next few strikes and makes each one burn your mana."},
+    {key:'thessaly',text:"And I never come alone. Two bodyguards stand at my side from the first round. Set them to guard me and they take the blows meant for me; set them to attack and they earn their wages. I don't hire more, so spend them wisely."},
     {key:'thessaly',text:"By the time you understand what I've done, you've already run out of answers."},
   ],
   korvath:[
@@ -9911,6 +9952,7 @@ const TUTORIAL_CONVOS={
 // Character select stats, from each spell's `el` block
 function elemCharStats(cfg){
   const rows=[['❤ HP',String(cfg.hp)]];
+  if(cfg.bodyguards){ const b=cfg.bodyguards; rows.push([(b.icon||'💂')+' '+(b.count||1)+' '+(b.name||'Bodyguard')+'s','Start the duel at her side, '+b.soak+' HP each: on guard they soak hits for her (braced), on the attack each strikes for '+b.dmg+' a round; once they fall they\'re gone']); }
   if(cfg.forbidden&&cfg.forbidden.length)
     rows.push(['⛔ Can\'t cast',cfg.forbidden.map(id=>{ const e=elemById(id); return e.icon+' '+e.name; }).join(', ')]);
   (cfg.spells||[]).filter(s=>s.el).forEach(s=>{

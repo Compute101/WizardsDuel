@@ -1276,8 +1276,15 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 57,
+    "hp": 38,
     "dmgMult": 1.0,
+    "bodyguards": {
+      "count": 2,
+      "name": "Bodyguard",
+      "icon": "💂",
+      "soak": 3,
+      "dmg": 1
+    },
     "spells": [
       {
         "id": "enthral",
