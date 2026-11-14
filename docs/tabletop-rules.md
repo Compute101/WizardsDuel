@@ -262,7 +262,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Candle** | Dispel | Fire | Normal | 2 | Until cleansed: the foe takes 2 each time they cast Protection or Meditate. |
 
 ### SKADI — The Permafrost
-**HP 11** · Can't cast: Fire
+**HP 11** · Can't cast: Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -280,7 +280,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Warpstone Curse** | Dispel | Lightning | Normal | 2 | Until cleansed: every strike on the foe deals +1. |
 
 ### MARY — The Devoted
-**HP 11** · Can't cast: Dark, Fire
+**HP 11** · Can't cast: Dark, Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -343,7 +343,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Soul Tithe** | Dispel | Dark | Lesser | 2 | Until cleansed: the foe loses 1 mana for each of your skeletons they kill. |
 
 ### MIREL — The Deceiver
-**HP 10** · Can't cast: Physical, Fire
+**HP 10** · Can't cast: Physical
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|

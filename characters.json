@@ -408,7 +408,8 @@
     "hp": 54,
     "dmgMult": 1.15,
     "forbidden": [
-      "ice"
+      "ice",
+      "water"
     ],
     "spells": [
       {
@@ -482,7 +483,7 @@
     "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
-      "fire"
+      "lightning"
     ],
     "spells": [
       {
@@ -642,7 +643,7 @@
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
-      "fire"
+      "lightning"
     ],
     "spells": [
       {
@@ -885,7 +886,8 @@
     },
     "dmgMult": 1.0,
     "forbidden": [
-      "lightning"
+      "lightning",
+      "air"
     ],
     "spells": [
       {
@@ -1037,7 +1039,8 @@
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
-      "arcane"
+      "arcane",
+      "air"
     ],
     "spells": [
       {
@@ -1199,8 +1202,7 @@
     },
     "dmgMult": 1.0,
     "forbidden": [
-      "earth",
-      "fire"
+      "earth"
     ],
     "spells": [
       {
@@ -1585,7 +1587,8 @@
     },
     "dmgMult": 1.0,
     "forbidden": [
-      "fire"
+      "fire",
+      "air"
     ],
     "spells": [
       {
