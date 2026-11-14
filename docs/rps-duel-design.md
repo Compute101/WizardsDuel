@@ -314,6 +314,7 @@ so (Normal AI, 200 games per matchup, after: 47.1–54.7%, Mordant highest as an
 Most wizards are barred from one or two elements that clash with who they are. Only Eldrin, Aurelia,
 Thessaly and Fizzwick can cast every element. This is theme first; balance is kept with numbers.
 Signature elements are never forbidden. Fire is the most common ban, so a Fire ward is often safe.
+(This is the six-element table; the bans changed with eight elements, see "Bans for eight elements".)
 
 | Character | Can't cast | Why |
 |---|---|---|
@@ -929,6 +930,7 @@ of his picks; Durin HP 68 → 65, 49.5% (roster 44.8–54.0%, 80 games a matchup
   Mary 60, Sylvara 66, Durin 61, Fizzwick 53, Mirel 51, Korvath 44, Gnash 55, Frederick 51, Nyxara 60.
   Result (80 games a matchup): 46.8–53.6%, about 17.8 rounds.
 - Still to do: the water wizard (a Tidecaster-inspired original), Air / Water bans for some wizards, tabletop.
+  (The water wizard is Nerissa; the bans are in "Bans for eight elements" below.)
 
 ### Nerissa of the Deep (the water wizard)
 
@@ -946,6 +948,37 @@ cleansed. Undertow (Lesser, 2 mana): 4+ on a die, the foe can't pick Protection 
 150–250 games): Fathom 3 HP 32.4% · Advanced HP 12 40.5% · Fathom 4 HP 45.6% · bite 4 40.8% · Fathom 4 +
 bite 4 51.1% (but 55–56% in Beginner / Normal) · Fathom 4 + Advanced HP 11 47.9% · **Fathom 4 + Advanced HP
 12 51.8%**. Final (300 games): Beginner 52.9%, Normal 52.3%, Advanced 51.1%.
+
+### Bans for eight elements
+
+With six elements Fire was the common ban, and it stayed that way after Air and Water arrived: nine of 23
+wizards were banned from Fire and nobody from Air or Water. Since Fire is Water's opposite, a Water ward was
+the one most foes couldn't unravel, and it became nearly everyone's second-favourite ward (5.6% of all picks,
+the most of any ward); an Air ward (its opposite, Earth, open to 21 of 23) was the weakest (2.6%).
+
+Changes (Fire bans 9 → 6, Air 0 → 3, Water 0 → 1, Lightning 3 → 5):
+
+| Character | Was | Now | Why |
+|---|---|---|---|
+| Cinder | Ice | Ice, Water | water quenches her flame (Fire's opposite) |
+| Durin | Lightning | Lightning, Air | a dwarf keeps his feet on the stone |
+| Gretch | Fire, Arcane | Fire, Arcane, Air | a hulking troggoth, earthbound |
+| Daveron | Fire | Fire, Air | the Gravelord rules below the earth |
+| Skadi | Fire | Lightning | her wheel opposite: the storm shatters the ice |
+| Mary | Dark, Fire | Dark, Lightning | a healer shuns destruction; the storm, not the hearth fire |
+| Mirel | Physical, Fire | Earth | the Fire ban had no reason; she was near the bottom |
+
+Tried and left out: Water for Korvath (51.6 → 45.3%) and Frederick (already low); lifting Daveron's Fire ban
+(58%, out of band); Mary with only Dark banned (47.7 → 55.7%, too big a swing; Lightning keeps her at about 52%).
+The Air bans on Gretch, Daveron and Durin are mostly flavour, since the first two hardly cast wheel Air; Durin
+loses about 2–3 points.
+
+Sim, Normal AI, 80 games a matchup (three runs of the new bans averaged against two runs before): Skadi
+47.4 → 54.8%, Mary 47.7 → 51.9%, Mirel 47.0 → 50.4%, Cinder 51.5 → 48.1%, Durin 48.4 → 45.5%, the rest
+within noise. Roster before: 46.2–55.0%; after, from the shipped file: 45.9–54.9%, about 18.5 rounds. Air wards
+are still the rarest (2.3%); a few Earth bans on airy wizards would be the lever if they should matter more.
+Tabletop (300 games, which keeps six elements, so only Skadi's, Mary's and Mirel's changes reach it):
+Beginner 44–55%, Normal 46–54%, Advanced 45–55%; every changed wizard moved 2 points or less.
 
 ### Phase 3 built: minions as bodies
 
