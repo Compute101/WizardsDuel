@@ -779,3 +779,6 @@ curse now meets wards), so his graveguard got tougher: middle-ring soak 10 → 1
 move this a point at a time). Valdris and Gretch needed nothing; Fizzwick held at about 51% without the
 seeping poison. Ponder 55 → 57 and Malachar 48 → 50 HP (bottom of the roster). Result (80 games a
 matchup): 46.0–55.3%, about 17 rounds.
+
+Correction: poison isn't magic. Caustic Bomb's poison has `bypassWard` again (if the bomb reaches HP, the
+poison seeps past wards raised after). Fizzwick 48.0%, roster 45.8–54.7% (60 games a matchup).

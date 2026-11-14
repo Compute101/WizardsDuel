@@ -4722,7 +4722,7 @@ function elemTickEffects(who){
     e.tick=(e.tick||0)+1;
     if(foreseeBlock(who,e.icon)) return;
     const dmg=Math.round((e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg)*suddenDeathMult());
-    // Ticks hit a ward first, like any damage (bypassWard lets an effect seep past; no spell uses it now)
+    // Ticks hit a ward first, like any damage — unless the effect isn't magic and seeps past wards (bypassWard: Caustic Bomb's poison)
     if(e.bypassWard||(!hasWard(st)&&!effectsOf(st,'minion').some(m=>m.soak))){
       if(e.bypassWard&&hasWard(st)) addFloat(x,bH*.3,e.icon+' Seeps past the ward!','#99dd55',11);
       elemFloatDmg(who,dmg,e.icon,'#cc88ff');
@@ -8747,7 +8747,7 @@ const TUTORIAL_CONVOS={
   ],
   fizzwick:[
     {key:'fizzwick',text:"Heh — a satchel full of things that probably shouldn't mix. Sometimes I'm not sure what they'll do until it's too late."},
-    {key:'fizzwick',text:"Caustic Bomb is my Dark strike. If it gets through to them, the poison is in their blood, eating away round after round — though a ward they raise will soak it. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
+    {key:'fizzwick',text:"Caustic Bomb is my Dark strike. If it gets through to them, the poison is in their blood — and poison's no spell, so it seeps straight past any ward they raise after. Unstable Concoction is my Arcane strike — completely random damage. Could be a dud. Could end the fight."},
     {key:'fizzwick',text:"Volatile Tonic, in the Physical sector of my Protection wheel, knows what I need: when I'm badly hurt it heals me, and otherwise it empowers my next strike."},
     {key:'fizzwick',text:"Most duellists plan for consistency. I bring chaos in a bottle."},
   ],

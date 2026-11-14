@@ -1383,10 +1383,11 @@
           "cost": 4,
           "power": 8,
           "tier": 2,
-          "desc": "8 + poison 5 a round × 3 (if it reaches HP)",
+          "desc": "8 + poison 5 a round × 3 — if it reaches HP, the poison seeps past wards (it's not magic)",
           "dot": {
             "dmg": 5,
-            "rounds": 3
+            "rounds": 3,
+            "bypassWard": true
           }
         }
       },
