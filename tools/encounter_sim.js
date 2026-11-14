@@ -1,14 +1,15 @@
-// Encounter balance: every wizard against every band (BANDS in js/game.js), AI on both sides.
+// Survival balance: every wizard runs the wave ladder (SURVIVAL_WAVES in js/game.js) `runs` times, AI on
+// both sides. There's no 50% target: a wizard should swat the early waves, most runs should end somewhere
+// in the second half, and a full clear should be an achievement.
 //
-//   node tools/encounter_sim.js [gamesPerPair=40] [bands=all] [ai=normal]
+//   node tools/encounter_sim.js [runsPerWizard=20] [ai=normal]
 //
-// Prints each band's win rate for the wizards (target: about 50% for an average wizard, i.e. the
-// roster mean), the spread across wizards, the average rounds, and what the wizards picked.
-// Tune a band with its `scale` (fighters' HP) in BANDS, or the fighters in fighters.json.
-// PRE='js code' runs in the page first (e.g. PRE="BANDS[0].scale=1.2").
+// Prints, for the whole roster: the share of runs that clear each wave, the average waves cleared and the
+// full-clear rate, then each wizard's average. PRE='js code' runs in the page first, e.g.
+//   PRE="FIGHTER_DEFS.soldier.phys.atk=6" node tools/encounter_sim.js 10
 const http=require('http'), fs=require('fs'), path=require('path');
 const {chromium}=require('playwright');
-const games=+(process.argv[2]||40), bandArg=process.argv[3]||'all', ai=process.argv[4]||'normal';
+const runs=+(process.argv[2]||20), ai=process.argv[3]||'normal';
 const root=path.join(__dirname,'..');
 const TYPES={'.html':'text/html','.js':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.jpg':'image/jpeg'};
 const server=http.createServer((req,res)=>{
@@ -24,28 +25,26 @@ const server=http.createServer((req,res)=>{
   await page.goto(`http://localhost:${server.address().port}/index.html`);
   await page.waitForFunction(()=>Object.keys(CHAR_DEFS).length&&Object.keys(FIGHTER_DEFS).length,null,{timeout:60000});
   if(process.env.PRE) await page.evaluate(process.env.PRE);
-  const out=await page.evaluate(([games,bandArg,ai])=>{
-    const bands=bandArg==='all'?BANDS.map(b=>b.id):bandArg.split(',');
-    const wiz=Object.keys(CHAR_DEFS), res={};
-    const orig=elemAIChoose; let picks={};
-    window.elemAIChoose=w=>{ const a=orig(w);
-      if(w==='p1'&&a){ const k=a.act||(a.skin?'skin':null)||a.sig||(a.cat==='meditate'||a.cat==='pass'?a.cat:a.cat+(a.self?'-self':'')); picks[k]=(picks[k]||0)+1; }
-      return a; };
-    bands.forEach(b=>{
-      picks={}; const per={}; let rounds=0;
-      wiz.forEach(k=>{ let w=0; for(let i=0;i<games;i++){ const r=simEncounter(k,b,ai); if(r.won) w++; rounds+=r.rounds; } per[k]=w/games; });
-      res[b]={per,rounds:rounds/(games*wiz.length),picks};
+  const out=await page.evaluate(([runs,ai])=>{
+    const n=SURVIVAL_WAVES.length, reach=Array(n+1).fill(0), per={};
+    let total=0, all=0, rounds=0;
+    Object.keys(CHAR_DEFS).forEach(k=>{
+      let sum=0;
+      for(let i=0;i<runs;i++){
+        const r=simSurvival(k,ai);
+        sum+=r.cleared; total+=r.cleared; rounds+=r.rounds; reach[r.cleared]++; if(r.won) all++;
+      }
+      per[k]=sum/runs;
     });
-    window.elemAIChoose=orig;
-    return res;
-  },[games,bandArg,ai]);
+    const count=runs*Object.keys(CHAR_DEFS).length;
+    return {n, waves:SURVIVAL_WAVES.map(w=>w.name), reach, per, avg:total/count, full:all/count, rounds:rounds/count, count};
+  },[runs,ai]);
   await browser.close(); server.close();
-  for(const [b,r] of Object.entries(out)){
-    const v=Object.values(r.per), mean=v.reduce((a,x)=>a+x,0)/v.length;
-    const sorted=Object.entries(r.per).sort((a,b)=>b[1]-a[1]);
-    const tot=Object.values(r.picks).reduce((a,x)=>a+x,0);
-    console.log(`\n${b}: wizards win ${(mean*100).toFixed(1)}%, ${r.rounds.toFixed(1)} rounds`);
-    console.log('  '+sorted.map(([k,x])=>`${k} ${(x*100).toFixed(0)}`).join(' · '));
-    console.log('  picks: '+Object.entries(r.picks).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,x])=>`${k} ${(x/tot*100).toFixed(0)}%`).join(' · '));
-  }
+  // reach[c] = runs that cleared exactly c waves; the share that cleared at least wave i
+  let left=out.count;
+  const cleared=[];
+  for(let i=0;i<out.n;i++){ left-=out.reach[i]; cleared.push(left/out.count); }
+  console.log(`\n${out.count} runs (${runs} per wizard), AI ${ai}: average ${out.avg.toFixed(1)} of ${out.n} waves cleared, ${(out.full*100).toFixed(0)}% full clears, ${out.rounds.toFixed(0)} rounds a run\n`);
+  out.waves.forEach((w,i)=>console.log(`  wave ${String(i+1).padStart(2)} ${w.padEnd(18)} cleared by ${(cleared[i]*100).toFixed(0).padStart(3)}%`));
+  console.log('\n  '+Object.entries(out.per).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${v.toFixed(1)}`).join(' · '));
 })();

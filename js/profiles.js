@@ -2,11 +2,11 @@
 // Named player profiles saved on this device (localStorage 'wd-profiles'): win rates, who you've
 // beaten, favourite wizards, rank/XP progression and recent matches. game.js reports results through
 // Profiles.record*() and maps seats to profiles with Profiles.seats; training and the balance sim never record.
-// Uses game.js globals (CHAR_DEFS, BANDS) only at call time, so it can load before game.js.
+// Uses game.js globals (CHAR_DEFS, SURVIVAL_WAVES) only at call time, so it can load before game.js.
 const Profiles=(()=>{
   const KEY='wd-profiles', HISTORY=25, NAME_MAX=16;
   // XP for a result, and the ranks it climbs through
-  const XP={win:100, draw:40, loss:25, newFoe:50, arcadeStage:15, arcadeClear:300, encounterWin:60};
+  const XP={win:100, draw:40, loss:25, newFoe:50, arcadeStage:15, arcadeClear:300, encounterWin:60, survivalWave:20};
   const RANKS=[
     {xp:0,     name:'Novice',         ico:'🕯'},
     {xp:300,   name:'Apprentice',     ico:'📜'},
@@ -17,7 +17,7 @@ const Profiles=(()=>{
     {xp:8000,  name:'Archmage',       ico:'⚡'},
     {xp:12000, name:'Grand Archmage', ico:'👑'},
   ];
-  const MODE_NAMES={arcade:'Arcade', versus:'2 Player', multi:'3–4 Wizards', encounter:'Encounter', duel:'Duel'};
+  const MODE_NAMES={arcade:'Arcade', versus:'2 Player', multi:'3–4 Wizards', encounter:'Survival', duel:'Duel'};
 
   let db={v:1, active:null, list:{}};
   try{ const d=JSON.parse(localStorage.getItem(KEY)||'null'); if(d&&d.list) db=d; }catch(e){}
@@ -100,6 +100,13 @@ const Profiles=(()=>{
         h[o.result==='win'?'w':o.result==='loss'?'l':'d']++;
       }
     });
+    // Survival runs: waves cleared (XP for each) and the best run
+    if(o.waves!=null){
+      const sv=p.survival=p.survival||{runs:0, best:0, bestWith:null, clears:0};
+      sv.runs++; xp+=XP.survivalWave*o.waves;
+      if(o.waves>sv.best){ sv.best=o.waves; sv.bestWith=o.char; }
+      if(o.result==='win') sv.clears++;
+    }
     if(o.band){
       const b=p.bands[o.band]=p.bands[o.band]||{g:0,w:0};
       b.g++; if(o.result==='win'){ b.w++; xp+=XP.encounterWin; }
@@ -109,7 +116,7 @@ const Profiles=(()=>{
     }
     if(o.arcadeClear){ p.arcade.clears++; p.arcade.clearedWith[o.char]=(p.arcade.clearedWith[o.char]||0)+1; xp+=XP.arcadeClear; }
     p.xp+=xp;
-    p.history.unshift({t:Date.now(), mode:o.mode, char:o.char, foes:(o.foes||[]).map(f=>f.char), band:o.band||null,
+    p.history.unshift({t:Date.now(), mode:o.mode, char:o.char, foes:(o.foes||[]).map(f=>f.char), band:o.band||null, waves:o.waves!=null?o.waves:null,
       result:o.result, place:o.place||null, rounds:o.rounds||0, clear:!!o.arcadeClear});
     p.history.length=Math.min(p.history.length,HISTORY);
     save();
@@ -200,7 +207,7 @@ const Profiles=(()=>{
     const tile=(n,l)=>`<div class="pf-tile"><b>${n}</b><small>${l}</small></div>`;
     const hist=p.history.map(h=>{
       const res=h.result==='win'?'W':h.result==='loss'?'L':'D';
-      const vs=h.band?bandName(h.band):h.foes.map(charName).join(', ');
+      const vs=h.waves!=null?'the waves ('+h.waves+' cleared)':h.band?bandName(h.band):h.foes.map(charName).join(', ');
       const d=new Date(h.t);
       return `<div class="pf-hist pf-${h.result}"><span class="pf-res">${res}</span>`+
         `<img src="portraits/small/${esc(h.char)}.jpg" alt=""><span class="pf-hist-txt">${esc(charName(h.char))} vs ${esc(vs)}`+
@@ -220,7 +227,8 @@ const Profiles=(()=>{
       <div class="pf-section">Your wizards</div>${recordTable(played,'Wizard')}
       <div class="pf-section">Against</div>${recordTable(foes,'Opponent')}
       ${h2h.length?`<div class="pf-section">Head to head</div><table class="pf-table"><tr><th>Player</th><th>W</th><th>L</th><th>D</th></tr>${h2h.map(([id,v])=>`<tr><td>${esc(db.list[id].name)}</td><td>${v.w}</td><td>${v.l}</td><td>${v.d}</td></tr>`).join('')}</table>`:''}
-      ${bands.length?`<div class="pf-section">Encounters</div><table class="pf-table"><tr><th>Band</th><th>P</th><th>W</th><th>%</th></tr>${bands.map(([id,v])=>`<tr><td>${esc(bandName(id))}</td><td>${v.g}</td><td>${v.w}</td><td>${pct(v)}</td></tr>`).join('')}</table>`:''}
+      ${p.survival&&p.survival.runs?`<div class="pf-section">Survival</div><div class="pf-tiles">${tile(p.survival.runs,'Runs')}${tile(p.survival.best,'Best wave')}${tile(p.survival.clears,'Full clears')}</div>${p.survival.bestWith?`<div class="pf-xptxt">Best run with ${esc(charName(p.survival.bestWith))}</div>`:''}`:''}
+      ${bands.length?`<div class="pf-section">Encounters (old bands)</div><table class="pf-table"><tr><th>Band</th><th>P</th><th>W</th><th>%</th></tr>${bands.map(([id,v])=>`<tr><td>${esc(bandName(id))}</td><td>${v.g}</td><td>${v.w}</td><td>${pct(v)}</td></tr>`).join('')}</table>`:''}
       <div class="pf-section">Recent matches</div>${hist||'<div class="pf-empty">No matches yet. Training doesn\'t count.</div>'}
       <div class="pf-section">Manage</div>
       <form class="pf-new" id="pf-rename-form" autocomplete="off"><input id="pf-rename" maxlength="${NAME_MAX}" value="${esc(p.name)}" aria-label="Name"><button class="mo-opt" type="submit">Rename</button></form>

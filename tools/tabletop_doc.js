@@ -4,10 +4,10 @@
 const fs=require('fs'), path=require('path');
 const root=path.join(__dirname,'..');
 const TT=require(path.join(root,'js/tabletop.js'));
-const chars=TT.load(require(path.join(root,'characters.json')),require(path.join(root,'tabletop.json')));
+const chars=TT.load(require(path.join(root,'characters.json')),require(path.join(root,'tabletop.json')),require(path.join(root,'fighters.json')));
 const R=TT.RULES;
 const RING=['Lesser','Normal','Greater'];
-const ELEM={fire:'Fire',ice:'Ice',lightning:'Lightning',arcane:'Arcane',physical:'Physical',dark:'Dark',water:'Water',air:'Air'};
+const ELEM={fire:'Fire',ice:'Ice',lightning:'Lightning',arcane:'Arcane',earth:'Earth',dark:'Dark',water:'Water',air:'Air'};
 const CAT={damage:'Damage',protect:'Protection',dispel:'Dispel'};
 
 // Base spells are the same in every rule set; Beginner and Normal flick budget minus the cost,
@@ -21,14 +21,15 @@ let base='| Level | Cost | Damage | Ward | Dispel | Flicks | Advanced: winks to 
 
 let out='';
 Object.values(chars).forEach(c=>{
-  const notes=[];
+  const notes=[`Attack **${c.atk}**`];
+  if(c.skin) notes.push(`Skin: **${c.skin.name}** (${c.skin.cost} mana, soaks ${c.skin.soak} blows) instead of Ironskin`);
   if(c.deathless) notes.push(`Deathless: when knocked to 0 HP, pay ${c.deathless} mana to stay on 1 HP`);
   if(c.sealAll) notes.push('Normal rules: Seal Ward seals every one of your ward piles at once');
   if(c.forbidden.length) notes.push('Can\'t cast: '+c.forbidden.map(e=>ELEM[e]).join(', '));
   // "hp" is the Normal rules' (Beginner uses it too); other rule sets can change it
-  const alt=['beginner','advanced'].filter(r=>c.alt[r]&&c.alt[r].hp!=null&&c.alt[r].hp!==c.baseHp)
+  const alt=['beginner','normal','advanced'].filter(r=>c.alt[r]&&c.alt[r].hp!=null&&c.alt[r].hp!==c.baseHp)
     .map(r=>`${r[0].toUpperCase()+r.slice(1)} rules: **${c.alt[r].hp}**`);
-  out+=`### ${c.name} — ${c.title}\n**HP ${c.baseHp}**${alt.length?` (${alt.join(', ')})`:''}${notes.length?' · '+notes.join(' · '):''}\n\n`;
+  out+=`### ${c.name} — ${c.title}\n**HP ${c.baseHp}**${alt.length?` (${alt.join(', ')})`:''} · ${notes.join(' · ')}\n\n`;
   out+='| Spell | Type | Element | Level | Cost | Effect |\n|---|---|---|---|---|---|\n';
   c.spells.forEach(s=>{ out+=`| **${s.name}** | ${CAT[s.cat]} | ${ELEM[s.elem]} | ${RING[s.ring-1]} | ${s.cost} | ${s.text} |\n`; });
   out+='\n';
@@ -43,5 +44,25 @@ const swap=(name,body)=>{
 };
 swap('base-spells',base);
 swap('characters',out);
+
+// Survival: the wave ladder, with each wave's fighters in each rule set
+const RS=TT.RULE_SETS, cap=r=>r[0].toUpperCase()+r.slice(1);
+const nm=k=>k[0].toUpperCase()+k.slice(1);
+let enc='| Wave | Fighters | '+RS.map(cap).join(' | ')+' |\n|---|---|'+RS.map(()=>'---|').join('')+'\n';
+TT.WAVES.forEach((w,i)=>{
+  const counts={}; w.members.forEach(k=>counts[k]=(counts[k]||0)+1);
+  const L=TT.LEVELS[w.level].name;
+  const who=Object.keys(counts).map(k=>(counts[k]>1?counts[k]+' ':'')+(L?L+' ':'')+nm(k)+(counts[k]>1?'s':'')).join(', ');
+  const cells=RS.map(r=>{
+    TT.useRules(r);
+    return Object.keys(counts).map(k=>{
+      const f=TT.fighters[k], lv=TT.LEVELS[w.level];
+      return `${nm(k)} ${Math.max(1,Math.round(f.hp*lv.hp))} HP, Attack ${f.atk+lv.atk}`;
+    }).join('; ');
+  });
+  enc+=`| **${i+1}. ${w.name}** | ${who} | ${cells.join(' | ')} |\n`;
+});
+TT.useRules('normal');
+swap('encounters',enc);
 fs.writeFileSync(file,doc);
 console.log('Updated',path.relative(root,file),'—',Object.keys(chars).length,'characters');

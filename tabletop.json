@@ -24,14 +24,15 @@
     ]
   },
   "sylvara": {
+    "skin": {"name": "Barkskin", "cost": 1, "soak": 3},
     "hp": 11,
     "spells": [
-      {"id": "heal", "name": "Regen", "cat": "protect", "elem": "physical", "ring": 2, "cost": 3, "kind": "buff", "effect": {"type": "regen", "heal": 1},
+      {"id": "heal", "name": "Regen", "cat": "protect", "elem": "earth", "ring": 2, "cost": 3, "kind": "buff", "effect": {"type": "regen", "heal": 1},
        "text": "Until dispelled: heal 1 at every round end."},
-      {"id": "entangle", "name": "Entangle", "cat": "dispel", "elem": "physical", "ring": 1, "cost": 2, "kind": "curse", "roll": 4, "effect": {"type": "lock", "cat": "damage"},
+      {"id": "entangle", "name": "Entangle", "cat": "dispel", "elem": "earth", "ring": 1, "cost": 2, "kind": "curse", "roll": 4, "effect": {"type": "lock", "cat": "damage"},
        "text": "Roll a die: on 4+ the foe can't pick Damage next round."},
-      {"id": "vinewhip", "name": "Vine Whip", "cat": "damage", "elem": "physical", "ring": 2, "cost": 3, "kind": "strike", "dmg": 3, "dot": {"dmg": 1},
-       "text": "Physical strike of 3. Until cleansed, vines deal 1 to the foe at every round end."}
+      {"id": "vinewhip", "name": "Vine Whip", "cat": "damage", "elem": "earth", "ring": 2, "cost": 3, "dmgKind": "physical", "kind": "strike", "dmg": 3, "dot": {"dmg": 1},
+       "text": "A blow of 3 (wards don't stop it). Until cleansed, vines deal 1 blow to the foe at every round end."}
     ]
   },
   "aurelia": {
@@ -48,17 +49,17 @@
   "gnash": {
     "hp": 11,
     "spells": [
-      {"id": "warpaint", "name": "War Paint", "cat": "protect", "elem": "physical", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "resist", "n": 1},
+      {"id": "warpaint", "name": "War Paint", "cat": "protect", "elem": "earth", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "resist", "n": 1},
        "text": "Until dispelled: every hit on you deals 1 less (min 1)."},
-      {"id": "charge", "name": "Savage Charge", "cat": "damage", "elem": "physical", "ring": 2, "cost": 4, "kind": "strike", "dmg": 5, "manaburn": 2,
-       "text": "Physical strike of 5. The foe loses 2 mana."},
+      {"id": "charge", "name": "Savage Charge", "cat": "damage", "elem": "earth", "ring": 2, "cost": 4, "dmgKind": "physical", "kind": "strike", "dmg": 5, "manaburn": 2,
+       "text": "A blow of 5 (wards don't stop it). The foe loses 2 mana."},
       {"id": "frenzy", "name": "Frenzy", "cat": "protect", "elem": "fire", "ring": 1, "cost": 2, "kind": "buff", "effect": {"type": "frenzy", "bonus": 2, "selfDmg": 1},
        "text": "Until dispelled: your strikes deal +2, but each costs you 1 HP."}
     ]
   },
   "cinder": {
     "hp": 11,
-    "rules": {"advanced": {"hp": 10}},
+    "rules": {"advanced": {"hp": 11}},
     "spells": [
       {"id": "fireball", "name": "Fireball", "cat": "damage", "elem": "fire", "ring": 1, "cost": 2, "kind": "strike", "dmg": 4,
        "text": "Fire strike of 4 (a Lesser strike is 2)."},
@@ -108,7 +109,7 @@
        "text": "Until cleansed: the foe takes 2 at every round end, unless they Meditated that round (Corruption stops Meditate escaping it)."},
       {"id": "silence", "name": "Silence", "cat": "dispel", "elem": "arcane", "ring": 2, "cost": 2, "kind": "curse", "effect": {"type": "silence", "roll": 3},
        "text": "Until cleansed: each spell the foe casts, they roll a die: on 1–2 it fails (no mana spent)."},
-      {"id": "corruption", "name": "Corruption", "cat": "dispel", "elem": "physical", "ring": 2, "cost": 2, "kind": "curse", "effect": {"type": "incomeDrain", "n": 1, "corrupt": true},
+      {"id": "corruption", "name": "Corruption", "cat": "dispel", "elem": "earth", "ring": 2, "cost": 2, "kind": "curse", "effect": {"type": "incomeDrain", "n": 1, "corrupt": true},
        "text": "Until cleansed: the foe gains 1 less mana each round (and from Meditate), and Meditate doesn't escape Agony."}
     ]
   },
@@ -126,25 +127,26 @@
   },
   "durin": {
     "hp": 12,
+    "skin": {"name": "Stoneskin", "cost": 3, "soak": 6},
     "spells": [
-      {"id": "stoneskin", "name": "Stoneskin", "cat": "protect", "elem": "physical", "ring": 2, "cost": 5, "kind": "ward", "ward": 9,
-       "text": "Physical ward of 9."},
-      {"id": "stonesoul", "name": "Stonesoul", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "resist", "n": 1},
-       "text": "Until dispelled: every hit on you deals 1 less (min 1)."},
-      {"id": "rockfall", "name": "Rockfall", "cat": "damage", "elem": "physical", "ring": 3, "cost": 5, "kind": "strike", "dmg": 7,
-       "text": "Physical strike of 7."}
+      {"id": "bedrock", "name": "Bedrock", "cat": "protect", "elem": "earth", "ring": 2, "cost": 5, "kind": "ward", "ward": 9, "holdWear": true,
+       "text": "Earth ward of 9 that never wears away at round end."},
+      {"id": "stonesoul", "name": "Stonesoul", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "resist", "physOnly": true, "n": 1},
+       "text": "Until dispelled: every blow on you deals 1 less (min 1). Spells hit as usual."},
+      {"id": "rockfall", "name": "Rockfall", "cat": "damage", "elem": "earth", "ring": 3, "cost": 5, "kind": "strike", "dmg": 7,
+       "text": "Earth strike of 7."}
     ]
   },
   "weizan": {
     "hp": 11,
     "rules": {"advanced": {"hp": 12}},
     "spells": [
-      {"id": "conjureblade", "name": "Conjure Blade", "cat": "protect", "elem": "physical", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "minion", "minion": "blade", "dmg": 1, "max": 3},
-       "text": "Conjure a blade (max 3). Until dispelled, each blade deals 1 to the foe at every round end."},
-      {"id": "bladestorm", "name": "Bladestorm", "cat": "damage", "elem": "physical", "ring": 2, "cost": 2, "kind": "strike", "perBlade": 3, "requires": "blade",
-       "text": "Needs a blade. Launch all your blades: a Physical strike of 3 per blade. The blades are used up."},
-      {"id": "ironpatience", "name": "Iron Patience", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "resist", "n": 1},
-       "text": "Until dispelled: every hit on you deals 1 less (min 1)."}
+      {"id": "conjureblade", "name": "Conjure Blade", "cat": "protect", "elem": "earth", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "minion", "minion": "blade", "dmg": 1, "max": 3},
+       "text": "Conjure a blade (max 3). Until dispelled, each blade deals a blow of 1 to the foe at every round end."},
+      {"id": "bladestorm", "name": "Bladestorm", "cat": "damage", "elem": "earth", "ring": 2, "cost": 2, "dmgKind": "physical", "kind": "strike", "perBlade": 3, "requires": "blade",
+       "text": "Needs a blade. Launch all your blades: a blow of 3 per blade (wards don't stop it). The blades are used up."},
+      {"id": "ironpatience", "name": "Iron Patience", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "resist", "physOnly": true, "n": 1},
+       "text": "Until dispelled: every blow on you deals 1 less (min 1). Spells hit as usual."}
     ]
   },
   "gretch": {
@@ -152,18 +154,18 @@
     "spells": [
       {"id": "plague", "name": "Plague", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 3, "kind": "curse", "effect": {"type": "dot", "dmg": 1},
        "text": "Until cleansed: the foe takes 1 at every round end."},
-      {"id": "maggotcloud", "name": "Maggot Cloud", "cat": "dispel", "elem": "physical", "ring": 2, "cost": 2, "kind": "curse", "drainNow": 3, "effect": {"type": "incomeDrain", "n": 1},
+      {"id": "maggotcloud", "name": "Maggot Cloud", "cat": "dispel", "elem": "earth", "ring": 2, "cost": 2, "kind": "curse", "drainNow": 3, "effect": {"type": "incomeDrain", "n": 1},
        "text": "The foe loses 3 mana now. Until cleansed, they gain 1 less mana each round (and from Meditate)."},
       {"id": "bonetotem", "name": "Bone Totem", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "totem", "kind": "minion", "soak": 4, "heal": 1, "max": 1, "raise": 1},
-       "text": "Plant a bone totem (one at a time). It has 4 HP and stands in front of your ward: damage (strikes and ticks) wears it down before anything reaches your ward. Dispels can't touch it. While it stands, heal 1 at every round end."}
+       "text": "Plant a bone totem (one at a time). It has 4 HP and always guards: damage (strikes, blows and ticks) wears it down before anything reaches you or your ward. Dispels can't touch it. While it stands, heal 1 at every round end."}
     ]
   },
   "valdris": {
     "hp": 7,
-    "rules": {"advanced": {"hp": 9}},
+    "rules": {"beginner": {"hp": 6}, "normal": {"hp": 8}, "advanced": {"hp": 9}},
     "spells": [
       {"id": "raisedead", "name": "Raise Dead", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "skeleton", "kind": "minion", "soak": true, "dmg": 1, "max": 5, "raise": 3},
-       "text": "Raise 3 skeletons (max 5 on the table). Each has 1 HP and stands in front of your ward: every point of damage (strikes and ticks) kills one skeleton before anything reaches your ward. Dispels can't touch them. Each skeleton still standing deals 1 to the foe at every round end."},
+       "text": "Raise 3 skeletons (max 5 on the table). Each has 1 HP. Guarding, they stand in front of you: every point of damage kills one before anything reaches you or your ward. Attacking, each bites the foe for 1 (a blow) at every round end. Dispels can't touch them."},
       {"id": "necroticdrain", "name": "Necrotic Drain", "cat": "damage", "elem": "dark", "ring": 2, "cost": 4, "kind": "strike", "dmg": 4, "lifesteal": true,
        "text": "Dark strike of 4. Heal half the HP damage it deals (round down)."},
       {"id": "soultithe", "name": "Soul Tithe", "cat": "dispel", "elem": "dark", "ring": 1, "cost": 2, "kind": "curse", "effect": {"type": "tithe", "n": 1},
@@ -172,9 +174,10 @@
   },
   "mirel": {
     "hp": 10,
+    "rules": {"advanced": {"hp": 9}},
     "spells": [
       {"id": "simulacrum", "name": "Simulacrum", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 5, "kind": "buff", "effect": {"type": "minion", "minion": "simulacrum", "dmg": 1, "max": 2},
-       "text": "Summon a simulacrum (max 2). Until dispelled, each deals 1 to the foe at every round end."},
+       "text": "Summon a simulacrum (max 2). Until dispelled, each deals a blow of 1 to the foe at every round end."},
       {"id": "bewitch", "name": "Bewitch", "cat": "dispel", "elem": "arcane", "ring": 2, "cost": 2, "kind": "curse", "effect": {"type": "bewitch"},
        "text": "The foe's next strike hits themselves instead."},
       {"id": "feint", "name": "Feint", "cat": "damage", "elem": "arcane", "ring": 2, "cost": 4, "kind": "strike", "dmg": 4, "manaburn": 2,
@@ -196,20 +199,20 @@
   "korvath": {
     "hp": 11,
     "spells": [
-      {"id": "dragonscales", "name": "Dragon Scales", "cat": "protect", "elem": "fire", "ring": 2, "cost": 5, "kind": "buff", "effect": {"type": "resist", "n": 1, "retaliate": 1},
-       "text": "Until dispelled: every hit on you deals 1 less (min 1), and strikers take 1."},
+      {"id": "dragonscales", "name": "Dragon Scales", "cat": "protect", "elem": "fire", "ring": 2, "cost": 5, "kind": "buff", "effect": {"type": "resist", "physOnly": true, "n": 1, "retaliate": 1},
+       "text": "Until dispelled: every blow on you deals 1 less (min 1), and strikers take 1. Spells hit as usual."},
       {"id": "wyrmfirebreath", "name": "Wyrmfire Breath", "cat": "damage", "elem": "fire", "ring": 2, "cost": 4, "kind": "strike", "dmg": 4, "dot": {"dmg": 1},
        "text": "Fire strike of 4. Until cleansed, the foe burns for 1 at every round end."},
-      {"id": "ancientwrath", "name": "Ancient Wrath", "cat": "damage", "elem": "physical", "ring": 3, "cost": 7, "kind": "strike", "dmg": 9, "once": true,
-       "text": "Physical strike of 9. Once per game."}
+      {"id": "ancientwrath", "name": "Ancient Wrath", "cat": "damage", "elem": "earth", "ring": 3, "cost": 7, "dmgKind": "physical", "kind": "strike", "dmg": 9, "once": true,
+       "text": "A blow of 9 (wards don't stop it). Once per game."}
     ]
   },
   "fizzwick": {
     "hp": 11,
     "spells": [
-      {"id": "causticbomb", "name": "Caustic Bomb", "cat": "damage", "elem": "dark", "ring": 2, "cost": 3, "kind": "strike", "dmg": 3, "dot": {"dmg": 1, "bypassWard": true},
-       "text": "Dark strike of 3. Until cleansed, poison deals 1 to the foe at every round end. If the strike reached HP, the poison ignores wards."},
-      {"id": "volatiletonic", "name": "Volatile Tonic", "cat": "protect", "elem": "physical", "ring": 1, "cost": 2, "kind": "instant", "action": {"type": "tonic", "heal": 6, "bonus": 3},
+      {"id": "causticbomb", "name": "Caustic Bomb", "cat": "damage", "elem": "dark", "ring": 2, "cost": 3, "dmgKind": "physical", "kind": "strike", "dmg": 3, "dot": {"dmg": 1, "bypassWard": true},
+       "text": "A thrown bomb: a blow of 3 (wards don't stop it). Until cleansed, poison deals 1 to the foe at every round end, ignoring wards."},
+      {"id": "volatiletonic", "name": "Volatile Tonic", "cat": "protect", "elem": "earth", "ring": 1, "cost": 2, "kind": "instant", "action": {"type": "tonic", "heal": 6, "bonus": 3},
        "text": "Roll a die: on 1–3 heal 6; on 4–6 your next strike deals +3."},
       {"id": "unstableconcoction", "name": "Unstable Concoction", "cat": "damage", "elem": "arcane", "ring": 2, "cost": 4, "kind": "strike", "dice": "d6!",
        "text": "Arcane strike: roll a die and deal that much. On a 6, roll again and add it (keep going on 6s)."}
@@ -229,10 +232,10 @@
   },
   "daveron": {
     "hp": 8,
-    "rules": {"advanced": {"hp": 10}},
+    "rules": {"beginner": {"hp": 7}, "advanced": {"hp": 10}},
     "spells": [
       {"id": "raisegraveguard", "name": "Raise Graveguard", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "skeleton", "kind": "minion", "soak": 3, "dmg": 1, "max": 3, "raise": 1},
-       "text": "Raise 1 graveguard (max 3 on the table). Each has 3 HP and stands in front of your ward: damage (strikes and ticks) wears down the oldest graveguard first, and only what gets past them reaches your ward. Dispels can't touch them. Each graveguard still standing deals 1 to the foe at every round end."},
+       "text": "Raise 1 graveguard (max 3 on the table). Each has 3 HP. Guarding, they stand in front of you: damage wears down the oldest first, and only what gets past reaches you or your ward. Attacking, each strikes the foe for 1 (a blow) at every round end. Dispels can't touch them."},
       {"id": "dansemacabre", "name": "Vanhal's Danse Macabre", "cat": "protect", "elem": "arcane", "ring": 1, "cost": 2, "kind": "buff", "requires": "skeleton", "effect": {"type": "danse", "bonus": 1},
        "text": "Needs a graveguard on the table. Until dispelled: each of your graveguard deals 1 more at every round end."},
       {"id": "curseyears", "name": "Curse of the Years", "cat": "dispel", "elem": "dark", "ring": 2, "cost": 4, "kind": "curse", "effect": {"type": "agony", "dmg": 2, "inescapable": true},
@@ -252,12 +255,12 @@
     },
   "nerissa": {
     "hp": 10,
-    "rules": {"advanced": {"hp": 12}},
+    "rules": {"beginner": {"hp": 9}, "advanced": {"hp": 12}},
     "spells": [
       {"id": "fathom", "name": "Summon Fathom", "cat": "protect", "elem": "water", "ring": 2, "cost": 3, "kind": "buff", "effect": {"type": "minion", "minion": "shark", "kind": "minion", "soak": 4, "dmg": 1, "max": 1, "raise": 1},
-       "text": "Fathom, your shark familiar, swims to your side (one at a time). He has 4 HP and stands in front of your ward: damage (strikes and ticks) wears him down before anything reaches your ward. Dispels can't touch him. While he swims, he bites the foe for 1 at every round end."},
-      {"id": "bloodinwater", "name": "Blood in the Water", "cat": "damage", "elem": "water", "ring": 2, "cost": 4, "kind": "strike", "dmg": 3, "dot": {"dmg": 1},
-       "text": "Fathom bites: a Water strike of 3. Until cleansed, the foe bleeds 1 at every round end."},
+       "text": "Fathom, your shark familiar, swims to your side (one at a time). He has 4 HP. Guarding, he circles you and takes the damage first. Attacking, he bites the foe for 1 (a blow) at every round end. Dispels can't touch him."},
+      {"id": "bloodinwater", "name": "Blood in the Water", "cat": "damage", "elem": "water", "ring": 2, "cost": 4, "dmgKind": "physical", "kind": "strike", "dmg": 3, "dot": {"dmg": 1},
+       "text": "Fathom bites: a blow of 3 (wards don't stop it). Until cleansed, the foe bleeds 1 at every round end."},
       {"id": "undertow", "name": "Undertow", "cat": "dispel", "elem": "water", "ring": 1, "cost": 2, "kind": "curse", "roll": 4, "effect": {"type": "lock", "cat": "protect"},
        "text": "Roll a die: on 4+ the foe is dragged under and can't pick Protection next round."}
     ]

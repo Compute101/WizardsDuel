@@ -2041,8 +2041,9 @@ function refreshHUD(){
 
 // 3–4 wizards: one compact card per seat (built by buildMultiHUD when the duel starts)
 function buildMultiHUD(){
-  document.getElementById('mhud').innerHTML=PLAYERS.map(w=>{
-    const cfg=seatCfg(w), team=!encounterBand&&seatSetup&&seatSetup.find(st=>st.who===w).team;
+  const wv=survival&&SURVIVAL_WAVES[survival.wave];
+  document.getElementById('mhud').innerHTML=(wv?`<div class="mh-wave">Wave ${survival.wave+1} / ${SURVIVAL_WAVES.length} · ${wv.name}</div>`:'')+PLAYERS.map(w=>{
+    const cfg=seatCfg(w), team=!survival&&seatSetup&&seatSetup.find(st=>st.who===w).team;
     return `<div class="mh-card${cfg.fighter?' fighter':''}" id="mh-${w}" style="--mh-col:${cfg.col}">`+
       `<img class="mh-img" src="portraits/small/${seatKey(w)}.jpg" alt=""><span class="mh-name">${cfg.name}</span>`+
       (team?`<span class="mh-team">Team ${team}</span>`:'')+
@@ -3581,6 +3582,7 @@ function tickRound(who){
   const g=gs[who].gate;
   if(!(g&&g.until>=gs.round-1)) elemTickEffects(who);
   gs[who].mana=Math.min(MAX_MANA,gs[who].mana+elemIncome(who));
+  skinUpkeep(who);
 }
 
 // At the end of his round in the Infernal Gate the camera swings round, he and a foe trade sides, and he
@@ -3783,7 +3785,7 @@ function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS.find(e=>e.id
 const ACTIONS={damage:{id:'attack',name:'Attack',icon:'⚔️'}, protect:{id:'guard',name:'Guard',icon:'🛡'}, dispel:{id:'grapple',name:'Grapple',icon:'🤼'}};
 const ACT_RULES={counterMult:1, attackVsGrapple:1.5, grappleOther:0.5};
 const PHYS_DEFAULT={atk:4};
-const SKIN_DEFAULT={id:'ironskin', name:'Ironskin', icon:'🛡', cost:3, soak:15, col:'#b8c4d4', alpha:.4};   // alpha: how strongly the sheen tints the sprite
+const SKIN_DEFAULT={id:'ironskin', name:'Ironskin', icon:'🛡', cost:2, soak:20, col:'#b8c4d4', alpha:.4};   // alpha: how strongly the sheen tints the sprite
 function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}); }
 // ── FIGHTERS (Phase 4): non-wizards who fight with the Actions alone ──────────────
 // A fighter (fighters.json, `fighter:true`) has no mana to speak of, no wheel and no spells: every round
@@ -3795,47 +3797,116 @@ function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}
 const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'}};
 function isFighter(who){ return !!(gs[who]&&seatCfg(who).fighter); }
 function traitOf(who){ return gs[who]?seatCfg(who).trait||null:null; }
-// Encounter bands: your wizard alone against these. `scale` multiplies the fighters' HP (tuned so an
-// average wizard wins about half the time against each band with the Normal AI: tools/encounter_sim.js).
-const BANDS=[
-  {id:'patrol', name:'Patrol', icon:'🛡', members:['soldier','soldier'], scale:1.35, desc:'Two veteran soldiers with sword and shield.'},
-  {id:'skirmish', name:'Skirmishers', icon:'🏹', members:['archer','archer','archer'], scale:0.9, desc:'Three archers whose arrows slip past your guard.'},
-  {id:'warband', name:'Warband', icon:'⚔️', members:['soldier','archer','archer'], scale:0.8, desc:'A soldier holding the line for two archers.'},
+// ── SURVIVAL (Encounters): a fixed ladder of waves ─────────────────────────────────
+// Your wizard alone against wave after wave of fighters. A wizard swats the early waves; each one adds
+// fighters or levels them up (SURVIVAL_LEVELS: HP × hp, Attack + atk), and the last is brutal. Between waves
+// you catch your breath (SURVIVAL_BREATHER: heal a share of max HP, some mana, curses cleared); HP, wards,
+// skins, buffs and minions carry on. The score is how many waves you clear; clearing all of them wins.
+// Tuned with tools/encounter_sim.js (survival runs per wizard, Normal AI).
+const SURVIVAL_LEVELS=[
+  {name:'',          hp:1,    atk:0},
+  {name:'Veteran',   hp:1.2,  atk:0},
+  {name:'Elite',     hp:1.45, atk:1},
+  {name:'Champion',  hp:1.75, atk:2},
 ];
-function bandById(id){ return BANDS.find(b=>b.id===id); }
-// A fighter's cfg for one band: HP scaled, everything else from fighters.json
-function fighterCfg(key,band){
-  const d=FIGHTER_DEFS[key], sc=(band&&band.scale)||1;
-  return Object.assign({},d,{hp:Math.max(1,Math.round(d.hp*sc)),forbidden:ELEMENTS.map(e=>e.id),spells:[]});
+const SURVIVAL_WAVES=[
+  {name:'Road Patrol',      members:['soldier','soldier'],            level:0},
+  {name:'Poachers',         members:['archer','archer'],              level:0},
+  {name:'Scouting Party',   members:['soldier','archer','archer'],    level:0},
+  {name:'Shield Line',      members:['soldier','soldier','soldier'],  level:1},
+  {name:'Volley',           members:['archer','archer','archer'],     level:1},
+  {name:'Vanguard',         members:['soldier','soldier','archer'],   level:1},
+  {name:'Warband',          members:['soldier','archer','archer'],    level:2},
+  {name:'Iron Wall',        members:['soldier','soldier','soldier'],  level:2},
+  {name:'Rain of Arrows',   members:['archer','archer','archer'],     level:3},
+  {name:"Champion's Guard", members:['soldier','soldier','archer'],   level:3},
+];
+const SURVIVAL_BREATHER={heal:0.25, mana:4, cleanse:true};
+// A fighter's cfg at a level: HP and Attack raised, name prefixed (Veteran Soldier)
+function fighterCfg(key,level){
+  const d=FIGHTER_DEFS[key], L=SURVIVAL_LEVELS[level||0];
+  const cfg=Object.assign({},d,{hp:Math.max(1,Math.round(d.hp*L.hp)),forbidden:ELEMENTS.map(e=>e.id),spells:[],
+    phys:Object.assign({},d.phys,{atk:d.phys.atk+L.atk})});
+  cfg.name=(L.name?L.name.toUpperCase()+' ':'')+d.name;
+  return cfg;
 }
-// Seats for an encounter: the wizard (p1, human unless sim) on team A, the band on team B
-function encounterSeats(wizKey,band,human){
-  const seen={}, many=k=>band.members.filter(m=>m===k).length>1;
-  return [{key:wizKey,human:human!==false,team:'A'}].concat(band.members.map(k=>{
-    const cfg=fighterCfg(k,band);
+// Seats for one wave: the wizard (p1) on team A, the wave on team B
+function waveSeats(wizKey,wave,human){
+  const w=SURVIVAL_WAVES[wave], seen={}, many=k=>w.members.filter(m=>m===k).length>1;
+  return [{key:wizKey,human:human!==false,team:'A'}].concat(w.members.map(k=>{
+    const cfg=fighterCfg(k,w.level);
     seen[k]=(seen[k]||0)+1;
     if(many(k)) cfg.name+=' '+['I','II','III','IV'][seen[k]-1];   // Soldier I, Soldier II
     return {key:k,cfg,human:false,team:'B'};
   }));
 }
-// Encounter mode: the band picked on the Encounter screen; the player then picks a wizard
-let encounterBand=null;
+// The run in progress: {wizKey, human, wave} (null outside Survival). encounterBand is its old name.
+let survival=null, encounterPending=false;   // encounterPending: Survival chosen, waiting for the wizard pick
+// Best wave cleared per wizard (this browser only)
+function survivalBest(){ try{ return JSON.parse(localStorage.getItem('wd-survival-best')||'{}'); }catch(e){ return {}; } }
+function saveSurvivalBest(key,cleared){
+  try{ const b=survivalBest(); if(!(b[key]>=cleared)){ b[key]=cleared; localStorage.setItem('wd-survival-best',JSON.stringify(b)); } }catch(e){}
+}
 function renderEncounterSetup(){
-  document.getElementById('enc-bands').innerHTML=BANDS.map(b=>{
-    const who=b.members.map(k=>FIGHTER_DEFS[k]).filter(Boolean);
-    const counts={}; b.members.forEach(k=>counts[k]=(counts[k]||0)+1);
-    const list=Object.keys(counts).map(k=>(counts[k]>1?counts[k]+' × ':'')+(FIGHTER_DEFS[k]?FIGHTER_DEFS[k].title:k)).join(', ');
-    return `<button class="enc-band" data-band="${b.id}"><span class="enc-ico">${b.icon}</span>`+
-      `<span class="enc-txt"><b>${b.name}</b><span class="enc-who">${list}</span><span class="enc-desc">${b.desc}</span></span>`+
-      `<span class="enc-faces">${who.map((f,i)=>`<img src="portraits/small/${b.members[i]}.jpg" alt="">`).join('')}</span></button>`;
-  }).join('')+'<div class="enc-traits">'+Object.keys(FIGHTER_DEFS).map(k=>{
+  const best=survivalBest(), bestList=Object.entries(best).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('enc-bands').innerHTML='<ol class="enc-waves">'+SURVIVAL_WAVES.map((w,i)=>{
+    const counts={}; w.members.forEach(k=>counts[k]=(counts[k]||0)+1);
+    const L=SURVIVAL_LEVELS[w.level].name;
+    const list=Object.keys(counts).map(k=>(counts[k]>1?counts[k]+' × ':'')+(L?L+' ':'')+(FIGHTER_DEFS[k]?FIGHTER_DEFS[k].name[0]+FIGHTER_DEFS[k].name.slice(1).toLowerCase():k)).join(', ');
+    return `<li><b>${w.name}</b> <span class="enc-who">${list}</span></li>`;
+  }).join('')+'</ol>'+
+  (bestList.length?'<div class="enc-best">🏆 Best runs: '+bestList.map(([k,n])=>`${CHAR_DEFS[k]?CHAR_DEFS[k].name:k} ${n===SURVIVAL_WAVES.length?'all '+n:n}`).join(' · ')+'</div>':'')+
+  '<button class="btn" id="btn-enc-go">Choose Your Wizard →</button>'+
+  '<div class="enc-traits">'+Object.keys(FIGHTER_DEFS).map(k=>{
     const f=FIGHTER_DEFS[k], t=FIGHTER_TRAITS[f.trait]||{};
     return `<div class="enc-trait"><b>${t.icon||''} ${f.title}</b> — ${f.desc}</div>`;
   }).join('')+'</div>';
 }
 function startEncounter(wizKey){
-  const seats=encounterSeats(wizKey,encounterBand,true);
-  startMultiBattle(seats);
+  survival={wizKey, human:true, wave:0};
+  startMultiBattle(waveSeats(wizKey,0,true));
+  waveBanner();
+}
+// The breather between waves: heal, mana, curses gone (the rest carries on)
+function survivalBreather(){
+  const st=gs.p1, B=SURVIVAL_BREATHER, hp0=st.hp, mana0=st.mana;
+  st.hp=Math.min(st.maxHp,st.hp+Math.ceil(st.maxHp*B.heal));
+  st.mana=Math.min(MAX_MANA,st.mana+B.mana);
+  if(B.cleanse) st.effects=st.effects.filter(e=>e.kind!=='curse');
+  return {hp:st.hp-hp0, mana:st.mana-mana0};
+}
+// Bring on the next wave: the wizard's seat is kept, the fighters are new
+function nextWave(){
+  const keep=gs.p1;
+  survival.wave++;
+  setupSeats(waveSeats(survival.wizKey,survival.wave,survival.human));
+  newState();
+  gs.p1=Object.assign(keep,{out:false, lastTarget:null, lastPick:null, grudges:null});
+  gs.wave=survival.wave;
+}
+function waveBanner(){
+  if(simMode||!survival) return;
+  const w=SURVIVAL_WAVES[survival.wave];
+  addFloat(bW*.5,bH*.16,'Wave '+(survival.wave+1)+' of '+SURVIVAL_WAVES.length+': '+w.name,'#f0cc6a',18);
+}
+// A wave falls: the run is won after the last one; otherwise breathe and bring on the next
+function waveCleared(){
+  if(survival.wave>=SURVIVAL_WAVES.length-1) return false;   // the last wave: the run ends in victory
+  gameEnded=true;   // stops the round in progress
+  if(simMode){ gs.waveCleared=true; return true; }
+  gs.myTurn=false; gs.busy=true;
+  const got=survivalBreather();
+  addFloat(seatX('p1'),bH*.2,'Wave '+(survival.wave+1)+' cleared!','#f0cc6a',17);
+  addFloat(seatX('p1'),bH*.27,'Breather: +'+got.hp+' HP, +'+got.mana+' Mana'+(SURVIVAL_BREATHER.cleanse?', curses gone':''),'#9be8a8',13);
+  setTimeout(()=>{
+    if(!battleRunning||!survival) return;
+    nextWave();
+    loadSprites(); buildMultiHUD(); resizeBC();
+    gameEnded=false;
+    waveBanner();
+    setTimeout(beginPickPhase,600);
+  },2800);
+  return true;
 }
 // Fighter AI: reads the foe's last pick like aiPhysAction. Mostly Attacks; Guards a foe who keeps
 // Attacking (and a soldier Guards when the wizard went for him last round: Shield Wall halves the spell);
@@ -4200,7 +4271,7 @@ function openElemWheel(cat){
   // Ironskin (or this wizard's own skin spell): a magic buff that soaks blows
   const skinBtn=document.getElementById('wheel-skin'), sk=skinOf(who), skOn=skinOn(st);
   skinBtn.style.display=cat==='protect'?'':'none';
-  skinBtn.textContent=sk.icon+' '+sk.name+' ('+sk.cost+' Mana) — soaks '+sk.soak+' from blows'+(skOn?' · now '+skOn.hp:'');
+  skinBtn.textContent=sk.icon+' '+sk.name+' ('+sk.cost+' Mana, '+SKIN_UPKEEP+' a round) — soaks '+sk.soak+' from blows'+(skOn?' · now '+skOn.hp:'');
   skinBtn.disabled=cat==='protect'&&!canSkin(who);
   // Cleanse Self, one button per ring: 1 curse, 2 curses, all of them
   const cl=document.getElementById('wheel-cleanse');
@@ -4219,7 +4290,7 @@ function openElemWheel(cat){
   }
   const ruleText={
     damage:'Every spell is magic, Earth included: a ward stops it · ⚔️ Attack (the centre) is a free blow: wards don\'t stop it, Ironskin soaks it, and a foe who Guards that round blocks it and counters · it hits harder into a Grapple · some signature strikes are physical too (charges, blades, claws, vines, bombs) · a ward\'s opposite element (across the wheel) unravels it · Lightning burns mana · Air gusts over minions · Water drenches (next Lightning harder, next Fire doused) · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
-    protect:'Wards stop magic, never blows · Ironskin (the button below) soaks blows until it\'s used up or dispelled · 🛡 Guard (the centre, free) lasts this round only: it blocks blows aimed at you and counters an Attack, but a Grapple gets through · summoned minions guard you (braced: they lose half of each hit) or attack — set it free with the chip under the buttons · wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · wards resist every element but their opposite, which unravels them · an Air ward may deflect a spell; a Water ward ebbs and flows (regains '+ELEM_WARD_TRAITS.tide+' a round instead of wearing)'+
+    protect:'Wards stop magic, never blows · Ironskin (the button below) soaks blows until it\'s used up or dispelled, for '+SKIN_UPKEEP+' mana upkeep each round end (no mana and it fades: against a wizard who casts, it\'s rarely worth it) · 🛡 Guard (the centre, free) lasts this round only: it blocks blows aimed at you and counters an Attack, but a Grapple gets through · summoned minions guard you (braced: they lose half of each hit) or attack — set it free with the chip under the buttons · wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · wards resist every element but their opposite, which unravels them · an Air ward may deflect a spell; a Water ward ebbs and flows (regains '+ELEM_WARD_TRAITS.tide+' a round instead of wearing)'+
       (WARD_RULES.boost?' · recast your ward\'s element to top it up (to '+WARD_RULES.boostCap+'× that cast)':'')+
       (WARD_RULES.layers>1?' · a new element goes on over it, up to '+WARD_RULES.layers+' layers'+
         (WARD_RULES.stackTake<1?' · 🏰 Bulwark: a ward with another beneath it loses only '+Math.round(WARD_RULES.stackTake*100)+'% from each strike'+(WARD_RULES.stackDispel?' and dispel':' (dispels still cut it as usual)'):''):'')+
@@ -5437,6 +5508,16 @@ function suddenDeathLevel(){
 function suddenDeathMult(){ return 1+SUDDEN_DEATH.dmgPerRound*suddenDeathLevel(); }
 function suddenDeathMana(){ return Math.min(SUDDEN_DEATH.maxMana,SUDDEN_DEATH.manaPerRound*suddenDeathLevel()); }
 function incomeDrainOf(who){ return effectsOf(gs[who],'incomeDrain').reduce((a,e)=>a+e.n,0); }
+// Skins need upkeep (SKIN_UPKEEP mana at every round end, after income) or they fade: against a wizard
+// who rarely throws blows it isn't worth it, so you stay with magic; against fighters or minions it pays.
+let SKIN_UPKEEP=1;
+function skinUpkeep(who){
+  const st=gs[who], sk=effectsOf(st,'skin')[0];
+  if(!sk||!SKIN_UPKEEP) return;
+  if(st.mana>=SKIN_UPKEEP){ st.mana-=SKIN_UPKEEP; return; }
+  st.effects=st.effects.filter(e=>e!==sk);
+  if(!simMode) addFloat(seatX(who),bH*.24,'🛡 '+(sk.name||'Ironskin')+' fades (no upkeep)','#b8c4d4',12);
+}
 function elemIncome(who){
   return Math.max(0,ELEM_INCOME-incomeDrainOf(who))+suddenDeathMana();
 }
@@ -5614,7 +5695,9 @@ function physThreat(f){
   const st=gs[f];
   if(isFighter(f)) return 0.9;   // a fighter is all blows
   let t=0.05+physOf(f).atk/40;   // everyone can Attack; brutes hit harder
-  if(seatCfg(f).spells.some(sp=>(sp.el.kind==='strike'&&strikeKind(sp.el)==='physical')||(sp.el.effect&&sp.el.effect.type==='minion'&&sp.el.effect.dmg))) t+=0.25;
+  // Only blows that are coming: a physical strike card, and minions already on the table (not ones the foe
+  // could summon: a skin has upkeep, so raising it early only pays for nothing)
+  if(seatCfg(f).spells.some(sp=>sp.el.kind==='strike'&&strikeKind(sp.el)==='physical')) t+=0.2;
   t+=0.15*effectsOf(st,'minion').filter(m=>m.dmg).length;
   return Math.min(0.9,t);
 }
@@ -6138,6 +6221,7 @@ function eliminateSeats(){
   });
   const teams=[...new Set(activeSeats().map(seatTeam))];
   if(teams.length>1) return;
+  if(survival&&teams[0]==='A'&&waveCleared()) return;   // Survival: on to the next wave
   if(simMode){ gameEnded=true; simOutcome=teams.length?teams[0]:'draw'; return; }
   if(multiMode) showMultiEnd(teams[0]||null);
   else endGame(teams.length?teams[0]===seatTeam('p1'):'draw');
@@ -6150,18 +6234,20 @@ function showMultiEnd(team){
   const winners=team?PLAYERS.filter(w=>seatTeam(w)===team):[];
   recordMulti(team,winners);
   const names=ws=>ws.map(w=>seatCfg(w).name).join(' & ');
-  if(encounterBand){
-    // An encounter: victory or defeat for the wizard, and who fell
-    const won=team===seatTeam('p1'), band=encounterBand;
+  if(survival){
+    // The end of a Survival run: every wave cleared, or how far the wizard got
+    const won=team===seatTeam('p1'), n=SURVIVAL_WAVES.length, wv=SURVIVAL_WAVES[survival.wave];
+    const cleared=won?n:survival.wave, prev=survivalBest()[survival.wizKey]||0;
+    saveSurvivalBest(survival.wizKey,cleared);
     setTimeout(()=>{
       battleRunning=false;
-      document.getElementById('ovico').textContent=won?'🏆':gs.timeUp?'⌛':'☠';
+      document.getElementById('ovico').textContent=won?'🏆':'☠';
       const title=document.getElementById('ovtitle');
-      title.textContent=won?'Victory!':gs.timeUp?'The '+band.name+' Holds':'Defeated by the '+band.name;
+      title.textContent=won?'Survived Every Wave!':gs.timeUp?'Held to a Standstill':'Fell on Wave '+(survival.wave+1);
       title.style.color=won?seatCfg('p1').col:'#ff6677';
-      const fell=(gs.outOrder||[]).filter(o=>isFighter(o.who)).length;
-      document.getElementById('ovdesc').textContent=won?`${seatCfg('p1').name} routed the ${band.name} in ${gs.round} rounds.`:
-        `${fell} of ${band.members.length} fell before ${seatCfg('p1').name} did.`;
+      const name=seatCfg('p1').name;
+      document.getElementById('ovdesc').textContent=(won?`${name} cut through all ${n} waves, ${wv.name} last.`:
+        `${name} cleared ${cleared} of ${n} waves before the ${wv.name} won.`)+(cleared>prev?'  ·  New best!':prev?`  ·  Best: ${prev}`:'');
       document.getElementById('btn-continue').textContent='Back to Title';
       document.getElementById('overlay').classList.add('active');
     },1800);
@@ -6185,7 +6271,7 @@ function showMultiEnd(team){
   },1800);
 }
 function endMultiMode(){
-  multiMode=false; multiPicks=[]; encounterBand=null;
+  multiMode=false; multiPicks=[]; survival=null; encounterPending=false;
   setupSeats(null);
   document.getElementById('battle-screen').classList.remove('multi');
   document.getElementById('hud').classList.remove('multi');
@@ -6331,7 +6417,11 @@ function recordMulti(team,winners){
   const ids=Profiles.seats, rounds=gs.round||0;
   const out=PLAYERS.filter(w=>ids[w]&&isHumanSeat(w)).map(w=>{
     const result=!team?'draw':seatTeam(w)===team?'win':'loss';
-    if(encounterBand) return Profiles.recordGame(ids[w],{mode:'encounter', char:seatKey(w), result:gs.timeUp&&result==='loss'?'draw':result, rounds, band:encounterBand.id, foes:[]});
+    // Survival: a run counts as a win only when every wave falls; the profile keeps the waves cleared
+    if(survival){
+      const waves=team===seatTeam('p1')?SURVIVAL_WAVES.length:survival.wave;
+      return Profiles.recordGame(ids[w],{mode:'encounter', char:seatKey(w), result:waves>=SURVIVAL_WAVES.length?'win':'loss', rounds, waves, foes:[]});
+    }
     // A loss counts against the winners only, not the others who fell too
     const foes=PLAYERS.filter(f=>seatTeam(f)!==seatTeam(w)&&(result!=='loss'||winners.includes(f))).map(f=>({char:seatKey(f), pid:ids[f]||null}));
     // Place: the winners share 1st; everyone else by when they fell
@@ -9487,7 +9577,8 @@ function pickCharacter(key){
     showScreen('training-screen');
     return;
   }
-  if(encounterBand&&!multiMode){
+  if(encounterPending&&!multiMode){
+    encounterPending=false;
     document.getElementById('char-player-label').style.display='none';
     multiMode=true;
     startEncounter(key);
@@ -9684,10 +9775,31 @@ function simMatch(k1,k2,ai){
   return out;
 }
 
-// Encounter sim: wizKey against a band (BANDS id). Returns true when the wizard wins.
-function simEncounter(wizKey,bandId,ai){
-  const r=simMatchN(encounterSeats(wizKey,bandById(bandId),false),ai);
-  return {won:r.winner==='A',rounds:r.rounds,winner:r.winner};
+// Survival sim: one run for wizKey. Returns {cleared, won, rounds}: waves cleared, all of them, rounds played.
+function simSurvival(wizKey,ai){
+  simMode=true; simOutcome=null; twoPlayerMode=false; trainingMode=false;
+  aiDifficulty=ai||'normal';
+  survival={wizKey, human:false, wave:0};
+  setupSeats(waveSeats(wizKey,0,false));
+  let rounds=0;
+  try{
+    newState();
+    if(!bW){ bW=400; bH=300; }
+    battleRunning=true; gameEnded=false;
+    for(;;){
+      while(!gameEnded&&gs.round<=SIM_MAX_ROUNDS){
+        activeSeats().forEach(w=>{ gs.pending[w]=elemAIChoose(w); });
+        resolveSimRound(); rounds++;
+        gs.parts=[]; gs.floats=[]; gs.beams=[]; gs.manaBurnFires=[]; gs.shadowCircles=[]; gs.darkRituals=[]; gs.wardUnravels=[]; gs.siphons=[]; gs.fireballs=[]; gs.explosions=[]; gs.iceCrystals=[]; gs.iceShards=[]; gs.boulders=[]; gs.storms=[]; gs.elemFx=[]; gs.counterArcs=[]; gs.quake=null;
+      }
+      if(gs.waveCleared){ survivalBreather(); nextWave(); gameEnded=false; continue; }
+      const won=simOutcome==='A';
+      return {cleared:won?SURVIVAL_WAVES.length:survival.wave, won, rounds};
+    }
+  } finally {
+    battleRunning=false; simMode=false; survival=null;
+    setupSeats(null);
+  }
 }
 // 3–4 seat version: seats [{key,team?}]. Returns the winning team ('p1'… for free-for-all), 'draw' or 'timeout'.
 function simMatchN(seats,ai){
@@ -9767,7 +9879,7 @@ const TUTORIAL_CONVOS={
     {key:'mal',    text:"With three or four of us, whoever deals the most damage to a wizard in the round they fall claims a bounty: HP and mana. Gang up on someone if you like — but your ally wants that kill as much as you do."},
     {key:'gnash',  text:"Duel drag on too long? Normally it ends in a draw at the round limit. Pick SUDDEN DEATH in Options instead: from round 30 — round 20 with three or four of us — every round hits harder and brings more mana. Wards don't grow. Somebody falls soon."},
     {key:'ponder', text:"Think they're all coming for you? Tap 🌀 Phase. Everything aimed at you that round misses, and you soak up the mana they spent on it. Catch two or more spells and your next spell is free — any ring! Guess wrong and you've lost your turn and 4 mana. Not in an Encounter, though: no hiding from soldiers."},
-    {key:'durin',  text:"Fancy a fight that isn't a wizard? 🗡 Encounter, in the Duel menu, sends you alone against a band — soldiers and archers. They cast nothing: every round they Attack, Guard or Grapple, so your wards won't stop a single blow. Keep Ironskin up, Guard the swordsmen, and strike the archers first — they're fragile, but their arrows fly straight past a Guard."},
+    {key:'durin',  text:"Fancy a fight that isn't a wizard? 🗡 Encounter, in the Duel menu, is Survival: ten waves of soldiers and archers, each harder than the last, and you alone. They cast nothing: every round they Attack, Guard or Grapple, so your wards won't stop a single blow. Keep Ironskin up, Guard the swordsmen, and strike the archers first: they're fragile, but their arrows fly straight past a Guard. Between waves you catch your breath: some HP and mana back, and your curses gone. How far can you get?"},
   ],
   wheel:[
     {key:'ponder', text:"Pick a category and a wheel appears. It has eight elements — Fire, Air, Lightning, Arcane, Water, Earth, Ice and Dark — and three rings. Each sits across the wheel from its opposite. In the middle sits a plain action anyone can take, wizard or not: Attack on the Damage wheel, Guard on Protection, Grapple on Dispel. They cost nothing."},
@@ -9777,7 +9889,7 @@ const TUTORIAL_CONVOS={
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, the worst first."},
     {key:'eldrin', text:"Summoned minions — skeletons, graveguard, a totem, a shark — are bodies on the field. Their master orders them each round, free: on guard they stand in front of him and take hits for him; on the attack they strike but shield no one. You can aim a strike, an Attack or a Grapple at one of them instead of their master."},
-    {key:'eldrin', text:"Magic and blows are different things. A ward, in any element, stops magic — and a fist, a blade or a skeleton's sword walks straight through it. Against blows, cast Ironskin — the button under the Protection wheel: it soaks blows until it's used up or dispelled. Or Guard, in the middle of the wheel, for one round: you block their blows and counter an Attack, though a Grapple gets through. A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — burns, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike wears it only half as much — though a dispel still cuts it as usual. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
+    {key:'eldrin', text:"Magic and blows are different things. A ward, in any element, stops magic — and a fist, a blade or a skeleton's sword walks straight through it. Against blows, cast Ironskin — the button under the Protection wheel: it soaks blows until it's used up or dispelled. It costs 1 mana of upkeep every round end, so save it for fighters, claws and swords: against a wizard who casts, magic is the better buy. Or Guard, in the middle of the wheel, for one round: you block their blows and counter an Attack, though a Grapple gets through. A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — burns, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike wears it only half as much — though a dispel still cuts it as usual. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],
@@ -10165,14 +10277,13 @@ window.addEventListener('DOMContentLoaded', ()=>{
     document.getElementById('encounter-overlay').classList.add('show');
   });
   document.getElementById('encounter-overlay').addEventListener('click',e=>{
-    const b=e.target.closest('[data-band]');
-    if(!b) return;
-    encounterBand=bandById(b.dataset.band);
+    if(!e.target.closest('#btn-enc-go')) return;
+    encounterPending=true;
     if(hasProfiles()) Profiles.setSeats({p1:activeId()});
     document.getElementById('encounter-overlay').classList.remove('show');
     trainingMode=false; twoPlayerMode=false; multiMode=false; multiPicks=[];
     const lbl=document.getElementById('char-player-label');
-    lbl.textContent='Choose a wizard to face the '+encounterBand.name;
+    lbl.textContent='Choose a wizard to survive the waves';
     lbl.style.display='';
     showScreen('char-screen');
   });

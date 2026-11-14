@@ -1017,3 +1017,33 @@ Agreed: an **Encounter** mode (your wizard alone against a band of 2–3 fighter
 ## Merge note: main's Dispel nerf
 
 Main nerfed Dispel to 15 / 24 / 40 with a 1.5× matching bonus (Durin HP 110 → 105) against the pre-Phase-1 numbers. When this branch merged main, it had already cut dispels further (10 / 20 / 35; "Bigger wards, smaller dispels") and moved the bonus to a ward's opposite element (×2), with every HP scaled ×0.6. The nerf's aim (dispels too strong against wards) is already covered, so this branch's numbers were kept.
+
+## Phase 5 built: the tabletop mirror
+
+Agreed: eight elements with the opposite counting +2 against a ward (no riders or ward traits at the table); Actions and Ironskin in all three rule sets; minion stances and aiming at bodies in Normal and Advanced; Encounters at the table now.
+
+- **Engine:** `js/tabletop.js` now seats any number of players on teams (`newTable`), so a wizard can face a band. Duels are unchanged in shape.
+- **Actions and blows:** free, no flick, one round, the same circle as the app. Attack is 1 for most wizards and 2 for the brutes, so blows are a sideline next to 2 / 4 / 6 spells, as in the app. Wards stop magic only; Ironskin (2 mana, soaks 3) stops blows. Durin's Stoneskin became his skin (3 mana, soaks 6) and his ward card became Bedrock (a pile that never wears).
+- **Stances without a brace:** the app's brace (a guarding body loses half of what it stops) made Gretch's totem stop double and put him at 66–74%. With whole winks, one wink per point is the simpler rule and kept the roster at 42–58% before HP nudges.
+- **Encounters:** a wizard who fizzles half their Normal flicks can't keep up with three archers hitting every round, so Beginner and Normal archers have 1 HP (one hit and she's down), and Warband's soldier 4. Advanced wizards pot 3 flicks in 4, so their fighters are much tougher (soldier Attack 2, archers 8 HP). Archer HP is a cliff there too (8: 56%, 9: 42%).
+- **Results:** duels (300 games) Beginner 43.4–57.0%, Normal 44.2–57.4%, Advanced 44.3–55.2%; encounters (30 games a wizard) 41–56% per band and rule set, Skirmishers the hardest in Beginner and Normal.
+- **Open:** Skirmishers in Normal sit at 41–48%: if that's too hard at the table, field two archers instead of three. The app and tabletop bands share names and fighters but not numbers.
+
+## Skin upkeep
+
+Feedback: skins shouldn't wear, but you should have to maintain them, so that against other wizards you usually don't bother and use magic instead.
+
+- **Rule:** a skin costs **1 mana at every round end, after income**, or it fades (app `SKIN_UPKEEP`, tabletop `RULES.skin.upkeep`). Income is 4 in both games, so upkeep is a quarter of it.
+- **Why it was needed:** before, a skin sat untouched about 70% of the rounds it was up, and about 45% were still on at the end of the game: cheap insurance cast once and forgotten.
+- **What it took in the app:** upkeep alone pushed the minion casters to about 60% (skins were the counter to their bites). Two changes fixed it: the AI counts only blows that are coming (`physThreat`: a physical strike card and minions on the table, not minions the foe could summon, which had it skin up early and pay for nothing), and Ironskin got cheaper and stronger per cast (3 mana / 15 → 2 / 20; Barkskin 2 / 15 → 1 / 15, Stoneskin 4 / 30 → 3 / 30). Nerissa HP 58 → 55. Result: 44.5–56.9%, skins 2.4% of picks (was 4%).
+- **Encounters (app):** the better Ironskin made wizards win about 71% of the time; soldiers atk 7 → 8, band scales Patrol 1.3, Skirmishers 1.18, Warband 0.95: 52.7–53.6%.
+- **Tabletop:** the AI skins only at a threat of 0.6+: skins against wizards fell from 6% to under 1% of picks. Nerissa Beginner HP 9. Duels 43.3–57.7% across the three rule sets; encounters 46–53%.
+
+## Encounters become Survival
+
+Feedback: encounters don't need to be 50%. A wizard should comfortably wipe three normal dudes; the mode should be about how long you can survive progressively harder waves. Chosen: a breather between waves, a fixed ladder (a run can be won), app and tabletop both.
+
+- **The ladder:** 10 waves of 2–3 soldiers and archers: three waves of recruits, then Veterans, Elites and Champions. Fighters came down to "normal dudes" (app: Soldier HP 30 / atk 5, Archer 20 / 4).
+- **Breather:** keep HP, wards, skins, buffs and minions; heal a share of max HP, gain 4 mana, curses cleared.
+- **App tuning:** first try (Veteran ×1.35 / +1 atk) put a wall at wave 4 (66%) and 1% full clears. Veteran ×1.2 / +0, Elite ×1.45 / +1, Champion ×1.75 / +2 and a 25% heal give a steady decline: 100 / 99 / 99 / 83 / 80 / 71 / 53 / 33 / 14 / 9% (share of runs clearing each wave), 6.4 waves on average.
+- **Tabletop tuning:** at Normal flicking (half the spells fizzle) even two 4-HP soldiers beat 15% of wizards. Three fixes: recruits just swing (only veterans and up read your picks), the AI punches any fighter its free Attack can drop, and skins only when the band hits for 3+ a round. Fighters are 2 / 1 HP at Normal (6 / 4 at Advanced); the breather heals half; Champions get HP, not Attack. Result: waves 1–3 cleared 95–99% of the time, 5–8% full clears.

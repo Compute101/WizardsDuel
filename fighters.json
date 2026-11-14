@@ -6,9 +6,9 @@
     "trait": "shieldwall",
     "sprite": "sprites/soldier.png",
     "col": "#b8c0cc",
-    "hp": 50,
+    "hp": 30,
     "phys": {
-      "atk": 7
+      "atk": 5
     },
     "spells": [],
     "taunts": [
@@ -16,7 +16,16 @@
       "Steel doesn't care for your sparks.",
       "Shields up, lads."
     ],
-    "desc": "Solid HP and a good sword. Shield Wall: while he Guards, his shield also halves a spell aimed at him."
+    "desc": "Solid HP and a good sword. Shield Wall: while he Guards, his shield also halves a spell aimed at him.",
+    "tabletop": {
+      "hp": 2,
+      "atk": 1,
+      "rules": {
+        "advanced": {
+          "hp": 6
+        }
+      }
+    }
   },
   "archer": {
     "name": "ARCHER",
@@ -25,9 +34,9 @@
     "trait": "ranged",
     "sprite": "sprites/archer.png",
     "col": "#7fae5a",
-    "hp": 30,
+    "hp": 20,
     "phys": {
-      "atk": 6
+      "atk": 4
     },
     "spells": [],
     "taunts": [
@@ -35,6 +44,15 @@
       "Hold still, wizard.",
       "One more arrow."
     ],
-    "desc": "Fragile, with a weaker shot. At Range: her arrows slip past a Guard (no block, no counter), and she keeps her distance, so a Grapple can't reach her."
+    "desc": "Fragile, with a weaker shot. At Range: her arrows slip past a Guard (no block, no counter), and she keeps her distance, so a Grapple can't reach her.",
+    "tabletop": {
+      "hp": 1,
+      "atk": 1,
+      "rules": {
+        "advanced": {
+          "hp": 4
+        }
+      }
+    }
   }
 }
