@@ -1096,7 +1096,7 @@
             "raise": 3,
             "rounds": null
           },
-          "desc": "Raise 3 skeletons (max 5): each soaks 11 damage in front of your ward and strikes for 3 a round; dispels can't touch them"
+          "desc": "Raise 3 skeletons (max 5): each soaks 3 damage in front of your ward and strikes for 3 a round; dispels can't touch them"
         }
       },
       {
@@ -1548,7 +1548,7 @@
             "raise": 1,
             "rounds": null
           },
-          "desc": "Raise 1 armoured graveguard (max 3): each soaks 18 damage in front of your ward and strikes for 4 a round; dispels can't touch them"
+          "desc": "Raise 1 armoured graveguard (max 3): each soaks 11 damage in front of your ward and strikes for 4 a round; dispels can't touch them"
         }
       },
       {
