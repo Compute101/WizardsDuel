@@ -946,3 +946,22 @@ cleansed. Undertow (Lesser, 2 mana): 4+ on a die, the foe can't pick Protection 
 150–250 games): Fathom 3 HP 32.4% · Advanced HP 12 40.5% · Fathom 4 HP 45.6% · bite 4 40.8% · Fathom 4 +
 bite 4 51.1% (but 55–56% in Beginner / Normal) · Fathom 4 + Advanced HP 11 47.9% · **Fathom 4 + Advanced HP
 12 51.8%**. Final (300 games): Beginner 52.9%, Normal 52.3%, Advanced 51.1%.
+
+### Phase 3 built: minions as bodies
+
+Decisions: Attacks and damage spells can target a body; bodies intercept only when ordered to guard; orders
+are a free stance toggle (not a pick); summoned creatures are bodies, blades and simulacra are spectral.
+- Stance (`st.minionStance`): guard (intercept hits on their master, or an ally in team games; don't strike)
+  or attack (strike at round end; shield no one). Default guard. The chip under the action buttons cycles it.
+- Brace: a guarding body loses half of each hit it intercepts (`MINION_BRACE` 0.5). Without it guarding was
+  worthless: head to head, always-guard won 12–19% and always-attack 62–77% for Valdris, Daveron and
+  Nerissa. With it: always-guard 25–40%, and the AI's mixed rule (guard when hurt or facing a big strike)
+  beats both extremes.
+- Targeting: a strike, Attack or Grapple aimed at one body hits it alone (no ward, no riders); the target
+  picker lists each foe's bodies with HP, bite and stance. The AI aims at an attacking body it can kill
+  (about 0.6% of picks).
+- Numbers: Bone Totem soak 15 → 9 (it always guards, so the brace doubled it: Gretch 72%), Valdris's
+  skeletons bite 3 → 2 (a screen of attacking skeletons is a lot of free damage). HP: Valdris 45, Gretch 59,
+  Daveron 51, Ponder 69, Mary 62, Korvath 46, Sylvara 68.
+- Result (80 games a matchup, twice): 45.2–53.6% and 46.4–54.1%, about 18.9 rounds.
+- Not yet in tabletop.

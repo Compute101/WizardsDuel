@@ -1572,3 +1572,13 @@ body {
 .tt-table th { color: #f0cc6a; text-align: left; font-weight: 700; border-bottom: 1px solid rgba(201,168,76,0.4); padding: 5px 6px; white-space: nowrap; }
 .tt-table td { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 5px 6px; vertical-align: top; }
 .tt-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; margin: 0 0 8px; }
+
+/* Minion stance chip (Phase 3): free, under the action buttons, only with summoned minions */
+.abar-row-stance { justify-content: center; margin-top: 4px; }
+.stance-chip { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .5px; padding: 5px 14px; border-radius: 14px;
+  border: 1px solid #c9a84c88; background: #1a1030; color: #f0cc6a; cursor: pointer; }
+.stance-chip.guarding { color: #bfe3ff; border-color: #7fb8ff88; }
+.stance-chip:disabled { opacity: .5; cursor: default; }
+/* Target picker: a foe's summoned minions under them */
+.tg-minion { margin-left: 22px; padding: 4px 10px; opacity: .92; }
+.tg-mico { font-size: 22px; width: 40px; text-align: center; }

@@ -35,7 +35,7 @@ const CHAR_FLAVOUR={
   durin:'The mountain endures. Outlast every spell — stone by stone.',
   weizan:'Build blades slowly. Release all at once. Dispel kills your investment — protect it.',
   gretch:'Infect and drain. The Bone Totem heals you every round and soaks hits until it is smashed — Dispels can\'t touch it.',
-  valdris:'His skeletons stand in front of his ward and soak your damage, and dispels can\'t touch them, so batter through with strikes. Cleanse Soul Tithe first, or each skeleton you kill costs you mana.',
+  valdris:'On guard his skeletons stand braced in front of him and soak your damage; on the attack they strike every round. Dispels can\'t touch them, so batter through — or aim a strike at one. Cleanse Soul Tithe first, or each skeleton you kill costs you mana.',
   mirel:'Simulacra strike every round until dispelled. Bewitch turns the next strike against its caster.',
   thessaly:'Enthral calls their next move — guess right and it is lost, its mana yours. Spellbind taxes their favourite move — strike her over and over, and it is your strikes that cost more. Weave wards her, then turns strikes into mana denial.',
   korvath:'A dragon-bonded sorcerer who endures and burns. Save Ancient Wrath for the killing blow — you only get one.',
@@ -2044,6 +2044,12 @@ function refreshActionBar(){
     document.getElementById('bel-phase-cost').textContent=PHASE.cost+' Mana';
     ph.classList.toggle('off',busy||!phaseReady(who)||hasFreeSpell(who));
   }
+  const sc=document.getElementById('bel-stance');
+  if(sc){
+    const has=gs[who]&&bodiesOf(gs[who]).length>0&&isHumanSeat(who);
+    sc.style.display=has?'':'none';
+    if(has){ sc.textContent=stanceLabel(who); sc.classList.toggle('guarding',stanceOf(who).mode==='guard'); sc.disabled=!gs.myTurn; }
+  }
   const med=document.getElementById('bel-meditate');
   if(med){
     document.getElementById('bel-meditate-cost').textContent=gs[who].meditatedRound===gs.round-1?'Rested':'+'+meditateGain(who)+' Mana';
@@ -3736,6 +3742,81 @@ const ACT_RULES={counterMult:1, attackVsGrapple:1.5, grappleOther:0.5};
 const PHYS_DEFAULT={atk:4};
 const SKIN_DEFAULT={id:'ironskin', name:'Ironskin', icon:'🛡', cost:3, soak:15, col:'#b8c4d4', alpha:.4};   // alpha: how strongly the sheen tints the sprite
 function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}); }
+// ── MINIONS AS BODIES (Phase 3) ──
+// A body is a summoned creature that stands on the field: a minion with soak HP (skeletons, graveguard,
+// Fathom, the Bone Totem). Weizan's blades and Mirel's simulacra are spectral: they always strike and never
+// guard, and nobody can aim at them. Each wizard sets a free stance for their bodies (st.minionStance,
+// MINION_STANCE_DEFAULT): {mode:'attack'} — they strike at round end and shield no one; {mode:'guard', ward}
+// — they stand in front of `ward` (their master, or an ally in team games), intercepting every hit on them
+// (magic and physical) before any ward, and don't strike. Strikes, Attacks and Grapples can be aimed at one
+// body (action.minion = its uid): the hit lands on it alone, with no ward and no riders.
+const MINION_NAMES={skeleton:'Skeleton', totem:'Bone Totem', shark:'Fathom'};
+const MINION_STANCE_DEFAULT='guard';
+let MINION_BRACE=0.5;   // a guarding body loses this share of each hit it intercepts (they brace behind their shields)
+let minionUid=0;
+function isBody(m){ return !!m.soak; }
+function bodiesOf(st){ return effectsOf(st,'minion').filter(isBody); }
+function minionName(m){ return m.look===2?'Graveguard':MINION_NAMES[m.minion]||m.name||'Minion'; }
+function stanceOf(w){ const s=gs[w].minionStance; return s&&s.mode?s:{mode:MINION_STANCE_DEFAULT,ward:w}; }
+// The seats whose bodies are guarding tgt this moment (their own or an ally's)
+function guardingFor(tgt){ return activeSeats().filter(o=>{ const s=stanceOf(o); return s.mode==='guard'&&(s.ward||o)===tgt&&bodiesOf(gs[o]).length; }); }
+// Where a wizard's bodies stand: in front of them, toward the foes (for effects aimed at a minion)
+function minionPos(owner){ const dir=seatFacesRight(owner)?1:-1; return {x:seatX(owner)+dir*wizSize(owner)*.55, y:wizFeetY()-wizSize(owner)*.3}; }
+// Bodies that fall: off the field; Soul Tithe charges whoever killed them (dmgSource)
+function minionsFall(owner,dead){
+  const os=gs[owner];
+  os.effects=os.effects.filter(e=>!dead.includes(e));
+  syncMinionVisuals(os);
+  VFX.minionFall(seatX(owner),dead.length);
+  const killer=dmgSource;
+  if(killer&&killer!==owner&&gs[killer]){
+    const n=effectsOf(gs[killer],'tithe').filter(e=>e.from===owner).reduce((a,e)=>a+e.n,0)*dead.length;
+    const lost=Math.min(gs[killer].mana,n);
+    if(lost>0){ gs[killer].mana-=lost; addFloat(seatX(killer),bH*.42,'🪙 Tithe −'+lost+' Mana','#aa88ff',12); }
+  }
+}
+// Can this pick be aimed at a single body? Attacks, Grapples and damage spells that hit for a number
+function canTargetMinion(who,action){
+  if(action.act) return action.act==='attack'||action.act==='grapple';
+  if(action.cat!=='damage'||action.self) return false;
+  if(action.sig){ const sp=sigById(who,action.sig); return !!(sp&&sp.el.kind==='strike'&&sp.el.power); }
+  return true;
+}
+function minionStrikePower(who,action,sp){
+  const ph=physOf(who);
+  if(action.act==='attack') return {elem:'earth',dmg:ph.atk};
+  if(action.act==='grapple') return {elem:'earth',dmg:Math.max(1,Math.round(ph.atk*ACT_RULES.grappleOther))};
+  if(sp){ const el=sigAtTier(sp,action.tier); return {elem:el.elem||'arcane',dmg:previewStrikeDmg(who,el.elem,el.power||0)}; }
+  return {elem:action.elem,dmg:previewStrikeDmg(who,action.elem,ELEM_CATS.damage.power[action.tier-1])};
+}
+function hitMinion(who,owner,m,dmg,el){
+  const pos=minionPos(owner);
+  dmgSource=who;
+  const d=Math.min(dmg,m.hp); m.hp-=d;
+  addFloat(pos.x,bH*.3,el.icon+' −'+d+' '+minionName(m),el.col,13);
+  spawnParts(pos.x,pos.y,el.col,12);
+  if(m.hp<=0) minionsFall(owner,[m]);
+}
+function executeAtMinion(who,action,m,sp,cb){
+  const owner=action.target, p=minionStrikePower(who,action,sp), pos=minionPos(owner), el=elemById(p.elem);
+  if(!action.act) gs[who].lastElem=p.elem;
+  anim(who,'cast',600);
+  const land=()=>{ hitMinion(who,owner,m,p.dmg,el); combatTimeout(cb,600); };
+  if(action.act) lunge(who,.22,land);
+  else spawnProj(seatX(who),wizMidY(who),pos.x,pos.y,sp&&SPELL_VFX[sp.id]&&SPELL_VFX[sp.id].delivery&&SPELL_VFX[sp.id].delivery.proj||ELEM_PROJ[p.elem]||'arcane',el.col,land);
+}
+// Minion stance, as the stance chip shows it
+function stanceLabel(w){
+  const s=stanceOf(w);
+  if(s.mode==='attack') return '⚔️ Minions attack';
+  return '🛡 Minions guard '+((s.ward||w)===w?'me':seatCfg(s.ward).name);
+}
+// The next stance in the chip's cycle: attack → guard me → guard each ally → attack
+function nextStance(w){
+  const s=stanceOf(w), opts=[{mode:'attack'},{mode:'guard',ward:w}].concat(alliesOf(w).map(a=>({mode:'guard',ward:a})));
+  const i=opts.findIndex(o=>o.mode===s.mode&&(o.ward||w)===(s.ward||w));
+  return opts[(i+1)%opts.length];
+}
 function skinOf(who){ return Object.assign({},SKIN_DEFAULT,seatCfg(who).skin||{}); }
 function skinOn(st){ return effectsOf(st,'skin')[0]||null; }
 // The Action a seat chose this round (null for spells), and whether it's guarding
@@ -3795,7 +3876,7 @@ function addEffect(who,eff,fromWho){
   if(eff.type==='minion'){
     const n=Math.min(eff.raise||1,(eff.max||Infinity)-countMinions(st,eff.minion));
     if(n<=0) return false;
-    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:fromWho},eff,eff.soak?{hp:eff.soak}:{},untimedBuff(eff)?{rounds:null}:{}));
+    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:fromWho},eff,eff.soak?{hp:eff.soak}:{},untimedBuff(eff)?{rounds:null}:{},{uid:++minionUid}));
     syncMinionVisuals(st);
     addFloat(x,bH*.26,eff.icon+' '+eff.name+(n>1?' ×'+n:'')+'!','#88ffcc',13);
     return true;
@@ -4010,7 +4091,7 @@ function openElemWheel(cat){
   }
   const ruleText={
     damage:'Every spell is magic, Earth included: a ward stops it · ⚔️ Attack (the centre) is a free blow: wards don\'t stop it, Ironskin soaks it, and a foe who Guards that round blocks it and counters · it hits harder into a Grapple · some signature strikes are physical too (charges, blades, claws, vines, bombs) · a ward\'s opposite element (across the wheel) unravels it · Lightning burns mana · Air gusts over minions · Water drenches (next Lightning harder, next Fire doused) · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
-    protect:'Wards stop magic, never blows · Ironskin (the button below) soaks blows until it\'s used up or dispelled · 🛡 Guard (the centre, free) lasts this round only: it blocks blows aimed at you and counters an Attack, but a Grapple gets through · wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · wards resist every element but their opposite, which unravels them · an Air ward may deflect a spell; a Water ward ebbs and flows (regains '+ELEM_WARD_TRAITS.tide+' a round instead of wearing)'+
+    protect:'Wards stop magic, never blows · Ironskin (the button below) soaks blows until it\'s used up or dispelled · 🛡 Guard (the centre, free) lasts this round only: it blocks blows aimed at you and counters an Attack, but a Grapple gets through · summoned minions guard you (braced: they lose half of each hit) or attack — set it free with the chip under the buttons · wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · wards resist every element but their opposite, which unravels them · an Air ward may deflect a spell; a Water ward ebbs and flows (regains '+ELEM_WARD_TRAITS.tide+' a round instead of wearing)'+
       (WARD_RULES.boost?' · recast your ward\'s element to top it up (to '+WARD_RULES.boostCap+'× that cast)':'')+
       (WARD_RULES.layers>1?' · a new element goes on over it, up to '+WARD_RULES.layers+' layers'+
         (WARD_RULES.stackTake<1?' · 🏰 Bulwark: a ward with another beneath it loses only '+Math.round(WARD_RULES.stackTake*100)+'% from each strike'+(WARD_RULES.stackDispel?' and dispel':' (dispels still cut it as usual)'):''):'')+
@@ -4144,11 +4225,14 @@ function chooseTarget(who,action){
   if(action.self) done(who);
   else if(action.ok&&canShareProtection(who,action)&&alliesOf(who).length)
     showTargetPicker(who,[who].concat(alliesOf(who)),t=>{ action.ally=t; done(foes[0]); },'Protect who?');
-  else if(!action.ok||!needsTarget(who,action)||foes.length<=1) done(foes[0]);
+  else if(!action.ok||!needsTarget(who,action)) done(foes[0]);
+  else if(canTargetMinion(who,action)&&!hitsAllFoes(who,action)&&foes.some(f=>bodiesOf(gs[f]).length))
+    showTargetPicker(who,foes,(t,uid)=>{ if(uid!=null) action.minion=uid; done(t); },'Choose a target',true);
+  else if(foes.length<=1) done(foes[0]);
   else if(hitsAllFoes(who,action)) done(weakestFoe(who));   // no need to choose: it hits them all
   else showTargetPicker(who,foes,done);
 }
-function showTargetPicker(who,foes,cb,title='Choose a target'){
+function showTargetPicker(who,foes,cb,title='Choose a target',withMinions=false){
   let ov=document.getElementById('target-overlay');
   if(!ov){
     ov=document.createElement('div'); ov.id='target-overlay';
@@ -4163,9 +4247,12 @@ function showTargetPicker(who,foes,cb,title='Choose a target'){
     return `<button class="tg-foe" data-who="${w}" style="--tg-col:${cfg.col}">`+
       `<img src="portraits/small/${seatKey(w)}.jpg" alt=""><span class="tg-name">${cfg.name}${w===who?' (you)':''}</span>`+
       `<span class="tg-hp">❤ ${st.hp} / ${st.maxHp}</span>${ward}`+
-      (ban?`<span class="tg-ban">⛔ ${ban}</span>`:'')+`</button>`;
+      (ban?`<span class="tg-ban">⛔ ${ban}</span>`:'')+`</button>`+
+      (withMinions?bodiesOf(st).map(m=>`<button class="tg-foe tg-minion" data-who="${w}" data-uid="${m.uid}" style="--tg-col:${cfg.col}">`+
+        `<span class="tg-mico">${m.icon||'💀'}</span><span class="tg-name">${minionName(m)}</span>`+
+        `<span class="tg-hp">❤ ${m.hp}${m.dmg?' · bites '+m.dmg:''} · ${stanceOf(w).mode==='guard'?'🛡 guarding':'⚔️ attacking'}</span></button>`).join(''):'');
   }).join('');
-  ov.querySelectorAll('.tg-foe').forEach(b=>b.onclick=()=>{ ov.classList.remove('show'); cb(b.dataset.who); });
+  ov.querySelectorAll('.tg-foe').forEach(b=>b.onclick=()=>{ ov.classList.remove('show'); cb(b.dataset.who,b.dataset.uid!=null?+b.dataset.uid:undefined); });
   ov.classList.add('show');
 }
 
@@ -4286,7 +4373,7 @@ function executeElemental(who,action,cb){
     if(st.hp<=0||!agonyBites(who,action,agony)) return;
     // The bite hits skeletons and wards first, like any tick (bypassWard on the effect lets it seep past)
     dmgSource=agony.from;
-    if(!agony.bypassWard&&(hasWard(st)||effectsOf(st,'minion').some(m=>m.soak))) elemIncoming(who,bite,agony.elem||'dark',agony.icon,'#9944cc',true);
+    if(!agony.bypassWard&&(hasWard(st)||guardingFor(who).length)) elemIncoming(who,bite,agony.elem||'dark',agony.icon,'#9944cc',true);
     else elemFloatDmg(who,bite,agony.icon+' '+agony.name,'#9944cc');
     if(TICK_VFX[agony.id]) TICK_VFX[agony.id](x,wizMidY(x)); else VFX.agony(x); dmgSource=who;
   });
@@ -4353,6 +4440,12 @@ function executeElemental(who,action,cb){
     if(hpCost) elemFloatDmg(who,hpCost,'🩸','#ff4444');
   }
 
+  if(action.minion!=null){
+    const m=effectsOf(gs[action.target],'minion').find(e=>e.uid===action.minion);
+    if(m){ executeAtMinion(who,action,m,sp,cb); return; }
+    addFloat(seatX(action.target),bH*.36,'Already down — it goes for '+seatCfg(action.target).name,'#cccccc',12);
+    delete action.minion;
+  }
   if(action.act){ executeAction(who,action,cb); return; }
   if(action.skin){ executeSkin(who); combatTimeout(cb,900); return; }
   const isWard=sp?sp.el.kind==='ward':(action.cat==='protect');
@@ -4774,28 +4867,22 @@ function elemDispelHit(tgt,elem,power,tier){
 // first, before anything reaches the ward. Dispels can't touch them (kind 'minion', not a buff).
 // Soul Tithe: whoever kills them while cursed by their owner loses mana for each one.
 function soakMinions(tgt,dmg){
-  const ts=gs[tgt], tx=seatX(tgt);
-  const wall=effectsOf(ts,'minion').filter(m=>m.soak);
-  if(!wall.length||dmg<=0) return dmg;
-  let soaked=0; const dead=[];
-  for(const m of wall){
-    if(dmg<=0) break;
-    const d=Math.min(dmg,m.hp);
-    m.hp-=d; dmg-=d; soaked+=d;
-    if(m.hp<=0) dead.push(m);
-  }
-  if(dead.length){
-    ts.effects=ts.effects.filter(e=>!dead.includes(e));
-    syncMinionVisuals(ts);
-    VFX.minionFall(tx,dead.length);
-    const killer=dmgSource;
-    if(killer&&killer!==tgt&&gs[killer]){
-      const n=effectsOf(gs[killer],'tithe').filter(e=>e.from===tgt).reduce((a,e)=>a+e.n,0)*dead.length;
-      const lost=Math.min(gs[killer].mana,n);
-      if(lost>0){ gs[killer].mana-=lost; addFloat(seatX(killer),bH*.42,'🪙 Tithe −'+lost+' Mana','#aa88ff',12); }
+  if(dmg<=0) return dmg;
+  const guards=guardingFor(tgt);
+  if(!guards.length) return dmg;
+  let soaked=0, fell=0;
+  for(const o of guards){
+    const dead=[];
+    for(const m of bodiesOf(gs[o])){
+      if(dmg<=0) break;
+      const d=Math.min(dmg,Math.floor(m.hp/MINION_BRACE));   // what this body can stop, braced
+      m.hp-=Math.max(1,Math.ceil(d*MINION_BRACE)); dmg-=d; soaked+=d;
+      if(m.hp<=0) dead.push(m);
     }
+    if(dead.length){ minionsFall(o,dead); fell+=dead.length; }
+    if(dmg<=0) break;
   }
-  addFloat(tx,bH*.2,'💀 −'+soaked+(dead.length?' ('+dead.length+' fall'+(dead.length>1?'':'s')+')':''),'#ccccdd',12);
+  addFloat(seatX(tgt),bH*.2,'🛡 −'+soaked+' guarded'+(fell?' ('+fell+' fall'+(fell>1?'':'s')+')':''),'#ccccdd',12);
   return dmg;
 }
 
@@ -4848,7 +4935,7 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike,blast,kind){
   const ts=gs[tgt], tx=seatX(tgt);
   kind=kind||'magic';
   let warded=false, around=0;
-  if(strike&&elem==='air'&&ELEM_RIDERS.gust&&effectsOf(ts,'minion').some(m=>m.soak)){
+  if(strike&&elem==='air'&&ELEM_RIDERS.gust&&guardingFor(tgt).length){
     if(!(wear&&wear.gustNoted)){ if(wear) wear.gustNoted=true; addFloat(tx,bH*.2,'💨 Gusts over the screen','#c8f4ec',11); }
   } else dmg=soakMinions(tgt,dmg);
   if(kind==='physical') dmg=soakSkin(tgt,dmg);
@@ -5132,7 +5219,7 @@ function elemTickEffects(who){
     if(foreseeBlock(who,e.icon)) return;
     const dmg=Math.round((e.ramp?e.ramp[Math.min(e.tick,e.ramp.length)-1]:e.dmg)*suddenDeathMult());
     // Ticks hit a ward first, like any damage — unless the effect isn't magic and seeps past wards (bypassWard: Caustic Bomb's poison)
-    if(e.bypassWard||(!hasWard(st)&&!effectsOf(st,'minion').some(m=>m.soak)&&!(e.dmgKind==='physical'&&skinOn(st)))){
+    if(e.bypassWard||(!hasWard(st)&&!guardingFor(who).length&&!(e.dmgKind==='physical'&&skinOn(st)))){
       if(e.bypassWard&&hasWard(st)) addFloat(x,bH*.3,e.icon+' Seeps past the ward!','#99dd55',11);
       elemFloatDmg(who,dmg,e.icon,'#cc88ff');
     }
@@ -5155,7 +5242,8 @@ function elemTickEffects(who){
   activeSeats().filter(o=>o!==who&&minionTarget(o)===who).forEach(owner=>{
     // Danse Macabre (Daveron): every skeleton strikes harder while it lasts
     const danse=effectsOf(gs[owner],'danse').reduce((a,e)=>a+e.bonus,0);
-    effectsOf(gs[owner],'minion').filter(m=>m.dmg).forEach(m=>{   // a totem doesn't strike
+    const guarding=stanceOf(owner).mode==='guard';
+    effectsOf(gs[owner],'minion').filter(m=>m.dmg&&!(guarding&&isBody(m))).forEach(m=>{   // a totem doesn't strike; guarding bodies don't either
       const el=elemById(m.elem||'earth');
       dmgSource=owner;
       const bonus=m.minion==='skeleton'?danse:0;
@@ -5380,7 +5468,37 @@ function aiPhysAction(who,cat,tgt,smart){
   }
   return null;
 }
+// Bodies guard when their master is hurt or about to be hit hard, and in a gang; a totem only guards.
+// Team games: guard the ally the foes went for when they're worse off. AI_MINIONS tunes it.
+const AI_MINIONS={guardBase:.25, guardHurt:.4, guardThreat:.25, targetKill:.6};
+function aiSetStance(who){
+  const me=gs[who], bodies=bodiesOf(me);
+  if(!bodies.length) return;
+  if(!bodies.some(m=>m.dmg)){ me.minionStance={mode:'guard',ward:who}; return; }
+  const smart=aiDifficulty==='normal';
+  let p=AI_MINIONS.guardBase;
+  if(me.hp<me.maxHp*.45) p+=AI_MINIONS.guardHurt;
+  if(foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',3))) p+=AI_MINIONS.guardThreat;
+  if(!smart) p=.5;
+  const mate=alliesOf(who).filter(a=>!gs[a].out).sort((a,b)=>gs[a].hp/gs[a].maxHp-gs[b].hp/gs[b].maxHp)[0];
+  const ward=mate&&gs[mate].hp/gs[mate].maxHp<me.hp/me.maxHp-.25&&_rng()<.6?mate:who;
+  me.minionStance=_rng()<p?{mode:'guard',ward}:{mode:'attack'};
+}
+// Aim a strike at a foe's attacking body when the hit would kill it
+function aiMaybeTargetMinion(who,a){
+  if(!a||a.target==null||!canTargetMinion(who,a)||hitsAllFoes(who,a)||_rng()>AI_MINIONS.targetKill) return a;
+  const owner=a.target;
+  if(stanceOf(owner).mode!=='attack') return a;   // a guarding body takes the hit anyway
+  const sp=a.sig?sigById(who,a.sig):null, dmg=minionStrikePower(who,a,sp).dmg;
+  const prey=bodiesOf(gs[owner]).filter(m=>m.dmg&&m.hp<=dmg).sort((x,y)=>y.dmg-x.dmg)[0];
+  if(prey) a.minion=prey.uid;
+  return a;
+}
 function elemAIChoose(who){
+  aiSetStance(who);
+  return aiMaybeTargetMinion(who,elemAIChooseCore(who));
+}
+function elemAIChooseCore(who){
   // Several foes aimed at me last round: hit back at the weakest of them, and turtle
   const gangedBy=(gs.focus&&gs.focus[who]||[]).filter(f=>foesOf(who).includes(f));
   const ganged=GANG_AWARE_AI&&gangedBy.length>=2;
@@ -9331,6 +9449,7 @@ const TUTORIAL_CONVOS={
     {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Air gusts right over skeletons and totems, and an Air ward may blow a spell aside. Water drenches them — the next Lightning bites harder, the next Fire fizzles — and a Water ward ebbs and flows instead of wearing away. Earth is plain magic: a conjured rock is still a spell. Zakkit hates rocks anyway."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, the worst first."},
+    {key:'eldrin', text:"Summoned minions — skeletons, graveguard, a totem, a shark — are bodies on the field. Their master orders them each round, free: on guard they stand in front of him and take hits for him; on the attack they strike but shield no one. You can aim a strike, an Attack or a Grapple at one of them instead of their master."},
     {key:'eldrin', text:"Magic and blows are different things. A ward, in any element, stops magic — and a fist, a blade or a skeleton's sword walks straight through it. Against blows, cast Ironskin — the button under the Protection wheel: it soaks blows until it's used up or dispelled. Or Guard, in the middle of the wheel, for one round: you block their blows and counter an Attack, though a Grapple gets through. A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — burns, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike wears it only half as much — though a dispel still cuts it as usual. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
@@ -9442,12 +9561,12 @@ const TUTORIAL_CONVOS={
   gretch:[
     {key:'gretch',text:"Heh. Come closer. My kit is about poison and drain — I infect you, starve you, and keep myself alive while you rot."},
     {key:'gretch',text:"Plague is a Dark curse — damage every round for a while. Maggot Cloud is an Earth curse — it drains mana now and slows your mana for a couple of rounds. Meditating won't save you."},
-    {key:'gretch',text:"Bone Totem, in the Dark sector of my Protection wheel, plants a totem that heals me every round. It's bone and wood, not an enchantment — Dispels can't touch it. It stands in front of me and soaks hits until someone smashes it."},
+    {key:'gretch',text:"Bone Totem, in the Dark sector of my Protection wheel, plants a totem that heals me every round. It's bone and wood, not an enchantment — Dispels can't touch it. It always stands guard in front of me, braced, and soaks hits until someone smashes it — or aims a strike straight at it."},
     {key:'gretch',text:"Not elegant. Not subtle. Just results. Plague them, drain them, totem up, and let time finish the job."},
   ],
   valdris:[
     {key:'valdris',text:"I am Valdris, the Undying. I do not fight alone — the dead stand between you and me."},
-    {key:'valdris',text:"Raise Dead, in the Dark sector of my Protection wheel, raises three skeletons — up to five at once. They stand in front of my ward and soak your damage until it cuts them down, and dispels can't touch them. Every one still standing strikes you each round."},
+    {key:'valdris',text:"Raise Dead, in the Dark sector of my Protection wheel, raises three skeletons — up to five at once. Under the action buttons I give them their orders, free: on guard they stand in front of me and take your blows — braced, so it takes twice the damage to cut one down — and on the attack every one strikes you each round. Dispels can't touch them, but you can aim a strike at one."},
     {key:'valdris',text:"Necrotic Drain is my Dark strike — it heals me for part of the damage dealt. Soul Tithe, on my Dispel wheel, curses you: each skeleton you kill costs you mana."},
     {key:'valdris',text:"Cut through my dead, and you may yet reach me. Leave them standing, and they will grind you to dust."},
   ],
@@ -9478,7 +9597,7 @@ const TUTORIAL_CONVOS={
   ],
   daveron:[
     {key:'daveron',text:"I am Daveron. I do not need a horde — only a few who were the finest in life, and are finer still in death."},
-    {key:'daveron',text:"Raise Graveguard, in the Dark sector of my Protection wheel, raises one armoured graveguard — up to three at once. Each stands in front of my ward and soaks a great deal of damage, strikes you every round, and dispels can't touch it. A stronger cast raises a tougher guard."},
+    {key:'daveron',text:"Raise Graveguard, in the Dark sector of my Protection wheel, raises one armoured graveguard — up to three at once. On guard, each stands braced in front of me and soaks a great deal of damage; on the attack, each strikes you every round. Dispels can't touch them, though you may aim a strike at one. A stronger cast raises a tougher guard."},
     {key:'daveron',text:"Vanhal's Danse Macabre, in the Arcane sector, sets my dead dancing: for a few rounds every skeleton strikes harder. It needs a skeleton standing, and it is a buff, so a Dispel can stop the music."},
     {key:'daveron',text:"Curse of the Years is my Dark curse. Time falls on you all at once: you take damage whatever you do, and unlike Agony, even Meditating won't escape it. Only a Cleanse will."},
   ],
@@ -9490,7 +9609,7 @@ const TUTORIAL_CONVOS={
   ],
   nerissa:[
     {key:'nerissa',text:"I am Nerissa of the Deep, and this is Fathom. He swims wherever I go — even through the air. Mind your fingers."},
-    {key:'nerissa',text:"Summon Fathom, in the Water sector of my Protection wheel, calls him to circle me. He takes the hits meant for me and bites you every round — and dispels can't touch him. Only steel or spells will drive him off."},
+    {key:'nerissa',text:"Summon Fathom, in the Water sector of my Protection wheel, calls him to me. On guard he circles me and takes the hits meant for me; on the attack he bites you every round. I choose, every round, for free. Dispels can't touch him — but steel or a well-aimed spell will drive him off."},
     {key:'nerissa',text:"Blood in the Water is my Water strike: Fathom darts across and bites. It's teeth, not magic, so a ward won't stop it — and you'll keep bleeding for a round or two."},
     {key:'nerissa',text:"Undertow is my Water curse. It drags you under, and often you can't raise any Protection next round. That's when Fathom feeds."},
   ],
@@ -9630,6 +9749,12 @@ window.addEventListener('DOMContentLoaded', ()=>{
     const cat=wheelCat;
     closeElemWheel();
     if(cat==='protect') castElemental('protect',gs[gs.turnPlayer].shieldType,1,true);   // Seal Ward
+  });
+  document.getElementById('bel-stance').addEventListener('click',()=>{
+    const who=gs.turnPlayer||'p1';
+    if(!gs.myTurn||!bodiesOf(gs[who]).length) return;
+    gs[who].minionStance=nextStance(who);   // free: no turn spent
+    refreshActionBar(); refreshStatusBar();
   });
   document.getElementById('wheel-skin').addEventListener('click',e=>{
     if(e.currentTarget.disabled) return;

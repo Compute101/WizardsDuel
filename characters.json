@@ -161,7 +161,7 @@
       "You tangled with nature itself. The vines always win.",
       "My roots run deeper than your courage. Try growing some."
     ],
-    "hp": 66,
+    "hp": 68,
     "skin": {
       "id": "barkskin",
       "name": "Barkskin",
@@ -638,7 +638,7 @@
       "Your defeat was written before this duel began. I merely carried it out.",
       "Kneel before the radiance, or be consumed by it. There is no third option."
     ],
-    "hp": 60,
+    "hp": 62,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -781,7 +781,7 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 66,
+    "hp": 69,
     "phys": {
       "atk": 3
     },
@@ -1030,7 +1030,7 @@
       "You called it ugly. Gretch calls it efficient.",
       "The swamp takes all things. Even stubborn little wizards."
     ],
-    "hp": 61,
+    "hp": 59,
     "phys": {
       "atk": 6
     },
@@ -1092,13 +1092,13 @@
             "minion": "totem",
             "kind": "minion",
             "elite": true,
-            "soak": 15,
+            "soak": 9,
             "heal": 2,
             "max": 1,
             "raise": 1,
             "rounds": null
           },
-          "desc": "Plant a bone totem (one at a time): heals you 2 a round and soaks 15 damage in front of your ward until smashed; dispels can't touch it"
+          "desc": "Plant a bone totem (one at a time): heals you 2 a round; it always guards, braced, soaking 9 damage (18 of hits) until smashed; dispels can't touch it, but a strike can target it"
         }
       }
     ]
@@ -1117,7 +1117,7 @@
       "Death is not an ending. It is merely an inconvenience.",
       "Kneel before the undying, or be consumed by it. There is no third option."
     ],
-    "hp": 48,
+    "hp": 45,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -1138,13 +1138,13 @@
             "minion": "skeleton",
             "kind": "minion",
             "soak": 3,
-            "dmg": 3,
+            "dmg": 2,
             "elem": "dark",
             "max": 5,
             "raise": 3,
             "rounds": null
           },
-          "desc": "Raise 3 skeletons (max 5): each soaks 3 damage in front of your ward and strikes for 3 a round; dispels can't touch them"
+          "desc": "Raise 3 skeletons (max 5), 3 HP each: on guard they soak hits for you (braced: twice the damage), on the attack each strikes for 2 a round; dispels can't touch them"
         }
       },
       {
@@ -1347,7 +1347,7 @@
       "Strike me. My scales have tasted dragonfire and grown harder for it.",
       "I have one wrath left in me. You have already wasted my patience earning it."
     ],
-    "hp": 44,
+    "hp": 46,
     "phys": {
       "atk": 6
     },
@@ -1579,7 +1579,7 @@
       "Dance, my dead. Dance, and let the living hear the music.",
       "Every year you have lived is a debt. I have come to collect."
     ],
-    "hp": 53,
+    "hp": 51,
     "phys": {
       "atk": 5
     },
@@ -1611,7 +1611,7 @@
             "raise": 1,
             "rounds": null
           },
-          "desc": "Raise 1 armoured graveguard (max 3): each soaks 10 damage in front of your ward and strikes for 4 a round; dispels can't touch them"
+          "desc": "Raise 1 armoured graveguard (max 3), 10 HP each: on guard they soak hits for you (braced), on the attack each strikes for 4 a round; dispels can't touch them"
         }
       },
       {
@@ -1770,7 +1770,7 @@
             "raise": 1,
             "rounds": null
           },
-          "desc": "Fathom, her shark familiar, circles her through the air (one at a time): soaks 12 damage in front of her ward and bites for 4 a round (physical); dispels can't touch him"
+          "desc": "Fathom, her shark familiar (one at a time), 12 HP: on guard he circles her and soaks hits (braced), on the attack he bites for 4 a round (physical); dispels can't touch him"
         }
       },
       {
