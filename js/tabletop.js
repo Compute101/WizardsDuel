@@ -7,7 +7,8 @@
 //
 // It is self-contained: the standard game (js/game.js) never loads it and none of its rules change.
 // Works in the browser (window.TT) and in Node (module.exports) for quick balance runs:
-//   node -e "const TT=require('./js/tabletop.js'); TT.load(require('./characters.json'),require('./tabletop.json')); console.log(TT.balance(40))"
+//   node -e "const TT=require('./js/tabletop.js'); TT.load(require('./characters.json'),require('./tabletop.json'),require('./fighters.json')); console.log(TT.balance(40))"
+// Encounters (a wizard against a band of fighters): TT.encounterBalance(games) after TT.useRules(name).
 (function(root){
 'use strict';
 
@@ -28,7 +29,17 @@ const RULES={
     damage: {cost:[2,4,6], power:[2,4,6],  stage:3},
   },
   wardWear:1,                  // a ward loses this many counters at every round end; it lasts until it runs out
-  wardMatch:2,                 // a strike or dispel in the ward's own element counts this much more against it
+  wardMatch:2,                 // a strike or dispel in the ward's OPPOSITE element (across the wheel) counts this much more
+  // Actions (everyone, free, no winks, last the round they're made): Attack hits for your atk (+1 into a foe
+  // grappling you); a Guard blocks every blow aimed at you that round and counters an Attack for your atk;
+  // a Grapple hits a Guard for your atk, anyone else for half (rounded down), and fails against an Attack at you.
+  // Wards stop magic only: blows (Attacks, minion bites, physical cards) go past them. Ironskin soaks blows.
+  skin:{name:'Ironskin', cost:2, soak:3},
+  // Minions as bodies (Normal and Advanced): each round you set your bodies' stance, free. Guard: they stand in
+  // front of you and take hits first, braced (each stops 2 damage per wink of its HP), and don't bite.
+  // Attack: they bite at round end and shield no one. A strike, Attack or Grapple can be aimed at one body.
+  // Beginner (stances:false): bodies always soak (1 per wink) and always bite.
+  minions:{stances:true, brace:1, target:true},
   // Layered wards and seals (the standard game's WARD_RULES, in counters):
   //  boost:    a ward in the element of one already up tops that one up instead: + the new ward's winks,
   //            up to boostCap × them (Lesser 6, Normal 12, Greater 18), never fewer than it has
@@ -89,7 +100,7 @@ const RULES={
 //            after a miss, and squop the missed winks left on the table for mana.
 const PRESETS={
   beginner:{flickMode:'chances', chances:{budget:10}, pot:0.12, squops:0,
-    wardMatch:0, wards:{boost:false, layers:1, seals:false, dispelStrips:false},
+    wardMatch:0, wards:{boost:false, layers:1, seals:false, dispelStrips:false}, minions:{stances:false, brace:1, target:false},
     cleanseCost:[2,2,2], cleanseCount:[Infinity,Infinity,Infinity]},
   normal:{flickMode:'chances', chances:{budget:10}, pot:0.12, squops:0},
   advanced:{},
@@ -123,24 +134,40 @@ function rulesOf(name){
 // it under a named rule set: "rules":{"advanced":{"hp":17}}. Only HP for now.
 function applyCharRules(){
   Object.values(CHARS).forEach(c=>{ const o=c.alt[rulesName]||{}; c.hp=Math.min(RULES.maxHp,o.hp!=null?o.hp:c.baseHp); });
+  // Fighters (no HP cap: they keep their own counters): "rules":{"advanced":{"hp":n,"atk":n}} in fighters.json's "tabletop"
+  Object.values(FIGHTERS).forEach(c=>{ const o=c.alt[rulesName]||{}; c.hp=o.hp!=null?o.hp:c.baseHp; c.atk=o.atk!=null?o.atk:c.baseAtk; });
 }
-const ELEMENTS=['fire','ice','lightning','arcane','physical','dark'];
+// Eight elements, each across the wheel from its opposite (index + 4): Fire / Water, Air / Earth,
+// Lightning / Ice, Arcane / Dark. A ward's opposite counts +wardMatch against it.
+const ELEMENTS=['fire','air','lightning','arcane','water','earth','ice','dark'];
+const opposite=e=>{ const i=ELEMENTS.indexOf(e); return i<0?null:ELEMENTS[(i+ELEMENTS.length/2)%ELEMENTS.length]; };
 const CATS=['protect','dispel','damage'];
 
 let CHARS={};   // key -> merged tabletop character
+let FIGHTERS={};   // key -> tabletop fighter (Encounters)
 let rulesName='normal';
 let rng=Math.random;
 
 // Merge characters.json (names, colours, forbidden) with tabletop.json (the counter numbers)
-function load(chars,tt){
+// A wizard's Attack: 2 for the brutes (the app's atk 5+), 1 for everyone else; tabletop.json's "atk" overrides
+const tableAtk=(c,t)=>t.atk!=null?t.atk:((c.phys&&c.phys.atk)||4)>=5?2:1;
+function load(chars,tt,fighters){
   CHARS={};
   Object.keys(tt).forEach(k=>{
     if(k.startsWith('_')||!chars[k]) return;
     const c=chars[k], t=tt[k];
     CHARS[k]={key:k, name:c.name, title:c.title, col:c.col, sealAll:!!c.sealAll, sealCostMod:c.sealCostMod||0,
       hp:Math.min(RULES.maxHp,t.hp), baseHp:Math.min(RULES.maxHp,t.hp), alt:t.rules||{},
-      deathless:t.deathless||0, forbidden:(t.forbidden||c.forbidden||[]).map(e=>e==='earth'?'physical':e).filter(e=>ELEMENTS.includes(e)),   // the app's Earth is tabletop's Physical (until tabletop moves to eight elements)
+      atk:tableAtk(c,t), skin:t.skin||null,
+      deathless:t.deathless||0, forbidden:(t.forbidden||c.forbidden||[]).map(e=>e==='physical'?'earth':e).filter(e=>ELEMENTS.includes(e)),
       spells:t.spells||[]};
+  });
+  // Non-wizard fighters (fighters.json, "tabletop" numbers): Actions only, one trait each
+  FIGHTERS={};
+  Object.keys(fighters||{}).forEach(k=>{
+    const f=fighters[k], t=f.tabletop||{};
+    FIGHTERS[k]={key:k, name:f.name, title:f.title, col:f.col, fighter:true, trait:f.trait, hp:t.hp||8, baseHp:t.hp||8,
+      atk:t.atk||1, baseAtk:t.atk||1, alt:t.rules||{}, skin:null, deathless:0, forbidden:ELEMENTS.slice(), spells:[]};
   });
   applyCharRules();
   return CHARS;
@@ -158,14 +185,24 @@ const clamp=v=>Math.max(0,Math.min(RULES.max,v));
 
 // ── State ──────────────────────────────────────────────────
 let gs=null;
-function newGame(k1,k2){
-  const seat=(k,w)=>({w, key:k, c:CHARS[k], hp:CHARS[k].hp, mana:RULES.startMana, ward:null, wardInner:[],
+// A table of seats p1, p2, … : list [{key, c?, team?}]. With no team every seat is its own side.
+function newTable(list){
+  const seat=(c,k,w)=>({w, key:k, c, hp:c.hp, mana:c.fighter?0:RULES.startMana, ward:null, wardInner:[],
     wardStats:{raised:0, boosted:0, layered:0, sealed:0, sealsBroken:0}, effects:[],
-    medRound:-9, potted:0, catCounts:{}, lostLast:0, hpAtStart:0, used:{}, meditated:false});
-  gs={round:1, p1:seat(k1,'p1'), p2:seat(k2,'p2'), table:0, over:null, log:[]};
+    medRound:-9, potted:0, catCounts:{}, lostLast:0, hpAtStart:0, used:{}, meditated:false, stance:'guard'});
+  gs={round:1, seats:[], table:0, over:null, log:[], acts:{}};
+  list.forEach((x,i)=>{ const w='p'+(i+1); gs[w]=seat(x.c||CHARS[x.key],x.key,w); gs[w].team=x.team||w; gs.seats.push(w); });
   return gs;
 }
-const foe=w=>w==='p1'?'p2':'p1';
+function newGame(k1,k2){ return newTable([{key:k1},{key:k2}]); }
+const active=()=>gs.seats.filter(w=>!gs[w].out);
+const foes=w=>active().filter(x=>gs[x].team!==gs[w].team);
+// The foe to aim at by default: the only one in a duel; in an encounter the weakest
+const foe=w=>{ const f=foes(w); return f.length?f.reduce((a,b)=>gs[a].hp<=gs[b].hp?a:b):null; };
+// The target of a pick: its own target if still standing, else the default foe
+function tgtOf(w,a){ const t=a&&a.target; return t&&gs[t]&&!gs[t].out&&gs[t].team!==gs[w].team?t:foe(w); }
+const isFighter=w=>!!gs[w].c.fighter;
+const traitOf=w=>gs[w].c.trait||null;
 const fx=(st,type)=>st.effects.filter(e=>e.type===type);
 const buffs=st=>st.effects.filter(e=>e.kind==='buff');
 const curses=st=>st.effects.filter(e=>e.kind==='curse');
@@ -180,6 +217,8 @@ function log(s){ if(gs.verbose) gs.log.push('R'+gs.round+' '+s); }
 function inGate(w){ const g=gs[w].gate; return !!g&&gs.round<=g.until; }
 // Does this pick aim at the foe? (Cleanse, wards, buffs, heals and Meditate don't.)
 function aimsAtFoe(st,a){
+  if(a.act) return a.act!=='guard';
+  if(a.skin) return false;
   if(a.cat==='damage') return true;
   if(a.cat!=='dispel'||a.self) return false;
   const sp=a.sig&&sigById(st,a.sig);
@@ -190,14 +229,26 @@ function canMeditate(st){ return st.medRound!==gs.round-1&&st.mana<RULES.max; }
 function incomeDrain(st){ return fx(st,'incomeDrain').reduce((a,e)=>a+e.n,0); }
 function mostUsedCat(st){ return ['damage','protect','dispel'].reduce((a,c)=>(st.catCounts[c]||0)>(st.catCounts[a]||0)?c:a,'damage'); }
 function costOf(st,a){
-  if(a.cat==='meditate'||a.cat==='pass') return 0;
+  if(a.cat==='meditate'||a.cat==='pass'||a.act) return 0;
+  if(a.skin) return skinOf(st).cost;
   const sp=a.sig&&sigById(st,a.sig);
   let c=sp?sp.cost:isSeal(a)?sealCost(st):a.self?RULES.cleanseCost[a.ring-1]:RULES.cats[a.cat].cost[a.ring-1];
   if(!sp) c=Math.max(1,c);
   c+=fx(st,'spellbind').filter(e=>e.cat===a.cat).reduce((s,e)=>s+e.extra,0);
   return c;
 }
-function ringOf(st,a){ const sp=a.sig&&sigById(st,a.sig); return sp?sp.ring:a.ring; }
+function ringOf(st,a){ const sp=a.sig&&sigById(st,a.sig); return sp?sp.ring:a.skin?1:a.ring; }
+// Ironskin (or a character's own skin card): a Lesser flick, soaks blows until used up or dispelled
+const skinOf=st=>Object.assign({},RULES.skin,st.c.skin||{});
+const skinOn=st=>st.effects.find(e=>e.type==='skin');
+// This round's Actions (gs.acts): who Guards, who Grapples whom
+const actOf=w=>gs.acts&&gs.acts[w];
+const guarding=w=>{ const a=actOf(w); return !!a&&a.act==='guard'; };
+// Bodies: soak minions. Guarding ones stand in front of their master (stances), else (Beginner) all of them
+const bodies=st=>st.effects.filter(e=>e.type==='minion'&&e.soak);
+const stancesOn=()=>!!(RULES.minions&&RULES.minions.stances);
+function screen(st){ const b=bodies(st); return !stancesOn()?b:b.filter(m=>st.stance==='guard'||!m.dmg); }
+function biters(st){ return minions(st).filter(m=>m.dmg&&(!stancesOn()||!m.soak||st.stance==='attack')); }
 
 // ── Effects ────────────────────────────────────────────────
 function addEffect(who,eff,from){
@@ -212,7 +263,7 @@ function addEffect(who,eff,from){
     const n=Math.min(eff.max-minions(st,eff.minion).length, eff.raise||1);
     if(n<=0) return false;
     // Soak minions get HP: soak:true is 1 (Valdris's skeletons), a number is tougher (Daveron's graveguard)
-    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:gs.round, by:from},eff,eff.soak?{hp:eff.soak===true?1:eff.soak}:{}));
+    for(let i=0;i<n;i++) st.effects.push(Object.assign({from:gs.round, by:from, uid:++gs.uid||(gs.uid=1)},eff,eff.soak?{hp:eff.soak===true?1:eff.soak}:{}));
     return true;
   }
   st.effects=st.effects.filter(e=>e.id!==eff.id);
@@ -243,24 +294,31 @@ function gainMana(who,n){ gs[who].mana=clamp(gs[who].mana+n); }
 // Returns the HP damage dealt.
 // blast: up to this much of the damage goes around the ward straight to HP (Frederick's strikes)
 // elem: the strike's element, so each ward pile it meets counts its own +2 (instead of adj)
-function incoming(who,dmg,adj,own,blast,elem){
+// kind: 'physical' for blows (Attacks, minion bites, physical cards): wards don't stop them, a skin soaks them
+function incoming(who,dmg,adj,own,blast,elem,kind){
   const st=gs[who];
   if(dmg<=0) return 0;
   // Soak minions (skeletons) stand in front of the ward, oldest first: each soaks damage up to its HP
-  // (1 for a plain skeleton, so every point kills one) and falls when its HP runs out
-  const wall=st.effects.filter(e=>e.type==='minion'&&e.soak);
+  // (1 for a plain skeleton, so every point kills one) and falls when its HP runs out. Braced (a guarding
+  // stance): each wink of a body's HP stops `brace` damage
+  const wall=screen(st), brace=stancesOn()?(RULES.minions.brace||1):1;
   if(wall.length){
     const dead=[];
     for(const m of wall){
       if(dmg<=0) break;
-      const d=Math.min(dmg,m.hp);
-      m.hp-=d; dmg-=d;
+      const d=Math.min(dmg,m.hp*brace);
+      m.hp-=Math.ceil(d/brace); dmg-=d;
       if(m.hp<=0) dead.push(m);
     }
     st.effects=st.effects.filter(e=>!dead.includes(e));
-    // Soul Tithe: a foe cursed with it loses mana for each skeleton they kill
-    if(!own&&dead.length) fx(gs[foe(who)],'tithe').forEach(e=>loseMana(foe(who),dead.length*e.n));
+    if(!own) titheFor(who,dead.length);
     if(dmg<=0) return 0;
+  }
+  if(kind==='physical'){
+    const sk=skinOn(st);
+    if(sk){ const d=Math.min(dmg,sk.hp); sk.hp-=d; dmg-=d; if(sk.hp<=0) removeEffects(who,[sk]); }
+    loseHp(who,dmg);
+    return dmg;
   }
   let around=0;
   if(st.ward&&blast){ around=Math.min(blast,dmg); dmg-=around; }
@@ -276,7 +334,21 @@ function incoming(who,dmg,adj,own,blast,elem){
   loseHp(who,dmg);
   return dmg;
 }
-function wardAdj(st,elem){ return st.ward&&st.ward.elem===elem?RULES.wardMatch:0; }
+function wardAdj(st,elem){ return st.ward&&elem&&opposite(st.ward.elem)===elem?RULES.wardMatch:0; }
+// Soul Tithe: whoever killed the bodies loses mana for each, if cursed with it by their owner
+function titheFor(who,n){
+  const k=gs.src&&gs.src!==who?gs.src:foe(who);
+  if(n&&k) fx(gs[k],'tithe').forEach(e=>loseMana(k,n*e.n));
+}
+// A strike, Attack or Grapple aimed at one body (minions.target): it hits that body alone, no ward,
+// no riders. False when the body is gone (the hit goes to its master instead).
+function hitBody(who,t,uid,d){
+  const ts=gs[t], m=uid!=null&&ts.effects.find(e=>e.uid===uid&&e.type==='minion'&&e.soak);
+  if(!m) return false;
+  m.hp-=d;
+  if(m.hp<=0){ removeEffects(t,[m]); titheFor(t,1); }
+  return true;
+}
 
 // ── Wards: piles of ward winks, outer first (st.ward), the rest beneath (st.wardInner, innermost first)
 const wardRules=()=>RULES.wards||{};
@@ -326,10 +398,12 @@ function raiseWard(who,elem,hp,ret,noBoost){
 function doProtect(who,a){
   const st=gs[who], sp=a.sig&&sigById(st,a.sig);
   if(isSeal(a)){ doSeal(who); return; }
+  if(a.skin){ const k=skinOf(st); addEffect(who,{id:'skin', type:'skin', kind:'buff', name:k.name, hp:k.soak},who); return; }
   if(!sp){ raiseWard(who,a.elem,RULES.cats.protect.power[a.ring-1]); return; }
   if(sp.kind==='ward'){
     let hp=sp.ward+(sp.perSkeleton||0)*minions(st,'skeleton').length;
     raiseWard(who,sp.elem,hp,sp.retaliate);
+    if(sp.holdWear){ const l=st.ward&&st.ward.elem===sp.elem?st.ward:st.wardInner.find(x=>x.elem===sp.elem); if(l) l.hold=true; }
     if(sp.rewind) heal(who,Math.min(sp.rewind,st.lostLast));
     return;
   }
@@ -362,16 +436,16 @@ function strikeMisses(w){
   if(abs){ removeEffects(w,[abs]); return true; }
   return fx(ts,'dodge').some(e=>rolls(e.roll));
 }
-function hitAdjust(ts,dmg){
+function hitAdjust(ts,dmg,kind){
   dmg+=fx(ts,'vuln').reduce((s,e)=>s+e.n,0);
-  const res=fx(ts,'resist').reduce((s,e)=>s+e.n,0);
+  const res=fx(ts,'resist').filter(e=>!(e.physOnly&&kind!=='physical')&&!(e.magicOnly&&kind==='physical')).reduce((s,e)=>s+e.n,0);
   return res?Math.max(1,dmg-res):dmg;
 }
 // Vanish (Ponder): this round and the next, every strike at him misses (minions' too) and curses find
 // nothing. Picking Damage reveals him (playRound); a dispel only removes it (doDispel).
 const vanishOf=st=>st.effects.find(e=>e.type==='vanish');
 function doDispel(who,a){
-  const st=gs[who], t=foe(who), ts=gs[t], sp=a.sig&&sigById(st,a.sig);
+  const st=gs[who], t=tgtOf(who,a), ts=gs[t], sp=a.sig&&sigById(st,a.sig);
   if(a.self){   // Cleanse: the worst curses first (a player picks which)
     const list=curses(st).sort((x,y)=>curseHarm(y)-curseHarm(x)).slice(0,RULES.cleanseCount[a.ring-1]);
     removeEffects(who,list); return;
@@ -420,11 +494,12 @@ function doDispel(who,a){
 function doDamage(who,a){
   const st=gs[who], sp=a.sig&&sigById(st,a.sig);
   const ring=ringOf(st,a);
-  let tgt=foe(who);
+  let tgt=tgtOf(who,a);
   const bew=fx(st,'bewitch')[0];
   if(bew){ removeEffects(who,[bew]); tgt=who; }
   const ts=gs[tgt];
-  const elem=sp?sp.elem:a.elem;
+  const elem=sp?sp.elem:a.elem, kind=sp&&sp.dmgKind==='physical'?'physical':'magic';
+  gs.src=who;
   let dmg;
   if(sp){
     if(sp.once) st.used[sp.id]=true;
@@ -442,22 +517,51 @@ function doDamage(who,a){
   const weave=fx(st,'weave')[0];
   if(weave){ dmg+=weave.bonus; burn+=weave.burn; if(--weave.charges<=0) removeEffects(who,[weave]); }
   if(sp&&sp.recoil) loseHp(who,sp.recoil);
-  if(tgt===who){ incoming(who,dmg,0,true); return; }
+  if(tgt===who){ incoming(who,dmg,0,true,0,elem,kind); return; }
+  // Aimed at one body: it takes the hit alone
+  if(a.minion!=null&&RULES.minions.target&&hitBody(who,tgt,a.minion,dmg)) return;
+  // A Guard this round blocks a blow (no counter: only an Attack is countered)
+  if(kind==='physical'&&guarding(tgt)) return;
   // Misses
   if(strikeMisses(tgt)) return;
-  dmg=hitAdjust(ts,dmg);
-  const retaliate=fx(ts,'resist').concat(fx(ts,'counter')).reduce((s,e)=>s+(e.retaliate||0),0)+(ts.ward?ts.ward.ret:0);
-  const hp=incoming(tgt,dmg,0,false,pierce?dmg:sp&&sp.blast,elem);
+  dmg=hitAdjust(ts,dmg,kind);
+  // Shield Wall: a guarding soldier's shield halves a spell
+  if(kind!=='physical'&&guarding(tgt)&&ts.c.trait==='shieldwall') dmg=Math.floor(dmg/2);
+  const retaliate=fx(ts,'resist').concat(fx(ts,'counter')).reduce((s,e)=>s+(e.retaliate||0),0)+(ts.ward&&kind!=='physical'?ts.ward.ret:0);
+  const hp=incoming(tgt,dmg,0,false,pierce?dmg:sp&&sp.blast,elem,kind);
   if(hp>0){
     if(sp&&sp.lifesteal) heal(who,Math.floor(hp/2));
-    if(sp&&sp.dot) addEffect(tgt,{id:sp.id+'-dot', type:'dot', kind:'curse', name:sp.name, dmg:sp.dot.dmg, bypassWard:sp.dot.bypassWard},who);
+    if(sp&&sp.dot) addEffect(tgt,{id:sp.id+'-dot', type:'dot', kind:'curse', name:sp.name, dmg:sp.dot.dmg, bypassWard:sp.dot.bypassWard, dmgKind:sp.dmgKind},who);
     if(sp&&sp.chill) addEffect(tgt,{id:'chill', type:'lock', kind:'curse', name:'Chilled', cat:'damage'},who);
   }
   // Mana burn lands whether or not the ward held
   burn+=sp&&sp.manaburn||0;
   loseMana(tgt,burn);
-  if(sp&&sp.arc&&rolls(sp.arc.roll)) incoming(tgt,sp.arc.dmg,0);
+  if(sp&&sp.arc&&rolls(sp.arc.roll)) incoming(tgt,sp.arc.dmg,0,false,0,elem);
   if(retaliate) loseHp(who,retaliate);
+}
+// ── Actions ────────────────────────────────────────────────
+// Free, no winks, this round only. They answer each other through gs.acts (everyone's Action this round).
+function doAction(who,a){
+  if(a.act==='guard') return;   // read by the others' Attacks, Grapples and blows
+  const st=gs[who], t=tgtOf(who,a);
+  if(!t) return;
+  const ts=gs[t], ta=actOf(t), atk=st.c.atk, atMe=ta&&tgtOf(t,ta)===who;
+  gs.src=who;
+  if(a.act==='grapple'){
+    if(ta&&ta.act==='attack'&&atMe) return;                 // caught mid-grapple: it fails
+    const d=guarding(t)?atk:Math.floor(atk/2);
+    if(a.minion!=null&&RULES.minions.target&&hitBody(who,t,a.minion,d)) return;
+    if(vanishOf(ts)||ts.c.trait==='ranged') return;          // nothing to hold / she keeps her distance
+    if(d>0) incoming(t,d,0,false,0,null,'physical');
+    return;
+  }
+  // Attack (an archer's is a bow shot: it slips past a Guard)
+  if(a.minion!=null&&RULES.minions.target&&hitBody(who,t,a.minion,atk)) return;
+  if(guarding(t)&&st.c.trait!=='ranged'){ gs.src=t; incoming(who,ts.c.atk,0,false,0,null,'physical'); return; }   // blocked and countered
+  if(strikeMisses(t)) return;
+  const d=hitAdjust(ts,atk+(ta&&ta.act==='grapple'&&atMe?1:0),'physical');
+  incoming(t,d,0,false,0,null,'physical');
 }
 // ── A round ────────────────────────────────────────────────
 // picks: {p1:action, p2:action}. action: {cat:'damage'|'protect'|'dispel', elem, ring} or
@@ -467,8 +571,11 @@ function doDamage(who,a){
 // otherwise they are rolled from RULES.pot. squops (optional): {p1:winks squopped, ...}; otherwise
 // rolled from RULES.squop.
 function playRound(picks,flicks,squops){
-  const W=['p1','p2'];
-  W.forEach(w=>{ gs[w].hpAtStart=gs[w].hp; gs[w].meditated=false; gs[w].potted=0; });
+  const W=active();
+  W.forEach(w=>{ gs[w].hpAtStart=gs[w].hp; gs[w].meditated=false; gs[w].potted=0; if(!picks[w]) picks[w]={cat:'pass'}; });
+  gs.acts={}; W.forEach(w=>{ if(picks[w].act) gs.acts[w]=picks[w]; });
+  // Stances (free): a pick may carry the seat's stance for its bodies this round
+  W.forEach(w=>{ if(picks[w].stance) gs[w].stance=picks[w].stance; });
   const outcome={};
   // Quick spells (Mana Siphon) are paid and steal before anyone else pays
   const quick=w=>{ const sp=picks[w].sig&&sigById(gs[w],picks[w].sig); return !!(sp&&sp.quick); };
@@ -476,9 +583,11 @@ function playRound(picks,flicks,squops){
   order.forEach(w=>{
     outcome[w]=pay(w,picks[w],flicks&&flicks[w]);
     if(outcome[w]==='cast'&&quick(w)){
-      const sp=sigById(gs[w],picks[w].sig), n=Math.min(sp.action.n,gs[foe(w)].mana);
-      loseMana(foe(w),n); gainMana(w,n);
+      const t=tgtOf(w,picks[w]), sp=sigById(gs[w],picks[w].sig), n=Math.min(sp.action.n,gs[t].mana);
+      loseMana(t,n); gainMana(w,n);
     }
+    if(picks[w].cat!=='meditate'&&picks[w].cat!=='pass') gs[w].lastPick={act:picks[w].act||null, cat:picks[w].cat, target:aimsAtFoe(gs[w],picks[w])?tgtOf(w,picks[w]):null};
+    if(aimsAtFoe(gs[w],picks[w])) gs[w].lastTarget=tgtOf(w,picks[w]);
   });
   // No striking from hiding: picking Damage reveals a Vanished wizard for the whole round
   W.forEach(w=>{ if(picks[w].cat==='damage'){ const v=vanishOf(gs[w]); if(v) removeEffects(w,[v]); } });
@@ -487,13 +596,15 @@ function playRound(picks,flicks,squops){
     const seats=W.filter(w=>outcome[w]==='cast'&&picks[w].cat===cat);
     if(rng()<0.5) seats.reverse();
     seats.forEach(w=>{
-      if(gs.over||inGate(w)) return;                                    // he's gone through the Gate
-      if(aimsAtFoe(gs[w],picks[w])&&inGate(foe(w))&&!fx(gs[w],'bewitch').length) return;   // into the Gate: fizzles
-      (cat==='protect'?doProtect:cat==='dispel'?doDispel:doDamage)(w,picks[w]);
+      if(gs.over||gs[w].out||inGate(w)) return;                         // he's gone through the Gate
+      if(aimsAtFoe(gs[w],picks[w])&&inGate(tgtOf(w,picks[w]))&&!fx(gs[w],'bewitch').length) return;   // into the Gate: fizzles
+      if(picks[w].act) doAction(w,picks[w]);
+      else (cat==='protect'?doProtect:cat==='dispel'?doDispel:doDamage)(w,picks[w]);
+      checkOver();
     });
     if(checkOver()) return outcome;
   }
-  W.forEach(w=>{ if(picks[w].cat==='meditate'&&outcome[w]==='cast') gainMana(w,Math.max(0,RULES.meditate-incomeDrain(gs[w]))); });
+  W.forEach(w=>{ if(picks[w].cat==='meditate'&&outcome[w]==='cast'&&!gs[w].out) gainMana(w,Math.max(0,RULES.meditate-incomeDrain(gs[w]))); });
   squopPhase(squops);
   endRound();
   return outcome;
@@ -501,7 +612,7 @@ function playRound(picks,flicks,squops){
 // Squops: the wizards take turns, RULES.squops attempts each, at any missed winks on the table.
 // given (real play): {p1:winks squopped, p2:...}.
 function squopPhase(given){
-  const W=['p1','p2'];
+  const W=active().filter(w=>!isFighter(w));
   if(given){
     W.forEach(w=>{ const got=Math.min(gs.table,given[w]||0); gs.table-=got; gainMana(w,got*RULES.squopGain); });
     return;
@@ -549,6 +660,7 @@ function flickCast(w,ring,given,paid){
 function pay(w,a,flick){
   const st=gs[w];
   if(a.cat==='pass') return 'pass';
+  if(a.act) return 'cast';   // an Action just goes off
   if(a.cat==='meditate'){
     st.medRound=gs.round; st.meditated=true;
     fx(st,'candle').forEach(e=>loseHp(w,e.dmg));
@@ -561,7 +673,7 @@ function pay(w,a,flick){
     removeEffects(w,[ent]);
     if(ent.call===a.cat&&cost<=st.mana){
       const steal=Math.min(cost,ent.steal);
-      loseMana(w,cost); gainMana(foe(w),steal);
+      loseMana(w,cost); if(ent.by&&gs[ent.by]) gainMana(ent.by,steal);
       return 'enthralled';
     }
   }
@@ -578,14 +690,18 @@ function pay(w,a,flick){
 }
 
 function endRound(){
-  const W=['p1','p2'];
+  const W=active();
   // Ticks: curses on you, then your buffs (regen) and minions
   W.forEach(w=>{
-    const st=gs[w], f=foe(w);
+    const st=gs[w];
+    if(st.out) return;
+    // Minions bite their master's last target (or the default foe)
+    const f=st.lastTarget&&gs[st.lastTarget]&&!gs[st.lastTarget].out?st.lastTarget:foe(w);
     if(inGate(w)){ fx(st,'regen').forEach(e=>heal(w,e.heal)); return; }   // nothing reaches him in the Gate
     fx(st,'dot').forEach(e=>{
       const n=e.ramp?e.ramp[Math.min(e.ramp.length-1,e.step++)]:e.dmg;
-      if(e.bypassWard) loseHp(w,n); else incoming(w,n,0);
+      gs.src=e.by;
+      if(e.bypassWard) loseHp(w,n); else incoming(w,n,0,false,0,null,e.dmgKind);
       if(e.manaDrain) loseMana(w,e.manaDrain);
     });
     fx(st,'agony').forEach(e=>{
@@ -598,19 +714,22 @@ function endRound(){
     // Danse Macabre (Daveron): each of your skeletons deals its bonus more
     const danse=fx(st,'danse').reduce((a,e)=>a+e.bonus,0);
     // A totem doesn't strike; nothing reaches him in the Gate. Each minion's strike is a strike (RULES.strikes)
-    if(!inGate(f)) minions(st).filter(m=>m.dmg).forEach(m=>{
+    // Bites are blows: wards don't stop them, a Guard (this round) or a skin does
+    if(f&&!inGate(f)) biters(st).forEach(m=>{
       if(gs[f].hp<=0) return;
       const d=m.dmg+(m.minion==='skeleton'?danse:0);
-      if(!RULES.strikes.minions){ incoming(f,d,0); return; }
+      gs.src=w;
+      if(guarding(f)) return;
+      if(!RULES.strikes.minions){ incoming(f,d,0,false,0,null,'physical'); return; }
       if(strikeMisses(f)) return;
-      incoming(f,hitAdjust(gs[f],d),0);
+      incoming(f,hitAdjust(gs[f],d,'physical'),0,false,0,null,'physical');
     });
   });
   // Sudden death
   const sd=RULES.suddenDeath;
   if(sd&&gs.round>=sd.round){
     const n=sd.dmg+Math.floor((gs.round-sd.round)/sd.every);
-    W.forEach(w=>{ if(!inGate(w)) loseHp(w,n); });
+    W.forEach(w=>{ if(!inGate(w)&&!isFighter(w)) loseHp(w,n); });
   }
   if(checkOver()) return;
   // Vanish lasts this round and the next
@@ -628,30 +747,36 @@ function endRound(){
     // Wards wear down, every pile, and last until they run out. A sealed pile doesn't wear;
     // Eldrin's Counter braces them all.
     if(st.ward&&!fx(st,'counter').some(e=>e.holdWard)){
-      st.wardInner=st.wardInner.filter(l=>l.sealed||(l.hp-=RULES.wardWear)>0);
-      if(!st.ward.sealed){ st.ward.hp-=RULES.wardWear; if(st.ward.hp<=0) dropOuterWard(st); }
+      st.wardInner=st.wardInner.filter(l=>l.sealed||l.hold||(l.hp-=RULES.wardWear)>0);
+      if(!st.ward.sealed&&!st.ward.hold){ st.ward.hp-=RULES.wardWear; if(st.ward.hp<=0) dropOuterWard(st); }
     }
     // Timed enchantments run down
     // Buffs and curses have no timers: they last until a Dispel or Cleanse removes them, or (for
     // "next strike" / "next pick" effects) until used. A lock lasts for the one round it blocks.
     st.effects=st.effects.filter(e=>!(e.type==='lock'&&e.from<gs.round));
-    gainMana(w,Math.max(0,RULES.income-incomeDrain(st)));
+    if(!isFighter(w)) gainMana(w,Math.max(0,RULES.income-incomeDrain(st)));
     st.lostLast=Math.max(0,st.hpAtStart-st.hp);
   });
   gs.round++;
 }
+// A seat at 0 HP is out; the game is over when one side (or none) is left. gs.over: the winning team
+// ('p1' / 'p2' in a duel, 'A' / 'B' in an encounter) or 'draw'.
 function checkOver(){
-  const d1=gs.p1.hp<=0, d2=gs.p2.hp<=0;
-  if(d1||d2) gs.over=d1&&d2?'draw':d1?'p2':'p1';
+  if(gs.over) return true;
+  active().forEach(w=>{ if(gs[w].hp<=0) gs[w].out=true; });
+  const teams=[...new Set(active().map(w=>gs[w].team))];
+  if(teams.length<=1&&gs.seats.some(w=>gs[w].out)) gs.over=teams[0]||'draw';
   return !!gs.over;
 }
 
 // ── AI ─────────────────────────────────────────────────────
 // A plain heuristic player, like the standard game's Normal AI: smart = 'normal', otherwise 'easy'.
 function canPick(st,a){
-  if(a.cat==='meditate') return canMeditate(st);
+  if(a.cat==='meditate') return !st.c.fighter&&canMeditate(st);
   if(a.cat==='pass') return true;
   if(locked(st,a.cat)) return false;
+  if(a.act) return true;
+  if(st.c.fighter) return false;
   if(isSeal(a)) return canSeal(st)&&sealCost(st)<=st.mana;
   if(a.elem&&!a.sig&&st.c.forbidden.includes(a.elem)) return false;
   const sp=a.sig&&sigById(st,a.sig);
@@ -689,7 +814,111 @@ const guardSpell=st=>st.c.spells.find(s=>s.effect&&s.effect.type==='minion'&&s.e
 const guards=st=>st.effects.filter(e=>e.type==='minion'&&e.soak).length;
 // Screen running thin: at or below half the card's max (Valdris: 2 of 5; Daveron's graveguard: 1 of 3)
 const guardLow=st=>{ const g=guardSpell(st); return !!g&&guards(st)<=Math.floor(g.effect.max/2); };
+// The AI's pick, with its target (the default foe) and its bodies' stance filled in
 function aiChoose(w,level){
+  const smart=level!=='easy';
+  const a=isFighter(w)?fighterChoose(w,smart):aiChooseCore(w,level);
+  if(!a.target&&aimsAtFoe(gs[w],a)) a.target=foe(w);
+  if(!isFighter(w)){ const sc=aiStance(w,smart); if(sc) a.stance=sc; }
+  aiAimAtBody(w,a,smart);
+  return a;
+}
+// Physical threat from a foe: fighters are all blows; else their Attack, physical cards and biting minions
+function physThreat(f){
+  const st=gs[f];
+  if(st.c.fighter) return 0.9;
+  let t=0.05+st.c.atk*0.1;
+  if(st.c.spells.some(sp=>sp.dmgKind==='physical'||(sp.effect&&sp.effect.type==='minion'&&sp.effect.dmg))) t+=0.25;
+  t+=0.15*minions(st).filter(m=>m.dmg).length;
+  return Math.min(0.9,t);
+}
+const allBlows=w=>foes(w).length>0&&foes(w).every(isFighter);
+// Bodies guard when hurt or facing a big strike, else bite (AI_MINIONS); a totem only guards
+const AI_MINIONS={guardBase:.25, guardHurt:.4, guardThreat:.25, targetKill:.6};
+function aiStance(w,smart){
+  const st=gs[w];
+  if(!stancesOn()||!bodies(st).some(m=>m.dmg)) return null;
+  let p=AI_MINIONS.guardBase;
+  if(st.hp<st.c.hp*.45) p+=AI_MINIONS.guardHurt;
+  if(foes(w).some(f=>!isFighter(f)&&gs[f].mana>=RULES.cats.damage.cost[2])||allBlows(w)) p+=AI_MINIONS.guardThreat;
+  if(!smart) p=.5;
+  return rng()<p?'guard':'attack';
+}
+// Aim a strike or Attack at a biting body the hit would kill
+function aiAimAtBody(w,a,smart){
+  if(!RULES.minions.target||!a.target||!(a.cat==='damage')||!smart||rng()>AI_MINIONS.targetKill) return;
+  const ts=gs[a.target];
+  if(!stancesOn()||ts.stance!=='attack') return;
+  const sp=a.sig&&sigById(gs[w],a.sig);
+  const d=a.act==='attack'?gs[w].c.atk:sp?(sp.dmg||0):RULES.cats.damage.power[(a.ring||1)-1];
+  const prey=bodies(ts).filter(m=>m.dmg&&m.hp<=d).sort((x,y)=>y.dmg-x.dmg)[0];
+  if(prey) a.minion=prey.uid;
+}
+// Fighters: mostly Attack; Guard a foe who Attacked me; a soldier Guards when he was aimed at; Grapple a
+// habitual guard (an archer never Grapples)
+const AI_FIGHTERS={attack:.72, guardRead:.5, guardFocus:.35, grappleRead:.5, grapple:.08, guard:.08};
+function fighterChoose(w,smart){
+  const tgt=foe(w), last=(tgt&&gs[tgt].lastPick)||{}, A=AI_FIGHTERS, tr=traitOf(w);
+  const act=(c,x)=>({cat:c, act:x, target:tgt});
+  let guard=A.guard, grapple=tr==='ranged'?0:A.grapple;
+  if(smart){
+    if(last.act==='attack'&&last.target===w) guard+=A.guardRead;
+    if(tr==='shieldwall'&&tgt&&gs[tgt].lastTarget===w) guard+=A.guardFocus;
+    if(tr!=='ranged'&&last.act==='guard') grapple+=A.grappleRead;
+  }
+  if(locked(gs[w],'damage')) return act('protect','guard');
+  const r=rng()*(A.attack+guard+grapple);
+  return r<A.attack?act('damage','attack'):r<A.attack+guard?act('protect','guard'):act('dispel','grapple');
+}
+// The wizard's Actions and Ironskin, read from the foe's last pick (like the app's aiPhysAction)
+const AI_ACTIONS={attackBase:0.08, attackOpen:0.25, guardBase:0.04, guardRead:0.45, guardBroke:0.3,
+  grappleBase:0.03, grappleRead:0.5, skinThreat:0.35, skinCast:0.6, skinWeight:0.5};
+function aiPhys(w,cat,smart){
+  const st=gs[w], t=foe(w), ts=gs[t], last=ts.lastPick||{}, A=AI_ACTIONS;
+  const act=x=>({cat, act:x, target:t});
+  const broke=!ts.c.fighter&&ts.mana<costOf(ts,{cat:'damage',ring:1});
+  if(cat==='damage'){
+    if(vanishOf(st)||vanishOf(ts)) return null;
+    if(!canPick(st,{cat,elem:ELEMENTS.find(e=>!st.c.forbidden.includes(e)),ring:1})) return act('attack');
+    let p=A.attackBase;
+    if(ts.ward&&!skinOn(ts)) p+=A.attackOpen;
+    if(skinOn(ts)) p*=0.5;
+    if(last.act==='guard') p*=0.3;
+    if(last.act==='grapple') p+=0.2;
+    if(!smart) p*=0.6;
+    return rng()<p?act('attack'):null;
+  }
+  if(cat==='protect'){
+    const sk=skinOn(st), want=!sk||sk.hp<skinOf(st).soak*0.4;
+    if(want&&canPick(st,{cat,skin:true})&&physThreat(t)>=A.skinThreat&&rng()<(smart?A.skinCast:A.skinCast*0.5)) return {cat,skin:true};
+    let p=A.guardBase;
+    if(last.act==='attack'&&last.target===w&&traitOf(t)!=='ranged') p+=A.guardRead;
+    if(broke) p+=A.guardBroke;
+    if(!smart) p*=0.5;
+    return rng()<p?act('guard'):null;
+  }
+  if(cat==='dispel'){
+    let p=A.grappleBase;
+    if(last.act==='guard'&&traitOf(t)!=='ranged') p+=A.grappleRead;
+    if(!canPick(st,{cat,self:true,ring:1})) p=Math.max(p,0.4);
+    if(!smart) p*=0.6;
+    return rng()<p?act('grapple'):null;
+  }
+  return null;
+}
+// An encounter (every foe a fighter): wards and seals are wasted on blows, so keep a skin up, Guard a
+// swordsman who just Attacked me, and strike
+const AI_ENCOUNTER={skin:1.4, protect:0.35, guardRead:0.6};
+function aiEncounterProtect(w,smart){
+  const st=gs[w], sk=skinOn(st);
+  if((!sk||sk.hp<skinOf(st).soak*0.5)&&canPick(st,{cat:'protect',skin:true})) return {cat:'protect',skin:true};
+  const melee=foes(w).filter(f=>traitOf(f)!=='ranged'&&(gs[f].lastPick||{}).act==='attack'&&gs[f].lastPick.target===w);
+  if(melee.length&&rng()<AI_ENCOUNTER.guardRead) return {cat:'protect',act:'guard'};
+  const sigs=st.c.spells.filter(sp=>sp.cat==='protect'&&sp.kind!=='ward'&&!sp.ward&&canPick(st,{cat:'protect',sig:sp.id})&&sigSensible(w,sp));
+  if(sigs.length&&rng()<0.5) return {cat:'protect',sig:sigs[Math.floor(rng()*sigs.length)].id};
+  return {cat:'protect',act:'guard'};
+}
+function aiChooseCore(w,level){
   const st=gs[w], ts=gs[foe(w)], smart=level!=='easy';
   // Meditate when short of mana
   if(canMeditate(st)&&st.mana<costOf(st,{cat:'damage',ring:2})){
@@ -736,6 +965,14 @@ function aiChoose(w,level){
     if(smart&&wardLayers(st)>1) w8.seal+=0.3;
     if(smart&&st.hp<st.c.hp*0.5) w8.seal+=0.3;
   }
+  if(smart&&allBlows(w)){
+    const sk=skinOn(st);
+    delete w8.seal;
+    w8.protect=(!sk||sk.hp<skinOf(st).soak*0.5)?AI_ENCOUNTER.skin:AI_ENCOUNTER.protect;
+    if(guardLow(st)) w8.protect+=1.2;
+    if(st.hp<st.c.hp*0.35) w8.protect+=0.3;
+    w8.dispel=nCurses?0.5:hexes?0.25*hexes:0;
+  } else if(smart&&!skinOn(st)&&physThreat(foe(w))>=AI_ACTIONS.skinThreat) w8.protect+=AI_ACTIONS.skinWeight;
   const cats=CATS.concat(w8.seal?['seal']:[]).filter(c=>(c==='seal'||!locked(st,c))&&w8[c]>0);
   // Pick a category, then a spell in it that we can afford; fall back through the others
   const pickW=list=>{ let r=rng()*list.reduce((s,c)=>s+w8[c],0); for(const c of list){ r-=w8[c]; if(r<=0) return c; } return list[0]; };
@@ -756,6 +993,8 @@ const AI_WARDS={layer:0.4, seal:1.0, sealHp:4, boostHp:6};
 function aiInCat(w,cat,smart){
   const st=gs[w], ts=gs[foe(w)];
   if(cat==='seal') return canPick(st,{cat:'protect',self:true,ring:1})?{cat:'protect',self:true,ring:1}:null;
+  if(cat==='protect'&&smart&&allBlows(w)&&!(guardLow(st)&&guardSpell(st))) return aiEncounterProtect(w,smart);
+  if(!(cat==='dispel'&&curses(st).length)){ const pa=aiPhys(w,cat,smart); if(pa) return pa; }
   // Cleanse a curse
   const nc=curses(st).length;
   if(cat==='dispel'&&nc&&canPick(st,{cat,self:true,ring:1})&&rng()<(smart?(!ts.ward&&!buffs(ts).length?0.9:0.6):0.5)){
@@ -783,9 +1022,9 @@ function aiInCat(w,cat,smart){
   if(idleDispel) return null;
   const elems=ELEMENTS.filter(e=>!st.c.forbidden.includes(e));
   let elem=elems[Math.floor(rng()*elems.length)];
-  if(smart&&ts.ward&&(cat==='dispel'||cat==='damage')&&elems.includes(ts.ward.elem)&&rng()<0.8) elem=ts.ward.elem;
+  if(smart&&ts.ward&&(cat==='dispel'||cat==='damage')&&elems.includes(opposite(ts.ward.elem))&&rng()<0.8) elem=opposite(ts.ward.elem);
   if(cat==='protect'&&smart){
-    const safe=elems.filter(e=>ts.c.forbidden.includes(e));
+    const safe=elems.filter(e=>ts.c.forbidden.includes(opposite(e)));
     if(safe.length&&rng()<0.7) elem=safe[Math.floor(rng()*safe.length)];
   }
   // Wards up: a worn one gets topped up; a healthy one with room for another pile gets a new element over it
@@ -817,7 +1056,7 @@ function simMatch(k1,k2,ai){
   const picks={p1:{},p2:{}};
   while(!gs.over&&gs.round<=RULES.maxRounds){
     const a={p1:aiChoose('p1',ai), p2:aiChoose('p2',ai)};
-    ['p1','p2'].forEach(w=>{ const k=a[w].sig||(a[w].self?(a[w].cat==='protect'?'seal':'cleanse'):a[w].cat); picks[w][k]=(picks[w][k]||0)+1; });
+    ['p1','p2'].forEach(w=>{ const k=a[w].act||(a[w].skin?'skin':null)||a[w].sig||(a[w].self?(a[w].cat==='protect'?'seal':'cleanse'):a[w].cat); picks[w][k]=(picks[w][k]||0)+1; });
     playRound(a);
   }
   return {winner:gs.over||'timeout', rounds:gs.over?gs.round:gs.round-1, hp:{p1:gs.p1.hp,p2:gs.p2.hp}, picks,
@@ -839,10 +1078,59 @@ function balance(games,ai){
     .sort((a,b)=>b.winRate-a.winRate);
 }
 
+// ── Encounters: one wizard (team A) against a band of fighters (team B) ──
+// A fighter's HP and Attack come from fighters.json ("tabletop", with per-rule-set "rules"); a band can set
+// its fighters' HP per rule set (hp) or scale them. Tuned so an average wizard wins about half the time
+// against each band with the Normal AI (encounterBalance). Archers have 1 HP in Beginner and Normal: three
+// archers chip a wizard who fizzles half their flicks down fast, so one hit drops each.
+const BANDS=[
+  {id:'patrol', name:'Patrol', members:['soldier','soldier'], scale:1},
+  {id:'skirmish', name:'Skirmishers', members:['archer','archer','archer'], scale:1},
+  {id:'warband', name:'Warband', members:['soldier','archer','archer'], scale:1,
+    hp:{beginner:{soldier:4}, normal:{soldier:4}, advanced:{soldier:6, archer:7}}},
+];
+function bandSeats(wizKey,band){
+  return [{key:wizKey,team:'A'}].concat(band.members.map(k=>{
+    const f=FIGHTERS[k];
+    // band.hp[rule set][fighter] sets a fighter's HP in this band; otherwise its own HP × scale
+    const set=band.hp&&band.hp[rulesName]&&band.hp[rulesName][k];
+    const sc=typeof band.scale==='object'?(band.scale[rulesName]||1):(band.scale||1);
+    return {key:k, team:'B', c:Object.assign({},f,{hp:set!=null?set:Math.max(1,Math.round(f.hp*sc))})};
+  }));
+}
+function encounter(wizKey,bandId,ai){
+  const band=BANDS.find(b=>b.id===bandId);
+  newTable(bandSeats(wizKey,band));
+  const picks={};
+  while(!gs.over&&gs.round<=RULES.maxRounds){
+    const a={};
+    active().forEach(w=>{ a[w]=aiChoose(w,ai); });
+    const k=a.p1&&(a.p1.act||(a.p1.skin?'skin':null)||a.p1.sig||a.p1.cat);
+    if(k) picks[k]=(picks[k]||0)+1;
+    playRound(a);
+  }
+  return {won:gs.over==='A', rounds:gs.round, picks};
+}
+// Every wizard against a band, `games` each: {band:{winRate, rounds, per:{key:rate}, picks}}
+function encounterBalance(games,ai,bandIds){
+  const out={};
+  (bandIds||BANDS.map(b=>b.id)).forEach(id=>{
+    let won=0, n=0, rounds=0; const per={}, picks={};
+    Object.keys(CHARS).forEach(k=>{
+      let w=0;
+      for(let g=0;g<games;g++){ const r=encounter(k,id,ai||'normal'); if(r.won) w++; rounds+=r.rounds; Object.entries(r.picks).forEach(([x,c])=>picks[x]=(picks[x]||0)+c); }
+      per[k]=+(w/games*100).toFixed(0); won+=w; n+=games;
+    });
+    out[id]={winRate:+(won/n*100).toFixed(1), rounds:+(rounds/n).toFixed(1), per, picks};
+  });
+  return out;
+}
+
 useRules('normal');
 
-const TT={RULES, PRESETS, RULE_SETS, useRules, rulesOf, AI_WARDS, get rulesName(){ return rulesName; }, ELEMENTS, load, newGame, playRound, aiChoose, simMatch, balance,
-  get chars(){ return CHARS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
+const TT={RULES, PRESETS, RULE_SETS, useRules, rulesOf, AI_WARDS, AI_FIGHTERS, AI_ACTIONS, AI_MINIONS, AI_ENCOUNTER, BANDS,
+  get rulesName(){ return rulesName; }, ELEMENTS, opposite, load, newGame, newTable, playRound, aiChoose, simMatch, balance,
+  encounter, encounterBalance, get chars(){ return CHARS; }, get fighters(){ return FIGHTERS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
 if(typeof module!=='undefined'&&module.exports) module.exports=TT;
 else root.TT=TT;
 })(typeof window!=='undefined'?window:this);

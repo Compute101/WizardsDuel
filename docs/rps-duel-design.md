@@ -984,3 +984,14 @@ Agreed: an **Encounter** mode (your wizard alone against a band of 2–3 fighter
 ## Merge note: main's Dispel nerf
 
 Main nerfed Dispel to 15 / 24 / 40 with a 1.5× matching bonus (Durin HP 110 → 105) against the pre-Phase-1 numbers. When this branch merged main, it had already cut dispels further (10 / 20 / 35; "Bigger wards, smaller dispels") and moved the bonus to a ward's opposite element (×2), with every HP scaled ×0.6. The nerf's aim (dispels too strong against wards) is already covered, so this branch's numbers were kept.
+
+## Phase 5 built: the tabletop mirror
+
+Agreed: eight elements with the opposite counting +2 against a ward (no riders or ward traits at the table); Actions and Ironskin in all three rule sets; minion stances and aiming at bodies in Normal and Advanced; Encounters at the table now.
+
+- **Engine:** `js/tabletop.js` now seats any number of players on teams (`newTable`), so a wizard can face a band. Duels are unchanged in shape.
+- **Actions and blows:** free, no flick, one round, the same circle as the app. Attack is 1 for most wizards and 2 for the brutes, so blows are a sideline next to 2 / 4 / 6 spells, as in the app. Wards stop magic only; Ironskin (2 mana, soaks 3) stops blows. Durin's Stoneskin became his skin (3 mana, soaks 6) and his ward card became Bedrock (a pile that never wears).
+- **Stances without a brace:** the app's brace (a guarding body loses half of what it stops) made Gretch's totem stop double and put him at 66–74%. With whole winks, one wink per point is the simpler rule and kept the roster at 42–58% before HP nudges.
+- **Encounters:** a wizard who fizzles half their Normal flicks can't keep up with three archers hitting every round, so Beginner and Normal archers have 1 HP (one hit and she's down), and Warband's soldier 4. Advanced wizards pot 3 flicks in 4, so their fighters are much tougher (soldier Attack 2, archers 8 HP). Archer HP is a cliff there too (8: 56%, 9: 42%).
+- **Results:** duels (300 games) Beginner 43.4–57.0%, Normal 44.2–57.4%, Advanced 44.3–55.2%; encounters (30 games a wizard) 41–56% per band and rule set, Skirmishers the hardest in Beginner and Normal.
+- **Open:** Skirmishers in Normal sit at 41–48%: if that's too hard at the table, field two archers instead of three. The app and tabletop bands share names and fighters but not numbers.

@@ -154,8 +154,8 @@ function setWards(w){
   if(p) G.simInfo().setWardRules({...WARD_PRESETS.game,...p});
 }
 function setMode(m){ mode=MODES[m]||MODES.standard; if(mode.rules) TT.useRules(mode.rules); CHARS=mode.chars(); }
-TT_READY=Promise.all(['../characters.json','../tabletop.json'].map(u=>fetch(u).then(r=>r.json())))
-  .then(([chars,tt])=>TT.load(chars,tt));
+TT_READY=Promise.all(['../characters.json','../tabletop.json','../fighters.json'].map(u=>fetch(u).then(r=>r.json())))
+  .then(([chars,tt,fighters])=>TT.load(chars,tt,fighters));
 
 frame.addEventListener('load',()=>{
   const wait=()=>{

@@ -16,7 +16,16 @@
       "Steel doesn't care for your sparks.",
       "Shields up, lads."
     ],
-    "desc": "Solid HP and a good sword. Shield Wall: while he Guards, his shield also halves a spell aimed at him."
+    "desc": "Solid HP and a good sword. Shield Wall: while he Guards, his shield also halves a spell aimed at him.",
+    "tabletop": {
+      "hp": 8,
+      "atk": 1,
+      "rules": {
+        "advanced": {
+          "atk": 2
+        }
+      }
+    }
   },
   "archer": {
     "name": "ARCHER",
@@ -35,6 +44,15 @@
       "Hold still, wizard.",
       "One more arrow."
     ],
-    "desc": "Fragile, with a weaker shot. At Range: her arrows slip past a Guard (no block, no counter), and she keeps her distance, so a Grapple can't reach her."
+    "desc": "Fragile, with a weaker shot. At Range: her arrows slip past a Guard (no block, no counter), and she keeps her distance, so a Grapple can't reach her.",
+    "tabletop": {
+      "hp": 1,
+      "atk": 1,
+      "rules": {
+        "advanced": {
+          "hp": 8
+        }
+      }
+    }
   }
 }

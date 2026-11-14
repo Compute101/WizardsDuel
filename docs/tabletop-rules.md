@@ -16,8 +16,8 @@ Learn them in this order. You never need better flicking to move from Beginner t
 
 | Rules | Who it's for | What changes |
 |---|---|---|
-| **Beginner** | Your first games | The core rules below, and nothing else: one ward at a time, elements are just for show, one simple Cleanse. |
-| **Normal** | Most tables, most of the time | The core rules plus **Normal rules**: elements count against wards, wards top up, layer and seal, Cleanse by level. |
+| **Beginner** | Your first games | The core rules below, and nothing else: one ward at a time, elements are just for show, one simple Cleanse, minions always guard and bite. |
+| **Normal** | Most tables, most of the time | The core rules plus **Normal rules**: opposite elements count against wards, wards top up, layer and seal, Cleanse by level, minion stances. |
 | **Advanced** | Tiddlywinks masters, potting about 3 flicks in 4 | Everything in Normal, plus **Advanced rules**: pot a wink per level, pay to retry, and squop missed winks for mana. |
 
 Both Beginner and Normal use the same flick, tuned for new flickers: **7 pots in 57 flicks (about 12%)** on our first try.
@@ -31,6 +31,8 @@ Both Beginner and Normal use the same flick, tuned for new flickers: **7 pots in
 - A six-sided die (d6).
 - A way to pick secretly: a dial, or face-down cards for Damage / Protection / Dispel / Meditate plus a note of the element and level.
 - A token or the spell card to mark each buff and curse while it's in play (no round counting needed).
+- A few spare winks of a fourth colour for **Ironskin** (see **Actions and blows**).
+- For **Encounters**, a counter pile of HP winks for each fighter.
 
 ## Setup
 
@@ -45,10 +47,12 @@ Both Beginner and Normal use the same flick, tuned for new flickers: **7 pots in
    - One of your wizard's **signature spells**. Each card has its own cost and level.
    - **Cleanse:** a Dispel at yourself that removes your curses (see **Buffs and curses**).
    - **Meditate:** skip your spell and gain 3 mana. You can't Meditate two rounds running.
+   - An **Action**: **Attack**, **Guard** or **Grapple**. Free, no flick (see **Actions and blows**).
+   - **Ironskin** (or your wizard's own skin card): a Protection spell, Lesser flick.
 2. **Reveal** both picks.
 3. **Pay.** Mana Siphon is a quick spell: it's paid and steals before anyone else pays. Then check curses that react to your pick (Enthral, then Silence). Then pay the spell's cost in mana winks. If you can't afford your spell, it's lost (you pay nothing).
 4. **Flick** for your spell, using the mana winks you just paid (see **The flick**).
-5. **Resolve, in this order:** every **Protection**, then every **Dispel**, then every **Damage**, then **Meditate**. Within a stage, both spells happen together.
+5. **Resolve, in this order:** every **Protection**, then every **Dispel**, then every **Damage**, then **Meditate**. Within a stage, both spells happen together. Actions go in their own stage: Guard with Protection, Grapple with Dispel, Attack with Damage.
 6. **Round end** (see below). In Advanced rules, squops come first (see **Advanced rules**).
 
 When a wizard reaches 0 HP, the game ends straight away. If both fall at the same moment, it's a draw.
@@ -64,6 +68,20 @@ Easy to remember: **every spell costs 2 mana per level.** **Damage equals the co
 | Normal | 4 | 4 | 8 | 8 | 6 | 2 |
 | Greater | 6 | 6 | 12 | 12 | 4 | 3 |
 <!-- base-spells:end -->
+
+## Actions and blows
+
+Every wizard can fight with their hands as well as with magic. Most are poor at it.
+
+- **Attack, Guard and Grapple** are **Actions**. They cost nothing, need no flick and always go off. They last only the round you pick them. Your wizard's **Attack** number is on their card: **2** for the brutes, **1** for everyone else.
+  - **Attack:** hit the foe for your Attack. **+1** if they Grapple you this round (and their Grapple fails).
+  - **Guard:** block every blow aimed at you this round. An **Attack** into your Guard misses, and you **counter** for your own Attack.
+  - **Grapple:** against a **Guard**, hit for your Attack; against anything else, half your Attack (round down, so 0 for most wizards). A Grapple at someone who Attacks you fails.
+  - Like Damage, Protection and Dispel, they go round in a circle: Attack beats Grapple, Grapple beats Guard, Guard beats Attack.
+- **Magic and blows are different.** Every spell is **magic**, Earth included (a conjured rock is still a spell). **Blows** are Attacks, minions' bites and the cards that say "a blow".
+  - **A ward stops magic, never blows.** A blow walks straight past it.
+  - **A Guard stops blows, never magic.**
+  - **Ironskin** stops blows for longer: a Protection spell (**2 mana**, Lesser flick) that soaks **3** blows, then it's gone. Put 3 winks of your fourth colour on your card and take one off for each point it soaks. It's a buff, so a Dispel can strip it. Casting it again refills it. Some wizards have their own skin instead (Sylvara's Barkskin, Durin's Stoneskin; see **Wizards**).
 
 ## The flick
 
@@ -84,11 +102,11 @@ If you want fewer outright fizzles, agree before the game what counts as a **nea
 
 - A ward is a pile of ward winks.
 - **One ward at a time:** casting a new ward replaces the one you have (Normal rules change this, see **Normal rules**).
-- **Strikes hit the ward first.** What breaks through goes to HP.
+- **Spells hit the ward first.** What breaks through goes to HP. Blows go past it (see **Actions and blows**).
   - Example: a Normal strike (4) hits a ward of 3. The ward breaks and 1 goes through to HP.
 - A ward **lasts until it runs out**. It loses **1 wink at every round end**, and strikes and dispels take it down.
-- Ticks (burns, poison, minions) also hit the ward first.
-- **Skeletons stand in front of the ward.** Each skeleton has 1 HP: every point of damage (strikes and ticks) kills one skeleton before anything reaches the ward. Only what gets past the skeletons meets the ward.
+- Magic ticks (burns, plague) also hit the ward first. Bleeding, vines and minions' bites are blows: they don't.
+- **Minions are bodies.** Skeletons, graveguard, Fathom and the Bone Totem stand in front of their master and take hits first, spells and blows alike. Each skeleton has 1 HP: every point of damage kills one skeleton before anything reaches the ward. Only what gets past them meets the ward (or, for a blow, the wizard). In Normal rules they only do this while **guarding** (see **Minion stances**).
   - Example: a Normal strike (4) hits 3 skeletons and a ward of 5. 3 skeletons fall, and the last 1 takes the ward down to 4.
 - **Graveguard** (Daveron's elite skeletons) work the same way but have **3 HP each**: damage wears down the oldest graveguard first, and each one falls when its HP runs out. Keep a die or extra winks by each one to track its HP.
   - Example: a Normal strike (4) hits 2 graveguard (3 HP each) and a ward of 5. The first graveguard falls (3), the second drops to 2 HP (1), and nothing reaches the ward.
@@ -115,6 +133,7 @@ There are no round counters. **Buffs last until a Dispel removes them**, and **c
 ## Round end
 
 1. **Ticks:** curses on each wizard (burns, poison, plague, Agony and similar), then their regeneration, then their minions strike the foe.
+   - **A minion's strike is a blow:** the foe's ward doesn't stop it, their Ironskin soaks it, and a Guard picked this round blocks it.
    - **A minion's strike is a strike.** Whatever makes a strike miss or hit softer meets it too: Vanish, Foresight (used up), Blink's dodge roll, Stonesoul-type resistance and Warpstone-type extra damage. Retaliation (Counter, a ward's "strikers take") doesn't answer a minion.
 2. **Sudden death:** from **round 15**, both wizards lose 1 HP at every round end, +1 more every 3 rounds after that (2 HP from round 18). Most games are over well before then: it's there to break stalemates.
 3. **Wards wear:** every ward loses 1 wink (in Normal rules, not a sealed one). A ward with no winks left is gone.
@@ -138,8 +157,11 @@ Once the Beginner game feels easy, add these. The flick doesn't change.
 
 ### Elements
 
-- A strike or Dispel in **a ward's own element** counts **+2** against it.
-  - Example: a Normal Fire strike (4) hits a Fire ward of 5. It counts as 6, so the ward breaks and 1 goes through to HP.
+There are eight elements, in four opposed pairs: **Fire and Water**, **Air and Earth**, **Lightning and Ice**, **Arcane and Dark**.
+
+- A strike or Dispel in **the opposite of a ward's element** counts **+2** against it.
+  - Example: a Normal Water strike (4) hits a Fire ward of 5. It counts as 6, so the ward breaks and 1 goes through to HP.
+  - So ward in an element whose opposite your foe can't cast.
   - Against skeletons, the +2 only applies to what gets past them and meets the ward.
 - Remember (or mark) each ward pile's element.
 
@@ -150,7 +172,7 @@ These replace "one ward at a time".
 - **Top up:** casting a ward in the element of a pile you already have adds its winks to that pile, up to **one and a half times** the new ward (Lesser 6, Normal 12, Greater 18). It never makes the pile smaller.
   - Example: your Fire ward is down to 3 and you cast a Normal Fire ward (8). It becomes 11. Cast another and it stays at 12.
 - **Layers:** casting a ward in a **new** element puts a second pile **on the outside** of the first. You can have **2 piles** at most; a third new element replaces the outer pile. All your piles together hold at most 20 winks.
-- **Strikes hit the outer pile first.** If it runs out, the rest carries on into the pile beneath (with that pile's own +2), then to HP.
+- **Strikes hit the outer pile first.** If it runs out, the rest carries on into the pile beneath (with that pile's own +2 if it's the opposite), then to HP.
 - Every pile wears at round end.
 
 ### Seals
@@ -165,6 +187,16 @@ These replace "one ward at a time".
 
 - A Dispel hits the **outer** pile. A Lesser or Normal Dispel stops at the pile it breaks. A **Greater** Dispel carries what's left into the next pile (a seal there stops it), and if it breaks **both** piles with power to spare, it removes **every** buff too.
   - Example: a Greater Arcane Dispel (12) meets a Fire pile of 5 over an Arcane pile of 9. The Fire pile breaks with 7 to spare, which counts as 9 against the Arcane pile, and that breaks too.
+
+### Minion stances
+
+These replace "minions always guard and bite".
+
+- **Pick a stance for your bodies every round,** along with your spell. It's free and doesn't use your pick. Show it when you reveal.
+  - **Guard:** they stand in front of you and take every hit first (spells and blows), and don't strike.
+  - **Attack:** they strike the foe at round end and shield no one.
+- A Bone Totem has no strike, so it always guards. Blades and simulacra aren't bodies: they always strike and can't be hit.
+- **Aim at a body:** a strike, Attack or Grapple can be aimed at one of the foe's bodies instead of the wizard. It hits that body alone: no ward, no extra effects. If the body is already gone, it hits the wizard.
 
 ### Cleanse by level
 
@@ -204,11 +236,31 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 
 ---
 
+## Encounters
+
+Your wizard alone against a band of fighters: soldiers and archers. They cast nothing. Every round each fighter picks an Action (Attack, Guard or Grapple) and aims it at you. Your spells, Attacks and Grapples are each aimed at one fighter (say which when you reveal). Your minions strike whoever you last aimed at. Use any rule set.
+
+- **Soldier** (*Shield Wall*): while he Guards, his shield also halves a spell aimed at him (round down). A Guard already stops blows, so hit someone else, or Grapple him.
+- **Archer** (*At Range*): her Attack is a bow shot. It slips past a Guard (no block, no counter), and she keeps her distance: a Grapple at her fails. She's fragile.
+- Fighters have no mana, no wards, no flicks and no Meditate. They don't take sudden death. A fighter at 0 HP is out. You win when every fighter is out.
+- **Play the band:** a friend can play the fighters, or let them follow a simple plan: each Attacks unless you Attacked them last round (then they Guard) or you Guarded last round (then the soldiers Grapple).
+- **Tips:** your wards won't stop a single blow. Keep Ironskin up, Guard the soldiers and strike the archers first.
+
+<!-- encounters:start -->
+| Band | Fighters | Beginner | Normal | Advanced |
+|---|---|---|---|---|
+| **Patrol** | 2 Soldiers | Soldier: 8 HP, Attack 1 | Soldier: 8 HP, Attack 1 | Soldier: 8 HP, Attack 2 |
+| **Skirmishers** | 3 Archers | Archer: 1 HP, Attack 1 | Archer: 1 HP, Attack 1 | Archer: 8 HP, Attack 1 |
+| **Warband** | Soldier, 2 Archers | Soldier: 4 HP, Attack 1; Archer: 1 HP, Attack 1 | Soldier: 4 HP, Attack 1; Archer: 1 HP, Attack 1 | Soldier: 6 HP, Attack 2; Archer: 7 HP, Attack 1 |
+<!-- encounters:end -->
+
+---
+
 ## Wizards
 
 <!-- characters:start -->
 ### ELDRIN — The Stalwart
-**HP 11** · Normal rules: Seal Ward seals every one of your ward piles at once
+**HP 11** · Attack **1** · Normal rules: Seal Ward seals every one of your ward piles at once
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -217,7 +269,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Ward** | Protection | Ice | Normal | 2 | Until dispelled: curses can't touch you. A dispel at you only removes this Ward. |
 
 ### MALACHAR — The Relentless
-**HP 11** (Advanced rules: **10**) · Can't cast: Arcane
+**HP 11** (Advanced rules: **10**) · Attack **1** · Can't cast: Arcane
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -226,16 +278,16 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Drain** | Damage | Dark | Normal | 4 | Dark strike of 5. Heal half the HP damage it deals (round down). |
 
 ### SYLVARA — The Verdant
-**HP 11** · Can't cast: Fire, Dark
+**HP 11** · Attack **1** · Skin: **Barkskin** (1 mana, soaks 3 blows) instead of Ironskin · Can't cast: Fire, Dark
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Regen** | Protection | Physical | Normal | 3 | Until dispelled: heal 1 at every round end. |
-| **Entangle** | Dispel | Physical | Lesser | 2 | Roll a die: on 4+ the foe can't pick Damage next round. |
-| **Vine Whip** | Damage | Physical | Normal | 3 | Physical strike of 3. Until cleansed, vines deal 1 to the foe at every round end. |
+| **Regen** | Protection | Earth | Normal | 3 | Until dispelled: heal 1 at every round end. |
+| **Entangle** | Dispel | Earth | Lesser | 2 | Roll a die: on 4+ the foe can't pick Damage next round. |
+| **Vine Whip** | Damage | Earth | Normal | 3 | A blow of 3 (wards don't stop it). Until cleansed, vines deal 1 blow to the foe at every round end. |
 
 ### AURELIA — The Radiant
-**HP 12**
+**HP 12** · Attack **1**
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -244,16 +296,16 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Rewind** | Protection | Arcane | Normal | 6 | Arcane ward of 7, and heal the HP you lost last round (max 5). |
 
 ### GNASH — The Feral
-**HP 11** · Can't cast: Arcane, Ice
+**HP 11** · Attack **2** · Can't cast: Arcane, Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **War Paint** | Protection | Physical | Normal | 2 | Until dispelled: every hit on you deals 1 less (min 1). |
-| **Savage Charge** | Damage | Physical | Normal | 4 | Physical strike of 5. The foe loses 2 mana. |
+| **War Paint** | Protection | Earth | Normal | 2 | Until dispelled: every hit on you deals 1 less (min 1). |
+| **Savage Charge** | Damage | Earth | Normal | 4 | A blow of 5 (wards don't stop it). The foe loses 2 mana. |
 | **Frenzy** | Protection | Fire | Lesser | 2 | Until dispelled: your strikes deal +2, but each costs you 1 HP. |
 
 ### CINDER — The Volatile
-**HP 11** (Advanced rules: **10**) · Can't cast: Ice
+**HP 11** · Attack **1** · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -262,7 +314,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Candle** | Dispel | Fire | Normal | 2 | Until cleansed: the foe takes 2 each time they cast Protection or Meditate. |
 
 ### SKADI — The Permafrost
-**HP 11** · Can't cast: Fire
+**HP 11** · Attack **1** · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -271,7 +323,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Blizzard** | Dispel | Ice | Normal | 3 | Until cleansed: at every round end the foe takes 1 and loses 1 mana. |
 
 ### ZAKKIT — The Warpstorm
-**HP 11** · Can't cast: Physical
+**HP 11** · Attack **1** · Can't cast: Earth
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -280,7 +332,7 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Warpstone Curse** | Dispel | Lightning | Normal | 2 | Until cleansed: every strike on the foe deals +1. |
 
 ### MARY — The Devoted
-**HP 11** · Can't cast: Dark, Fire
+**HP 11** · Attack **1** · Can't cast: Dark, Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -289,16 +341,16 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Radiant** | Damage | Arcane | Normal | 3 | Arcane strike of 3. The foe loses 2 mana. |
 
 ### MORDANT — The Defiler
-**HP 11** · Can't cast: Lightning
+**HP 11** · Attack **1** · Can't cast: Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Agony** | Dispel | Dark | Normal | 4 | Until cleansed: the foe takes 2 at every round end, unless they Meditated that round (Corruption stops Meditate escaping it). |
 | **Silence** | Dispel | Arcane | Normal | 2 | Until cleansed: each spell the foe casts, they roll a die: on 1–2 it fails (no mana spent). |
-| **Corruption** | Dispel | Physical | Normal | 2 | Until cleansed: the foe gains 1 less mana each round (and from Meditate), and Meditate doesn't escape Agony. |
+| **Corruption** | Dispel | Earth | Normal | 2 | Until cleansed: the foe gains 1 less mana each round (and from Meditate), and Meditate doesn't escape Agony. |
 
 ### PONDER — The Apprentice
-**HP 12** (Advanced rules: **10**) · Can't cast: Dark, Fire
+**HP 12** (Advanced rules: **10**) · Attack **1** · Can't cast: Dark, Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -307,52 +359,52 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Blink** | Protection | Lightning | Normal | 3 | Until dispelled: roll a die for each strike at you (minions' too), on 4+ it misses. Plus a Lightning ward of 3. |
 
 ### DURIN — The Stoneheart
-**HP 12** · Can't cast: Lightning
+**HP 12** · Attack **2** · Skin: **Stoneskin** (3 mana, soaks 6 blows) instead of Ironskin · Can't cast: Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Stoneskin** | Protection | Physical | Normal | 5 | Physical ward of 9. |
-| **Stonesoul** | Protection | Arcane | Normal | 2 | Until dispelled: every hit on you deals 1 less (min 1). |
-| **Rockfall** | Damage | Physical | Greater | 5 | Physical strike of 7. |
+| **Bedrock** | Protection | Earth | Normal | 5 | Earth ward of 9 that never wears away at round end. |
+| **Stonesoul** | Protection | Arcane | Normal | 2 | Until dispelled: every blow on you deals 1 less (min 1). Spells hit as usual. |
+| **Rockfall** | Damage | Earth | Greater | 5 | Earth strike of 7. |
 
 ### WEIZAN — The Bladecaller
-**HP 11** (Advanced rules: **12**) · Can't cast: Dark
+**HP 11** (Advanced rules: **12**) · Attack **2** · Can't cast: Dark
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Conjure Blade** | Protection | Physical | Normal | 2 | Conjure a blade (max 3). Until dispelled, each blade deals 1 to the foe at every round end. |
-| **Bladestorm** | Damage | Physical | Normal | 2 | Needs a blade. Launch all your blades: a Physical strike of 3 per blade. The blades are used up. |
-| **Iron Patience** | Protection | Arcane | Normal | 2 | Until dispelled: every hit on you deals 1 less (min 1). |
+| **Conjure Blade** | Protection | Earth | Normal | 2 | Conjure a blade (max 3). Until dispelled, each blade deals a blow of 1 to the foe at every round end. |
+| **Bladestorm** | Damage | Earth | Normal | 2 | Needs a blade. Launch all your blades: a blow of 3 per blade (wards don't stop it). The blades are used up. |
+| **Iron Patience** | Protection | Arcane | Normal | 2 | Until dispelled: every blow on you deals 1 less (min 1). Spells hit as usual. |
 
 ### GRETCH — The Festering
-**HP 10** · Can't cast: Fire, Arcane
+**HP 10** · Attack **2** · Can't cast: Fire, Arcane
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
 | **Plague** | Dispel | Dark | Normal | 3 | Until cleansed: the foe takes 1 at every round end. |
-| **Maggot Cloud** | Dispel | Physical | Normal | 2 | The foe loses 3 mana now. Until cleansed, they gain 1 less mana each round (and from Meditate). |
-| **Bone Totem** | Protection | Dark | Normal | 4 | Plant a bone totem (one at a time). It has 4 HP and stands in front of your ward: damage (strikes and ticks) wears it down before anything reaches your ward. Dispels can't touch it. While it stands, heal 1 at every round end. |
+| **Maggot Cloud** | Dispel | Earth | Normal | 2 | The foe loses 3 mana now. Until cleansed, they gain 1 less mana each round (and from Meditate). |
+| **Bone Totem** | Protection | Dark | Normal | 4 | Plant a bone totem (one at a time). It has 4 HP and always guards: damage (strikes, blows and ticks) wears it down before anything reaches you or your ward. Dispels can't touch it. While it stands, heal 1 at every round end. |
 
 ### VALDRIS — The Undying
-**HP 7** (Advanced rules: **9**) · Can't cast: Fire
+**HP 7** (Beginner rules: **6**, Normal rules: **8**, Advanced rules: **9**) · Attack **1** · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Raise Dead** | Protection | Dark | Normal | 4 | Raise 3 skeletons (max 5 on the table). Each has 1 HP and stands in front of your ward: every point of damage (strikes and ticks) kills one skeleton before anything reaches your ward. Dispels can't touch them. Each skeleton still standing deals 1 to the foe at every round end. |
+| **Raise Dead** | Protection | Dark | Normal | 4 | Raise 3 skeletons (max 5 on the table). Each has 1 HP. Guarding, they stand in front of you: every point of damage kills one before anything reaches you or your ward. Attacking, each bites the foe for 1 (a blow) at every round end. Dispels can't touch them. |
 | **Necrotic Drain** | Damage | Dark | Normal | 4 | Dark strike of 4. Heal half the HP damage it deals (round down). |
 | **Soul Tithe** | Dispel | Dark | Lesser | 2 | Until cleansed: the foe loses 1 mana for each of your skeletons they kill. |
 
 ### MIREL — The Deceiver
-**HP 10** · Can't cast: Physical, Fire
+**HP 10** (Advanced rules: **9**) · Attack **1** · Can't cast: Earth, Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Simulacrum** | Protection | Arcane | Normal | 5 | Summon a simulacrum (max 2). Until dispelled, each deals 1 to the foe at every round end. |
+| **Simulacrum** | Protection | Arcane | Normal | 5 | Summon a simulacrum (max 2). Until dispelled, each deals a blow of 1 to the foe at every round end. |
 | **Bewitch** | Dispel | Arcane | Normal | 2 | The foe's next strike hits themselves instead. |
 | **Feint** | Damage | Arcane | Normal | 4 | Arcane strike of 4. The foe loses 2 mana. |
 
 ### THESSALY — The Gilded
-**HP 12** (Advanced rules: **11**)
+**HP 12** (Advanced rules: **11**) · Attack **1**
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -361,25 +413,25 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Spellbind** | Dispel | Dark | Normal | 2 | Until cleansed: the foe's most-cast category (Damage, Protection or Dispel) costs 3 more. |
 
 ### KORVATH — The Wyrmlord
-**HP 11** · Can't cast: Ice
+**HP 11** · Attack **2** · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Dragon Scales** | Protection | Fire | Normal | 5 | Until dispelled: every hit on you deals 1 less (min 1), and strikers take 1. |
+| **Dragon Scales** | Protection | Fire | Normal | 5 | Until dispelled: every blow on you deals 1 less (min 1), and strikers take 1. Spells hit as usual. |
 | **Wyrmfire Breath** | Damage | Fire | Normal | 4 | Fire strike of 4. Until cleansed, the foe burns for 1 at every round end. |
-| **Ancient Wrath** | Damage | Physical | Greater | 7 | Physical strike of 9. Once per game. |
+| **Ancient Wrath** | Damage | Earth | Greater | 7 | A blow of 9 (wards don't stop it). Once per game. |
 
 ### FIZZWICK — The Concoctor
-**HP 11**
+**HP 11** · Attack **1**
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Caustic Bomb** | Damage | Dark | Normal | 3 | Dark strike of 3. Until cleansed, poison deals 1 to the foe at every round end. If the strike reached HP, the poison ignores wards. |
-| **Volatile Tonic** | Protection | Physical | Lesser | 2 | Roll a die: on 1–3 heal 6; on 4–6 your next strike deals +3. |
+| **Caustic Bomb** | Damage | Dark | Normal | 3 | A thrown bomb: a blow of 3 (wards don't stop it). Until cleansed, poison deals 1 to the foe at every round end, ignoring wards. |
+| **Volatile Tonic** | Protection | Earth | Lesser | 2 | Roll a die: on 1–3 heal 6; on 4–6 your next strike deals +3. |
 | **Unstable Concoction** | Damage | Arcane | Normal | 4 | Arcane strike: roll a die and deal that much. On a 6, roll again and add it (keep going on 6s). |
 
 ### NYXARA — The Hollow
-**HP 10** (Advanced rules: **12**) · Can't cast: Lightning
+**HP 10** (Advanced rules: **12**) · Attack **1** · Can't cast: Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -388,16 +440,16 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Event Horizon** | Damage | Arcane | Greater | 7 | Arcane strike of half the foe's HP (round down, min 4). You take 2. |
 
 ### DAVERON — The Gravelord
-**HP 8** (Advanced rules: **10**) · Can't cast: Fire
+**HP 8** (Beginner rules: **7**, Advanced rules: **10**) · Attack **2** · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Raise Graveguard** | Protection | Dark | Normal | 4 | Raise 1 graveguard (max 3 on the table). Each has 3 HP and stands in front of your ward: damage (strikes and ticks) wears down the oldest graveguard first, and only what gets past them reaches your ward. Dispels can't touch them. Each graveguard still standing deals 1 to the foe at every round end. |
+| **Raise Graveguard** | Protection | Dark | Normal | 4 | Raise 1 graveguard (max 3 on the table). Each has 3 HP. Guarding, they stand in front of you: damage wears down the oldest first, and only what gets past reaches you or your ward. Attacking, each strikes the foe for 1 (a blow) at every round end. Dispels can't touch them. |
 | **Vanhal's Danse Macabre** | Protection | Arcane | Lesser | 2 | Needs a graveguard on the table. Until dispelled: each of your graveguard deals 1 more at every round end. |
 | **Curse of the Years** | Dispel | Dark | Normal | 4 | Until cleansed: the foe takes 2 at every round end, whatever they did. Unlike Agony, Meditating doesn't escape it. |
 
 ### FREDERICK — The Black
-**HP 10** · Can't cast: Ice
+**HP 10** · Attack **2** · Can't cast: Ice
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -406,12 +458,12 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 | **Blue Fire** | Damage | Fire | Greater | 6 | Fire strike of 7. Big blast: 3 of it goes around a ward straight to HP. |
 
 ### NERISSA — of the Deep
-**HP 10** (Advanced rules: **12**) · Can't cast: Fire
+**HP 10** (Advanced rules: **12**) · Attack **1** · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
-| **Summon Fathom** | Protection | Water | Normal | 3 | Fathom, your shark familiar, swims to your side (one at a time). He has 4 HP and stands in front of your ward: damage (strikes and ticks) wears him down before anything reaches your ward. Dispels can't touch him. While he swims, he bites the foe for 1 at every round end. |
-| **Blood in the Water** | Damage | Water | Normal | 4 | Fathom bites: a Water strike of 3. Until cleansed, the foe bleeds 1 at every round end. |
+| **Summon Fathom** | Protection | Water | Normal | 3 | Fathom, your shark familiar, swims to your side (one at a time). He has 4 HP. Guarding, he circles you and takes the damage first. Attacking, he bites the foe for 1 (a blow) at every round end. Dispels can't touch him. |
+| **Blood in the Water** | Damage | Water | Normal | 4 | Fathom bites: a blow of 3 (wards don't stop it). Until cleansed, the foe bleeds 1 at every round end. |
 | **Undertow** | Dispel | Water | Lesser | 2 | Roll a die: on 4+ the foe is dragged under and can't pick Protection next round. |
 
 <!-- characters:end -->
