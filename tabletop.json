@@ -255,7 +255,7 @@
     },
   "nerissa": {
     "hp": 10,
-    "rules": {"advanced": {"hp": 12}},
+    "rules": {"beginner": {"hp": 9}, "advanced": {"hp": 12}},
     "spells": [
       {"id": "fathom", "name": "Summon Fathom", "cat": "protect", "elem": "water", "ring": 2, "cost": 3, "kind": "buff", "effect": {"type": "minion", "minion": "shark", "kind": "minion", "soak": 4, "dmg": 1, "max": 1, "raise": 1},
        "text": "Fathom, your shark familiar, swims to your side (one at a time). He has 4 HP. Guarding, he circles you and takes the damage first. Attacking, he bites the foe for 1 (a blow) at every round end. Dispels can't touch him."},

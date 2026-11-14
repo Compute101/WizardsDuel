@@ -34,7 +34,7 @@ const RULES={
   // grappling you); a Guard blocks every blow aimed at you that round and counters an Attack for your atk;
   // a Grapple hits a Guard for your atk, anyone else for half (rounded down), and fails against an Attack at you.
   // Wards stop magic only: blows (Attacks, minion bites, physical cards) go past them. Ironskin soaks blows.
-  skin:{name:'Ironskin', cost:2, soak:3},
+  skin:{name:'Ironskin', cost:2, soak:3, upkeep:1},   // upkeep: mana at every round end (after income) to keep it, or it fades
   // Minions as bodies (Normal and Advanced): each round you set your bodies' stance, free. Guard: they stand in
   // front of you and take hits first, braced (each stops 2 damage per wink of its HP), and don't bite.
   // Attack: they bite at round end and shield no one. A strike, Attack or Grapple can be aimed at one body.
@@ -755,6 +755,9 @@ function endRound(){
     // "next strike" / "next pick" effects) until used. A lock lasts for the one round it blocks.
     st.effects=st.effects.filter(e=>!(e.type==='lock'&&e.from<gs.round));
     if(!isFighter(w)) gainMana(w,Math.max(0,RULES.income-incomeDrain(st)));
+    // Skin upkeep: pay it or the skin fades (worth it against blows, not against a wizard who casts)
+    const sk=skinOn(st), up=RULES.skin.upkeep||0;
+    if(sk&&up){ if(st.mana>=up) st.mana-=up; else removeEffects(w,[sk]); }
     st.lostLast=Math.max(0,st.hpAtStart-st.hp);
   });
   gs.round++;
@@ -872,7 +875,7 @@ function fighterChoose(w,smart){
 }
 // The wizard's Actions and Ironskin, read from the foe's last pick (like the app's aiPhysAction)
 const AI_ACTIONS={attackBase:0.08, attackOpen:0.25, guardBase:0.04, guardRead:0.45, guardBroke:0.3,
-  grappleBase:0.03, grappleRead:0.5, skinThreat:0.35, skinCast:0.6, skinWeight:0.5};
+  grappleBase:0.03, grappleRead:0.5, skinThreat:0.6, skinCast:0.6, skinWeight:0.5};
 function aiPhys(w,cat,smart){
   const st=gs[w], t=foe(w), ts=gs[t], last=ts.lastPick||{}, A=AI_ACTIONS;
   const act=x=>({cat, act:x, target:t});

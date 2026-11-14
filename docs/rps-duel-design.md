@@ -995,3 +995,13 @@ Agreed: eight elements with the opposite counting +2 against a ward (no riders o
 - **Encounters:** a wizard who fizzles half their Normal flicks can't keep up with three archers hitting every round, so Beginner and Normal archers have 1 HP (one hit and she's down), and Warband's soldier 4. Advanced wizards pot 3 flicks in 4, so their fighters are much tougher (soldier Attack 2, archers 8 HP). Archer HP is a cliff there too (8: 56%, 9: 42%).
 - **Results:** duels (300 games) Beginner 43.4–57.0%, Normal 44.2–57.4%, Advanced 44.3–55.2%; encounters (30 games a wizard) 41–56% per band and rule set, Skirmishers the hardest in Beginner and Normal.
 - **Open:** Skirmishers in Normal sit at 41–48%: if that's too hard at the table, field two archers instead of three. The app and tabletop bands share names and fighters but not numbers.
+
+## Skin upkeep
+
+Feedback: skins shouldn't wear, but you should have to maintain them, so that against other wizards you usually don't bother and use magic instead.
+
+- **Rule:** a skin costs **1 mana at every round end, after income**, or it fades (app `SKIN_UPKEEP`, tabletop `RULES.skin.upkeep`). Income is 4 in both games, so upkeep is a quarter of it.
+- **Why it was needed:** before, a skin sat untouched about 70% of the rounds it was up, and about 45% were still on at the end of the game: cheap insurance cast once and forgotten.
+- **What it took in the app:** upkeep alone pushed the minion casters to about 60% (skins were the counter to their bites). Two changes fixed it: the AI counts only blows that are coming (`physThreat`: a physical strike card and minions on the table, not minions the foe could summon, which had it skin up early and pay for nothing), and Ironskin got cheaper and stronger per cast (3 mana / 15 → 2 / 20; Barkskin 2 / 15 → 1 / 15, Stoneskin 4 / 30 → 3 / 30). Nerissa HP 58 → 55. Result: 44.5–56.9%, skins 2.4% of picks (was 4%).
+- **Encounters (app):** the better Ironskin made wizards win about 71% of the time; soldiers atk 7 → 8, band scales Patrol 1.3, Skirmishers 1.18, Warband 0.95: 52.7–53.6%.
+- **Tabletop:** the AI skins only at a threat of 0.6+: skins against wizards fell from 6% to under 1% of picks. Nerissa Beginner HP 9. Duels 43.3–57.7% across the three rule sets; encounters 46–53%.

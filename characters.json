@@ -166,7 +166,7 @@
       "id": "barkskin",
       "name": "Barkskin",
       "icon": "🌳",
-      "cost": 2,
+      "cost": 1,
       "soak": 15,
       "col": "#4a2e14",
       "alpha": 0.62,
@@ -877,7 +877,7 @@
       "id": "stoneskin",
       "name": "Stoneskin",
       "icon": "🪨",
-      "cost": 4,
+      "cost": 3,
       "soak": 30,
       "col": "#a89880",
       "alpha": 0.45,
@@ -1739,7 +1739,7 @@
       "You were never drowning. You were just learning to breathe water.",
       "Fathom wasn't hungry. He was being polite."
     ],
-    "hp": 58,
+    "hp": 55,
     "phys": {
       "atk": 3
     },

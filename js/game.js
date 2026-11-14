@@ -3553,6 +3553,7 @@ function tickRound(who){
   const g=gs[who].gate;
   if(!(g&&g.until>=gs.round-1)) elemTickEffects(who);
   gs[who].mana=Math.min(MAX_MANA,gs[who].mana+elemIncome(who));
+  skinUpkeep(who);
 }
 
 // At the end of his round in the Infernal Gate the camera swings round, he and a foe trade sides, and he
@@ -3755,7 +3756,7 @@ function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS.find(e=>e.id
 const ACTIONS={damage:{id:'attack',name:'Attack',icon:'⚔️'}, protect:{id:'guard',name:'Guard',icon:'🛡'}, dispel:{id:'grapple',name:'Grapple',icon:'🤼'}};
 const ACT_RULES={counterMult:1, attackVsGrapple:1.5, grappleOther:0.5};
 const PHYS_DEFAULT={atk:4};
-const SKIN_DEFAULT={id:'ironskin', name:'Ironskin', icon:'🛡', cost:3, soak:15, col:'#b8c4d4', alpha:.4};   // alpha: how strongly the sheen tints the sprite
+const SKIN_DEFAULT={id:'ironskin', name:'Ironskin', icon:'🛡', cost:2, soak:20, col:'#b8c4d4', alpha:.4};   // alpha: how strongly the sheen tints the sprite
 function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}); }
 // ── FIGHTERS (Phase 4): non-wizards who fight with the Actions alone ──────────────
 // A fighter (fighters.json, `fighter:true`) has no mana to speak of, no wheel and no spells: every round
@@ -3770,9 +3771,9 @@ function traitOf(who){ return gs[who]?seatCfg(who).trait||null:null; }
 // Encounter bands: your wizard alone against these. `scale` multiplies the fighters' HP (tuned so an
 // average wizard wins about half the time against each band with the Normal AI: tools/encounter_sim.js).
 const BANDS=[
-  {id:'patrol', name:'Patrol', icon:'🛡', members:['soldier','soldier'], scale:1.35, desc:'Two veteran soldiers with sword and shield.'},
-  {id:'skirmish', name:'Skirmishers', icon:'🏹', members:['archer','archer','archer'], scale:0.9, desc:'Three archers whose arrows slip past your guard.'},
-  {id:'warband', name:'Warband', icon:'⚔️', members:['soldier','archer','archer'], scale:0.8, desc:'A soldier holding the line for two archers.'},
+  {id:'patrol', name:'Patrol', icon:'🛡', members:['soldier','soldier'], scale:1.3, desc:'Two veteran soldiers with sword and shield.'},
+  {id:'skirmish', name:'Skirmishers', icon:'🏹', members:['archer','archer','archer'], scale:1.18, desc:'Three archers whose arrows slip past your guard.'},
+  {id:'warband', name:'Warband', icon:'⚔️', members:['soldier','archer','archer'], scale:0.95, desc:'A soldier holding the line for two archers.'},
 ];
 function bandById(id){ return BANDS.find(b=>b.id===id); }
 // A fighter's cfg for one band: HP scaled, everything else from fighters.json
@@ -4160,7 +4161,7 @@ function openElemWheel(cat){
   // Ironskin (or this wizard's own skin spell): a magic buff that soaks blows
   const skinBtn=document.getElementById('wheel-skin'), sk=skinOf(who), skOn=skinOn(st);
   skinBtn.style.display=cat==='protect'?'':'none';
-  skinBtn.textContent=sk.icon+' '+sk.name+' ('+sk.cost+' Mana) — soaks '+sk.soak+' from blows'+(skOn?' · now '+skOn.hp:'');
+  skinBtn.textContent=sk.icon+' '+sk.name+' ('+sk.cost+' Mana, '+SKIN_UPKEEP+' a round) — soaks '+sk.soak+' from blows'+(skOn?' · now '+skOn.hp:'');
   skinBtn.disabled=cat==='protect'&&!canSkin(who);
   // Cleanse Self, one button per ring: 1 curse, 2 curses, all of them
   const cl=document.getElementById('wheel-cleanse');
@@ -4179,7 +4180,7 @@ function openElemWheel(cat){
   }
   const ruleText={
     damage:'Every spell is magic, Earth included: a ward stops it · ⚔️ Attack (the centre) is a free blow: wards don\'t stop it, Ironskin soaks it, and a foe who Guards that round blocks it and counters · it hits harder into a Grapple · some signature strikes are physical too (charges, blades, claws, vines, bombs) · a ward\'s opposite element (across the wheel) unravels it · Lightning burns mana · Air gusts over minions · Water drenches (next Lightning harder, next Fire doused) · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
-    protect:'Wards stop magic, never blows · Ironskin (the button below) soaks blows until it\'s used up or dispelled · 🛡 Guard (the centre, free) lasts this round only: it blocks blows aimed at you and counters an Attack, but a Grapple gets through · summoned minions guard you (braced: they lose half of each hit) or attack — set it free with the chip under the buttons · wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · wards resist every element but their opposite, which unravels them · an Air ward may deflect a spell; a Water ward ebbs and flows (regains '+ELEM_WARD_TRAITS.tide+' a round instead of wearing)'+
+    protect:'Wards stop magic, never blows · Ironskin (the button below) soaks blows until it\'s used up or dispelled, for '+SKIN_UPKEEP+' mana upkeep each round end (no mana and it fades: against a wizard who casts, it\'s rarely worth it) · 🛡 Guard (the centre, free) lasts this round only: it blocks blows aimed at you and counters an Attack, but a Grapple gets through · summoned minions guard you (braced: they lose half of each hit) or attack — set it free with the chip under the buttons · wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · wards resist every element but their opposite, which unravels them · an Air ward may deflect a spell; a Water ward ebbs and flows (regains '+ELEM_WARD_TRAITS.tide+' a round instead of wearing)'+
       (WARD_RULES.boost?' · recast your ward\'s element to top it up (to '+WARD_RULES.boostCap+'× that cast)':'')+
       (WARD_RULES.layers>1?' · a new element goes on over it, up to '+WARD_RULES.layers+' layers'+
         (WARD_RULES.stackTake<1?' · 🏰 Bulwark: a ward with another beneath it loses only '+Math.round(WARD_RULES.stackTake*100)+'% from each strike'+(WARD_RULES.stackDispel?' and dispel':' (dispels still cut it as usual)'):''):'')+
@@ -5397,6 +5398,16 @@ function suddenDeathLevel(){
 function suddenDeathMult(){ return 1+SUDDEN_DEATH.dmgPerRound*suddenDeathLevel(); }
 function suddenDeathMana(){ return Math.min(SUDDEN_DEATH.maxMana,SUDDEN_DEATH.manaPerRound*suddenDeathLevel()); }
 function incomeDrainOf(who){ return effectsOf(gs[who],'incomeDrain').reduce((a,e)=>a+e.n,0); }
+// Skins need upkeep (SKIN_UPKEEP mana at every round end, after income) or they fade: against a wizard
+// who rarely throws blows it isn't worth it, so you stay with magic; against fighters or minions it pays.
+let SKIN_UPKEEP=1;
+function skinUpkeep(who){
+  const st=gs[who], sk=effectsOf(st,'skin')[0];
+  if(!sk||!SKIN_UPKEEP) return;
+  if(st.mana>=SKIN_UPKEEP){ st.mana-=SKIN_UPKEEP; return; }
+  st.effects=st.effects.filter(e=>e!==sk);
+  if(!simMode) addFloat(seatX(who),bH*.24,'🛡 '+(sk.name||'Ironskin')+' fades (no upkeep)','#b8c4d4',12);
+}
 function elemIncome(who){
   return Math.max(0,ELEM_INCOME-incomeDrainOf(who))+suddenDeathMana();
 }
@@ -5574,7 +5585,9 @@ function physThreat(f){
   const st=gs[f];
   if(isFighter(f)) return 0.9;   // a fighter is all blows
   let t=0.05+physOf(f).atk/40;   // everyone can Attack; brutes hit harder
-  if(seatCfg(f).spells.some(sp=>(sp.el.kind==='strike'&&strikeKind(sp.el)==='physical')||(sp.el.effect&&sp.el.effect.type==='minion'&&sp.el.effect.dmg))) t+=0.25;
+  // Only blows that are coming: a physical strike card, and minions already on the table (not ones the foe
+  // could summon: a skin has upkeep, so raising it early only pays for nothing)
+  if(seatCfg(f).spells.some(sp=>sp.el.kind==='strike'&&strikeKind(sp.el)==='physical')) t+=0.2;
   t+=0.15*effectsOf(st,'minion').filter(m=>m.dmg).length;
   return Math.min(0.9,t);
 }
@@ -9696,7 +9709,7 @@ const TUTORIAL_CONVOS={
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, the worst first."},
     {key:'eldrin', text:"Summoned minions — skeletons, graveguard, a totem, a shark — are bodies on the field. Their master orders them each round, free: on guard they stand in front of him and take hits for him; on the attack they strike but shield no one. You can aim a strike, an Attack or a Grapple at one of them instead of their master."},
-    {key:'eldrin', text:"Magic and blows are different things. A ward, in any element, stops magic — and a fist, a blade or a skeleton's sword walks straight through it. Against blows, cast Ironskin — the button under the Protection wheel: it soaks blows until it's used up or dispelled. Or Guard, in the middle of the wheel, for one round: you block their blows and counter an Attack, though a Grapple gets through. A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — burns, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike wears it only half as much — though a dispel still cuts it as usual. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
+    {key:'eldrin', text:"Magic and blows are different things. A ward, in any element, stops magic — and a fist, a blade or a skeleton's sword walks straight through it. Against blows, cast Ironskin — the button under the Protection wheel: it soaks blows until it's used up or dispelled. It costs 1 mana of upkeep every round end, so save it for fighters, claws and swords: against a wizard who casts, magic is the better buy. Or Guard, in the middle of the wheel, for one round: you block their blows and counter an Attack, though a Grapple gets through. A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — burns, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike wears it only half as much — though a dispel still cuts it as usual. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],

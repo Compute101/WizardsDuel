@@ -106,7 +106,7 @@ function convos(){
       {key:'gnash',  text:"Not everything is magic! Every wizard can Attack, Guard or Grapple. They're Actions: free, no flick, they always go off, and they last only the round you pick them. Your Attack number is on your card: 2 for brutes like me, 1 for the bookish lot."},
       {key:'gnash',  text:"Attack hits for your Attack, and 1 more into someone grappling you. Guard blocks every blow aimed at you that round, and an Attack into your Guard gets countered. Grapple hits a Guard for your Attack, anything else for half (rounded down). A Grapple at someone who Attacks you fails."},
       {key:'durin',  text:"Magic and blows are different things. Every spell is magic, even an Earth one: a conjured rock is still a spell. Blows are Attacks, minions' bites, and the cards that say \"a blow\"."},
-      {key:'durin',  text:`A ward stops magic and never a blow. A Guard stops blows and never magic. For lasting protection against blows, cast ${sk.name}: ${sk.cost} mana and a Lesser flick, and it soaks ${sk.soak} blows. It's a buff, so a Dispel can strip it. Mine is Stoneskin, and it soaks a lot more.`},
+      {key:'durin',  text:`A ward stops magic and never a blow. A Guard stops blows and never magic. For lasting protection against blows, cast ${sk.name}: ${sk.cost} mana and a Lesser flick, and it soaks ${sk.soak} blows. It's a buff, so a Dispel can strip it. It needs upkeep, though: ${sk.upkeep} mana at every round end, or it fades. Against a wizard who casts, don't bother. Against claws and swords, it's worth every wink. Mine is Stoneskin, and it soaks a lot more.`},
     ],
     wards:[
       {key:'eldrin', text:"A ward is a pile of ward winks. Spells hit it first, and only what breaks through reaches your HP. Blows walk straight past it."},
@@ -124,6 +124,7 @@ function convos(){
     ],
     roundend:[
       {key:'gnash',  text:"At the round end, curses tick first (burns, poison, plague, Agony), then regeneration, then minions strike the foe. A minion's bite is a blow: a ward won't stop it, a Guard or a skin will."},
+      {key:'durin',  text:`After your income, pay ${N.skin.upkeep} mana to keep your skin, or let it fade.`},
       {key:'korvath',text:`From round ${sd.round} it's sudden death: both wizards lose ${sd.dmg} HP every round end, and ${sd.dmg} more every ${sd.every} rounds after that. Nobody hides forever.`},
       {key:'gnash',  text:`Then every ward wears by ${N.wardWear} wink, and each wizard gains ${N.income} mana, less any curse that cuts income.`},
       {key:'korvath',text:"Games are short: about 10 or 11 rounds. Make every flick count!"},

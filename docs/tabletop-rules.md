@@ -81,7 +81,8 @@ Every wizard can fight with their hands as well as with magic. Most are poor at 
 - **Magic and blows are different.** Every spell is **magic**, Earth included (a conjured rock is still a spell). **Blows** are Attacks, minions' bites and the cards that say "a blow".
   - **A ward stops magic, never blows.** A blow walks straight past it.
   - **A Guard stops blows, never magic.**
-  - **Ironskin** stops blows for longer: a Protection spell (**2 mana**, Lesser flick) that soaks **3** blows, then it's gone. Put 3 winks of your fourth colour on your card and take one off for each point it soaks. It's a buff, so a Dispel can strip it. Casting it again refills it. Some wizards have their own skin instead (Sylvara's Barkskin, Durin's Stoneskin; see **Wizards**).
+  - **Ironskin** stops blows for longer: a Protection spell (**2 mana**, Lesser flick) that soaks **3** blows, then it's gone. Put 3 winks of your fourth colour on your card and take one off for each point it soaks. It's a buff, so a Dispel can strip it. Casting it again refills it.
+  - **Upkeep:** at every round end, after income, pay **1 mana** to keep your skin, or it fades. Against a wizard who rarely throws a blow it isn't worth it: stay with magic. Against fighters, bites and blades, it pays for itself. Some wizards have their own skin instead (Sylvara's Barkskin, Durin's Stoneskin; see **Wizards**).
 
 ## The flick
 
@@ -137,7 +138,7 @@ There are no round counters. **Buffs last until a Dispel removes them**, and **c
    - **A minion's strike is a strike.** Whatever makes a strike miss or hit softer meets it too: Vanish, Foresight (used up), Blink's dodge roll, Stonesoul-type resistance and Warpstone-type extra damage. Retaliation (Counter, a ward's "strikers take") doesn't answer a minion.
 2. **Sudden death:** from **round 15**, both wizards lose 1 HP at every round end, +1 more every 3 rounds after that (2 HP from round 18). Most games are over well before then: it's there to break stalemates.
 3. **Wards wear:** every ward loses 1 wink (in Normal rules, not a sealed one). A ward with no winks left is gone.
-4. **Income:** each wizard gains **4 mana**, less any curse that cuts income.
+4. **Income:** each wizard gains **4 mana**, less any curse that cuts income. Then pay **1 mana** for your skin, or let it fade.
 
 ## Keywords
 
@@ -458,7 +459,7 @@ Your wizard alone against a band of fighters: soldiers and archers. They cast no
 | **Blue Fire** | Damage | Fire | Greater | 6 | Fire strike of 7. Big blast: 3 of it goes around a ward straight to HP. |
 
 ### NERISSA — of the Deep
-**HP 10** (Advanced rules: **12**) · Attack **1** · Can't cast: Fire
+**HP 10** (Beginner rules: **9**, Advanced rules: **12**) · Attack **1** · Can't cast: Fire
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
