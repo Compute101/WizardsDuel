@@ -3495,7 +3495,9 @@ const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane',
 
 // Elements a character can't cast at all (characters.json "forbidden"): their sectors are locked
 // on every wheel. Never one of the character's own signature sectors.
-function elemForbidden(who,elem){ return (seatCfg(who).forbidden||[]).includes(elem); }
+// A banned element can't be cast — except a Physical ward: every wizard can raise one, since only a
+// Physical ward stops physical blows (pass cat to ask about one category; without it, strikes and dispels)
+function elemForbidden(who,elem,cat){ return (seatCfg(who).forbidden||[]).includes(elem)&&!(cat==='protect'&&elem==='physical'); }
 function foesCantCast(who,elem){ return foesOf(who).every(w=>elemForbidden(w,elem)); }
 function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS[3]; }
 function hasWard(st){ return st.shield>0&&st.shieldHp>0; }
@@ -3636,7 +3638,7 @@ function sigAtTier(sp,tier){
 function sigAt(who,cat,elem){ return sigSpells(who,cat).find(sp=>sp.el.elem===elem)||null; }
 function sigCost(who,sp,tier){ return hasFreeSpell(who)?0:Math.max(0,sigAtTier(sp,tier).cost+spellbindExtra(who,sp.el.cat)); }
 function sectorOk(who,cat,elem,tier){
-  if(elemForbidden(who,elem)) return false;
+  if(elemForbidden(who,elem,cat)) return false;
   const sp=sigAt(who,cat,elem);
   return sp?!sigBlocked(who,sp,tier):elemCost(who,cat,tier,elem)<=gs[who].mana;
 }
@@ -3756,8 +3758,8 @@ function openElemWheel(cat){
     });
   }
   const ruleText={
-    damage:'A ward\'s own element unravels it · Lightning burns mana · Physical crushes wards · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
-    protect:'Wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · they resist other elements, but their own element unravels them'+
+    damage:'Physical strikes are physical blows: only a Physical ward stops them, and they pass straight through magic wards · every other strike is magic, and a Physical ward doesn\'t stop it · a magic ward\'s own element unravels it · Lightning burns mana · strong hits that land: Ice frostbites, Dark dreads, Fire scorches, Arcane unweaves buffs',
+    protect:'A Physical ward stops physical blows (Physical strikes, minions, blades); every other ward stops magic, never blows · anyone may raise a Physical ward, even a wizard banned from Physical · stack one of each to be safe from both · wards lose '+ELEM_WARD_WEAR+' HP a round and last until worn out · magic wards resist other elements, but their own element unravels them'+
       (WARD_RULES.boost?' · recast your ward\'s element to top it up (to '+WARD_RULES.boostCap+'× that cast)':'')+
       (WARD_RULES.layers>1?' · a new element goes on over it, up to '+WARD_RULES.layers+' layers'+
         (WARD_RULES.stackTake<1?' · 🏰 Bulwark: a ward with another beneath it loses only '+Math.round(WARD_RULES.stackTake*100)+'% from each strike'+(WARD_RULES.stackDispel?' and dispel':' (dispels still cut it as usual)'):''):'')+
@@ -3802,7 +3804,7 @@ function buildWheelSvg(who,cat){
   let html='';
   ELEMENTS.forEach((el,i)=>{
     const a0=-Math.PI/2-step/2+i*step, a1=a0+step, am=(a0+a1)/2;
-    const sp=sigAt(who,cat,el.id), banned=elemForbidden(who,el.id);
+    const sp=sigAt(who,cat,el.id), banned=elemForbidden(who,el.id,cat);
     WHEEL_RINGS.forEach(([r0,r1],t)=>{
       const off=!sectorOk(who,cat,el.id,t+1);
       const d=`M${pt(r0,a0)} L${pt(r1,a0)} A${r1} ${r1} 0 0 1 ${pt(r1,a1)} L${pt(r0,a1)} A${r0} ${r0} 0 0 0 ${pt(r0,a0)} Z`;
@@ -3829,7 +3831,7 @@ function castElemental(cat,elemId,tier,self){
   const sp=self?null:sigAt(who,cat,elemId);
   if(sp){ castSignature(sp.id,tier); return; }
   const seal=self&&cat==='protect';
-  if(seal?!canSeal(who):(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)||(!self&&elemForbidden(who,elemId)))) return;
+  if(seal?!canSeal(who):(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)||(!self&&elemForbidden(who,elemId,cat)))) return;
   const el=elemById(elemId);
   const spell={name:describeElemAction({cat,elem:elemId,tier,self}).name, icon:el.icon,
     element:elemId, col:el.col, tier, glyphs:cat==='damage'?ELEM_GLYPHS[elemId]:undefined};
@@ -4475,32 +4477,62 @@ function soakMinions(tgt,dmg){
 // wear: {blocked,worn}, shared by the hits of one split strike (an arcane volley) so the ward
 // wears exactly as it would from one big hit — rounding once, with the 1-point minimum once.
 // blast: up to this much of the damage washes around the ward straight to HP (skeletons still soak it)
-function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike,blast){
+// Damage is magical or physical. A ward stops only its own kind: a Physical ward stops physical damage,
+// every other ward stops magic. Physical damage: Physical strikes (wheel and signature, unless the spell
+// has dmgKind:"magic", like Vine Whip), minion hits and blades. Curses, ticks and other strikes are magic.
+function strikeKind(o){ return o.dmgKind||(o.elem==='physical'?'physical':'magic'); }
+function wardKind(type){ return type==='physical'?'physical':'magic'; }
+// The outermost ward layer of this kind: -1 for the outer layer, an index into wardInner, or null
+function wardLayerOfKind(st,kind){
+  if(!hasWard(st)) return null;
+  if(wardKind(st.shieldType)===kind) return -1;
+  for(let i=(st.wardInner||[]).length-1;i>=0;i--) if(wardKind(st.wardInner[i].type)===kind) return i;
+  return null;
+}
+function hasWardOfKind(st,kind){ return wardLayerOfKind(st,kind)!=null; }
+function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike,blast,kind){
   const ts=gs[tgt], tx=seatX(tgt);
+  kind=kind||'magic';
   let warded=false, around=0;
   dmg=soakMinions(tgt,dmg);
-  if(blast&&hasWard(ts)&&dmg>0){
+  if(blast&&hasWardOfKind(ts,kind)&&dmg>0){
     around=Math.min(blast,dmg); dmg-=around;
     addFloat(tx,bH*.18,dmg>0?'💥 Blast −'+around+' around the ward':'🔥 −'+around+' through the ward',col,12);
   }
-  // Layers: what breaks the outer ward carries on into the next one, on that ward's own element rules
-  while(hasWard(ts)&&dmg>0){
-    // The ward loses only its take share of what it stops, so a resistant ward stops more.
-    // Crush: a Physical strike (not ticks or minions) ignores an off-element ward's resistance.
-    // Bulwark (stackTake < 1): a ward with another layer beneath it wears less from each hit
-    const take=ELEM_WARD_TAKE[ts.shieldType===elem?'match':strike&&elem==='physical'&&ELEM_RIDERS.crush?'crush':'off']*(wardLayers(ts)>1?(WARD_RULES.stackTake??1):1);
-    const blocked=Math.min(dmg,Math.floor(ts.shieldHp/take));
+  // A ward of the other kind lets it straight through
+  if(dmg>0&&hasWard(ts)&&!hasWardOfKind(ts,kind)&&!(wear&&wear.passNoted)){
+    if(wear) wear.passNoted=true;
+    addFloat(tx,bH*.2,(kind==='physical'?'⚔ Physical':'✨ Magic')+' — passes the ward',col,11);
+  }
+  // Layers: what breaks a ward carries on into the next one of the same kind, on that ward's own rules
+  while(dmg>0){
+    const li=wardLayerOfKind(ts,kind);
+    if(li==null) break;
+    const layer=li<0?null:ts.wardInner[li], type=layer?layer.type:ts.shieldType;
+    let hp=layer?layer.hp:ts.shieldHp;
+    // The ward loses only its take share of what it stops, so a resistant ward stops more. A magic ward
+    // resists other elements and unravels to its own; a Physical ward takes physical blows as they come.
+    // Bulwark (stackTake < 1): a ward with another layer in the stack wears less from each hit.
+    const take=(kind==='physical'?ELEM_WARD_TAKE.crush:ELEM_WARD_TAKE[type===elem?'match':'off'])*(wardLayers(ts)>1?(WARD_RULES.stackTake??1):1);
+    const blocked=Math.min(dmg,Math.floor(hp/take));
     if(wear){
       wear.blocked+=blocked;
       const worn=Math.max(1,Math.ceil(wear.blocked*take));
-      ts.shieldHp-=worn-wear.worn; wear.worn=worn;
+      hp-=worn-wear.worn; wear.worn=worn;
     }
-    else ts.shieldHp-=Math.max(1,Math.ceil(blocked*take));
+    else hp-=Math.max(1,Math.ceil(blocked*take));
+    if(layer) layer.hp=hp; else ts.shieldHp=hp;
     dmg-=blocked; warded=true;
-    addFloat(tx,bH*.24,'🛡 −'+blocked+(take<1?' resisted':take>1?' unravels':' blocked'),wardCol(ts),12);
-    VFX.wardBlock(tx,wardCol(ts));
-    if(ts.shieldHp>0) break;
-    breakWard(ts,tx);
+    const wc=elemById(type).col;
+    addFloat(tx,bH*.24,'🛡 −'+blocked+(take<1?' resisted':take>1?' unravels':' blocked'),wc,12);
+    VFX.wardBlock(tx,wc);
+    if(hp>0) break;
+    if(layer){
+      ts.wardInner.splice(li,1);
+      addFloat(tx,bH*.2,'🛡 '+elemById(type).icon+' ward beneath SHATTERED!',wc,15);
+      VFX.wardShatter(tx,wc);
+    }
+    else breakWard(ts,tx);
     if(wear){ wear.blocked=0; wear.worn=0; }   // a fresh layer wears from scratch
   }
   dmg+=around;
@@ -4601,7 +4633,7 @@ function strikeResolve(who,tgt,o,b){
     if(absorb) return {tgt,miss:absorb.id==='vanish'?'vanish':'absorb'};
   }
   effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
-  const resist=effectsOf(ts,'resist').filter(e=>!(e.magicOnly&&o.elem==='physical'))
+  const resist=effectsOf(ts,'resist').filter(e=>!(e.magicOnly&&strikeKind(o)==='physical'))
     .reduce((m,e)=>Math.max(m,e.pct),0);
   return {tgt,dmg:Math.round(dmg*(1-resist)),pierce:b.pierce};
 }
@@ -4618,7 +4650,7 @@ function strikeMiss(who,r,o){
 function strikeChunk(who,r,o,dmg,wear){
   const el=elemById(o.elem);
   // Infernal Mantle: the whole hit goes around the ward; otherwise a blast strike's blast does
-  return elemIncoming(r.tgt,dmg,o.elem,el.icon,el.col,true,wear,true,r.pierce?dmg:wear?0:o.blast);
+  return elemIncoming(r.tgt,dmg,o.elem,el.icon,el.col,true,wear,true,r.pierce?dmg:wear?0:o.blast,strikeKind(o));
 }
 // The element riders of a strike that reached HP (see ELEM_RIDERS). Signature strikes get them too,
 // except that one with its own DoT doesn't also scorch.
@@ -4751,7 +4783,7 @@ function elemTickEffects(who){
       dmgSource=owner;
       const bonus=m.minion==='skeleton'?danse:0;
       if(foreseeBlock(who,m.icon)) return;
-      elemIncoming(who,Math.round((m.dmg+bonus)*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
+      elemIncoming(who,Math.round((m.dmg+bonus)*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true,null,false,0,'physical');   // minions hit physically
       if(bonus&&TICK_VFX.dansemacabre) TICK_VFX.dansemacabre(x,wizMidY(x));
       if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,wizMidY(x));
     });
@@ -4893,6 +4925,23 @@ function aiEnthralCall(who,tgt,smart){
 // raise a ward of a new element, so the stack becomes a Bulwark (WARD_RULES.stackTake). In head-to-head
 // sims it beat the stock AI by about 6–10 points for most wizards (tools/layer_strats.js, "fortress").
 const AI_FORTRESS={seal:0.7, layer:0.7, minHp:15};
+// How much of a foe's damage is physical (0–0.9): Physical strikes, physical signature strikes, and
+// minions or blades that strike every round. Steers the AI's choice of a Physical or magic ward.
+function physThreat(f){
+  const st=gs[f];
+  let t=elemForbidden(f,'physical')?0:0.25;
+  if(seatCfg(f).spells.some(sp=>(sp.el.kind==='strike'&&strikeKind(sp.el)==='physical')||(sp.el.effect&&sp.el.effect.type==='minion'&&sp.el.effect.dmg))) t+=0.3;
+  t+=0.15*effectsOf(st,'minion').filter(m=>m.dmg).length;
+  return Math.min(0.9,t);
+}
+// Which kind of ward I should raise next: the kind my stack lacks, weighted by the foe's threat
+function aiWantWardKind(who,foe){
+  const me=gs[who], pt=physThreat(foe);
+  const hasP=hasWardOfKind(me,'physical'), hasM=hasWardOfKind(me,'magic');
+  if(hasM&&!hasP) return pt>0.15?'physical':'magic';
+  if(hasP&&!hasM) return 'magic';
+  return _rng()<pt?'physical':'magic';
+}
 function aiFortress(who,smart){
   const me=gs[who];
   if(seatCfg(who).aiWard!=='fortress'||!hasWard(me)||catLocked(who,'protect')) return null;
@@ -4905,6 +4954,8 @@ function aiFortress(who,smart){
   const opp=gs[aiPickTarget(who)];
   let els=ELEMENTS.map(e=>e.id).filter(e=>e!==me.shieldType&&!sigAt(who,'protect',e)&&sectorOk(who,'protect',e,2));
   if(!els.length) return null;
+  const kindEls=els.filter(e=>wardKind(e)===aiWantWardKind(who,aiPickTarget(who)));
+  if(kindEls.length) els=kindEls;
   const safe=els.filter(e=>foesCantCast(who,e)), off=els.filter(e=>e!==opp.lastElem);
   els=safe.length?safe:off.length?off:els;
   const elem=els[Math.floor(_rng()*els.length)];
@@ -4963,7 +5014,10 @@ function elemAIChoose(who){
   }
   // Untimed buffs never wear off by themselves, so stripping them is worth more
   const buffPull=Math.min(3,buffsOf(opp).filter(e=>e.rounds==null).length)*(smart?0.25:0.1);
-  if(oppWard){ w.dispel=(smart?1.7:1.0)+buffPull; w.damage=0.5; }
+  // A foe's ward only stops its own kind: with a hole (a kind I can strike with that it doesn't cover), strike
+  const oppHole=oppWard&&((!hasWardOfKind(opp,'physical')&&!elemForbidden(who,'physical'))||!hasWardOfKind(opp,'magic'));
+  if(oppWard&&!(smart&&oppHole)){ w.dispel=(smart?1.7:1.0)+buffPull; w.damage=0.5; }
+  else if(oppWard){ w.dispel=0.6+buffPull; }
   // A guarded stack (Stack Guard) only yields to a Greater dispel: strike it instead unless I can afford one
   const guardedFoe=smart&&oppWard&&stackGuarded(opp);
   if(guardedFoe&&elemCost(who,'dispel',3)>me.mana){ w.dispel=0.15+buffPull*0.5; w.damage=1.0; }
@@ -4986,7 +5040,15 @@ function elemAIChoose(who){
   // With ward boost on, a worn ward (under WARD_BOOST_AI_HP) is worth topping up rather than left alone
   // With layers, a healthy ward with room for another layer still invites one (WARD_LAYER_AI)
   const roomForLayer=wardLayers(me)<WARD_RULES.layers;
-  if(hasWard(me)&&me.shieldHp>=(WARD_RULES.boost?WARD_BOOST_AI_HP:15)) w.protect=roomForLayer?WARD_LAYER_AI:0.2;
+  if(hasWard(me)&&me.shieldHp>=(WARD_RULES.boost?WARD_BOOST_AI_HP:15)){
+    w.protect=roomForLayer?WARD_LAYER_AI:0.2;
+    // a stack with no ward against one kind of the foe's damage: cover it
+    if(smart&&roomForLayer){
+      const pt=physThreat(tgt);
+      if(!hasWardOfKind(me,'physical')&&pt>0.15) w.protect+=pt*0.8;
+      else if(!hasWardOfKind(me,'magic')) w.protect+=0.4;
+    }
+  }
   else {
     if(foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',2))) w.protect+=0.35;
     if(me.hp<me.maxHp*0.35) w.protect+=0.35;
@@ -5082,8 +5144,15 @@ function elemAIChoose(who){
     // Strike with whichever element the foe's ward takes more from
     const matchHurts=ELEM_WARD_TAKE.match>ELEM_WARD_TAKE.off;
     if(cat==='damage'&&oppWard&&smart){
-      const best=matchHurts?plain.filter(x=>x.elem===opp.shieldType):plain.filter(x=>x.elem!==opp.shieldType);
-      if(best.length) choice=pickFrom(best);
+      // A ward stops only its own kind: strike through a hole if there is one
+      const holeP=!hasWardOfKind(opp,'physical'), holeM=!hasWardOfKind(opp,'magic');
+      const phys=plain.filter(x=>strikeKind(x)==='physical'), mag=plain.filter(x=>strikeKind(x)!=='physical');
+      if(holeP&&phys.length&&_rng()<0.85) choice=pickFrom(phys);
+      else if(holeM&&mag.length&&_rng()<0.85) choice=pickFrom(mag);
+      else {
+        const best=matchHurts?plain.filter(x=>x.elem===opp.shieldType):plain.filter(x=>x.elem!==opp.shieldType);
+        if(best.length) choice=pickFrom(best);
+      }
     }
     if(cat==='protect'){
       const roll=_rng();
@@ -5101,6 +5170,14 @@ function elemAIChoose(who){
       const layering=wardLayers(me)<WARD_RULES.layers&&me.shieldHp>=WARD_BOOST_AI_HP;
       if(layering&&choice&&choice.elem===me.shieldType){ const off=plain.filter(x=>x.elem!==me.shieldType); if(off.length) choice=pickFrom(off); }
       else if(same&&!layering&&opp.lastElem!==me.shieldType&&_rng()<(smart?0.75:0.4)) choice=same;
+      // Physical or magic: raise (or layer) the kind of ward the foe's damage calls for
+      if(smart&&choice&&!(choice===same&&!layering)){
+        const want=aiWantWardKind(who,tgt);
+        if(wardKind(choice.elem)!==want){
+          const alt=plain.filter(x=>wardKind(x.elem)===want&&!(layering&&x.elem===me.shieldType));
+          if(alt.length) choice=pickFrom(alt);
+        }
+      }
     }
   }
   else if(sectors.length) choice=sectors[Math.floor(_rng()*sectors.length)];   // anything beats waiting
@@ -8606,7 +8683,7 @@ const TUTORIAL_CONVOS={
     {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements. Zakkit hates rocks."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, the worst first."},
-    {key:'eldrin', text:"A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike wears it only half as much — though a dispel still cuts it as usual. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
+    {key:'eldrin', text:"There are two kinds of ward. A Physical ward stops physical blows — Physical strikes, skeletons, blades — and nothing else; every other ward stops magic, and a blow walks straight through it. Anyone can raise a Physical ward. A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike wears it only half as much — though a dispel still cuts it as usual. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],

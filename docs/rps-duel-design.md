@@ -782,3 +782,34 @@ matchup): 46.0–55.3%, about 17 rounds.
 
 Correction: poison isn't magic. Caustic Bomb's poison has `bypassWard` again (if the bomb reaches HP, the
 poison seeps past wards raised after). Fizzwick 48.0%, roster 45.8–54.7% (60 games a matchup).
+
+## Magical and physical damage
+
+Groundwork for RPG fights against non-wizards, who won't cast magic. Every hit is magical or physical
+(`strikeKind`, `wardKind`, `elemIncoming`'s `kind`):
+- **Physical:** Physical-element strikes, wheel and signature (Rockfall, Savage Charge, Ancient Wrath,
+  Bladestorm, Vine Whip's lash), every minion hit (skeletons, graveguard, Weizan's blades). A spell can
+  set `dmgKind:"magic"` (or `"physical"`) to override its element.
+- **Magic:** every other strike, every curse bite and tick (Vine Whip's vines, burns, Plague, Agony…),
+  arcs. Caustic Bomb's poison still seeps past every ward (`bypassWard`: poison isn't magic).
+- **Wards:** a Physical ward stops only physical damage; every other ward stops only magic. Damage passes
+  untouched through layers of the other kind and hits the outermost layer of its own kind
+  (`wardLayerOfKind`), so a stack of one of each covers both. A physical hit takes a Physical ward
+  at ×1 (`ELEM_WARD_TAKE.crush`; the old crush rider is moot); magic keeps match ×1.5 / off ×0.75.
+  Bulwark still applies to whichever layer is hit. Dispels and curses unravel either kind (stone wards
+  are still conjured). Blast goes around a ward of its own kind.
+- **Bans:** a ban never stops a Physical ward (`elemForbidden(who,elem,cat)`), so Zakkit and Mirel can
+  raise one but still can't strike or dispel with Physical. `magicOnly` resistances skip physical hits.
+- **AI:** `physThreat(foe)` (Physical strikes, physical signatures, minions that strike) and
+  `aiWantWardKind` steer which kind of ward it raises or layers (the kind its stack lacks); a foe's ward
+  with a hole (a kind it doesn't cover) gets struck through it instead of dispelled (`oppHole`);
+  the fortress AI layers the missing kind.
+
+First run: Daveron 65%, Valdris 59% (minion blows pass magic wards), Sylvara 35% (her Physical sector
+was Vine Whip, briefly all-magic, and she's banned from Fire and Dark: no hole-finding strike), Durin 46%
+(Stoneskin now stops blows only). Then graveguard soak 11 → 10, and HP: Daveron 53, Valdris 48,
+Ponder 54, Weizan 55, Gretch 53, Frederick 50, Gnash 63, Cinder 56, Sylvara 69, Zakkit 65, Mordant 56,
+Nyxara 56, Durin 66, Skadi 51, Thessaly 54. Result (80 games a matchup): **47.3–53.3%**, about 13.4
+rounds. In the sim (3 games a matchup): 28% of wards raised are Physical, about a third of strikes are
+physical, about half the strikes that meet a ward pass through it, and a wizard holds both kinds in
+about 10% of rounds. Tabletop mode doesn't have this yet.

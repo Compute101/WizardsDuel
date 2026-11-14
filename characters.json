@@ -161,7 +161,7 @@
       "You tangled with nature itself. The vines always win.",
       "My roots run deeper than your courage. Try growing some."
     ],
-    "hp": 61,
+    "hp": 69,
     "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
@@ -218,7 +218,7 @@
           "cost": 4,
           "power": 10,
           "tier": 2,
-          "desc": "10 physical + vines 3 a round × 3",
+          "desc": "10 physical lash + magic vines 3 a round × 3",
           "dot": {
             "dmg": 3,
             "rounds": 3
@@ -309,7 +309,7 @@
       "Gnash not done smashing. Where you going? COME BACK.",
       "Little mage runs away? Gnash will wait. Gnash ALWAYS waits."
     ],
-    "hp": 66,
+    "hp": 63,
     "dmgMult": 1.05,
     "forbidden": [
       "arcane",
@@ -386,7 +386,7 @@
       "Roll the dice, fan the flames — and never, ever bet against fire.",
       "Still smouldering. Still standing. Come back when you're ready to burn."
     ],
-    "hp": 50,
+    "hp": 56,
     "dmgMult": 1.15,
     "forbidden": [
       "ice"
@@ -459,7 +459,7 @@
       "You froze long before my blizzard reached you.",
       "The permafrost claims all things eventually. Even stubborn wizards."
     ],
-    "hp": 48,
+    "hp": 51,
     "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
@@ -537,7 +537,7 @@
       "Every spark you waste, Zakkit hoards it, twists it, gives it back. Green-burning, yes!",
       "The warpstorm obeys Zakkit! Squeal-squeal, man-thing, squeal!"
     ],
-    "hp": 60,
+    "hp": 65,
     "dmgMult": 1.1,
     "forbidden": [
       "physical"
@@ -685,7 +685,7 @@
       "The hexes were already written. Your fate merely confirmed them.",
       "Kneel before the dark, or be consumed by it. There is no third option."
     ],
-    "hp": 52,
+    "hp": 56,
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
@@ -759,7 +759,7 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 57,
+    "hp": 54,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -844,7 +844,7 @@
       "You threw everything you had at me. I barely felt it.",
       "The mountain endures all things. So too shall I."
     ],
-    "hp": 63,
+    "hp": 66,
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
@@ -909,7 +909,7 @@
       "You counted the blades. You forgot to count the one behind you.",
       "The patient sword outlasts the hasty one. Always."
     ],
-    "hp": 56,
+    "hp": 55,
     "dmgMult": 1.0,
     "forbidden": [
       "dark"
@@ -985,7 +985,7 @@
       "You called it ugly. Gretch calls it efficient.",
       "The swamp takes all things. Even stubborn little wizards."
     ],
-    "hp": 56,
+    "hp": 53,
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
@@ -1069,7 +1069,7 @@
       "Death is not an ending. It is merely an inconvenience.",
       "Kneel before the undying, or be consumed by it. There is no third option."
     ],
-    "hp": 53,
+    "hp": 48,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -1223,7 +1223,7 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 52,
+    "hp": 54,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1443,7 +1443,7 @@
       "You cling to your strength as if it makes you safe. The bigger they are, the more there is to take.",
       "Don't struggle. The void doesn't hate you. It just... empties."
     ],
-    "hp": 53,
+    "hp": 56,
     "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
@@ -1519,7 +1519,7 @@
       "Dance, my dead. Dance, and let the living hear the music.",
       "Every year you have lived is a debt. I have come to collect."
     ],
-    "hp": 57,
+    "hp": 53,
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -1541,14 +1541,14 @@
             "kind": "minion",
             "elite": true,
             "look": 2,
-            "soak": 11,
+            "soak": 10,
             "dmg": 4,
             "elem": "dark",
             "max": 3,
             "raise": 1,
             "rounds": null
           },
-          "desc": "Raise 1 armoured graveguard (max 3): each soaks 11 damage in front of your ward and strikes for 4 a round; dispels can't touch them"
+          "desc": "Raise 1 armoured graveguard (max 3): each soaks 10 damage in front of your ward and strikes for 4 a round; dispels can't touch them"
         }
       },
       {
@@ -1604,7 +1604,7 @@
       "You DARE stand before me? I will drag you screaming through the Gate!",
       "Run, then! Hide! There is nowhere my fire cannot follow!"
     ],
-    "hp": 52,
+    "hp": 50,
     "dmgMult": 1.0,
     "forbidden": [
       "ice"
