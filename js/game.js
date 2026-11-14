@@ -3381,7 +3381,8 @@ function endSimRound(){
     if(ELEM_WARD_WEAR&&hasWard(st)&&!braced){
       // Every layer wears, so stacking costs upkeep and a stack can't sit untouched for good
       // A sealed layer doesn't wear
-      st.wardInner=(st.wardInner||[]).filter(l=>l.sealed||(l.hp-=ELEM_WARD_WEAR)>0);
+      // (innerWear false: only the outer layer wears; the ones beneath wait untouched)
+      if(WARD_RULES.innerWear!==false) st.wardInner=(st.wardInner||[]).filter(l=>l.sealed||(l.hp-=ELEM_WARD_WEAR)>0);
       if(!st.wardSealed){ st.shieldHp-=ELEM_WARD_WEAR; if(st.shieldHp<=0) clearOuterWard(st); }
     }
   });
@@ -3439,7 +3440,7 @@ const ELEM_WARD_WEAR=4;         // flat ward HP lost at each round end
 //   sealBlocks: a seal stops the whole dispel, whatever its ring: it breaks the seal and goes no further,
 //             so a sealed ward takes two dispels (a cheap one for the seal, then one for the ward).
 //             false: a Greater dispel breaks the seal and goes on with what sealSoak leaves it.
-const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:true, sealSoak:10, sealBlocks:true};
+const WARD_RULES={boost:true, boostCap:1.5, seals:true, layers:2, dispelStrips:true, sealSoak:10, sealBlocks:true, innerWear:true, dispelMatch:2, layerDiscount:0, stackGuard:false, stackSeal:true, stackTake:1};
 // Seal Ward. A character's sealCostMod (characters.json) changes the cost; sealAll seals every layer
 // at once (Eldrin's hook, now that everyone can brace a ward).
 const SEAL={cost:1};
@@ -3592,9 +3593,12 @@ function spellbindExtra(who,cat){
 }
 // A Phase Shift that caught two or more spells makes the phaser's next pick free, at any ring
 function hasFreeSpell(who){ return !!(gs&&gs[who]&&gs[who].freeSpellRound===gs.round); }
-function elemCost(who,cat,tier){
+function isLayerCast(who,elem){ const st=gs[who]; return WARD_RULES.layers>1&&hasWard(st)&&st.shieldType!==elem&&wardLayers(st)<WARD_RULES.layers; }
+function elemCost(who,cat,tier,elem){
   if(hasFreeSpell(who)) return 0;
-  const mod=cat==='protect'?(seatCfg(who).shieldCostMod||0):0;
+  let mod=cat==='protect'?(seatCfg(who).shieldCostMod||0):0;
+  // A ward of a new element over one already up (a layer) costs WARD_RULES.layerDiscount less
+  if(cat==='protect'&&elem&&isLayerCast(who,elem)) mod-=WARD_RULES.layerDiscount||0;
   return Math.max(1,ELEM_CATS[cat].cost[tier-1]+mod)+spellbindExtra(who,cat);
 }
 // A signature spell's numbers are written for the middle ring; the inner and outer rings scale them
@@ -3634,7 +3638,7 @@ function sigCost(who,sp,tier){ return hasFreeSpell(who)?0:Math.max(0,sigAtTier(s
 function sectorOk(who,cat,elem,tier){
   if(elemForbidden(who,elem)) return false;
   const sp=sigAt(who,cat,elem);
-  return sp?!sigBlocked(who,sp,tier):elemCost(who,cat,tier)<=gs[who].mana;
+  return sp?!sigBlocked(who,sp,tier):elemCost(who,cat,tier,elem)<=gs[who].mana;
 }
 // Why a signature spell can't be cast at this ring right now ('' = it can)
 function sigBlocked(who,sp,tier){
@@ -3940,7 +3944,7 @@ function payForAction(who,action){
   if(action.cat==='pass') return;
   if(action.cat==='meditate'){ st.meditatedRound=gs.round; return; }
   const sp=action.sig?sigById(who,action.sig):null;
-  const cost=action.cat==='phase'?PHASE.cost:isSeal(action)?sealCost(who):sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier);
+  const cost=action.cat==='phase'?PHASE.cost:isSeal(action)?sealCost(who):sp?sigCost(who,sp,action.tier):elemCost(who,action.cat,action.tier,action.self?null:action.elem);
   const silence=effectsOf(st,'silence')[0];
   const risk=effectsOf(st,'risk').find(e=>e.cat===action.cat);   // Frostbite / Dread
   if(risk) st.effects=st.effects.filter(e=>e!==risk);   // one roll, on the next pick it covers
@@ -4304,6 +4308,7 @@ function sealCost(who){ return Math.max(0,SEAL.cost+(seatCfg(who).sealCostMod||0
 function sealTargetable(who){
   const st=gs[who];
   if(!WARD_RULES.seals||!hasWard(st)) return false;
+  if(WARD_RULES.stackSeal===false&&wardLayers(st)>1) return false;   // a stack can't be sealed
   return !st.wardSealed||(!!seatCfg(who).sealAll&&(st.wardInner||[]).some(l=>!l.sealed));
 }
 function isSeal(action){ return action.cat==='protect'&&!!action.self; }
@@ -4346,7 +4351,8 @@ function raiseWard(who,elem,power,retaliate,noBoost,sig){
   // A ward in a new element goes on over the one already up, while there's room for another layer;
   // otherwise it replaces the outer layer
   const over=!noBoost&&WARD_RULES.layers>1&&hasWard(st)&&wardLayers(st)<WARD_RULES.layers;
-  if(over){ st.wardInner.push({hp:st.shieldHp,type:st.shieldType,retaliate:st.wardRetaliate,sig:st.wardSig,sealed:st.wardSealed}); ws.layered++; }
+  // stackSeal false: a stack can't hold a seal, so a layer over a sealed ward breaks the seal
+  if(over){ st.wardInner.push({hp:st.shieldHp,type:st.shieldType,retaliate:st.wardRetaliate,sig:st.wardSig,sealed:st.wardSealed&&WARD_RULES.stackSeal!==false}); ws.layered++; }
   const under=over&&elemById(st.wardInner[st.wardInner.length-1].type);
   setOuterWard(st,{hp:power,type:elem,retaliate,sig});
   ws.raised++; ws.peak=Math.max(ws.peak,wardTotal(st));
@@ -4383,9 +4389,14 @@ function elemCleanse(who,all,tier){
 // Layers: a Greater dispel (tier ELEM_DISPEL_ALL_TIER) that breaks a layer carries what's left of its
 // power into the next one, and if it breaks the last with power to spare it strips every buff too.
 // A lesser dispel stops at the layer it breaks.
+function stackGuarded(st){ return !!WARD_RULES.stackGuard&&wardLayers(st)>1; }
 function elemWardDispel(tgt,elem,power,tier){
   const ts=gs[tgt], tx=seatX(tgt);
   const through=WARD_RULES.layers>1&&tier>=ELEM_DISPEL_ALL_TIER, stack=wardLayers(ts);
+  // Stack Guard: a stack of two or more layers turns aside anything but a Greater dispel (curses too)
+  if(stackGuarded(ts)&&!(tier>=ELEM_DISPEL_ALL_TIER)){
+    addFloat(tx,bH*.3,'🛡 The stack holds','#ffd75a',14); VFX.wardUnravel(tx,wardCol(ts)); return;
+  }
   while(hasWard(ts)&&power>0){
     // A seal takes the dispel; only a Greater one goes on to hit the ward behind it
     if(ts.wardSealed){
@@ -4398,14 +4409,14 @@ function elemWardDispel(tgt,elem,power,tier){
       power-=soak;
       if(power<=0) return;
     }
-    const match=ts.shieldType===elem, mult=match?2:1;
+    const match=ts.shieldType===elem, mult=(match?(WARD_RULES.dispelMatch??2):1)*(wardLayers(ts)>1?(WARD_RULES.stackTake??1):1);   // a dispel in the ward's element counts extra; a stack resists
     const dmg=power*mult, had=ts.shieldHp;
     ts.shieldHp-=dmg;
     addFloat(tx,bH*.3,'✦ −'+Math.min(dmg,had)+' ward'+(match?' (matched!)':''),'#ffaaff',14);
     if(ts.shieldHp>0){ VFX.wardUnravel(tx,wardCol(ts)); return; }
     breakWard(ts,tx,true);
     if(!through) return;
-    power=Math.floor((dmg-had)/mult);
+    power=Math.floor((dmg-had)/mult);   // what's left, back in plain power
   }
   if(through&&power>0&&stack>1&&WARD_RULES.dispelStrips){
     const buffs=buffsOf(ts);
@@ -4469,7 +4480,8 @@ function elemIncoming(tgt,dmg,elem,icon,col,quiet,wear,strike,blast){
   while(hasWard(ts)&&dmg>0){
     // The ward loses only its take share of what it stops, so a resistant ward stops more.
     // Crush: a Physical strike (not ticks or minions) ignores an off-element ward's resistance.
-    const take=ELEM_WARD_TAKE[ts.shieldType===elem?'match':strike&&elem==='physical'&&ELEM_RIDERS.crush?'crush':'off'];
+    // Bulwark (stackTake < 1): a ward with another layer beneath it wears less from each hit
+    const take=ELEM_WARD_TAKE[ts.shieldType===elem?'match':strike&&elem==='physical'&&ELEM_RIDERS.crush?'crush':'off']*(wardLayers(ts)>1?(WARD_RULES.stackTake??1):1);
     const blocked=Math.min(dmg,Math.floor(ts.shieldHp/take));
     if(wear){
       wear.blocked+=blocked;
@@ -4920,6 +4932,9 @@ function elemAIChoose(who){
   // Untimed buffs never wear off by themselves, so stripping them is worth more
   const buffPull=Math.min(3,buffsOf(opp).filter(e=>e.rounds==null).length)*(smart?0.25:0.1);
   if(oppWard){ w.dispel=(smart?1.7:1.0)+buffPull; w.damage=0.5; }
+  // A guarded stack (Stack Guard) only yields to a Greater dispel: strike it instead unless I can afford one
+  const guardedFoe=smart&&oppWard&&stackGuarded(opp);
+  if(guardedFoe&&elemCost(who,'dispel',3)>me.mana){ w.dispel=0.15+buffPull*0.5; w.damage=1.0; }
   else if(oppBuffs) w.dispel+=(smart?0.9:0.4)+buffPull*2;
   if(myCurses) w.dispel+=0.5;
   // Cash in a pending strike boost (Empower, Galvanize, Frenzy, Arcane Weave)
@@ -5066,11 +5081,12 @@ function elemAIChoose(who){
   // A sealed ward: with sealBlocks, any dispel only breaks the seal, so break it with the cheapest ring
   // that's strong enough; without, only a Greater one gets through, so don't hold back
   const sealedFoe=cat==='dispel'&&smart&&opp.wardSealed&&!choice.sp;
+  if(cat==='dispel'&&guardedFoe&&!choice.sp&&sectorOk(who,cat,choice.elem,3)) tier=3;   // only a Greater one gets through
   if(sealedFoe&&WARD_RULES.sealBlocks){
     const p=ELEM_CATS.dispel.power, t=[1,2,3].find(t=>p[t-1]>=(WARD_RULES.sealSoak||0)&&sectorOk(who,cat,choice.elem,t));
     if(t) tier=t;
   }
-  else if(tier>1&&!free&&!(sealedFoe&&tier===3)&&!(ganged&&cat!=='dispel')&&_rng()<0.4) tier--;
+  else if(tier>1&&!free&&!(sealedFoe&&tier===3)&&!(guardedFoe&&cat==='dispel'&&tier===3)&&!(ganged&&cat!=='dispel')&&_rng()<0.4) tier--;
   const elem=choice.elem;
   const pick=choice.sp?{type:'el',cat,elem,tier,sig:choice.sp.id,target:aimTgt,ok}:{type:'el',cat,elem,tier,self:false,target:aimTgt,ok};
   if(choice.sp&&choice.sp.el.effect&&choice.sp.el.effect.type==='enthral') pick.call=aiEnthralCall(who,aimTgt,smart);

@@ -679,3 +679,32 @@ to about 58% in every option and pushed down the minion casters (who don't use w
 HP after: Mordant 50 → 47, Sylvara 58 → 61, Zakkit 55 → 58, Valdris 48 → 51, Daveron 54 → 57,
 Gretch 51 → 53, Skadi 53 → 51. Result (80 games a matchup): 45.9–55.4%, about 14.8 rounds; Protection
 and Dispel picks each about 30% / 28%, peak ward 27 → 36 HP, seals about 0.4 → 0.7 a game.
+
+## Is layering worth it? (AI strategy tests)
+
+`node tools/layer_strats.js` plays one seat with a ward strategy (`tools/layer_strats_ai.js`) against the
+stock Normal AI, every matchup, seats swapped (8 games a matchup ≈ 3,700 games, about ±1.6 points).
+Over 50% means the strategy beats the stock AI. Strategies: `eager50/80` (layer whenever a 15+ HP
+ward is up), `big` (outer-ring layers only), `readStrike` (layer when the foe can strike and didn't just
+dispel), `hurt` (below half HP), `never`, `sealOnly` (seal eagerly, never layer), `fortress` (ward → seal
+→ layer → seal) and variants, `wardStrike` (strike while warded).
+
+Current rules: every plain layering strategy loses (eager 47–48%, big 48.6, readStrike 48.1, hurt 49.1);
+`never` 48.9 (the stock AI's rare layers are fine). `fortress` wins 52.5–53%, but `sealOnly` wins 52.2%:
+the gain is from sealing more (the stock AI under-seals), not from the layers.
+
+Why: Protection resolves before Damage in the same round, so you can always ward the round you need it.
+A layer banked early only spends mana sooner and sits exposed to wear and dispels (the stock AI dispels a
+warded foe most rounds, matched 80% of the time). In 3–4 seat games, where two foes can act on you in
+one round, this may differ (not tested).
+
+Rule switches tried (all in `WARD_RULES`, defaults keep today's rules):
+- `innerWear:false` (only the outer layer wears): no change (eager 48.2, readStrike 49.8).
+- `dispelMatch:1.5` (matched dispels ×1.5, not ×2): no change (eager 47.7, readStrike 47.3).
+- `layerDiscount:3` (a layer costs 3 less): no change (eager 48.3, readStrike 49.9).
+- `stackGuard:true` (a 2+ stack turns aside all but Greater dispels; the AI knows): eager 51.0, but
+  fortress 60.7 (seal + guard lock each other in). With `stackSeal:false` (a stack can't be sealed; a
+  layer over a seal breaks it): every layering strategy loses again (46–47).
+- `stackTake` (Bulwark: a ward with a layer beneath wears this share from each strike and dispel):
+  0.6 → eager 49.7, readStrike 49.9, sealOnly 50.6, fortress 55.8; **0.4 → eager 52.2, readStrike 53.8,
+  sealOnly 51.6, fortress 57.3**. The first rule where layers themselves pay. Not adopted yet.
