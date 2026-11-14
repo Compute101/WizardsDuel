@@ -14,7 +14,7 @@
       "I have endured far worse than you. Come back when you have.",
       "The stalwart does not fall. Will you prove the same?"
     ],
-    "hp": 52,
+    "hp": 50,
     "aiWard": "fortress",
     "dmgMult": 1.1,
     "sealAll": true,
@@ -88,7 +88,7 @@
       "I bled for that victory. Can you match my hunger?",
       "Relentless. That's the only lesson worth learning. Come back."
     ],
-    "hp": 50,
+    "hp": 56,
     "dmgMult": 1.1,
     "forbidden": [
       "arcane"
@@ -161,7 +161,15 @@
       "You tangled with nature itself. The vines always win.",
       "My roots run deeper than your courage. Try growing some."
     ],
-    "hp": 59,
+    "hp": 63,
+    "skin": {
+      "id": "barkskin",
+      "name": "Barkskin",
+      "icon": "🌳",
+      "cost": 2,
+      "soak": 15,
+      "col": "#9a7a48"
+    },
     "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
@@ -243,8 +251,10 @@
       "Time bends to my will. Your next attempt? Already foreseen.",
       "You're as predictable as sunrise. Surprise me next time."
     ],
-    "hp": 57,
-    "phys": {"atk": 4, "guard": 14},
+    "hp": 54,
+    "phys": {
+      "atk": 3
+    },
     "dmgMult": 1.05,
     "spells": [
       {
@@ -312,8 +322,10 @@
       "Gnash not done smashing. Where you going? COME BACK.",
       "Little mage runs away? Gnash will wait. Gnash ALWAYS waits."
     ],
-    "hp": 55,
-    "phys": {"atk": 6, "guard": 20},
+    "hp": 58,
+    "phys": {
+      "atk": 6
+    },
     "dmgMult": 1.05,
     "forbidden": [
       "arcane",
@@ -543,7 +555,9 @@
       "The warpstorm obeys Zakkit! Squeal-squeal, man-thing, squeal!"
     ],
     "hp": 65,
-    "phys": {"atk": 4, "guard": 14},
+    "phys": {
+      "atk": 3
+    },
     "dmgMult": 1.1,
     "forbidden": [
       "earth"
@@ -765,8 +779,10 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 70,
-    "phys": {"atk": 4, "guard": 14},
+    "hp": 62,
+    "phys": {
+      "atk": 3
+    },
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -851,28 +867,23 @@
       "You threw everything you had at me. I barely felt it.",
       "The mountain endures all things. So too shall I."
     ],
-    "hp": 60,
-    "phys": {"atk": 6, "guard": 20},
+    "hp": 68,
+    "phys": {
+      "atk": 6
+    },
+    "skin": {
+      "id": "stoneskin",
+      "name": "Stoneskin",
+      "icon": "🪨",
+      "cost": 4,
+      "soak": 30,
+      "col": "#a89880"
+    },
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
     ],
     "spells": [
-      {
-        "id": "stoneskin",
-        "name": "Stoneskin",
-        "icon": "🧱",
-        "el": {
-          "guard": true,
-          "cat": "protect",
-          "kind": "ward",
-          "elem": "earth",
-          "cost": 6,
-          "power": 40,
-          "tier": 2,
-          "desc": "Skin of stone: a Guard of 40 against blows (it doesn't stop magic, and dispels can't touch it)"
-        }
-      },
       {
         "id": "stonesoul",
         "name": "Stonesoul",
@@ -885,7 +896,7 @@
           "tier": 2,
           "effect": {
             "type": "resist",
-              "physOnly": true,
+            "physOnly": true,
             "pct": 0.25,
             "rounds": 3
           },
@@ -920,7 +931,9 @@
       "The patient sword outlasts the hasty one. Always."
     ],
     "hp": 51,
-    "phys": {"atk": 6, "guard": 18},
+    "phys": {
+      "atk": 6
+    },
     "dmgMult": 1.0,
     "forbidden": [
       "dark"
@@ -976,7 +989,7 @@
           "tier": 2,
           "effect": {
             "type": "resist",
-              "physOnly": true,
+            "physOnly": true,
             "pct": 0.22,
             "rounds": 3
           },
@@ -999,7 +1012,9 @@
       "The swamp takes all things. Even stubborn little wizards."
     ],
     "hp": 58,
-    "phys": {"atk": 6, "guard": 18},
+    "phys": {
+      "atk": 6
+    },
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
@@ -1159,8 +1174,10 @@
       "Which one was real? Wrong answer — they all were.",
       "Deception is not dishonesty. It is simply a more elegant form of truth."
     ],
-    "hp": 56,
-    "phys": {"atk": 4, "guard": 14},
+    "hp": 54,
+    "phys": {
+      "atk": 3
+    },
     "dmgMult": 1.0,
     "forbidden": [
       "earth",
@@ -1312,7 +1329,9 @@
       "I have one wrath left in me. You have already wasted my patience earning it."
     ],
     "hp": 47,
-    "phys": {"atk": 6, "guard": 18},
+    "phys": {
+      "atk": 6
+    },
     "aiWard": "fortress",
     "dmgMult": 1.05,
     "forbidden": [
@@ -1331,7 +1350,7 @@
           "tier": 2,
           "effect": {
             "type": "resist",
-              "physOnly": true,
+            "physOnly": true,
             "pct": 0.12,
             "retaliate": 3,
             "rounds": 3
@@ -1387,8 +1406,10 @@
       "Half of what's in my satchel is medicine. The other half is, well, also medicine. Different patient.",
       "Don't worry about the smell. That's normal. Probably."
     ],
-    "hp": 57,
-    "phys": {"atk": 4, "guard": 14},
+    "hp": 54,
+    "phys": {
+      "atk": 3
+    },
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1463,7 +1484,7 @@
       "You cling to your strength as if it makes you safe. The bigger they are, the more there is to take.",
       "Don't struggle. The void doesn't hate you. It just... empties."
     ],
-    "hp": 56,
+    "hp": 58,
     "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
@@ -1539,8 +1560,10 @@
       "Dance, my dead. Dance, and let the living hear the music.",
       "Every year you have lived is a debt. I have come to collect."
     ],
-    "hp": 50,
-    "phys": {"atk": 5, "guard": 18},
+    "hp": 53,
+    "phys": {
+      "atk": 5
+    },
     "dmgMult": 1.0,
     "forbidden": [
       "fire"
@@ -1625,8 +1648,10 @@
       "You DARE stand before me? I will drag you screaming through the Gate!",
       "Run, then! Hide! There is nowhere my fire cannot follow!"
     ],
-    "hp": 56,
-    "phys": {"atk": 5, "guard": 15},
+    "hp": 53,
+    "phys": {
+      "atk": 5
+    },
     "dmgMult": 1.0,
     "forbidden": [
       "ice"

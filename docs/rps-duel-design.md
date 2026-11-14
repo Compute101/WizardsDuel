@@ -888,3 +888,20 @@ Tidecaster (original name and look if ever published).
   Aurelia 57, Thessaly 59, Mary 61, Gretch 58, Mirel 56, Daveron 50, Mordant 53, Frederick 56.
 - Result (80 games a matchup, twice): 45.4–55.0% and 45.4–54.1%, about 15.5 rounds. Picks: Attack 8%,
   Guard 12.5%, Grapple 7%, wheel Damage 15%, Protection 10.5%, Dispel 12%, Seal 9%, signatures 22.5%.
+
+### Actions rework: one-round melee, Ironskin for lasting protection
+
+Feedback: a Guard drawn as a bubble looked like magic, and a soldier raising a ward isn't melee. Now:
+- **Actions last the round they're made.** Attack vs Guard: blocked, the guard counters for its own atk.
+  Grapple vs Guard: lands in full. Attack vs Grapple: ×1.5, the grapple fails. Otherwise Attack hits for
+  atk, Grapple for half, Guard does nothing. A Guard also blocks physical signature strikes that round.
+  The Guard layer, its orbiters and `grappleGuard` are gone; every ward is magic again.
+- **Ironskin** (every wizard; a Protection-wheel button): a magic, dispellable buff that soaks physical
+  damage until used up (3 mana, 15). Sylvara's Barkskin is cheaper (2, 15); Durin's Stoneskin stronger
+  (4, 30) and no longer a wheel signature. Drawn as a metallic sheen on the sprite.
+- Most wizards are poor fighters: atk 4 by default, 3 for the slight ones, 5–6 for brutes. The AI reads
+  the foe's last pick (Guard a habitual attacker, Grapple a habitual guard) and keeps Actions a sideline
+  (Attack 5%, Ironskin 4%, Guard 2%, Grapple 1% of picks).
+- HP after: Ponder 62 (was 70; at 70 he hit 61%), Durin 68 (lost his Stoneskin signature: 38%), Malachar
+  56, Gnash 58, Sylvara 63, Nyxara 58, Fizzwick 54, Mirel 54, Frederick 53, Eldrin 50, Aurelia 54,
+  Daveron 53. Result (80 games a matchup, twice): 45.8–54.4% and 46.0–54.4%, about 16.7 rounds.
