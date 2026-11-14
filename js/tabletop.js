@@ -8,7 +8,7 @@
 // It is self-contained: the standard game (js/game.js) never loads it and none of its rules change.
 // Works in the browser (window.TT) and in Node (module.exports) for quick balance runs:
 //   node -e "const TT=require('./js/tabletop.js'); TT.load(require('./characters.json'),require('./tabletop.json'),require('./fighters.json')); console.log(TT.balance(40))"
-// Encounters (a wizard against a band of fighters): TT.encounterBalance(games) after TT.useRules(name).
+// Survival (a wizard against a ladder of waves): TT.survivalBalance(runs) after TT.useRules(name).
 (function(root){
 'use strict';
 
@@ -864,7 +864,8 @@ function fighterChoose(w,smart){
   const tgt=foe(w), last=(tgt&&gs[tgt].lastPick)||{}, A=AI_FIGHTERS, tr=traitOf(w);
   const act=(c,x)=>({cat:c, act:x, target:tgt});
   let guard=A.guard, grapple=tr==='ranged'?0:A.grapple;
-  if(smart){
+  // Plain recruits (level 0 in Survival) just swing; veterans and up read your last pick
+  if(smart&&!(gs[w].c.level===0)){
     if(last.act==='attack'&&last.target===w) guard+=A.guardRead;
     if(tr==='shieldwall'&&tgt&&gs[tgt].lastTarget===w) guard+=A.guardFocus;
     if(tr!=='ranged'&&last.act==='guard') grapple+=A.grappleRead;
@@ -911,10 +912,17 @@ function aiPhys(w,cat,smart){
 }
 // An encounter (every foe a fighter): wards and seals are wasted on blows, so keep a skin up, Guard a
 // swordsman who just Attacked me, and strike
-const AI_ENCOUNTER={skin:1.4, protect:0.35, guardRead:0.6};
+const AI_ENCOUNTER={skin:1.4, protect:0.35, guardRead:0.6, skinBlows:3, skinHurt:0.6};
+// A skin is worth its cost and upkeep only against enough blows: the band hits for skinBlows a round, or
+// I'm below skinHurt of my HP and taking any. Against a couple of weak fighters, just strike.
+function skinWorthIt(w){
+  const st=gs[w], blows=foes(w).reduce((a,f)=>a+gs[f].c.atk,0), sk=skinOn(st);
+  if(sk&&sk.hp>=skinOf(st).soak*0.5) return false;
+  return blows>=AI_ENCOUNTER.skinBlows||(blows>=2&&st.hp<=st.c.hp*AI_ENCOUNTER.skinHurt);
+}
 function aiEncounterProtect(w,smart){
   const st=gs[w], sk=skinOn(st);
-  if((!sk||sk.hp<skinOf(st).soak*0.5)&&canPick(st,{cat:'protect',skin:true})) return {cat:'protect',skin:true};
+  if(skinWorthIt(w)&&canPick(st,{cat:'protect',skin:true})) return {cat:'protect',skin:true};
   const melee=foes(w).filter(f=>traitOf(f)!=='ranged'&&(gs[f].lastPick||{}).act==='attack'&&gs[f].lastPick.target===w);
   if(melee.length&&rng()<AI_ENCOUNTER.guardRead) return {cat:'protect',act:'guard'};
   const sigs=st.c.spells.filter(sp=>sp.cat==='protect'&&sp.kind!=='ward'&&!sp.ward&&canPick(st,{cat:'protect',sig:sp.id})&&sigSensible(w,sp));
@@ -923,6 +931,13 @@ function aiEncounterProtect(w,smart){
 }
 function aiChooseCore(w,level){
   const st=gs[w], ts=gs[foe(w)], smart=level!=='easy';
+  // Against a band: a free Attack never fizzles, so finish any fighter it can drop (not a soldier
+  // who Guarded last round, and not into a Guard an archer's shot would need)
+  if(smart&&allBlows(w)&&!locked(st,'damage')&&!vanishOf(st)){
+    const prey=foes(w).filter(f=>gs[f].hp<=st.c.atk&&!(traitOf(f)!=='ranged'&&(gs[f].lastPick||{}).act==='guard'))
+      .sort((x,y)=>gs[y].c.atk-gs[x].c.atk)[0];
+    if(prey) return {cat:'damage', act:'attack', target:prey};
+  }
   // Meditate when short of mana
   if(canMeditate(st)&&st.mana<costOf(st,{cat:'damage',ring:2})){
     let p=st.mana<costOf(st,{cat:'damage',ring:1})?0.5:0.25;
@@ -971,7 +986,7 @@ function aiChooseCore(w,level){
   if(smart&&allBlows(w)){
     const sk=skinOn(st);
     delete w8.seal;
-    w8.protect=(!sk||sk.hp<skinOf(st).soak*0.5)?AI_ENCOUNTER.skin:AI_ENCOUNTER.protect;
+    w8.protect=skinWorthIt(w)?AI_ENCOUNTER.skin:AI_ENCOUNTER.protect;
     if(guardLow(st)) w8.protect+=1.2;
     if(st.hp<st.c.hp*0.35) w8.protect+=0.3;
     w8.dispel=nCurses?0.5:hexes?0.25*hexes:0;
@@ -1043,6 +1058,11 @@ function aiInCat(w,cat,smart){
   while(ring>1&&!canPick(st,{cat,elem,ring})) ring--;
   if(!canPick(st,{cat,elem,ring})) return null;
   if(ring>1&&rng()<0.4) ring--;
+  // A strike: the smallest level that finishes the target (no ward, no body in the way) is enough
+  if(cat==='damage'&&smart&&!ts.ward&&!screen(ts).length){
+    const kill=[1,2,3].find(r=>r<=ring&&RULES.cats.damage.power[r-1]>=ts.hp);
+    if(kill) ring=kill;
+  }
   return {cat,elem,ring};
 }
 function aiCall(w){
@@ -1081,59 +1101,85 @@ function balance(games,ai){
     .sort((a,b)=>b.winRate-a.winRate);
 }
 
-// ── Encounters: one wizard (team A) against a band of fighters (team B) ──
-// A fighter's HP and Attack come from fighters.json ("tabletop", with per-rule-set "rules"); a band can set
-// its fighters' HP per rule set (hp) or scale them. Tuned so an average wizard wins about half the time
-// against each band with the Normal AI (encounterBalance). Archers have 1 HP in Beginner and Normal: three
-// archers chip a wizard who fizzles half their flicks down fast, so one hit drops each.
-const BANDS=[
-  {id:'patrol', name:'Patrol', members:['soldier','soldier'], scale:1},
-  {id:'skirmish', name:'Skirmishers', members:['archer','archer','archer'], scale:1},
-  {id:'warband', name:'Warband', members:['soldier','archer','archer'], scale:1,
-    hp:{beginner:{soldier:4}, normal:{soldier:4}, advanced:{soldier:6, archer:7}}},
+// ── Survival (Encounters): one wizard (team A) against a ladder of waves (team B) ──
+// A wizard swats the early waves; each one adds fighters or raises their level (LEVELS: HP × hp, Attack +
+// atk), and the last is brutal. Between waves the wizard catches their breath (BREATHER: heal a share of
+// max HP, some mana, curses cleared); HP, wards, skins, buffs and minions carry on. The score is how many
+// waves are cleared. A fighter's base HP and Attack come from fighters.json ("tabletop", with per-rule-set
+// "rules"). Plain recruits (level 0) just swing; veterans and up read your picks (fighterChoose). Tuned with
+// survivalBalance (Normal AI): nearly every run clears waves 1–3, about 5–9% clear all ten.
+const LEVELS=[
+  {name:'',          hp:1,    atk:0},
+  {name:'Veteran',   hp:1,    atk:0},   // same numbers as a recruit, but they read your picks
+  {name:'Elite',     hp:1.5,  atk:0},
+  {name:'Champion',  hp:2.5,  atk:0},   // +1 Attack doubles a blow at the table, so Champions get HP instead
 ];
-function bandSeats(wizKey,band){
-  return [{key:wizKey,team:'A'}].concat(band.members.map(k=>{
-    const f=FIGHTERS[k];
-    // band.hp[rule set][fighter] sets a fighter's HP in this band; otherwise its own HP × scale
-    const set=band.hp&&band.hp[rulesName]&&band.hp[rulesName][k];
-    const sc=typeof band.scale==='object'?(band.scale[rulesName]||1):(band.scale||1);
-    return {key:k, team:'B', c:Object.assign({},f,{hp:set!=null?set:Math.max(1,Math.round(f.hp*sc))})};
-  }));
+const WAVES=[
+  {name:'Road Patrol',      members:['soldier','soldier'],            level:0},
+  {name:'Poachers',         members:['archer','archer'],              level:0},
+  {name:'Scouting Party',   members:['soldier','archer','archer'],    level:0},
+  {name:'Shield Line',      members:['soldier','soldier','soldier'],  level:1},
+  {name:'Volley',           members:['archer','archer','archer'],     level:1},
+  {name:'Vanguard',         members:['soldier','soldier','archer'],   level:1},
+  {name:'Warband',          members:['soldier','archer','archer'],    level:2},
+  {name:'Iron Wall',        members:['soldier','soldier','soldier'],  level:2},
+  {name:'Rain of Arrows',   members:['archer','archer','archer'],     level:3},
+  {name:"Champion's Guard", members:['soldier','soldier','archer'],   level:3},
+];
+const BREATHER={heal:0.5, mana:4};   // a quarter of max HP was too little: 10-HP wizards wore out by wave 4
+// A fighter at a level, in the current rule set
+function fighterAt(k,level){
+  const f=FIGHTERS[k], L=LEVELS[level||0];
+  return Object.assign({},f,{hp:Math.max(1,Math.round(f.hp*L.hp)), atk:f.atk+L.atk, level:level||0, name:(L.name?L.name+' ':'')+f.name});
 }
-function encounter(wizKey,bandId,ai){
-  const band=BANDS.find(b=>b.id===bandId);
-  newTable(bandSeats(wizKey,band));
-  const picks={};
-  while(!gs.over&&gs.round<=RULES.maxRounds){
-    const a={};
-    active().forEach(w=>{ a[w]=aiChoose(w,ai); });
-    const k=a.p1&&(a.p1.act||(a.p1.skin?'skin':null)||a.p1.sig||a.p1.cat);
-    if(k) picks[k]=(picks[k]||0)+1;
-    playRound(a);
+const waveSeats=(wizKey,n)=>[{key:wizKey,team:'A'}].concat(WAVES[n].members.map(k=>({key:k,team:'B',c:fighterAt(k,WAVES[n].level)})));
+// Between waves: keep the wizard's seat, catch a breath, bring on the next wave
+function breather(st){
+  st.hp=Math.min(st.c.hp,st.hp+Math.ceil(st.c.hp*BREATHER.heal));
+  st.mana=clamp(st.mana+BREATHER.mana);
+  st.effects=st.effects.filter(e=>e.kind!=='curse');
+}
+function nextWave(wizKey,n){
+  const keep=gs.p1;
+  newTable(waveSeats(wizKey,n));
+  gs.p1=Object.assign(keep,{out:false, lastTarget:null, lastPick:null});
+  gs.wave=n;
+}
+// One Survival run: {cleared, won, rounds}
+function survival(wizKey,ai){
+  newTable(waveSeats(wizKey,0)); gs.wave=0;
+  let rounds=0;
+  for(;;){
+    while(!gs.over&&gs.round<=RULES.maxRounds){
+      const a={};
+      active().forEach(w=>{ a[w]=aiChoose(w,ai); });
+      playRound(a); rounds++;
+    }
+    if(gs.over!=='A') return {cleared:gs.wave, won:false, rounds};
+    if(gs.wave>=WAVES.length-1) return {cleared:WAVES.length, won:true, rounds};
+    breather(gs.p1);
+    nextWave(wizKey,gs.wave+1);
   }
-  return {won:gs.over==='A', rounds:gs.round, picks};
 }
-// Every wizard against a band, `games` each: {band:{winRate, rounds, per:{key:rate}, picks}}
-function encounterBalance(games,ai,bandIds){
-  const out={};
-  (bandIds||BANDS.map(b=>b.id)).forEach(id=>{
-    let won=0, n=0, rounds=0; const per={}, picks={};
-    Object.keys(CHARS).forEach(k=>{
-      let w=0;
-      for(let g=0;g<games;g++){ const r=encounter(k,id,ai||'normal'); if(r.won) w++; rounds+=r.rounds; Object.entries(r.picks).forEach(([x,c])=>picks[x]=(picks[x]||0)+c); }
-      per[k]=+(w/games*100).toFixed(0); won+=w; n+=games;
-    });
-    out[id]={winRate:+(won/n*100).toFixed(1), rounds:+(rounds/n).toFixed(1), per, picks};
+// Every wizard runs the ladder `runs` times: {avg, full, cleared:[share clearing each wave], per:{key:avg}}
+function survivalBalance(runs,ai){
+  const n=WAVES.length, reach=Array(n+1).fill(0), per={};
+  let total=0, full=0, count=0;
+  Object.keys(CHARS).forEach(k=>{
+    let sum=0;
+    for(let i=0;i<runs;i++){ const r=survival(k,ai||'normal'); sum+=r.cleared; total+=r.cleared; reach[r.cleared]++; if(r.won) full++; count++; }
+    per[k]=+(sum/runs).toFixed(1);
   });
-  return out;
+  let left=count; const cleared=[];
+  for(let i=0;i<n;i++){ left-=reach[i]; cleared.push(+(left/count*100).toFixed(0)); }
+  return {avg:+(total/count).toFixed(1), full:+(full/count*100).toFixed(0), cleared, per};
 }
 
 useRules('normal');
 
-const TT={RULES, PRESETS, RULE_SETS, useRules, rulesOf, AI_WARDS, AI_FIGHTERS, AI_ACTIONS, AI_MINIONS, AI_ENCOUNTER, BANDS,
+const TT={RULES, PRESETS, RULE_SETS, useRules, rulesOf, AI_WARDS, AI_FIGHTERS, AI_ACTIONS, AI_MINIONS, AI_ENCOUNTER, WAVES, LEVELS, BREATHER,
   get rulesName(){ return rulesName; }, ELEMENTS, opposite, load, newGame, newTable, playRound, aiChoose, simMatch, balance,
-  encounter, encounterBalance, get chars(){ return CHARS; }, get fighters(){ return FIGHTERS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
+  survival, survivalBalance, get chars(){ return CHARS; }, get fighters(){ return FIGHTERS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
 if(typeof module!=='undefined'&&module.exports) module.exports=TT;
 else root.TT=TT;
 })(typeof window!=='undefined'?window:this);

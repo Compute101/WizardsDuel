@@ -6,9 +6,9 @@
     "trait": "shieldwall",
     "sprite": "sprites/soldier.png",
     "col": "#b8c0cc",
-    "hp": 50,
+    "hp": 30,
     "phys": {
-      "atk": 8
+      "atk": 5
     },
     "spells": [],
     "taunts": [
@@ -18,11 +18,11 @@
     ],
     "desc": "Solid HP and a good sword. Shield Wall: while he Guards, his shield also halves a spell aimed at him.",
     "tabletop": {
-      "hp": 8,
+      "hp": 2,
       "atk": 1,
       "rules": {
         "advanced": {
-          "atk": 2
+          "hp": 6
         }
       }
     }
@@ -34,9 +34,9 @@
     "trait": "ranged",
     "sprite": "sprites/archer.png",
     "col": "#7fae5a",
-    "hp": 30,
+    "hp": 20,
     "phys": {
-      "atk": 6
+      "atk": 4
     },
     "spells": [],
     "taunts": [
@@ -50,7 +50,7 @@
       "atk": 1,
       "rules": {
         "advanced": {
-          "hp": 8
+          "hp": 4
         }
       }
     }

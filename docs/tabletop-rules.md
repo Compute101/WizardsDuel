@@ -237,22 +237,31 @@ The simulator assumes an Advanced player pots **75%** of flicks from their handi
 
 ---
 
-## Encounters
+## Encounters: Survival
 
-Your wizard alone against a band of fighters: soldiers and archers. They cast nothing. Every round each fighter picks an Action (Attack, Guard or Grapple) and aims it at you. Your spells, Attacks and Grapples are each aimed at one fighter (say which when you reveal). Your minions strike whoever you last aimed at. Use any rule set.
+How many waves can your wizard last? Ten waves of soldiers and archers come at you, one after another, each harder than the last. Clear all ten and you've won. Otherwise your score is the waves you cleared. Use any rule set.
 
-- **Soldier** (*Shield Wall*): while he Guards, his shield also halves a spell aimed at him (round down). A Guard already stops blows, so hit someone else, or Grapple him.
-- **Archer** (*At Range*): her Attack is a bow shot. It slips past a Guard (no block, no counter), and she keeps her distance: a Grapple at her fails. She's fragile.
-- Fighters have no mana, no wards, no flicks and no Meditate. They don't take sudden death. A fighter at 0 HP is out. You win when every fighter is out.
-- **Play the band:** a friend can play the fighters, or let them follow a simple plan: each Attacks unless you Attacked them last round (then they Guard) or you Guarded last round (then the soldiers Grapple).
-- **Tips:** your wards won't stop a single blow. Keep Ironskin up, Guard the soldiers and strike the archers first.
+- **Fighters** cast nothing. Every round each one picks an Action (Attack, Guard or Grapple) and aims it at you. Your spells, Attacks and Grapples are each aimed at one fighter (say which when you reveal). Your minions strike whoever you last aimed at.
+  - **Soldier** (*Shield Wall*): while he Guards, his shield also halves a spell aimed at him (round down). A Guard already stops blows, so hit someone else, or Grapple him.
+  - **Archer** (*At Range*): her Attack is a bow shot. It slips past a Guard (no block, no counter), and she keeps her distance: a Grapple at her fails.
+- Fighters have no mana, wards, flicks or Meditate, and don't take sudden death. A fighter at 0 HP is out. A wave is cleared when every fighter in it is out.
+- **Catch your breath** between waves: heal **half** your HP (round up), gain **4 mana**, and remove all your curses. Everything else carries on: your HP, wards, skins, buffs and minions. Start the next wave at round 1.
+- **Recruits, veterans, elites and champions.** Waves 1–3 are recruits, who just swing: each Attacks every round. From wave 4 they're veterans and better, and read you: each Attacks unless you Attacked them last round (then they Guard) or you Guarded last round (then soldiers Grapple). A friend can play them instead.
+- **Tips:** your wards won't stop a single blow. A free Attack never fizzles: punch out the 1-HP archers. Keep a skin up once three of them are hitting you, Guard the soldiers, and strike the archers first.
 
 <!-- encounters:start -->
-| Band | Fighters | Beginner | Normal | Advanced |
+| Wave | Fighters | Beginner | Normal | Advanced |
 |---|---|---|---|---|
-| **Patrol** | 2 Soldiers | Soldier: 8 HP, Attack 1 | Soldier: 8 HP, Attack 1 | Soldier: 8 HP, Attack 2 |
-| **Skirmishers** | 3 Archers | Archer: 1 HP, Attack 1 | Archer: 1 HP, Attack 1 | Archer: 8 HP, Attack 1 |
-| **Warband** | Soldier, 2 Archers | Soldier: 4 HP, Attack 1; Archer: 1 HP, Attack 1 | Soldier: 4 HP, Attack 1; Archer: 1 HP, Attack 1 | Soldier: 6 HP, Attack 2; Archer: 7 HP, Attack 1 |
+| **1. Road Patrol** | 2 Soldiers | Soldier 2 HP, Attack 1 | Soldier 2 HP, Attack 1 | Soldier 6 HP, Attack 1 |
+| **2. Poachers** | 2 Archers | Archer 1 HP, Attack 1 | Archer 1 HP, Attack 1 | Archer 4 HP, Attack 1 |
+| **3. Scouting Party** | Soldier, 2 Archers | Soldier 2 HP, Attack 1; Archer 1 HP, Attack 1 | Soldier 2 HP, Attack 1; Archer 1 HP, Attack 1 | Soldier 6 HP, Attack 1; Archer 4 HP, Attack 1 |
+| **4. Shield Line** | 3 Veteran Soldiers | Soldier 2 HP, Attack 1 | Soldier 2 HP, Attack 1 | Soldier 6 HP, Attack 1 |
+| **5. Volley** | 3 Veteran Archers | Archer 1 HP, Attack 1 | Archer 1 HP, Attack 1 | Archer 4 HP, Attack 1 |
+| **6. Vanguard** | 2 Veteran Soldiers, Veteran Archer | Soldier 2 HP, Attack 1; Archer 1 HP, Attack 1 | Soldier 2 HP, Attack 1; Archer 1 HP, Attack 1 | Soldier 6 HP, Attack 1; Archer 4 HP, Attack 1 |
+| **7. Warband** | Elite Soldier, 2 Elite Archers | Soldier 3 HP, Attack 1; Archer 2 HP, Attack 1 | Soldier 3 HP, Attack 1; Archer 2 HP, Attack 1 | Soldier 9 HP, Attack 1; Archer 6 HP, Attack 1 |
+| **8. Iron Wall** | 3 Elite Soldiers | Soldier 3 HP, Attack 1 | Soldier 3 HP, Attack 1 | Soldier 9 HP, Attack 1 |
+| **9. Rain of Arrows** | 3 Champion Archers | Archer 3 HP, Attack 1 | Archer 3 HP, Attack 1 | Archer 10 HP, Attack 1 |
+| **10. Champion's Guard** | 2 Champion Soldiers, Champion Archer | Soldier 5 HP, Attack 1; Archer 3 HP, Attack 1 | Soldier 5 HP, Attack 1; Archer 3 HP, Attack 1 | Soldier 15 HP, Attack 1; Archer 10 HP, Attack 1 |
 <!-- encounters:end -->
 
 ---

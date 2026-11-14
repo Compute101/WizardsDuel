@@ -45,21 +45,22 @@ const swap=(name,body)=>{
 swap('base-spells',base);
 swap('characters',out);
 
-// Encounters: each band's fighters, their HP and Attack in each rule set
+// Survival: the wave ladder, with each wave's fighters in each rule set
 const RS=TT.RULE_SETS, cap=r=>r[0].toUpperCase()+r.slice(1);
-let enc='| Band | Fighters | '+RS.map(cap).join(' | ')+' |\n|---|---|'+RS.map(()=>'---|').join('')+'\n';
-TT.BANDS.forEach(b=>{
-  const counts={}; b.members.forEach(k=>counts[k]=(counts[k]||0)+1);
-  const who=Object.keys(counts).map(k=>(counts[k]>1?counts[k]+' ':'')+k[0].toUpperCase()+k.slice(1)+(counts[k]>1?'s':'')).join(', ');
+const nm=k=>k[0].toUpperCase()+k.slice(1);
+let enc='| Wave | Fighters | '+RS.map(cap).join(' | ')+' |\n|---|---|'+RS.map(()=>'---|').join('')+'\n';
+TT.WAVES.forEach((w,i)=>{
+  const counts={}; w.members.forEach(k=>counts[k]=(counts[k]||0)+1);
+  const L=TT.LEVELS[w.level].name;
+  const who=Object.keys(counts).map(k=>(counts[k]>1?counts[k]+' ':'')+(L?L+' ':'')+nm(k)+(counts[k]>1?'s':'')).join(', ');
   const cells=RS.map(r=>{
     TT.useRules(r);
     return Object.keys(counts).map(k=>{
-      const f=TT.fighters[k], set=b.hp&&b.hp[r]&&b.hp[r][k];
-      const sc=typeof b.scale==='object'?(b.scale[r]||1):(b.scale||1);
-      return `${k[0].toUpperCase()+k.slice(1)}: ${set!=null?set:Math.max(1,Math.round(f.hp*sc))} HP, Attack ${f.atk}`;
+      const f=TT.fighters[k], lv=TT.LEVELS[w.level];
+      return `${nm(k)} ${Math.max(1,Math.round(f.hp*lv.hp))} HP, Attack ${f.atk+lv.atk}`;
     }).join('; ');
   });
-  enc+=`| **${b.name}** | ${who} | ${cells.join(' | ')} |\n`;
+  enc+=`| **${i+1}. ${w.name}** | ${who} | ${cells.join(' | ')} |\n`;
 });
 TT.useRules('normal');
 swap('encounters',enc);

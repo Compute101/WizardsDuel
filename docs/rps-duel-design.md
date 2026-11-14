@@ -1005,3 +1005,12 @@ Feedback: skins shouldn't wear, but you should have to maintain them, so that ag
 - **What it took in the app:** upkeep alone pushed the minion casters to about 60% (skins were the counter to their bites). Two changes fixed it: the AI counts only blows that are coming (`physThreat`: a physical strike card and minions on the table, not minions the foe could summon, which had it skin up early and pay for nothing), and Ironskin got cheaper and stronger per cast (3 mana / 15 → 2 / 20; Barkskin 2 / 15 → 1 / 15, Stoneskin 4 / 30 → 3 / 30). Nerissa HP 58 → 55. Result: 44.5–56.9%, skins 2.4% of picks (was 4%).
 - **Encounters (app):** the better Ironskin made wizards win about 71% of the time; soldiers atk 7 → 8, band scales Patrol 1.3, Skirmishers 1.18, Warband 0.95: 52.7–53.6%.
 - **Tabletop:** the AI skins only at a threat of 0.6+: skins against wizards fell from 6% to under 1% of picks. Nerissa Beginner HP 9. Duels 43.3–57.7% across the three rule sets; encounters 46–53%.
+
+## Encounters become Survival
+
+Feedback: encounters don't need to be 50%. A wizard should comfortably wipe three normal dudes; the mode should be about how long you can survive progressively harder waves. Chosen: a breather between waves, a fixed ladder (a run can be won), app and tabletop both.
+
+- **The ladder:** 10 waves of 2–3 soldiers and archers: three waves of recruits, then Veterans, Elites and Champions. Fighters came down to "normal dudes" (app: Soldier HP 30 / atk 5, Archer 20 / 4).
+- **Breather:** keep HP, wards, skins, buffs and minions; heal a share of max HP, gain 4 mana, curses cleared.
+- **App tuning:** first try (Veteran ×1.35 / +1 atk) put a wall at wave 4 (66%) and 1% full clears. Veteran ×1.2 / +0, Elite ×1.45 / +1, Champion ×1.75 / +2 and a 25% heal give a steady decline: 100 / 99 / 99 / 83 / 80 / 71 / 53 / 33 / 14 / 9% (share of runs clearing each wave), 6.4 waves on average.
+- **Tabletop tuning:** at Normal flicking (half the spells fizzle) even two 4-HP soldiers beat 15% of wizards. Three fixes: recruits just swing (only veterans and up read your picks), the AI punches any fighter its free Attack can drop, and skins only when the band hits for 3+ a round. Fighters are 2 / 1 HP at Normal (6 / 4 at Advanced); the breather heals half; Champions get HP, not Attack. Result: waves 1–3 cleared 95–99% of the time, 5–8% full clears.

@@ -130,10 +130,12 @@ function convos(){
       {key:'korvath',text:"Games are short: about 10 or 11 rounds. Make every flick count!"},
     ],
     encounters:[
-      {key:'durin',  text:"Fancy a fight that isn't a wizard? In an Encounter you take on a band alone: soldiers, archers, or both. Any rule set works."},
+      {key:'durin',  text:"Fancy a fight that isn't a wizard? In Survival you face ten waves of soldiers and archers alone, each harder than the last. Clear them all and you've won; otherwise your score is the waves you cleared. Any rule set works."},
+      {key:'durin',  text:"Between waves you catch your breath: heal half your HP, gain 4 mana, and lose your curses. Everything else carries on."},
       {key:'durin',  text:"They cast nothing. Every round each fighter picks an Action and aims it at you, so your wards won't stop a single blow. Keep a skin up and Guard the swordsmen. Aim each of your spells at one fighter."},
       {key:'weizan', text:"Soldiers have Shield Wall: while one Guards, his shield halves a spell aimed at him. Strike someone else that round, or Grapple him."},
-      {key:'weizan', text:"Archers shoot from range: their arrows slip past a Guard, and a Grapple can't reach them. But they're fragile. Strike them first. The rulebook lists each band's HP for each rule set."},
+      {key:'weizan', text:"Archers shoot from range: their arrows slip past a Guard, and a Grapple can't reach them. But they're fragile: in the early waves a plain Attack drops one, and an Attack never fizzles. The rulebook lists every wave."},
+      {key:'weizan', text:"The first three waves are recruits who just swing. From the fourth, veterans read your last pick, so keep them guessing."},
     ],
     next:[
       {key:'ponder', text:"That's the whole Beginner game! Play a few duels until picking, paying and flicking feel easy."},
