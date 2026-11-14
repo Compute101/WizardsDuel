@@ -685,7 +685,7 @@
       "The hexes were already written. Your fate merely confirmed them.",
       "Kneel before the dark, or be consumed by it. There is no third option."
     ],
-    "hp": 47,
+    "hp": 52,
     "dmgMult": 1.0,
     "forbidden": [
       "lightning"
@@ -707,7 +707,7 @@
             "taper": 2,
             "rounds": 4
           },
-          "desc": "4 rounds: foe takes 8, then 6, 4, 2, whatever they do (Meditate escapes it, unless Corrupted)"
+          "desc": "4 rounds: foe takes 8, then 6, 4, 2 (a ward takes it first; Meditate escapes it, unless Corrupted)"
         }
       },
       {
@@ -1585,9 +1585,10 @@
             "type": "agony",
             "dmg": 4,
             "rounds": 4,
-            "inescapable": true
+            "inescapable": true,
+            "bypassWard": true
           },
-          "desc": "4 rounds: foe takes 4 whatever they do — even Meditate doesn't escape it"
+          "desc": "4 rounds: foe takes 4 a round — no ward stops the years, and even Meditate doesn't escape it"
         }
       }
     ]

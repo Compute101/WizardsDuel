@@ -4004,7 +4004,11 @@ function executeElemental(who,action,cb){
     const bite=agony.dmg;
     if(agony.taper) agony.dmg=Math.max(1,agony.dmg-agony.taper);   // a tapering curse eases every round, bitten or escaped
     if(st.hp<=0||!agonyBites(who,action,agony)) return;
-    dmgSource=agony.from; elemFloatDmg(who,bite,agony.icon+' '+agony.name,'#9944cc'); if(TICK_VFX[agony.id]) TICK_VFX[agony.id](x,wizMidY(x)); else VFX.agony(x); dmgSource=who;
+    // The bite hits skeletons and wards first, like any tick (bypassWard on the effect lets it seep past)
+    dmgSource=agony.from;
+    if(!agony.bypassWard&&(hasWard(st)||effectsOf(st,'minion').some(m=>m.soak))) elemIncoming(who,bite,agony.elem||'dark',agony.icon,'#9944cc',true);
+    else elemFloatDmg(who,bite,agony.icon+' '+agony.name,'#9944cc');
+    if(TICK_VFX[agony.id]) TICK_VFX[agony.id](x,wizMidY(x)); else VFX.agony(x); dmgSource=who;
   });
   if(agonies.length&&st.hp<=0){ combatTimeout(cb,700); return; }   // Agony knocked them out before they could act
   if(action.enthral){ showEnthral(who,action); if(action.outcome==='enthralled'){ anim(who,'cast',600); combatTimeout(cb,1000); return; } }
@@ -8688,7 +8692,7 @@ const TUTORIAL_CONVOS={
   ],
   mordant:[
     {key:'mordant',text:"Do not think of me as aggressive. I am patient. Half my Dispel wheel is curses — and every one of them wears at your ward too."},
-    {key:'mordant',text:"Agony is Dark: whatever you do, you suffer — only a Meditate escapes it. Silence is Arcane: your spells may simply fail."},
+    {key:'mordant',text:"Agony is Dark: it bites every round, hardest at first — a ward takes the pain, and only a Meditate escapes it. Silence is Arcane: your spells may simply fail."},
     {key:'mordant',text:"Corruption is Physical: the rot slows the mana you gain each round, and it spoils a Meditate — under Corruption, even meditating feeds my Agony. Starve them, and watch their options narrow to nothing."},
     {key:'mordant',text:"Cleanse Self is the answer to me. Make them spend their rounds cleansing instead of striking. The hex is already written."},
   ],

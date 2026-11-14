@@ -756,3 +756,15 @@ Fixes adopted:
 Still open: Mordant playing fortress himself beats the stock AI 58.6% and fortressing foes about 65%
 (other wizards gain 6–10 from fortress). Balance run after (80 games a matchup): 44.6–55.1%, about 16.9
 rounds, Mordant 50.7%.
+
+### Agony meets wards
+
+Agony-type bites used to go straight to HP. Now they hit skeletons and wards first, like any tick
+(`elemIncoming` in `executeElemental`, as the curse's element), unless the effect has `bypassWard`.
+That alone undid the wall counter: stock Mordant vs fortressing foes went 61–64% → 45–53%. With wards
+taking the bite, the taper was weighed again (Mordant, 30 games a matchup; stock vs fortress foes /
+vs stock / his own fortress vs stock): 8 taper 2 45.4 / 43.3 / 53.8 · 7 flat 53.2 / 49.0 / 56.6 ·
+9 flat 51.6 / 53.7 / 60.5 · 9 taper 2 45.2 / 49.8 / 60.7 · **8 taper 2 at HP 52: 52.3 / 48.3 / 56.7**
+(his fortress gain about +8, like the others). Adopted: Agony 8 → 6 → 4 → 2, Mordant HP 47 → 52.
+Daveron's Curse of the Years fell to 42% meeting wards, so it has `bypassWard` (no ward stops the
+years; it was already inescapable). Balance run (80 games a matchup): 45.4–53.0%, about 17 rounds.
