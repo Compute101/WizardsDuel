@@ -3691,6 +3691,7 @@ function enterGate(who){
 const INFERNAL_MANTLE={id:'infernalmantle',type:'empower',mult:1,pierce:true,kind:'buff',name:'Infernal Mantle',icon:'🔥',rounds:1};   // rounds only with BUFF_TIMERS
 const TONIC_HURT=0.5;   // Volatile Tonic heals below this share of max HP, empowers at or above it (0.7 put Fizzwick at 54%)
 // Vanish (Ponder): picking a Damage spell reveals him, before anything resolves that round
+function isVanished(who){ return effectsOf(gs[who],'absorbNext').some(e=>e.keep); }
 function revealVanished(who){
   const veil=effectsOf(gs[who],'absorbNext').filter(e=>e.keep);
   if(!veil.length) return;
@@ -4235,6 +4236,10 @@ function executeSignature(who,sp,action,cb){
   }
   if(el.kind==='curse'){
     spawnProj(x,y,tx,wizMidY(tx),ELEM_PROJ[el.elem||'arcane'],e.col,()=>{
+      if(VANISH_STOPS_CURSES&&isVanished(tgt)){
+        if(!simMode){ addFloat(tx,bH*.3,'👻 '+sigName(sp)+' finds nothing','#b8a0e8',13); VFX.vanished(tx); }
+        combatTimeout(cb,700); return;
+      }
       if(el.chance!=null&&_rng()>el.chance){ addFloat(tx,bH*.3,sigIcon(sp)+' Resisted','#cccccc',12); VFX.resisted(tx); }
       else {
         const eff=effect({kind:'curse'});
@@ -4413,11 +4418,19 @@ function elemWardDispel(tgt,elem,power,tier){
     if(buffs.length) removeEffects(tgt,buffs,'✦ Dispelled');
   }
 }
+// Vanish is a seal: a dispel at a Vanished wizard only strips the Vanish.
+// Vanish also turns curses aside: a curse aimed at a Vanished wizard finds nothing (VANISH_STOPS_CURSES).
+// Minion strikes are strikes (MINION_STRIKES_ARE_STRIKES): Vanish, dodge, Foresight, resist and vuln apply.
+let VANISH_TAKES_DISPEL=true, VANISH_STOPS_CURSES=true, MINION_STRIKES_ARE_STRIKES=true;
 function elemDispelHit(tgt,elem,power,tier){
   const ts=gs[tgt], tx=seatX(tgt);
   // Warding (Eldrin's Ward) takes the dispel in place of the ward and every other buff
   const warding=effectsOf(ts,'warding');
   if(warding.length){ VFX.dispelHit(tx); removeEffects(tgt,warding,'✦ Ward takes the dispel'); return; }
+  // Vanish works like a seal: it takes the whole dispel (Greater too), and the ward and other buffs behind
+  // it are untouched. Losing it costs little: he'd have given it up to strike soon enough.
+  const veil=VANISH_TAKES_DISPEL&&effectsOf(ts,'absorbNext').filter(e=>e.keep);
+  if(veil&&veil.length){ VFX.dispelHit(tx); removeEffects(tgt,veil,'✦ Vanish takes the dispel'); return; }
   if(hasWard(ts)){ elemWardDispel(tgt,elem,power,tier); return; }
   VFX.dispelHit(tx);
   const buffs=buffsOf(ts);
@@ -4732,8 +4745,16 @@ function elemTickEffects(who){
       const el=elemById(m.elem||'physical');
       dmgSource=owner;
       const bonus=m.minion==='skeleton'?danse:0;
-      if(foreseeBlock(who,m.icon)) return;
-      elemIncoming(who,Math.round((m.dmg+bonus)*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
+      // A minion's strike is a strike: Vanish, Blink's dodge, Foresight, resistance and vulnerability all
+      // meet it as they meet the owner's own (strikeResolve). Retaliation and element riders don't.
+      if(MINION_STRIKES_ARE_STRIKES){
+        const r=strikeResolve(owner,who,{power:m.dmg+bonus,elem:m.elem||'physical'},{mult:1,bonus:0});
+        if(r.miss){ if(!simMode) strikeMiss(owner,r,{elem:m.elem||'physical'}); return; }
+        elemIncoming(who,r.dmg,m.elem||'physical',m.icon,el.col,true);
+      } else {
+        if(foreseeBlock(who,m.icon)) return;
+        elemIncoming(who,Math.round((m.dmg+bonus)*suddenDeathMult()),m.elem||'physical',m.icon,el.col,true);
+      }
       if(bonus&&TICK_VFX.dansemacabre) TICK_VFX.dansemacabre(x,wizMidY(x));
       if(MINION_VFX[m.minion]) MINION_VFX[m.minion](x,wizMidY(x));
     });
@@ -4836,7 +4857,7 @@ function aiSigSensible(who,sp,tgt=weakestFoe(who)){
   const st=gs[who], ts=gs[tgt], el=sp.el;
   const active=(s,id)=>(s.effects||[]).some(e=>e.id===id);
   if(el.kind==='buff') return el.effect.type==='minion'||!active(st,sp.id);
-  if(el.kind==='curse') return !active(ts,sp.id)&&!(el.effect.type==='lock'&&catLocked(tgt,el.effect.cat));
+  if(el.kind==='curse') return !(VANISH_STOPS_CURSES&&isVanished(tgt))&&!active(ts,sp.id)&&!(el.effect.type==='lock'&&catLocked(tgt,el.effect.cat));
   if(el.kind==='instant'){
     const a=el.action;
     if(a.type==='heal') return st.hp<st.maxHp*0.7;
@@ -4848,6 +4869,62 @@ function aiSigSensible(who,sp,tgt=weakestFoe(who)){
     if(a.type==='siphon') return ts.mana>=3;
   }
   return true;
+}
+// Combo lines for a kit built around Vanish (every strike at him misses while it lasts): Ponder's.
+// Vanish only stops strikes. Curses still land, ticks still bite and a Dispel strips it, so the AI plays
+// it as a window to do the things that would otherwise cost him a free hit:
+//  · not Vanished, with a lasting curse on and a foe who can strike: Vanish (middle ring or better, so it
+//    lasts into next round), then cleanse under it
+//  · Vanished: cleanse lasting curses; raise Blink's ward over the Vanish when a foe could dispel it (the
+//    ward takes the dispel); siphon a foe who has saved up; or rest. Never strike (it reveals him).
+//  · a foe with a strike boost up (Empower, Infernal Mantle, Frenzy, Weave): Vanish before it lands
+// The lines in use (null: every one). Sim, Ponder's whole roster, both seats, 200 games a foe, curse timers on,
+// Vanish taking dispels: none 38.3%; vanishBoost + strikeLast 42.7%; + cleanseUnder 42.9% (neutral, kept: it's
+// what Vanish is for). Tried and left out: blinkOver −3.6, vanishToCleanse −2.2, siphonUnder −1.5, restUnder −0.6,
+// strikeAny (worse than strikeLast), a siphon timed to deny the foe's best spell (−8.5: he does nothing else),
+// siphoning only a foe with 6+ mana (−3.6).
+let COMBO_LINES=['cleanseUnder','vanishBoost','strikeLast'];
+function aiComboPick(who,tgt){
+  const on=n=>!COMBO_LINES||COMBO_LINES.includes(n);
+  const me=gs[who], opp=gs[tgt];
+  const vanishSp=sigSpells(who,'protect').find(sp=>sp.el.effect&&sp.el.effect.type==='absorbNext'&&sp.el.effect.keep);
+  if(!vanishSp) return null;
+  const blinkSp=sigSpells(who,'protect').find(sp=>sp.el.effect&&sp.el.effect.type==='dodge');
+  const siphonSp=sigSpells(who,'dispel').find(sp=>sp.el.action&&sp.el.action.type==='siphon');
+  const ok=_rng()<0.9;
+  const canSig=(sp,tier)=>sp&&elemCanPick(who,sp.el.cat)&&!sigBlocked(who,sp,tier);
+  const bestTier=(sp,lo)=>[3,2,1].find(t=>t>=lo&&canSig(sp,t));
+  const sig=(sp,tier)=>({type:'el',cat:sp.el.cat,elem:sp.el.elem,tier,sig:sp.id,target:tgt,ok});
+  const foes=foesOf(who);
+  const foeCanStrike=foes.some(f=>gs[f].mana>=elemCost(f,'damage',2));
+  const foeCanDispel=foes.some(f=>gs[f].mana>=elemCost(f,'dispel',1));
+  const foeBoost=foes.some(f=>gs[f].effects.some(e=>['empower','frenzy','weave'].includes(e.type)));
+  // Curses worth a turn: lasting ones, or with a round or more still to run
+  const lasting=cleansableCurses(me).filter(e=>e.rounds==null||e.rounds>=2);
+  const harm=lasting.reduce((a,e)=>a+(CURSE_HARM[e.type]||1),0);
+  const cleanse=()=>{
+    if(!elemCanPick(who,'dispel')) return null;
+    let tier=Math.min(3,lasting.length);
+    while(tier>1&&elemCost(who,'dispel',tier)>me.mana) tier--;
+    return elemCost(who,'dispel',tier)<=me.mana?{type:'el',cat:'dispel',elem:'arcane',tier,self:true,target:who,ok}:null;
+  };
+  if(effectsOf(me,'absorbNext').some(e=>e.keep)){
+    const c=harm>=2&&cleanse();
+    if(on('cleanseUnder')&&c&&_rng()<0.85) return c;
+    const bt=blinkSp&&bestTier(blinkSp,1);
+    if(on('blinkOver')&&bt&&!hasWard(me)&&foeCanDispel&&_rng()<0.5) return sig(blinkSp,bt);
+    const st=siphonSp&&opp.mana>=3&&bestTier(siphonSp,1);
+    if(on('siphonUnder')&&st&&_rng()<0.6) return sig(siphonSp,Math.min(2,st));
+    if(on('restUnder')&&canMeditate(who)&&meditateGain(who)>0&&!effectsOf(me,'candle').length&&me.mana<8&&_rng()<0.5)
+      return {type:'el',cat:'meditate',ok:true};
+    return null;
+  }
+  const vt=bestTier(vanishSp,2);
+  if(!vt) return null;
+  const vtier=Math.min(2,vt);   // the middle ring is enough to cleanse under; keep the rest for the Cleanse
+  if(on('vanishToCleanse')&&harm>=2&&foeCanStrike&&_rng()<0.7) return sig(vanishSp,vtier);
+  if(on('vanishBoost')&&foeBoost&&_rng()<0.6) return sig(vanishSp,vtier);
+  return null;
 }
 // Enthral's call: read the foe's next pick from the same pressures that steer the AI's own picks.
 // Easy guesses at random; Normal leans toward the likeliest pick without becoming predictable.
@@ -4898,6 +4975,9 @@ function elemAIChoose(who){
   const agonyOn=effectsOf(me,'agony').find(e=>!agonyBites(who,{cat:'meditate'},e));
   if(agonyOn&&canMeditate(who)&&_rng()<(smart?0.7:0.35))
     return {type:'el',cat:'meditate',ok:true};
+  // Combo lines for a kit built around Vanish (Ponder): see aiComboPick
+  const comboPick=smart?aiComboPick(who,tgt):null;
+  if(comboPick) return comboPick;
   if(canMeditate(who)&&medGain>0&&me.mana<elemCost(who,'damage',2)){
     let p=(me.mana<elemCost(who,'damage',1)?0.4:0.2)*medGain/MEDITATE.gain;
     if(!foesOf(who).some(f=>gs[f].mana>=elemCost(f,'damage',1))) p+=0.3;
@@ -4954,7 +5034,12 @@ function elemAIChoose(who){
   // Last round of my miss/dodge cover: spend it on a Siphon or a strike — the foe's strike would be wasted
   const cover=me.effects.filter(e=>e.type==='dodge'||(e.type==='absorbNext'&&!e.keep));
   // Vanished: a strike would reveal me, so siphon, ward up or rest instead
-  if(effectsOf(me,'absorbNext').some(e=>e.keep)){ w.damage*=smart?0.3:0.7; w.dispel+=smart?0.4:0.1; }
+  // Strike from hiding: picks are secret, and a foe facing a Vanish rarely picks a strike, so the reveal
+  // seldom costs anything (strikeLast: only in the Vanish's last round; strikeAny: any round of it)
+  const veilOn=effectsOf(me,'absorbNext').find(e=>e.keep);
+  const hideStrike=smart&&veilOn&&(!COMBO_LINES||COMBO_LINES.includes('strikeAny')||(COMBO_LINES.includes('strikeLast')&&veilOn.rounds<=1));
+  if(hideStrike) w.damage+=0.8;
+  else if(veilOn){ w.damage*=smart?0.3:0.7; w.dispel+=smart?0.4:0.1; }
   if(smart&&cover.length&&cover.every(e=>e.rounds===1)){
     w.protect*=0.3; w.damage+=0.5;
     if(siphon) w.dispel+=0.6;
@@ -8651,7 +8736,7 @@ const TUTORIAL_CONVOS={
   ],
   ponder:[
     {key:'ponder',text:"Hi! I'm Ponder — yes, the apprentice. My spells are all about misdirection and stealing mana."},
-    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes every strike miss me entirely for two rounds — three from the outer ring. But I can't strike from hiding: pick Damage and I'm revealed that round. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Want to hit me while I'm Vanished? Dispel it first."},
+    {key:'ponder',text:"Vanish, in the Arcane sector of my Protection wheel, makes every strike miss me entirely for two rounds — three from the outer ring — even a skeleton's or a blade's, and no curse can find me. But I can't strike from hiding: pick Damage and I'm revealed that round. Blink, in the Lightning sector, gives me a chance to dodge every strike for a few rounds, behind a light ward. Want to hit me while I'm Vanished? Dispel it first — but the Vanish takes that whole dispel, so my ward stays up."},
     {key:'ponder',text:"Mana Siphon takes the Arcane sector of my Dispel wheel. It's quick: I steal mana as the round begins, before my rival pays for their spell — if they can't afford it any more, it fails!"},
     {key:'ponder',text:"By the time they catch me, I've drained their mana and they can't afford to finish the job. Surprise!"},
   ],

@@ -755,7 +755,7 @@
       "You couldn't find me when I vanished. Try looking harder.",
       "Even an apprentice has tricks you haven't seen yet. Want another lesson?"
     ],
-    "hp": 84,
+    "hp": 80,
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
@@ -778,7 +778,7 @@
             "keep": true,
             "rounds": 2
           },
-          "desc": "2 rounds: every strike at you misses. Picking Damage reveals you"
+          "desc": "2 rounds: every strike at you misses, minions' too, and curses find nothing. Picking Damage reveals you. A dispel only strips the Vanish"
         }
       },
       {
@@ -816,7 +816,7 @@
             "rounds": 3
           },
           "ward": 10,
-          "desc": "45% dodge × 3 rounds, plus a 10 HP Lightning ward"
+          "desc": "45% dodge × 3 rounds (minions' strikes too), plus a 10 HP Lightning ward"
         }
       }
     ]
