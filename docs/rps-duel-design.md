@@ -817,3 +817,48 @@ about 10% of rounds. Tabletop mode doesn't have this yet.
 Correction: vines aren't magic. Vine Whip's vines carry `dmgKind:"physical"` on their `dot`, and a tick
 passes its effect's `dmgKind` to `elemIncoming` (ticks are magic unless it says otherwise), so only a
 Physical ward stops them. Sylvara 50.7%, roster 45.6–54.4% (80 games a matchup), no HP changes.
+
+## Plan of record: Actions and Magic
+
+Agreed design (supersedes the "Physical is an element" split above). Inspired by Final Fantasy: regular
+folk have **Actions**; wizards have Actions **and Magic**. Groundwork for RPG fights against non-wizards.
+
+**Two layers**
+- **Actions** (physical, everyone, free): ⚔️ **Attack** beats 🤼 **Grapple**, 🛡 **Guard** beats Attack,
+  Grapple breaks a Guard — the same rock-paper-scissors as magic. Actions cost no mana and need no
+  minigame (in tabletop they need no winks: they just go off). Stamina for special actions may come later
+  (the yellow winks).
+- **Magic** (wizards only): the element wheel, Damage / Protection / Dispel × 8 elements.
+- **Physical damage** (Attack, minion blows, weapons, bodies) is stopped only by physical defence (Guard,
+  armour, bodyguard minions, spells that grant physical defence such as Stoneskin). **Magic damage** (every
+  cast, Earth included) is stopped only by magic wards. Dispels unravel magic wards; Grapple breaks guards.
+- An Earth spell is magic; throwing a rock is an Attack.
+
+**Menus:** the three category buttons stay. Each wheel's centre is its Action (Damage → Attack,
+Protection → Guard, Dispel → Grapple), with the 8 element segments around it. A non-wizard sees only the
+centres. A later 💀 Command button may cover summoning and ordering minions (attack, bodyguard).
+
+**Elements:** Air, Water, Fire, Earth (the classical four) plus Lightning, Ice, Arcane, Dark. Physical
+becomes Earth (magic). Bans apply to magic only. **Opposed pairs** replace "a ward's own element unravels
+it": Water ↔ Fire, Air ↔ Earth, Lightning ↔ Ice, Arcane ↔ Dark (strikes and dispels of the opposite
+element hit a ward harder). Air: gusts over minion screens; deflecting ward; glyphs on gusts. Water:
+Drenched (next Lightning stronger, Fire weaker); a tide ward that regains instead of wearing; glyphs on
+ripples. Suggested glyphs: Air `Δ ϟ ✸ Φ`, Water `∇ ∞ Ω Φ`. A water wizard inspired by an Idoneth
+Tidecaster (original name and look if ever published).
+
+**Signature spells re-sorted**
+- Earth magic: Rockfall, the wheel's Earth strike, Corruption, Maggot Cloud, Entangle, Regen.
+- Physical damage: Savage Charge, Ancient Wrath, Caustic Bomb (the poison still seeps past every
+  defence), Bladestorm and Weizan's blades, every minion blow, Vine Whip (a physical strike and physical
+  damage over time, not a minion).
+- Boost physical attack: War Paint, Frenzy, Empower-style buffs.
+- Physical defence: Stoneskin, Iron Patience, Stonesoul, Dragon Scales.
+- Frost Armor: both ice magic and a physical guard.
+
+**Phases** (each balanced before the next)
+1. Actions and the Earth rename: Physical → Earth (magic), Attack / Guard / Grapple as wheel hubs,
+   per-character physical stats, re-sorted signatures, AI, rebalance.
+2. Air and Water: minigames, glyphs, VFX, riders, opposed pairs, bans, the water wizard.
+3. Minions as bodies: targeting minions, bodyguard minions, the Command button.
+4. Non-wizard enemies (soldiers, archers, knights): Actions only, balanced with the sim.
+5. Tabletop mirror: magic uses winks, Actions just go off.
