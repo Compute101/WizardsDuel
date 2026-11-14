@@ -414,7 +414,7 @@
       {
         "id": "fireball",
         "name": "Fireball",
-        "icon": "🎱",
+        "icon": "🔥",
         "el": {
           "cat": "damage",
           "kind": "strike",
@@ -1274,7 +1274,7 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 59,
+    "hp": 57,
     "dmgMult": 1.0,
     "spells": [
       {
@@ -1720,6 +1720,96 @@
           "blast": 10,
           "tier": 2,
           "desc": "26 fire; big blast: 10 of it gets around a ward"
+        }
+      }
+    ]
+  },
+  "nerissa": {
+    "name": "NERISSA",
+    "title": "of the Deep",
+    "sprite": "sprites/mage-light.png",
+    "arena": "library",
+    "col": "#2ec4d6",
+    "rivals": {
+      "cinder": "Your little flame hisses out in the deep, Cinder.",
+      "skadi": "Ice is only water that forgot how to move."
+    },
+    "taunts": [
+      "The tide always comes back. So does Fathom.",
+      "You were never drowning. You were just learning to breathe water.",
+      "Fathom wasn't hungry. He was being polite."
+    ],
+    "hp": 58,
+    "phys": {
+      "atk": 3
+    },
+    "dmgMult": 1,
+    "forbidden": [
+      "fire"
+    ],
+    "spells": [
+      {
+        "id": "fathom",
+        "name": "Summon Fathom",
+        "icon": "🦈",
+        "el": {
+          "cat": "protect",
+          "kind": "buff",
+          "elem": "water",
+          "cost": 5,
+          "tier": 2,
+          "effect": {
+            "type": "minion",
+            "minion": "shark",
+            "kind": "minion",
+            "elite": true,
+            "soak": 12,
+            "dmg": 4,
+            "elem": "water",
+            "max": 1,
+            "raise": 1,
+            "rounds": null
+          },
+          "desc": "Fathom, her shark familiar, circles her through the air (one at a time): soaks 12 damage in front of her ward and bites for 4 a round (physical); dispels can't touch him"
+        }
+      },
+      {
+        "id": "bloodinwater",
+        "name": "Blood in the Water",
+        "icon": "🩸",
+        "el": {
+          "dmgKind": "physical",
+          "cat": "damage",
+          "kind": "strike",
+          "elem": "water",
+          "cost": 5,
+          "power": 13,
+          "tier": 2,
+          "dot": {
+            "dmg": 3,
+            "rounds": 2,
+            "dmgKind": "physical"
+          },
+          "desc": "Fathom darts across and bites: 13 physical (teeth, not magic: a ward won't stop it) + bleeding 3 a round × 2"
+        }
+      },
+      {
+        "id": "undertow",
+        "name": "Undertow",
+        "icon": "🌀",
+        "el": {
+          "cat": "dispel",
+          "kind": "curse",
+          "elem": "water",
+          "cost": 2,
+          "tier": 2,
+          "chance": 0.55,
+          "effect": {
+            "type": "lock",
+            "cat": "protect",
+            "rounds": 2
+          },
+          "desc": "55%: dragged under — the foe can't pick Protection next round"
         }
       }
     ]

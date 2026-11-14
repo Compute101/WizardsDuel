@@ -189,7 +189,7 @@ so each spell's numbers can be tuned there.
 | Gnash | 🩸 War Paint | 🛡 Protection | 👊 Physical | Enchantment (self) | 2 / 3 / 5 | Take 33% less damage × 3 rounds |
 | Gnash | ⚔️ Savage Charge | ⚔️ Damage | 👊 Physical | Strike | 3 / 5 / 8 | 16 physical; burns 2 mana |
 | Gnash | 💢 Frenzy | 🛡 Protection | 🔥 Fire | Enchantment (self) | 1 / 2 / 3 | 2 rounds: strikes +40%, each costs 4 HP |
-| Cinder | 🎱 Fireball | ⚔️ Damage | 🔥 Fire | Strike | 3 / 5 / 8 | 12–24 random fire |
+| Cinder | 🔥 Fireball | ⚔️ Damage | 🔥 Fire | Strike | 3 / 5 / 8 | 12–24 random fire |
 | Cinder | 🛡️ Flame Shield | 🛡 Protection | 🔥 Fire | Ward | 4 / 7 / 11 | Fire ward of 30; strikers take 8 |
 | Cinder | 🕯️ Candle | ✦ Dispel | 🔥 Fire | Curse (foe) | 1 / 2 / 3 | 3 rounds: foe burns for 8 when they ward or meditate |
 | Skadi | 🧊 Ice Lance | ⚔️ Damage | ❄️ Ice | Strike | 4 / 6 / 10 | 18 ice; chills (middle ring and up) |
@@ -929,3 +929,13 @@ of his picks; Durin HP 68 → 65, 49.5% (roster 44.8–54.0%, 80 games a matchup
   Mary 60, Sylvara 66, Durin 61, Fizzwick 53, Mirel 51, Korvath 44, Gnash 55, Frederick 51, Nyxara 60.
   Result (80 games a matchup): 46.8–53.6%, about 17.8 rounds.
 - Still to do: the water wizard (a Tidecaster-inspired original), Air / Water bans for some wizards, tabletop.
+
+### Nerissa of the Deep (the water wizard)
+
+A sea elf with Fathom, a shark familiar that swims through the air (original character; the Idoneth
+Tidecaster was the inspiration). All Water: Summon Fathom (a shark soak minion: 12 HP, bites 4 a round,
+physical, one at a time, cost 5), Blood in the Water (Fathom bites: 13 physical + bleeding 3 × 2, cost 5),
+Undertow (55%: the foe can't pick Protection next round, cost 2). HP 58, atk 3, banned from Fire. At HP 55
+she was 45.6–47.3%; at 58, 49.7% (roster 46.5–53.3%, 80 games a matchup). Picks: Summon Fathom 20%,
+Undertow 13%, Blood in the Water 9%. Placeholder art (mage-light sprite, generated portrait) until real art.
+Also: Cinder's Fireball icon 🎱 → 🔥.

@@ -42,6 +42,7 @@ const CHAR_FLAVOUR={
   fizzwick:'A goblin alchemist whose kit is a gamble — Caustic Bomb wears them down, Volatile Tonic patches you up or arms your next hit, and Unstable Concoction can swing wildly either way.',
   daveron:'A necromancer guarded by a few elite graveguard. They soak your damage and dispels can\'t touch them, so batter through — and dispel Danse Macabre before it makes them deadly. Meditating won\'t escape Curse of the Years — cleanse it.',
   frederick:'A furious dark battle-wizard who lives to deal damage, and blasts straight through wards. Doom Bolt and Blue Fire each get part of their damage around a ward. Infernal Gate teleports him: whatever you aimed at him fizzles, and he comes out behind you in Infernal Mantle, ready to strike straight through your ward. Dispel the Mantle before he does.',
+  nerissa:'A sea elf who fights alongside Fathom, her shark familiar, swimming through the air. Fathom circles her, takes the blows meant for her and bites every round; Blood in the Water sets him on you, and Undertow drags you under so you cannot ward.',
   nyxara:'A void sorceress whose damage scales with what remains — Gravity Well and Event Horizon hit hardest early and taper off as HP drops, while Singularity grinds them down over time.',
 };
 
@@ -1490,6 +1491,13 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     bx.globalAlpha=1;
   }
   bx.restore();   // end of the aura oval
+  // Fathom (Nerissa's shark familiar): swims a wide loop around her, nose first, rising and dipping
+  if(state&&state.shark>0){
+    // a loop around her chest, kept close enough to stay on screen at the scene's edge
+    const a=t/1700, sx=x+Math.cos(a)*sz*.55, sy=y-sz*.78+Math.sin(a)*sz*.14+Math.sin(t/400)*sz*.03;
+    const depth=.82+.22*Math.sin(a);   // nearer (bigger) on the front half of the loop
+    drawShark(sx,sy,sz*.34*depth,-Math.sin(a)>=0?1:-1,t,.95,Math.cos(a)*.15);
+  }
   // Ward orbiters on the far side, behind the sprite
   if(shielded>0){
     drawWardOrbiters(x,y-sz*.62,sz,state,'back',fShield,t);
@@ -1693,9 +1701,38 @@ function addFloat(x,y,t,col,sz=17){ gs.floats.push({x,y,t,col,sz,life:1}); }
 // o.arc: peak height (px) of a parabolic flight path instead of a straight line
 function spawnProj(x1,y1,x2,y2,element,col,cb,o={}){
   if(simMode){ if(cb) cb(); return; }
-  const speeds={fire:0.038,lightning:0.22,ice:0.045,arcane:0.042,physical:0.065,dispel:0.05,manaburn:0.056,dark:0.048,arcaneOrb:0.03};
+  const speeds={fire:0.038,lightning:0.22,ice:0.045,arcane:0.042,physical:0.065,dispel:0.05,manaburn:0.056,dark:0.048,arcaneOrb:0.03,water:0.05,air:0.07,shark:0.026};
   gs.projs.push({x1,y1,x2,y2,progress:0,speed:speeds[element]||0.045,element,col,cb,done:false,arc:o.arc||0,
     phase:_rng()*Math.PI*2});
+}
+
+// A shark swimming through the air (Nerissa's familiar, Fathom): body, fins, a beating tail and a teal
+// glow. len: nose to tail; dir: +1 faces right, -1 left; tilt: radians, nose up or down.
+function drawShark(cx,cy,len,dir,t,alpha,tilt){
+  bx.save(); bx.translate(cx,cy); bx.scale(dir,1); bx.rotate(tilt||0); bx.globalAlpha*=alpha;
+  const L=len, H=len*.26, wag=Math.sin(t/110)*.32;
+  bx.shadowColor='#5fe0ff'; bx.shadowBlur=10;
+  const g=bx.createLinearGradient(0,-H,0,H);
+  g.addColorStop(0,'#3d5f7a'); g.addColorStop(.55,'#6f93ad'); g.addColorStop(1,'#d8e8f2');
+  bx.fillStyle=g;
+  bx.beginPath();   // body: pointed snout at +L/2, narrowing to the tail stock at -L/2
+  bx.moveTo(L*.5,0);
+  bx.quadraticCurveTo(L*.32,-H*.95,-L*.1,-H*.7);
+  bx.quadraticCurveTo(-L*.38,-H*.42,-L*.46,-H*.08);
+  bx.lineTo(-L*.46,H*.08);
+  bx.quadraticCurveTo(-L*.36,H*.5,-L*.05,H*.62);
+  bx.quadraticCurveTo(L*.32,H*.75,L*.5,0);
+  bx.fill();
+  bx.shadowBlur=0; bx.fillStyle='#3d5f7a';
+  bx.beginPath(); bx.moveTo(L*.04,-H*.78); bx.lineTo(-L*.14,-H*1.75); bx.lineTo(-L*.2,-H*.62); bx.fill();   // dorsal fin
+  bx.beginPath(); bx.moveTo(L*.12,H*.5); bx.lineTo(-L*.06,H*1.35); bx.lineTo(-L*.08,H*.45); bx.fill();      // pectoral fin
+  bx.save(); bx.translate(-L*.46,0); bx.rotate(wag);   // tail, beating
+  bx.beginPath(); bx.moveTo(0,0); bx.lineTo(-L*.22,-H*1.25); bx.lineTo(-L*.12,0); bx.lineTo(-L*.2,H*.85); bx.closePath(); bx.fill();
+  bx.restore();
+  bx.fillStyle='#0a1420'; bx.beginPath(); bx.arc(L*.3,-H*.18,Math.max(1,L*.022),0,6.28); bx.fill();   // eye
+  bx.strokeStyle='rgba(20,40,60,.6)'; bx.lineWidth=Math.max(.8,L*.008);   // gill slits
+  for(let k=0;k<3;k++){ bx.beginPath(); bx.moveTo(L*(.16-k*.035),-H*.3); bx.lineTo(L*(.14-k*.035),H*.2); bx.stroke(); }
+  bx.restore();
 }
 
 // Arcane strikes: pulsating blue orbs lobbed one after another, each on a parabola with its own
@@ -1779,6 +1816,25 @@ function tickProjs(){
       bx.shadowBlur=0; bx.restore();
       if(_rng()<.5*fk) gs.parts.push({x:px,y:py,col:'#66aaff',vx:(_rng()-.5)*.6,vy:(_rng()-.5)*.6,
         sz:1.5+_rng()*1.5,life:.7,dec:.04,noGrav:true});
+    } else if(p.element==='shark'){
+      // Fathom darts across, swimming through the air, nose first
+      const dirX=p.x2>=p.x1?1:-1, sw=Math.sin(p.progress*Math.PI*3)*bH*.012;
+      drawShark(px,py+sw,bH*.16,dirX,Date.now(),1,Math.cos(p.progress*Math.PI*3)*.12);
+    } else if(p.element==='water'){
+      // A water bolt: a bright core with a trail of droplets
+      const ang=Math.atan2(p.y2-p.y1,p.x2-p.x1), r=bH*.016;
+      for(let k=1;k<=5;k++){ bx.globalAlpha=.5-k*.08; bx.fillStyle='#5aa8ff'; bx.beginPath();
+        bx.arc(px-Math.cos(ang)*k*r*1.3,py-Math.sin(ang)*k*r*1.3+Math.sin(k*2+Date.now()/90)*2,r*(1-k*.14),0,6.28); bx.fill(); }
+      bx.globalAlpha=1; bx.shadowColor='#5aa8ff'; bx.shadowBlur=14; bx.fillStyle='#d8ecff';
+      bx.beginPath(); bx.arc(px,py,r,0,6.28); bx.fill(); bx.shadowBlur=0;
+    } else if(p.element==='air'){
+      // A gust: three pale streaks curling around each other
+      const ang=Math.atan2(p.y2-p.y1,p.x2-p.x1), t=Date.now();
+      bx.save(); bx.translate(px,py); bx.rotate(ang); bx.strokeStyle='rgba(220,255,248,.8)'; bx.lineCap='round';
+      for(let k=0;k<3;k++){ bx.lineWidth=2-k*.4; bx.beginPath();
+        for(let j=0;j<=10;j++){ const u=j/10, xx=-u*bH*.09, yy=Math.sin(u*7+t/80+k*2.1)*bH*.012; j?bx.lineTo(xx,yy):bx.moveTo(xx,yy); }
+        bx.stroke(); }
+      bx.restore();
     } else if(p.element==='physical'){
       const dir=Math.atan2(p.y2-p.y1,p.x2-p.x1);
       bx.save(); bx.translate(px,py); bx.rotate(dir);
@@ -1838,7 +1894,7 @@ const WIZ_VISUAL_BY_ID={timedrain:'timeDrain', counter:'counter', candle:'candle
   enthral:'enthralled', arcaneweave:'arcaneWeave', curseyears:'yearsCurse', dansemacabre:'danse', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen', frostbite:'frozen', dread:'dread',
   warpaint:'resist', ironpatience:'resist', heal:'regen', drenched:'drenched'};
 function wizVisuals(st){
-  const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra};
+  const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra, shark:st.shark};
   st.effects.forEach(e=>{
     const k=WIZ_VISUAL_BY_ID[e.id];
     if(k) v[k]=e.type==='weave'?e.charges:(e.rounds||1);
@@ -3056,6 +3112,7 @@ const MINION_VFX={
   blade:(x,y)=>vfxDrift(x,y,['#aaaadd'],4,{spd:1.2,lift:-.5,dec:.022,grav:true}),
   skeleton:(x,y)=>vfxDrift(x,y,['#9966cc'],6,{spd:1,lift:-.5,dec:.022,grav:true}),
   simulacrum:(x,y)=>spawnParts(x,y,'#b86ef4',10),
+  shark:(x,y)=>vfxDrift(x,y,['#5aa8ff','#d8ecff'],6,{spd:1,lift:-.5,dec:.022,grav:true}),
 };
 
 // Each signature spell's own look, ported from its original effect.
@@ -3181,6 +3238,10 @@ const SPELL_VFX={
   // Frederick: Doom Bolt is a purple fireball with a small blast; Blue Fire a big blue one with a far bigger blast
   doombolt:{delivery:{fireball:'doom'},
     hit:c=>{ spawnFireExplosion(c.tx,c.ty,c.dmg||12,'doom',1.1); flash('#9933ff'); vfxStrikeAnim(c.who,c.tgt); }},
+  bloodinwater:{delivery:{volley:1,proj:'shark',col:'#5fe0ff'},
+    hit:c=>{ spawnParts(c.tx,c.ty,'#cc1122',16); spawnParts(c.tx,c.ty,'#5aa8ff',10); flash('#3a8cff'); vfxStrikeAnim(c.who,c.tgt); }},
+  fathom:{self:c=>{ vfxPhaseIn(c.cx,c.cy,['#5fe0ff','#3a8cff','#ffffff'],18); }},
+  undertow:{hit:c=>{ vfxRing(c.tx,wizFeetY(),['#1d5fb8','#5aa8ff','#d8ecff'],18,{spd:1.2,lift:-.6,sz:3}); }},
   bluefire:{delivery:{fireball:'blue'},
     hit:c=>{ spawnFireExplosion(c.tx,c.ty,c.dmg||24,'blue',1.7); vfxRing(c.tx,c.ty,['#aee6ff','#3399ff','#ffffff'],26,{spd:2.2,sz:3});
       quake(bH*.012,450); flash('#3399ff'); vfxStrikeAnim(c.who,c.tgt); }},
@@ -3702,6 +3763,7 @@ function syncMinionVisuals(st){
   st.blades=countMinions(st,'blade');
   st.skeletons=effectsOf(st,'minion').filter(e=>e.minion==='skeleton').map(e=>({tier:e.look||e.tier||2}));
   st.simulacra=effectsOf(st,'minion').filter(e=>e.minion==='simulacrum').map(()=>({}));
+  st.shark=countMinions(st,'shark');
 }
 function addEffect(who,eff,fromWho){
   const st=gs[who], x=seatX(who);
@@ -9415,6 +9477,12 @@ const TUTORIAL_CONVOS={
     {key:'frederick',text:"Doom Bolt is my Dark strike — cheap, quick, and a small blast: part of it rolls around your ward and finds you anyway."},
     {key:'frederick',text:"Blue Fire is my Fire strike. It costs me dearly and I do not care. It hits hard, and its blast is far bigger — a ward will barely slow it."},
     {key:'frederick',text:"Infernal Gate, in the Fire sector of my Protection wheel, is my way out. I step through, and whatever you threw at me finds nothing. Then I step out behind you, wreathed in Infernal Mantle — and my next strike goes straight through your ward. Dispel it if you can."},
+  ],
+  nerissa:[
+    {key:'nerissa',text:"I am Nerissa of the Deep, and this is Fathom. He swims wherever I go — even through the air. Mind your fingers."},
+    {key:'nerissa',text:"Summon Fathom, in the Water sector of my Protection wheel, calls him to circle me. He takes the hits meant for me and bites you every round — and dispels can't touch him. Only steel or spells will drive him off."},
+    {key:'nerissa',text:"Blood in the Water is my Water strike: Fathom darts across and bites. It's teeth, not magic, so a ward won't stop it — and you'll keep bleeding for a round or two."},
+    {key:'nerissa',text:"Undertow is my Water curse. It drags you under, and often you can't raise any Protection next round. That's when Fathom feeds."},
   ],
   nyxara:[
     {key:'nyxara',text:"My magic doesn't care how strong you are — only how much of you is left."},
