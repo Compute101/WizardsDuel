@@ -315,7 +315,7 @@ How many waves can your wizard last? Ten waves of soldiers and archers come at y
 | **Frenzy** | Protection | Fire | Lesser | 2 | Until dispelled: your strikes deal +2, but each costs you 1 HP. |
 
 ### CINDER — The Volatile
-**HP 11** · Attack **1** · Can't cast: Ice
+**HP 11** · Attack **1** · Can't cast: Ice, Water
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -324,7 +324,7 @@ How many waves can your wizard last? Ten waves of soldiers and archers come at y
 | **Candle** | Dispel | Fire | Normal | 2 | Until cleansed: the foe takes 2 each time they cast Protection or Meditate. |
 
 ### SKADI — The Permafrost
-**HP 11** · Attack **1** · Can't cast: Fire
+**HP 11** · Attack **1** · Can't cast: Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -342,7 +342,7 @@ How many waves can your wizard last? Ten waves of soldiers and archers come at y
 | **Warpstone Curse** | Dispel | Lightning | Normal | 2 | Until cleansed: every strike on the foe deals +1. |
 
 ### MARY — The Devoted
-**HP 11** · Attack **1** · Can't cast: Dark, Fire
+**HP 11** · Attack **1** · Can't cast: Dark, Lightning
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -369,7 +369,7 @@ How many waves can your wizard last? Ten waves of soldiers and archers come at y
 | **Blink** | Protection | Lightning | Normal | 3 | Until dispelled: roll a die for each strike at you (minions' too), on 4+ it misses. Plus a Lightning ward of 3. |
 
 ### DURIN — The Stoneheart
-**HP 12** · Attack **2** · Skin: **Stoneskin** (3 mana, soaks 6 blows) instead of Ironskin · Can't cast: Lightning
+**HP 12** · Attack **2** · Skin: **Stoneskin** (3 mana, soaks 6 blows) instead of Ironskin · Can't cast: Lightning, Air
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -387,7 +387,7 @@ How many waves can your wizard last? Ten waves of soldiers and archers come at y
 | **Iron Patience** | Protection | Arcane | Normal | 2 | Until dispelled: every blow on you deals 1 less (min 1). Spells hit as usual. |
 
 ### GRETCH — The Festering
-**HP 10** · Attack **2** · Can't cast: Fire, Arcane
+**HP 10** · Attack **2** · Can't cast: Fire, Arcane, Air
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -405,7 +405,7 @@ How many waves can your wizard last? Ten waves of soldiers and archers come at y
 | **Soul Tithe** | Dispel | Dark | Lesser | 2 | Until cleansed: the foe loses 1 mana for each of your skeletons they kill. |
 
 ### MIREL — The Deceiver
-**HP 10** (Advanced rules: **9**) · Attack **1** · Can't cast: Earth, Fire
+**HP 10** (Advanced rules: **9**) · Attack **1** · Can't cast: Earth
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|
@@ -450,7 +450,7 @@ How many waves can your wizard last? Ten waves of soldiers and archers come at y
 | **Event Horizon** | Damage | Arcane | Greater | 7 | Arcane strike of half the foe's HP (round down, min 4). You take 2. |
 
 ### DAVERON — The Gravelord
-**HP 8** (Beginner rules: **7**, Advanced rules: **10**) · Attack **2** · Can't cast: Fire
+**HP 8** (Beginner rules: **7**, Advanced rules: **10**) · Attack **2** · Can't cast: Fire, Air
 
 | Spell | Type | Element | Level | Cost | Effect |
 |---|---|---|---|---|---|

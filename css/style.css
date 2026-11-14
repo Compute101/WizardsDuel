@@ -1612,3 +1612,75 @@ body {
 /* Target picker: a foe's summoned minions under them */
 .tg-minion { margin-left: 22px; padding: 4px 10px; opacity: .92; }
 .tg-mico { font-size: 22px; width: 40px; text-align: center; }
+
+/* ── PLAYER PROFILES (js/profiles.js) ── */
+.profile-chip {
+  position: absolute; top: 12px; left: 12px; z-index: 2;
+  display: flex; align-items: center; gap: 8px; max-width: calc(100% - 24px);
+  padding: 6px 12px 6px 8px; cursor: pointer; text-align: left;
+  color: #f0cc6a; background: rgba(40, 20, 70, 0.75);
+  border: 1px solid rgba(201,168,76,0.5); border-radius: 22px;
+  font-family: 'Cinzel', serif; -webkit-tap-highlight-color: transparent;
+}
+.profile-chip:hover { box-shadow: 0 0 14px rgba(201,168,76,0.4); }
+.pfc-ico { font-size: 20px; }
+.pfc-txt { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.pfc-txt b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pfc-txt small { font-size: 10px; color: rgba(201,168,76,0.65); letter-spacing: 1px; }
+#profile-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(8,4,20,0.97); z-index: 320;
+  align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto;
+}
+#profile-overlay.show { display: flex; }
+.pf-box { max-width: 440px; margin: auto 0; padding: 8px 0 24px; }
+.pf-box .btn { width: 100%; max-width: 280px; }
+.pf-intro { font-size: 13px; color: #ccc; line-height: 1.5; margin: 0 0 6px; }
+.pf-section { font: 700 12px 'Cinzel', serif; letter-spacing: 2px; text-transform: uppercase; color: #c9a84c; text-align: left; margin: 18px 0 6px; border-bottom: 1px solid rgba(201,168,76,0.25); padding-bottom: 3px; }
+.pf-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; margin: 6px 0; padding: 9px 12px; text-align: left;
+  color: #e8dcc0; background: rgba(40, 20, 70, 0.8); border: 1px solid rgba(201,168,76,0.35); border-radius: 8px; cursor: pointer;
+  font-family: inherit;
+}
+.pf-row:hover { border-color: #c9a84c; }
+.pf-row-ico { font-size: 22px; }
+.pf-row-txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.pf-row-txt b { font-size: 15px; color: #f0cc6a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-row-txt small { font-size: 11px; color: #aaa; }
+.pf-tag { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #9f9; border: 1px solid #5a5; border-radius: 10px; padding: 2px 7px; }
+.pf-stats-btn { font-size: 18px; padding: 2px 4px; }
+.pf-new { display: flex; gap: 8px; margin: 6px 0; }
+.pf-new input {
+  flex: 1; min-width: 0; padding: 9px 10px; font: 15px 'Cinzel', serif; color: #f0e6cc;
+  background: rgba(20, 10, 40, 0.9); border: 1px solid rgba(201,168,76,0.5); border-radius: 6px;
+}
+.pf-new .mo-opt { flex: 0 0 auto; padding: 9px 14px; }
+.pf-err { font-size: 12px; color: #ff7788; min-height: 16px; text-align: left; }
+.pf-rank { font: 700 16px 'Cinzel', serif; color: #f0cc6a; margin: 6px 0; letter-spacing: 1px; }
+.pf-xpbar { height: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(201,168,76,0.4); border-radius: 5px; overflow: hidden; }
+.pf-xpbar div { height: 100%; background: linear-gradient(90deg, #8a3aaa, #f0cc6a); }
+.pf-xptxt { font-size: 11px; color: #aaa; margin: 4px 0 10px; }
+.pf-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pf-tile { background: rgba(40, 20, 70, 0.7); border: 1px solid rgba(201,168,76,0.25); border-radius: 6px; padding: 7px 4px; display: flex; flex-direction: column; }
+.pf-tile b { font-size: 17px; color: #f0e6cc; }
+.pf-tile small { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: #aaa; }
+.pf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 5px; }
+.pf-grid img { width: 100%; aspect-ratio: 1; border-radius: 6px; filter: grayscale(1) brightness(0.35); border: 1px solid #333; }
+.pf-grid img.won { filter: none; border-color: #c9a84c; box-shadow: 0 0 6px rgba(201,168,76,0.5); }
+.pf-nemesis, .pf-note { font-size: 12px; color: #ccc; margin: 8px 0 0; text-align: left; }
+.pf-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #ddd; }
+.pf-table th { font-size: 10px; letter-spacing: 1px; color: #999; font-weight: 400; text-align: right; padding: 2px 4px; }
+.pf-table th:first-child, .pf-table td:first-child { text-align: left; }
+.pf-table td { text-align: right; padding: 3px 4px; border-top: 1px solid rgba(255,255,255,0.06); }
+.pf-table td:first-child { display: flex; align-items: center; gap: 6px; }
+.pf-table td img { width: 22px; height: 22px; border-radius: 4px; }
+.pf-empty { font-size: 12px; color: #888; text-align: left; }
+.pf-hist { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid rgba(255,255,255,0.06); text-align: left; }
+.pf-hist img { width: 28px; height: 28px; border-radius: 5px; }
+.pf-res { width: 22px; font-weight: 700; text-align: center; }
+.pf-win .pf-res { color: #7f7; } .pf-loss .pf-res { color: #f77; } .pf-draw .pf-res { color: #fb6; }
+.pf-hist-txt { display: flex; flex-direction: column; font-size: 12px; color: #ddd; min-width: 0; }
+.pf-hist-txt small { font-size: 10px; color: #999; }
+.pf-del { width: 100%; margin: 4px 0 10px; color: #ff8899; border-color: rgba(255,100,120,0.5); }
+#ovprof { margin: -18px 0 24px; font-size: 13px; color: #e8dcc0; line-height: 1.6; }
+.ovp-line b { color: #f0cc6a; }
+.pf-rankup { color: #f0cc6a; font-weight: 700; text-shadow: 0 0 10px #c9a84c; }

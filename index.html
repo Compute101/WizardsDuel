@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wizard's Duel</title>
-<link rel="stylesheet" href="css/style.css?v=0.26">
+<link rel="stylesheet" href="css/style.css?v=0.27">
 </head>
 <body>
 <div id="app">
@@ -12,6 +12,7 @@
   <!-- TITLE -->
   <div id="title-screen" class="screen active">
     <div class="title-grid"></div>
+    <button class="profile-chip" id="btn-profile" type="button" aria-label="Player profile"></button>
     <div class="rune-icon">🧙</div>
     <div class="title-text">Wizard's<br>Duel</div>
     <div class="title-sub">★ &nbsp;Master of Arcane Arts&nbsp; ★</div>
@@ -337,6 +338,11 @@
     </div>
   </div>
 
+  <!-- PLAYER PROFILES (js/profiles.js) -->
+  <div id="profile-overlay">
+    <div class="mo-box pf-box" id="pf-body"></div>
+  </div>
+
   <!-- 3–4 WIZARD SETUP -->
   <div id="encounter-overlay">
     <div class="mo-box enc-box">
@@ -433,6 +439,7 @@
     <div id="ovico">🏆</div>
     <div id="ovtitle">Victory!</div>
     <div id="ovdesc">Your spell finds its mark!</div>
+    <div id="ovprof" style="display:none"></div>
     <button class="btn" id="btn-continue">Continue</button>
   </div>
 
@@ -440,7 +447,8 @@
 
 </div>
 
-<script src="js/game.js?v=0.45"></script>
+<script src="js/profiles.js?v=1"></script>
+<script src="js/game.js?v=0.46"></script>
 <!-- Tabletop screen: the tiddlywink rules and tutorial (read only; the game itself never uses them) -->
 <script src="js/tabletop.js?v=1"></script>
 <script src="js/tabletop_ui.js?v=1"></script>

@@ -116,6 +116,7 @@ function newState(){
   seats.forEach(st=>{
     gs[st.who]=newSeat(st.cfg||defOf(st.key),st.key);
     gs[st.who].team=st.team||st.who;
+    addStartingMinions(st.who);
     if(gs[st.who+'anim']==null){ gs[st.who+'anim']='idle'; gs[st.who+'xOff']=0; }
   });
 }
@@ -1588,6 +1589,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   drawBoneTotem(x0,y,sz,who,flip,auraFade(who,'boneTotem',!!(state&&state.boneTotem>0)),t);
   // Skeletons stand in front of their master and his ward, so they're drawn last
   if(state&&state.skeletons&&state.skeletons.length) drawSkeletons(x,y,sz,who,flip,state.skeletons,t);
+  if(state&&state.guards>0) drawBodyguards(x,y,sz,who,flip,state.guards,t);
 }
 // Bone Totem (Gretch's regen buff): sprites/bonetotem.png planted on the floor on the foe's side of
 // him, in front of his sprite and ward. It rises out of the ground as it phases in (fade = auraFade), sways a little
@@ -1644,6 +1646,31 @@ function drawSkeletons(x,y,sz,who,flip,skels,t){
     bx.beginPath(); bx.arc(sx,cy,r,0,Math.PI*2); bx.fill();
     bx.fillStyle='#333'; bx.font=`${Math.round(r*.8)}px serif`;
     bx.textAlign='center'; bx.fillText('💀',sx,cy+r*.3);
+    bx.globalAlpha=1; bx.shadowBlur=0;
+  });
+}
+
+// Bodyguards (Thessaly's hired swords): the encounter soldier's still, smaller, standing in front of
+// her on the foe's side like skeletons do (same slots), facing the way she faces.
+const BODYGUARD_HEIGHT=0.7;   // fraction of the master's drawn height
+const bodyguardImg={img:new Image(),ready:false};
+bodyguardImg.img.onload=()=>{ bodyguardImg.ready=true; };
+bodyguardImg.img.src='sprites/soldier.png';
+function drawBodyguards(x,y,sz,who,flip,n,t){
+  const dir=flip?1:-1, hsz=sz*SPRITE_SCALE/seatSpriteHeight(who);
+  const slots=[[0.62,-.05,.92],[0.32,0,1]].slice(0,Math.min(n,2));   // the far one first, so the near one overlaps it
+  slots.forEach(([dx,dy,sc],i)=>{
+    const sx=x+dir*hsz*dx, fy=y+dy*hsz, h=hsz*BODYGUARD_HEIGHT*sc;
+    if(bodyguardImg.ready){
+      const bob=Math.sin(t/520+i*2.1)*hsz*.003;
+      bx.save(); bx.globalAlpha=0.98;
+      drawSprite(bodyguardImg.img,'idle',0,sx,fy+bob,h,flip);
+      bx.restore();
+      return;
+    }
+    const r=h*.18, cy=fy-h*.5;
+    bx.globalAlpha=0.9; bx.fillStyle='#b8c0cc'; bx.shadowColor='#ddaa22'; bx.shadowBlur=5;
+    bx.beginPath(); bx.arc(sx,cy,r,0,Math.PI*2); bx.fill();
     bx.globalAlpha=1; bx.shadowBlur=0;
   });
 }
@@ -1915,7 +1942,7 @@ const WIZ_VISUAL_BY_ID={timedrain:'timeDrain', counter:'counter', candle:'candle
   enthral:'enthralled', arcaneweave:'arcaneWeave', curseyears:'yearsCurse', dansemacabre:'danse', spellbind:'spellbound', bewitch:'bewitched', chill:'frozen', frostbite:'frozen', dread:'dread',
   warpaint:'resist', ironpatience:'resist', heal:'regen', drenched:'drenched'};
 function wizVisuals(st){
-  const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra, shark:st.shark};
+  const v={blades:st.blades, skeletons:st.skeletons, simulacra:st.simulacra, shark:st.shark, guards:st.guards};
   st.effects.forEach(e=>{
     const k=WIZ_VISUAL_BY_ID[e.id];
     if(k) v[k]=e.type==='weave'?e.charges:(e.rounds||1);
@@ -3141,6 +3168,7 @@ const MINION_VFX={
   skeleton:(x,y)=>vfxDrift(x,y,['#9966cc'],6,{spd:1,lift:-.5,dec:.022,grav:true}),
   simulacrum:(x,y)=>spawnParts(x,y,'#b86ef4',10),
   shark:(x,y)=>vfxDrift(x,y,['#5aa8ff','#d8ecff'],6,{spd:1,lift:-.5,dec:.022,grav:true}),
+  guard:(x,y)=>spawnParts(x,y,'#d8dde6',8),
 };
 
 // Each signature spell's own look, ported from its original effect.
@@ -3434,7 +3462,7 @@ function showReveal(){
   cards.innerHTML=activeSeats().map(who=>{
     const cfg=seatCfg(who), act=gs.pending[who], d=describeAction(who,act);
     const taunt=rivalTaunt(who,act);
-    const label=!passPhone()?cfg.name:isHumanSeat(who)?'Player '+(PLAYERS.indexOf(who)+1):cfg.name+' (AI)';
+    const label=!passPhone()?cfg.name:isHumanSeat(who)?playerLabel(who):cfg.name+' (AI)';
     // With more than one foe, say who each spell is aimed at
     const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${hitsAllFoes(who,act)?'All foes':seatCfg(act.target).name}</span>`:
       act.ally&&act.ally!==who?`<span class="rv-aim">→ ${seatCfg(act.ally).name}</span>`:'';
@@ -3905,7 +3933,7 @@ function fighterAIChoose(who){
 // — they stand in front of `ward` (their master, or an ally in team games), intercepting every hit on them
 // (magic and physical) before any ward, and don't strike. Strikes, Attacks and Grapples can be aimed at one
 // body (action.minion = its uid): the hit lands on it alone, with no ward and no riders.
-const MINION_NAMES={skeleton:'Skeleton', totem:'Bone Totem', shark:'Fathom'};
+const MINION_NAMES={skeleton:'Skeleton', totem:'Bone Totem', shark:'Fathom', guard:'Bodyguard'};
 const MINION_STANCE_DEFAULT='guard';
 let MINION_BRACE=0.5;   // a guarding body loses this share of each hit it intercepts (they brace behind their shields)
 let minionUid=0;
@@ -3929,6 +3957,17 @@ function minionsFall(owner,dead){
     const lost=Math.min(gs[killer].mana,n);
     if(lost>0){ gs[killer].mana-=lost; addFloat(seatX(killer),bH*.42,'🪙 Tithe −'+lost+' Mana','#aa88ff',12); }
   }
+}
+// Bodies a wizard brings to the duel (`bodyguards` in characters.json: Thessaly's two hired guards).
+// Plain soak minions, the same as a summoned body: they guard or attack by the owner's stance, can be
+// targeted, dispels can't touch them, and once they fall they're gone for the rest of the duel.
+function addStartingMinions(who){
+  const st=gs[who], bg=st.cfg&&st.cfg.bodyguards;
+  if(!bg) return;
+  for(let i=0;i<(bg.count||1);i++) st.effects.push({id:'bodyguard', type:'minion', kind:'minion', minion:'guard',
+    name:bg.name||'Bodyguard', icon:bg.icon||'💂', soak:bg.soak, hp:bg.soak, dmg:bg.dmg||0, max:bg.count||1,
+    rounds:null, from:who, uid:++minionUid});
+  syncMinionVisuals(st);
 }
 // Can this pick be aimed at a single body? Attacks, Grapples and damage spells that hit for a number
 function canTargetMinion(who,action){
@@ -4010,6 +4049,7 @@ function syncMinionVisuals(st){
   st.skeletons=effectsOf(st,'minion').filter(e=>e.minion==='skeleton').map(e=>({tier:e.look||e.tier||2}));
   st.simulacra=effectsOf(st,'minion').filter(e=>e.minion==='simulacrum').map(()=>({}));
   st.shark=countMinions(st,'shark');
+  st.guards=countMinions(st,'guard');
 }
 function addEffect(who,eff,fromWho){
   const st=gs[who], x=seatX(who);
@@ -6192,6 +6232,7 @@ function showMultiEnd(team){
   gameEnded=true;
   gs.myTurn=false; gs.busy=true;
   const winners=team?PLAYERS.filter(w=>seatTeam(w)===team):[];
+  recordMulti(team,winners);
   const names=ws=>ws.map(w=>seatCfg(w).name).join(' & ');
   if(survival){
     // The end of a Survival run: every wave cleared, or how far the wizard got
@@ -6290,7 +6331,8 @@ function fillRandomAISeats(){
 function labelMultiPick(){
   const i=multiPicks.length, lbl=document.getElementById('char-player-label');
   const team=multiSetup.format==='2v2'?' · Team '+(i<2?'A':'B'):'';
-  lbl.textContent='Wizard '+(i+1)+(multiSetup.human[i]?'':' (AI)')+team+': Choose';
+  const who=hasProfiles()&&multiSetup.human[i]&&Profiles.nameOf('p'+(i+1));
+  lbl.textContent=(who||'Wizard '+(i+1))+(multiSetup.human[i]?'':' (AI)')+team+': Choose';
   lbl.style.display='';
 }
 function checkWin(){
@@ -6349,9 +6391,51 @@ function resetTrainingRound(knockedOut){
   },950);
 }
 
+// ── PROFILE STATS (js/profiles.js) ──
+// Who sits in each seat comes from Profiles.seats (set when a mode starts); guests and AI seats aren't recorded.
+const hasProfiles=()=>typeof Profiles!=='undefined';
+function playerLabel(who){ return (hasProfiles()&&Profiles.nameOf(who))||'Player '+(PLAYERS.indexOf(who)+1); }
+// A 1v1 duel (Arcade or 2 Player): won is true / false / 'draw' from p1's side
+function recordDuel(won){
+  if(!hasProfiles()) return;
+  if(trainingMode||simMode){ Profiles.showSummary([]); return; }
+  const ids=Profiles.seats, rounds=gs.round||0;
+  const res=w=>won==='draw'?'draw':(w==='p1')===!!won?'win':'loss';
+  const mode=twoPlayerMode?'versus':tournamentQueue.length?'arcade':'duel';
+  const out=['p1','p2'].filter(w=>ids[w]&&(w==='p1'||twoPlayerMode)).map(w=>{
+    const foe=w==='p1'?'p2':'p1';
+    const o={mode, char:w==='p1'?p1Key:p2Key, result:res(w), rounds, foes:[{char:w==='p1'?p2Key:p1Key, pid:twoPlayerMode?ids[foe]:null}]};
+    if(mode==='arcade'){ o.arcadeStage=tournamentIndex+1; o.arcadeClear=won===true&&tournamentIndex>=tournamentQueue.length-1; }
+    return Profiles.recordGame(ids[w],o);
+  });
+  Profiles.showSummary(out);
+}
+// A 3–4 wizard duel or an Encounter: team is the winning team (null for a draw)
+function recordMulti(team,winners){
+  if(!hasProfiles()) return;
+  if(simMode){ Profiles.showSummary([]); return; }
+  const ids=Profiles.seats, rounds=gs.round||0;
+  const out=PLAYERS.filter(w=>ids[w]&&isHumanSeat(w)).map(w=>{
+    const result=!team?'draw':seatTeam(w)===team?'win':'loss';
+    // Survival: a run counts as a win only when every wave falls; the profile keeps the waves cleared
+    if(survival){
+      const waves=team===seatTeam('p1')?SURVIVAL_WAVES.length:survival.wave;
+      return Profiles.recordGame(ids[w],{mode:'encounter', char:seatKey(w), result:waves>=SURVIVAL_WAVES.length?'win':'loss', rounds, waves, foes:[]});
+    }
+    // A loss counts against the winners only, not the others who fell too
+    const foes=PLAYERS.filter(f=>seatTeam(f)!==seatTeam(w)&&(result!=='loss'||winners.includes(f))).map(f=>({char:seatKey(f), pid:ids[f]||null}));
+    // Place: the winners share 1st; everyone else by when they fell
+    const order=(gs.outOrder||[]).slice().reverse().map(o=>o.who).filter(x=>!winners.includes(x));
+    const place=result==='win'?1:winners.length+order.indexOf(w)+1;
+    return Profiles.recordGame(ids[w],{mode:'multi', char:seatKey(w), result, rounds, foes, place:place>0?place:null});
+  });
+  Profiles.showSummary(out);
+}
+
 function endGame(won){
   if(gameEnded) return;
   gameEnded=true;
+  recordDuel(won);
   const isDraw=won==='draw';
   gs.myTurn=false; gs.busy=true;
   if(isDraw){ gs.p1anim='death'; gs.p2anim='death'; }
@@ -6372,13 +6456,13 @@ function endGame(won){
         document.getElementById('ovtitle').style.color='#ff8844';
       } else {
         document.getElementById('ovtitle').textContent=
-          isMatchOver?'Player '+winnerNum+' Wins the Match!':'Player '+winnerNum+' Wins Round '+matchRound+'!';
+          isMatchOver?playerLabel('p'+winnerNum)+' Wins the Match!':playerLabel('p'+winnerNum)+' Wins Round '+matchRound+'!';
         document.getElementById('ovtitle').style.color=winnerCfg.col;
       }
       const p1s='★'.repeat(Math.min(2,p1MatchWins))+'☆'.repeat(Math.max(0,2-p1MatchWins));
       const p2s='★'.repeat(Math.min(2,p2MatchWins))+'☆'.repeat(Math.max(0,2-p2MatchWins));
       document.getElementById('ovdesc').textContent=
-        p1Cfg.name+' (P1): '+p1s+'  vs  '+p2Cfg.name+' (P2): '+p2s;
+        p1Cfg.name+' ('+playerLabel('p1')+'): '+p1s+'  vs  '+p2Cfg.name+' ('+playerLabel('p2')+'): '+p2s;
       continueBtn.textContent=isMatchOver?'Back to Title':'Fight Round '+(matchRound+1)+' →';
       document.getElementById('overlay').classList.add('active');
       return;
@@ -9513,7 +9597,7 @@ function pickCharacter(key){
       p1Key=key; p1Cfg=CHAR_DEFS[key];
       twoPlayerPhase=2;
       const lbl=document.getElementById('char-player-label');
-      lbl.textContent='Player 2: Choose Your Wizard';
+      lbl.textContent=playerLabel('p2')+': Choose Your Wizard';
       lbl.style.display='';
       return;
     } else {
@@ -9536,6 +9620,7 @@ function pickCharacter(key){
   const bossList=ARCADE_BOSSES.filter(k=>k!==key);
   tournamentQueue=[...earlyFoes,...bossList];
   tournamentIndex=0;
+  if(hasProfiles()) Profiles.arcadeRun(Profiles.seats.p1);
   p2Key=tournamentQueue[0];
   p2Cfg=CHAR_DEFS[p2Key];
   showBracket(false);
@@ -9578,7 +9663,7 @@ function startTwoPlayerBattle(){
 function showHandoffOverlay(toPlayer, callback){
   const cfg=seatCfg(toPlayer);
   const num=PLAYERS.indexOf(toPlayer)+1;
-  document.getElementById('handoff-player-num').textContent='Player '+num;
+  document.getElementById('handoff-player-num').textContent=playerLabel(toPlayer);
   document.getElementById('handoff-char-name').textContent=cfg.name.toUpperCase();
   const portrait=document.getElementById('handoff-portrait');
   portrait.src='portraits/small/'+seatKey(toPlayer)+'.jpg';
@@ -9935,6 +10020,7 @@ const TUTORIAL_CONVOS={
     {key:'thessaly',text:"Enthral is my Arcane curse. I secretly call your next move — Damage, Protection or Dispel. Choose what I called and your spell is lost, its mana mine. Choose otherwise and I misread you. Nobody cleanses it in time: it springs the moment you cast."},
     {key:'thessaly',text:"Spellbind is my Dark curse — whatever you cast most often costs more for a while. Lean on one move and I'll make you pay for it."},
     {key:'thessaly',text:"Arcane Weave, in the Arcane sector of my Protection wheel, raises a light ward, then empowers my next few strikes and makes each one burn your mana."},
+    {key:'thessaly',text:"And I never come alone. Two bodyguards stand at my side from the first round. Set them to guard me and they take the blows meant for me; set them to attack and they earn their wages. I don't hire more, so spend them wisely."},
     {key:'thessaly',text:"By the time you understand what I've done, you've already run out of answers."},
   ],
   korvath:[
@@ -9978,6 +10064,7 @@ const TUTORIAL_CONVOS={
 // Character select stats, from each spell's `el` block
 function elemCharStats(cfg){
   const rows=[['❤ HP',String(cfg.hp)]];
+  if(cfg.bodyguards){ const b=cfg.bodyguards; rows.push([(b.icon||'💂')+' '+(b.count||1)+' '+(b.name||'Bodyguard')+'s','Start the duel at her side, '+b.soak+' HP each: on guard they soak hits for her (braced), on the attack each strikes for '+b.dmg+' a round; once they fall they\'re gone']); }
   if(cfg.forbidden&&cfg.forbidden.length)
     rows.push(['⛔ Can\'t cast',cfg.forbidden.map(id=>{ const e=elemById(id); return e.icon+' '+e.name; }).join(', ')]);
   (cfg.spells||[]).filter(s=>s.el).forEach(s=>{
@@ -10157,8 +10244,10 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btn-duel-back').addEventListener('click',()=>{
     duelOverlay.style.display='none';
   });
+  const activeId=()=>hasProfiles()&&Profiles.active()?Profiles.active().id:null;
   document.getElementById('btn-duel-arcade').addEventListener('click',()=>{
     duelOverlay.style.display='none';
+    if(hasProfiles()) Profiles.setSeats({p1:activeId()});
     trainingMode=false; twoPlayerMode=false; twoPlayerPhase=1;
     document.getElementById('char-player-label').style.display='none';
     showScreen('char-screen');
@@ -10190,6 +10279,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('encounter-overlay').addEventListener('click',e=>{
     if(!e.target.closest('#btn-enc-go')) return;
     encounterPending=true;
+    if(hasProfiles()) Profiles.setSeats({p1:activeId()});
     document.getElementById('encounter-overlay').classList.remove('show');
     trainingMode=false; twoPlayerMode=false; multiMode=false; multiPicks=[];
     const lbl=document.getElementById('char-player-label');
@@ -10222,17 +10312,34 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
   document.getElementById('btn-multi-go').addEventListener('click',()=>{
     document.getElementById('multi-overlay').classList.remove('show');
-    trainingMode=false; twoPlayerMode=false; multiMode=true; multiPicks=[];
-    labelMultiPick();
-    showScreen('char-screen');
+    const go=()=>{
+      trainingMode=false; twoPlayerMode=false; multiMode=true; multiPicks=[];
+      labelMultiPick();
+      showScreen('char-screen');
+    };
+    if(!hasProfiles()){ go(); return; }
+    // Every player seat after the first says who's playing it (seat 1 is the active profile)
+    const extra=[];
+    for(let i=1;i<multiSetup.n;i++) if(multiSetup.human[i]) extra.push(i);
+    Profiles.choosePlayers(extra.map(i=>'Wizard '+(i+1)),ids=>{
+      const map={p1:activeId()};
+      extra.forEach((i,j)=>map['p'+(i+1)]=ids[j]);
+      Profiles.setSeats(map);
+      go();
+    },()=>document.getElementById('multi-overlay').classList.add('show'));
   });
   document.getElementById('btn-duel-2player').addEventListener('click',()=>{
     duelOverlay.style.display='none';
-    trainingMode=false; twoPlayerMode=true; twoPlayerPhase=1;
-    const lbl=document.getElementById('char-player-label');
-    lbl.textContent='Player 1: Choose Your Wizard';
-    lbl.style.display='';
-    showScreen('char-screen');
+    const go=()=>{
+      trainingMode=false; twoPlayerMode=true; twoPlayerPhase=1;
+      const lbl=document.getElementById('char-player-label');
+      lbl.textContent=playerLabel('p1')+': Choose Your Wizard';
+      lbl.style.display='';
+      showScreen('char-screen');
+    };
+    if(!hasProfiles()){ go(); return; }
+    Profiles.choosePlayers(['Player 2'],ids=>{ Profiles.setSeats({p1:activeId(), p2:ids[0]}); go(); },
+      ()=>{ duelOverlay.style.display='flex'; });
   });
 
   document.getElementById('btn-practice').addEventListener('click',()=>{
@@ -10315,7 +10422,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     } else if(twoPlayerMode&&twoPlayerPhase===2){
       twoPlayerPhase=1;
       const lbl=document.getElementById('char-player-label');
-      lbl.textContent='Player 1: Choose Your Wizard';
+      lbl.textContent=playerLabel('p1')+': Choose Your Wizard';
     } else {
       twoPlayerMode=false; twoPlayerPhase=1;
       document.getElementById('char-player-label').style.display='none';

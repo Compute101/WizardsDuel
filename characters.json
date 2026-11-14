@@ -408,7 +408,8 @@
     "hp": 54,
     "dmgMult": 1.15,
     "forbidden": [
-      "ice"
+      "ice",
+      "water"
     ],
     "spells": [
       {
@@ -482,7 +483,7 @@
     "aiWard": "fortress",
     "dmgMult": 1.0,
     "forbidden": [
-      "fire"
+      "lightning"
     ],
     "spells": [
       {
@@ -642,7 +643,7 @@
     "dmgMult": 1.0,
     "forbidden": [
       "dark",
-      "fire"
+      "lightning"
     ],
     "spells": [
       {
@@ -869,7 +870,7 @@
       "You threw everything you had at me. I barely felt it.",
       "The mountain endures all things. So too shall I."
     ],
-    "hp": 61,
+    "hp": 67,
     "phys": {
       "atk": 6
     },
@@ -885,7 +886,8 @@
     },
     "dmgMult": 1.0,
     "forbidden": [
-      "lightning"
+      "lightning",
+      "air"
     ],
     "spells": [
       {
@@ -1037,7 +1039,8 @@
     "dmgMult": 1.0,
     "forbidden": [
       "fire",
-      "arcane"
+      "arcane",
+      "air"
     ],
     "spells": [
       {
@@ -1199,8 +1202,7 @@
     },
     "dmgMult": 1.0,
     "forbidden": [
-      "earth",
-      "fire"
+      "earth"
     ],
     "spells": [
       {
@@ -1274,8 +1276,15 @@
       "You fought well. You just fought the wrong opponent.",
       "Every spell you cast was mine to exploit. You were generous."
     ],
-    "hp": 57,
+    "hp": 38,
     "dmgMult": 1.0,
+    "bodyguards": {
+      "count": 2,
+      "name": "Bodyguard",
+      "icon": "💂",
+      "soak": 3,
+      "dmg": 1
+    },
     "spells": [
       {
         "id": "enthral",
@@ -1585,7 +1594,8 @@
     },
     "dmgMult": 1.0,
     "forbidden": [
-      "fire"
+      "fire",
+      "air"
     ],
     "spells": [
       {
