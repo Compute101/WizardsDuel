@@ -1727,7 +1727,7 @@
   "nerissa": {
     "name": "NERISSA",
     "title": "of the Deep",
-    "sprite": "sprites/mage-light.png",
+    "sprite": "sprites/nerissa.png",
     "arena": "library",
     "col": "#2ec4d6",
     "rivals": {

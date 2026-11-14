@@ -38,7 +38,7 @@ FACES = {
     'mary':      (0.45, 0.27, 0.32),
     'mirel':     (0.56, 0.23, 0.32),
     'mordant':   (0.40, 0.21, 0.32),
-    'nerissa':   (0.50, 0.42, 0.42),   # placeholder art (tools: generated), replace with real art
+    'nerissa':   (0.42, 0.255, 0.28),
     'nyxara':    (0.52, 0.19, 0.30),
     'ponder':    (0.53, 0.28, 0.34),
     'skadi':     (0.43, 0.22, 0.34),

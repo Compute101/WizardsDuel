@@ -1492,11 +1492,12 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
   }
   bx.restore();   // end of the aura oval
   // Fathom (Nerissa's shark familiar): swims a wide loop around her, nose first, rising and dipping
-  if(state&&state.shark>0){
+  // (hidden while he's away biting: a shark projectile leaving from her side)
+  if(state&&state.shark>0&&!(gs.projs||[]).some(p=>p.element==='shark'&&!p.done&&Math.abs(p.x1-x)<bW*.15)){
     // a loop around her chest, kept close enough to stay on screen at the scene's edge
     const a=t/1700, sx=x+Math.cos(a)*sz*.55, sy=y-sz*.78+Math.sin(a)*sz*.14+Math.sin(t/400)*sz*.03;
     const depth=.82+.22*Math.sin(a);   // nearer (bigger) on the front half of the loop
-    drawShark(sx,sy,sz*.34*depth,-Math.sin(a)>=0?1:-1,t,.95,Math.cos(a)*.15);
+    drawShark(sx,sy,sz*.42*depth,-Math.sin(a)>=0?1:-1,t,.95,Math.cos(a)*.15);
   }
   // Ward orbiters on the far side, behind the sprite
   if(shielded>0){
@@ -1708,7 +1709,16 @@ function spawnProj(x1,y1,x2,y2,element,col,cb,o={}){
 
 // A shark swimming through the air (Nerissa's familiar, Fathom): body, fins, a beating tail and a teal
 // glow. len: nose to tail; dir: +1 faces right, -1 left; tilt: radians, nose up or down.
+// Fathom's art (sprites/fathom.png, facing right, with its own glow and water wisps); the vector shark
+// below is the fallback while it loads or if it's missing
+const FATHOM_IMG=new Image(); FATHOM_IMG.src='sprites/fathom.png';
 function drawShark(cx,cy,len,dir,t,alpha,tilt){
+  if(FATHOM_IMG.complete&&FATHOM_IMG.naturalWidth){
+    const w=len*1.45, h=w*FATHOM_IMG.naturalHeight/FATHOM_IMG.naturalWidth, sw=1+Math.sin(t/160)*.025;   // a slight swimming pulse
+    bx.save(); bx.translate(cx,cy); bx.scale(dir*sw,1/sw); bx.rotate(tilt||0); bx.globalAlpha*=alpha;
+    bx.drawImage(FATHOM_IMG,-w/2,-h/2,w,h);
+    bx.restore(); return;
+  }
   bx.save(); bx.translate(cx,cy); bx.scale(dir,1); bx.rotate(tilt||0); bx.globalAlpha*=alpha;
   const L=len, H=len*.26, wag=Math.sin(t/110)*.32;
   bx.shadowColor='#5fe0ff'; bx.shadowBlur=10;

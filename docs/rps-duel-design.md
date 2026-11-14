@@ -937,5 +937,5 @@ Tidecaster was the inspiration). All Water: Summon Fathom (a shark soak minion: 
 physical, one at a time, cost 5), Blood in the Water (Fathom bites: 13 physical + bleeding 3 × 2, cost 5),
 Undertow (55%: the foe can't pick Protection next round, cost 2). HP 58, atk 3, banned from Fire. At HP 55
 she was 45.6–47.3%; at 58, 49.7% (roster 46.5–53.3%, 80 games a matchup). Picks: Summon Fathom 20%,
-Undertow 13%, Blood in the Water 9%. Placeholder art (mage-light sprite, generated portrait) until real art.
+Undertow 13%, Blood in the Water 9%. Art: the artist's sprite sheet (Nerissa and Fathom, cut into `sprites/nerissa.png` and `sprites/fathom.png`) and portrait.
 Also: Cinder's Fireball icon 🎱 → 🔥.
