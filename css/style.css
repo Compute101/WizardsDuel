@@ -996,6 +996,32 @@ body {
   color: #f0cc6a;
   text-shadow: 0 0 18px #c9a84c;
 }
+#wheel-head { position: relative; width: 100%; display: flex; justify-content: center; align-items: center; padding: 0 40px; }
+#wheel-info {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1.5px solid #c9a84c; background: rgba(201,168,76,0.1); color: #f0cc6a;
+  font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 700; font-size: 18px; line-height: 1;
+  cursor: pointer;
+}
+#wheel-info:hover { background: rgba(201,168,76,0.25); box-shadow: 0 0 10px rgba(201,168,76,0.5); }
+/* Wheel help: rules, ring costs and signature spells, opened from the info button */
+#wheel-help {
+  display: none; position: fixed; inset: 0; z-index: 195;
+  background: rgba(4, 1, 12, 0.92);
+  align-items: flex-start; justify-content: center;
+  padding: 16px; overflow-y: auto;
+}
+#wheel-help.active { display: flex; }
+#wheel-help-box {
+  margin: auto 0; width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 16px; border: 1px solid rgba(201,168,76,0.4); border-radius: 10px;
+  background: #120a22;
+}
+#wheel-help-title { font-family: 'Cinzel Decorative', serif; font-size: 18px; color: #f0cc6a; }
+.wh-section { align-self: stretch; text-align: left; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #f0cc6a; margin-top: 4px; }
+#wheel-help-close { margin-top: 6px; }
 #wheel-mana { font-size: 11px; letter-spacing: 2px; color: #88aaff; }
 #wheel-svg { width: min(100%, 340px); height: auto; touch-action: manipulation; }
 #wheel-svg .wseg { stroke: #0a0616; stroke-width: 2; cursor: pointer; transition: fill-opacity 0.1s; }
@@ -1006,7 +1032,7 @@ body {
 #wheel-svg .wname { font-size: 9px; font-family: 'Cinzel', serif; font-weight: 700; fill: #fff; opacity: 0.85; }
 #wheel-svg .wcentre { fill: #140c26; stroke: #c9a84c; stroke-width: 1.5; }
 #wheel-svg .wcentre-ico { font-size: 24px; fill: #f0cc6a; }
-#wheel-legend { width: 100%; max-width: 300px; font-size: 11px; }
+#wheel-legend { width: 100%; font-size: 11px; }
 .wl-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1.2fr;
@@ -1015,7 +1041,9 @@ body {
   border-bottom: 1px solid rgba(201,168,76,0.15);
 }
 .wl-row.off { color: rgba(255,255,255,0.3); }
-#wheel-rule { font-size: 10px; line-height: 1.5; color: rgba(255,255,255,0.5); max-width: 320px; }
+#wheel-rule { font-size: 11px; line-height: 1.5; color: rgba(255,255,255,0.7); width: 100%; text-align: left; }
+#wheel-rule ul { margin: 0; padding-left: 18px; }
+#wheel-rule li { margin-bottom: 3px; }
 #wheel-self { margin-top: 4px; }
 #wheel-self:disabled { opacity: .45; cursor: default; }
 /* Cleanse Self: one button per ring (1 curse / 2 curses / all) */

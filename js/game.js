@@ -228,17 +228,26 @@ function fillSceneBands(){
   if(below>0) bx.drawImage(bc,0,bOffY+bH-1,bW,1,0,bOffY+bH,bW,below);
 }
 
-// Painted arena backdrop (backgrounds/<ARENA_BG>.jpg). null, or an image that hasn't loaded,
-// falls back to the procedural per-opponent backgrounds below.
-const ARENA_BG='library';
+// Painted arena backdrops (backgrounds/<name>.jpg). Each character's `arena` in characters.json
+// names its home ground; a duel is fought on the opponent's (p2Key), like the old procedural
+// backgrounds. A character with no `arena` uses ARENA_DEFAULT; null there, or an image that
+// hasn't loaded yet, falls back to the procedural per-opponent backgrounds below.
+const ARENA_DEFAULT='library';   // 'library' (gothic library) or 'ruins' (moonlit ruined streets)
 const ARENA_DIM=0.22;   // dark wash over the painting so wizards and spell effects stand out
-const arenaImg={img:new Image(),ready:false};
-if(ARENA_BG){ arenaImg.img.onload=()=>{arenaImg.ready=true;}; arenaImg.img.src='backgrounds/'+ARENA_BG+'.jpg'; }
-function arenaBgActive(){ return !!(ARENA_BG&&arenaImg.ready); }
+const arenaImgs={};     // name -> {img, ready}, loaded on first use
+function arenaName(key){ return (CHAR_DEFS&&CHAR_DEFS[key]&&CHAR_DEFS[key].arena)||ARENA_DEFAULT; }
+function arenaFor(key){
+  const name=arenaName(key); if(!name) return null;
+  let a=arenaImgs[name];
+  if(!a){ a=arenaImgs[name]={img:new Image(),ready:false};
+    a.img.onload=()=>{a.ready=true;}; a.img.src='backgrounds/'+name+'.jpg'; }
+  return a;
+}
+function arenaBgActive(){ const a=arenaFor(p2Key); return !!(a&&a.ready); }
 // Cover the whole canvas, floor kept at the bottom of the scene (where the wizards stand);
 // any band above or below the scene fades into the room's darkness instead of being stretched.
 function drawArenaImage(){
-  const im=arenaImg.img, iw=im.naturalWidth, ih=im.naturalHeight;
+  const im=arenaFor(p2Key).img, iw=im.naturalWidth, ih=im.naturalHeight;
   const top=-bOffY, bot=bc.height-bOffY;
   bx.fillStyle='#07040c'; bx.fillRect(0,top,bW,bot-top);
   const s=Math.max(bW/iw,bH/ih), dw=iw*s, dh=ih*s;
@@ -3733,7 +3742,7 @@ function openElemWheel(cat){
   cl.style.display=cat==='dispel'?'':'none';
   if(cat==='dispel'){
     const n=cursesOf(st).length;
-    cl.innerHTML='<div class="wheel-cleanse-label">✦ Cleanse Self'+(n?' · '+n+' curse'+(n>1?'s':'')+' on you':' · no curses on you')+'</div>';
+    cl.innerHTML='<div class="wheel-cleanse-label">✦ Cleanse Self'+(n?' ('+n+' curse'+(n>1?'s':'')+')':'')+'</div>';
     ['1 curse','2 curses','All curses'].forEach((lbl,i)=>{
       const tier=i+1, cost=elemCost(who,'dispel',tier), b=document.createElement('button');
       b.className='btn wheel-cleanse-btn'; b.dataset.tier=tier;
@@ -3752,7 +3761,9 @@ function openElemWheel(cat){
         (WARD_RULES.sealBlocks?', even a Greater one — it takes a second dispel for the ward':WARD_RULES.sealSoak?' (it soaks '+WARD_RULES.sealSoak+' power: weaker dispels bounce off, a Greater one goes on with the rest)':' (a Greater one goes on through)'):''),
     dispel:'Breaks wards (double vs the same element) · with no ward up, strips an enchantment · curses also weaken wards',
   }[cat];
-  document.getElementById('wheel-rule').textContent=ruleText;
+  // The rules, ring costs and signature spell text live behind the ⓘ button (wheel-help), keeping the wheel uncluttered
+  document.getElementById('wheel-help-title').textContent=c.icon+' '+c.name;
+  document.getElementById('wheel-rule').innerHTML='<ul>'+ruleText.split(' · ').map(r=>'<li>'+r[0].toUpperCase()+r.slice(1)+'</li>').join('')+'</ul>';
   document.getElementById('wheel-legend').innerHTML=[0,1,2].map(t=>{
     const cost=elemCost(who,cat,t+1), off=cost>st.mana;
     return `<div class="wl-row${off?' off':''}"><span>${['Inner','Middle','Outer'][t]}</span><span>${cost} Mana</span><span>${c.power[t]} ${c.unit}</span></div>`;
@@ -3771,7 +3782,10 @@ function openElemWheel(cat){
   buildWheelSvg(who,cat);
   document.getElementById('wheel-overlay').classList.add('active');
 }
+function openWheelHelp(){ document.getElementById('wheel-help').classList.add('active'); }
+function closeWheelHelp(){ document.getElementById('wheel-help').classList.remove('active'); }
 function closeElemWheel(){
+  closeWheelHelp();
   document.getElementById('wheel-overlay').classList.remove('active');
   wheelCat=null;
 }
@@ -3789,7 +3803,8 @@ function buildWheelSvg(who,cat){
       const off=!sectorOk(who,cat,el.id,t+1);
       const d=`M${pt(r0,a0)} L${pt(r1,a0)} A${r1} ${r1} 0 0 1 ${pt(r1,a1)} L${pt(r0,a1)} A${r0} ${r0} 0 0 0 ${pt(r0,a0)} Z`;
       html+=`<path class="wseg${off?' off':''}${sp?' sig':''}" d="${d}" data-elem="${el.id}" data-tier="${t+1}" `+
-        `style="fill:${off?'#2a2a33':el.col};fill-opacity:${off?0.5:[0.22,0.42,0.68][t]}"/>`;
+        `style="fill:${off?'#2a2a33':el.col};fill-opacity:${off?0.5:[0.22,0.42,0.68][t]}">`+
+        `<title>${ELEM_TIER_NAMES[t]}${sp?sigName(sp):el.name} · ${sp?sigCost(who,sp,t+1):elemCost(who,cat,t+1)} Mana</title></path>`;
     });
     const label=banned?'⛔ '+el.name:sp?'★'+sigName(sp).split(' ')[0]:el.name;
     html+=`<text class="wicon${banned?' wicon-banned':''}" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${sp?sigIcon(sp):el.icon}</text>`;
@@ -8913,6 +8928,9 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
   document.getElementById('wheel-svg').addEventListener('click',onWheelTap);
   document.getElementById('wheel-cancel').addEventListener('click',closeElemWheel);
+  document.getElementById('wheel-info').addEventListener('click',openWheelHelp);
+  document.getElementById('wheel-help-close').addEventListener('click',closeWheelHelp);
+  document.getElementById('wheel-help').addEventListener('click',e=>{ if(e.target.id==='wheel-help') closeWheelHelp(); });
   document.getElementById('wheel-self').addEventListener('click',e=>{
     if(e.currentTarget.disabled) return;
     const cat=wheelCat;
@@ -9186,6 +9204,6 @@ window.addEventListener('DOMContentLoaded', ()=>{
   // Load character data — must complete before a character can be picked
   fetch('characters.json')
     .then(r=>r.json())
-    .then(data=>{ CHAR_DEFS=data; p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key]; loadSprites(); })
+    .then(data=>{ CHAR_DEFS=data; p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key]; loadSprites(); Object.keys(CHAR_DEFS).forEach(arenaFor); })
     .catch(err=>console.error('Failed to load characters.json:', err));
 });
