@@ -867,7 +867,7 @@
       "You threw everything you had at me. I barely felt it.",
       "The mountain endures all things. So too shall I."
     ],
-    "hp": 68,
+    "hp": 65,
     "phys": {
       "atk": 6
     },
@@ -884,6 +884,21 @@
       "lightning"
     ],
     "spells": [
+      {
+        "id": "bedrock",
+        "name": "Bedrock",
+        "icon": "⛰️",
+        "el": {
+          "cat": "protect",
+          "kind": "ward",
+          "elem": "earth",
+          "cost": 7,
+          "power": 40,
+          "tier": 2,
+          "holdWear": true,
+          "desc": "Earth ward of 40 that never wears away between rounds — only strikes and dispels bring it down"
+        }
+      },
       {
         "id": "stonesoul",
         "name": "Stonesoul",

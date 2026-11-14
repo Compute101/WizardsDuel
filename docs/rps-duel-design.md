@@ -905,3 +905,8 @@ Feedback: a Guard drawn as a bubble looked like magic, and a soldier raising a w
 - HP after: Ponder 62 (was 70; at 70 he hit 61%), Durin 68 (lost his Stoneskin signature: 38%), Malachar
   56, Gnash 58, Sylvara 63, Nyxara 58, Fizzwick 54, Mirel 54, Frederick 53, Eldrin 50, Aurelia 54,
   Daveron 53. Result (80 games a matchup, twice): 45.8–54.4% and 46.0–54.4%, about 16.7 rounds.
+
+Durin's third signature: **Bedrock** (Earth Protection sector, freed when Stoneskin became his skin spell).
+An Earth ward of 40 for 7 mana (`holdWear`) that never wears away at round end; strikes and dispels break it
+as usual, and topping it up with a plain Earth ward keeps the hold. Stoneskin's rock-coat visual. About 9%
+of his picks; Durin HP 68 → 65, 49.5% (roster 44.8–54.0%, 80 games a matchup). Tabletop keeps his old cards.

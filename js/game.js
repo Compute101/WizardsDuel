@@ -3401,8 +3401,9 @@ function endSimRound(){
       // Every layer wears, so stacking costs upkeep and a stack can't sit untouched for good
       // A sealed layer doesn't wear
       // (innerWear false: only the outer layer wears; the ones beneath wait untouched)
-      if(WARD_RULES.innerWear!==false) st.wardInner=(st.wardInner||[]).filter(l=>l.sealed||(l.hp-=ELEM_WARD_WEAR)>0);
-      if(!st.wardSealed){ st.shieldHp-=ELEM_WARD_WEAR; if(st.shieldHp<=0) clearOuterWard(st); }
+      // Bedrock (a holdWear signature ward) doesn't wear either
+      if(WARD_RULES.innerWear!==false) st.wardInner=(st.wardInner||[]).filter(l=>l.sealed||sigHoldsWear(l.sig)||(l.hp-=ELEM_WARD_WEAR)>0);
+      if(!st.wardSealed&&!sigHoldsWear(st.wardSig)){ st.shieldHp-=ELEM_WARD_WEAR; if(st.shieldHp<=0) clearOuterWard(st); }
     }
   });
   gs.round++;
@@ -3539,6 +3540,7 @@ function roundAct(w){ const a=gs.roundActs&&gs.roundActs[w]; return a&&a.act?a:n
 function isGuarding(w){ const a=roundAct(w); return !!(a&&a.act==='guard'&&!gs[w].out); }
 function hasWard(st){ return st.shield>0&&st.shieldHp>0; }
 
+SPELL_VFX.bedrock=SPELL_VFX.stoneskin;   // Bedrock keeps Stoneskin's look: rocks fly in and coat him
 // ── Signature spells: each character spell with an `el` block in characters.json ──
 // el.cat (damage/protect/dispel) sets the wheel it is listed under, its resolution stage, and
 // which locks/spellbinds affect it. el.kind: strike | ward | buff (enchantment on self) |
@@ -4319,7 +4321,7 @@ function executeSignature(who,sp,action,cb){
   if(el.kind==='ward'){
     let power=el.power;
     if(el.perSkeleton) power+=el.perSkeleton*countMinions(st,'skeleton');
-    raiseWard(ally,el.guard?'guard':el.elem,power,el.retaliate||0,false,sp.id);   // guard:true — a physical Guard (Stoneskin), not a ward
+    raiseWard(ally,el.elem,power,el.retaliate||0,false,sp.id);
     if(fx.self) fx.self(actx); else anim(ally,'shield',700);
     if(el.rewind){
       const back=Math.min(el.rewind,as.lastRoundLoss||0);
@@ -4392,6 +4394,14 @@ function wardCol(st){ return st.shieldType?elemById(st.shieldType).col:'#4af0ff'
 // The layers beneath wait in st.wardInner (innermost first) and step out when the outer one falls.
 function wardLayers(st){ return hasWard(st)?1+(st.wardInner||[]).length:0; }
 function wardTotal(st){ return hasWard(st)?st.shieldHp+(st.wardInner||[]).reduce((a,l)=>a+l.hp,0):0; }
+// A ward raised by a signature with holdWear (Durin's Bedrock) doesn't wear at round end; topping it up
+// with a plain ward of its element keeps the signature, and the hold
+const _holdWear={};
+function sigHoldsWear(id){
+  if(!id) return false;
+  if(_holdWear[id]==null) _holdWear[id]=Object.values(CHAR_DEFS).some(c=>(c.spells||[]).some(s=>s.id===id&&s.el&&s.el.holdWear));
+  return _holdWear[id];
+}
 function setOuterWard(st,l){
   st.shield=ELEM_WARD_ROUNDS||1;   // with no timer, shield just marks a ward as up
   st.shieldHp=l.hp; st.shieldType=l.type; st.wardRetaliate=l.retaliate||0; st.wardSig=l.sig||null;
@@ -8967,7 +8977,7 @@ const TUTORIAL_CONVOS={
   ],
   durin:[
     {key:'durin',text:"I am Durin. I have more HP than anyone in the arena. When spells come, they barely scratch me."},
-    {key:'durin',text:"My Stoneskin is a dwarf's Ironskin — twice as sturdy against blows, though it won't stop a spell. Stonesoul, in the Arcane sector, cuts the blows I take until it's dispelled — and I'll never touch Lightning, so warding in Lightning against me is safe."},
+    {key:'durin',text:"Bedrock, in my Earth sector, is a ward that never wears away — like the mountain, it only comes down if you break it. My Stoneskin is a dwarf's Ironskin, twice as sturdy against blows. Stonesoul, in the Arcane sector, cuts the blows I take — and I'll never touch Lightning, so warding in Lightning against me is safe."},
     {key:'durin',text:"Rockfall is my Earth strike — a heavy one, with a long ritual."},
     {key:'durin',text:"I am slow. I am deliberate. And when I am ready... the mountain falls."},
   ],
