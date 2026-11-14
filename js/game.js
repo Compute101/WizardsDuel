@@ -4759,7 +4759,7 @@ function elemTickEffects(who){
       if(e.bypassWard&&hasWard(st)) addFloat(x,bH*.3,e.icon+' Seeps past the ward!','#99dd55',11);
       elemFloatDmg(who,dmg,e.icon,'#cc88ff');
     }
-    else elemIncoming(who,dmg,e.elem||'arcane',e.icon,'#cc88ff',true);
+    else elemIncoming(who,dmg,e.elem||'arcane',e.icon,'#cc88ff',true,null,false,0,e.dmgKind||'magic');   // ticks are magic unless the effect says (Vine Whip's vines are physical)
     const tick=TICK_VFX[e.id]||TICK_VFX[e.elem];
     if(tick) tick(x,wizMidY(x));
     if(e.manaDrain){ const d=Math.min(st.mana,e.manaDrain); st.mana-=d; if(d) addFloat(x,bH*.46,'−'+d+' Mana','#88aaff',11); }
@@ -8683,7 +8683,7 @@ const TUTORIAL_CONVOS={
     {key:'zakkit',text:"Every element carries an extra effect, yes-yes! Lightning burns your rival's mana, even through a ward. Physical crushes wards: they can't resist it as they resist other elements. Zakkit hates rocks."},
     {key:'skadi',  text:"The rest need a strong hit — middle ring or more — that reaches them. Ice frostbites: if they pick Damage next round, it's a coin flip whether it freezes and is lost. Dark fills them with dread: the same, for Protection."},
     {key:'cinder', text:"Fire sets them burning for a couple of rounds. Arcane unweaves their enchantments — a round off their newest buff, or off every buff from the outer ring. A buff with no timer frays instead, and unravels if it frays twice. Burns, frostbite and dread are curses: Cleanse Self clears them, the worst first."},
-    {key:'eldrin', text:"There are two kinds of ward. A Physical ward stops physical blows — Physical strikes, skeletons, blades — and nothing else; every other ward stops magic, and a blow walks straight through it. Anyone can raise a Physical ward. A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — poison, burns, vines, plague — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike wears it only half as much — though a dispel still cuts it as usual. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
+    {key:'eldrin', text:"There are two kinds of ward. A Physical ward stops physical blows — Physical strikes, skeletons, blades — and nothing else; every other ward stops magic, and a blow walks straight through it. Anyone can raise a Physical ward. A ward stays up until it runs out. It wears a little every round, and strikes, dispels and damage over time — burns, plague, and on a Physical ward, vines — wear it down too. Recasting a ward's element tops it up, up to half again what that cast gives. A ward in a new element goes on over the old one — two layers at most — and a blow that breaks the outer one carries on into the one beneath. Only a Greater dispel cuts through more than one layer. Two layers make a Bulwark: while one ward stands over another, every strike wears it only half as much — though a dispel still cuts it as usual. And 🔒 Seal Ward, on the Protection wheel, seals your outer ward: it stops wearing, and a dispel — even a Greater one — only breaks the seal. Your rival needs a second dispel for the ward itself."},
     {key:'mary',   text:"In a team duel, your wards, buffs and heals can go on a team-mate instead — after the ritual you choose who to protect. Summoned minions always serve whoever summoned them, though."},
     {key:'sylvara',text:"Each wizard's own spells take over some sectors of the wheel — they're outlined in gold, and listed under the wheel with their costs. That's where a wizard's personality shows."},
   ],
@@ -8729,7 +8729,7 @@ const TUTORIAL_CONVOS={
     {key:'sylvara',text:"Hello! I'm Sylvara. I prefer patience and control over brute force — nature always wins in the end."},
     {key:'sylvara',text:"Regen, in the Physical sector of my Protection wheel, heals me a little every round for several rounds. It's a buff, so keep a ward up to stop it being dispelled."},
     {key:'sylvara',text:"Entangle sits on my Dispel wheel. It's a curse with a good chance to stop my rival choosing Damage next round — and like every curse, it wears at their ward too."},
-    {key:'sylvara',text:"Vine Whip is my Physical strike. If it gets through, the vines keep hurting them for a few rounds afterwards."},
+    {key:'sylvara',text:"Vine Whip is my Physical strike. If it gets through, the vines keep squeezing them for a few rounds afterwards — real vines, so only a Physical ward stops them."},
   ],
   aurelia:[
     {key:'aurelia',text:"I see three moves ahead. Foresight, in the Lightning sector of my Protection wheel, makes the next hits against me do nothing at all — strikes, lingering burns and poisons, even minions. Two of them, or three from the outer ring."},

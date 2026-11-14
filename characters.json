@@ -218,10 +218,11 @@
           "cost": 4,
           "power": 10,
           "tier": 2,
-          "desc": "10 physical lash + magic vines 3 a round × 3",
+          "desc": "10 physical + vines 3 a round × 3 (physical too: only a Physical ward stops them)",
           "dot": {
             "dmg": 3,
-            "rounds": 3
+            "rounds": 3,
+            "dmgKind": "physical"
           }
         }
       }

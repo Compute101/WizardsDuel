@@ -813,3 +813,7 @@ Nyxara 56, Durin 66, Skadi 51, Thessaly 54. Result (80 games a matchup): **47.3â
 rounds. In the sim (3 games a matchup): 28% of wards raised are Physical, about a third of strikes are
 physical, about half the strikes that meet a ward pass through it, and a wizard holds both kinds in
 about 10% of rounds. Tabletop mode doesn't have this yet.
+
+Correction: vines aren't magic. Vine Whip's vines carry `dmgKind:"physical"` on their `dot`, and a tick
+passes its effect's `dmgKind` to `elemIncoming` (ticks are magic unless it says otherwise), so only a
+Physical ward stops them. Sylvara 50.7%, roster 45.6â€“54.4% (80 games a matchup), no HP changes.
