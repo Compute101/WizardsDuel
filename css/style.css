@@ -1032,6 +1032,10 @@ body {
 #wheel-svg .wname { font-size: 9px; font-family: 'Cinzel', serif; font-weight: 700; fill: #fff; opacity: 0.85; }
 #wheel-svg .wcentre { fill: #140c26; stroke: #c9a84c; stroke-width: 1.5; }
 #wheel-svg .wcentre-ico { font-size: 24px; fill: #f0cc6a; }
+#wheel-svg .whub { cursor: pointer; }
+#wheel-svg .whub:hover .wcentre { fill: #2a1c48; stroke: #f0cc6a; stroke-width: 2.5; }
+#wheel-svg .whub-name { font-size: 10px; fill: #e8dcc0; letter-spacing: .5px; }
+#wheel-svg .whub text { pointer-events: none; }
 #wheel-legend { width: 100%; font-size: 11px; }
 .wl-row {
   display: grid;
@@ -1292,6 +1296,31 @@ body {
 .mo-opt:disabled { opacity: .3; cursor: default; }
 #mo-seats { margin: 14px 0 10px; }
 .mo-seat-team { font-size: 10px; color: #aaa; width: 46px; }
+
+/* ── ENCOUNTER SETUP ── */
+#encounter-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300;
+  align-items: center; justify-content: center; padding: 16px; overflow-y: auto;
+}
+#encounter-overlay.show { display: flex; }
+.enc-box { max-width: 420px; }
+.enc-note { font-size: 12px; color: #bbb; line-height: 1.45; margin: -6px 0 12px; }
+.enc-band {
+  display: flex; align-items: center; gap: 10px; width: 100%; margin: 8px 0; padding: 10px 12px; text-align: left;
+  color: #e8dcc0; background: rgba(40, 20, 70, 0.8); border: 1px solid rgba(201,168,76,0.4); border-radius: 8px; cursor: pointer;
+}
+.enc-band:hover, .enc-band:focus-visible { border-color: #c9a84c; background: rgba(70, 30, 110, 0.9); }
+.enc-ico { font-size: 24px; flex: none; }
+.enc-txt { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.enc-txt b { font: 700 14px 'Cinzel', serif; color: #f0cc6a; }
+.enc-who { font-size: 11px; color: #c9a84c; }
+.enc-desc { font-size: 11px; color: #aaa; }
+.enc-faces { display: flex; flex: none; }
+.enc-faces img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #c9a84c; margin-left: -8px; background: #222; }
+.enc-traits { margin: 12px 0 6px; text-align: left; }
+.enc-trait { font-size: 11px; color: #bbb; line-height: 1.45; margin: 6px 0; }
+.enc-trait b { color: #e8dcc0; }
+.mh-card.fighter .mh-mana { visibility: hidden; }
 
 /* ── TARGET PICKER (3–4 seat duels) ── */
 #target-overlay {
@@ -1568,3 +1597,13 @@ body {
 .tt-table th { color: #f0cc6a; text-align: left; font-weight: 700; border-bottom: 1px solid rgba(201,168,76,0.4); padding: 5px 6px; white-space: nowrap; }
 .tt-table td { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 5px 6px; vertical-align: top; }
 .tt-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; margin: 0 0 8px; }
+
+/* Minion stance chip (Phase 3): free, under the action buttons, only with summoned minions */
+.abar-row-stance { justify-content: center; margin-top: 4px; }
+.stance-chip { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .5px; padding: 5px 14px; border-radius: 14px;
+  border: 1px solid #c9a84c88; background: #1a1030; color: #f0cc6a; cursor: pointer; }
+.stance-chip.guarding { color: #bfe3ff; border-color: #7fb8ff88; }
+.stance-chip:disabled { opacity: .5; cursor: default; }
+/* Target picker: a foe's summoned minions under them */
+.tg-minion { margin-left: 22px; padding: 4px 10px; opacity: .92; }
+.tg-mico { font-size: 22px; width: 40px; text-align: center; }

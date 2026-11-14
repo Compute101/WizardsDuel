@@ -57,7 +57,7 @@ What was built, including choices made while building:
   dispels wear it too; Counter stops the round-end wear while it lasts. (It used to last 3 rounds and
   keep 75% of its HP each round: `ELEM_WARD_ROUNDS` 0 and `ELEM_WARD_DECAY` 1 now.)
   A ward **resists every element but its own**: other elements wear it down at 75%, while a strike in
-  its own element **unravels** it at 150% (`ELEM_WARD_TAKE`). A dispel of its element does 1.5× (`ELEM_DISPEL_MATCH`; was double).
+  its own element **unravels** it at 150% (`ELEM_WARD_TAKE`). A dispel of its element does double.
 - **Damage over time** (poison, burns, vines, Plague, Singularity, Blizzard) hits a ward first at each
   tick, using the ward's element rules, just as minions do. The one exception is Fizzwick's Caustic Bomb:
   if the bomb itself reaches HP, its poison seeps past wards (`bypassWard` on the spell's `dot`).
@@ -104,11 +104,11 @@ Starting numbers (to be tuned):
 | Ring | Damage (cost → dmg) | Shield (cost → shield HP) | Dispel (cost → shield dmg) |
 |---|---|---|---|
 | Inner  | 3 → 8  | 5 → 20  | 1 → 15 |
-| Middle | 5 → 15 | 8 → 35  | 2 → 24 (was 30) |
-| Outer  | 8 → 26 | 12 → 55 | 4 → 40 (was 50) |
+| Middle | 5 → 15 | 8 → 35  | 2 → 30 |
+| Outer  | 8 → 26 | 12 → 55 | 4 → 50 |
 
 - **Shields** take half damage from their chosen type, last **3 rounds**, and **decay** each round.
-- **Dispels** deal 1.5× to a shield of the matching type (was double).
+- **Dispels** deal double to a shield of the matching type.
 - **Resolution stages** replace `ACTION_PRIORITY`: start-of-round → all Protection → all Dispel → all Damage → end-of-round.
 - **Mana**: fixed income every round (about +4). **Channel is removed** (Meditate later brought back a riskier version), and so are free (0-cost) spells.
 - **Piercing is removed** (Lightning, Radiant, Feint, Charge). Those spells get a mana-burn rider instead.
@@ -152,7 +152,7 @@ so each spell's numbers can be tuned there.
   (`timed:true` on the effect). Curses keep their timers. A foe's Dispel hits your ward first; with no ward up it strips your newest buff, and a
   Greater (outer ring) dispel strips all of them — so wards protect your buffs.
 - **Curses** (Dispel wheel) resolve with Dispels. Besides the hex, each is a weak dispel: it hits the
-  foe's ward with half a dispel's power for that ring (1.5× vs a matching ward) but never strips
+  foe's ward with half a dispel's power for that ring (double vs a matching ward) but never strips
   buffs (`ELEM_CURSE_DISPEL`). **Cleanse Self** removes only your newest curse; Mary's Purge removes every curse on you. Silence can
   block a Cleanse Self like any other spell.
 - **Locks** (Ice Lance's chill, Entangle) come only from signature spells. They block one category
@@ -178,7 +178,7 @@ so each spell's numbers can be tuned there.
 | Eldrin | ⚡ Counter | 🛡 Protection | ⚡ Lightning | Enchantment (self) | 2 / 3 / 5 | 3 rounds: strikers take 10, and your ward doesn't wear at round end |
 | Eldrin | 🔰 Ward | 🛡 Protection | ❄️ Ice | Enchantment (self) | 1 / 2 / 3 | 3 rounds: immune to curses (and their wear on wards); the next dispel only removes the Ward |
 | Malachar | 💪 Empower | 🛡 Protection | 🔥 Fire | Enchantment (self) | 1 / 2 / 3 | Next strike +50% |
-| Malachar | 🩸 Blood Pact | 🛡 Protection | 💀 Dark | Instant | 0 | Lose 15 HP, gain 8 mana |
+| Malachar | 🩸 Blood Pact | 🛡 Protection | 💀 Dark | Instant | 0 | Lose 9 HP, gain 8 mana |
 | Malachar | 💀 Drain | ⚔️ Damage | 💀 Dark | Strike | 3 / 5 / 8 | 15 dark; heal 45% of HP damage |
 | Sylvara | 💚 Regen | 🛡 Protection | 👊 Physical | Enchantment (self) | 2 / 4 / 6 | Heal 5 a round for 5 rounds |
 | Sylvara | 🌿 Entangle | ✦ Dispel | 👊 Physical | Curse (foe) | 1 / 2 / 3 | 55%: foe can't pick Damage next round |
@@ -189,7 +189,7 @@ so each spell's numbers can be tuned there.
 | Gnash | 🩸 War Paint | 🛡 Protection | 👊 Physical | Enchantment (self) | 2 / 3 / 5 | Take 33% less damage × 3 rounds |
 | Gnash | ⚔️ Savage Charge | ⚔️ Damage | 👊 Physical | Strike | 3 / 5 / 8 | 16 physical; burns 2 mana |
 | Gnash | 💢 Frenzy | 🛡 Protection | 🔥 Fire | Enchantment (self) | 1 / 2 / 3 | 2 rounds: strikes +40%, each costs 4 HP |
-| Cinder | 🎱 Fireball | ⚔️ Damage | 🔥 Fire | Strike | 3 / 5 / 8 | 12–24 random fire |
+| Cinder | 🔥 Fireball | ⚔️ Damage | 🔥 Fire | Strike | 3 / 5 / 8 | 12–24 random fire |
 | Cinder | 🛡️ Flame Shield | 🛡 Protection | 🔥 Fire | Ward | 4 / 7 / 11 | Fire ward of 30; strikers take 8 |
 | Cinder | 🕯️ Candle | ✦ Dispel | 🔥 Fire | Curse (foe) | 1 / 2 / 3 | 3 rounds: foe burns for 8 when they ward or meditate |
 | Skadi | 🧊 Ice Lance | ⚔️ Damage | ❄️ Ice | Strike | 4 / 6 / 10 | 18 ice; chills (middle ring and up) |
@@ -422,7 +422,7 @@ Free-for-all first; teams (2v2) are supported by the same code. Seats with the s
   strikes hitting every foe, damage falloff on a focused wizard and extra mana for the focused wizard
   were all tried; none moved that, so only the first was kept. Two wizards simply beat one.
 - In 4 seats ganging barely pays: two allies go from 25% to ~29% each while the wizard left out gets ~38%.
-- **Knock-out bounty** (`ELEM_KO_BOUNTY`, +20 HP +5 mana): whoever dealt the most damage to a wizard in
+- **Knock-out bounty** (`ELEM_KO_BOUNTY`, +12 HP +5 mana; was +20 before the HP cut): whoever dealt the most damage to a wizard in
   the round they fell (damage in a round is simultaneous, so not whoever hit last) claims it. In a 3-seat
   alliance the ally who lands the kill then wins the final duel 71% of the time, so allies race each
   other for it. Credit by "last hit" gave the last seat in resolution order a big edge, hence "most".
@@ -644,3 +644,343 @@ within ±8% for every cap tried (1×, 1.5×, 2×, except Durin 58.2% once at 2×
 or broken before they're worth recasting, so step 1 alone barely moves balance. Seals are where it
 will.
 
+
+## HP in proportion with tabletop
+
+The standard game's wizards had about 8× their tabletop HP, while strikes are only about 3.75× (a
+middle-ring strike is 15 against a Normal tabletop strike of 4), so a duel took about twice as many hits
+as at the table (about 22 rounds against 10–11). Every wizard's HP was scaled ×0.6 (the same factor
+tabletop HP took for the winks), leaving strikes, wards, heals and costs alone. Flat numbers sized
+against HP went with it: Blood Pact costs 9 HP (was 15), the 3–4 seat knock-out bounty heals 12 (was
+20), and the AI's Blood Pact check is half its max HP (was a flat 40).
+
+Uniform scales tried (Normal AI): ×1 22 rounds · ×0.7 15 · ×0.6 13 · ×0.55 7 · ×0.5 7.5. Below about
+×0.6 games collapse to a few rounds and 4–7 wizards fall outside ±8%, so ×0.6 it is. Fixes after the
+cut (60–80 games a matchup): Mordant 58.1% → Agony back to 4 rounds (absolute curse damage is worth
+more against smaller pools); Nyxara 41.5% (her strike takes a share of the target's HP, so it shrank
+with them) → HP 59; Mary 55, Fizzwick 54, Sylvara 58, Ponder 53 (low edge); Frederick 52, Durin 63
+(high edge). Result: 44.8–55.6%, about 13.3 rounds.
+
+## Bigger wards, smaller dispels
+
+Wards felt poor value for their mana (a middle ward, 8 mana for 35 HP, was mostly undone by a 2-mana
+dispel of 30), so the AI seldom layered them (0.17 layers a game). Wheel wards went 20 / 35 / 55 →
+**25 / 45 / 70** (costs unchanged, 5 / 8 / 12) and dispels 15 / 30 / 50 → **10 / 20 / 35** (1 / 2 / 4).
+Dispels stay the more efficient answer to a ward: about 9–10 power a mana against 5–6 ward HP a mana,
+so a middle dispel takes 44% of a middle ward for a quarter of its cost (89% if matched, ×2), and it
+takes two to clear one. `WARD_RULES.sealSoak` follows the curse ward hit (half a middle dispel): 15 → 10.
+Signature wards were left alone.
+
+Options tried (Normal AI, 30 games a matchup; range / outside ±8% / rounds / layers a game):
+base 44.7–54.7 / 0 / 13.2 / 0.17 · wards 25/45/70 + dispels 12/24/40: 43.7–57.9 / 0 / 14.4 / 0.22 ·
+30/50/80 + 12/24/40: 39.9–58.6 / 3 / 15.2 / 0.27 · **25/45/70 + 10/20/35: 43.7–57.6 / 0 / 14.8 / 0.24** ·
+30/55/85 + 10/20/35: 40.6–60.2 / 4 / 15.7 / 0.31. Bigger wards lifted Mordant (curses go around wards)
+to about 58% in every option and pushed down the minion casters (who don't use wheel wards) and Sylvara.
+HP after: Mordant 50 → 47, Sylvara 58 → 61, Zakkit 55 → 58, Valdris 48 → 51, Daveron 54 → 57,
+Gretch 51 → 53, Skadi 53 → 51. Result (80 games a matchup): 45.9–55.4%, about 14.8 rounds; Protection
+and Dispel picks each about 30% / 28%, peak ward 27 → 36 HP, seals about 0.4 → 0.7 a game.
+
+## Is layering worth it? (AI strategy tests)
+
+`node tools/layer_strats.js` plays one seat with a ward strategy (`tools/layer_strats_ai.js`) against the
+stock Normal AI, every matchup, seats swapped (8 games a matchup ≈ 3,700 games, about ±1.6 points).
+Over 50% means the strategy beats the stock AI. Strategies: `eager50/80` (layer whenever a 15+ HP
+ward is up), `big` (outer-ring layers only), `readStrike` (layer when the foe can strike and didn't just
+dispel), `hurt` (below half HP), `never`, `sealOnly` (seal eagerly, never layer), `fortress` (ward → seal
+→ layer → seal) and variants, `wardStrike` (strike while warded).
+
+Current rules: every plain layering strategy loses (eager 47–48%, big 48.6, readStrike 48.1, hurt 49.1);
+`never` 48.9 (the stock AI's rare layers are fine). `fortress` wins 52.5–53%, but `sealOnly` wins 52.2%:
+the gain is from sealing more (the stock AI under-seals), not from the layers.
+
+Why: Protection resolves before Damage in the same round, so you can always ward the round you need it.
+A layer banked early only spends mana sooner and sits exposed to wear and dispels (the stock AI dispels a
+warded foe most rounds, matched 80% of the time). In 3–4 seat games, where two foes can act on you in
+one round, this may differ (not tested).
+
+Rule switches tried (all in `WARD_RULES`, defaults keep today's rules):
+- `innerWear:false` (only the outer layer wears): no change (eager 48.2, readStrike 49.8).
+- `dispelMatch:1.5` (matched dispels ×1.5, not ×2): no change (eager 47.7, readStrike 47.3).
+- `layerDiscount:3` (a layer costs 3 less): no change (eager 48.3, readStrike 49.9).
+- `stackGuard:true` (a 2+ stack turns aside all but Greater dispels; the AI knows): eager 51.0, but
+  fortress 60.7 (seal + guard lock each other in). With `stackSeal:false` (a stack can't be sealed; a
+  layer over a seal breaks it): every layering strategy loses again (46–47).
+- `stackTake` (Bulwark: a ward with a layer beneath wears this share from each strike and dispel):
+  0.6 → eager 49.7, readStrike 49.9, sealOnly 50.6, fortress 55.8; **0.4 → eager 52.2, readStrike 53.8,
+  sealOnly 51.6, fortress 57.3**. The first rule where layers themselves pay. Not adopted yet.
+
+### Adopted: Bulwark 0.5, and fortress wizards
+
+`WARD_RULES.stackTake` 0.5: a ward with another layer beneath it loses half as much from each strike and
+dispel. Head to head at 0.5 (8 games a matchup): eager 50.4, readStrike 50.1, sealOnly 51.7,
+**fortress 55.1** (the layers now add about 3.4 points over sealing alone). Bulwark 0.4 was stronger
+(fortress 57.3) but makes a stack nearly 2.5× its HP.
+
+Banning more elements doesn't help layering. Bringing every wizard to 2 banned elements (non-signature,
+spread evenly): readStrike 51.3, sealOnly 52.5, fortress 54.2; to 3: 49.5 / 51.8 / 55.8, with fewer
+layers (fewer elements to layer in). Bans stay a balancing lever, not a ward lever.
+
+Fortress is an AI personality, `aiWard:"fortress"` in `characters.json` (`aiFortress` / `AI_FORTRESS` in
+`js/game.js`, checked before the usual weights): seal an unsealed 15+ HP ward (70%), and over a sealed
+ward raise a middle- or outer-ring ward of a new element (70%), preferring an element the foe can't cast.
+Confirmed with `KEEN=… node tools/layer_strats.js stock,fortress 30` (Bulwark 0.5): Skadi +10.3,
+Fizzwick +10.2, Sylvara +9.6, Malachar +9.1, Nyxara +9.0, Eldrin +7.6, Mordant +7.3, Gretch +6.7,
+Mirel +6.3, Gnash +6.1, Korvath +5.4, Cinder +1.4. Given to the walls-and-patience wizards: Eldrin,
+Sylvara, Skadi, Korvath, Nyxara. Mordant was dropped from it: hexes ticking behind a sealed Bulwark put
+him at 59–63% even at 42 HP with Agony 6.
+
+HP after (80 games a matchup): Eldrin 46, Skadi 48, Korvath 55, Nyxara 53, Ponder 55, Mirel 53,
+Zakkit 60, Mary 57, Fizzwick 57, Gretch 56, Valdris 53. Result: 45.8–55.3%, about 17.2 rounds (was
+14.8: sealed stacks last). Fortress wizards seal 3.6–6 times a game and layer about once; the rest
+seal about once. To shorten games, lower `AI_FORTRESS` or raise ward wear.
+
+### Mordant against walls: tapering Agony
+
+Worry: Mordant playing fortress. Head to head (`KEEN=mordant`, 30–60 games a matchup; `OPP=fortress` makes
+the other seat fortress too). Weakening one of his curses (Silence 30%, Silence 2 rounds, Corruption −2,
+Agony 5) moved his stock and fortress play by the same amount: fortress still added about 12 points. The
+real issue is a counter: Agony goes around wards, so a foe who turtles eats it for 20+ rounds. Stock
+Mordant vs fortressing foes: 61–64%.
+
+Fixes adopted:
+- Agony tapers (`taper` on an `agony` effect: the bite drops by that much every round, bitten or
+  escaped, to a minimum of 1): **8 → 6 → 4 → 2** (was 7 × 4). Tried (stock Mordant vs fortress foes /
+  vs stock): 7 flat 59.8 / 54.4 · 8 taper 2 53.6 / 50.7 · 7 taper 2 55.3 / 44.8 · 6 taper 2 50.2 / 42.3 ·
+  10 taper 3 (fortress Mordant 66) · 7 flat 3 rounds 52.5 / 48.1.
+- The fortress AI (`aiFortress`, and the test strategy) hands over to the usual logic 60% of the time
+  when it carries a curse it can afford to cleanse; before, a fortress wizard never cleansed.
+- Bulwark resists strikes only (`stackDispel:false`): a dispel cuts a stacked ward as usual, so dispels
+  stay the efficient answer to wards. Head to head (8 games a matchup): fortress 53.7 (was 55.1 with
+  dispels halved too), sealOnly 50.7, readStrike 49.1.
+
+Still open: Mordant playing fortress himself beats the stock AI 58.6% and fortressing foes about 65%
+(other wizards gain 6–10 from fortress). Balance run after (80 games a matchup): 44.6–55.1%, about 16.9
+rounds, Mordant 50.7%.
+
+### Agony meets wards
+
+Agony-type bites used to go straight to HP. Now they hit skeletons and wards first, like any tick
+(`elemIncoming` in `executeElemental`, as the curse's element), unless the effect has `bypassWard`.
+That alone undid the wall counter: stock Mordant vs fortressing foes went 61–64% → 45–53%. With wards
+taking the bite, the taper was weighed again (Mordant, 30 games a matchup; stock vs fortress foes /
+vs stock / his own fortress vs stock): 8 taper 2 45.4 / 43.3 / 53.8 · 7 flat 53.2 / 49.0 / 56.6 ·
+9 flat 51.6 / 53.7 / 60.5 · 9 taper 2 45.2 / 49.8 / 60.7 · **8 taper 2 at HP 52: 52.3 / 48.3 / 56.7**
+(his fortress gain about +8, like the others). Adopted: Agony 8 → 6 → 4 → 2, Mordant HP 47 → 52.
+Daveron's Curse of the Years fell to 42% meeting wards, so it has `bypassWard` (no ward stops the
+years; it was already inescapable). Balance run (80 games a matchup): 45.4–53.0%, about 17 rounds.
+
+### Magic hits wards
+
+Every curse and tick now meets skeletons and wards first: Curse of the Years and Caustic Bomb's poison
+lost `bypassWard` (the engine switch stays, unused). Frederick's `blast` and Infernal Mantle `pierce` still
+go around wards: those are strike mechanics and his identity. Daveron fell to 42.2% (his inescapable
+curse now meets wards), so his graveguard got tougher: middle-ring soak 10 → 11 (60 games a matchup:
+11 → 52.2%, 12 → 56.7%, 14 → 67.9%, 18 → 85.8%; three undispellable elite skeletons compound fast, so
+move this a point at a time). Valdris and Gretch needed nothing; Fizzwick held at about 51% without the
+seeping poison. Ponder 55 → 57 and Malachar 48 → 50 HP (bottom of the roster). Result (80 games a
+matchup): 46.0–55.3%, about 17 rounds.
+
+Correction: poison isn't magic. Caustic Bomb's poison has `bypassWard` again (if the bomb reaches HP, the
+poison seeps past wards raised after). Fizzwick 48.0%, roster 45.8–54.7% (60 games a matchup).
+
+## Magical and physical damage
+
+Groundwork for RPG fights against non-wizards, who won't cast magic. Every hit is magical or physical
+(`strikeKind`, `wardKind`, `elemIncoming`'s `kind`):
+- **Physical:** Physical-element strikes, wheel and signature (Rockfall, Savage Charge, Ancient Wrath,
+  Bladestorm, Vine Whip's lash), every minion hit (skeletons, graveguard, Weizan's blades). A spell can
+  set `dmgKind:"magic"` (or `"physical"`) to override its element.
+- **Magic:** every other strike, every curse bite and tick (Vine Whip's vines, burns, Plague, Agony…),
+  arcs. Caustic Bomb's poison still seeps past every ward (`bypassWard`: poison isn't magic).
+- **Wards:** a Physical ward stops only physical damage; every other ward stops only magic. Damage passes
+  untouched through layers of the other kind and hits the outermost layer of its own kind
+  (`wardLayerOfKind`), so a stack of one of each covers both. A physical hit takes a Physical ward
+  at ×1 (`ELEM_WARD_TAKE.crush`; the old crush rider is moot); magic keeps match ×1.5 / off ×0.75.
+  Bulwark still applies to whichever layer is hit. Dispels and curses unravel either kind (stone wards
+  are still conjured). Blast goes around a ward of its own kind.
+- **Bans:** a ban never stops a Physical ward (`elemForbidden(who,elem,cat)`), so Zakkit and Mirel can
+  raise one but still can't strike or dispel with Physical. `magicOnly` resistances skip physical hits.
+- **AI:** `physThreat(foe)` (Physical strikes, physical signatures, minions that strike) and
+  `aiWantWardKind` steer which kind of ward it raises or layers (the kind its stack lacks); a foe's ward
+  with a hole (a kind it doesn't cover) gets struck through it instead of dispelled (`oppHole`);
+  the fortress AI layers the missing kind.
+
+First run: Daveron 65%, Valdris 59% (minion blows pass magic wards), Sylvara 35% (her Physical sector
+was Vine Whip, briefly all-magic, and she's banned from Fire and Dark: no hole-finding strike), Durin 46%
+(Stoneskin now stops blows only). Then graveguard soak 11 → 10, and HP: Daveron 53, Valdris 48,
+Ponder 54, Weizan 55, Gretch 53, Frederick 50, Gnash 63, Cinder 56, Sylvara 69, Zakkit 65, Mordant 56,
+Nyxara 56, Durin 66, Skadi 51, Thessaly 54. Result (80 games a matchup): **47.3–53.3%**, about 13.4
+rounds. In the sim (3 games a matchup): 28% of wards raised are Physical, about a third of strikes are
+physical, about half the strikes that meet a ward pass through it, and a wizard holds both kinds in
+about 10% of rounds. Tabletop mode doesn't have this yet.
+
+Correction: vines aren't magic. Vine Whip's vines carry `dmgKind:"physical"` on their `dot`, and a tick
+passes its effect's `dmgKind` to `elemIncoming` (ticks are magic unless it says otherwise), so only a
+Physical ward stops them. Sylvara 50.7%, roster 45.6–54.4% (80 games a matchup), no HP changes.
+
+## Plan of record: Actions and Magic
+
+Agreed design (supersedes the "Physical is an element" split above). Inspired by Final Fantasy: regular
+folk have **Actions**; wizards have Actions **and Magic**. Groundwork for RPG fights against non-wizards.
+
+**Two layers**
+- **Actions** (physical, everyone, free): ⚔️ **Attack** beats 🤼 **Grapple**, 🛡 **Guard** beats Attack,
+  Grapple breaks a Guard — the same rock-paper-scissors as magic. Actions cost no mana and need no
+  minigame (in tabletop they need no winks: they just go off). Stamina for special actions may come later
+  (the yellow winks).
+- **Magic** (wizards only): the element wheel, Damage / Protection / Dispel × 8 elements.
+- **Physical damage** (Attack, minion blows, weapons, bodies) is stopped only by physical defence (Guard,
+  armour, bodyguard minions, spells that grant physical defence such as Stoneskin). **Magic damage** (every
+  cast, Earth included) is stopped only by magic wards. Dispels unravel magic wards; Grapple breaks guards.
+- An Earth spell is magic; throwing a rock is an Attack.
+
+**Menus:** the three category buttons stay. Each wheel's centre is its Action (Damage → Attack,
+Protection → Guard, Dispel → Grapple), with the 8 element segments around it. A non-wizard sees only the
+centres. A later 💀 Command button may cover summoning and ordering minions (attack, bodyguard).
+
+**Elements:** Air, Water, Fire, Earth (the classical four) plus Lightning, Ice, Arcane, Dark. Physical
+becomes Earth (magic). Bans apply to magic only. **Opposed pairs** replace "a ward's own element unravels
+it": Water ↔ Fire, Air ↔ Earth, Lightning ↔ Ice, Arcane ↔ Dark (strikes and dispels of the opposite
+element hit a ward harder). Air: gusts over minion screens; deflecting ward; glyphs on gusts. Water:
+Drenched (next Lightning stronger, Fire weaker); a tide ward that regains instead of wearing; glyphs on
+ripples. Suggested glyphs: Air `Δ ϟ ✸ Φ`, Water `∇ ∞ Ω Φ`. A water wizard inspired by an Idoneth
+Tidecaster (original name and look if ever published).
+
+**Signature spells re-sorted**
+- Earth magic: Rockfall, the wheel's Earth strike, Corruption, Maggot Cloud, Entangle, Regen.
+- Physical damage: Savage Charge, Ancient Wrath, Caustic Bomb (the poison still seeps past every
+  defence), Bladestorm and Weizan's blades, every minion blow, Vine Whip (a physical strike and physical
+  damage over time, not a minion).
+- Boost physical attack: War Paint, Frenzy, Empower-style buffs.
+- Physical defence: Stoneskin, Iron Patience, Stonesoul, Dragon Scales.
+- Frost Armor: both ice magic and a physical guard.
+
+**Phases** (each balanced before the next)
+1. Actions and the Earth rename: Physical → Earth (magic), Attack / Guard / Grapple as wheel hubs,
+   per-character physical stats, re-sorted signatures, AI, rebalance.
+2. Air and Water: minigames, glyphs, VFX, riders, opposed pairs, bans, the water wizard.
+3. Minions as bodies: targeting minions, bodyguard minions, the Command button.
+4. Non-wizard enemies (soldiers, archers, knights): Actions only, balanced with the sim.
+5. Tabletop mirror: magic uses winks, Actions just go off.
+
+### Phase 1 built: Actions and the Earth rename
+
+- Physical → Earth (`earth`, 🪨, magic); bans magic-only; tabletop maps `earth` bans back to its own
+  `physical` until Phase 5.
+- Actions in each wheel's centre (`ACTIONS`, `executeAction`, `castAction`): Attack (physical, the
+  character's `phys.atk`), Guard (a `guard` layer of `phys.guard` HP: one at most, beneath the magic wards,
+  not sealable, dispels and curses can't touch it, wears like a ward), Grapple (`GRAPPLE_MULT` 2 × atk off
+  a Guard; nothing else). Free, no minigame, never fizzle, silence or risk.
+- Signatures re-sorted: `dmgKind:"physical"` on Savage Charge, Ancient Wrath, Caustic Bomb, Bladestorm,
+  Vine Whip (and its vines); Stoneskin `guard:true` (a 40 Guard); Stonesoul, Iron Patience, Dragon Scales
+  `physOnly` resists; Frost Armor resists both.
+- `phys` stats: default 5 / 15; Gnash, Durin 6 / 20; Korvath, Gretch, Weizan 6 / 18; Daveron 5 / 18;
+  Frederick 5 / 15; Zakkit, Mirel, Ponder, Fizzwick, Aurelia 4 / 14. A wider spread (brutes 7–8 attack)
+  put Korvath and Gnash at 61–67%: a free Attack every round makes the attack stat count for a lot.
+- AI (`aiPhysAction`, `AI_ACTIONS`): Attack through a magic ward with no Guard (65%) or when it can't
+  afford a strike; Guard by the foe's `physThreat` and readily (75%) behind a lone magic ward, plus a
+  Protection weight for it; Grapple a Guard. Fixes found on the way: a Vanished wizard never Attacks
+  (it reveals him) and nobody Attacks into Vanish; Mana Siphon is skipped at the mana cap (Ponder spammed it
+  at 20 mana).
+- Free Actions weaken mana denial: Ponder fell to 23–28% (Mana Siphon matters less when a starved foe can
+  still Attack). Mana Siphon steals 5 (was 3) and Ponder's HP is 70 for now; his kit wants a rethink.
+- HP after: Ponder 70, Korvath 47, Sylvara 59, Gnash 55, Durin 60, Weizan 51, Cinder 54, Eldrin 52,
+  Aurelia 57, Thessaly 59, Mary 61, Gretch 58, Mirel 56, Daveron 50, Mordant 53, Frederick 56.
+- Result (80 games a matchup, twice): 45.4–55.0% and 45.4–54.1%, about 15.5 rounds. Picks: Attack 8%,
+  Guard 12.5%, Grapple 7%, wheel Damage 15%, Protection 10.5%, Dispel 12%, Seal 9%, signatures 22.5%.
+
+### Actions rework: one-round melee, Ironskin for lasting protection
+
+Feedback: a Guard drawn as a bubble looked like magic, and a soldier raising a ward isn't melee. Now:
+- **Actions last the round they're made.** Attack vs Guard: blocked, the guard counters for its own atk.
+  Grapple vs Guard: lands in full. Attack vs Grapple: ×1.5, the grapple fails. Otherwise Attack hits for
+  atk, Grapple for half, Guard does nothing. A Guard also blocks physical signature strikes that round.
+  The Guard layer, its orbiters and `grappleGuard` are gone; every ward is magic again.
+- **Ironskin** (every wizard; a Protection-wheel button): a magic, dispellable buff that soaks physical
+  damage until used up (3 mana, 15). Sylvara's Barkskin is cheaper (2, 15); Durin's Stoneskin stronger
+  (4, 30) and no longer a wheel signature. Drawn as a metallic sheen on the sprite.
+- Most wizards are poor fighters: atk 4 by default, 3 for the slight ones, 5–6 for brutes. The AI reads
+  the foe's last pick (Guard a habitual attacker, Grapple a habitual guard) and keeps Actions a sideline
+  (Attack 5%, Ironskin 4%, Guard 2%, Grapple 1% of picks).
+- HP after: Ponder 62 (was 70; at 70 he hit 61%), Durin 68 (lost his Stoneskin signature: 38%), Malachar
+  56, Gnash 58, Sylvara 63, Nyxara 58, Fizzwick 54, Mirel 54, Frederick 53, Eldrin 50, Aurelia 54,
+  Daveron 53. Result (80 games a matchup, twice): 45.8–54.4% and 46.0–54.4%, about 16.7 rounds.
+
+Durin's third signature: **Bedrock** (Earth Protection sector, freed when Stoneskin became his skin spell).
+An Earth ward of 40 for 7 mana (`holdWear`) that never wears away at round end; strikes and dispels break it
+as usual, and topping it up with a plain Earth ward keeps the hold. Stoneskin's rock-coat visual. About 9%
+of his picks; Durin HP 68 → 65, 49.5% (roster 44.8–54.0%, 80 games a matchup). Tabletop keeps his old cards.
+
+### Phase 2 built: Air and Water
+
+- Eight elements in `ELEMENTS`, opposites across the wheel (Fire ↔ Water, Air ↔ Earth, Lightning ↔ Ice,
+  Arcane ↔ Dark). The opposite unravels a ward (strikes ×1.5, dispels ×2); every other element, a ward's
+  own included, is resisted (×0.75). Before, a ward's own element unravelled it.
+- Air: strikes gust over minion screens; an outer Air ward deflects a magic strike 20% of the time.
+  Water: strikes Drench (2 rounds: the next Lightning strike ×1.3, the next Fire ×0.7, either uses it up);
+  a Water ward regains 1 a round (up to what it was raised with) instead of wearing. Tide 2 gave 18.3-round
+  games and made Water the go-to ward.
+- Minigames: Gale of Runes (Air) and Tide of Runes (Water) on a shared `mgGlyphGame` runner. Glyphs: Air
+  `Δ ϟ ✸ Φ`, Water `∇ ∞ Ω Φ` (each shares at most two with any other set).
+- Visuals: a cyclone (Air) and a crashing wave (Water); wind-wisp and droplet ward orbiters; Drenched drips.
+- Sim (2 games a matchup): wheel strikes Air 17%, Water 15% (nobody is banned from them yet); wards Water
+  27% (eight wizards are banned from Fire, its opposite), Air and Ice 15%.
+- HP: Skadi 55 (Ice now falls to Lightning: she was 41–42%), Ponder 66, Gretch 61 (Air gusts over his totem),
+  Mary 60, Sylvara 66, Durin 61, Fizzwick 53, Mirel 51, Korvath 44, Gnash 55, Frederick 51, Nyxara 60.
+  Result (80 games a matchup): 46.8–53.6%, about 17.8 rounds.
+- Still to do: the water wizard (a Tidecaster-inspired original), Air / Water bans for some wizards, tabletop.
+
+### Nerissa of the Deep (the water wizard)
+
+A sea elf with Fathom, a shark familiar that swims through the air (original character; the Idoneth
+Tidecaster was the inspiration). All Water: Summon Fathom (a shark soak minion: 12 HP, bites 4 a round,
+physical, one at a time, cost 5), Blood in the Water (Fathom bites: 13 physical + bleeding 3 × 2, cost 5),
+Undertow (55%: the foe can't pick Protection next round, cost 2). HP 58, atk 3, banned from Fire. At HP 55
+she was 45.6–47.3%; at 58, 49.7% (roster 46.5–53.3%, 80 games a matchup). Picks: Summon Fathom 20%,
+Undertow 13%, Blood in the Water 9%. Art: the artist's sprite sheet (Nerissa and Fathom, cut into `sprites/nerissa.png` and `sprites/fathom.png`) and portrait.
+Also: Cinder's Fireball icon 🎱 → 🔥.
+
+Nerissa in tabletop: HP 10 (Advanced 12). Summon Fathom (Normal, 3 mana): a shark minion, 4 HP, bites 1 at
+every round end, one at a time. Blood in the Water (Normal, 4 mana): Water strike of 3, bleeds 1 until
+cleansed. Undertow (Lesser, 2 mana): 4+ on a die, the foe can't pick Protection next round. Tried (Advanced,
+150–250 games): Fathom 3 HP 32.4% · Advanced HP 12 40.5% · Fathom 4 HP 45.6% · bite 4 40.8% · Fathom 4 +
+bite 4 51.1% (but 55–56% in Beginner / Normal) · Fathom 4 + Advanced HP 11 47.9% · **Fathom 4 + Advanced HP
+12 51.8%**. Final (300 games): Beginner 52.9%, Normal 52.3%, Advanced 51.1%.
+
+### Phase 3 built: minions as bodies
+
+Decisions: Attacks and damage spells can target a body; bodies intercept only when ordered to guard; orders
+are a free stance toggle (not a pick); summoned creatures are bodies, blades and simulacra are spectral.
+- Stance (`st.minionStance`): guard (intercept hits on their master, or an ally in team games; don't strike)
+  or attack (strike at round end; shield no one). Default guard. The chip under the action buttons cycles it.
+- Brace: a guarding body loses half of each hit it intercepts (`MINION_BRACE` 0.5). Without it guarding was
+  worthless: head to head, always-guard won 12–19% and always-attack 62–77% for Valdris, Daveron and
+  Nerissa. With it: always-guard 25–40%, and the AI's mixed rule (guard when hurt or facing a big strike)
+  beats both extremes.
+- Targeting: a strike, Attack or Grapple aimed at one body hits it alone (no ward, no riders); the target
+  picker lists each foe's bodies with HP, bite and stance. The AI aims at an attacking body it can kill
+  (about 0.6% of picks).
+- Numbers: Bone Totem soak 15 → 9 (it always guards, so the brace doubled it: Gretch 72%), Valdris's
+  skeletons bite 3 → 2 (a screen of attacking skeletons is a lot of free damage). HP: Valdris 45, Gretch 59,
+  Daveron 51, Ponder 69, Mary 62, Korvath 46, Sylvara 68.
+- Result (80 games a matchup, twice): 45.2–53.6% and 46.4–54.1%, about 18.9 rounds.
+- Not yet in tabletop.
+
+
+## Phase 4 built: Encounters (non-wizard fighters)
+
+Agreed: an **Encounter** mode (your wizard alone against a band of 2–3 fighters, on the 3–4 seat engine), a first batch of **Soldier** and **Archer**, **a passive trait each** (no new resource; stamina for special moves can come later with the yellow winks), and **placeholder art**.
+
+- Fighters (`fighters.json`) have no spells or mana; every round they Attack, Guard or Grapple.
+  - **Soldier** (HP 50, atk 7), *Shield Wall*: while he Guards, his shield halves a spell aimed at him as well as stopping blows. Striking a guarding soldier is half wasted: hit someone else or Grapple him.
+  - **Archer** (HP 30, atk 6), *At Range*: her Attack is an arrow that slips past a Guard (no block, no counter), and a Grapple can't reach her.
+- Bands (`BANDS`, HP `scale`): Patrol (2 soldiers, 1.35), Skirmishers (3 archers, 0.9), Warband (soldier + 2 archers, 0.8).
+- Wizard AI against a band: magic wards, seals and fortress are wasted against blows, so it keeps Ironskin up (about half its picks), Guards a swordsman who just Attacked, and strikes (about a quarter). Phase Shift (a wizard-brawl bet) and the KO bounty (it snowballed) are off in encounters.
+- First tries: the bands were far too weak (wizards won 90–100%) once the AI stopped warding and Phase-Shifting. Raising attack was what mattered: HP alone barely moved the archers, who were dying before they did much. Three-bodied bands at high attack ended in 4–5 rounds and swung wildly, so attacks settled at 7 / 6 with HP doing the rest.
+- The archer HP cliff: an outer-ring strike does 26. At 26 HP each archer dies to one (Skirmishers 56–60% for the wizard); at 27 she survives on 1 (42–45%).
+- Results (`node tools/encounter_sim.js 30`, every wizard × 30 games a band): Patrol 48.0% (about 12 rounds), Skirmishers 42–45% (about 6.5), Warband 50.1% (about 7). Wizards spread widely: Durin (Stoneskin soaks 30) and Malachar (lifesteal) win about 90%+, while Mirel, Mordant and Aurelia win 10–30%. Wizards weren't built for this, and the spread is part of picking a wizard for a fight.
+- Open: Ironskin is about half the wizard AI's picks against bands (re-skin, strike, re-skin). If that feels samey in play, fighters could get a skin-breaker (a Knight's mace, or an armour-piercing shot), as planned for later fighters. Real art can replace the placeholders.
+
+## Merge note: main's Dispel nerf
+
+Main nerfed Dispel to 15 / 24 / 40 with a 1.5× matching bonus (Durin HP 110 → 105) against the pre-Phase-1 numbers. When this branch merged main, it had already cut dispels further (10 / 20 / 35; "Bigger wards, smaller dispels") and moved the bonus to a ward's opposite element (×2), with every HP scaled ×0.6. The nerf's aim (dispels too strong against wards) is already covered, so this branch's numbers were kept.

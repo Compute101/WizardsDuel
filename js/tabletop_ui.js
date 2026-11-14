@@ -16,7 +16,7 @@ let rulesSections=[];       // [{id, title, html}]
 let tab='tutorial', topic='welcome', stage='beginner';
 
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const ELEM={fire:'Fire',ice:'Ice',lightning:'Lightning',arcane:'Arcane',physical:'Physical',dark:'Dark'};
+const ELEM={fire:'Fire',ice:'Ice',lightning:'Lightning',arcane:'Arcane',physical:'Physical',dark:'Dark',water:'Water',air:'Air'};   // Water / Air: signature cards only, until tabletop gets eight elements
 const CAT={damage:'Damage',protect:'Protection',dispel:'Dispel'};
 const LEVEL=['Lesser','Normal','Greater'];
 const list=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];

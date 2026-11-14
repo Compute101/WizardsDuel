@@ -1,0 +1,40 @@
+{
+  "soldier": {
+    "name": "SOLDIER",
+    "title": "Man-at-Arms",
+    "fighter": true,
+    "trait": "shieldwall",
+    "sprite": "sprites/soldier.png",
+    "col": "#b8c0cc",
+    "hp": 50,
+    "phys": {
+      "atk": 7
+    },
+    "spells": [],
+    "taunts": [
+      "Hold the line!",
+      "Steel doesn't care for your sparks.",
+      "Shields up, lads."
+    ],
+    "desc": "Solid HP and a good sword. Shield Wall: while he Guards, his shield also halves a spell aimed at him."
+  },
+  "archer": {
+    "name": "ARCHER",
+    "title": "Bowman",
+    "fighter": true,
+    "trait": "ranged",
+    "sprite": "sprites/archer.png",
+    "col": "#7fae5a",
+    "hp": 30,
+    "phys": {
+      "atk": 6
+    },
+    "spells": [],
+    "taunts": [
+      "Loose!",
+      "Hold still, wizard.",
+      "One more arrow."
+    ],
+    "desc": "Fragile, with a weaker shot. At Range: her arrows slip past a Guard (no block, no counter), and she keeps her distance, so a Grapple can't reach her."
+  }
+}

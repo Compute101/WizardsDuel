@@ -152,6 +152,10 @@
         <img class="char-portrait" src="portraits/small/frederick.jpg" alt="Frederick">
         <div class="char-name" style="color:#8a4dff">FREDERICK</div>
       </div>
+      <div class="char-card" id="pick-nerissa">
+        <img class="char-portrait" src="portraits/small/nerissa.jpg" alt="Nerissa">
+        <div class="char-name" style="color:#2ec4d6">NERISSA</div>
+      </div>
     </div>
     <button class="btn" id="btn-back">← Back</button>
   </div>
@@ -238,6 +242,7 @@
         <button class="abtn abtn-ability" id="bel-phase" style="display:none"><span class="abtn-ico">🌀</span><span class="abtn-name">Phase</span><span class="cost" id="bel-phase-cost"></span></button>
         <button class="abtn abtn-ability" id="bel-meditate"><span class="abtn-ico">🧘</span><span class="abtn-name">Meditate</span><span class="cost" id="bel-meditate-cost"></span></button>
       </div>
+      <div class="abar-row abar-row-stance"><button class="stance-chip" id="bel-stance" style="display:none" title="Free: set what your summoned minions do this round"></button></div>
     </div>
   </div>
 
@@ -285,6 +290,7 @@
       <button class="btn" id="btn-duel-arcade">🏆 Arcade</button>
       <button class="btn btn-2p" id="btn-duel-2player">⚔ 2 Player (Same Device)</button>
       <button class="btn btn-2p" id="btn-duel-multi">👥 3–4 Wizards</button>
+      <button class="btn btn-2p" id="btn-duel-encounter">🗡 Encounter</button>
       <button class="btn btn-training-back-btn" id="btn-duel-back" style="margin-top:12px;">← Back</button>
     </div>
   </div>
@@ -332,6 +338,15 @@
   </div>
 
   <!-- 3–4 WIZARD SETUP -->
+  <div id="encounter-overlay">
+    <div class="mo-box enc-box">
+      <div class="mo-title">Encounter</div>
+      <div class="mo-sub">★ Your wizard alone against a band ★</div>
+      <div class="enc-note">They don't cast. They fight with Attack, Guard and Grapple, so wards won't stop them: use Ironskin, Guard and your strikes.</div>
+      <div id="enc-bands"></div>
+      <button class="btn btn-training-back-btn" id="btn-enc-back">← Back</button>
+    </div>
+  </div>
   <div id="multi-overlay">
     <div class="mo-box">
       <div class="mo-title">3–4 Wizards</div>
@@ -370,6 +385,7 @@
       <div id="wheel-mana"></div>
       <svg id="wheel-svg" viewBox="-170 -170 340 340"></svg>
       <button class="btn" id="wheel-self"></button>
+      <button class="btn" id="wheel-skin"></button>
       <div id="wheel-cleanse"></div>
       <button class="btn wd-back-btn" id="wheel-cancel">✕ Cancel</button>
     </div>
