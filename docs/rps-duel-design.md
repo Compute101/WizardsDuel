@@ -965,3 +965,18 @@ are a free stance toggle (not a pick); summoned creatures are bodies, blades and
   Daveron 51, Ponder 69, Mary 62, Korvath 46, Sylvara 68.
 - Result (80 games a matchup, twice): 45.2–53.6% and 46.4–54.1%, about 18.9 rounds.
 - Not yet in tabletop.
+
+
+## Phase 4 built: Encounters (non-wizard fighters)
+
+Agreed: an **Encounter** mode (your wizard alone against a band of 2–3 fighters, on the 3–4 seat engine), a first batch of **Soldier** and **Archer**, **a passive trait each** (no new resource; stamina for special moves can come later with the yellow winks), and **placeholder art**.
+
+- Fighters (`fighters.json`) have no spells or mana; every round they Attack, Guard or Grapple.
+  - **Soldier** (HP 50, atk 7), *Shield Wall*: while he Guards, his shield halves a spell aimed at him as well as stopping blows. Striking a guarding soldier is half wasted: hit someone else or Grapple him.
+  - **Archer** (HP 30, atk 6), *At Range*: her Attack is an arrow that slips past a Guard (no block, no counter), and a Grapple can't reach her.
+- Bands (`BANDS`, HP `scale`): Patrol (2 soldiers, 1.35), Skirmishers (3 archers, 0.9), Warband (soldier + 2 archers, 0.8).
+- Wizard AI against a band: magic wards, seals and fortress are wasted against blows, so it keeps Ironskin up (about half its picks), Guards a swordsman who just Attacked, and strikes (about a quarter). Phase Shift (a wizard-brawl bet) and the KO bounty (it snowballed) are off in encounters.
+- First tries: the bands were far too weak (wizards won 90–100%) once the AI stopped warding and Phase-Shifting. Raising attack was what mattered: HP alone barely moved the archers, who were dying before they did much. Three-bodied bands at high attack ended in 4–5 rounds and swung wildly, so attacks settled at 7 / 6 with HP doing the rest.
+- The archer HP cliff: an outer-ring strike does 26. At 26 HP each archer dies to one (Skirmishers 56–60% for the wizard); at 27 she survives on 1 (42–45%).
+- Results (`node tools/encounter_sim.js 30`, every wizard × 30 games a band): Patrol 48.0% (about 12 rounds), Skirmishers 42–45% (about 6.5), Warband 50.1% (about 7). Wizards spread widely: Durin (Stoneskin soaks 30) and Malachar (lifesteal) win about 90%+, while Mirel, Mordant and Aurelia win 10–30%. Wizards weren't built for this, and the spread is part of picking a wizard for a fight.
+- Open: Ironskin is about half the wizard AI's picks against bands (re-skin, strike, re-skin). If that feels samey in play, fighters could get a skin-breaker (a Knight's mace, or an armour-piercing shot), as planned for later fighters. Real art can replace the placeholders.

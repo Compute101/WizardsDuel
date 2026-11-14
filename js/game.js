@@ -16,6 +16,9 @@ const BUFF_TILE_GLYPHS={
 
 // ── CHARACTER DEFINITIONS (loaded from characters.json) ───────
 let CHAR_DEFS={};
+// Non-wizard fighters (fighters.json): Encounter mode only. They never show on the character screen.
+let FIGHTER_DEFS={};
+function defOf(key){ return CHAR_DEFS[key]||FIGHTER_DEFS[key]; }
 let p1Key='eldrin', p2Key='mal';
 let p1Cfg, p2Cfg;
 
@@ -111,7 +114,7 @@ function newState(){
   };
   const seats=seatSetup||[{who:'p1',cfg:p1Cfg,key:p1Key},{who:'p2',cfg:p2Cfg,key:p2Key}];
   seats.forEach(st=>{
-    gs[st.who]=newSeat(st.cfg||CHAR_DEFS[st.key],st.key);
+    gs[st.who]=newSeat(st.cfg||defOf(st.key),st.key);
     gs[st.who].team=st.team||st.who;
     if(gs[st.who+'anim']==null){ gs[st.who+'anim']='idle'; gs[st.who+'xOff']=0; }
   });
@@ -770,7 +773,7 @@ const sprites={p1:null,p2:null};
 const spriteStatus={p1:'loading',p2:'loading'};
 
 function loadSprites(){
-  const seats=seatSetup?seatSetup.map(st=>[st.who,CHAR_DEFS[st.key]]):[['p1',p1Cfg],['p2',p2Cfg]];
+  const seats=seatSetup?seatSetup.map(st=>[st.who,st.cfg||defOf(st.key)]):[['p1',p1Cfg],['p2',p2Cfg]];
   ['p1','p2','p3','p4'].forEach(w=>{ sprites[w]=null; spriteStatus[w]='failed'; });
   seats.forEach(([w,cfg])=>{
     if(!cfg) return;
@@ -1702,7 +1705,7 @@ function addFloat(x,y,t,col,sz=17){ gs.floats.push({x,y,t,col,sz,life:1}); }
 // o.arc: peak height (px) of a parabolic flight path instead of a straight line
 function spawnProj(x1,y1,x2,y2,element,col,cb,o={}){
   if(simMode){ if(cb) cb(); return; }
-  const speeds={fire:0.038,lightning:0.22,ice:0.045,arcane:0.042,physical:0.065,dispel:0.05,manaburn:0.056,dark:0.048,arcaneOrb:0.03,water:0.05,air:0.07,shark:0.026};
+  const speeds={fire:0.038,lightning:0.22,ice:0.045,arcane:0.042,physical:0.065,dispel:0.05,manaburn:0.056,dark:0.048,arcaneOrb:0.03,water:0.05,air:0.07,shark:0.026,arrow:0.06};
   gs.projs.push({x1,y1,x2,y2,progress:0,speed:speeds[element]||0.045,element,col,cb,done:false,arc:o.arc||0,
     phase:_rng()*Math.PI*2});
 }
@@ -1826,6 +1829,14 @@ function tickProjs(){
       bx.shadowBlur=0; bx.restore();
       if(_rng()<.5*fk) gs.parts.push({x:px,y:py,col:'#66aaff',vx:(_rng()-.5)*.6,vy:(_rng()-.5)*.6,
         sz:1.5+_rng()*1.5,life:.7,dec:.04,noGrav:true});
+    } else if(p.element==='arrow'){
+      // An arrow: a shaft, a head and fletching, pointing along its flight
+      const ang=Math.atan2(p.y2-p.y1,p.x2-p.x1)-(p.arc?Math.cos(p.progress*Math.PI)*p.arc*4:0), L=bH*.07;
+      bx.save(); bx.translate(px,py); bx.rotate(ang);
+      bx.strokeStyle='#8a6a40'; bx.lineWidth=2; bx.beginPath(); bx.moveTo(-L,0); bx.lineTo(L*.4,0); bx.stroke();
+      bx.fillStyle='#d8dde8'; bx.beginPath(); bx.moveTo(L*.55,0); bx.lineTo(L*.35,-L*.09); bx.lineTo(L*.35,L*.09); bx.fill();
+      bx.fillStyle='#e8e0c8'; bx.beginPath(); bx.moveTo(-L,0); bx.lineTo(-L*1.15,-L*.1); bx.lineTo(-L*.8,0); bx.lineTo(-L*1.15,L*.1); bx.fill();
+      bx.restore();
     } else if(p.element==='shark'){
       // Fathom darts across, swimming through the air, nose first
       const dirX=p.x2>=p.x1?1:-1, sw=Math.sin(p.progress*Math.PI*3)*bH*.012;
@@ -2004,8 +2015,8 @@ function refreshHUD(){
 // 3–4 wizards: one compact card per seat (built by buildMultiHUD when the duel starts)
 function buildMultiHUD(){
   document.getElementById('mhud').innerHTML=PLAYERS.map(w=>{
-    const cfg=seatCfg(w), team=seatSetup&&seatSetup.find(st=>st.who===w).team;
-    return `<div class="mh-card" id="mh-${w}" style="--mh-col:${cfg.col}">`+
+    const cfg=seatCfg(w), team=!encounterBand&&seatSetup&&seatSetup.find(st=>st.who===w).team;
+    return `<div class="mh-card${cfg.fighter?' fighter':''}" id="mh-${w}" style="--mh-col:${cfg.col}">`+
       `<img class="mh-img" src="portraits/small/${seatKey(w)}.jpg" alt=""><span class="mh-name">${cfg.name}</span>`+
       (team?`<span class="mh-team">Team ${team}</span>`:'')+
       `<div class="mh-bar mh-hp"><div class="mh-fill"></div></div><div class="mh-bar mh-mana"><div class="mh-fill"></div></div>`+
@@ -2021,7 +2032,7 @@ function refreshMultiHUD(){
     card.querySelector('.mh-hp .mh-fill').style.width=Math.max(0,st.hp/st.maxHp*100)+'%';
     card.querySelector('.mh-mana .mh-fill').style.width=(st.mana/MAX_MANA*100)+'%';
     card.querySelector('.mh-hpn').textContent='❤'+st.hp;
-    card.querySelector('.mh-mn').textContent='✦'+st.mana;
+    card.querySelector('.mh-mn').textContent=st.cfg&&st.cfg.fighter?'':'✦'+st.mana;
     card.querySelector('.mh-ward').textContent=hasWard(st)?'🛡'+wardLabel(st):'';
   });
 }
@@ -2040,7 +2051,7 @@ function refreshActionBar(){
   });
   const ph=document.getElementById('bel-phase');
   if(ph){
-    ph.style.display=PHASE.enabled&&PLAYERS.length>2?'':'none';
+    ph.style.display=PHASE.enabled&&PLAYERS.length>2&&!isEncounter()?'':'none';
     document.getElementById('bel-phase-cost').textContent=PHASE.cost+' Mana';
     ph.classList.toggle('off',busy||!phaseReady(who)||hasFreeSpell(who));
   }
@@ -3292,7 +3303,11 @@ function seatX(who){
   }
   return base;
 }
-function seatFacesRight(who){ return seatX(who)<bW*.5; }
+function seatFacesRight(who){
+  // An encounter: everyone faces the other side's average (the soldier left of centre still faces the wizard)
+  if(gs&&gs[who]&&isEncounter()){ const f=foesOf(who); if(f.length) return f.reduce((a,w)=>a+seatX(w),0)/f.length>seatX(who); }
+  return seatX(who)<bW*.5;
+}
 // Two seats trade places: the camera swings round and they slide across (PAN_MS), then cb
 const PAN_MS=1100;
 function swapSides(a,b,cb){
@@ -3742,6 +3757,75 @@ const ACT_RULES={counterMult:1, attackVsGrapple:1.5, grappleOther:0.5};
 const PHYS_DEFAULT={atk:4};
 const SKIN_DEFAULT={id:'ironskin', name:'Ironskin', icon:'🛡', cost:3, soak:15, col:'#b8c4d4', alpha:.4};   // alpha: how strongly the sheen tints the sprite
 function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}); }
+// ── FIGHTERS (Phase 4): non-wizards who fight with the Actions alone ──────────────
+// A fighter (fighters.json, `fighter:true`) has no mana to speak of, no wheel and no spells: every round
+// it Attacks, Guards or Grapples. Each has one passive `trait` (FIGHTER_TRAITS):
+//   shieldwall (Soldier): while he Guards, his shield also halves a spell aimed at him (a Guard already
+//     stops blows), so striking a guarding soldier is a waste: hit someone else, or Grapple him.
+//   ranged (Archer): her Attack is a bow shot: it slips past a Guard (no block, no counter), and she keeps
+//     her distance, so a Grapple at her fails.
+const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'}};
+function isFighter(who){ return !!(gs[who]&&seatCfg(who).fighter); }
+function traitOf(who){ return gs[who]?seatCfg(who).trait||null:null; }
+// Encounter bands: your wizard alone against these. `scale` multiplies the fighters' HP (tuned so an
+// average wizard wins about half the time against each band with the Normal AI: tools/encounter_sim.js).
+const BANDS=[
+  {id:'patrol', name:'Patrol', icon:'🛡', members:['soldier','soldier'], scale:1.35, desc:'Two veteran soldiers with sword and shield.'},
+  {id:'skirmish', name:'Skirmishers', icon:'🏹', members:['archer','archer','archer'], scale:0.9, desc:'Three archers whose arrows slip past your guard.'},
+  {id:'warband', name:'Warband', icon:'⚔️', members:['soldier','archer','archer'], scale:0.8, desc:'A soldier holding the line for two archers.'},
+];
+function bandById(id){ return BANDS.find(b=>b.id===id); }
+// A fighter's cfg for one band: HP scaled, everything else from fighters.json
+function fighterCfg(key,band){
+  const d=FIGHTER_DEFS[key], sc=(band&&band.scale)||1;
+  return Object.assign({},d,{hp:Math.max(1,Math.round(d.hp*sc)),forbidden:ELEMENTS.map(e=>e.id),spells:[]});
+}
+// Seats for an encounter: the wizard (p1, human unless sim) on team A, the band on team B
+function encounterSeats(wizKey,band,human){
+  const seen={}, many=k=>band.members.filter(m=>m===k).length>1;
+  return [{key:wizKey,human:human!==false,team:'A'}].concat(band.members.map(k=>{
+    const cfg=fighterCfg(k,band);
+    seen[k]=(seen[k]||0)+1;
+    if(many(k)) cfg.name+=' '+['I','II','III','IV'][seen[k]-1];   // Soldier I, Soldier II
+    return {key:k,cfg,human:false,team:'B'};
+  }));
+}
+// Encounter mode: the band picked on the Encounter screen; the player then picks a wizard
+let encounterBand=null;
+function renderEncounterSetup(){
+  document.getElementById('enc-bands').innerHTML=BANDS.map(b=>{
+    const who=b.members.map(k=>FIGHTER_DEFS[k]).filter(Boolean);
+    const counts={}; b.members.forEach(k=>counts[k]=(counts[k]||0)+1);
+    const list=Object.keys(counts).map(k=>(counts[k]>1?counts[k]+' × ':'')+(FIGHTER_DEFS[k]?FIGHTER_DEFS[k].title:k)).join(', ');
+    return `<button class="enc-band" data-band="${b.id}"><span class="enc-ico">${b.icon}</span>`+
+      `<span class="enc-txt"><b>${b.name}</b><span class="enc-who">${list}</span><span class="enc-desc">${b.desc}</span></span>`+
+      `<span class="enc-faces">${who.map((f,i)=>`<img src="portraits/small/${b.members[i]}.jpg" alt="">`).join('')}</span></button>`;
+  }).join('')+'<div class="enc-traits">'+Object.keys(FIGHTER_DEFS).map(k=>{
+    const f=FIGHTER_DEFS[k], t=FIGHTER_TRAITS[f.trait]||{};
+    return `<div class="enc-trait"><b>${t.icon||''} ${f.title}</b> — ${f.desc}</div>`;
+  }).join('')+'</div>';
+}
+function startEncounter(wizKey){
+  const seats=encounterSeats(wizKey,encounterBand,true);
+  startMultiBattle(seats);
+}
+// Fighter AI: reads the foe's last pick like aiPhysAction. Mostly Attacks; Guards a foe who keeps
+// Attacking (and a soldier Guards when the wizard went for him last round: Shield Wall halves the spell);
+// Grapples a habitual guard. An archer never Grapples.
+const AI_FIGHTERS={attack:.72, guardRead:.5, guardFocus:.35, grappleRead:.5, grapple:.08, guard:.08};
+function fighterAIChoose(who){
+  const tgt=aiPickTarget(who), opp=gs[tgt], last=(opp&&opp.lastPick)||{};
+  const act=c=>({type:'el',cat:c,act:ACTIONS[c].id,target:tgt,ok:true});
+  if(tgt==null) return act('protect');
+  const smart=aiDifficulty==='normal', A=AI_FIGHTERS, tr=traitOf(who);
+  let guard=A.guard, grapple=tr==='ranged'?0:A.grapple;
+  if(last.act==='attack'&&last.target===who) guard+=A.guardRead;
+  if(tr==='shieldwall'&&(gs.focus&&gs.focus[who]||[]).length) guard+=A.guardFocus;
+  if(tr!=='ranged'&&last.act==='guard') grapple+=A.grappleRead;
+  if(!smart){ guard=A.guard; grapple=tr==='ranged'?0:A.grapple; }
+  const r=_rng()*(A.attack+guard+grapple);
+  return r<A.attack?act('damage'):r<A.attack+guard?act('protect'):act('dispel');
+}
 // ── MINIONS AS BODIES (Phase 3) ──
 // A body is a summoned creature that stands on the field: a minion with soak HP (skeletons, graveguard,
 // Fathom, the Bone Totem). Weizan's blades and Mirel's simulacra are spectral: they always strike and never
@@ -3989,7 +4073,10 @@ function elemCanPick(who,cat){
 // and you gain the mana each caster spent on it. Priced near the cost of a typical aimed spell, so one
 // attacker is roughly break-even, nobody is a loss (mana and your turn), and a gang pays you.
 const PHASE={enabled:true, cost:4, smartAI:true, freeAt:2};
-function phaseReady(who){ return PHASE.enabled&&PLAYERS.length>2&&gs[who].mana>=PHASE.cost; }
+function phaseReady(who){ return PHASE.enabled&&PLAYERS.length>2&&!isEncounter()&&gs[who].mana>=PHASE.cost; }
+// An encounter (a wizard against fighters): Phase Shift is a wizard brawl's bet, and fighters aim at you every
+// round, so it isn't offered
+function isEncounter(){ return !!gs&&PLAYERS.some(w=>isFighter(w)); }
 function phaseCaught(who){
   const st=gs[who];
   if(++st.phasedCount===PHASE.freeAt&&PHASE.freeAt){
@@ -4467,6 +4554,7 @@ function executeAction(who,action,cb){
   if(action.act==='grapple'){
     const caught=ta&&ta.act==='attack'&&ta.target===who;
     if(caught){ addFloat(seatX(tgt),bH*.3,'🤼 The grapple fails','#cccccc',12); combatTimeout(cb,700); return; }
+    if(traitOf(tgt)==='ranged'){ addFloat(seatX(tgt),bH*.3,'🏹 Keeps her distance','#cccccc',12); combatTimeout(cb,700); return; }
     const full=isGuarding(tgt), dmg=Math.max(1,Math.round(ph.atk*(full?1:ACT_RULES.grappleOther)));
     lunge(who,.2,()=>{
       addFloat(seatX(tgt),bH*.3,full?'🤼 Grappled through the guard!':'🤼 Grappled',full?'#ffd75a':'#e8dcc0',14);
@@ -4479,6 +4567,13 @@ function executeAction(who,action,cb){
   const intoGrapple=ta&&ta.act==='grapple'&&ta.target===who;
   const power=Math.round(ph.atk*(intoGrapple?ACT_RULES.attackVsGrapple:1));
   if(intoGrapple) addFloat(seatX(tgt),bH*.36,'⚔️ Caught mid-grapple!','#ffd75a',13);
+  if(traitOf(who)==='ranged'){
+    // An archer's shot: an arrow flies (it slips past a Guard, in strikeResolve)
+    anim(who,'cast',500);
+    spawnProj(seatX(who),wizMidY(who),seatX(tgt),wizMidY(tgt),'arrow','#d8c8a0',()=>elemStrike(who,[tgt],{elem:'earth',tier:2,power,dmgKind:'physical',ranged:true,name:'Shot',noRiders:true,
+      vfx:c=>{ spawnParts(c.tx,c.ty,'#d8c8a0',8); }}),{arc:.06});
+    combatTimeout(cb,1100); return;
+  }
   lunge(who,.24,()=>elemStrike(who,[tgt],{elem:'earth',tier:2,power,dmgKind:'physical',melee:true,name:'Attack',noRiders:true,
     vfx:c=>{ spawnParts(c.tx,c.ty,'#e8e8f0',12); spawnParts(c.tx,c.ty,'#c8a070',6); }}));
   combatTimeout(cb,1000);
@@ -5076,8 +5171,11 @@ function strikeResolve(who,tgt,o,b){
     else if(absorb) absorb.charges--;
     if(absorb) return {tgt,miss:absorb.id==='vanish'?'vanish':'absorb'};
   }
-  // A Guard this round turns aside a physical strike (and counters an Attack, in strikeMiss)
-  if(strikeKind(o)==='physical'&&isGuarding(tgt)) return {tgt,miss:'guard'};
+  // A Guard this round turns aside a physical strike (and counters an Attack, in strikeMiss); an archer's
+  // shot (o.ranged) slips past it
+  if(strikeKind(o)==='physical'&&isGuarding(tgt)&&!o.ranged) return {tgt,miss:'guard'};
+  // Shield Wall: a guarding soldier's shield halves a spell too
+  if(strikeKind(o)!=='physical'&&isGuarding(tgt)&&traitOf(tgt)==='shieldwall'){ dmg*=FIGHTER_TRAITS.shieldwall.magicTake; b.shieldWall=tgt; }
   // An Air ward may turn a magic strike aside (b.pierce burns straight through it)
   if(tgt!==who&&strikeKind(o)!=='physical'&&!b.pierce&&hasWard(ts)&&ts.shieldType==='air'&&_rng()<ELEM_WARD_TRAITS.deflect) return {tgt,miss:'deflect'};
   // Drenched: the next Lightning strike conducts, the next Fire strike is doused (either uses it up)
@@ -5394,6 +5492,7 @@ const AI_FORTRESS={seal:0.7, layer:0.7, minHp:15};
 // minions or blades that strike every round. Steers the AI's choice of a Physical or magic ward.
 function physThreat(f){
   const st=gs[f];
+  if(isFighter(f)) return 0.9;   // a fighter is all blows
   let t=0.05+physOf(f).atk/40;   // everyone can Attack; brutes hit harder
   if(seatCfg(f).spells.some(sp=>(sp.el.kind==='strike'&&strikeKind(sp.el)==='physical')||(sp.el.effect&&sp.el.effect.type==='minion'&&sp.el.effect.dmg))) t+=0.25;
   t+=0.15*effectsOf(st,'minion').filter(m=>m.dmg).length;
@@ -5468,6 +5567,16 @@ function aiPhysAction(who,cat,tgt,smart){
   }
   return null;
 }
+// Encounters (every foe a fighter): Ironskin when it's down or worn; a Guard when a swordsman (not an
+// archer: arrows slip past) Attacked me last round; else null, and the wheel offers a signature
+const AI_ENCOUNTER={skin:1.4, protect:0.35, guardRead:0.6};
+function aiEncounterProtect(who,tgt,ok){
+  const me=gs[who], sk=skinOn(me);
+  if(canSkin(who)&&(!sk||sk.hp<skinOf(who).soak*.5)) return {type:'el',cat:'protect',skin:true,elem:'earth',tier:1,target:tgt,ok};
+  const melee=foesOf(who).filter(f=>traitOf(f)!=='ranged'&&(gs[f].lastPick||{}).act==='attack'&&(gs[f].lastPick||{}).target===who);
+  if(melee.length&&_rng()<AI_ENCOUNTER.guardRead) return {type:'el',cat:'protect',act:'guard',target:tgt,ok:true};
+  return null;
+}
 // Bodies guard when their master is hurt or about to be hit hard, and in a gang; a totem only guards.
 // Team games: guard the ally the foes went for when they're worse off. AI_MINIONS tunes it.
 const AI_MINIONS={guardBase:.25, guardHurt:.4, guardThreat:.25, targetKill:.6};
@@ -5495,6 +5604,7 @@ function aiMaybeTargetMinion(who,a){
   return a;
 }
 function elemAIChoose(who){
+  if(isFighter(who)) return fighterAIChoose(who);
   aiSetStance(who);
   return aiMaybeTargetMinion(who,elemAIChooseCore(who));
 }
@@ -5526,7 +5636,7 @@ function elemAIChooseCore(who){
   if(agonyOn&&canMeditate(who)&&_rng()<(smart?0.7:0.35))
     return {type:'el',cat:'meditate',ok:true};
   // Fortress wizards (aiWard "fortress" in characters.json): ward, seal it, layer over it (a Bulwark), seal again
-  const fort=aiFortress(who,smart);
+  const fort=foesOf(who).every(isFighter)?null:aiFortress(who,smart);   // no fortress against blows
   if(fort) return fort;
   if(canMeditate(who)&&medGain>0&&me.mana<elemCost(who,'damage',2)){
     let p=(me.mana<elemCost(who,'damage',1)?0.4:0.2)*medGain/MEDITATE.gain;
@@ -5606,6 +5716,17 @@ function elemAIChooseCore(who){
   if(guardSp&&guardLow(who)) w.protect+=smart?1.2:0.6;
   if(oppGuards){ w.damage+=(smart?0.25:0.1)*oppGuards; if(!oppWard) w.dispel*=0.5; }
   if(ganged){ w.protect+=hasWard(me)&&me.shieldHp>=25?0.4:1.2; w.damage*=0.8; }
+  // An encounter: every foe is a fighter, all blows, so magic wards and seals are wasted. Protection means
+  // Ironskin (kept topped up), a body screen, a non-ward signature (Blink, Stonesoul…) or a Guard
+  const allBlows=smart&&foesOf(who).every(isFighter);
+  if(allBlows){
+    const sk=skinOn(me), skinWant=canSkin(who)&&(!sk||sk.hp<skinOf(who).soak*.5);
+    delete w.seal;
+    w.protect=skinWant?AI_ENCOUNTER.skin:AI_ENCOUNTER.protect;
+    if(guardSp&&guardLow(who)) w.protect+=1.2;
+    if(me.hp<me.maxHp*0.35) w.protect+=0.3;
+    w.dispel=myCurses?0.5:hexes?0.25*hexes:0;
+  }
   const free=hasFreeSpell(who);
   if(free) w.damage+=1.2;   // a free spell: make it a big strike
   // Bewitched: my next strike would hit me, so don't strike — cleanse it, or play around it
@@ -5616,6 +5737,7 @@ function elemAIChooseCore(who){
   for(const c of cats){ r-=w[c]; if(r<=0){ cat=c; break; } }
   const ok=_rng()<(smart?0.9:0.78);
   if(cat==='seal') return {type:'el',cat:'protect',elem:me.shieldType,tier:1,self:true,target:who,ok};
+  if(allBlows&&cat==='protect'){ const ep=aiEncounterProtect(who,tgt,ok); if(ep) return ep; }
   const physAct=aiPhysAction(who,cat,tgt,smart);
   if(physAct) return physAct;
   // Aiming at a wizard who can phase: if they usually do, hold off — hit someone else, or ward up instead
@@ -5631,8 +5753,14 @@ function elemAIChooseCore(who){
 
   // Each sector of the wheel is a plain element or one of this character's signature spells
   const sectors=ELEMENTS.map(e=>({elem:e.id,sp:sigAt(who,cat,e.id)})).filter(x=>sectorOk(who,cat,x.elem,1));
-  const plain=sectors.filter(x=>!x.sp);
-  const sigs=sectors.filter(x=>x.sp&&aiSigSensible(who,x.sp,tgt));
+  let plain=sectors.filter(x=>!x.sp);
+  let sigs=sectors.filter(x=>x.sp&&aiSigSensible(who,x.sp,tgt));
+  if(allBlows&&cat==='protect'){
+    // no magic wards against fighters: keep only signatures that help against blows
+    plain=[];
+    sigs=sigs.filter(x=>x.sp.el.kind!=='ward'&&!x.sp.el.ward&&!(x.sp.el.effect&&(x.sp.el.effect.magicOnly||x.sp.el.effect.type==='counter')));
+    if(!sigs.length) return {type:'el',cat:'protect',act:'guard',target:tgt,ok:true};
+  }
   const cleanseOk=cat==='dispel'&&myCurses&&elemCost(who,'dispel',1)<=me.mana;
   // Cleanse at the ring that clears what's on us (1 / 2 / all), or the biggest we can afford
   const cleanse=()=>{
@@ -5867,6 +5995,7 @@ function eliminateSeats(){
     const top=Object.keys(by).filter(src=>by[src]===most&&most>0&&gs[src]&&!gs[src].out);
     const k=top.length?top[Math.floor(_rng()*top.length)]:null, ks=k&&gs[k];
     if(!ks||ks.out||ks.hp<=0||!ELEM_KO_BOUNTY.hp&&!ELEM_KO_BOUNTY.mana) return;
+    if(seatCfg(w).fighter||seatCfg(k).fighter) return;   // encounters: no bounty either way
     const hp0=ks.hp, mana0=ks.mana;
     ks.hp=Math.min(ks.maxHp,ks.hp+ELEM_KO_BOUNTY.hp); ks.mana=Math.min(MAX_MANA,ks.mana+ELEM_KO_BOUNTY.mana);
     (gs.koBy||(gs.koBy={}))[w]=k;
@@ -5892,6 +6021,23 @@ function showMultiEnd(team){
   gs.myTurn=false; gs.busy=true;
   const winners=team?PLAYERS.filter(w=>seatTeam(w)===team):[];
   const names=ws=>ws.map(w=>seatCfg(w).name).join(' & ');
+  if(encounterBand){
+    // An encounter: victory or defeat for the wizard, and who fell
+    const won=team===seatTeam('p1'), band=encounterBand;
+    setTimeout(()=>{
+      battleRunning=false;
+      document.getElementById('ovico').textContent=won?'🏆':gs.timeUp?'⌛':'☠';
+      const title=document.getElementById('ovtitle');
+      title.textContent=won?'Victory!':gs.timeUp?'The '+band.name+' Holds':'Defeated by the '+band.name;
+      title.style.color=won?seatCfg('p1').col:'#ff6677';
+      const fell=(gs.outOrder||[]).filter(o=>isFighter(o.who)).length;
+      document.getElementById('ovdesc').textContent=won?`${seatCfg('p1').name} routed the ${band.name} in ${gs.round} rounds.`:
+        `${fell} of ${band.members.length} fell before ${seatCfg('p1').name} did.`;
+      document.getElementById('btn-continue').textContent='Back to Title';
+      document.getElementById('overlay').classList.add('active');
+    },1800);
+    return;
+  }
   const out=(gs.outOrder||[]).slice().reverse().filter(o=>!winners.includes(o.who));
   const places=[];
   if(winners.length) places.push(names(winners));
@@ -5910,17 +6056,17 @@ function showMultiEnd(team){
   },1800);
 }
 function endMultiMode(){
-  multiMode=false; multiPicks=[];
+  multiMode=false; multiPicks=[]; encounterBand=null;
   setupSeats(null);
   document.getElementById('battle-screen').classList.remove('multi');
   document.getElementById('hud').classList.remove('multi');
   document.getElementById('btn-continue').textContent='Continue';
 }
-function startMultiBattle(){
-  const seats=multiPicks.map((key,i)=>({key,human:multiSetup.human[i],
+function startMultiBattle(list){
+  const seats=list||multiPicks.map((key,i)=>({key,human:multiSetup.human[i],
     team:multiSetup.format==='2v2'?(i<2?'A':'B'):undefined}));
   setupSeats(seats);
-  p1Key=seats[0].key; p1Cfg=CHAR_DEFS[p1Key]; p2Key=seats[1].key; p2Cfg=CHAR_DEFS[p2Key];
+  p1Key=seats[0].key; p1Cfg=seats[0].cfg||defOf(p1Key); p2Key=seats[1].key; p2Cfg=seats[1].cfg||defOf(p2Key);
   tournamentQueue=[]; twoPlayerMode=false; trainingMode=false;
   document.getElementById('btn-training-menu').style.display='none';
   document.getElementById('battle-screen').classList.add('multi');
@@ -9173,6 +9319,12 @@ function pickCharacter(key){
     showScreen('training-screen');
     return;
   }
+  if(encounterBand&&!multiMode){
+    document.getElementById('char-player-label').style.display='none';
+    multiMode=true;
+    startEncounter(key);
+    return;
+  }
   if(multiMode){
     multiPicks.push(key);
     fillRandomAISeats();
@@ -9363,6 +9515,11 @@ function simMatch(k1,k2,ai){
   return out;
 }
 
+// Encounter sim: wizKey against a band (BANDS id). Returns true when the wizard wins.
+function simEncounter(wizKey,bandId,ai){
+  const r=simMatchN(encounterSeats(wizKey,bandById(bandId),false),ai);
+  return {won:r.winner==='A',rounds:r.rounds,winner:r.winner};
+}
 // 3–4 seat version: seats [{key,team?}]. Returns the winning team ('p1'… for free-for-all), 'draw' or 'timeout'.
 function simMatchN(seats,ai){
   simMode=true; simOutcome=null;
@@ -9828,6 +9985,26 @@ window.addEventListener('DOMContentLoaded', ()=>{
     else return;
     saveOptions(); renderOptions();
   });
+  document.getElementById('btn-duel-encounter').addEventListener('click',()=>{
+    duelOverlay.style.display='none';
+    renderEncounterSetup();
+    document.getElementById('encounter-overlay').classList.add('show');
+  });
+  document.getElementById('encounter-overlay').addEventListener('click',e=>{
+    const b=e.target.closest('[data-band]');
+    if(!b) return;
+    encounterBand=bandById(b.dataset.band);
+    document.getElementById('encounter-overlay').classList.remove('show');
+    trainingMode=false; twoPlayerMode=false; multiMode=false; multiPicks=[];
+    const lbl=document.getElementById('char-player-label');
+    lbl.textContent='Choose a wizard to face the '+encounterBand.name;
+    lbl.style.display='';
+    showScreen('char-screen');
+  });
+  document.getElementById('btn-enc-back').addEventListener('click',()=>{
+    document.getElementById('encounter-overlay').classList.remove('show');
+    duelOverlay.style.display='flex';
+  });
   document.getElementById('btn-duel-multi').addEventListener('click',()=>{
     duelOverlay.style.display='none';
     renderMultiSetup();
@@ -10029,4 +10206,6 @@ window.addEventListener('DOMContentLoaded', ()=>{
     .then(r=>r.json())
     .then(data=>{ CHAR_DEFS=data; p1Cfg=CHAR_DEFS[p1Key]; p2Cfg=CHAR_DEFS[p2Key]; loadSprites(); Object.keys(CHAR_DEFS).forEach(arenaFor); })
     .catch(err=>console.error('Failed to load characters.json:', err));
+  fetch('fighters.json').then(r=>r.json()).then(data=>{ FIGHTER_DEFS=data; })
+    .catch(err=>console.error('Failed to load fighters.json:', err));
 });
