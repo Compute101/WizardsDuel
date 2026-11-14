@@ -9551,16 +9551,16 @@ const CHAR_COLORS_TUT={
   gnash:'#dd8822',cinder:'#ff6600',skadi:'#88ddff',zakkit:'#aaff44',
   mary:'#f0d8a0',mordant:'#9944cc',ponder:'#9988cc',durin:'#b08040',
   weizan:'#aabbee',gretch:'#55aa33',valdris:'#8899cc',mirel:'#cc88ff',thessaly:'#ffdd88',
-  korvath:'#cc6622',fizzwick:'#99cc44',nyxara:'#6633aa',daveron:'#b8283c',frederick:'#8a4dff'
+  korvath:'#cc6622',fizzwick:'#99cc44',nyxara:'#6633aa',daveron:'#b8283c',frederick:'#8a4dff',nerissa:'#2ec4d6'
 };
 const CHAR_NAMES_TUT={
   eldrin:'Eldrin',mal:'Malachar',sylvara:'Sylvara',aurelia:'Aurelia',
   gnash:'Gnash',cinder:'Cinder',skadi:'Skadi',zakkit:'Zakkit',
   mary:'Mary',mordant:'Mordant',ponder:'Ponder',durin:'Durin',
   weizan:'Weizan',gretch:'Gretch',valdris:'Valdris',mirel:'Mirel',thessaly:'Thessaly',
-  korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara',daveron:'Daveron',frederick:'Frederick'
+  korvath:'Korvath',fizzwick:'Fizzwick',nyxara:'Nyxara',daveron:'Daveron',frederick:'Frederick',nerissa:'Nerissa'
 };
-const CHAR_KEYS_TUT=['eldrin','mal','sylvara','aurelia','gnash','cinder','skadi','zakkit','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara','daveron','frederick'];
+const CHAR_KEYS_TUT=['eldrin','mal','sylvara','aurelia','gnash','cinder','skadi','zakkit','mary','mordant','ponder','durin','weizan','gretch','valdris','mirel','thessaly','korvath','fizzwick','nyxara','daveron','frederick','nerissa'];
 
 // Character guides describe each spell's effect and wheel sector rather than exact numbers,
 // which live in characters.json and are shown on the wheel itself.
@@ -10150,6 +10150,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('pick-nyxara').addEventListener('click',()=>showWizardDetail('nyxara'));
   document.getElementById('pick-daveron').addEventListener('click',()=>showWizardDetail('daveron'));
   document.getElementById('pick-frederick').addEventListener('click',()=>showWizardDetail('frederick'));
+  document.getElementById('pick-nerissa').addEventListener('click',()=>showWizardDetail('nerissa'));
 
   document.getElementById('wd-back').addEventListener('click',()=>{
     document.getElementById('wizard-detail').classList.remove('active');
