@@ -730,14 +730,17 @@ function isSpriteSheet(img){
 // Draws a sprite standing at (x,y), sz tall. flip = the p1 seat (face right).
 // A skin spell's sheen: the sprite tinted (source-atop on a scratch canvas) with a band of light sweeping down
 const _tintCv=document.createElement('canvas'), _tintCx=_tintCv.getContext('2d');
-function drawSkinSheen(img,dx,dy,dw,dh,col,t){
+// src: [sx,sy,sw,sh] for a spritesheet frame (null: the whole image); skin: {col, alpha}
+function drawSkinSheen(img,src,dx,dy,dw,dh,skin,t){
   _tintCv.width=Math.ceil(dw); _tintCv.height=Math.ceil(dh);
   _tintCx.clearRect(0,0,dw,dh); _tintCx.globalCompositeOperation='source-over';
-  _tintCx.drawImage(img,0,0,dw,dh);
+  _tintCx.imageSmoothingEnabled=bx.imageSmoothingEnabled;
+  if(src) _tintCx.drawImage(img,src[0],src[1],src[2],src[3],0,0,dw,dh); else _tintCx.drawImage(img,0,0,dw,dh);
   _tintCx.globalCompositeOperation='source-atop';
-  _tintCx.globalAlpha=.38; _tintCx.fillStyle=col; _tintCx.fillRect(0,0,dw,dh);
+  _tintCx.globalAlpha=skin.alpha||.38; _tintCx.fillStyle=skin.col; _tintCx.fillRect(0,0,dw,dh);
   const band=((t/1800)%1)*dh*1.6-dh*.3, g=_tintCx.createLinearGradient(0,band-dh*.12,0,band+dh*.12);
-  g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(.5,'rgba(255,255,255,.55)'); g.addColorStop(1,'rgba(255,255,255,0)');
+  const sh=skin.shine??.55;   // how bright the sweeping band is (bark barely shines; iron does)
+  g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(.5,'rgba(255,255,255,'+sh+')'); g.addColorStop(1,'rgba(255,255,255,0)');
   _tintCx.globalAlpha=1; _tintCx.fillStyle=g; _tintCx.fillRect(0,0,dw,dh);
   bx.drawImage(_tintCv,dx,dy,dw,dh);
 }
@@ -749,12 +752,13 @@ function drawSprite(img,animName,frame,x,y,sz,flip,wMul=1,skin=null){
     const srcX=frame*cfg.frameW, srcY=row*cfg.frameH;
     const scale=sz/cfg.frameH, dw=cfg.frameW*scale*wMul, dh=cfg.frameH*scale;
     if(flip){ bx.scale(-1,1); x=-x; }
-    bx.drawImage(img,srcX,srcY,cfg.frameW,cfg.frameH,x-dw/2,y-dh,dw,dh);
+    if(skin&&animName!=='death') drawSkinSheen(img,[srcX,srcY,cfg.frameW,cfg.frameH],x-dw/2,y-dh,dw,dh,skin,Date.now());
+    else bx.drawImage(img,srcX,srcY,cfg.frameW,cfg.frameH,x-dw/2,y-dh,dw,dh);
   } else {
     const dh=sz*1.04, dw=dh*img.naturalWidth/img.naturalHeight*wMul;
     if(!flip){ bx.scale(-1,1); x=-x; }
     if(animName==='death') bx.globalAlpha*=0.45;
-    if(skin&&animName!=='death') drawSkinSheen(img,x-dw/2,y-dh,dw,dh,skin,Date.now());
+    if(skin&&animName!=='death') drawSkinSheen(img,null,x-dw/2,y-dh,dw,dh,skin,Date.now());
     else bx.drawImage(img,x-dw/2,y-dh,dw,dh);
   }
   bx.restore();
@@ -1513,7 +1517,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     const bob=animName==='idle'?Math.sin(t/500+x)*sz*.015:0;
     // Drawn a bit taller than sz: the auras around it (radius ~0.82×sz) still enclose it
     const sk=gs[who]&&skinOn(gs[who]);
-    drawSprite(img,animName,animState[who].frame,x,y+lift+shake+bob,sz*SPRITE_SCALE,flip,seatSpriteWidth(who),sk?sk.col:null);
+    drawSprite(img,animName,animState[who].frame,x,y+lift+shake+bob,sz*SPRITE_SCALE,flip,seatSpriteWidth(who),sk?{col:sk.col,alpha:sk.alpha,shine:sk.shine}:null);
   } else {
     if(flip){bx.scale(-1,1); x=-x;}
     const bob=animName==='idle'?Math.sin(t/500+x)*.015*sz:0;
@@ -3531,7 +3535,7 @@ function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS[3]; }
 const ACTIONS={damage:{id:'attack',name:'Attack',icon:'⚔️'}, protect:{id:'guard',name:'Guard',icon:'🛡'}, dispel:{id:'grapple',name:'Grapple',icon:'🤼'}};
 const ACT_RULES={counterMult:1, attackVsGrapple:1.5, grappleOther:0.5};
 const PHYS_DEFAULT={atk:4};
-const SKIN_DEFAULT={id:'ironskin', name:'Ironskin', icon:'🛡', cost:3, soak:15, col:'#b8c4d4'};
+const SKIN_DEFAULT={id:'ironskin', name:'Ironskin', icon:'🛡', cost:3, soak:15, col:'#b8c4d4', alpha:.4};   // alpha: how strongly the sheen tints the sprite
 function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}); }
 function skinOf(who){ return Object.assign({},SKIN_DEFAULT,seatCfg(who).skin||{}); }
 function skinOn(st){ return effectsOf(st,'skin')[0]||null; }
@@ -3888,7 +3892,7 @@ function castSkin(){
 function executeSkin(who){
   const st=gs[who], sk=skinOf(who), on=skinOn(st), x=seatX(who);
   if(on) on.hp=Math.max(on.hp,sk.soak);   // recasting refreshes it
-  else addEffect(who,{id:sk.id,type:'skin',kind:'buff',name:sk.name,icon:sk.icon,col:sk.col,hp:sk.soak,rounds:null},who);
+  else addEffect(who,{id:sk.id,type:'skin',kind:'buff',name:sk.name,icon:sk.icon,col:sk.col,alpha:sk.alpha,shine:sk.shine,hp:sk.soak,rounds:null},who);
   addFloat(x,bH*.3,sk.icon+' '+sk.name+' '+sk.soak,sk.col,14);
   vfxPhaseIn(x,wizMidY(who),[sk.col,sk.col,'#ffffff'],14);
 }

@@ -168,7 +168,9 @@
       "icon": "🌳",
       "cost": 2,
       "soak": 15,
-      "col": "#9a7a48"
+      "col": "#4a2e14",
+      "alpha": 0.62,
+      "shine": 0.15
     },
     "aiWard": "fortress",
     "dmgMult": 1.0,
@@ -877,7 +879,9 @@
       "icon": "🪨",
       "cost": 4,
       "soak": 30,
-      "col": "#a89880"
+      "col": "#a89880",
+      "alpha": 0.45,
+      "shine": 0.35
     },
     "dmgMult": 1.0,
     "forbidden": [
