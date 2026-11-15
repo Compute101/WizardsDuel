@@ -887,7 +887,6 @@ body {
 
 /* ── TITLE: New Game / Load Game, everything else behind Test ── */
 .btn:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
-.btn.btn-confirm { background: linear-gradient(135deg, #8a1a2a, #b8383a); }
 .title-load-note {
   position: relative; z-index: 1;
   font-family: Georgia, serif; font-style: italic; font-size: 12px;
@@ -907,6 +906,29 @@ body {
   background: rgba(0,0,0,0.2);
 }
 .title-test[hidden] { display: none; }
+
+/* Load Game: the profile's saved wizards (js/explore.js openLoad) */
+#load-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(8,4,20,0.97); z-index: 320;
+  align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto;
+}
+#load-overlay.show { display: flex; }
+.ld-box { width: 100%; text-align: center; }
+.ld-head { font-family: 'Cinzel Decorative', serif; font-size: 22px; color: #f0cc6a; text-shadow: 0 0 16px #c9a84c; margin: 6px 0 2px; }
+.ld-sub { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: rgba(201,168,76,0.55); margin-bottom: 12px; }
+.ld-list { margin-bottom: 14px; }
+.ld-slot { display: flex; align-items: stretch; gap: 6px; margin: 8px 0; }
+.ld-slot .pf-row { margin: 0; flex: 1; min-width: 0; }
+.ld-face { flex: 0 0 52px; width: 52px; height: 52px; border-radius: 8px; overflow: hidden; border: 2px solid var(--ec); box-shadow: 0 0 10px var(--ec); background: rgba(0,0,0,0.4); }
+.ld-face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ld-face img:not([src]) { visibility: hidden; }
+.ld-row .pf-row-txt small + small { color: #8f86a0; font-style: italic; }
+.ld-gold { font-size: 11px; color: #f0cc6a; white-space: nowrap; }
+.ld-del {
+  flex: 0 0 auto; min-width: 44px; padding: 0 8px; font: 700 11px 'Cinzel', serif; color: #c9a84c;
+  background: rgba(40, 20, 70, 0.8); border: 1px solid rgba(201,168,76,0.35); border-radius: 8px; cursor: pointer;
+}
+.ld-del.on { background: #8a1a2a; border-color: #ff7788; color: #fff; }
 
 /* ── 2 PLAYER MODE ── */
 .btn-2p {
