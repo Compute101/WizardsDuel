@@ -63,6 +63,9 @@ const FOOT = {
   hearthPot:[{w:.9,h:.25}], workbench:[{w:.9,h:.25}], pantry:[{w:.9,h:.3}], bookcase:[{w:.9,h:.15}], wardrobe:[{w:.9,h:.15}],
   cupboard:[{w:.9,h:.15}], altar:[{w:.9,h:.2}], pew:[{w:.9,h:.35}], brokenBed:[{w:.85,h:.3}], brokenTable:[{w:.8,h:.3}],
   wallRubble:[{w:.5,h:.2}], chest:[{w:.85,h:.4}], q_:[{w:.6,h:.3}],
+  // small things on the floor (ExploreRooms.ITEM_SCALE): a sliver to stand by, barely in the way
+  letter:[{w:.6,h:6}], scroll:[{w:.6,h:6}], journal:[{w:.6,h:6}], bookOpen:[{w:.6,h:6}], bookClosed:[{w:.6,h:6}],
+  key:[{w:.6,h:6}], coins:[{w:.6,h:6}], pouch:[{w:.6,h:6}], potion:[{w:.6,h:6}], crockery:[{w:.7,h:6}],
 };
 function footOf(kind){
   if(FOOT[kind]) return FOOT[kind];

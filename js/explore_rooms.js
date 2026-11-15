@@ -16,6 +16,16 @@
 const P = window.ExplorePieces;
 const {T} = P;
 const RS = 0.5;                       // interior prop scale (the sheets' floor tile is ~124 px → 62)
+// Small things are drawn as big as furniture on their sheets (a letter ~180 px, nearly a floor tile),
+// so they get their own scale, judged against the 124 px floor tile and a bed about two tiles long.
+const ITEM_SCALE = {
+  letter:0.2, scroll:0.2, scrollPinned:0.2, journal:0.2, bookOpen:0.2, bookClosed:0.2, key:0.18,
+  potionRed:0.2, potionBlue:0.2, potionGreen:0.2, pouch:0.2, coinsS:0.22, coinsM:0.22,
+  coinsL:0.25, coinSack:0.25, ironBox:0.26, chest:0.3, chestOpen:0.3,
+  q_fire:0.3, q_water:0.3, q_ice:0.3, q_lightning:0.3, q_earth:0.3, q_air:0.3, q_arcane:0.3, q_dark:0.3,
+  crockery:0.26, bookPile:0.3, cauldron:0.38, lectern:0.4, alembic:0.36, herbs:0.4, washtub:0.4,
+};
+const scaleOf = k => ITEM_SCALE[k] || RS;
 
 // furniture by room type: back = against the back wall, floor = about the room
 const TYPES = {
@@ -120,9 +130,9 @@ function build(spec,rects){
   const floor=ruined&&D.floor==='w'?'b':D.floor;
   const ground=[]; for(let y=0;y<rows;y++){ let row=''; for(let x=0;x<cols;x++) row+=(x>=1&&x<=C&&y>=2&&y<2+R)?floor:'v'; ground.push(row); }
   const objects=[], boxes=[], lore={}, ev=rollEvent(spec,r);
-  const sz=k=>{ const q=rects[k]; return {w:q[2]*RS, h:q[3]*RS}; };
-  const put=(k,x,y,extra)=>{ if(!rects[k]) return null; const e=Object.assign({scale:RS},extra||{}); objects.push([k,Math.round(x),Math.round(y),e]);
-    const o={kind:k,x,y,scale:RS}; for(const b of P.footBoxes(rects,o)) boxes.push(b); return o; };
+  const sz=k=>{ const q=rects[k]; return {w:q[2]*scaleOf(k), h:q[3]*scaleOf(k)}; };
+  const put=(k,x,y,extra)=>{ if(!rects[k]) return null; const e=Object.assign({scale:scaleOf(k)},extra||{}); objects.push([k,Math.round(x),Math.round(y),e]);
+    const o={kind:k,x,y,scale:scaleOf(k)}; for(const b of P.footBoxes(rects,o)) boxes.push(b); return o; };
   const X0=T, X1=(C+1)*T, Y0=2*T, Y1=(2+R)*T, DX=W/2;
   // back wall
   const walls=WALLS[D.wall]; let wx=X0-8, i=0;
@@ -212,5 +222,5 @@ function build(spec,rects){
     interior:true, type, ev, npcs, flow:'S'};
 }
 
-window.ExploreRooms={build, BOOKS, TYPES, RS, hash};
+window.ExploreRooms={build, BOOKS, TYPES, RS, ITEM_SCALE, hash};
 })();
