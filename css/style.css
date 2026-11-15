@@ -1909,7 +1909,21 @@ body {
 #explore-screen .xi-text b { color:#4a1808; }
 #explore-screen .xi-omen { font-style:italic; text-decoration:underline; text-decoration-color:var(--xc); text-decoration-thickness:3px; text-underline-offset:3px; text-decoration-skip-ink:none; }
 #explore-screen b.xi-omen { font-style:normal; }
-#explore-screen .xi-rule { text-align:center; color:#8a5a2a; font-size:18px; margin:6px 0 14px; letter-spacing:12px; }
+#explore-screen .xi-ink { margin:10px auto 2px; max-width:520px; }
+#explore-screen .xi-ink svg { display:block; width:100%; height:auto; overflow:visible; }
+#explore-screen .xi-ink path, #explore-screen .xi-ink circle, #explore-screen .xi-ink ellipse {
+  fill:none; stroke:#3a2410; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;
+  stroke-dasharray:1 1; stroke-dashoffset:1; transition:stroke-dashoffset 0.9s ease-in-out; transition-delay:calc(var(--i) * 0.16s); }
+#explore-screen .xi-ink .w { stroke-width:1.1; opacity:0.8; }
+#explore-screen .xi-ink .f, #explore-screen .xi-ink .h { fill-opacity:0; transition:stroke-dashoffset 0.9s ease-in-out, fill-opacity 0.8s ease; transition-delay:calc(var(--i) * 0.16s), calc(var(--i) * 0.16s + 0.7s); }
+#explore-screen .xi-ink .f { fill:#3a2410; }
+#explore-screen .xi-ink .h { fill:url(#xi-hatch); }
+#explore-screen .xi-ink .g { stroke-width:1.2; }
+#explore-screen .xi-ink.drawn path, #explore-screen .xi-ink.drawn circle, #explore-screen .xi-ink.drawn ellipse { stroke-dashoffset:0; }
+#explore-screen .xi-ink.drawn .f, #explore-screen .xi-ink.drawn .h { fill-opacity:0.85; }
+#explore-screen .xi-ink.drawn .g { animation:xiGlint 2.4s ease-in-out infinite; animation-delay:calc(var(--i) * 0.16s + 1s); transform-box:fill-box; transform-origin:center; }
+@keyframes xiGlint { 0%,100% { opacity:0.25; transform:scale(0.6); } 50% { opacity:1; transform:scale(1.15); } }
+@media (prefers-reduced-motion: reduce){ #explore-screen .xi-ink * { transition:none !important; animation:none !important; } }
 #explore-screen .xi-goal { margin:16px 0 14px; padding:12px 14px; border:2px solid #8a5a2a; border-radius:6px; background:rgba(255,240,200,0.45); font-size:0.98em; }
 #explore-screen .xi-goal > b:first-child { display:block; font-family:'Cinzel',serif; letter-spacing:2px; text-transform:uppercase; font-size:0.8em; color:#6a1a1a; margin-bottom:4px; }
 #explore-screen .xi-help { display:flex; flex-direction:column; gap:5px; font-size:0.85em; color:#5a3a1a; font-style:italic; }
