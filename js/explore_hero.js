@@ -15,13 +15,30 @@
 'use strict';
 // Base figures: 512×768-ish stills facing right, feet on the bottom edge, purple robe and hat, blue
 // magic, silver hair. hair / face: boxes as fractions (x0, y0, x1, y1) and (x, y, size of width).
+// skin: boxes round the face and hands (skin tones only change in there; a fifth number caps the
+// saturation in that box, so a staff held in the hand stays wood); noTrim: boxes where the gold
+// isn't trim (the staff, the belt and pouches, the boots): trim is gold that touches the robe outside them.
 // Two per sex and age are wanted (the art brief in docs/world-design.md, "Character creation");
 // until a slot has its own, the same sex's figures stand in (standIn in the creator).
 const BASES = [
-  {id:'m_old_1', sex:'m', age:'old', src:'sprites/folk/source/old_eldrin.png', hair:[0.28,0.18,0.64,0.48], face:[0.38,0.15,0.30]},
-  {id:'f_old_1', sex:'f', age:'old', src:'sprites/folk/source/old_witch.png',  hair:[0.18,0.18,0.60,0.42], face:[0.37,0.15,0.30]},
+  {id:'m_old_1', sex:'m', age:'old', src:'sprites/folk/source/old_eldrin.png', hair:[0.28,0.18,0.64,0.48], face:[0.38,0.15,0.30],
+    skin:[[0.44,0.228,0.62,0.31],[0.09,0.34,0.20,0.42,0.88],[0.70,0.31,0.86,0.43,0.88]], noTrim:[[0,0,0.22,1],[0.30,0.42,0.62,0.62],[0,0.89,1,1]]},
+  {id:'f_old_1', sex:'f', age:'old', src:'sprites/folk/source/old_witch.png',  hair:[0.18,0.18,0.60,0.42], face:[0.37,0.15,0.30],
+    skin:[[0.44,0.20,0.62,0.345],[0.10,0.33,0.22,0.41,0.88],[0.70,0.30,0.87,0.42,0.88]], noTrim:[[0,0,0.22,1],[0.28,0.43,0.66,0.62],[0,0.9,1,1]]},
 ];
 const AGES = [['young','Young'],['middle','Middle-aged'],['old','Old']];
+// trim: hue°, saturation ×, value × (null keeps the gold)
+const TRIMS = [
+  {name:'Gold', t:null, sw:'#e0a830'}, {name:'Silver', t:[220,0.12,1.08], sw:'#c8ccd8'}, {name:'Copper', t:[16,0.95,0.85], sw:'#c0602a'},
+  {name:'Bone', t:[40,0.25,1.15], sw:'#e8dcc0'}, {name:'Black', t:[260,0.15,0.38], sw:'#2a2630'}, {name:'Scarlet', t:[358,0.95,0.9], sw:'#c0202a'},
+  {name:'Jade', t:[140,0.8,0.8], sw:'#2a9a5a'}, {name:'Sky', t:[200,0.75,1.05], sw:'#4aa8e8'},
+];
+// skin: the base's skin, light to dark mapped onto a shadow → highlight pair (null keeps it)
+const SKINS = [
+  {name:'Natural', k:null, sw:'#e0a080'}, {name:'Pale', k:['#5a3830','#f8dccc'], sw:'#f6d8c8'}, {name:'Fair', k:['#6e4230','#f8d0aa'], sw:'#eec09a'},
+  {name:'Olive', k:['#4e3218','#dcae7a'], sw:'#c89a68'}, {name:'Tan', k:['#42260f','#cc8e5a'], sw:'#b07848'},
+  {name:'Brown', k:['#2e1608','#a86c40'], sw:'#8a5530'}, {name:'Deep', k:['#1a0c06','#7e4c2c'], sw:'#5e3620'},
+];
 // robe: hue°, saturation ×, value × (null keeps the base's purple)
 const ROBES = [
   {name:'Violet', r:null, sw:'#7a3cc8'}, {name:'Crimson', r:[355,0.95,0.85], sw:'#b01e2a'}, {name:'Midnight', r:[225,0.65,0.55], sw:'#22336e'},
@@ -66,13 +83,38 @@ function paint(img, base, look){
   const x=c.getContext('2d'); x.drawImage(img,0,0);
   const robe=(ROBES.find(r=>r.name===look.robe)||ROBES[0]).r, hair=(HAIRS.find(h=>h.name===look.hair)||HAIRS[0]).h;
   const magic=(ELEMS.find(e=>e.id===look.elem)||ELEMS[4]).m;
-  if(!robe&&!hair&&!magic) return c;
+  const trim=(TRIMS.find(t=>t.name===look.trim)||TRIMS[0]).t, skin=(SKINS.find(k=>k.name===look.skin)||SKINS[0]).k;
+  if(!robe&&!hair&&!magic&&!trim&&!skin) return c;
   const d=x.getImageData(0,0,W,H), p=d.data, hb=base.hair.map((f,i)=>Math.round(f*(i%2?H:W)));
-  const hd=hair&&hex(hair[0]), hl=hair&&hex(hair[1]);
+  const hd=hair&&hex(hair[0]), hl=hair&&hex(hair[1]), kd=skin&&hex(skin[0]), kl=skin&&hex(skin[1]);
+  const box=b=>[b[0]*W,b[1]*H,b[2]*W,b[3]*H,b[4]||1], inBox=(b,px,py)=>px>=b[0]&&px<=b[2]&&py>=b[1]&&py<=b[3], inAny=(bs,px,py)=>bs.some(b=>inBox(b,px,py));
+  const skinB=(base.skin||[]).map(box), noTrimB=(base.noTrim||[]).map(box);
+  // the robe as it was (before any recolour), grown by a few pixels: gold touching it is trim
+  let nearRobe=null;
+  if(trim){
+    const R=4, m=new Uint8Array(W*H), g2=new Uint8Array(W*H);
+    for(let i=0,j=0;i<p.length;i+=4,j++){ if(!p[i+3]) continue; const [h,s]=rgb2hsv(p[i]/255,p[i+1]/255,p[i+2]/255); if(h>=255&&h<=320&&s>0.22) m[j]=1; }
+    for(let y=0;y<H;y++){ let run=-1e9; for(let x0=0;x0<W;x0++){ if(m[y*W+x0]) run=x0; if(x0-run<=R) g2[y*W+x0]=1; } run=1e9; for(let x0=W-1;x0>=0;x0--){ if(m[y*W+x0]) run=x0; if(run-x0<=R) g2[y*W+x0]=1; } }
+    nearRobe=new Uint8Array(W*H);
+    for(let x0=0;x0<W;x0++){ let run=-1e9; for(let y=0;y<H;y++){ if(g2[y*W+x0]) run=y; if(y-run<=R) nearRobe[y*W+x0]=1; } run=1e9; for(let y=H-1;y>=0;y--){ if(g2[y*W+x0]) run=y; if(run-y<=R) nearRobe[y*W+x0]=1; } }
+  }
   for(let i=0;i<p.length;i+=4){
     if(!p[i+3]) continue;
     const r=p[i]/255, g=p[i+1]/255, b=p[i+2]/255, [h,s,v]=rgb2hsv(r,g,b);
     let out=null;
+    if((skin||trim)&&(h<40||h>=345)&&s>0.15){
+      const j=i/4, px=j%W, py=Math.floor(j/W);
+      const sb=skinB.find(b=>inBox(b,px,py));
+      if(sb&&s<=sb[4]){                                            // skin: face and hands
+        // all of the skin, outlines and flushed shadows too, but not the mauve-grey hair
+        if(skin&&v>0.08&&(s>0.3||h>=12)){ const t=Math.pow(Math.min(1,(v-0.08)/0.92),1.15); p[i]=kd[0]+(kl[0]-kd[0])*t; p[i+1]=kd[1]+(kl[1]-kd[1])*t; p[i+2]=kd[2]+(kl[2]-kd[2])*t; }
+        continue;
+      }
+    }
+    if(trim&&h>=8&&h<=60&&s>0.35&&v>0.3){                         // trim: gold on the robe, not the staff, belt or boots
+      const j=i/4, px=j%W, py=Math.floor(j/W);
+      if(nearRobe[j]&&!inAny(noTrimB,px,py)){ out=hsv2rgb(trim[0],Math.min(1,s*trim[1]),Math.min(1,v*trim[2])); p[i]=out[0]*255; p[i+1]=out[1]*255; p[i+2]=out[2]*255; continue; }
+    }
     if(robe&&h>=255&&h<=320&&s>0.22) out=hsv2rgb(robe[0],Math.min(1,s*robe[1]),Math.min(1,v*robe[2]));
     else if(magic&&h>=185&&h<255&&s>0.25) out=hsv2rgb(magic[0],Math.min(1,s*magic[1]),Math.min(1,v*magic[2]));
     else if(hair&&v>0.16&&(s<0.16||(s<0.34&&(h>=190||h<12)))){   // silver hair, with its blue- and mauve-grey shadows
@@ -116,8 +158,9 @@ function open(root, opts){
   return new Promise(resolve=>{
     const h0=opts.hero;
     const sex=h0?h0.sex:rnd(['m','f']);
-    const st=h0?Object.assign({},h0):{sex, age:'young', fig:null, robe:'Violet', hair:'Brown', elem:rnd(ELEMS).id, name:rnd(NAMES[sex])};
+    const st=h0?Object.assign({},h0):{sex, age:'young', fig:null, robe:'Violet', trim:'Gold', hair:'Brown', skin:'Natural', elem:rnd(ELEMS).id, name:rnd(NAMES[sex])};
     if(!st.fig) st.fig=figuresFor(st.sex,st.age).list[0].id;
+    st.trim=st.trim||'Gold'; st.skin=st.skin||'Natural';   // heroes made before trim and skin
     if(box) box.remove();
     box=document.createElement('div'); box.className='hc'; root.appendChild(box);
     box.innerHTML=`<div class="hc-box">
@@ -150,7 +193,7 @@ function open(root, opts){
         (opts.edit?'':pills('sex',[['m','Man'],['f','Woman']],'I am'))+
         pills('age',AGES,'Age')+
         `<div class="hc-row"><span class="hc-lab">Figure</span><div class="hc-pills"><button type="button" class="hc-pill" data-fig="-1">‹</button><span class="hc-figno">${i+1} of ${F.list.length}</span><button type="button" class="hc-pill" data-fig="1">›</button></div></div>`+
-        swatches('robe',ROBES,'Robes')+swatches('hair',HAIRS,'Hair')+
+        swatches('robe',ROBES,'Robes')+swatches('trim',TRIMS,'Trim')+swatches('hair',HAIRS,'Hair')+swatches('skin',SKINS,'Skin')+
         (opts.edit?'':`<div class="hc-row"><span class="hc-lab">Element</span><div class="hc-pills">`+ELEMS.map(e=>`<button type="button" class="hc-pill hc-el${st.elem===e.id?' on':''}" data-k="elem" data-v="${e.id}"><i style="background:${e.col}"></i>${e.name}</button>`).join('')+`</div></div>`+
         `<div class="hc-elnote">Your magic burns ${ELEMS.find(e=>e.id===st.elem).name.toLowerCase()}-coloured. Your first spells will be ${ELEMS.find(e=>e.id===st.elem).name}, and in time ${op.name}, its opposite, will come hardest to you.</div>`);
       $('.hc-note').textContent=F.standIn?'Stand-in figure: the art for '+(st.age==='middle'?'a middle-aged':'a '+st.age)+' '+(st.sex==='m'?'man':'woman')+' is still to come.':'';
@@ -176,5 +219,5 @@ function open(root, opts){
     render();
   });
 }
-window.ExploreHero={open, def, BASES, ROBES, HAIRS, ELEMS, NAMES};
+window.ExploreHero={open, def, BASES, ROBES, TRIMS, HAIRS, SKINS, ELEMS, NAMES};
 })();

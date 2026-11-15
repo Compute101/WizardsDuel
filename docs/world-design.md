@@ -224,7 +224,7 @@ trader, and the named Echoes (sheets 5–10 of the interior brief).
 ## Character creation
 
 Built so far (`js/explore_hero.js`): a new game asks who you are. Name, man or woman, young / middle-aged
-/ old (humans only for now), a figure, robes (10 colours), hair (7 colours) and an element, whose colour
+/ old (humans only for now), a figure, robes (10 colours), trim (8), hair (7), skin (7 tones) and an element, whose colour
 your magic takes. The look is a recolour of a base figure, done in the browser. A new wizard fights with
 the plain wheel and the Actions; their element's first spells, the barred opposite and levelling up are
 the next part of step 7.
@@ -244,7 +244,7 @@ Twelve figures, two for each sex and age, so the Figure choice has something to 
 
 The game recolours three things, so they must be painted in **key colours**: robes and hat in purple
 (only), the magic in blue (only), and hair and beard in silver-grey (only), even on the young figures.
-No other purple, blue or grey anywhere on them; gold trim, leather, wood and skin are left alone. Put
+No other purple, blue or grey anywhere on them. The trim must be gold (it is recoloured too, as gold on the robe), and skin can be any natural tone (it is recoloured inside face and hand boxes set per figure). Put
 each file in `sprites/hero/source/` and they get cut, sized and added to `BASES` with their hair and
 face boxes.
 
