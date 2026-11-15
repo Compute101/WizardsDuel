@@ -71,7 +71,7 @@ let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
 let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null, quests={};
 const POTION_HEAL=0.3, POTION_PRICE={shop:8, safehouse:10}, MAX_ALLIES=2;
-let found=new Set(), spill={}, cleared={}, actors=[], grace=0, crews=[], bandState={}, parley=null, clashes=[], visited=new Set(), saveOwner=null, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
+let found=new Set(), spill={}, cleared={}, actors=[], grace=0, crews=[], bandState={}, parley=null, clashes=[], visited=new Set(), saveOwner=null, hero=null, creating=false, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
 const imgCache={};
 function imgOf(src){ if(!imgCache[src]){ const i=new Image(); i.src=src; imgCache[src]=i; } return imgCache[src]; }
 
@@ -391,6 +391,7 @@ function fight(a){
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false);
     const key=wizKeys[wizIdx];
+    if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
     window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:fighting.map(x=>({key:x.key,level:x.level,name:x.name,hp:x.hp})), text, arena:MAP.arena,
       onEnd:(won,low,allyHp)=>afterFight(a,won,low,key,fighting,allyHp)});
   });
@@ -483,12 +484,12 @@ function findDoors(){
     const depth=Math.max(0,Math.min(1,(1-o.y/WORLD_H)*1.15-0.12));
     const ruined=/_(burnt|char)$/.test(o.kind)||['house5','house6','tiltedHouse','sunkHouse'].includes(base);
     const spec={id:'room:'+MAP.id+'#'+o.id, base, outside:{map:MAP.id,x:o.x,y:o.y+6}, el, depth, city:CITY_MAPS.includes(MAP.id),
-      ruined, fixed:f||null, wizards:wizKeys, safe:!!MAP.safe};
+      ruined, fixed:f||null, wizards:wizKeys.filter(k=>k!=='hero'), safe:!!MAP.safe};
     doors.push({x:o.x, y:o.y+14, spec, label:f?FIXED_LABEL[f]:'Enter'});
   }
 }
 function enterDoor(dr){
-  roomSpec=Object.assign({},dr.spec,{wizards:wizKeys.filter(k=>k!==wizKeys[wizIdx])});
+  roomSpec=Object.assign({},dr.spec,{wizards:wizKeys.filter(k=>k!==wizKeys[wizIdx]&&k!=='hero')});
   enterMap(roomSpec.id,'door').then(()=>{ grace=1.5; });
 }
 function roomState(){ return rooms[MAP.id]||(rooms[MAP.id]={}); }
@@ -544,6 +545,7 @@ function spar({foes, text, onWin, onLose}){
   const key=wizKeys[wizIdx], before=hpOf(key);
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false);
+    if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
     window.startExploreBattle({wizKey:key, foes, hp:maxHp(key), allies:[], text, arena:MAP.arena||'library',
       onEnd:won=>{
         el.root.classList.add('active'); running=true; busy=false; resize();
@@ -676,7 +678,8 @@ function renderBag(){
     h+=`<div class="ex-bag-note">Spill from broken Echoes. Wenna in Cindergate bakes with cinderglass; the Lamplighter in Gloamside trades for nightglass.</div>`;
   } else if(bagTab==='party'){
     const wizzes=wizKeys.filter(k=>k===key||(vit[k]!=null&&vit[k]<maxHp(k)));
-    h+=`<div class="ex-bag-sec">Wizards</div>`+wizzes.map(k=>`<div class="ex-bag-row"><img class="ex-bag-face" src="portraits/small/${k}.jpg" alt=""><span class="ex-bag-name">${esc(chars[k].name)}${k===key?' <em>(walking)</em>':''}</span>${bar(hpOf(k),maxHp(k))}</div>`).join('');
+    h+=`<div class="ex-bag-sec">Wizards</div>`+wizzes.map(k=>`<div class="ex-bag-row"><img class="ex-bag-face" src="${faceSrc(k)}" alt=""><span class="ex-bag-name">${esc(chars[k].name)}${k===key?' <em>(walking)</em>':''}</span>${bar(hpOf(k),maxHp(k))}</div>`).join('');
+    if(hero) h+=`<div class="ex-bag-row"><span class="ex-bag-name"><small>${esc(hero.name)}, ${esc(chars.hero.title)}</small></span><button class="ex-btn" data-act="look" type="button">Change look</button></div>`;
     h+=`<div class="ex-bag-note">Wounds carry from fight to fight. Rest at an inn or a gleaner camp, or drink a potion.</div>`;
     h+=`<div class="ex-bag-sec">Allies · ${allies.length} / ${MAX_ALLIES}</div>`;
     h+=allies.length?allies.map((a,i)=>{ const f=fighters[a.key]||{}, mx=allyMax(a);
@@ -714,6 +717,7 @@ function bagClick(e){
   else {
     const a=t.dataset.act;
     if(a==='drink'){ drinkPotion(); renderHp(); renderSpill(); save(); }
+    else if(a==='look'){ closeBag(); createHero(true); return; }
     else if(a==='unread') bagRead=null;
     else if(a==='dismiss'){ const i=+t.dataset.i;
       if(bagConfirm==='dismiss'+i){ const al=allies[i]; allies.splice(i,1); bagConfirm=null; toast(al.name+' heads back to the gate.'); renderSpill(); save(); }
@@ -729,6 +733,7 @@ async function startOver(){
   closeBag();
   try{ localStorage.removeItem(saveKeyFor(saveOwner)); }catch(e){}
   applySave(null); renderSpill(); renderHp(); renderClock();
+  await createHero(false);
   await enterMap(START.map,START.spawn);
   toast('A fresh start, at the gates of Wrenford.');
 }
@@ -861,7 +866,7 @@ async function enterMap(id,at,instant){
 }
 function save(){
   if(!MAP||!saveOwner) return;
-  try{ localStorage.setItem(saveKeyFor(saveOwner),JSON.stringify({v:2, t:Date.now(), map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
+  try{ localStorage.setItem(saveKeyFor(saveOwner),JSON.stringify({v:2, t:Date.now(), map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,hero,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
 }
 function loadSave(id){
   try{
@@ -875,7 +880,7 @@ function applySave(s){
   s=s||{};
   found=new Set(s.found||[]); visited=new Set(s.visited||[]); spill=s.spill||{}; cleared=s.cleared||{};
   clock=s.clock!=null?s.clock:9*60; lightMode=s.lightMode||'auto'; vit=s.vit||{};
-  gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; quests=s.quests||{}; roomSpec=s.roomSpec||null; bandState=s.bands||{};
+  gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; quests=s.quests||{}; hero=s.hero||null; roomSpec=s.roomSpec||null; bandState=s.bands||{};
   if(s.map&&!s.map.startsWith('room:')) visited.add(s.map);
   for(const id of found){ const l=world&&world.locations.find(x=>x.id===id); if(l&&l.map) visited.add(l.map); }   // older saves knew only world-map places
 }
@@ -1097,6 +1102,7 @@ function setTarget(e){
 function onKey(e){
   if(!running) return;
   const k=e.key.toLowerCase();
+  if(creating) return;
   if(bagOpen){ if(k==='escape'||k==='i'){ closeBag(); e.preventDefault(); } return; }
   if(worldOpen){
     if(k==='escape'){ closeWorld(); e.preventDefault(); }
@@ -1127,10 +1133,30 @@ function sizeMini(){
   el.mini.style.width=mw+'px'; el.mini.style.height=Math.round(mw*ROWS/COLS)+'px';
 }
 
+// a small face: the portrait thumbnail, or a made wizard's own
+function faceSrc(key){ const c=chars&&chars[key]; return c&&c.face||'portraits/small/'+key+'.jpg'; }
+// ── your own wizard (js/explore_hero.js) ──
+// hero (saved) is the record from the creator; its character entry goes in as 'hero' here and in the
+// duel engine's CHAR_DEFS, first in wizKeys. While you have one, the roster switcher is hidden.
+async function useHero(){
+  if(!hero||!window.ExploreHero) return;
+  const d=await window.ExploreHero.def(hero);
+  chars.hero=d; if(typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=d;
+  if(wizKeys[0]!=='hero') wizKeys.unshift('hero');
+  el.root.querySelectorAll('#ex-prev,#ex-next').forEach(b=>b.hidden=true);
+  setWizard(0);
+}
+async function createHero(edit){
+  creating=true; keys.clear(); target=null; hideSay();
+  const h=await window.ExploreHero.open(el.root,{hero:edit?hero:null, edit:!!edit});
+  creating=false;
+  if(h){ hero=h; await useHero(); save(); }
+  return h;
+}
 function setWizard(i){
   wizIdx=(i+wizKeys.length)%wizKeys.length;
   const key=wizKeys[wizIdx], c=chars[key];
-  el.name.textContent=c.name; el.face.src='portraits/small/'+key+'.jpg'; renderHp();
+  el.name.textContent=c.name; el.face.src=faceSrc(key); renderHp();
   try{ localStorage.setItem('wd-explore-wiz',key); }catch(e){}
   const img=new Image(); img.src=c.sprite; img.onload=()=>{ if(wizKeys[wizIdx]===key) wizImg=img; };
 }
@@ -1207,7 +1233,7 @@ function exitAt(x,y){
   return null;
 }
 function update(dt){
-  if(busy||worldOpen||bagOpen){ wiz.moving=false; return; }
+  if(busy||worldOpen||bagOpen||creating){ wiz.moving=false; return; }
   let dx=0, dy=0;
   if(keys.has('arrowleft')||keys.has('a')) dx--;
   if(keys.has('arrowright')||keys.has('d')) dx++;
@@ -1572,6 +1598,7 @@ async function open(){
   sizeMini();
   let saved=s&&s.wiz; if(!saved) try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}
   setWizard(Math.max(0,wizKeys.indexOf(saved||'eldrin'))); renderClock();
+  if(!hero&&window.ExploreHero) await createHero(false); else await useHero();
   last=performance.now(); requestAnimationFrame(frame);
   el.hint.classList.remove('fade');
   setTimeout(()=>{ if(el.hint) el.hint.classList.add('fade'); },7000);
@@ -1587,7 +1614,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(b) b.addEventListener('click',open);
 });
 window.Explore={open, close, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
-  _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _bands:()=>bandState, _echoes:()=>actors,
+  _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
   // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
   _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;
     for(let h=0;h<q.length;h++){ const c=q[h], cx=c%nc; for(const n of [c-nc,c+nc,cx>0?c-1:-1,cx<nc-1?c+1:-1]) if(n>=0&&n<nc*nr&&!seen[n]&&g[n]){ seen[n]=1; q.push(n); } }
