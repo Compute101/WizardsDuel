@@ -3801,7 +3801,8 @@ function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}
 //     stops blows), so striking a guarding soldier is a waste: hit someone else, or Grapple him.
 //   ranged (Archer): his Attack is a bow shot: it slips past a Guard (no block, no counter), and he keeps
 //     his distance, so a Grapple at him fails.
-const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'},
+//   reach (Halberdier, Explore only): a long-hafted axe holds you off, so a Grapple at him fails.
+const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'}, reach:{name:'Long Reach',icon:'🪓'},
   echo:{name:'Echo',icon:'✦'}};
 // Echoes (Explore: Corvanthe's citizens remade in one element, fighters.json `echo`): their blow is a
 // strike in that element (magic: a ward stops it, a Guard doesn't), they shrug off their own element
@@ -3869,7 +3870,7 @@ function renderEncounterSetup(){
   }).join('')+'</ol>'+
   (bestList.length?'<div class="enc-best">🏆 Best runs: '+bestList.map(([k,n])=>`${CHAR_DEFS[k]?CHAR_DEFS[k].name:k} ${n===SURVIVAL_WAVES.length?'all '+n:n}`).join(' · ')+'</div>':'')+
   '<button class="btn" id="btn-enc-go">Choose Your Wizard →</button>'+
-  '<div class="enc-traits">'+Object.keys(FIGHTER_DEFS).filter(k=>!FIGHTER_DEFS[k].echo).map(k=>{
+  '<div class="enc-traits">'+Object.keys(FIGHTER_DEFS).filter(k=>!FIGHTER_DEFS[k].echo&&!FIGHTER_DEFS[k].explore).map(k=>{
     const f=FIGHTER_DEFS[k], t=FIGHTER_TRAITS[f.trait]||{};
     return `<div class="enc-trait"><b>${t.icon||''} ${f.title}</b> — ${f.desc}</div>`;
   }).join('')+'</div>';
@@ -4703,7 +4704,8 @@ function executeAction(who,action,cb){
   if(action.act==='grapple'){
     const caught=ta&&ta.act==='attack'&&ta.target===who;
     if(caught){ addFloat(seatX(tgt),bH*.3,'🤼 The grapple fails','#cccccc',12); combatTimeout(cb,700); return; }
-    if(traitOf(tgt)==='ranged'){ addFloat(seatX(tgt),bH*.3,'🏹 Keeps her distance','#cccccc',12); combatTimeout(cb,700); return; }
+    if(traitOf(tgt)==='ranged'){ addFloat(seatX(tgt),bH*.3,'🏹 Keeps his distance','#cccccc',12); combatTimeout(cb,700); return; }
+    if(traitOf(tgt)==='reach'){ addFloat(seatX(tgt),bH*.3,'🪓 Held off by the halberd','#cccccc',12); combatTimeout(cb,700); return; }
     if(isVanished(tgt)){ addFloat(seatX(tgt),bH*.3,'👻 Grasps at nothing','#b8a0e8',12); combatTimeout(cb,700); return; }   // Vanish: nothing to hold
     const full=isGuarding(tgt), dmg=Math.max(1,Math.round(ph.atk*(full?1:ACT_RULES.grappleOther)));
     lunge(who,.2,()=>{

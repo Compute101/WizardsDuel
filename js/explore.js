@@ -70,7 +70,7 @@ let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
 let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null;
 const POTION_HEAL=0.3, POTION_PRICE={shop:8, safehouse:10}, MAX_ALLIES=2;
-let found=new Set(), spill={}, cleared={}, actors=[], grace=0, visited=new Set(), saveOwner=null, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
+let found=new Set(), spill={}, cleared={}, actors=[], grace=0, crews=[], bandState={}, parley=null, clashes=[], visited=new Set(), saveOwner=null, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
 const imgCache={};
 function imgOf(src){ if(!imgCache[src]){ const i=new Image(); i.src=src; imgCache[src]=i; } return imgCache[src]; }
 
@@ -135,6 +135,7 @@ function setupMap(data){
   npcs=(data.npcs||[]).map(n=>Object.assign({},n));
   applyRoomState();
   spawnEchoes();
+  spawnBands();
   buildMinimap();
   if(el.title){ el.title.textContent=data.name; sizeMini(); }
 }
@@ -157,6 +158,7 @@ function spawnEchoes(){
 }
 function updateEchoes(dt){
   for(const a of actors){
+    if(a.clash){ a.moving=false; continue; }          // busy with a warband
     const d=Math.hypot(wiz.x-a.x,(wiz.y-a.y)*1.3);
     const chasing=grace<=0&&(d<ECHO.sight||MAP.interior);   // indoors there's nowhere to hide
     if(chasing){ a.tx=wiz.x; a.ty=wiz.y; }
@@ -177,6 +179,188 @@ function updateEchoes(dt){
       a.walk+=dt*6;
     }
     if(grace<=0&&Math.abs(wiz.x-a.x)<ECHO.touch&&Math.abs(wiz.y-a.y)<18){ fight(a); return; }
+  }
+}
+// ── Warbands (js/explore_bands.js): rival gleaner crews on the streets ──
+// A crew walks the map's streets (ROAD ground kinds, on a tile grid), now and then making for the nearest
+// Echo group to hunt it. Meeting one plays out on the map (CLASH): the odds come from both sides' weight
+// (ExploreBands.clashOdds); a winning crew takes the spill and may lose a member, a losing one is broken.
+// Toll crews stop you and ask for gold or spill; hostile ones charge. bandState[id] (saved): beaten (time),
+// lost (fallen members), gold, spill, tollUntil, met.
+const ROAD_KINDS='RMcPfD';
+const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+let roadSet=null, roadList=[];
+function bandRec(b){
+  const B=window.ExploreBands.BAND_RULES;
+  let st=bandState[b.id];
+  if(!st||(st.beaten&&Date.now()-st.beaten>B.respawnMs)){
+    const met=st&&st.met;
+    st=bandState[b.id]={lost:[], gold:B.gold[b.level]+Math.floor(Math.random()*8), spill:{}, met:!!met};
+  }
+  return st;
+}
+const aliveOf=(b,st)=>b.members.filter((m,i)=>!st.lost.includes(i));
+function roadsOf(){
+  roadSet=new Set(); roadList=[];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const k=MAP.ground[r][c];
+    if(ROAD_KINDS.includes(k)||(k==='W'&&!wet(c*T+T/2,r*T+T/2))){ roadSet.add(r*COLS+c); roadList.push(r*COLS+c); }
+  }
+}
+function roadPath(from,to){                       // tile indices along the streets, BFS
+  const prev=new Map([[from,from]]), q=[from];
+  for(let h=0;h<q.length;h++){ const c=q[h]; if(c===to) break; const x=c%COLS;
+    for(const n of [c-COLS,c+COLS,x>0?c-1:-1,x<COLS-1?c+1:-1]) if(n>=0&&roadSet.has(n)&&!prev.has(n)){ prev.set(n,c); q.push(n); } }
+  if(!prev.has(to)) return null;
+  const out=[]; for(let c=to;c!==from;c=prev.get(c)) out.unshift({x:(c%COLS)*T+T/2+(Math.random()-0.5)*20, y:Math.floor(c/COLS)*T+T/2+(Math.random()-0.5)*14});
+  return out;
+}
+const roadIdx=(x,y)=>Math.floor(y/T)*COLS+Math.floor(x/T);
+function spawnBands(){
+  crews=[]; parley=null; clashes=[];
+  if(MAP.interior||!window.ExploreBands) return;
+  const here=window.ExploreBands.BANDS.filter(b=>b.map===MAP.id);
+  if(!here.length) return;
+  roadsOf(); if(!roadList.length) return;
+  const sp=[wiz.x,wiz.y];
+  for(const b of here){
+    const st=bandRec(b); if(st.beaten) continue;
+    const far=roadList.filter(c=>Math.hypot((c%COLS)*T-sp[0],Math.floor(c/COLS)*T-sp[1])>700);
+    const c=(far.length?far:roadList)[Math.floor(Math.random()*(far.length||roadList.length))];
+    const x=(c%COLS)*T+T/2, y=Math.floor(c/COLS)*T+T/2;
+    crews.push({b, x, y, path:null, wait:1+Math.random()*2, face:1, walk:0, trail:[], moving:false, clash:null,
+      imgs:(b.wizard&&chars[b.wizard]?[chars[b.wizard].sprite]:[]).concat(aliveOf(b,st).map(k=>(fighters[k]||{}).sprite)).filter(Boolean).map(imgOf)});
+  }
+}
+function crewFoes(b,st){ return aliveOf(b,st).map(k=>[k,b.level]); }
+function updateBands(dt){
+  if(!crews.length) return;
+  const B=window.ExploreBands.BAND_RULES, now=Date.now();
+  // a toll crew is waiting on your answer; walk away and that's an answer
+  if(parley&&el.say.hidden){ const c=parley; parley=null; toast(cap(c.b.name)+' take that as a no.'); bandFight(c); return; }
+  for(const c of crews){
+    const st=bandRec(c.b);
+    if(c.clash){                                   // fighting Echoes: stand and trade blows, then settle it
+      c.clash.t-=dt*1000; c.moving=false;
+      if(c.clash.t<=0) settleClash(c,st);
+      continue;
+    }
+    if(parley===c) continue;
+    const d=Math.hypot(wiz.x-c.x,(wiz.y-c.y)*1.3);
+    const wants=grace<=0&&!(st.tollUntil>now);
+    let tx=null, ty=null, speed=B.wander;
+    if(wants&&d<B.sight){ tx=wiz.x; ty=wiz.y; speed=B.chase; c.path=null; st.met=true; }
+    else {
+      if(!c.path||!c.path.length){
+        c.wait-=dt; if(c.wait>0){ c.moving=false; continue; }
+        c.wait=1.5+Math.random()*3;
+        const from=roadIdx(c.x,c.y); let to=null;
+        const prey=actors.filter(a=>a.e.el&&!a.clash);
+        if(prey.length&&Math.random()<B.hunt){ const p=prey.sort((p,q)=>Math.hypot(p.x-c.x,p.y-c.y)-Math.hypot(q.x-c.x,q.y-c.y))[0];
+          let best=null, bd=1e9; for(const r of roadList){ const dd=Math.hypot((r%COLS)*T+T/2-p.x,Math.floor(r/COLS)*T+T/2-p.y); if(dd<bd){ bd=dd; best=r; } } to=best; }
+        else { const near=roadList.filter(r=>{ const dd=Math.hypot((r%COLS)*T-c.x,Math.floor(r/COLS)*T-c.y); return dd>T*6&&dd<T*22; }); to=near[Math.floor(Math.random()*near.length)]; }
+        if(roadSet.has(from)&&to!=null) c.path=roadPath(from,to);
+        if(!c.path){ const r=roadList[Math.floor(Math.random()*roadList.length)]; c.x=(r%COLS)*T+T/2; c.y=Math.floor(r/COLS)*T+T/2; continue; }   // off the streets somehow: back on them
+      }
+      if(c.path&&c.path.length){ tx=c.path[0].x; ty=c.path[0].y; if(Math.hypot(tx-c.x,ty-c.y)<8){ c.path.shift(); continue; } }
+    }
+    if(tx==null){ c.moving=false; continue; }
+    const dx=tx-c.x, dy=ty-c.y, len=Math.hypot(dx,dy)||1, step=speed*dt;
+    if(speed===B.chase){ if(!blocked(c.x+dx/len*step,c.y)) c.x+=dx/len*step; if(!blocked(c.x,c.y+dy/len*step)) c.y+=dy/len*step; }
+    else { c.x+=dx/len*Math.min(step,len); c.y+=dy/len*Math.min(step,len); }
+    c.moving=true; c.walk+=dt*6; if(Math.abs(dx)>4) c.face=dx>0?1:-1;
+    c.trail.unshift({x:c.x,y:c.y}); if(c.trail.length>60) c.trail.pop();
+    // they reach you
+    if(wants&&Math.abs(wiz.x-c.x)<B.touch&&Math.abs(wiz.y-c.y)<20){ meetBand(c,st); return; }
+    // they reach an Echo group
+    for(const a of actors) if(a.e.el&&!a.clash&&Math.hypot(a.x-c.x,a.y-c.y)<70){
+      c.clash=a.clash={t:B.clashMs, a, odds:window.ExploreBands.clashOdds(fighters,chars,c.b,aliveOf(c.b,st),a.e.foes)};
+      clashes.push({x:(a.x+c.x)/2,y:(a.y+c.y)/2,t0:performance.now(),c}); c.path=null;
+      if(Math.hypot(wiz.x-a.x,wiz.y-a.y)<700) toast(cap(c.b.name)+' fall on '+(a.n>1?'a pack of':'an')+' '+a.e.el+' Echo'+(a.n>1?'es':'')+'!');
+      break;
+    }
+  }
+}
+function settleClash(c,st){
+  const a=c.clash.a, win=Math.random()<c.clash.odds, close=Math.hypot(wiz.x-c.x,wiz.y-c.y)<800;
+  c.clash=null; a.clash=null; clashes=clashes.filter(k=>k.c!==c);
+  if(win){
+    cleared[MAP.id+':'+a.e.id]=Date.now(); actors=actors.filter(x=>x!==a);
+    const got=a.e.foes.reduce((n,[k])=>n+SPILL_YIELD[k.endsWith('_strong')?'strong':'weak'],0);
+    st.spill[a.e.el]=(st.spill[a.e.el]||0)+got;
+    // the Echoes took someone with them? never the last one standing
+    const alive=c.b.members.map((m,i)=>i).filter(i=>!st.lost.includes(i));
+    if(alive.length>1&&Math.random()<0.3){ st.lost.push(alive[alive.length-1]); c.imgs.pop(); }
+    if(close) toast(cap(c.b.name)+' break the Echoes and take the spill.');
+  } else {
+    st.beaten=Date.now(); crews=crews.filter(x=>x!==c);
+    if(close) toast('The Echoes tear through '+c.b.name+'.');
+  }
+  save();
+}
+function meetBand(c,st){
+  const B=window.ExploreBands.BAND_RULES, b=c.b;
+  keys.clear(); target=null; st.met=true;
+  if(b.mood==='hostile'){ toast(b.leader+': '+b.shout); bandFight(c); return; }
+  const toll=B.toll[b.level], spillHave=Object.values(spill).reduce((x,y)=>x+y,0), inSpill=Math.max(1,Math.ceil(toll/5));
+  parley=c;
+  showDialog(b.leader+', of '+b.name, b.toll+'\n\nThe toll is '+toll+' gold.',[
+    {label:'Pay '+toll+' gold', disabled:gold<toll, fn:()=>{ parley=null; st.robbed=false; gold-=toll; st.gold+=toll; st.tollUntil=Date.now()+B.tollMs; toast('They step aside. "Pleasure doing business."'); }},
+    {label:'Pay in spill ('+inSpill+')', disabled:spillHave<inSpill, fn:()=>{ parley=null; payInSpill(inSpill,st); st.tollUntil=Date.now()+B.tollMs; toast('They weigh the crystals and wave you on.'); }},
+    {label:'Fight', fn:()=>{ parley=null; bandFight(c); }}]);
+}
+function payInSpill(n,st){                          // the commonest first
+  while(n>0){ const k=Object.keys(spill).filter(e=>spill[e]>0).sort((p,q)=>spill[q]-spill[p])[0]; if(!k) break; spill[k]--; st.spill[k]=(st.spill[k]||0)+1; n--; }
+  renderSpill();
+}
+function bandFight(c){
+  const st=bandRec(c.b);
+  fight({e:{band:c.b, crew:c, id:'band:'+c.b.id, foes:crewFoes(c.b,st), wizard:c.b.wizard&&chars[c.b.wizard]?c.b.wizard:null, x:c.x, y:c.y}, x:c.x, y:c.y});
+}
+function afterBandFight(a,won){
+  const b=a.e.band, st=bandRec(b), B=window.ExploreBands.BAND_RULES;
+  if(won){
+    gold+=st.gold; const got=[];
+    for(const k in st.spill) if(st.spill[k]>0){ spill[k]=(spill[k]||0)+st.spill[k]; got.push(st.spill[k]+' '+SPILL[k][0]); }
+    toast('+'+st.gold+' gold'+(got.length?', '+got.join(', '):'')+' from '+b.name);
+    st.beaten=Date.now(); crews=crews.filter(x=>x!==a.e.crew);
+  } else {
+    const g=Math.floor(gold*B.robGold); gold-=g; st.gold+=g;
+    for(const k in spill){ const n=Math.floor(spill[k]*B.robSpill); spill[k]-=n; st.spill[k]=(st.spill[k]||0)+n; }
+    setTimeout(()=>toast(cap(b.name)+' went through your pockets'+(g?': '+g+' gold gone.':'.')),2600);
+    st.tollUntil=Date.now()+B.tollMs; st.robbed=true;  // they've had their fill of you for a while
+  }
+  renderSpill();
+}
+function drawCrew(c,t){
+  const st=bandState[c.b.id]; const n=c.imgs.length;
+  for(let i=n-1;i>=0;i--){                         // followers trail behind the leader
+    const img=c.imgs[i]; if(!img.complete||!img.naturalWidth) continue;
+    const p=i===0?c:(c.trail[Math.min(c.trail.length-1,i*14)]||c);
+    const h=WIZ_H*(i===0&&c.b.wizard?1.0:0.96), w=h*img.naturalWidth/img.naturalHeight, bob=c.moving?Math.abs(Math.sin(c.walk+i))*3:0;
+    ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(p.x,p.y-2,w*0.3,5,0,0,Math.PI*2); ctx.fill();
+    ctx.save(); ctx.translate(p.x,p.y-bob); if(c.face<0) ctx.scale(-1,1); ctx.drawImage(img,-w/2,-h,w,h); ctx.restore();
+  }
+  // the crew's colours over the leader, and its name when you're close
+  const d=Math.hypot(wiz.x-c.x,wiz.y-c.y);
+  ctx.fillStyle=c.b.col; ctx.beginPath(); ctx.moveTo(c.x-6,c.y-WIZ_H-14); ctx.lineTo(c.x+6,c.y-WIZ_H-14); ctx.lineTo(c.x,c.y-WIZ_H-5); ctx.fill();
+  if(d<380){
+    ctx.font='12px Cinzel, serif'; ctx.textAlign='center';
+    const label=cap(c.b.name)+(c.b.mood==='hostile'?' ⚔':'');
+    const w=ctx.measureText(label).width+12;
+    ctx.fillStyle='rgba(14,10,30,0.8)'; ctx.fillRect(c.x-w/2,c.y-WIZ_H-34,w,17);
+    ctx.fillStyle=c.b.col; ctx.fillText(label,c.x,c.y-WIZ_H-21);
+  }
+}
+function drawClashes(t){                           // a crew and Echoes trading blows: sparks and steel
+  for(const k of clashes){
+    const e=(t-k.t0)/1000;
+    for(let i=0;i<6;i++){
+      const a=e*7+i*1.05, r=10+((e*40+i*13)%26);
+      ctx.fillStyle=i%2?'rgba(255,230,160,0.9)':'rgba(255,140,60,0.8)';
+      ctx.fillRect(k.x+Math.cos(a)*r,k.y-30+Math.sin(a)*r*0.6,3,3);
+    }
+    if(Math.floor(e*3)%2===0){ ctx.font='bold 14px Cinzel, serif'; ctx.textAlign='center'; ctx.fillStyle='#ffe0a0'; ctx.fillText('⚔',k.x,k.y-60); }
   }
 }
 function drawEcho(a,t){
@@ -200,7 +384,8 @@ function fight(a){
   busy=true; keys.clear(); target=null; hideSay(); save();
   const foes=(a.e.wizard?[{key:a.e.wizard,wizard:true}]:[]).concat(a.e.foes.map(([key,level])=>({key,level})));
   const fighting=allies.slice();
-  const text=a.e.party?{winTitle:'The Crew Breaks', win:'They scatter into the dark streets, leaving their takings behind.'}:null;
+  const text=a.e.band?{winTitle:cap(a.e.band.name)+' Broken', win:a.e.band.beaten+' They scatter, leaving their purse and their haul.'}
+    :a.e.party?{winTitle:'The Crew Breaks', win:'They scatter into the dark streets, leaving their takings behind.'}:null;
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false);
     const key=wizKeys[wizIdx];
@@ -217,7 +402,9 @@ function afterFight(a,won,low,key,fighting,allyHp){
   renderHp();
   // allies who fought: they keep their wounds; the fallen are gone
   (allyHp||[]).forEach((hp,i)=>{ const al=fighting[i]; if(!al) return; if(hp<=0){ allies=allies.filter(x=>x!==al); toast(al.name+' fell. You leave them where they lie.'); } else al.hp=hp; });
-  if(won&&a.e.party){
+  if(a.e.band){ afterBandFight(a,won); }
+  if(won&&a.e.band){ grace=ECHO.grace; }
+  else if(won&&a.e.party){
     roomState().done=true; actors=actors.filter(x=>x!==a); gold+=(MAP.ev||{}).gold||0;
     toast('+'+((MAP.ev||{}).gold||0)+' gold from their packs'); grace=ECHO.grace;
   } else if(won){
@@ -453,6 +640,13 @@ function renderBag(){
     const places=Object.keys(MAP_NAMES);
     h+=`<div class="ex-bag-sec">Places · ${places.filter(p=>visited.has(p)).length} / ${places.length}</div><div class="ex-bag-places">`+
       places.map(p=>`<span class="${visited.has(p)?'':'none'}">${visited.has(p)?esc(MAP_NAMES[p].replace(/^the /,'The ')):'???'}</span>`).join('')+`</div>`;
+    const met=window.ExploreBands?window.ExploreBands.BANDS.filter(b=>bandState[b.id]&&bandState[b.id].met):[];
+    if(met.length){
+      const now=Date.now(), R=window.ExploreBands.BAND_RULES;
+      h+=`<div class="ex-bag-sec">Warbands</div>`+met.map(b=>{ const st=bandState[b.id];
+        const how=st.beaten&&now-st.beaten<R.respawnMs?'broken, for now':st.tollUntil>now?(st.robbed?'robbed you blind':'paid off, for now'):b.mood==='hostile'?'out for blood':'want their toll';
+        return `<div class="ex-bag-task"><b style="color:${b.col}">${esc(cap(b.name))}</b> · ${esc(MAP_NAMES[b.map]||b.map)} · ${how}</div>`; }).join('');
+    }
     const B=window.ExploreRooms.BOOKS, read=B.filter(b=>booksRead.includes(b.id));
     h+=`<div class="ex-bag-sec">Lore · ${read.length} / ${B.length}</div>`;
     if(bagRead){ const b=B.find(x=>x.id===bagRead); h+=`<div class="ex-bag-book"><b>${esc(b.title)}</b><p>${esc(b.text)}</p><button class="ex-btn" data-act="unread" type="button">← All lore</button></div>`; }
@@ -617,7 +811,7 @@ async function enterMap(id,at,instant){
 }
 function save(){
   if(!MAP||!saveOwner) return;
-  try{ localStorage.setItem(saveKeyFor(saveOwner),JSON.stringify({v:2, t:Date.now(), map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
+  try{ localStorage.setItem(saveKeyFor(saveOwner),JSON.stringify({v:2, t:Date.now(), map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,bands:bandState,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
 }
 function loadSave(id){
   try{
@@ -631,7 +825,7 @@ function applySave(s){
   s=s||{};
   found=new Set(s.found||[]); visited=new Set(s.visited||[]); spill=s.spill||{}; cleared=s.cleared||{};
   clock=s.clock!=null?s.clock:9*60; lightMode=s.lightMode||'auto'; vit=s.vit||{};
-  gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; roomSpec=s.roomSpec||null;
+  gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; roomSpec=s.roomSpec||null; bandState=s.bands||{};
   if(s.map&&!s.map.startsWith('room:')) visited.add(s.map);
   for(const id of found){ const l=world&&world.locations.find(x=>x.id===id); if(l&&l.map) visited.add(l.map); }   // older saves knew only world-map places
 }
@@ -977,6 +1171,7 @@ function update(dt){
   }
   if(grace>0) grace-=dt;
   updateEchoes(dt); if(busy) return;
+  updateBands(dt); if(busy) return;
   // a way out? (you must step out of the one you arrived in first)
   const ex=exitAt(wiz.x,wiz.y);
   if(!ex) exitArmed=true;
@@ -1098,17 +1293,20 @@ function draw(t){
   }
   list.push({wiz:true,y:wiz.y});
   for(const a of actors) if(a.x>cam.x-80&&a.x<cam.x+cw+80&&a.y>cam.y&&a.y<cam.y+ch+120) list.push({actor:a,y:a.y});
+  for(const c of crews) if(c.x>cam.x-120&&c.x<cam.x+cw+120&&c.y>cam.y&&c.y<cam.y+ch+160) list.push({crew:c,y:c.y});
   for(const n of npcs) if(!n.gone) list.push({npc:n,y:n.y});
   list.sort((a,b)=>a.y-b.y);
   for(const o of list){
     if(o.wiz){ drawWizard(t); continue; }
     if(o.actor){ drawEcho(o.actor,t); continue; }
+    if(o.crew){ drawCrew(o.crew,t); continue; }
     if(o.npc){ drawNpc(o.npc,t); continue; }
     const s=sizeOf(o.kind,o.scale);
     // a tall piece in front of the wizard turns see-through
     const hides=o.y>wiz.y && s.h>90 && overlap(wizBox,{x:o.x-s.w/2,y:o.y-s.h,w:s.w,h:s.h-12});
     drawPiece(o.kind,o.x,o.y,hides?0.5:undefined,o.scale);
   }
+  drawClashes(t);
   // inspect marker
   if(near && el.say.hidden){
     const s=near.npc?{h:WIZ_H}:near.decal?{h:40}:sizeOf(near.kind,near.scale), bob=Math.sin(t/250)*3;
@@ -1261,6 +1459,7 @@ function drawMini(){
   m.strokeStyle='rgba(255,255,255,0.7)'; m.lineWidth=1;
   m.strokeRect(cam.x*k+0.5,cam.y*k+0.5,vw/zoom*k,vh/zoom*k);
   for(const a of actors){ m.fillStyle=a.e.el?SPILL[a.e.el][1]:'#ff5050'; m.fillRect(a.x*k-1.5,a.y*k-1.5,3,3); }
+  for(const c of crews){ m.fillStyle=c.b.col; m.strokeStyle='#000'; m.fillRect(c.x*k-2.5,c.y*k-2.5,5,5); m.strokeRect(c.x*k-2.5,c.y*k-2.5,5,5); }
   m.fillStyle='#fff'; m.beginPath(); m.arc(wiz.x*k,wiz.y*k,2.5,0,Math.PI*2); m.fill();
 }
 let clockT=0;
@@ -1327,7 +1526,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(b) b.addEventListener('click',open);
 });
 window.Explore={open, close, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
-  _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y),
+  _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _bands:()=>bandState, _echoes:()=>actors,
   // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
   _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;
     for(let h=0;h<q.length;h++){ const c=q[h], cx=c%nc; for(const n of [c-nc,c+nc,cx>0?c-1:-1,cx<nc-1?c+1:-1]) if(n>=0&&n<nc*nr&&!seen[n]&&g[n]){ seen[n]=1; q.push(n); } }

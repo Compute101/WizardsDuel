@@ -5,7 +5,7 @@ Baldur's Gate: countries, cities, towns and villages, with wizards stationed aro
 You meet them, they start stories, and some join your party. Battles use the existing duel
 screen. Nothing here is built yet beyond Hollowmere (see "Explore mode" in `CLAUDE.md`).
 
-Status: **vision and names agreed; steps 1, 3 and 4 built; step 2 has all eight outer rings (inner rings next); interiors built.**
+Status: **vision and names agreed; steps 1, 3, 4 and 6 built; step 2 has all eight outer rings (inner rings next); interiors built.**
 
 ## Decisions so far
 
@@ -117,7 +117,7 @@ in battle: you pick for each, or set one to AI.
    "Echoes" in `CLAUDE.md`); balancing the Echo numbers against created wizards waits for step 7.
 4. **Inventory and save game**, per profile. *Done:* one Explore save per profile (Guest too), the satchel (pack, companions, journal with lore to reread), Start over, and a Corvanthe section on the profile page. What quintessence buys is still deferred.
 5. **Characters, dialogue and quests:** wizards in places, conversations, quest state.
-6. **Warbands.**
+6. **Warbands.** *Done:* 17 named crews (`js/explore_bands.js`) walk the streets, hunt Echoes for spill, take tolls or attack, and can be robbed or rob you; the halberdier joins the soldiers and archers. Talking, trading and hiring them waits for step 5.
 7. **Character creation and the party** (needs the 6-seat battle work) can start any time after 1.
 
 1 and 3 are the backbone.
