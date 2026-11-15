@@ -5,7 +5,7 @@ Baldur's Gate: countries, cities, towns and villages, with wizards stationed aro
 You meet them, they start stories, and some join your party. Battles use the existing duel
 screen. Nothing here is built yet beyond Hollowmere (see "Explore mode" in `CLAUDE.md`).
 
-Status: **vision agreed, names not chosen, nothing built.**
+Status: **vision and names agreed, nothing built.**
 
 ## Decisions so far
 
@@ -16,17 +16,17 @@ Status: **vision agreed, names not chosen, nothing built.**
 | Battles | On the existing duel screen (wheel, minigames, picks). Not on the map. |
 | Difficulty | Rises toward the centre of the accident city: easy at the edge, very hard near the centre. |
 | What the element loot buys | Deferred. |
-| Names | Not chosen yet; candidates below. |
+| Names | Chosen: see "Names" below. |
 
-## The first city: the magical accident
+## The first city: Corvanthe and the Unweaving
 
-A great city where magic went wrong, a magical Chernobyl. The city is in ruins and saturated with
-magical energy. The citizens were turned into elementals. They can't die: when one is destroyed it
+**Corvanthe**, a great old university city, where magic went wrong in **the Unweaving**: a magical Chernobyl. Ground zero is **the Wound**. The city is in ruins and saturated with
+magical energy. The citizens were turned into elementals, the **Echoes**. They can't die: when one is destroyed it
 reforms at ground zero and walks back to where it stood when the accident happened. In the game they
 simply respawn after a while; the lore doesn't need to be shown.
 
-A destroyed elemental leaves raw elemental matter behind. It's in high demand for potions, magic
-items and spells, so warbands come into the ruins to hunt elementals for it, and fight each other
+A destroyed Echo leaves raw elemental matter behind: **quintessence** officially, **spill** on the street. It's in high demand for potions, magic
+items and spells, so warbands (**gleaners**) come into the ruins to hunt Echoes for it ("spilling"), and fight each other
 over it.
 
 ### Eight sectors, one per element
@@ -37,7 +37,7 @@ spell wheel, so opposites face each other across the centre. Each sector looks d
 elementals fight in its element, resist it and take extra from its opposite, which the engine
 already handles. Bringing the opposite element's magic into a sector pays.
 
-Candidate sector names (old districts):
+The sectors (old districts):
 
 | Element | Sector | What it was | Look now |
 |---|---|---|---|
@@ -130,18 +130,27 @@ in battle: you pick for each, or set one to AI.
 
 Prompt rules that worked for generated sheets are in `CLAUDE.md` (Explore mode, Art).
 
-## Name candidates
+## Names
 
-Keep the names our own: the idea of warbands scavenging a ruined city is generic, but nothing should
-be borrowed from an existing setting.
+Chosen (all from the earlier candidates). Keep names our own: the idea of warbands scavenging a
+ruined city is generic, but nothing should be borrowed from an existing setting.
 
-- **The city:** Corvanthe (grand, old, a university city), Esterhold (a merchant city),
-  Vael Arden (magical), Kessmark (a working city).
-- **The accident:** the Unweaving (magic coming undone; fits the game's dispel / unravel theme),
-  the Bright Hour (what survivors call it), the Overspill.
-- **Ground zero:** the Wound, the Crucible, the Heart.
-- **The elementals:** Echoes (they keep returning to where they stood).
-- **The element matter:** quintessence officially, "spill" on the street ("spilling" for the hunt);
-  or per element: cinderglass (Fire), tideglass (Water), rimeheart (Ice), stormglass (Lightning),
-  lodestone (Earth), galesilk (Air), aether (Arcane), nightglass (Dark).
-- **The warbands:** gleaners, or spillers.
+| Thing | Name |
+|---|---|
+| The city | Corvanthe |
+| The accident | the Unweaving (survivors also say "the Bright Hour") |
+| Ground zero | the Wound |
+| The elementals | Echoes |
+| The element matter | quintessence; "spill" on the street, "spilling" for the hunt |
+| Per element | cinderglass (Fire), tideglass (Water), rimeheart (Ice), stormglass (Lightning), lodestone (Earth), galesilk (Air), aether (Arcane), nightglass (Dark) |
+| The warbands | gleaners |
+| The sectors | Cindergate, the Drowned Quarter, Frostmarket, Spirewatch, the Quarry Ward, the Heights, the Collegium, Gloamside (table above) |
+
+## Echo art brief
+
+An Echo is a citizen remade in one element, still roughly human-shaped and carrying traces of who
+they were (an apron, a guard's helmet, a lamplighter's pole). The weak kind is an ordinary citizen;
+the strong kind is bigger and more monstrous, someone who was powerful or near the Wound. Battle
+sprites in the same format as the character stills: full body, facing right, feet on the bottom
+edge, about 512 × 768 for the weak kind (taller for the strong kind), detailed pixel art like
+`sprites/eldrin.png` and `sprites/gretch.png`.
