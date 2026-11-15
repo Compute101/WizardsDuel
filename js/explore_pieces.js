@@ -58,6 +58,11 @@ const FOOT = {
   temple:[{w:.9,h:.3}], catacomb:[{ox:.15,w:.25,h:22},{ox:.85,w:.25,h:22}], graves:[{w:.85,h:24}], mausoleum:[{w:.85,h:.3}],
   candles:[{w:.85,h:20}], hoodedShrine:[{w:.85,h:22}], forge:[{w:.9,h:.35}], anvil:[{w:.8,h:20}], slag:[{w:.8,h:20}],
   bellows:[{w:.85,h:22}], swordRack:[{w:.9,h:18}],
+  // interiors (sheets 10–13; drawn at ExploreRooms.RS)
+  bed:[{w:.85,h:.4}], diningTable:[{w:.9,h:.3}], roundTable:[{w:.8,h:.3}], counter:[{w:.95,h:.35}], safeTable:[{w:.9,h:.3}],
+  hearthPot:[{w:.9,h:.25}], workbench:[{w:.9,h:.25}], pantry:[{w:.9,h:.3}], bookcase:[{w:.9,h:.15}], wardrobe:[{w:.9,h:.15}],
+  cupboard:[{w:.9,h:.15}], altar:[{w:.9,h:.2}], pew:[{w:.9,h:.35}], brokenBed:[{w:.85,h:.3}], brokenTable:[{w:.8,h:.3}],
+  wallRubble:[{w:.5,h:.2}], chest:[{w:.85,h:.4}], q_:[{w:.6,h:.3}],
 };
 function footOf(kind){
   if(FOOT[kind]) return FOOT[kind];
@@ -79,6 +84,9 @@ const LIGHTS = {
   lavaCrack:[[.5,.5,'lamp']], slag:[[.5,.5]], swordRack:[[.5,.6]], hall:[[.5,.55],[.3,.55],[.7,.55]], temple:[[.5,.35]],
   hoodedShrine:[[.5,.75]], bellTower:[[.5,.2],[.5,.85]], watchTower:[[.5,.9]], tiltedHouse:[[.45,.55],[.7,.5]],
   catacomb:[[.5,.6]], lightningRod:[[.5,.08,'lamp']], glassPatch:[[.5,.5]], frozenFountain:[[.5,.4]],
+  wallPlasterWin:[[.5,.4]], wallStoneWin:[[.5,.4]], wallHearth:[[.5,.75,'lamp']], hearthPot:[[.5,.6,'lamp']], safeHearth:[[.5,.65,'lamp']],
+  readingDesk:[[.8,.12]], diningTable:[[.45,.08]], roundTable:[[.5,.12]], altar:[[.5,.4,'lamp']], cauldron:[[.5,.7]], crystalDisplay:[[.5,.35]],
+  safeTable:[[.45,.25]], q_fire:[[.5,.5]], q_water:[[.5,.5]], q_ice:[[.5,.5]], q_lightning:[[.5,.5]], q_earth:[[.5,.5]], q_air:[[.5,.5]], q_arcane:[[.5,.5]], q_dark:[[.5,.5]],
   lamppost:[[79,65,'lamp']], lamp2:[[23,45,'lamp']], lamp3:[[20,41,'lamp']], lamp4:[[21,41,'lamp']],
 };
 // recoloured pieces ('house1_slate') share their base piece's lights and footprint
@@ -98,7 +106,7 @@ const BRIDGE = {
 function sizeOf(rects,kind,sc){ const q=rects[kind]; sc=sc||PS; return {w:q[2]*sc, h:q[3]*sc}; }
 // a piece's blocking boxes in world px; o = {kind, x (centre), y (base)}
 function footBoxes(rects,o){
-  const s=sizeOf(rects,o.kind), out=[];
+  const s=sizeOf(rects,o.kind,o.scale), out=[];   // o.scale: interiors draw smaller
   for(const f of footOf(o.kind)){
     const fw=f.w*s.w, fh=f.h<1?f.h*s.h:f.h, cx=o.x-s.w/2+(f.ox??.5)*s.w;
     out.push({x:cx-fw/2, y:o.y-fh, w:fw, h:fh});
