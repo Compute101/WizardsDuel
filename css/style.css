@@ -1880,6 +1880,46 @@ body {
   #explore-screen .hc-elnote { margin-left:0; }
 }
 
+/* Explore: introduction (js/explore_intro.js), a parchment scroll that rolls up by itself */
+#explore-screen .xi { position:absolute; inset:0; z-index:41; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  padding:calc(12px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  background:radial-gradient(ellipse at 50% 35%, rgba(40,24,70,0.95), rgba(4,2,10,0.98)); animation:xiIn 0.6s ease both; }
+#explore-screen .xi.leaving { animation:xiOut 0.45s ease both; }
+@keyframes xiIn { from { opacity:0; } to { opacity:1; } }
+@keyframes xiOut { to { opacity:0; transform:scale(0.98); } }
+#explore-screen .xi-scroll { position:relative; width:min(620px,100%); flex:1 1 auto; min-height:0; max-height:760px; display:flex; flex-direction:column; filter:drop-shadow(0 12px 30px #000); }
+#explore-screen .xi-roll { flex:0 0 26px; border-radius:13px; position:relative; z-index:2; margin:0 -10px;
+  background:linear-gradient(180deg,#5a3a1a 0%,#c89a5a 30%,#e8c890 48%,#a0703a 75%,#4a2c12 100%);
+  box-shadow:0 3px 8px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(60,30,10,0.6); }
+#explore-screen .xi-roll::before, #explore-screen .xi-roll::after { content:''; position:absolute; top:3px; width:18px; height:20px; border-radius:50%;
+  background:radial-gradient(circle at 40% 40%,#c9a84c,#6a4a18); box-shadow:0 0 0 2px #3a2008; }
+#explore-screen .xi-roll::before { left:-8px; } #explore-screen .xi-roll::after { right:-8px; }
+#explore-screen .xi-page { flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; outline:none;
+  margin:-6px 0; padding:0 clamp(18px,6vw,48px); scrollbar-width:thin; scrollbar-color:#8a6a3a transparent;
+  background:radial-gradient(ellipse at 50% 50%,#f4e4bc 0%,#ead3a0 60%,#d8b878 100%);
+  box-shadow:inset 0 14px 18px -10px rgba(80,50,10,0.55), inset 0 -14px 18px -10px rgba(80,50,10,0.55), inset 14px 0 22px -14px rgba(120,80,20,0.45), inset -14px 0 22px -14px rgba(120,80,20,0.45);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 34px,#000 calc(100% - 34px),transparent 100%);
+          mask-image:linear-gradient(to bottom,transparent 0,#000 34px,#000 calc(100% - 34px),transparent 100%); }
+#explore-screen .xi-pad { height:38%; }
+#explore-screen .xi-end { height:40px; }
+#explore-screen .xi-text { color:#3a2410; font-family:Georgia,'Times New Roman',serif; font-size:clamp(15px,2.2vw,17px); line-height:1.65; }
+#explore-screen .xi-text h2 { font-family:'Cinzel',serif; font-weight:700; color:#6a1a1a; font-size:clamp(18px,3vw,24px); letter-spacing:3px; text-transform:uppercase; text-align:center; margin:6px 0 10px; text-shadow:0 1px 0 rgba(255,240,200,0.6); }
+#explore-screen .xi-text p { margin:0 0 12px; text-align:justify; hyphens:auto; }
+#explore-screen .xi-text h2 + p::first-letter { font-family:'Cinzel Decorative','Cinzel',serif; float:left; font-size:3.1em; line-height:0.9; margin:4px 8px 0 0; color:#7a1a1a; }
+#explore-screen .xi-text b { color:#4a1808; }
+#explore-screen .xi-omen { font-style:italic; text-decoration:underline; text-decoration-color:var(--xc); text-decoration-thickness:3px; text-underline-offset:3px; text-decoration-skip-ink:none; }
+#explore-screen b.xi-omen { font-style:normal; }
+#explore-screen .xi-rule { text-align:center; color:#8a5a2a; font-size:18px; margin:6px 0 14px; letter-spacing:12px; }
+#explore-screen .xi-goal { margin:16px 0 14px; padding:12px 14px; border:2px solid #8a5a2a; border-radius:6px; background:rgba(255,240,200,0.45); font-size:0.98em; }
+#explore-screen .xi-goal > b:first-child { display:block; font-family:'Cinzel',serif; letter-spacing:2px; text-transform:uppercase; font-size:0.8em; color:#6a1a1a; margin-bottom:4px; }
+#explore-screen .xi-help { display:flex; flex-direction:column; gap:5px; font-size:0.85em; color:#5a3a1a; font-style:italic; }
+#explore-screen .xi-help span::before { content:'\2726  '; color:#8a5a2a; font-style:normal; }
+#explore-screen .xi-foot { display:flex; gap:10px; justify-content:center; flex:0 0 auto; }
+#explore-screen .xi-skip { opacity:0.7; }
+#explore-screen .xi-go { font-size:16px; padding:9px 24px; }
+#explore-screen .xi-go.ready { border-color:#f0cc6a; box-shadow:0 0 18px rgba(240,204,106,0.55); color:#fff4d0; }
+@media (prefers-reduced-motion: reduce){ #explore-screen .xi, #explore-screen .xi.leaving { animation:none; } }
+
 /* ── SPLASH ── */
 #splash-screen {
   position: fixed; inset: 0; z-index: 50;
