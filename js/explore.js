@@ -431,18 +431,23 @@ function talkTo(n){
     return;
   }
 }
+// someone standing about: not gone, and not the wizard you're playing (ExploreFolk.absent)
+function present(n){ return !n.gone&&!(Folk&&Folk.absent(n,folkApi)); }
 function drawNpc(n,t){
   let src=NPC_SPRITE[n.role];
   if(!src&&Folk&&Folk.knows(n.role)) src=Folk.sprite(n,folkApi);
   if(n.role==='wounded'){ const f=fighters[(MAP.ev||{}).key]; src=f&&f.sprite; }
   if(!src) return;
   const img=imgOf(src); if(!img.complete||!img.naturalWidth) return;
-  const h=WIZ_H*(n.role==='wounded'?0.8:1.05), w=h*img.naturalWidth/img.naturalHeight;
+  // an old 192×320 mage spritesheet (stand-ins for townsfolk without art): its first frame, 48×64, facing left
+  const sheet=img.naturalWidth===192&&img.naturalHeight===320, sw=sheet?48:img.naturalWidth, sh=sheet?64:img.naturalHeight;
+  const h=WIZ_H*(n.role==='wounded'?0.8:1.05), w=h*sw/sh;
   ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(n.x,n.y-2,w*0.3,5,0,0,Math.PI*2); ctx.fill();
   ctx.save(); ctx.translate(n.x,n.y);
   if(n.role==='wounded'){ ctx.filter='saturate(0.5) brightness(0.85)'; ctx.scale(-1,0.8); }   // slumped, facing in
-  else ctx.globalAlpha=0.9+0.1*Math.sin(t/200);
-  ctx.drawImage(img,-w/2,-h,w,h);
+  else if(NPC_SPRITE[n.role]) ctx.globalAlpha=0.9+0.1*Math.sin(t/200);                       // named Echoes shimmer; people don't
+  if(sheet) ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(img,0,0,sw,sh,-w/2,-h,w,h);
   ctx.restore();
 }
 
@@ -941,7 +946,7 @@ function update(dt){
       if(d<best){ best=d; near=o; }
     }
   }
-  for(const n of npcs){ if(n.gone) continue; const d=Math.hypot(n.x-wiz.x,(n.y-wiz.y)*1.3); if(d<best+12){ best=d-12; near=Object.assign(n,{npc:n,lore:'npc'}); } }
+  for(const n of npcs){ if(!present(n)) continue; const d=Math.hypot(n.x-wiz.x,(n.y-wiz.y)*1.3); if(d<best+12){ best=d-12; near=Object.assign(n,{npc:n,lore:'npc'}); } }
   nearDoor=null;
   if(!near){ let bd=40; for(const dr of doors){ const d=Math.hypot(dr.x-wiz.x,(dr.y-wiz.y)*1.4); if(d<bd){ bd=d; nearDoor=dr; } } }
   // the action button: inspect what's near, enter a door, or take the way out you're close to
@@ -1047,7 +1052,7 @@ function draw(t){
   }
   list.push({wiz:true,y:wiz.y});
   for(const a of actors) if(a.x>cam.x-80&&a.x<cam.x+cw+80&&a.y>cam.y&&a.y<cam.y+ch+120) list.push({actor:a,y:a.y});
-  for(const n of npcs) if(!n.gone) list.push({npc:n,y:n.y});
+  for(const n of npcs) if(present(n)) list.push({npc:n,y:n.y});
   list.sort((a,b)=>a.y-b.y);
   for(const o of list){
     if(o.wiz){ drawWizard(t); continue; }
@@ -1274,7 +1279,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   const b=document.getElementById('btn-explore');
   if(b) b.addEventListener('click',open);
 });
-window.Explore={open, close, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
+window.Explore={open, close, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
   _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y),
   // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
   _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;

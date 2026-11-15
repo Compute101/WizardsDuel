@@ -242,12 +242,13 @@ module.exports = function wrenford(rects){
   // ── people ──
   m.npcs=[
     {role:'porter',  x:26.2*T, y:40.6*T},          // at the Founders' gate
-    {role:'aurelia', x:29.4*T, y:34.2*T},          // in Founders' Quad
+    {role:'tutor',   x:29.4*T, y:34.2*T},          // the Senior Tutor, in Founders' Quad
     {role:'weizan',  x:16*T,   y:35.4*T},          // on the Schools' court
     {role:'fizzwick',x:45*T,   y:8.4*T},           // at the Laboratory door
-    {role:'eldrin',  x:31.6*T, y:10.4*T},          // on the Library steps
-    {role:'mary',    x:24.1*T, y:13.4*T},          // at the Memorial
-    {role:'thessaly',x:15.6*T, y:20.6*T},          // in the Covered Market
+    {role:'keeper',  x:31.6*T, y:10.4*T},          // the Keeper, on the Library steps
+    {role:'chaplain',x:24.1*T, y:13.4*T},          // the Chaplain, at the Memorial
+    {role:'dealer',  x:15.6*T, y:20.6*T},          // the licensed dealer, in the Covered Market
+    {role:'aurelia', x:30.2*T, y:21.6*T},          // reading cards in Radcliffe Square (met here, again later)
     {role:'ponder',  x:44*T,   y:43.4*T},          // asleep on the Meadow
     {role:'bulldog', x:proc.cx-40, y:proc.base+44},// outside the Proctors'
     {role:'bulldog2',x:47.2*T, y:26.3*T},          // at the end of Orrin Bridge, greeting arrivals

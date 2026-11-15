@@ -179,6 +179,29 @@ the basics through the Matriculation quest, and later it is where you make spell
 Lantern College, not built yet). Built: see "Wrenford" in `CLAUDE.md`. Next: more quests and
 colourful characters, the spell workshop, and a road map between Wrenford and Hollowmere.
 
+## Wrenford's people
+
+About half of Wrenford is roster wizards; the rest are its own people, who stay there so the town
+feels the same each time you come back. Roster wizards here follow one of two threads.
+
+| Person | Who | Thread |
+|---|---|---|
+| The Head Porter | local (an old Wardgate soldier) | stays |
+| The Bulldogs | local (the Proctors' constables) | stay |
+| Dr Penhallow, Senior Tutor | local (invented) | stays; runs Matriculation, later the spell workshop |
+| Mr Quill, Keeper of the Library | local (invented) | stays |
+| Canon Marrow, Chaplain | local (invented) | stays; heals |
+| Widow Coyle, licensed dealer | local (invented) | stays; buys spill, sells potions |
+| Weizan, Master of the Schools | roster | **field trip**: stays, joins you on a University quest (a Schools party walking the Corvanthe Road) |
+| Fizzwick, Master of the Laboratory | roster | **field trip**: stays, joins you on a University quest (collecting samples in Cindergate) |
+| Aurelia, doctoral student | roster | **met at uni**: met again later, further east (her reading says so) |
+| Ponder, third-year student | roster | **met at uni**: met again later elsewhere |
+
+Still to do: art for the four invented dons (they use the old pixel mage sheets for now); the field
+trip quests (the party work, step 7, lets these two fight beside you); the later meetings, which can
+check `ExploreFolk.metAtUni(key)` to say "we met at uni"; and more townsfolk, not yet invented
+(students, a rival, the landlady of the Wren's Nest, the Proctors themselves).
+
 ## The Hollow
 
 The river of Hollowmere rises north of Corvanthe and runs through the city: in under the harbour wall

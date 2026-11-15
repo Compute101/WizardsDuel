@@ -4,8 +4,18 @@
 //  Matriculation quest live here. js/explore.js asks this module for an
 //  NPC's title and sprite, and hands talk() an `api` to act through
 //  (dialogs, gold, potions, spill, healing, practice duels, quest state).
-//  Each role is played by a roster wizard (`cast`); if that's the wizard
-//  you're playing, the next in the list stands in.
+//  Three kinds of people (FOLK[role].kind), so the town has continuity:
+//   - 'local': Wrenford's own people (the dons, the Porter, the Bulldogs),
+//     who stay here for good; generic sprites until they get their own art.
+//   - 'roster' with fate 'metLater': a roster wizard who is here now, doesn't
+//     join you, and turns up later elsewhere ("we met at uni"). Absent if
+//     you're playing them.
+//   - 'roster' with fate 'fieldTrip': a roster wizard who stays at the
+//     University and joins you later, on University quests (field trips).
+//     The job is what matters, so if you're playing them the next in
+//     `cast` stands in.
+//  Talking to a roster wizard here records it in quests.met[key]
+//  (metAtUni), for those later meetings to remember.
 // ═══════════════════════════════════════════════════════════════════
 (function(){
 'use strict';
@@ -27,16 +37,20 @@ const SPILL_PRICE = 4;               // what the licensed dealer pays a piece
 const MARKET_POTION = 8;
 
 const FOLK = {
-  porter:  {title:'The Head Porter', fighter:'soldier'},
-  bulldog: {title:'A Bulldog', sprite:'sprites/halberdier.png'},
-  bulldog2:{title:'A Bulldog', sprite:'sprites/halberdier.png'},
-  aurelia: {title:'The Senior Tutor',            cast:['aurelia','sylvara','nerissa']},
-  weizan:  {title:'The Master of the Schools',   cast:['weizan','durin','skadi']},
-  eldrin:  {title:'The Keeper of the Library',   cast:['eldrin','mirel','thessaly']},
-  fizzwick:{title:'The Master of the Laboratory',cast:['fizzwick','zakkit','cinder']},
-  mary:    {title:'The University Chaplain',     cast:['mary','sylvara','aurelia']},
-  thessaly:{title:'A Licensed Dealer',           cast:['thessaly','frederick','mal']},
-  ponder:  {title:'A Sleeping Student',          cast:['ponder','zakkit','mirel']},
+  // Wrenford's own: they stay
+  porter:  {kind:'local', title:'The Head Porter', fighter:'soldier'},
+  bulldog: {kind:'local', title:'A Bulldog', sprite:'sprites/halberdier.png'},
+  bulldog2:{kind:'local', title:'A Bulldog', sprite:'sprites/halberdier.png'},
+  tutor:   {kind:'local', title:'The Senior Tutor', name:'Dr Penhallow', sprite:'sprites/mage-light.png'},
+  keeper:  {kind:'local', title:'The Keeper of the Library', name:'Mr Quill', sprite:'sprites/mage-yellow.png'},
+  chaplain:{kind:'local', title:'The University Chaplain', name:'Canon Marrow', sprite:'sprites/mage-dark.png'},
+  dealer:  {kind:'local', title:'A Licensed Dealer', name:'Widow Coyle', sprite:'sprites/mage-green.png'},
+  // roster wizards who stay, and join you later on University quests (field trips)
+  weizan:  {kind:'roster', fate:'fieldTrip', title:'The Master of the Schools',    cast:['weizan','durin','skadi']},
+  fizzwick:{kind:'roster', fate:'fieldTrip', title:'The Master of the Laboratory', cast:['fizzwick','zakkit','cinder']},
+  // roster wizards you meet here, and again later somewhere else
+  aurelia: {kind:'roster', fate:'metLater', title:'A Doctoral Student', cast:['aurelia']},
+  ponder:  {kind:'roster', fate:'metLater', title:'A Sleeping Student', cast:['ponder']},
 };
 
 // who plays a role, given the wizard you are
@@ -44,7 +58,11 @@ function castOf(role, api){
   const F=FOLK[role]; if(!F||!F.cast) return null;
   return F.cast.find(k=>k!==api.wizKey()&&api.chars[k])||F.cast[0];
 }
-function nameOf(role, api){ const k=castOf(role,api); return k?cap(api.chars[k].name):''; }
+function nameOf(role, api){ const F=FOLK[role]; if(F&&F.name) return F.name; const k=castOf(role,api); return k?cap(api.chars[k].name):''; }
+// a 'metLater' wizard isn't here if you're playing them
+function absent(n, api){ const F=FOLK[n.role]; return !!(F&&F.fate==='metLater'&&F.cast.includes(api.wizKey())); }
+// did you meet this roster wizard at the University? (for later meetings: "we met at uni")
+function metAtUni(key, api){ return !!api.quest('met')[key]; }
 function title(n, api){
   const F=FOLK[n.role]; if(!F) return null;
   const nm=nameOf(n.role,api);
@@ -78,7 +96,8 @@ function journal(api){
 // ── what they say ──
 function talk(n, api){
   const s=q(api), me=api.wizName(), say=(_,x,ch)=>api.dialog(title(n,api),x,ch||[]);
-  const nm=r=>nameOf(r,api);
+  const nm=r=>nameOf(r,api), F_=FOLK[n.role];
+  if(F_&&F_.kind==='roster'){ const k=castOf(n.role,api), met=api.quest('met'); if(k&&!met[k]){ met[k]=true; api.save(); } }
   switch(n.role){
 
   case 'porter': {
@@ -89,7 +108,7 @@ function talk(n, api){
       {label:'Where can I sleep?', fn:()=>say(0,'"The Wren\'s Nest, on George Street off Cornmarket. Tell them the Lodge sent you. It won\'t make any difference, but they like to hear it."',dirs())},
     ];
     function dirs(){ return where; }
-    if(!s.stage) say(0,'A broad old man in a bowler hat, with a soldier\'s back and a sword he plainly still knows how to use. "Morning. New, are you? Everyone new comes in from the east road looking like that." He nods at the arch. "You\'ll want to matriculate. The Senior Tutor, '+nm('aurelia')+', in Founders\' Quad, through there. Keep off the grass."',where);
+    if(!s.stage) say(0,'A broad old man in a bowler hat, with a soldier\'s back and a sword he plainly still knows how to use. "Morning. New, are you? Everyone new comes in from the east road looking like that." He nods at the arch. "You\'ll want to matriculate. The Senior Tutor, '+nm('tutor')+', in Founders\' Quad, through there. Keep off the grass."',where);
     else if(s.stage===1){ const left=tasksLeft(api);
       say(0,'"Getting on all right, '+me+'? '+(left.length?'You\'ve still to see to: '+left.map(t=>t[0]==='schools'?'the Schools':t[0]==='library'?'the Library':'the Laboratory').join(', ')+'."':'That\'s the lot, is it? Back to the Senior Tutor with you, then."')+' He taps the side of his nose. "And keep off the grass."',where); }
     else say(0,'"Morning, '+me+'." The Porter almost smiles. "Most of the Porters here held the Wardgate at Corvanthe, you know. We held it from the wrong side, as it turned out. Mind how you go out there."',where);
@@ -103,11 +122,12 @@ function talk(n, api){
     say(0,'"Welcome to Wrenford." The Bulldog at the bridge looks you up and down. "Wands, staves and familiars are permitted. Spells in the street are not. Quintessence is to be sold only to licensed dealers, Covered Market, off the High. Enjoy your stay."');
     return;
 
-  case 'aurelia': {
+  case 'tutor': {
+    const D=nm('tutor');
     if(!s.stage){
-      say(0,nm('aurelia')+' is reading on the bench by the chapel, an unlit lamp alongside. The book closes on a finger. "Another one from the east road. Sit." A long look at you for a long moment, as if reading the end of the story first.\n\n"Everyone who teaches here was away from Corvanthe on the day. A visit, a dig, a funeral. We came here because it was far, and small, and nobody had ever done anything dangerous in it. We teach what we should have been taught: that a working is a promise you make to the world, and the world holds you to it."\n\n"Matriculate, and we will teach you to keep it."',[
+      say(0,D+', small and grey and very upright, is reading on the bench by the chapel, an unlit lamp alongside. The book closes on a finger. "Another one from the east road. Sit." A long look at you for a long moment, as if reading the end of the story first.\n\n"Everyone who teaches here was away from Corvanthe on the day. A visit, a dig, a funeral. We came here because it was far, and small, and nobody had ever done anything dangerous in it. We teach what we should have been taught: that a working is a promise you make to the world, and the world holds you to it."\n\n"Matriculate, and we will teach you to keep it."',[
         {label:'Matriculate', fn:()=>{ s.stage=1; api.save();
-          say(0,'"Good." '+nm('aurelia')+' writes your name in a ledger, slowly, in ink. "Three things before you are one of us. Pass a bout at the Schools: the Master will teach you to fight, because you will be fought. Read in the Remnant Library: the Keeper will tell you what we lost. And pass the Laboratory\'s safety test: the Master there will show you what a working really is, which nobody ever believes until they see it." A card with a crest on it is pressed into your hand. "Come back when it\'s done."');
+          say(0,'"Good." '+D+' writes your name in a ledger, slowly, in ink. "Three things before you are one of us. Pass a bout at the Schools: the Master will teach you to fight, because you will be fought. Read in the Remnant Library: the Keeper will tell you what we lost. And pass the Laboratory\'s safety test: the Master there will show you what a working really is, which nobody ever believes until they see it." A card with a crest on it is pressed into your hand. "Come back when it\'s done."');
           api.toast('Matriculation begun: the Schools, the Library and the Laboratory.'); }},
         {label:'Not yet'}]);
       return;
@@ -115,13 +135,13 @@ function talk(n, api){
     if(s.stage===1){
       const left=tasksLeft(api);
       if(left.length){ say(0,'"Still to do: '+left.map(t=>t[1]).join('; ')+'." Back to the book, then, without looking up: "There\'s no hurry. Hurry is how we got here."'); return; }
-      say(0,nm('aurelia')+' reads the card back, each mark on it, and nods. "The Master of the Schools says you fight like someone who means to come home. The Keeper says you read like someone who is listening. And the Laboratory says you are still alive, which from them is high praise."\n\n"Then by the authority of the University, '+me+', you are matriculated." For a moment the lamp on the bench lights itself, very softly, and goes out again. "There. You saw nothing."',[
+      say(0,D+' reads the card back, each mark on it, and nods. "The Master of the Schools says you fight like someone who means to come home. The Keeper says you read like someone who is listening. And the Laboratory says you are still alive, which from them is high praise."\n\n"Then by the authority of the University, '+me+', you are matriculated." For a moment the lamp on the bench lights itself, very softly, and goes out again. "There. You saw nothing."',[
         {label:'Take your gown', fn:()=>{ s.stage=2; api.addGold(MATRIC.reward.gold); api.addPotions(MATRIC.reward.potions); api.save();
           api.toast('Matriculated! +'+MATRIC.reward.gold+' gold and '+MATRIC.reward.potions+' potions.');
           say(0,'"The east road goes to Hollowmere, and past Hollowmere to Corvanthe. You\'ll go, I expect. They all go." A quiet moment. "Bring back what you can. Books, if you find them. Names, if you find those. And when you are ready to write workings of your own, come and find me: we are building a workshop for it, at Lantern College. It isn\'t ready. Neither are you."'); }}]);
       return;
     }
-    say(0,'"'+me+'." '+nm('aurelia')+' marks a place in the book. "The workshop at Lantern College is not ready yet. When it is, you\'ll write your own workings there, and we\'ll see whether you\'ve listened." A pause. "Have you been east?"',[
+    say(0,'"'+me+'." '+D+' marks a place in the book. "The workshop at Lantern College is not ready yet. When it is, you\'ll write your own workings there, and we\'ll see whether you\'ve listened." A pause. "Have you been east?"',[
       {label:'Ask about Corvanthe', fn:()=>say(0,'"It was the greatest university in the world, and it knew it. That was the trouble. Every one of us here could have been in the Collegium that day. Some of us were meant to be." The book opens again. "I was meant to be."')},
       {label:'Ask about the Statutes', fn:()=>say(0,'"Five rules, and a sixth in pencil. No working larger than its maker; none without a witness; none that cannot be undone; none in the street; no Word spoken that is not understood. The sixth says don\'t be clever. That one\'s mine."')}]);
     return;
@@ -146,12 +166,12 @@ function talk(n, api){
       say(0,'"Now me." '+M+' steps into the circle. "The wheel: Damage, Protection, Dispel, chosen in secret, and they meet. A ward stops a strike; a dispel tears a ward; a strike punishes a dispel. Each element has its opposite across the wheel: Fire and Water, Air and Earth, Lightning and Ice, the Arcane and the Dark. Strike a ward with its opposite and it comes apart in your hands."\n\n"Show me you were listening."',[duelMaster,sparHobbes,{label:'Not now'}]);
       return;
     }
-    say(0,'"'+me+'." '+M+' doesn\'t stop the drill. "The court is open whenever you want it. Use it. The Echoes in Corvanthe don\'t give second bouts."',[duelMaster,sparHobbes,{label:'Not now'}]);
+    say(0,'"'+me+'." '+M+' doesn\'t stop the drill. "The court is open whenever you want it. Use it. The Echoes in Corvanthe don\'t give second bouts."'+(s.stage>=2?'\n\n"And keep yourself sharp. When the Schools next take a party east, to walk the Corvanthe Road and see what we\'re training for, I\'ll want students who can hold a line. I\'ll be going. You might be."':''),[duelMaster,sparHobbes,{label:'Not now'}]);
     return;
   }
 
-  case 'eldrin': {
-    const K=nm('eldrin'), read=libBooks(api);
+  case 'keeper': {
+    const K=nm('keeper'), read=libBooks(api);
     if(!s.stage){ say(0,K+' stands on the Library steps with a ring of keys, watching readers in and out like a shepherd counting sheep. "The Remnant is open to members of the University. You are not one yet. The Senior Tutor, in Founders\' Quad, can mend that."'); return; }
     if(!s.library){
       if(read>=MATRIC.booksNeeded){
@@ -160,7 +180,7 @@ function talk(n, api){
       } else say(0,'"Inside, through the doors behind me. The reading room is at the front; the stacks go back further than they should. Read '+MATRIC.booksNeeded+' of the Remnant books and come and tell me about them." '+(read?K+' checks a slip. "You\'ve read '+read+'."':'"No candles. No reading aloud."'));
       return;
     }
-    say(0,'"'+me+'." '+K+' unlocks a door for someone without looking. "If you find books in Corvanthe, bring them here. If you find a Collegium seal on them, bring them here faster. Some of our colleagues\' last work is still lying in those streets."');
+    say(0,'"'+me+'." '+K+' unlocks a door for someone without looking. "Forty years I\'ve kept libraries, and I never kept one that was all lost property before." A sniff. "If you find books in Corvanthe, bring them here. If you find a Collegium seal on them, bring them here faster. Some of our colleagues\' last work is still lying in those streets."');
     return;
   }
 
@@ -177,24 +197,37 @@ function talk(n, api){
         {label:'Not now'}]);
       return;
     }
-    say(0,'"'+me+'! Still in one piece, I see." '+F+' waves at the smoking chimney. "Bring me spill from Corvanthe, any kind, and I\'ll distil you a potion. Two pieces a bottle. The Statutes say I mustn\'t do anything more interesting with it, and I never do anything they say I mustn\'t." A pause. "Lately."',[brew,{label:'Ask about spill', fn:()=>say(0,'"Quintessence. What\'s left when a working is unmade: pure element, settled out like frost. Every bit of it in Corvanthe was a person, once, more or less." A sip of tea. "We try not to think about it. We\'re very good at not thinking about things, here. It\'s the one thing we learned."',[brew])}]);
+    say(0,'"'+me+'! Still in one piece, I see." '+F+' waves at the smoking chimney. "Bring me spill from Corvanthe, any kind, and I\'ll distil you a potion. Two pieces a bottle. The Statutes say I mustn\'t do anything more interesting with it, and I never do anything they say I mustn\'t." A pause. "Lately."'+(s.stage>=2?'\n\n"Oh! And the Laboratory wants fresh samples from Cindergate, properly collected, by somebody with a licence and an escort. Field work. I\'ve put my name down. When it\'s approved, I\'ll want a pair of hands that has passed the safety test."':''),[brew,{label:'Ask about spill', fn:()=>say(0,'"Quintessence. What\'s left when a working is unmade: pure element, settled out like frost. Every bit of it in Corvanthe was a person, once, more or less." A sip of tea. "We try not to think about it. We\'re very good at not thinking about things, here. It\'s the one thing we learned."',[brew])}]);
     return;
   }
 
-  case 'mary': {
-    const C=nm('mary'), hurt=api.hp()<api.maxHp();
+  case 'chaplain': {
+    const C=nm('chaplain'), hurt=api.hp()<api.maxHp();
     say(0,C+' is laying fresh flowers at the foot of the Memorial, one bunch at a time, reading the cards. "There\'s a card for every one of them, in the end." "Some years it takes a while."\n\n'+(hurt?C+' sees how you are standing. "You\'ve been hurt. Kneel a moment."':'"Go gently out there. And come back."'),[
       {label:hurt?'Kneel and be healed ('+api.hp()+' → '+api.maxHp()+' HP)':'Light a candle', fn:()=>{ if(hurt){ api.healFull(); api.toast('A warmth, very quiet, nothing anyone could call a spell. You are whole.'); } else api.toast('You light a candle for the Absent. It does not go out.'); }},
       {label:'Ask about the Memorial', fn:()=>say(0,'"Magister Orrin. He voted against the Word, and lost the vote, and stayed in the Collegium anyway because his students were there." A wreath is set straight. "We put up a statue of the one man who said no. It\'s a poor sort of apology, but it\'s the one we could afford."')}]);
     return;
   }
 
-  case 'thessaly': {
-    const D=nm('thessaly'), n=api.spillTotal();
-    say(0,D+' keeps a stall hung with silk and a licence in a gilt frame. Two hired men lean on the post behind. "Quintessence bought, by licence of the University, at a fair price, '+SPILL_PRICE+' gold a piece, which is to say mine." A smile like a ledger. "And potions, for those who\'d rather not brew."',[
+  case 'dealer': {
+    const D=nm('dealer'), n=api.spillTotal();
+    say(0,D+' keeps a stall hung with oilcloth and a licence in a gilt frame, and a ledger chained to the counter. "Quintessence bought, by licence of the University, at a fair price, '+SPILL_PRICE+' gold a piece, which is to say mine." A smile like a ledger. "And potions, for those who\'d rather not brew."',[
       {label:'Sell your spill ('+n+' × '+SPILL_PRICE+' = '+n*SPILL_PRICE+' gold)', disabled:n<1, fn:()=>{ const g=api.sellSpill(SPILL_PRICE); api.save(); api.toast('+'+g+' gold. The spill vanishes into a lead-lined box.'); }},
       {label:'Buy a potion ('+MARKET_POTION+' gold)', disabled:api.gold()<MARKET_POTION, fn:()=>{ api.addGold(-MARKET_POTION); api.addPotions(1); api.save(); api.toast('A potion, sealed with the University crest.'); }},
       {label:'Not today'}]);
+    return;
+  }
+
+  case 'aurelia': {
+    const A=nm('aurelia');
+    if(s.aureliaMet){
+      say(0,A+' looks up from the cards spread on the bench before you can speak. "You\'re about to ask whether I\'ll still be here next term." A small smile. "No. I\'m going east, when the reading says so. And so are you." The top card is turned over: a tower, standing. "We\'ll meet again, further along. I\'ve seen it. You looked tired. I looked worse."');
+      return;
+    }
+    s.aureliaMet=true; api.save();
+    say(0,'A scholar in a doctoral gown sits on a bench in Radcliffe Square, laying out cards in rows under the Great Orrery and frowning at them. "Sit, if you like. Doctoral student: Foresight, which is the study of what hasn\'t happened yet, which the Statutes are very nervous about." '+A+' taps a card. "This one is you. It isn\'t supposed to be in this reading at all. It turns up in a much later one."',[
+      {label:'Ask about Foresight', fn:()=>{ say(0,'"Everyone in Corvanthe who could see the future saw the Unweaving coming. Every one. And they all thought someone else would stop it." The cards are swept up. "So here we read the future the way you\'d read a weather glass. Carefully, and then you take a coat." A pause. "Take a coat, '+me+'."'); }},
+      {label:'Leave the cards be'}]);
     return;
   }
 
@@ -223,5 +256,5 @@ function inspect(o, api){
 // things already taken stay taken
 function hidden(o, api){ const s=q(api); return o.lore==='q:satchel'&&(s.satchel||s.satchelDone); }
 
-window.ExploreFolk={knows, title, sprite, talk, inspect, hidden, journal, MATRIC, FOLK};
+window.ExploreFolk={knows, title, sprite, talk, inspect, hidden, absent, metAtUni, journal, MATRIC, FOLK};
 })();

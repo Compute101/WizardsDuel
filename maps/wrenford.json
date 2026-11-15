@@ -998,7 +998,7 @@
    "y": 2598.4
   },
   {
-   "role": "aurelia",
+   "role": "tutor",
    "x": 1881.6,
    "y": 2188.8
   },
@@ -1013,19 +1013,24 @@
    "y": 537.6
   },
   {
-   "role": "eldrin",
+   "role": "keeper",
    "x": 2022.4,
    "y": 665.6
   },
   {
-   "role": "mary",
+   "role": "chaplain",
    "x": 1542.4,
    "y": 857.6
   },
   {
-   "role": "thessaly",
+   "role": "dealer",
    "x": 998.4,
    "y": 1318.4
+  },
+  {
+   "role": "aurelia",
+   "x": 1932.8,
+   "y": 1382.4
   },
   {
    "role": "ponder",
