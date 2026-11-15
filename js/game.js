@@ -19,6 +19,8 @@ let CHAR_DEFS={};
 // Non-wizard fighters (fighters.json): Encounter mode only. They never show on the character screen.
 let FIGHTER_DEFS={};
 function defOf(key){ return CHAR_DEFS[key]||FIGHTER_DEFS[key]; }
+// a small face for the HUD: portraits/small/<key>.jpg, or a made wizard's own (Explore's hero carries `face`)
+function faceSrc(key){ const d=defOf(key); return d&&d.face||'portraits/small/'+key+'.jpg'; }
 let p1Key='eldrin', p2Key='mal';
 let p1Cfg, p2Cfg;
 
@@ -2052,7 +2054,7 @@ function buildMultiHUD(){
   document.getElementById('mhud').innerHTML=(wv?`<div class="mh-wave">Wave ${survival.wave+1} / ${SURVIVAL_WAVES.length} · ${wv.name}</div>`:'')+PLAYERS.map(w=>{
     const cfg=seatCfg(w), team=!survival&&seatSetup&&seatSetup.find(st=>st.who===w).team;
     return `<div class="mh-card${cfg.fighter?' fighter':''}" id="mh-${w}" style="--mh-col:${cfg.col}">`+
-      `<img class="mh-img" src="portraits/small/${seatKey(w)}.jpg" alt=""><span class="mh-name">${cfg.name}</span>`+
+      `<img class="mh-img" src="${faceSrc(seatKey(w))}" alt=""><span class="mh-name">${cfg.name}</span>`+
       (team?`<span class="mh-team">Team ${team}</span>`:'')+
       `<div class="mh-bar mh-hp"><div class="mh-fill"></div></div><div class="mh-bar mh-mana"><div class="mh-fill"></div></div>`+
       `<div class="mh-nums"><span class="mh-hpn"></span><span class="mh-mn"></span><span class="mh-ward"></span></div></div>`;
@@ -3474,7 +3476,7 @@ function showReveal(){
     const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${hitsAllFoes(who,act)?'All foes':seatCfg(act.target).name}</span>`:
       act.ally&&act.ally!==who?`<span class="rv-aim">→ ${seatCfg(act.ally).name}</span>`:'';
     return `<div class="rv-card" style="--rv-col:${cfg.col}"><div class="rv-inner">`+
-      `<div class="rv-face rv-back"><img class="rv-portrait" src="portraits/small/${seatKey(who)}.jpg" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
+      `<div class="rv-face rv-back"><img class="rv-portrait" src="${faceSrc(seatKey(who))}" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
       `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}${taunt?`<span class="rv-taunt">⚔ “${taunt}”</span>`:''}<span class="rv-name">${label}</span></div>`+
       `</div></div>`;
   }).join('');
@@ -3801,7 +3803,8 @@ function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}
 //     stops blows), so striking a guarding soldier is a waste: hit someone else, or Grapple him.
 //   ranged (Archer): his Attack is a bow shot: it slips past a Guard (no block, no counter), and he keeps
 //     his distance, so a Grapple at him fails.
-const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'},
+//   reach (Halberdier, Explore only): a long-hafted axe holds you off, so a Grapple at him fails.
+const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'}, reach:{name:'Long Reach',icon:'🪓'},
   echo:{name:'Echo',icon:'✦'}};
 // Echoes (Explore: Corvanthe's citizens remade in one element, fighters.json `echo`): their blow is a
 // strike in that element (magic: a ward stops it, a Guard doesn't), they shrug off their own element
@@ -3869,7 +3872,7 @@ function renderEncounterSetup(){
   }).join('')+'</ol>'+
   (bestList.length?'<div class="enc-best">🏆 Best runs: '+bestList.map(([k,n])=>`${CHAR_DEFS[k]?CHAR_DEFS[k].name:k} ${n===SURVIVAL_WAVES.length?'all '+n:n}`).join(' · ')+'</div>':'')+
   '<button class="btn" id="btn-enc-go">Choose Your Wizard →</button>'+
-  '<div class="enc-traits">'+Object.keys(FIGHTER_DEFS).filter(k=>!FIGHTER_DEFS[k].echo).map(k=>{
+  '<div class="enc-traits">'+Object.keys(FIGHTER_DEFS).filter(k=>!FIGHTER_DEFS[k].echo&&!FIGHTER_DEFS[k].explore).map(k=>{
     const f=FIGHTER_DEFS[k], t=FIGHTER_TRAITS[f.trait]||{};
     return `<div class="enc-trait"><b>${t.icon||''} ${f.title}</b> — ${f.desc}</div>`;
   }).join('')+'</div>';
@@ -4481,7 +4484,7 @@ function showTargetPicker(who,foes,cb,title='Choose a target',withMinions=false)
     const ward=hasWard(st)?`<span class="tg-ward">🛡 ${el.icon} ${wardLabel(st)}</span>`:'';
     const ban=(cfg.forbidden||[]).map(id=>elemById(id).icon).join('');
     return `<button class="tg-foe" data-who="${w}" style="--tg-col:${cfg.col}">`+
-      `<img src="portraits/small/${seatKey(w)}.jpg" alt=""><span class="tg-name">${cfg.name}${w===who?' (you)':''}</span>`+
+      `<img src="${faceSrc(seatKey(w))}" alt=""><span class="tg-name">${cfg.name}${w===who?' (you)':''}</span>`+
       `<span class="tg-hp">❤ ${st.hp} / ${st.maxHp}</span>${ward}`+
       (ban?`<span class="tg-ban">⛔ ${ban}</span>`:'')+`</button>`+
       (withMinions?bodiesOf(st).map(m=>`<button class="tg-foe tg-minion" data-who="${w}" data-uid="${m.uid}" style="--tg-col:${cfg.col}">`+
@@ -4703,7 +4706,8 @@ function executeAction(who,action,cb){
   if(action.act==='grapple'){
     const caught=ta&&ta.act==='attack'&&ta.target===who;
     if(caught){ addFloat(seatX(tgt),bH*.3,'🤼 The grapple fails','#cccccc',12); combatTimeout(cb,700); return; }
-    if(traitOf(tgt)==='ranged'){ addFloat(seatX(tgt),bH*.3,'🏹 Keeps her distance','#cccccc',12); combatTimeout(cb,700); return; }
+    if(traitOf(tgt)==='ranged'){ addFloat(seatX(tgt),bH*.3,'🏹 Keeps his distance','#cccccc',12); combatTimeout(cb,700); return; }
+    if(traitOf(tgt)==='reach'){ addFloat(seatX(tgt),bH*.3,'🪓 Held off by the halberd','#cccccc',12); combatTimeout(cb,700); return; }
     if(isVanished(tgt)){ addFloat(seatX(tgt),bH*.3,'👻 Grasps at nothing','#b8a0e8',12); combatTimeout(cb,700); return; }   // Vanish: nothing to hold
     const full=isGuarding(tgt), dmg=Math.max(1,Math.round(ph.atk*(full?1:ACT_RULES.grappleOther)));
     lunge(who,.2,()=>{

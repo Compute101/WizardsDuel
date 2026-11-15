@@ -31,6 +31,7 @@ HEIGHT = 768
 FACES = {        # HUD face (portraits/small/<key>.jpg): x, y, size in the 768-tall still
     'soldier': (248, 50, 135),
     'archer': (205, 82, 135),
+    'halberdier': (200, 72, 140),
 }
 PAD = 6
 

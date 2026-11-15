@@ -55,6 +55,27 @@
       }
     }
   },
+  "halberdier": {
+    "name": "HALBERDIER",
+    "title": "Halberdier",
+    "fighter": true,
+    "trait": "reach",
+    "explore": true,
+    "sprite": "sprites/halberdier.png",
+    "col": "#c8b890",
+    "hp": 34,
+    "phys": {
+      "atk": 6
+    },
+    "spells": [],
+    "taunts": [
+      "Mind the blade, wizard.",
+      "Long arms, short temper.",
+      "Keep your distance. Or don't."
+    ],
+    "desc": "Hits hard with a long-hafted axe. Long Reach: he holds you off at the end of his polearm, so a Grapple at him fails.",
+    "arena": "ruins"
+  },
   "echo_fire_weak": {
     "name": "EMBER APPRENTICE",
     "title": "A forge apprentice of living flame",

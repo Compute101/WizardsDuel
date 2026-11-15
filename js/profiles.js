@@ -61,6 +61,7 @@ const Profiles=(()=>{
     delete db.list[id];
     Object.values(db.list).forEach(p=>delete p.vsPlayer[id]);
     if(db.active===id) db.active=null;
+    try{ localStorage.removeItem('wd-explore-save:'+id); }catch(e){}   // their Explore game goes with them
     save();
   }
   function setActive(id){ db.active=id&&db.list[id]?id:null; db.asked=true; save(); refreshChip(); }
@@ -192,6 +193,15 @@ const Profiles=(()=>{
       rows.map(([k,r])=>`<tr><td><img src="portraits/small/${esc(k)}.jpg" alt=""><span style="color:${charCol(k)}">${esc(charName(k))}</span></td>`+
         `<td>${r.g}</td><td>${r.w}</td><td>${r.l}</td><td>${pct(r)}</td></tr>`).join('')+'</table>';
   }
+  // their Explore game (js/explore.js keeps one save per profile)
+  function exploreStats(id,tile){
+    let s=null; try{ s=JSON.parse(localStorage.getItem('wd-explore-save:'+id)||'null'); }catch(e){}
+    if(!s) return '';
+    const books=window.ExploreRooms?window.ExploreRooms.BOOKS.length:20;
+    const spill=Object.values(s.spill||{}).reduce((a,b)=>a+b,0);
+    return `<div class="pf-section">Corvanthe</div><div class="pf-tiles">${tile(s.gold||0,'Gold')}${tile(spill,'Quintessence')}${tile((s.visited||[]).length,'Places')}`+
+      `${tile((s.booksRead||[]).length+' / '+books,'Lore')}${tile((s.allies||[]).length,'Allies')}${tile(Object.keys(s.cleared||{}).length,'Echo groups broken')}</div>`;
+  }
   function renderStats(p){
     if(!p) return '';
     const r=rankOf(p.xp);
@@ -229,6 +239,7 @@ const Profiles=(()=>{
       ${h2h.length?`<div class="pf-section">Head to head</div><table class="pf-table"><tr><th>Player</th><th>W</th><th>L</th><th>D</th></tr>${h2h.map(([id,v])=>`<tr><td>${esc(db.list[id].name)}</td><td>${v.w}</td><td>${v.l}</td><td>${v.d}</td></tr>`).join('')}</table>`:''}
       ${p.survival&&p.survival.runs?`<div class="pf-section">Survival</div><div class="pf-tiles">${tile(p.survival.runs,'Runs')}${tile(p.survival.best,'Best wave')}${tile(p.survival.clears,'Full clears')}</div>${p.survival.bestWith?`<div class="pf-xptxt">Best run with ${esc(charName(p.survival.bestWith))}</div>`:''}`:''}
       ${bands.length?`<div class="pf-section">Encounters (old bands)</div><table class="pf-table"><tr><th>Band</th><th>P</th><th>W</th><th>%</th></tr>${bands.map(([id,v])=>`<tr><td>${esc(bandName(id))}</td><td>${v.g}</td><td>${v.w}</td><td>${pct(v)}</td></tr>`).join('')}</table>`:''}
+      ${exploreStats(p.id,tile)}
       <div class="pf-section">Recent matches</div>${hist||'<div class="pf-empty">No matches yet. Training doesn\'t count.</div>'}
       <div class="pf-section">Manage</div>
       <form class="pf-new" id="pf-rename-form" autocomplete="off"><input id="pf-rename" maxlength="${NAME_MAX}" value="${esc(p.name)}" aria-label="Name"><button class="mo-opt" type="submit">Rename</button></form>

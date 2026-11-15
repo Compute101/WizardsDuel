@@ -5,7 +5,7 @@ Baldur's Gate: countries, cities, towns and villages, with wizards stationed aro
 You meet them, they start stories, and some join your party. Battles use the existing duel
 screen. Nothing here is built yet beyond Hollowmere (see "Explore mode" in `CLAUDE.md`).
 
-Status: **vision and names agreed; step 1 (maps, travel, world map) built; step 2 started: Cindergate's outer ring. Wrenford, the University town and tutorial, built.**
+Status: **vision and names agreed; steps 1, 3, 4 and 6 built; step 2 has all eight outer rings (inner rings next); interiors built; Wrenford, the University town and tutorial, built.**
 
 ## Decisions so far
 
@@ -115,10 +115,10 @@ in battle: you pick for each, or set one to AI.
    each sector now has its own pieces from four sheets (`tools/mapgen/own.js`).
 3. **Elementals on the map:** roaming, battle on contact, loot, respawn. *Done for Cindergate* (see
    "Echoes" in `CLAUDE.md`); balancing the Echo numbers against created wizards waits for step 7.
-4. **Inventory and save game**, per profile.
+4. **Inventory and save game**, per profile. *Done:* one Explore save per profile (Guest too), the satchel (pack, companions, journal with lore to reread), Start over, and a Corvanthe section on the profile page. What quintessence buys is still deferred.
 5. **Characters, dialogue and quests:** wizards in places, conversations, quest state.
-6. **Warbands.**
-7. **Character creation and the party** (needs the 6-seat battle work) can start any time after 1.
+6. **Warbands.** *Done:* 17 named crews (`js/explore_bands.js`) walk the streets, hunt Echoes for spill, take tolls or attack, and can be robbed or rob you; the halberdier joins the soldiers and archers. Talking, trading and hiring them waits for step 5.
+7. **Character creation and the party** (needs the 6-seat battle work) can start any time after 1. *Started:* the look (see "Character creation" below); the magic (a starting element's spells, the barred opposite, growth) and the party come next.
 
 1 and 3 are the backbone.
 
@@ -220,3 +220,49 @@ homes of named Echoes you can talk and trade with (Wenna the Baker in Cindergate
 Gloamside). Built (see "Interiors" in `CLAUDE.md`); floors, walls, furniture and loot art in; the
 character art is still to come: gleaner adventurers, wounded gleaners, the safe-house keeper, a
 trader, and the named Echoes (sheets 5–10 of the interior brief).
+
+## Character creation
+
+Built so far (`js/explore_hero.js`): a new game asks who you are. Name, man or woman, young / middle-aged
+/ old (humans only for now), a figure, robes (10 colours), trim (8), hair (7), skin (7 tones) and an element, whose colour
+your magic takes. The look is a recolour of a base figure, done in the browser. A new wizard fights with
+the plain wheel and the Actions; their element's first spells, the barred opposite and levelling up are
+the next part of step 7.
+
+### Base figures (the art brief, delivered)
+
+All twelve are in: eleven from the brief below plus the old witch (`tools/cut_hero_figures.py`).
+
+Twelve figures, two for each sex and age, so the Figure choice has something to choose between:
+
+| Slot | Figure 1 | Figure 2 |
+|---|---|---|
+| Young man | slim, clean-shaven, short hair, pointed hat | broader, different skin tone, hair tied back, hood instead of a hat |
+| Young woman | long loose hair, pointed hat | darker skin, a braid over one shoulder, hood |
+| Middle-aged man | short beard, pointed hat | balding, moustache, no hat |
+| Middle-aged woman | hair in a bun, wide-brimmed hat | shoulder-length hair, a circlet, no hat |
+| Old man | long beard, pointed hat (a human, not Eldrin's elf) | short beard, stooped, hood |
+| Old woman | (have: the old witch) | hunched, shawl over the head, walking stick |
+
+The game recolours three things, so they must be painted in **key colours**: robes and hat in purple
+(only), the magic in blue (only), and hair and beard in silver-grey (only), even on the young figures.
+No other purple, blue or grey anywhere on them. The trim must be gold (it is recoloured too, as gold on the robe), and skin can be any natural tone (it is recoloured inside face and hand boxes set per figure). Put
+each file in `sprites/hero/source/` and they get cut, sized and added to `BASES` with their hair and
+face boxes.
+
+Prompt for ChatGPT (one figure at a time; attach `sprites/folk/source/old_eldrin.png` and
+`old_witch.png` as references):
+
+> Pixel-art full-body wizard sprite in exactly the same style, scale, pose and level of detail as the
+> attached two wizards: three-quarter view facing right, holding a gnarled wooden staff in the hand on
+> the left of the picture with a small magic flame at its top, the other hand raised with a swirl of
+> magic above the palm, feet flat at the bottom of the image. This one is a [YOUNG MAN: slim,
+> clean-shaven, short hair, pointed wizard hat]. A human, ordinary proportions. Colour rules, very
+> important: the robes, sleeves and hat (or hood) are purple and only purple, in its light and dark
+> shades, with gold trim; the magic (staff flame and hand swirl) is bright blue and only blue; the hair
+> and any beard are silver-grey and only silver-grey, even though the character is young. Use no other
+> purple, blue or grey anywhere. Leather belt and pouches brown, skin natural. Hard pixel edges, no glow
+> halo around the figure or the magic. Plain flat pure green (#00FF00) background, nothing else in the
+> picture, no text, no shadow on the ground. Portrait image, the figure about 768 pixels tall.
+
+Change the bracketed part for each slot in the table.
