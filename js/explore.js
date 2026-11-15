@@ -18,8 +18,14 @@ const WIZ_H = 62;             // wizard drawn height, world px (a door is ~70 at
 const SPEED = 175;            // world px / s
 const INSPECT_R = 46;         // how close (to its footprint's edge) to stand to inspect something
 const START = {map:'hollowmere', spawn:'start'};
-const SAVE_KEY = 'wd-explore-state';   // {map, x, y, found:[location ids]}; per device for now
+const SAVE_KEY = 'wd-explore-state';   // {map, x, y, found:[location ids], spill:{element:n}, cleared:{'map:echo id':time}}; per device for now
 const FADE_MS = 280;
+// ── Echoes on the map ──
+const ECHO = {wander:42, chase:118, sight:210, touch:26, respawnMs:8*60*1000, grace:2.5};
+// what a destroyed Echo leaves: quintessence, 'spill' (docs/world-design.md); a strong Echo leaves more
+const SPILL = {fire:['cinderglass','#ff8a3a'], water:['tideglass','#4aa8e0'], ice:['rimeheart','#a8e0ff'], lightning:['stormglass','#9aa8ff'],
+  earth:['lodestone','#b89a70'], air:['galesilk','#e0dcf4'], arcane:['aether','#b07aff'], dark:['nightglass','#9a6ac8']};
+const SPILL_YIELD = {weak:1, strong:3};
 
 // ── state ──
 let atlases=[], rects=null, chars=null, wizKeys=[], wizIdx=0, wizImg=null, world=null;
@@ -31,7 +37,9 @@ let el={}, ctx=null, dark=null, dctx=null;
 const wiz={x:0,y:0,face:1,walk:0,moving:false};
 const keys=new Set();
 let target=null, stuckT=0, near=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, cam={x:0,y:0}, vw=0, vh=0;
-let found=new Set();
+let found=new Set(), spill={}, cleared={}, actors=[], grace=0;
+const imgCache={};
+function imgOf(src){ if(!imgCache[src]){ const i=new Image(); i.src=src; imgCache[src]=i; } return imgCache[src]; }
 
 const sizeOf=(kind,sc)=>P.sizeOf(rects,kind,sc);
 const overlap=P.overlap;
@@ -80,8 +88,93 @@ function setupMap(data){
   if(data.fx!=='embers') for(let i=0;i<Math.round(COLS*ROWS/23);i++) fireflies.push({x:r()*WORLD_W,y:r()*WORLD_H,a:r()*6.28,s:8+r()*14,p:r()*6.28});
   embers=[];
   if(data.fx==='embers') for(let i=0;i<Math.round(COLS*ROWS/6);i++) embers.push({x:r()*WORLD_W,y:r()*WORLD_H,v:18+r()*30,p:r(),w:r()*6.28,s:1+r()*1.6});
+  spawnEchoes();
   buildMinimap();
   if(el.title){ el.title.textContent=data.name; sizeMini(); }
+}
+
+// ── Echoes ──
+function echoLeader(e){ const k=e.foes.find(f=>f[0].endsWith('_strong'))||e.foes[0]; return k[0]; }
+function spawnEchoes(){
+  const now=Date.now();
+  actors=(MAP.echoes||[]).filter(e=>!(cleared[MAP.id+':'+e.id]>now-ECHO.respawnMs)).map(e=>{
+    const strong=echoLeader(e).endsWith('_strong');
+    return {e, x:e.x, y:e.y, tx:e.x, ty:e.y, wait:Math.random()*2, face:Math.random()<.5?1:-1, walk:Math.random()*6,
+      strong, img:imgOf('sprites/echoes/'+e.el+'_'+(strong?'strong':'weak')+'.png'), n:e.foes.length};
+  });
+}
+function updateEchoes(dt){
+  for(const a of actors){
+    const d=Math.hypot(wiz.x-a.x,(wiz.y-a.y)*1.3);
+    const chasing=grace<=0&&d<ECHO.sight;
+    if(chasing){ a.tx=wiz.x; a.ty=wiz.y; }
+    else if(Math.hypot(a.tx-a.x,a.ty-a.y)<6){
+      a.wait-=dt;
+      if(a.wait<=0){ const ang=Math.random()*Math.PI*2, r=Math.random()*a.e.r; a.tx=a.e.x+Math.cos(ang)*r; a.ty=a.e.y+Math.sin(ang)*r*0.6; a.wait=1+Math.random()*2.5; }
+    }
+    const dx=a.tx-a.x, dy=a.ty-a.y, len=Math.hypot(dx,dy);
+    a.moving=len>6;
+    if(a.moving){
+      const step=(chasing?ECHO.chase:ECHO.wander)*dt, ux=dx/len, uy=dy/len;
+      const ox=a.x, oy=a.y;
+      if(!blocked(a.x+ux*step,a.y)) a.x+=ux*step;
+      if(!blocked(a.x,a.y+uy*step)) a.y+=uy*step;
+      if(Math.abs(ux)>0.2) a.face=ux>0?1:-1;
+      if(Math.hypot(a.x-ox,a.y-oy)<step*0.2&&!chasing){ a.tx=a.x; a.ty=a.y; }   // stuck: wait and pick again
+      a.walk+=dt*6;
+    }
+    if(grace<=0&&Math.abs(wiz.x-a.x)<ECHO.touch&&Math.abs(wiz.y-a.y)<18){ fight(a); return; }
+  }
+}
+function drawEcho(a,t){
+  const img=a.img; if(!img.complete||!img.naturalWidth) return;
+  const h=WIZ_H*(a.strong?1.35:1.0), w=h*img.naturalWidth/img.naturalHeight;
+  const bob=a.moving?Math.abs(Math.sin(a.walk))*3:Math.sin(t/500+a.e.x)*1.5;
+  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(a.x,a.y-2,w*0.32,6,0,0,Math.PI*2); ctx.fill();
+  ctx.save(); ctx.translate(a.x,a.y-bob); if(a.face<0) ctx.scale(-1,1);
+  ctx.globalAlpha=0.88+0.12*Math.sin(t/180+a.e.y);          // they flicker, a little
+  ctx.drawImage(img,-w/2,-h,w,h);
+  ctx.restore();
+  if(a.n>1){                                                // how many in the group
+    ctx.font='bold 13px Cinzel, serif'; ctx.textAlign='center';
+    ctx.fillStyle='rgba(14,10,30,0.8)'; ctx.fillRect(a.x+w*0.25,a.y-h-4,22,17);
+    ctx.fillStyle=SPILL[a.e.el][1]; ctx.fillText('×'+a.n,a.x+w*0.25+11,a.y-h+9);
+  }
+}
+// walk into an Echo: the battle plays on the duel screen, then we come back here
+function fight(a){
+  if(busy||typeof window.startExploreBattle!=='function') return;
+  busy=true; keys.clear(); target=null; hideSay(); save();
+  const foes=a.e.foes.map(([key,level])=>({key,level}));
+  fade(true).then(()=>{
+    running=false; el.root.classList.remove('active'); fade(false);
+    window.startExploreBattle({wizKey:wizKeys[wizIdx], foes, onEnd:won=>afterFight(a,won)});
+  });
+}
+function afterFight(a,won){
+  el.root.classList.add('active'); running=true; busy=false; resize();
+  if(won){
+    cleared[MAP.id+':'+a.e.id]=Date.now();
+    actors=actors.filter(x=>x!==a);
+    const got=a.e.foes.reduce((n,[k])=>n+SPILL_YIELD[k.endsWith('_strong')?'strong':'weak'],0);
+    spill[a.e.el]=(spill[a.e.el]||0)+got;
+    toast('+'+got+' '+SPILL[a.e.el][0]);
+    grace=ECHO.grace;
+  } else {
+    const p=MAP.spawns.gate||MAP.spawns.start||Object.values(MAP.spawns)[0];
+    wiz.x=p[0]; wiz.y=p[1];
+    a.x=a.e.x; a.y=a.e.y; a.tx=a.x; a.ty=a.y;
+    toast('You come to by the gate, singed and aching.');
+    grace=ECHO.grace*2;
+  }
+  renderSpill(); save();
+  last=performance.now(); requestAnimationFrame(frame);
+}
+function renderSpill(){
+  const keys=Object.keys(spill).filter(k=>spill[k]>0);
+  el.spill.hidden=!keys.length;
+  el.spill.innerHTML=keys.map(k=>`<span title="${SPILL[k][0]}"><i style="background:${SPILL[k][1]}"></i>${spill[k]}</span>`).join('');
+  el.spill.title='Spill: '+keys.map(k=>spill[k]+' '+SPILL[k][0]).join(', ');
 }
 
 // ── ground transitions ──
@@ -186,7 +279,7 @@ async function enterMap(id,at,instant){
 }
 function save(){
   if(!MAP) return;
-  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found]})); }catch(e){}
+  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],spill,cleared})); }catch(e){}
 }
 function loadSave(){ try{ return JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); }catch(e){ return null; } }
 function takeExit(x){
@@ -331,6 +424,7 @@ function buildDom(){
         <img id="ex-face" alt=""><span id="ex-name"></span>
         <button class="ex-btn ex-arrow" id="ex-next" type="button" aria-label="Next wizard">▶</button>
       </div>
+      <div class="ex-spill" id="ex-spill" hidden></div>
       <button class="ex-btn" id="ex-mapbtn" type="button" title="World map">🗺</button>
       <button class="ex-btn" id="ex-night" type="button" title="Day / night">☾</button>
     </div>
@@ -352,7 +446,7 @@ function buildDom(){
   el={root:d, cv:$('#ex-canvas'), mini:$('#ex-mini'), say:$('#ex-say'), act:$('#ex-act'), hint:$('#ex-hint'),
       face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), loading:$('#ex-loading'), title:$('#ex-title'),
       fade:$('#ex-fade'), toast:$('#ex-toast'), world:$('#ex-world'), worldCv:$('#ex-world-cv'), worldTitle:$('#ex-world-title'),
-      wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
+      spill:$('#ex-spill'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
   ctx=el.cv.getContext('2d');
   dark=document.createElement('canvas'); dctx=dark.getContext('2d');
   $('#ex-back').onclick=close;
@@ -465,6 +559,8 @@ function update(dt){
     wiz.walk+=dt*moved/step*10;
     if(moved>0.1) hideSay();
   }
+  if(grace>0) grace-=dt;
+  updateEchoes(dt); if(busy) return;
   // a way out? (you must step out of the one you arrived in first)
   const ex=exitAt(wiz.x,wiz.y);
   if(!ex) exitArmed=true;
@@ -575,9 +671,11 @@ function draw(t){
     list.push(o);
   }
   list.push({wiz:true,y:wiz.y});
+  for(const a of actors) if(a.x>cam.x-80&&a.x<cam.x+cw+80&&a.y>cam.y&&a.y<cam.y+ch+120) list.push({actor:a,y:a.y});
   list.sort((a,b)=>a.y-b.y);
   for(const o of list){
     if(o.wiz){ drawWizard(t); continue; }
+    if(o.actor){ drawEcho(o.actor,t); continue; }
     const s=sizeOf(o.kind);
     // a tall piece in front of the wizard turns see-through
     const hides=o.y>wiz.y && s.h>90 && overlap(wizBox,{x:o.x-s.w/2,y:o.y-s.h,w:s.w,h:s.h-12});
@@ -639,6 +737,7 @@ function lightsInView(cw,ch){
     }
   }
   for(const g of MAP.glows||[]) if(near(g.x,g.y)) out.push({x:g.x,y:g.y,r:g.r,c:g.c,seed:g.x});
+  for(const a of actors) if(near(a.x,a.y)){ const h=parseInt(SPILL[a.e.el][1].slice(1),16); out.push({x:a.x,y:a.y-WIZ_H*0.6,r:a.strong?150:110,c:[h>>16,(h>>8)&255,h&255].join(','),seed:a.e.x}); }
   return out;
 }
 function drawNight(t,cw,ch){
@@ -696,6 +795,7 @@ function drawMini(){
   const k=4/T;
   m.strokeStyle='rgba(255,255,255,0.7)'; m.lineWidth=1;
   m.strokeRect(cam.x*k+0.5,cam.y*k+0.5,vw/zoom*k,vh/zoom*k);
+  for(const a of actors){ m.fillStyle=SPILL[a.e.el][1]; m.fillRect(a.x*k-1.5,a.y*k-1.5,3,3); }
   m.fillStyle='#fff'; m.beginPath(); m.arc(wiz.x*k,wiz.y*k,2.5,0,Math.PI*2); m.fill();
 }
 function frame(now){
@@ -729,7 +829,7 @@ async function open(){
   try{
     await load();
     const s=loadSave();
-    found=new Set(s&&s.found||[]);
+    found=new Set(s&&s.found||[]); spill=(s&&s.spill)||{}; cleared=(s&&s.cleared)||{}; renderSpill();
     if(!MAP){
       if(s&&s.map) await enterMap(s.map,[s.x,s.y],true);
       else await enterMap(START.map,START.spawn,true);

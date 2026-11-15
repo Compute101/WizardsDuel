@@ -88,6 +88,24 @@ module.exports = function cindergate(rects){
   for(const o of m.objs) if(/^(rubble|blocks|ruinWall)/.test(o.kind) && o.y>5*T && o.y<22*T && m.r()<0.35)
     m.glows.push({x:o.x, y:o.y-20, r:110+m.r()*60, c:'255,100,30'});
 
+  // ── Echoes: Cindergate's forge-folk, weak and few by the gate, strong and many toward the Wound ──
+  // a few strays from other sectors have drifted in
+  const STRAYS=['earth','lightning','dark'];
+  const open=[];
+  for(let y=6;y<38;y++) for(let x=1;x<m.cols-2;x++) if(city.isStreet(x,y)&&city.isStreet(x+1,y)) open.push([x,y]);
+  let tries=0;
+  while(m.echoes.length<17&&tries++<4000){
+    const [tx,ty]=open[Math.floor(m.r()*open.length)], x=(tx+1)*T, y=ty*T+T/2+10;
+    if(Math.hypot(x-GX,y-40*T)<9*T) continue;                                   // a quiet street inside the gate
+    if(m.echoes.some(e=>Math.hypot(e.x-x,e.y-y)<7*T)) continue;
+    const v=ruin(x,y), el=m.r()<0.15?P.pick(m.r,STRAYS):'fire', w='echo_'+el+'_weak', st='echo_'+el+'_strong';
+    const foes=v<0.3?(m.r()<0.5?[[w,0]]:[[w,0],[w,0]]):
+               v<0.55?(m.r()<0.5?[[w,1],[w,1]]:[[st,0]]):
+               v<0.8?[[st,1],[w,1]]:
+               (m.r()<0.5?[[st,2],[w,2],[w,2]]:[[st,2],[st,2]]);
+    m.echoes.push({id:'cg'+m.echoes.length, el, foes, x:Math.round(x), y:Math.round(y), r:150});
+  }
+
   m.spawns={gate:[GX,40*T+20], start:[GX,40*T+20]};
   m.exits=[{x:GX-40,y:42*T+14,w:80,h:40,dir:'S',label:'The Corvanthe Road',to:{map:'corvanthe_road',spawn:'gate'}}];
   return m;

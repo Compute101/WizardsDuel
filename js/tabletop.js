@@ -164,7 +164,7 @@ function load(chars,tt,fighters){
   });
   // Non-wizard fighters (fighters.json, "tabletop" numbers): Actions only, one trait each
   FIGHTERS={};
-  Object.keys(fighters||{}).forEach(k=>{
+  Object.keys(fighters||{}).filter(k=>fighters[k].tabletop).forEach(k=>{   // Echoes (no tabletop block) are app-only
     const f=fighters[k], t=f.tabletop||{};
     FIGHTERS[k]={key:k, name:f.name, title:f.title, col:f.col, fighter:true, trait:f.trait, hp:t.hp||8, baseHp:t.hp||8,
       atk:t.atk||1, baseAtk:t.atk||1, alt:t.rules||{}, skin:null, deathless:0, forbidden:ELEMENTS.slice(), spells:[]};

@@ -2,7 +2,8 @@
 """Cut the Echo sheets (sprites/echoes/source/<element>.png: a weak Echo on the left, a strong
 one on the right, on a flat dark background) into battle sprites:
 sprites/echoes/<element>_weak.png and <element>_strong.png, trimmed, feet on the bottom edge,
-at most 768 px tall like the character stills.
+at most 768 px tall like the character stills, plus a face close-up for the battle HUD,
+portraits/small/echo_<element>_<tier>.jpg.
 
 The background is flood-filled out from the sheet's edges; its rim gets a soft alpha from how
 far each pixel is from the background colour, so glows and sparks fade out instead of keeping
@@ -61,7 +62,33 @@ def cut(el):
             im = im.resize((round(im.width * 768 / im.height), 768), Image.LANCZOS)
         im.save(os.path.join(DIR, '%s_%s.png' % (el, name)), optimize=True)
         out[name] = im
+        portrait(im, '%s_%s' % (el, name), os.path.join(HERE, '..', 'portraits', 'small', 'echo_%s_%s.jpg' % (el, name)))
     return out, split
+
+
+# Face close-ups for the battle HUD, set by hand (like FACES in tools/make_portrait_thumbs.py):
+# (centre x, centre y, square side), as fractions of the sprite's width / height / height.
+FACES = {
+    'fire_weak': (.62, .10, .20),  'fire_strong': (.60, .12, .17),
+    'water_weak': (.60, .12, .20), 'water_strong': (.53, .14, .17),
+    'earth_weak': (.64, .11, .20), 'earth_strong': (.52, .12, .17),
+    'lightning_weak': (.60, .10, .20), 'lightning_strong': (.55, .14, .17),
+    'ice_weak': (.60, .12, .20),   'ice_strong': (.60, .12, .17),
+    'air_weak': (.55, .16, .20),   'air_strong': (.62, .11, .17),
+    'arcane_weak': (.50, .14, .20), 'arcane_strong': (.50, .16, .17),
+    'dark_weak': (.55, .12, .20),  'dark_strong': (.60, .16, .17),
+}
+
+
+def portrait(im, key, path):
+    """A 256 px face close-up on the game's dark background."""
+    fx, fy, fs = FACES[key]
+    w, h = im.size
+    side = int(h * fs); cx, cy = int(w * fx), int(h * fy)
+    box = (cx - side // 2, cy - side // 2, cx + side // 2, cy + side // 2)
+    bg = Image.new('RGBA', (box[2] - box[0], box[3] - box[1]), (20, 16, 30, 255))
+    bg.alpha_composite(im.crop(box))
+    bg.convert('RGB').resize((256, 256), Image.LANCZOS).save(path, quality=88)
 
 
 def main():

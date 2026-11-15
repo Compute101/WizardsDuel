@@ -110,7 +110,8 @@ in battle: you pick for each, or set one to AI.
    `tools/mapgen/city.js` and Cindergate's outer ring (`tools/mapgen/cindergate.js`), built from
    burnt recolours of the existing art. Next: the other seven sectors' outer rings (each needs its
    own look: recolours where they work, new art where they don't), then the inner rings.
-3. **Elementals on the map:** roaming, battle on contact, loot, respawn.
+3. **Elementals on the map:** roaming, battle on contact, loot, respawn. *Done for Cindergate* (see
+   "Echoes" in `CLAUDE.md`); balancing the Echo numbers against created wizards waits for step 7.
 4. **Inventory and save game**, per profile.
 5. **Characters, dialogue and quests:** wizards in places, conversations, quest state.
 6. **Warbands.**
