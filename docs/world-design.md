@@ -5,7 +5,7 @@ Baldur's Gate: countries, cities, towns and villages, with wizards stationed aro
 You meet them, they start stories, and some join your party. Battles use the existing duel
 screen. Nothing here is built yet beyond Hollowmere (see "Explore mode" in `CLAUDE.md`).
 
-Status: **vision and names agreed; step 1 (maps, travel, world map) built; step 2 started: Cindergate's outer ring.**
+Status: **vision and names agreed; step 1 (maps, travel, world map) built; step 2 started: Cindergate's outer ring. Wrenford, the University town and tutorial, built.**
 
 ## Decisions so far
 
@@ -162,6 +162,45 @@ the strong kind is bigger and more monstrous, someone who was powerful or near t
 sprites in the same format as the character stills: full body, facing right, feet on the bottom
 edge, about 512 × 768 for the weak kind (taller for the strong kind), detailed pixel art like
 `sprites/eldrin.png` and `sprites/gretch.png`.
+
+## Wrenford, the University town
+
+Far west of Corvanthe (as far as two English cities apart), on the river Wren: the new University,
+founded by the scholars of Corvanthe who weren't in the city on the day. As if Oxford had blown up
+and its survivors had founded the next university somewhere quiet; Oxford-coded throughout (the
+High, Carfax, Broad Street, quads behind gate towers, Bulldogs and Proctors, the Meadow and punts).
+It is not ruined, and it is chastened: the Statutes of Caution (no working larger than its maker,
+none without a witness, none that can't be undone, none in the street, no Word not understood; "VI.
+Don't be clever" in pencil), a memorial to Magister Orrin (the one councillor who voted against the
+Word), All Absent College (Fellows who keep the work of the lost), a bell rung nightly for the dead.
+
+It is the safe zone and the giant tutorial: a new game starts here, the dons (roster wizards) teach
+the basics through the Matriculation quest, and later it is where you make spells (a workshop at
+Lantern College, not built yet). Built: see "Wrenford" in `CLAUDE.md`. Next: more quests and
+colourful characters, the spell workshop, and a road map between Wrenford and Hollowmere.
+
+## Wrenford's people
+
+About half of Wrenford is roster wizards; the rest are its own people, who stay there so the town
+feels the same each time you come back. Roster wizards here follow one of two threads.
+
+| Person | Who | Thread |
+|---|---|---|
+| The Head Porter | local (an old Wardgate soldier) | stays |
+| The Bulldogs | local (the Proctors' constables) | stay |
+| Dr Penhallow, Senior Tutor | local (invented) | stays; runs Matriculation, later the spell workshop |
+| Mr Quill, Keeper of the Library | local (invented) | stays |
+| Canon Marrow, Chaplain | local (invented) | stays; heals |
+| Widow Coyle, licensed dealer | local (invented) | stays; buys spill, sells potions |
+| Weizan, Master of the Schools | roster | **field trip**: stays, joins you on a University quest (a Schools party walking the Corvanthe Road) |
+| Fizzwick, Master of the Laboratory | roster | **field trip**: stays, joins you on a University quest (collecting samples in Cindergate) |
+| Aurelia, doctoral student | roster | **met at uni**: met again later, further east (her reading says so) |
+| Ponder, third-year student | roster | **met at uni**: met again later elsewhere |
+
+Still to do: their own art for the four invented dons (for now, recolours of Eldrin's old sprite and a female wizard in the same style: Dr Penhallow in a black gown and Widow Coyle in bottle green on the female figure, Mr Quill in russet and Canon Marrow in crimson on Eldrin's; `tools/make_folk_sprites.py`); the field
+trip quests (the party work, step 7, lets these two fight beside you); the later meetings, which can
+check `ExploreFolk.metAtUni(key)` to say "we met at uni"; and more townsfolk, not yet invented
+(students, a rival, the landlady of the Wren's Nest, the Proctors themselves).
 
 ## The Hollow
 

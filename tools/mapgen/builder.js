@@ -97,7 +97,10 @@ class MapBuilder {
        palette: 'frost'   a sector atlas (sprites/ruins/sector_<palette>): ground tiles take _<palette>
        windowGlow: 'r,g,b'  lit windows of palette houses glow this colour; storm: 1 = lightning flashes
        echoes: [{id, el, foes:[[fighter key, level],…], x, y, r}]   Echo groups: roam within r of
-               (x, y); walking into one starts a battle (js/explore.js, game.js startExploreBattle) } */
+               (x, y); walking into one starts a battle (js/explore.js, game.js startExploreBattle)
+       npcs:   [{role, x, y}]   people standing about; what they say is js/explore_folk.js
+       safe:   1 = a safe town: rooms hold no fights or loot (Wrenford)
+       arena:  the battle backdrop for fights here ('library'; default the ruined streets) } */
   toJSON(){
     const round=v=>Math.round(v*10)/10;
     return {
@@ -108,6 +111,7 @@ class MapBuilder {
         return Object.keys(e).length?[o.kind,round(o.x),round(o.y),e]:[o.kind,round(o.x),round(o.y)];
       }),
       lore:this.lore, spawns:this.spawns, exits:this.exits, blocks:this.blocks, glows:this.glows, echoes:this.echoes, walk:this.walk,
+      ...(this.npcs?{npcs:this.npcs.map(n=>Object.assign({},n,{x:round(n.x),y:round(n.y)}))}:{}), ...(this.safe?{safe:1}:{}), ...(this.arena?{arena:this.arena}:{}),
     };
   }
 }
