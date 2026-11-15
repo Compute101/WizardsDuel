@@ -5,10 +5,10 @@
   "age": "middle",
   "src": "sprites/hero/mid_man_1.png",
   "hair": [
-   0.339,
-   0.178,
-   0.574,
-   0.289
+   0.343,
+   0.182,
+   0.57,
+   0.285
   ],
   "face": [
    0.323,
@@ -44,7 +44,8 @@
    ]
   ],
   "noTrim": [],
-  "trimLo": 27
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_man_1_hair.png"
  },
  {
   "id": "mid_man_2",
@@ -52,10 +53,10 @@
   "age": "middle",
   "src": "sprites/hero/mid_man_2.png",
   "hair": [
-   0.356,
-   0.179,
-   0.515,
-   0.265
+   0.36,
+   0.182,
+   0.539,
+   0.261
   ],
   "face": [
    0.32,
@@ -91,7 +92,8 @@
    ]
   ],
   "noTrim": [],
-  "trimLo": 27
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_man_2_hair.png"
  },
  {
   "id": "mid_woman_1",
@@ -99,10 +101,10 @@
   "age": "middle",
   "src": "sprites/hero/mid_woman_1.png",
   "hair": [
-   0.315,
-   0.169,
-   0.577,
-   0.283
+   0.308,
+   0.167,
+   0.573,
+   0.279
   ],
   "face": [
    0.306,
@@ -138,7 +140,8 @@
    ]
   ],
   "noTrim": [],
-  "trimLo": 27
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_woman_1_hair.png"
  },
  {
   "id": "mid_woman_2",
@@ -146,10 +149,10 @@
   "age": "middle",
   "src": "sprites/hero/mid_woman_2.png",
   "hair": [
-   0.274,
-   0.139,
-   0.581,
-   0.296
+   0.278,
+   0.143,
+   0.577,
+   0.292
   ],
   "face": [
    0.207,
@@ -185,7 +188,8 @@
    ]
   ],
   "noTrim": [],
-  "trimLo": 27
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_woman_2_hair.png"
  },
  {
   "id": "old_man_1",
@@ -193,10 +197,10 @@
   "age": "old",
   "src": "sprites/hero/old_man_1.png",
   "hair": [
-   0.338,
-   0.176,
-   0.602,
-   0.472
+   0.328,
+   0.168,
+   0.598,
+   0.468
   ],
   "face": [
    0.343,
@@ -232,7 +236,8 @@
    ]
   ],
   "noTrim": [],
-  "trimLo": 27
+  "trimLo": 27,
+  "hairMask": "sprites/hero/old_man_1_hair.png"
  },
  {
   "id": "old_man_2",
@@ -240,10 +245,10 @@
   "age": "old",
   "src": "sprites/hero/old_man_2.png",
   "hair": [
-   0.485,
-   0.212,
-   0.657,
-   0.281
+   0.489,
+   0.206,
+   0.653,
+   0.333
   ],
   "face": [
    0.36,
@@ -279,7 +284,8 @@
    ]
   ],
   "noTrim": [],
-  "trimLo": 27
+  "trimLo": 27,
+  "hairMask": "sprites/hero/old_man_2_hair.png"
  },
  {
   "id": "old_woman_2",
@@ -287,10 +293,10 @@
   "age": "old",
   "src": "sprites/hero/old_woman_2.png",
   "hair": [
-   0.479,
-   0.228,
-   0.67,
-   0.376
+   0.481,
+   0.23,
+   0.669,
+   0.372
   ],
   "face": [
    0.403,
@@ -326,7 +332,8 @@
    ]
   ],
   "noTrim": [],
-  "trimLo": 27
+  "trimLo": 27,
+  "hairMask": "sprites/hero/old_woman_2_hair.png"
  },
  {
   "id": "young_man_1",
@@ -334,10 +341,10 @@
   "age": "young",
   "src": "sprites/hero/young_man_1.png",
   "hair": [
-   0.359,
-   0.194,
-   0.583,
-   0.289
+   0.363,
+   0.198,
+   0.581,
+   0.569
   ],
   "face": [
    0.31,
@@ -373,7 +380,8 @@
    ]
   ],
   "noTrim": [],
-  "trimLo": 27
+  "trimLo": 27,
+  "hairMask": "sprites/hero/young_man_1_hair.png"
  },
  {
   "id": "young_man_2",
@@ -381,10 +389,10 @@
   "age": "young",
   "src": "sprites/hero/young_man_2.png",
   "hair": [
-   0.324,
-   0.164,
-   0.569,
-   0.293
+   0.328,
+   0.168,
+   0.565,
+   0.57
   ],
   "face": [
    0.238,
@@ -420,7 +428,8 @@
    ]
   ],
   "noTrim": [],
-  "trimLo": 27
+  "trimLo": 27,
+  "hairMask": "sprites/hero/young_man_2_hair.png"
  },
  {
   "id": "young_woman_1",
@@ -428,10 +437,10 @@
   "age": "young",
   "src": "sprites/hero/young_woman_1.png",
   "hair": [
-   0.201,
-   0.189,
-   0.61,
-   0.597
+   0.205,
+   0.193,
+   0.606,
+   0.593
   ],
   "face": [
    0.319,
@@ -467,7 +476,8 @@
    ]
   ],
   "noTrim": [],
-  "trimLo": 27
+  "trimLo": 27,
+  "hairMask": "sprites/hero/young_woman_1_hair.png"
  },
  {
   "id": "young_woman_2",
@@ -475,10 +485,10 @@
   "age": "young",
   "src": "sprites/hero/young_woman_2.png",
   "hair": [
-   0.337,
-   0.165,
-   0.534,
-   0.465
+   0.341,
+   0.169,
+   0.562,
+   0.568
   ],
   "face": [
    0.327,
@@ -514,6 +524,7 @@
    ]
   ],
   "noTrim": [],
-  "trimLo": 27
+  "trimLo": 27,
+  "hairMask": "sprites/hero/young_woman_2_hair.png"
  }
 ]

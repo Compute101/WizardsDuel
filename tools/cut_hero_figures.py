@@ -6,7 +6,8 @@ gold trim, blue magic, silver hair (the key colours the creator recolours). This
 green (and the green spill on edges), drops loose specks, crops, scales to 768 px tall like the
 character stills, and works out the boxes the creator needs from the pixels:
 
-  hair   the silver hair and beard (pale, unsaturated, between the staff and the magic, above the waist)
+  hair   the silver hair and beard (pale, unsaturated, between the staff and the magic, above the waist),
+         and an exact mask of it (<id>_hair.png): the silver grown into its pinkish- and blue-grey edges
   face   a square round the face, for the HUD portrait
   skin   the face (and neck) and both hands, where skin tones change
   trimLo the trim's lowest hue: these figures' gold trim sits above the wood and leather in hue, so
@@ -98,6 +99,7 @@ def boxes(im):
             if 4 <= h <= 28 and 0.22 < s and v > 0.18: loose.add((x, y))   # darker skin and deep shadow are as saturated as wood
     hairc = [c for c in clumps(silver, W, H) if len(c) >= 120]
     hair = bbox([p for c in hairc for p in c], W, H, 0.008)
+    hairMask = None
     def pick(zone, least=40, src=None):
         cs = [c for c in clumps({p for p in (src or skin) if zone(p[0] / W, p[1] / H)}, W, H) if len(c) >= least]
         return cs[0] if cs else []
@@ -127,7 +129,28 @@ def boxes(im):
     sk = [b for b in (hb, lh, rh) if b]
     for b in sk[1:]: b.append(0.92 if dark else 0.95)   # hands: leave the most saturated wood out
     if nb: sk.append(nb)                                 # neck, no cap: no wood near it (after the hands: skin[0] is the face)
-    return {'hair': hair, 'face': face, 'skin': sk, 'noTrim': [], 'trimLo': 27}
+    # the hair, exactly: silver strands grown up to 4 px into their pinkish- and blue-grey edges, in
+    # clumps near the head (a beard can reach the belt; potion and buckle glints are small and apart)
+    grown, q = set(silver), deque((p, 0) for p in silver)
+    while q:
+        (x, y), d = q.popleft()
+        if d >= 4: continue
+        for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if n in grown or not (0 <= n[0] < W and 0 <= n[1] < H * 0.62): continue
+            r, g, b, a = px[n]
+            if not a: continue
+            h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255); h *= 360
+            if s < 0.34 and v > 0.3 and not (255 <= h <= 320):
+                grown.add(n); q.append((n, d + 1))
+    if hb:
+        ax0, ax1, ay0, ay1 = (hb[0] - 0.16) * W, (hb[2] + 0.16) * W, (hb[1] - 0.06) * H, (hb[3] + 0.28) * H
+        keep = [c for c in clumps(grown, W, H) if len(c) >= 30 and any(ax0 <= x <= ax1 and ay0 <= y <= ay1 for x, y in c[::7])]
+        pts = [p for c in keep for p in c]
+        if pts:
+            hairMask = Image.new('L', (W, H), 0); mp = hairMask.load()
+            for p in pts: mp[p] = 255
+            hair = bbox(pts, W, H, 0.004)
+    return {'hair': hair, 'face': face, 'skin': sk, 'noTrim': [], 'trimLo': 27, '_mask': hairMask}
 
 def main():
     figs = []
@@ -138,7 +161,11 @@ def main():
         im = cut(os.path.join(SRC, f))
         im.save(os.path.join(OUT, name + '.png'), optimize=True)
         sex, age = SLOTS[slot]
-        figs.append(dict(id=name, sex=sex, age=age, src='sprites/hero/' + name + '.png', **boxes(im)))
+        bx = boxes(im); mask = bx.pop('_mask')
+        fig = dict(id=name, sex=sex, age=age, src='sprites/hero/' + name + '.png', **bx)
+        if mask:
+            mask.save(os.path.join(OUT, name + '_hair.png'), optimize=True); fig['hairMask'] = 'sprites/hero/' + name + '_hair.png'
+        figs.append(fig)
         print(name, im.size)
     with open(os.path.join(OUT, 'figures.json'), 'w') as fh:
         json.dump(figs, fh, indent=1)
