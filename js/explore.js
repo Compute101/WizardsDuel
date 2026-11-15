@@ -32,7 +32,28 @@ let atlases=[], rects=null, chars=null, wizKeys=[], wizIdx=0, wizImg=null, world
 const mapCache={};
 let MAP=null, COLS=0, ROWS=0, WORLD_W=0, WORLD_H=0;
 let ground=null, groundKind=null, objs=[], boxes=[], bridges=[], fireflies=[], embers=[], mini=null;
-let built=false, running=false, busy=false, last=0, night=true, saveT=0;
+let built=false, running=false, busy=false, last=0, saveT=0;
+// ── the clock: a day passes in DAY_MS of play (paused during battles). lightMode: 'auto' follows it,
+//    'day' / 'night' hold it (the ☀ button cycles them).
+const DAY_MS = 16*60*1000;
+let clock=9*60, lightMode='auto';            // minutes since midnight
+function darkness(){
+  if(lightMode==='day') return 0; if(lightMode==='night') return 1;
+  const h=clock/60;
+  if(h>=7&&h<18) return 0;                    // day
+  if(h>=18&&h<20.5) return (h-18)/2.5;        // dusk
+  if(h>=5&&h<7) return 1-(h-5)/2;             // dawn
+  return 1;                                    // night
+}
+function clockLabel(){ const h=Math.floor(clock/60), m=Math.floor(clock%60); return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; }
+// ── wounds: each wizard's HP carries from fight to fight; healing in battle only buys time (after a
+//    win you keep the lowest you fell to). Rest at a safe place to recover (REST).
+let vit={};                                   // key → hp
+const REST = {hollowmere:{tavern:[1,'You take a room at the Drowned Crow and sleep till morning. The chairs still face the door.']},
+  corvanthe_road:{camp:[0.6,'You sleep a few hours by the gleaners\' cold firepit, one eye open.']},
+  cindergate:{camp:[0.6,'You rest in the gate\'s shadow. The pot on the fire is still warm.']}};
+function maxHp(key){ return (chars[key]&&chars[key].hp)||50; }
+function hpOf(key){ return vit[key]==null?maxHp(key):vit[key]; }
 let el={}, ctx=null, dark=null, dctx=null;
 const wiz={x:0,y:0,face:1,walk:0,moving:false};
 const keys=new Set();
@@ -84,7 +105,7 @@ function setupMap(data){
   data.objects.forEach(([kind,x,y,e],i)=>{
     if(!rects[kind]){ console.warn('explore: no piece',kind); return; }
     const o={kind,x,y,id:i,lore:e&&e.lore,scale:e&&e.scale,decal:!!(e&&e.decal)};
-    if(o.decal){ o.fb=P.bridgeDeck(rects,o); bridges.push(o); }
+    if(o.decal){ o.fb=P.BRIDGE[kind]?P.bridgeDeck(rects,o):[]; bridges.push(o); }   // a bridge, or flat ground art (a crack, glazed cobbles)
     else for(const b of P.footBoxes(rects,o)) boxes.push(b);
     objs.push(o);
   });
@@ -153,11 +174,16 @@ function fight(a){
   const foes=a.e.foes.map(([key,level])=>({key,level}));
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false);
-    window.startExploreBattle({wizKey:wizKeys[wizIdx], foes, onEnd:won=>afterFight(a,won)});
+    const key=wizKeys[wizIdx];
+    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), onEnd:(won,low)=>afterFight(a,won,low,key)});
   });
 }
-function afterFight(a,won){
+function afterFight(a,won,low,key){
   el.root.classList.add('active'); running=true; busy=false; resize();
+  clock=(clock+20)%1440;                       // a fight takes a while
+  if(won) vit[key]=Math.max(1,Math.round(Math.min(isFinite(low)?low:hpOf(key),hpOf(key))));
+  else vit[key]=Math.max(1,Math.round(maxHp(key)*0.25));
+  renderHp();
   if(won){
     cleared[MAP.id+':'+a.e.id]=Date.now();
     actors=actors.filter(x=>x!==a);
@@ -169,11 +195,25 @@ function afterFight(a,won){
     const p=MAP.spawns.gate||MAP.spawns.start||Object.values(MAP.spawns)[0];
     wiz.x=p[0]; wiz.y=p[1];
     a.x=a.e.x; a.y=a.e.y; a.tx=a.x; a.ty=a.y;
-    toast('You come to by the gate, singed and aching.');
+    toast('You come to, singed and aching, with a quarter of your strength. Find somewhere to rest.');
     grace=ECHO.grace*2;
   }
   renderSpill(); save();
   last=performance.now(); requestAnimationFrame(frame);
+}
+function renderHp(){
+  if(!el.hp||!chars) return;
+  const key=wizKeys[wizIdx], hp=hpOf(key), mx=maxHp(key), f=hp/mx;
+  el.hp.querySelector('i').style.width=Math.round(f*100)+'%';
+  el.hp.querySelector('i').style.background=f>0.6?'#4caf50':f>0.3?'#e0a030':'#d04040';
+  el.hp.querySelector('b').textContent=hp+'/'+mx;
+  el.hp.title='HP '+hp+' of '+mx+(hp<mx?': rest at the Drowned Crow in Hollowmere, or a gleaner camp':'');
+}
+function renderClock(){
+  if(!el.night) return;
+  const d=darkness();
+  const SUN='\u2600\uFE0E', MOON='\u263E\uFE0E';   // text forms, never emoji
+  el.night.textContent=lightMode==='day'?SUN+' Day':lightMode==='night'?MOON+' Night':(d>0.5?MOON:d>0?'\u25D0':SUN)+' '+clockLabel();
 }
 function renderSpill(){
   const keys=Object.keys(spill).filter(k=>spill[k]>0);
@@ -236,6 +276,7 @@ function wet(px,py){
   }
   if(t!=='W') return false;
   for(const b of bridges) for(const w of b.fb) if(inside(px,py,w)) return false;
+  for(const w of MAP.walk||[]) if(inside(px,py,w)) return false;
   return true;
 }
 
@@ -302,7 +343,7 @@ async function enterMap(id,at,instant){
 }
 function save(){
   if(!MAP) return;
-  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],spill,cleared})); }catch(e){}
+  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],spill,cleared,clock:Math.round(clock),lightMode,vit})); }catch(e){}
 }
 function loadSave(){ try{ return JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); }catch(e){ return null; } }
 function takeExit(x){
@@ -444,12 +485,12 @@ function buildDom(){
       <div class="ex-title" id="ex-title"></div>
       <div class="ex-wiz">
         <button class="ex-btn ex-arrow" id="ex-prev" type="button" aria-label="Previous wizard">◀</button>
-        <img id="ex-face" alt=""><span id="ex-name"></span>
+        <img id="ex-face" alt=""><span class="ex-who"><span id="ex-name"></span><span class="ex-hp" id="ex-hp"><i></i><b></b></span></span>
         <button class="ex-btn ex-arrow" id="ex-next" type="button" aria-label="Next wizard">▶</button>
       </div>
       <div class="ex-spill" id="ex-spill" hidden></div>
       <button class="ex-btn" id="ex-mapbtn" type="button" title="World map">🗺</button>
-      <button class="ex-btn" id="ex-night" type="button" title="Day / night">☾</button>
+      <button class="ex-btn" id="ex-night" type="button" title="Time of day: auto / day / night"></button>
     </div>
     <canvas id="ex-mini" aria-hidden="true"></canvas>
     <div class="ex-hint" id="ex-hint">WASD / arrows to walk · tap or click to walk there · E to inspect · walk off a road to travel</div>
@@ -469,7 +510,7 @@ function buildDom(){
   el={root:d, cv:$('#ex-canvas'), mini:$('#ex-mini'), say:$('#ex-say'), act:$('#ex-act'), hint:$('#ex-hint'),
       face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), loading:$('#ex-loading'), title:$('#ex-title'),
       fade:$('#ex-fade'), toast:$('#ex-toast'), world:$('#ex-world'), worldCv:$('#ex-world-cv'), worldTitle:$('#ex-world-title'),
-      spill:$('#ex-spill'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
+      hp:$('#ex-hp'), spill:$('#ex-spill'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
   ctx=el.cv.getContext('2d');
   dark=document.createElement('canvas'); dctx=dark.getContext('2d');
   $('#ex-back').onclick=close;
@@ -479,8 +520,8 @@ function buildDom(){
   $('#ex-world-close').onclick=closeWorld;
   el.wpGo.onclick=worldGo;
   el.worldCv.addEventListener('click',worldClick);
-  el.night.onclick=()=>{ night=!night; el.night.textContent=night?'☾':'☀'; };
-  el.act.onclick=inspect;
+  el.night.onclick=()=>{ lightMode={auto:'day',day:'night',night:'auto'}[lightMode]; renderClock(); save(); };
+  el.act.onclick=()=>{ if(near) inspect(); else if(nearExit&&!busy) takeExit(nearExit); };
   el.say.onclick=hideSay;
   el.cv.addEventListener('pointerdown',e=>{ el.cv.setPointerCapture(e.pointerId); setTarget(e); hideSay(); dragging=true; });
   el.cv.addEventListener('pointermove',e=>{ if(dragging) setTarget(e); });
@@ -527,7 +568,7 @@ function sizeMini(){
 function setWizard(i){
   wizIdx=(i+wizKeys.length)%wizKeys.length;
   const key=wizKeys[wizIdx], c=chars[key];
-  el.name.textContent=c.name; el.face.src='portraits/small/'+key+'.jpg';
+  el.name.textContent=c.name; el.face.src='portraits/small/'+key+'.jpg'; renderHp();
   try{ localStorage.setItem('wd-explore-wiz',key); }catch(e){}
   const img=new Image(); img.src=c.sprite; img.onload=()=>{ if(wizKeys[wizIdx]===key) wizImg=img; };
 }
@@ -537,6 +578,16 @@ function showSay(o){
   const L=loreOf(o); if(!L) return;
   el.say.querySelector('.ex-say-name').textContent=L[0];
   el.say.querySelector('.ex-say-text').textContent=L[1];
+  const R=(REST[MAP.id]||{})[o.lore], key=wizKeys[wizIdx];
+  let btn=el.say.querySelector('.ex-rest'); if(btn) btn.remove();
+  if(R){
+    btn=document.createElement('button'); btn.className='ex-btn ex-rest'; btn.type='button';
+    const to=Math.max(hpOf(key),Math.ceil(maxHp(key)*R[0]));
+    btn.textContent=to>hpOf(key)?'🛏 Rest ('+hpOf(key)+' → '+to+' HP)':'🛏 Rested';
+    btn.disabled=to<=hpOf(key);
+    btn.onclick=ev=>{ ev.stopPropagation(); vit[key]=to; clock=R[0]>=1?7*60:(clock+240)%1440; renderHp(); renderClock(); save(); hideSay(); toast(R[1]); };
+    el.say.appendChild(btn);
+  }
   el.say.hidden=false; el.hint.classList.add('fade');
 }
 function hideSay(){ if(el.say) el.say.hidden=true; }
@@ -587,7 +638,7 @@ function update(dt){
   // a way out? (you must step out of the one you arrived in first)
   const ex=exitAt(wiz.x,wiz.y);
   if(!ex) exitArmed=true;
-  else if(exitArmed&&len){ exitArmed=false; takeExit(ex); return; }
+  else if(exitArmed){ exitArmed=false; takeExit(ex); return; }
   nearExit=null;
   for(const e of MAP.exits||[]) if(Math.hypot(e.x+e.w/2-wiz.x,e.y+e.h/2-wiz.y)<260) nearExit=e;
   // something to inspect nearby?
@@ -599,8 +650,11 @@ function update(dt){
       if(d<best){ best=d; near=o; }
     }
   }
-  el.act.hidden=!near||!el.say.hidden;
+  // the action button: inspect what's near, or take the way out you're close to (easier than tapping the edge)
+  const exitClose=nearExit&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y+nearExit.h/2-wiz.y)<170;
+  el.act.hidden=!(near||exitClose)||!el.say.hidden;
   if(near) el.act.textContent='✋ '+loreOf(near)[0];
+  else if(exitClose) el.act.textContent='⟶ '+(nearExit.to==='world'?(nearExit.label||'Travel')+' (world map)':nearExit.label);
   // remember where you are
   saveT+=dt; if(saveT>2){ saveT=0; save(); }
 }
@@ -713,7 +767,9 @@ function draw(t){
     ctx.strokeText('?',near.x,my); ctx.fillText('?',near.x,my);
   }
   if(MAP.haze){ const [r,g,b,a]=MAP.haze.split(','); ctx.fillStyle=`rgba(${r},${g},${b},${a})`; ctx.fillRect(cam.x,cam.y,cw,ch); }
-  if(night) drawNight(t,cw,ch);
+  const D=darkness();
+  if(D>0) drawNight(t,cw,ch,D);
+  else if(MAP.storm) drawNight(t,cw,ch,0.25);   // Spirewatch is never quite light
   if(embers.length) drawEmbers(t,cw,ch);
   drawExitLabel();
   drawMini();
@@ -751,10 +807,10 @@ function lightsInView(cw,ch){
   const out=[];
   const near=(x,y)=>!(x<cam.x-300||x>cam.x+cw+300||y<cam.y-300||y>cam.y+ch+300);
   for(const o of objs){
-    const L=P.lightsOf(o.kind); if(!L||o.decal) continue;
+    const L=P.lightsOf(o.kind); if(!L||(o.decal&&P.BRIDGE[o.kind])) continue;
     const s=sizeOf(o.kind);
     for(const [lx,ly,type] of L){
-      const x=o.x-s.w/2+lx*PS, y=o.y-s.h+ly*PS;
+      const fr=lx<=1&&ly<=1, x=o.x-s.w/2+(fr?lx*s.w:lx*PS), y=o.y-s.h+(fr?ly*s.h:ly*PS);
       // a burnt house's windows glow ember-orange: what's inside isn't a hearth
       if(near(x,y)) out.push({x,y,r:type==='lamp'?150:105,seed:o.id,c:type==='lamp'?undefined:o.kind.endsWith('_burnt')?'255,120,50':MAP.windowGlow&&PAL&&o.kind.endsWith(PAL)?MAP.windowGlow:undefined});
     }
@@ -763,13 +819,13 @@ function lightsInView(cw,ch){
   for(const a of actors) if(near(a.x,a.y)){ const h=parseInt(SPILL[a.e.el][1].slice(1),16); out.push({x:a.x,y:a.y-WIZ_H*0.6,r:a.strong?150:110,c:[h>>16,(h>>8)&255,h&255].join(','),seed:a.e.x}); }
   return out;
 }
-function drawNight(t,cw,ch){
+function drawNight(t,cw,ch,D){
   const lights=lightsInView(cw,ch);
   lights.push({x:wiz.x,y:wiz.y-WIZ_H*0.6,r:140,wiz:true,seed:0});
   dctx.setTransform(dpr*zoom,0,0,dpr*zoom,-cam.x*dpr*zoom,-cam.y*dpr*zoom);
   dctx.globalCompositeOperation='source-over';
   dctx.clearRect(cam.x,cam.y,cw,ch);
-  dctx.fillStyle='rgba(8,12,36,0.66)'; dctx.fillRect(cam.x,cam.y,cw,ch);
+  dctx.fillStyle=`rgba(${Math.round(8+40*(1-D))},${Math.round(12+10*(1-D))},${Math.round(36-6*(1-D))},${(0.66*D).toFixed(3)})`; dctx.fillRect(cam.x,cam.y,cw,ch);   // dusk is warmer
   dctx.globalCompositeOperation='destination-out';
   for(const L of lights){
     const r=L.r*(1+Math.sin(t/140+L.seed*1.7)*0.04);
@@ -787,13 +843,13 @@ function drawNight(t,cw,ch){
     const r=L.r*(L.c?0.7:0.45)*(1+Math.sin(t/110+L.seed)*0.08);
     const g=ctx.createRadialGradient(L.x,L.y,0,L.x,L.y,r);
     const c=L.c||'255,190,90';
-    g.addColorStop(0,`rgba(${c},${(L.c?0.3:0.38)*flick})`); g.addColorStop(1,`rgba(${c},0)`);
+    g.addColorStop(0,`rgba(${c},${(L.c?0.3:0.38)*flick*D})`); g.addColorStop(1,`rgba(${c},0)`);
     ctx.fillStyle=g; ctx.fillRect(L.x-r,L.y-r,r*2,r*2);
   }
   for(const f of fireflies){
     const x=f.x+Math.sin(t/1900+f.a)*f.s*3, y=f.y+Math.cos(t/2300+f.a)*f.s*2;
     if(x<cam.x||x>cam.x+cw||y<cam.y||y>cam.y+ch) continue;
-    const a=0.5+0.5*Math.sin(t/400+f.p);
+    const a=(0.5+0.5*Math.sin(t/400+f.p))*D;
     const g=ctx.createRadialGradient(x,y,0,x,y,7);
     g.addColorStop(0,`rgba(220,255,140,${0.9*a})`); g.addColorStop(1,'rgba(160,255,80,0)');
     ctx.fillStyle=g; ctx.fillRect(x-7,y-7,14,14);
@@ -855,10 +911,12 @@ function drawMini(){
   for(const a of actors){ m.fillStyle=SPILL[a.e.el][1]; m.fillRect(a.x*k-1.5,a.y*k-1.5,3,3); }
   m.fillStyle='#fff'; m.beginPath(); m.arc(wiz.x*k,wiz.y*k,2.5,0,Math.PI*2); m.fill();
 }
+let clockT=0;
 function frame(now){
   if(!running) return;
   const dt=Math.min(0.05,(now-last)/1000||0); last=now;
-  if(MAP){ update(dt); draw(now); }
+  if(MAP){ if(!busy&&!worldOpen) clock=(clock+dt*1000*1440/DAY_MS)%1440; update(dt); draw(now); }
+  if((clockT+=dt)>1){ clockT=0; renderClock(); }
   requestAnimationFrame(frame);
 }
 
@@ -866,7 +924,7 @@ function frame(now){
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 async function load(){
   if(built) return;
-  const names=['ruins','ruins2','ruins3','ruins4','ruins5'];
+  const names=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9'];
   const [cj,wj,...sheets]=await Promise.all([
     fetch('characters.json').then(r=>r.json()),
     fetch('maps/world.json').then(r=>r.json()),
@@ -887,6 +945,7 @@ async function open(){
     await load();
     const s=loadSave();
     found=new Set(s&&s.found||[]); spill=(s&&s.spill)||{}; cleared=(s&&s.cleared)||{}; renderSpill();
+    if(s&&s.clock!=null) clock=s.clock; if(s&&s.lightMode) lightMode=s.lightMode; vit=(s&&s.vit)||{};
     if(!MAP){
       if(s&&s.map) await enterMap(s.map,[s.x,s.y],true);
       else await enterMap(START.map,START.spawn,true);
@@ -897,7 +956,7 @@ async function open(){
   el.loading.hidden=true;
   sizeMini();
   let saved=null; try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}
-  setWizard(Math.max(0,wizKeys.indexOf(saved||'eldrin')));
+  setWizard(Math.max(0,wizKeys.indexOf(saved||'eldrin'))); renderClock();
   last=performance.now(); requestAnimationFrame(frame);
   el.hint.classList.remove('fade');
   setTimeout(()=>{ if(el.hint) el.hint.classList.add('fade'); },7000);

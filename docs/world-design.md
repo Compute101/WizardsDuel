@@ -111,7 +111,8 @@ in battle: you pick for each, or set one to AI.
    burnt recolours of the existing art. *All eight outer rings done* (`tools/mapgen/sector.js`), joined in a
    ring along Wallside in the wheel's order, each from recolours of the existing art plus its own
    weather. Next: the inner rings beyond each sector's north barrier, and sector-specific art
-   (ice spires, floating rubble, rock spires, drowned streets) where recolours fall short.
+   (ice spires, floating rubble, rock spires, drowned streets) where recolours fall short. *Done:*
+   each sector now has its own pieces from four sheets (`tools/mapgen/own.js`).
 3. **Elementals on the map:** roaming, battle on contact, loot, respawn. *Done for Cindergate* (see
    "Echoes" in `CLAUDE.md`); balancing the Echo numbers against created wizards waits for step 7.
 4. **Inventory and save game**, per profile.
@@ -161,3 +162,10 @@ the strong kind is bigger and more monstrous, someone who was powerful or near t
 sprites in the same format as the character stills: full body, facing right, feet on the bottom
 edge, about 512 × 768 for the weak kind (taller for the strong kind), detailed pixel art like
 `sprites/eldrin.png` and `sprites/gretch.png`.
+
+## The Hollow
+
+The river of Hollowmere rises north of Corvanthe and runs through the city: in under the harbour wall
+in the Drowned Quarter, through the Wound, and out of Cindergate boiling, then south-west to
+Hollowmere. That is why Hollowmere's folk say it runs the other way at night. Only those two sectors
+(opposites, Water and Fire) carry it; the inner rings will carry it on to the Wound.

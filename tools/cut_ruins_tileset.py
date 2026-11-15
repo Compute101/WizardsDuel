@@ -8,6 +8,7 @@ sprites/ruins/tileset3_source.png → ruins3.png + ruins3.json (ground transitio
 grass/cobble, grass/dirt, grass shore, stone quay).
 sprites/ruins/tileset4_source.png → ruins4 (house backs and sides, tavern, chapel, tower).
 sprites/ruins/tileset5_source.png → ruins5 (bridges seen from above).
+sprites/ruins/tileset6..9_source.png → ruins6..9 (each sector's own pieces, two sectors a sheet).
 
 The source is a loose sheet on a flat dark background, not a grid, so each
 piece has a hand-checked rect (RECTS below). The background is removed by a
@@ -140,11 +141,42 @@ RECTS5 = {
     'bridgeTopStoneBroken': (56, 408, 671, 251), 'bridgeTopWoodBroken': (818, 412, 661, 245),
 }
 
+# ── sheets 6–9: each sector's own pieces (rects from the sheets' blobs, padded; a floating ruin
+#    keeps its shadow, so its base is the shadow and it hangs above the ground) ──
+def _pad(r, p=6): x, y, w, h = r; return (max(0, x - p), max(0, y - p), w + 2 * p, h + 2 * p)
+RECTS6 = {k: _pad(v) for k, v in {   # Frostmarket, the Drowned Quarter
+    'iceSpire1': (337, 160, 131, 100), 'iceSpire2': (574, 105, 203, 156), 'iceSpire3': (876, 16, 293, 252),
+    'frostStall': (16, 306, 307, 253), 'frozenFountain': (345, 288, 274, 271), 'iceCart': (641, 333, 273, 225),
+    'iceWall': (938, 418, 282, 131), 'snowdrift': (1245, 355, 275, 202),
+    'sunkHouse': (16, 655, 294, 277), 'boat': (328, 731, 214, 182), 'jetty': (563, 645, 209, 325),
+    'nets': (793, 693, 221, 222), 'figurehead': (1037, 671, 165, 254), 'moorings': (1243, 761, 278, 138)}.items()}
+RECTS7 = {k: _pad(v) for k, v in {   # the Heights, the Quarry Ward
+    'floatRoom': (28, 14, 310, 314), 'floatStairs': (367, 108, 177, 216), 'floatRoof': (570, 80, 229, 244),
+    'townhouse': (831, 14, 384, 314), 'gazebo': (1258, 12, 247, 305), 'weathervane': (137, 344, 105, 173),
+    'urn': (348, 368, 114, 137), 'urnDead': (581, 352, 138, 143), 'bench': (809, 385, 198, 117), 'urnBroken': (1095, 376, 175, 137),
+    'rockSpire1': (47, 635, 140, 111), 'rockSpire2': (218, 586, 175, 161), 'rockSpire3': (420, 511, 254, 238),
+    'quarryCrane': (716, 536, 284, 207), 'stoneYard': (1037, 537, 441, 206), 'chasm': (40, 792, 563, 193),
+    'tiltedHouse': (636, 733, 395, 252), 'mineCart': (1063, 801, 424, 181)}.items()}
+RECTS8 = {k: _pad(v) for k, v in {   # Spirewatch, the Collegium
+    'bellTower': (60, 16, 162, 463), 'fallenBell': (248, 295, 259, 187), 'lightningRod': (526, 107, 188, 380),
+    'watchTower': (740, 48, 196, 431), 'glassPatch': (980, 280, 211, 199), 'bellFrames': (1223, 262, 294, 217),
+    'hall': (17, 533, 346, 386), 'orrery': (377, 609, 215, 308), 'bookshelves': (609, 633, 241, 287),
+    'runeCircle': (865, 649, 217, 274), 'scholarStatue': (1096, 601, 150, 315), 'portal': (1264, 559, 261, 358)}.items()}
+RECTS9 = {k: _pad(v) for k, v in {   # Gloamside, Cindergate
+    'temple': (18, 21, 348, 445), 'catacomb': (390, 211, 206, 254), 'graves': (618, 234, 249, 233),
+    'mausoleum': (885, 190, 191, 273), 'candles': (1095, 280, 195, 183), 'hoodedShrine': (1309, 154, 211, 312),
+    'forge': (17, 483, 346, 426), 'anvil': (388, 728, 197, 181), 'slag': (592, 727, 200, 182),
+    'bellows': (799, 668, 253, 239), 'lavaCrack': (1068, 681, 211, 224), 'swordRack': (1298, 661, 225, 246)}.items()}
+
 SHEETS = {
     '1': dict(src='tileset_source.png', bg=(16, 18, 23), rects=RECTS, ground=GROUND_NAMES, out='ruins', key='1'),
     '2': dict(src='tileset2_source.png', bg=(9, 12, 18), rects=RECTS2, ground=GROUND2_NAMES, out='ruins2', key='2'),
     '4': dict(src='tileset4_source.png', bg=(14, 17, 22), rects=RECTS4, ground=set(), out='ruins4', key='4'),
     '5': dict(src='tileset5_source.png', bg=(14, 16, 22), rects=RECTS5, ground=set(), out='ruins5', key='5'),
+    '6': dict(src='tileset6_source.png', bg=(13, 15, 21), rects=RECTS6, ground=set(), out='ruins6', key='6', clean=True),
+    '7': dict(src='tileset7_source.png', bg=(14, 16, 22), rects=RECTS7, ground=set(), out='ruins7', key='7', clean=True),
+    '8': dict(src='tileset8_source.png', bg=(15, 17, 22), rects=RECTS8, ground=set(), out='ruins8', key='8', clean=True),
+    '9': dict(src='tileset9_source.png', bg=(11, 13, 21), rects=RECTS9, ground=set(), out='ruins9', key='9', clean=True),
     '3': dict(src='tileset3_source.png', bg=(13, 16, 21), rects=RECTS3, ground=set(RECTS3), out='ruins3', key='3', square=TR),
 }
 
@@ -212,7 +244,7 @@ def recolour(c, roof=None, stone=None, whole=None):
 # Every piece keeps its name plus _<palette>. ground = whole-image tint for the ground pieces
 # (saturation, brightness, RGB tint, brightness for grass); house = recolour() args for buildings.
 SECTOR_GROUND = ['grass', 'grass2', 'dirtGrass', 'flagCracked', 'flagMoss'] + \
-    ['tr_%s_%s' % (st, c) for st in ['cobble', 'dirt', 'shore'] for c in _TR]
+    ['tr_%s_%s' % (st, c) for st in ['cobble', 'dirt', 'shore', 'quay'] for c in _TR]
 SECTOR_HOUSES = ['house1', 'house2', 'house3', 'house4', 'house5', 'house6', 'backTerra1', 'backTerra2', 'backSlate',
                  'backPurple', 'backSlateRuin', 'backPurpleRuin', 'sideTerra', 'sideSlate', 'sidePurple', 'sidePurpleRuin',
                  'tavern', 'chapel', 'tower']
@@ -241,6 +273,20 @@ def sector_atlases(base):
         pack(crops, 'sector_' + pal)
 
 
+def drop_edge_scraps(c):
+    """Clear small blobs that touch the crop's edge: scraps of the neighbouring pieces. A piece's
+    own loose bits (floating stones, its shadow) sit inside the padding and are kept."""
+    a = np.array(c)
+    solid = a[..., 3] > 0
+    lab, n = ndimage.label(solid)
+    if n < 2: return c
+    sizes = ndimage.sum(solid, lab, range(1, n + 1))
+    edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {0}
+    for i in edge:
+        if sizes[i - 1] < 0.15 * sizes.max(): a[lab == i, 3] = 0
+    return Image.fromarray(a, 'RGBA')
+
+
 def transparent_sheet(path, bg):
     src = Image.open(path).convert('RGB')
     a = np.array(src).astype(int)
@@ -266,6 +312,8 @@ def cut(sh, write=True):
     crops = {}
     for k, (x, y, w, h) in sh['rects'].items():
         c = sheet.crop((x, y, x + w, y + h))
+        if sh.get('clean'):
+            c = drop_edge_scraps(c)
         if k not in sh['ground']:
             c = c.crop(c.getbbox())
         elif sh.get('square'):             # transition cells: every cell the same square size

@@ -116,6 +116,7 @@ function newState(){
   seats.forEach(st=>{
     gs[st.who]=newSeat(st.cfg||defOf(st.key),st.key);
     gs[st.who].team=st.team||st.who;
+    if(st.hp!=null) gs[st.who].hp=Math.max(1,Math.min(gs[st.who].maxHp,st.hp));   // Explore: wounds carry over
     addStartingMinions(st.who);
     if(gs[st.who+'anim']==null){ gs[st.who+'anim']='idle'; gs[st.who+'xOff']=0; }
   });
@@ -221,6 +222,9 @@ const BC_MIN_ASPECT=0.52, BC_MAX_ASPECT=0.85;
 let bOffY=0;
 function resizeBC(){
   const stage=bc.parentElement;
+  // hidden (the app in the background, or the screen not shown): keep the old size, or the canvas
+  // shrinks to nothing and stays black when the player comes back
+  if(!stage.clientWidth||!stage.clientHeight) return;
   bW=stage.clientWidth;
   bH=Math.round(Math.max(bW*BC_MIN_ASPECT,Math.min(stage.clientHeight,bW*BC_MAX_ASPECT)));
   const fullH=Math.max(bH,stage.clientHeight);
@@ -1974,6 +1978,9 @@ let fk=1;
 function battleLoop(ts){
   if(!battleRunning) return;
   battleRAF=requestAnimationFrame(battleLoop);
+  // the stage changed size while we weren't looking (app switched away and back): fit it again
+  { const st=bc.parentElement; if(st.clientWidth&&(st.clientWidth!==bW||bc.height<st.clientHeight)) resizeBC(); }
+  if(exploreFight&&gs.p1) exploreFight.low=Math.min(exploreFight.low,gs.p1.hp);   // Explore: the lowest HP reached
   const dt=lastFrameTime?Math.min(ts-lastFrameTime,100):16;
   lastFrameTime=ts;
   fk=Math.min(dt,50)/16.67;
@@ -3873,18 +3880,19 @@ function startEncounter(wizKey){
   waveBanner();
 }
 // ── EXPLORE BATTLES: a fight on the map (js/explore.js) played here, then back to the map ──
-// foes: [{key, level}] fighters (Echoes); onEnd(won) is called when the player leaves the result screen.
+// foes: [{key, level}] fighters (Echoes); hp: the wizard's HP coming in (wounds carry between fights);
+// onEnd(won, lowestHp) is called when the player leaves the result screen.
 let exploreFight=null;
-function startExploreBattle({wizKey, foes, onEnd}){
+function startExploreBattle({wizKey, foes, onEnd, hp}){
   survival=null; encounterPending=false;
   const seen={}, count=k=>foes.filter(f=>f.key===k).length;
-  const seats=[{key:wizKey,human:true,team:'A'}].concat(foes.map(f=>{
+  const seats=[{key:wizKey,human:true,team:'A',hp}].concat(foes.map(f=>{
     const cfg=fighterCfg(f.key,f.level||0);
     seen[f.key]=(seen[f.key]||0)+1;
     if(count(f.key)>1) cfg.name+=' '+['I','II','III','IV'][seen[f.key]-1];
     return {key:f.key,cfg,human:false,team:'B'};
   }));
-  exploreFight={onEnd, foes};
+  exploreFight={onEnd, foes, low:Infinity};
   multiMode=true; trainingMode=false; twoPlayerMode=false;
   if(window.Profiles&&Profiles.setSeats) Profiles.setSeats({});
   startMultiBattle(seats);
@@ -10523,7 +10531,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     if(exploreFight){
       const f=exploreFight; exploreFight=null;
       battleRunning=false; gameEnded=false; endMultiMode(); showScreen('title-screen');
-      if(f.onEnd) f.onEnd(!!f.won);
+      if(f.onEnd) f.onEnd(!!f.won, f.low);
       return;
     }
     if(multiMode){ battleRunning=false; gameEnded=false; endMultiMode(); showScreen('title-screen'); return; }
@@ -10566,3 +10574,9 @@ window.addEventListener('DOMContentLoaded', ()=>{
   fetch('fighters.json').then(r=>r.json()).then(data=>{ FIGHTER_DEFS=data; })
     .catch(err=>console.error('Failed to load fighters.json:', err));
 });
+
+// Coming back to the app: the battle canvas may have been resized while hidden, or thrown away by the
+// browser. Fit it again and restart the frame clock.
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&typeof resizeBC==='function'&&battleRunning){ resizeBC(); lastFrameTime=0; } });
+window.addEventListener('pageshow',()=>{ if(battleRunning){ resizeBC(); lastFrameTime=0; } });
+if(typeof bc!=='undefined'&&bc) bc.addEventListener('contextrestored',()=>{ resizeBC(); });

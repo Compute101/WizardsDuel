@@ -44,6 +44,20 @@ const FOOT = {
   // buildings sheet: backs, sides, the big three
   back:[{w:.9,h:.45}], side:[{w:.88,h:.45}],
   tavern:[{w:.86,h:.4}], chapel:[{w:.82,h:.4}], tower:[{ox:.4,w:.62,h:.32},{ox:.82,w:.34,h:.22}],
+  // each sector's own pieces (sheets 6–9)
+  iceSpire:[{w:.6,h:18}], frostStall:[{w:.9,h:24}], frozenFountain:[{w:.8,h:.3}], iceCart:[{w:.85,h:26}],
+  iceWall:[{w:.95,h:20}], snowdrift:[{w:.85,h:24}], sunkHouse:[{w:.9,h:.45}], boat:[{w:.8,h:22}], nets:[{w:.85,h:22}],
+  figurehead:[{w:.6,h:18}], moorings:[{ox:.12,w:.12,h:10},{ox:.5,w:.12,h:10},{ox:.88,w:.12,h:10}],
+  floatRoom:[{w:.4,h:10}], floatStairs:[{w:.4,h:8}], floatRoof:[{w:.4,h:8}],      // only their shadows touch the ground
+  townhouse:[{w:.9,h:.4}], gazebo:[{w:.85,h:.25}], weathervane:[{w:.3,h:10}], urn:[{w:.6,h:14}], bench:[{w:.9,h:14}],
+  rockSpire:[{w:.7,h:.25}], quarryCrane:[{ox:.2,w:.3,h:16},{ox:.75,w:.25,h:14}], stoneYard:[{w:.9,h:26}],
+  tiltedHouse:[{w:.85,h:.4}], mineCart:[{w:.9,h:18}],
+  bellTower:[{w:.8,h:.12}], fallenBell:[{w:.85,h:26}], lightningRod:[{w:.3,h:14}], watchTower:[{w:.8,h:.12}],
+  bellFrames:[{w:.85,h:22}], hall:[{w:.9,h:.35}], orrery:[{w:.6,h:20}], bookshelves:[{w:.85,h:22}], runeCircle:[{w:.7,h:20}],
+  scholarStatue:[{w:.7,h:20}], portal:[{ox:.15,w:.25,h:20},{ox:.85,w:.25,h:20}],
+  temple:[{w:.9,h:.3}], catacomb:[{ox:.15,w:.25,h:22},{ox:.85,w:.25,h:22}], graves:[{w:.85,h:24}], mausoleum:[{w:.85,h:.3}],
+  candles:[{w:.85,h:20}], hoodedShrine:[{w:.85,h:22}], forge:[{w:.9,h:.35}], anvil:[{w:.8,h:20}], slag:[{w:.8,h:20}],
+  bellows:[{w:.85,h:22}], swordRack:[{w:.9,h:18}],
 };
 function footOf(kind){
   if(FOOT[kind]) return FOOT[kind];
@@ -59,6 +73,12 @@ const LIGHTS = {
   chapel:[[196,175],[128,258],[273,258],[124,364],[274,362]],
   tower:[[106,234],[198,330],[232,326],[106,406]],
   backTerra1:[[142,176]], backSlate:[[116,173]], backPurple:[[76,178],[155,178]], sideSlate:[[92,138]],
+  // sheets 6–9: values of 1 or less are fractions of the piece's width / height
+  sunkHouse:[[.3,.82],[.62,.82]], townhouse:[[.36,.4],[.62,.4],[.25,.75],[.78,.75]], floatRoom:[[.4,.4,'lamp']],
+  forge:[[.5,.75,'lamp']], candles:[[.5,.3,'lamp']], portal:[[.5,.6,'lamp']], runeCircle:[[.5,.6,'lamp']],
+  lavaCrack:[[.5,.5,'lamp']], slag:[[.5,.5]], swordRack:[[.5,.6]], hall:[[.5,.55],[.3,.55],[.7,.55]], temple:[[.5,.35]],
+  hoodedShrine:[[.5,.75]], bellTower:[[.5,.2],[.5,.85]], watchTower:[[.5,.9]], tiltedHouse:[[.45,.55],[.7,.5]],
+  catacomb:[[.5,.6]], lightningRod:[[.5,.08,'lamp']], glassPatch:[[.5,.5]], frozenFountain:[[.5,.4]],
   lamppost:[[79,65,'lamp']], lamp2:[[23,45,'lamp']], lamp3:[[20,41,'lamp']], lamp4:[[21,41,'lamp']],
 };
 // recoloured pieces ('house1_slate') share their base piece's lights and footprint
