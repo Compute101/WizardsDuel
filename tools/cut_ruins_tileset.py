@@ -6,6 +6,8 @@ sprites/ruins/tileset2_source.png → ruins2.png + ruins2.json (river, bridges,
 docks, cranes, carts).
 sprites/ruins/tileset3_source.png → ruins3.png + ruins3.json (ground transitions:
 grass/cobble, grass/dirt, grass shore, stone quay).
+sprites/ruins/tileset4_source.png → ruins4 (house backs and sides, tavern, chapel, tower).
+sprites/ruins/tileset5_source.png → ruins5 (bridges seen from above).
 
 The source is a loose sheet on a flat dark background, not a grid, so each
 piece has a hand-checked rect (RECTS below). The background is removed by a
@@ -123,9 +125,25 @@ RECTS3.update(_cells('shore', [(55, 169), (176, 298), (304, 421)], [(555, 679), 
 RECTS3.update(_cells('quay', [(798, 913), (920, 1042), (1049, 1166)], [(559, 680), (687, 809), (815, 931)],
                      [(1216, 1332), (1360, 1477)], [(582, 709), (749, 877)]))
 
+# ── sheet 4: building backs and sides, big buildings ──
+RECTS4 = {
+    'backTerra1': (31, 16, 234, 234), 'backTerra2': (289, 16, 225, 233), 'backSlate': (542, 16, 219, 235),
+    'backSlateRuin': (784, 16, 228, 237), 'backPurple': (1042, 16, 225, 234), 'backPurpleRuin': (1288, 27, 226, 228),
+    'sideTerra': (240, 284, 179, 206), 'sideSlate': (536, 283, 172, 207), 'sidePurple': (840, 285, 175, 205),
+    'sidePurpleRuin': (1113, 289, 195, 201),
+    'tavern': (91, 522, 456, 402), 'chapel': (604, 508, 395, 413), 'tower': (1097, 502, 292, 420),
+}
+# ── sheet 5: bridges seen from above ──
+RECTS5 = {
+    'bridgeTopStone': (56, 96, 671, 251), 'bridgeTopWood': (816, 101, 664, 244),
+    'bridgeTopStoneBroken': (56, 408, 671, 251), 'bridgeTopWoodBroken': (818, 412, 661, 245),
+}
+
 SHEETS = {
     '1': dict(src='tileset_source.png', bg=(16, 18, 23), rects=RECTS, ground=GROUND_NAMES, out='ruins', key='1'),
     '2': dict(src='tileset2_source.png', bg=(9, 12, 18), rects=RECTS2, ground=GROUND2_NAMES, out='ruins2', key='2'),
+    '4': dict(src='tileset4_source.png', bg=(14, 17, 22), rects=RECTS4, ground=set(), out='ruins4', key='4'),
+    '5': dict(src='tileset5_source.png', bg=(14, 16, 22), rects=RECTS5, ground=set(), out='ruins5', key='5'),
     '3': dict(src='tileset3_source.png', bg=(13, 16, 21), rects=RECTS3, ground=set(RECTS3), out='ruins3', key='3', square=TR),
 }
 

@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  EXPLORE — walk a wizard around the ruined town of Hollowmere.
 //  Self-contained: builds its own full-screen overlay, loads the
-//  tileset atlases (sprites/ruins/ruins.png + ruins2.png and their .json,
+//  tileset atlases (sprites/ruins/ruins*.png and their .json,
 //  cut by tools/cut_ruins_tileset.py) and characters.json for the wizards.
 //  The map is generated from a fixed seed, so it's the same town every time.
 // ═══════════════════════════════════════════════════════════════════
@@ -43,6 +43,9 @@ const FOOT = {
   crane:[{ox:.07,w:.12,h:14},{ox:.93,w:.12,h:14},{ox:.5,w:.34,h:14}],
   craneBroken:[{ox:.3,w:.2,h:14},{ox:.75,w:.15,h:14}], gallowsHook:[{ox:.2,w:.15,h:14},{ox:.7,w:.15,h:14}],
   gallows:[{ox:.85,w:.18,h:14}],
+  // buildings sheet: backs, sides, the big three
+  back:[{w:.9,h:.45}], side:[{w:.88,h:.45}],
+  tavern:[{w:.86,h:.4}], chapel:[{w:.82,h:.4}], tower:[{ox:.4,w:.62,h:.32},{ox:.82,w:.34,h:.22}],
 };
 function footOf(kind){
   if(FOOT[kind]) return FOOT[kind];
@@ -54,6 +57,10 @@ function footOf(kind){
 const LIGHTS = {
   house1:[[165,208]], house2:[[70,205],[158,205]], house3:[[170,205]],
   house4:[[170,208]], house5:[[180,190]], house6:[[77,185]],
+  tavern:[[114,218],[288,218],[92,332],[153,332],[280,332],[337,330,'lamp']],
+  chapel:[[196,175],[128,258],[273,258],[124,364],[274,362]],
+  tower:[[106,234],[198,330],[232,326],[106,406]],
+  backTerra1:[[142,176]], backSlate:[[116,173]], backPurple:[[76,178],[155,178]], sideSlate:[[92,138]],
   lamppost:[[79,65,'lamp']], lamp2:[[23,45,'lamp']], lamp3:[[20,41,'lamp']], lamp4:[[21,41,'lamp']],
 };
 
@@ -86,6 +93,9 @@ const LORE = {
   bridgeWood:  ['Mill Bridge', 'The planks flex under you. Far below, something pale turns over in the water and is gone.'],
   bridgeStone: ['Old Stone Bridge', 'Older than the town. The mason\'s marks on the parapet are Arcana glyphs: θ Φ ☽ ∞, the Ice word.'],
   bridgeWoodBroken:['Broken Footbridge', 'Snapped in the middle. The far half still creaks as though someone were crossing it.'],
+  tavern:      ['The Drowned Crow', 'The last tavern in Hollowmere. The fire is lit, the tankards are clean, and the chairs are all turned to face the door.'],
+  chapel:      ['Chapel of the Watcher', 'The hooded figure in the niche matches the statue in the plaza. The pews are dusty, all but the front one.'],
+  tower:       ['The College Tower', 'All that stands of the duelling college. The brass orrery on its roof still turns, tracking stars that are not in the sky.'],
   pond:        ['Mill Pond', 'Fat carp circle in the shallows, unafraid. Someone still comes down here to feed them.'],
   river:       ['The Hollow', 'Black water, slow and cold. It runs north to south, and the townsfolk said it ran the other way at night.'],
 };
@@ -211,21 +221,20 @@ function wet(px,py){
   return true;
 }
 
-// ── bridges: side-on art laid flat across the river as walkable decals ──
+// ── bridges: drawn from above, laid across the river as walkable decals ──
 // walk = spans you can stand on, as fractions of the width (a broken one has a gap);
-// band = the deck's depth, as fractions of the drawn height from its top.
+// band = the deck between the parapets, as fractions of the height from the top.
 const BRIDGE = {
-  bridgeBanner:      {walk:[[0,1]]},
-  bridgeWood:        {walk:[[0,1]]},
-  bridgeStone:       {walk:[[0,1]]},
-  bridgeBannerBroken:{walk:[[0,.45],[.8,1]]},
-  bridgeWoodBroken:  {walk:[[0,.44],[.63,1]]},
+  bridgeTopStone:      {walk:[[0,1]],             band:[.3,.8]},
+  bridgeTopWood:       {walk:[[0,1]],             band:[.22,.78]},
+  bridgeTopStoneBroken:{walk:[[0,.4],[.62,1]],    band:[.3,.8]},
+  bridgeTopWoodBroken: {walk:[[0,.37],[.63,1]],   band:[.22,.78]},
 };
-function placeBridge(kind,cy){
-  const span=(RIVER.c1-RIVER.c0+1)*T+112, sc=span/rects[kind][2], s=sizeOf(kind,sc);
-  const cx=(RIVER.c0+RIVER.c1+1)/2*T, top=cy-s.h*0.56;
-  const fb=BRIDGE[kind].walk.map(([a,b])=>({x:cx-s.w/2+a*s.w, y:top+s.h*0.34, w:(b-a)*s.w, h:s.h*0.44}));
-  const o={kind,x:cx,y:top+s.h,scale:sc,decal:true,fb,lore:kind};
+function placeBridge(kind,cy,lore){
+  const span=(RIVER.c1-RIVER.c0+1)*T+112, sc=span/rects[kind][2], s=sizeOf(kind,sc), B=BRIDGE[kind];
+  const cx=(RIVER.c0+RIVER.c1+1)/2*T, top=cy-s.h*(B.band[0]+B.band[1])/2;
+  const fb=B.walk.map(([a,b])=>({x:cx-s.w/2+a*s.w, y:top+s.h*B.band[0], w:(b-a)*s.w, h:s.h*(B.band[1]-B.band[0])}));
+  const o={kind,x:cx,y:top+s.h,scale:sc,decal:true,fb,lore};
   bridges.push(o); objs.push(o); return o;
 }
 
@@ -254,17 +263,25 @@ function buildObjects(){
   const STREET_N=16*T-6, STREET_S=17*T+T+4, LANE_N=7*T-6, LANE_S=26*T-6;
   // houses: the west stands, the east is falling down
   const west=[180,360,700,880], east=[2136,2316,2696,2876];
-  [['house1','house2','house1','house4'],['house3','house4','house5','house6']].forEach((ks,i)=>{
-    (i?east:west).forEach((x,j)=>place(ks[j],x,STREET_N,i||j?null:{lore:'house1'}));
-  });
+  place('house1',west[0],STREET_N,{lore:'house1'}); place('house2',west[1],STREET_N);
+  place('tavern',790,STREET_N,{lore:'tavern'});      // the Drowned Crow, where two houses stood
+  ['house3','house4','house5','house6'].forEach((k,j)=>place(k,east[j],STREET_N));
   ['house4','house1','house2'].forEach((k,j)=>place(k,west[j],LANE_N));
   ['house6','house5','house3'].forEach((k,j)=>place(k,[2136,2696,2876][j],LANE_N));
   ['house2','house1','house3','house2'].forEach((k,j)=>place(k,west[j],LANE_S));
   ['house5','house6','house6'].forEach((k,j)=>place(k,[2136,2316,2876][j],LANE_S));
   place('ruinWall1',2656,LANE_S); place('rubble3',2726,LANE_S+8);
-  // houses south of the main street, backs to it, gardens behind
-  place('house2',360,STREET_S+180); place('house4',880,STREET_S+180);
-  place('house6',2316,STREET_S+180); place('house5',2696,STREET_S+180);
+  // houses south of the main street face it, so we see their backs; the roofs overlap the
+  // street's far edge, as they would from up here
+  const BACK_Y=STREET_S+80;
+  [['backTerra1',180],['backSlate',360],['backTerra2',700],['backTerra1',880],
+   ['backPurple',2136],['backPurpleRuin',2316],['backSlateRuin',2696]].forEach(([k,x])=>place(k,x,BACK_Y));
+  // gable ends onto the lanes
+  place('sideTerra',8*T-62,12*T); place('sideSlate',9*T+70,22*T);
+  place('sidePurple',39*T-70,21*T); place('sidePurpleRuin',40*T+80,11*T);
+  // the big three: the tavern (above), the chapel by the garden, the college tower east of the river
+  place('chapel',1150,31*T-10,{lore:'chapel'});
+  place('tower',2860,13*T-12,{lore:'tower'});
 
   // plaza: the Watcher, the banner, lanterns at its corners
   const PX=(17*T+27*T)/2, PY=(13*T+21*T)/2;
@@ -273,7 +290,7 @@ function buildObjects(){
   for(const [x,y] of [[17*T+18,21*T-6],[27*T-46,21*T-6]]) place('lamppost',x,y);
   place('barrel',17*T+90,21*T-10); place('crate2',17*T+130,21*T-8); place('crate1',27*T-110,13*T+40);
   // lanterns down the main street
-  for(const x of [270,790,990,2226,2786]) place('lamppost',x,STREET_N+2);
+  for(const x of [270,990,2226,2786]) place('lamppost',x,STREET_N+2);
 
   // the broken town wall and its gate, north
   const WALL_Y=4*T+30;
@@ -301,16 +318,16 @@ function buildObjects(){
 
   // the south: a garden of remembrance — shrine, the fallen hero, a well of stones
   place('shrine',600,30*T+20); place('brokenStatue',RIVER.c0*T-70,27*T+70);
-  for(const [k,x,y] of [['stone',560,30*T+40],['flowerbush',690,30*T+30],['bush',1640,29*T+40],['rocks1',1640,28*T+40],['post',1120,28*T+20],['stump',1200,30*T+10]]) place(k,x,y);
+  for(const [k,x,y] of [['stone',560,30*T+40],['flowerbush',690,30*T+30],['bush',1640,29*T+40],['rocks1',1640,28*T+40],['post',1310,28*T+20]]) place(k,x,y);
   place('rocks2',2606,30*T+30,{lore:'well'});
 
   // the river: five crossings, two of them down
   const LANE_C=k=>k*T+T/2;
-  placeBridge('bridgeWoodBroken',LANE_C(2));
-  placeBridge('bridgeWood',LANE_C(7));
-  placeBridge('bridgeBanner',17*T);
-  placeBridge('bridgeBannerBroken',LANE_C(26));
-  placeBridge('bridgeStone',LANE_C(30));
+  placeBridge('bridgeTopWoodBroken',LANE_C(2),'bridgeWoodBroken');
+  placeBridge('bridgeTopWood',LANE_C(7),'bridgeWood');
+  placeBridge('bridgeTopStone',17*T,'bridgeBanner');
+  placeBridge('bridgeTopStoneBroken',LANE_C(26),'bridgeBannerBroken');
+  placeBridge('bridgeTopStone',LANE_C(30),'bridgeStone');
   const RX0=RIVER.c0*T, RX1=(RIVER.c1+1)*T;
   for(const [k,x,y] of [['bannerP',RX0-26,16*T-4],['bannerTorn',RX1+28,16*T-4],['lamp2',RX0-30,18*T+20],['lamp4',RX1+12,18*T+20],
     ['lamp3',RX0-24,8*T+24],['lamp3',RX0-24,24*T],['lamp2',RX1+14,31*T+30],['postTall',RX0-20,26*T+6],['postTall',RX1+20,26*T+6]]) place(k,x,y);
@@ -323,15 +340,15 @@ function buildObjects(){
     ['crateStand',DX+190,DY1-30],['barrel3',DX+250,DY1-26],['planksPile',DX+320,DY1-30],['cart',DX+120,DY1-14],['chainFence1',DX+90,DY1+18],
     ['crate4',DX+380,DY1-40],['lamp4',DX+12,DY1-6]]) place(k,x,y,o);
   // the west: more of the market
-  place('wagon',150,18*T+30,{lore:'wagon'});
+  place('wagon',1010,21*T+60,{lore:'wagon'});
   for(const [k,x,y] of [['sacks',560,STREET_N-2],['crate3',620,STREET_N-6],['barrel3',1040,STREET_N-40],['fence2',210,LANE_N+170],['fence3',320,LANE_N+170],
     ['fence4',820,LANE_S+170],['crate6',1060,LANE_S-40],['chainFence2',17*T+60,21*T+40],['chainFence2',27*T-60,21*T+40],['postRing',1150,LANE_N-6],
     ['stoneArch',8*T+T/2,4*T+30],['woodArch',22*T,27*T+30]]) place(k,x,y);
   // the east: worse
   for(const [k,x,y] of [['brokenCart',2620,STREET_N+40],['barrelsBroken',2400,LANE_N-6],['crateBroken',2700,STREET_N-8],['planks2',2960,LANE_N+120],
-    ['blocks1',2380,STREET_S+40],['blocks2',3000,STREET_S+330],['rubble7',2620,LANE_S+120],['rubble9',2780,LANE_S+40],['rubble10',2900,LANE_N+80],
-    ['wheel3',2720,STREET_N+56],['craneBroken1',2860,13*T],['craneBroken2',2960,13*T+20],['gallowsHook',2200,23*T],['brokenArch',39*T+T/2,4*T+30],
-    ['gravel',2500,22*T],['barrelBroken',2260,STREET_S+20]]) place(k,x,y);
+    ['blocks1',2440,STREET_S+230],['blocks2',3000,STREET_S+330],['rubble7',2620,LANE_S+120],['rubble9',2780,LANE_S+40],['rubble10',2900,LANE_N+80],
+    ['wheel3',2720,STREET_N+56],['craneBroken1',2420,13*T+10],['craneBroken2',2960,13*T+20],['gallowsHook',2200,23*T],['brokenArch',39*T+T/2,4*T+30],
+    ['gravel',2500,22*T],['barrelBroken',2230,STREET_S+150]]) place(k,x,y);
   place('gallows',2560,22*T+10,{lore:'gallows'});
 
   // the edges: woods, thinning to dead trees in the east
@@ -372,7 +389,7 @@ function buildMinimap(){
   for(const o of objs){
     const s=sizeOf(o.kind,o.scale);
     if(o.decal){ m.fillStyle=o.kind.endsWith('Broken')?'#5a4a3a':'#b7a58a'; for(const b of o.fb) m.fillRect(b.x*k,b.y*k,b.w*k,Math.max(2,b.h*k)); }
-    else if(o.kind.startsWith('house')){ m.fillStyle={slate:'#7d8ea6',moss:'#5f8a4a',dusk:'#7a55a0',char:'#5e5650'}[o.kind.split('_')[1]]||'#b4582e'; m.fillRect((o.x-s.w/2)*k,(o.y-s.h*.6)*k,s.w*k,s.h*.6*k); }
+    else if(/^(house|back|side|tavern|chapel|tower)/.test(o.kind)){ m.fillStyle={slate:'#7d8ea6',moss:'#5f8a4a',dusk:'#7a55a0',char:'#5e5650'}[o.kind.split('_')[1]]||(/Slate/.test(o.kind)?'#7d8ea6':/Purple|tower/.test(o.kind)?'#7a55a0':o.kind==='chapel'?'#9a948a':'#b4582e'); m.fillRect((o.x-s.w/2)*k,(o.y-s.h*.6)*k,s.w*k,s.h*.6*k); }
     else if(o.kind==='tree'||o.kind==='bush'){ m.fillStyle='#1f3d16'; m.fillRect(o.x*k-1,o.y*k-2,2,2); }
     else if(o.kind==='deadtree'){ m.fillStyle='#4a3424'; m.fillRect(o.x*k-1,o.y*k-2,2,2); }
     else if(o.kind.match(/^(rubble|ruinWall|wallLow|lowwall|arch)/)){ m.fillStyle='#c9c3b6'; m.fillRect((o.x-s.w/2)*k,o.y*k-2,s.w*k,2); }
@@ -675,15 +692,14 @@ function frame(now){
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 async function load(){
   if(built) return;
-  const [a1,r1,a2,r2,a3,r3,cj]=await Promise.all([
-    loadImage('sprites/ruins/ruins.png'),  fetch('sprites/ruins/ruins.json').then(r=>r.json()),
-    loadImage('sprites/ruins/ruins2.png'), fetch('sprites/ruins/ruins2.json').then(r=>r.json()),
-    loadImage('sprites/ruins/ruins3.png'), fetch('sprites/ruins/ruins3.json').then(r=>r.json()),
+  const names=['ruins','ruins2','ruins3','ruins4','ruins5'];
+  const [cj,...sheets]=await Promise.all([
     fetch('characters.json').then(r=>r.json()),
+    ...names.map(n=>Promise.all([loadImage('sprites/ruins/'+n+'.png'), fetch('sprites/ruins/'+n+'.json').then(r=>r.json())])),
   ]);
-  // one name space across both sheets: [x, y, w, h, atlas index]
-  atlases=[a1,a2,a3]; rects={};
-  for(const [i,rj] of [[0,r1],[1,r2],[2,r3]]) for(const k in rj) rects[k]=[...rj[k],i];
+  // one name space across every sheet: [x, y, w, h, atlas index]
+  atlases=sheets.map(s=>s[0]); rects={};
+  sheets.forEach(([,rj],i)=>{ for(const k in rj) rects[k]=[...rj[k],i]; });
   chars=cj;
   wizKeys=Object.keys(chars).filter(k=>chars[k].sprite);
   buildGround(); buildObjects(); buildMinimap();
