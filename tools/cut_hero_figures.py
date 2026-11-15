@@ -136,7 +136,7 @@ def boxes(im):
         r, g, b, a = px[x, y]
         if not a: continue
         h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255); h *= 360
-        if v > 0.42 and (s < 0.2 or (s < 0.34 and (h >= 190 or h < 12))): core.add((x, y))   # warmer greys too
+        if v > 0.36 and (s < 0.2 or (s < 0.34 and (h >= 190 or h < 12))): core.add((x, y))   # warmer and darker greys too
     grown, q = set(core), deque((p, 0) for p in core)
     while q:
         (x, y), d = q.popleft()
@@ -146,16 +146,27 @@ def boxes(im):
             r, g, b, a = px[n]
             if not a: continue
             h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255); h *= 360
-            if s < 0.46 and v > 0.4 and (h < 60 or h >= 180) and not (255 <= h <= 320):   # into the cream and pinkish strands
-                grown.add(n); q.append((n, d + 1))
+            # the upper face (eyebrows): only the cool greys, a few px, so the brow doesn't spread into the skin
+            # round it; elsewhere into the cream and pinkish strands (warm beards) and lilac-grey ones
+            upper = hb and hb[0] * W <= n[0] <= hb[2] * W and hb[1] * H <= n[1] <= (hb[1] + 0.55 * (hb[3] - hb[1])) * H
+            if upper: ok_ = d < 4 and s < 0.34 and v > 0.3 and not (255 <= h <= 320 and s > 0.15)
+            else: ok_ = v > 0.4 and ((s < 0.46 and (h < 60 or h >= 180) and not (255 <= h <= 320)) or s < 0.16)
+            if ok_: grown.add(n); q.append((n, d + 1))
     if hb:
         ax0, ax1, ay0, ay1 = (hb[0] - 0.16) * W, (hb[2] + 0.16) * W, (hb[1] - 0.06) * H, (hb[3] + 0.28) * H
         fx0, fy0, fx1, fy1 = hb[0] * W, hb[1] * H, hb[2] * W, hb[3] * H
         inface = lambda c: all(fx0 <= x <= fx1 and fy0 <= y <= fy1 for x, y in c)
-        brow = lambda c: sum(y for _, y in c) / len(c) < fy0 + 0.45 * (fy1 - fy0)   # eyebrows sit in the face's upper part
+        brow = lambda c: sum(y for _, y in c) / len(c) < fy0 + 0.5 * (fy1 - fy0)    # eyebrows sit in the face's upper part
+        back = lambda c: sum(x for x, _ in c) / len(c) < fx0 + 0.4 * (fx1 - fx0)    # figures face right: the back of the head is hair
+        def cool(c):                                                                 # lilac and blue greys are hair; cheek and lip highlights are warm
+            n = 0
+            for x, y in c:
+                r, g, b, a = px[x, y]; h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                if h * 360 >= 180 and h * 360 < 335: n += 1
+            return n * 2 > len(c)
         def ok(c):
-            if inface(c) and len(c) < 150: return len(c) >= 5 and brow(c)   # smallish and inside the face: an eyebrow, not a cheek or lip highlight (beards are bigger)
-            return len(c) >= 30
+            if inface(c) and len(c) < 150: return len(c) >= 5 and (brow(c) or back(c) or cool(c))   # smallish and inside the face: hair unless a warm highlight low on the front of the face (beards are bigger)
+            return len(c) >= 15                                   # a ponytail behind its tie is a clump of its own
         keep = [c for c in clumps(grown, W, H) if ok(c) and any(ax0 <= x <= ax1 and ay0 <= y <= ay1 for x, y in c[::7])]
         pts = {p for c in keep for p in c}
         # eye whites aren't hair: drop what lies within 3 px of an iris (strong blue inside the face)
@@ -166,7 +177,21 @@ def boxes(im):
                 if not a: continue
                 h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255); h *= 360
                 if 185 <= h < 255 and s > 0.45 and v > 0.3: iris.add((x, y))
-        pts = [p for p in pts if not any((p[0] + dx, p[1] + dy) in iris for dx in range(-5, 6) for dy in range(-5, 3))]   # beside and below an iris; eyebrows just above it stay
+        pts = [p for p in pts if not any((p[0] + dx, p[1] + dy) in iris for dx in range(-5, 6) for dy in range(-4, 1))]   # beside and below an iris; eyebrows just above it stay
+        # the pinkish fringe painted round silver strands (more saturated than the strands): 2 px out from the hair
+        ps = set(pts); edge = list(ps)
+        for _ in range(2):
+            nxt = []
+            for (x, y) in edge:
+                for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if n in ps or not (0 <= n[0] < W and 0 <= n[1] < H): continue
+                    r, g, b, a = px[n]
+                    if not a: continue
+                    h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255); h *= 360
+                    if (h >= 325 or h < 12) and 0.12 < s_ < 0.62 and v > 0.4 and not any((n[0] + dx, n[1] + dy) in iris for dx in range(-5, 6) for dy in range(-4, 1)):
+                        ps.add(n); nxt.append(n)
+            edge = nxt
+        pts = list(ps)
         if pts:
             hairMask = Image.new('L', (W, H), 0); mp = hairMask.load()
             for p in pts: mp[p] = 255
