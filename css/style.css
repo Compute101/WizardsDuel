@@ -38,25 +38,14 @@ body {
 /* ── TITLE ── */
 #title-screen {
   background: radial-gradient(ellipse at 50% 35%, #2a1060 0%, #0d0820 70%);
-  padding-bottom: 140px;
+  padding-top: 64px;
+  padding-bottom: 40px;
 }
 .title-grid {
   position: absolute; inset: 0; pointer-events: none;
   background:
     repeating-linear-gradient(0deg,   transparent, transparent 39px, rgba(201,168,76,0.04) 39px, rgba(201,168,76,0.04) 40px),
     repeating-linear-gradient(90deg,  transparent, transparent 39px, rgba(201,168,76,0.04) 39px, rgba(201,168,76,0.04) 40px);
-}
-.rune-icon {
-  font-size: 76px;
-  filter: drop-shadow(0 0 22px #8844ff);
-  animation: runeGlow 3s ease-in-out infinite;
-  margin-bottom: 12px;
-  position: relative;
-  z-index: 1;
-}
-@keyframes runeGlow {
-  0%,100% { filter: drop-shadow(0 0 18px #8844ff); transform: scale(1); }
-  50%      { filter: drop-shadow(0 0 38px #cc88ff); transform: scale(1.06); }
 }
 .title-text {
   font-family: 'Cinzel Decorative', serif;
