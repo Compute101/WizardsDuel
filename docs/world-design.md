@@ -108,8 +108,10 @@ in battle: you pick for each, or set one to AI.
 2. **City-block generator** for the sectors: streets, blocks filled with terraces (fronts, backs and
    sides of houses face the right way), squares, then hand-placed landmarks. *Started:*
    `tools/mapgen/city.js` and Cindergate's outer ring (`tools/mapgen/cindergate.js`), built from
-   burnt recolours of the existing art. Next: the other seven sectors' outer rings (each needs its
-   own look: recolours where they work, new art where they don't), then the inner rings.
+   burnt recolours of the existing art. *All eight outer rings done* (`tools/mapgen/sector.js`), joined in a
+   ring along Wallside in the wheel's order, each from recolours of the existing art plus its own
+   weather. Next: the inner rings beyond each sector's north barrier, and sector-specific art
+   (ice spires, floating rubble, rock spires, drowned streets) where recolours fall short.
 3. **Elementals on the map:** roaming, battle on contact, loot, respawn. *Done for Cindergate* (see
    "Echoes" in `CLAUDE.md`); balancing the Echo numbers against created wizards waits for step 7.
 4. **Inventory and save game**, per profile.

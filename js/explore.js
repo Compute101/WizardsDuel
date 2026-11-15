@@ -37,6 +37,7 @@ let el={}, ctx=null, dark=null, dctx=null;
 const wiz={x:0,y:0,face:1,walk:0,moving:false};
 const keys=new Set();
 let target=null, stuckT=0, near=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, cam={x:0,y:0}, vw=0, vh=0;
+let PAL='';
 let found=new Set(), spill={}, cleared={}, actors=[], grace=0;
 const imgCache={};
 function imgOf(src){ if(!imgCache[src]){ const i=new Image(); i.src=src; imgCache[src]=i; } return imgCache[src]; }
@@ -72,6 +73,9 @@ function setupMap(data){
       default:  return 'grass';
     }
   }));
+  // a sector's palette: every ground tile that has a recolour in its atlas uses it
+  PAL=data.palette&&rects['grass_'+data.palette]?'_'+data.palette:'';
+  if(PAL) ground=ground.map(row=>row.map(n=>rects[n+PAL]?n+PAL:n));
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
     const set=EDGE_SET[groundKind[y][x]]; if(!set) continue;
     const t=edgeTile(set,x,y,r); if(t) ground[y][x]=t;
@@ -85,9 +89,10 @@ function setupMap(data){
     objs.push(o);
   });
   fireflies=[];
-  if(data.fx!=='embers') for(let i=0;i<Math.round(COLS*ROWS/23);i++) fireflies.push({x:r()*WORLD_W,y:r()*WORLD_H,a:r()*6.28,s:8+r()*14,p:r()*6.28});
+  if(!data.fx) for(let i=0;i<Math.round(COLS*ROWS/23);i++) fireflies.push({x:r()*WORLD_W,y:r()*WORLD_H,a:r()*6.28,s:8+r()*14,p:r()*6.28});
   embers=[];
-  if(data.fx==='embers') for(let i=0;i<Math.round(COLS*ROWS/6);i++) embers.push({x:r()*WORLD_W,y:r()*WORLD_H,v:18+r()*30,p:r(),w:r()*6.28,s:1+r()*1.6});
+  const FX=FX_TYPES[data.fx];
+  if(FX) for(let i=0;i<Math.round(COLS*ROWS*FX.n);i++) embers.push({x:r()*WORLD_W,y:r()*WORLD_H,v:FX.v[0]+r()*FX.v[1],p:r(),w:r()*6.28,s:1+r()*1.6});
   spawnEchoes();
   buildMinimap();
   if(el.title){ el.title.textContent=data.name; sizeMini(); }
@@ -198,11 +203,11 @@ function edgeTile(E,x,y,r){
   const cells=[cell(n,w,0,0),cell(n,e,0,1),cell(s,w,1,0),cell(s,e,1,1)];
   if(cells.every(c=>c===cells[0])){
     const c=cells[0];
-    const sfx=E.sfx||'';
+    const sfx=E.sfx||(PAL&&rects['tr_'+E.set+'_11'+PAL]?PAL:'');
     if(c[0]!=='1'&&c[1]!=='1'&&r()<.5) return 'tr_'+E.set+'_alt'+c+sfx;   // a second drawing of that corner
     return 'tr_'+E.set+'_'+c+sfx;
   }
-  return {set:E.set, sfx:E.sfx||'', cells};
+  return {set:E.set, sfx:E.sfx||(PAL&&rects['tr_'+E.set+'_11'+PAL]?PAL:''), cells};
 }
 const quarterCache=new Map();
 function quarterTile(g){
@@ -234,10 +239,18 @@ function wet(px,py){
   return true;
 }
 
+// a sector palette's ground colours on the minimap
+const MINI_PAL = {
+  frost:{G:'#c4ccd6',d:'#b4bcc6',R:'#8e98a8',P:'#a8b0bc'}, drowned:{G:'#24403c',R:'#4c6670',P:'#5a7078',O:'#1d4a70'},
+  storm:{G:'#2c3040',R:'#555a74',P:'#62667e'},             quarry:{G:'#6a6030',R:'#9a8664',P:'#a8946e'},
+  gale:{G:'#8a9068',R:'#a8a49a',P:'#b8b4aa'},              aether:{G:'#3a3050',R:'#6a5490',P:'#7a64a0'},
+  gloom:{G:'#1c1824',R:'#3a3048',P:'#443a52'},
+};
 function buildMinimap(){
   const S=4, c=document.createElement('canvas'); c.width=COLS*S; c.height=ROWS*S;
   const m=c.getContext('2d');
   const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70'};
+  Object.assign(col,MINI_PAL[MAP.palette]||{});
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ m.fillStyle=col[groundKind[y][x]]||col.G; m.fillRect(x*S,y*S,S,S); }
   const k=S/T;
   for(const b of MAP.blocks||[]){ m.fillStyle='rgba(10,8,20,0.55)'; m.fillRect(b.x*k,b.y*k,b.w*k,b.h*k); }
@@ -255,6 +268,15 @@ function buildMinimap(){
 }
 
 // ═══ TRAVEL ════════════════════════════════════════════════════════
+// a sector's recoloured atlas (sprites/ruins/sector_<palette>), loaded the first time you go there
+const palettesLoaded={};
+async function loadPalette(pal){
+  if(!pal||palettesLoaded[pal]) return;
+  const [img,rj]=await Promise.all([loadImage('sprites/ruins/sector_'+pal+'.png'), fetch('sprites/ruins/sector_'+pal+'.json').then(r=>r.json())]);
+  const i=atlases.length; atlases.push(img);
+  for(const k in rj) rects[k]=[...rj[k],i];
+  palettesLoaded[pal]=true;
+}
 function locationOfMap(id){ return world&&world.locations.find(l=>l.map===id); }
 async function getMap(id){
   if(!mapCache[id]) mapCache[id]=await fetch('maps/'+id+'.json').then(r=>{ if(!r.ok) throw new Error('map '+id); return r.json(); });
@@ -268,6 +290,7 @@ async function enterMap(id,at,instant){
   try{
     if(!instant) await fade(true);
     const data=await getMap(id);
+    await loadPalette(data.palette);
     setupMap(data);
     const p=Array.isArray(at)?at:(data.spawns[at]||data.spawns.start||Object.values(data.spawns)[0]);
     wiz.x=p[0]; wiz.y=p[1]; wiz.face=1;
@@ -733,7 +756,7 @@ function lightsInView(cw,ch){
     for(const [lx,ly,type] of L){
       const x=o.x-s.w/2+lx*PS, y=o.y-s.h+ly*PS;
       // a burnt house's windows glow ember-orange: what's inside isn't a hearth
-      if(near(x,y)) out.push({x,y,r:type==='lamp'?150:105,seed:o.id,c:o.kind.endsWith('_burnt')&&type!=='lamp'?'255,120,50':undefined});
+      if(near(x,y)) out.push({x,y,r:type==='lamp'?150:105,seed:o.id,c:type==='lamp'?undefined:o.kind.endsWith('_burnt')?'255,120,50':MAP.windowGlow&&PAL&&o.kind.endsWith(PAL)?MAP.windowGlow:undefined});
     }
   }
   for(const g of MAP.glows||[]) if(near(g.x,g.y)) out.push({x:g.x,y:g.y,r:g.r,c:g.c,seed:g.x});
@@ -777,17 +800,51 @@ function drawNight(t,cw,ch){
   }
   ctx.globalCompositeOperation='source-over';
 }
-// rising embers: each climbs 300 px over its life, drifting and flickering, then starts again
+// each map's weather (MAP.fx): particles that drift through it, day and night.
+// n = particles per tile, v = [min speed, extra] in px/s along their path
+const FX_TYPES = {
+  embers:{n:1/6, v:[18,30]}, motes:{n:1/7, v:[12,22]}, snow:{n:1/4, v:[25,30]}, rain:{n:1/3, v:[420,200]},
+  dust:{n:1/8, v:[10,20]},   wind:{n:1/9, v:[260,160]}, shade:{n:1/14, v:[6,10]},
+};
 function drawEmbers(t,cw,ch){
-  ctx.globalCompositeOperation='lighter';
+  const fx=MAP.fx, sec=t/1000;
+  const vis=(x,y,m)=>!(x<cam.x-m||x>cam.x+cw+m||y<cam.y-m||y>cam.y+ch+m);
+  ctx.globalCompositeOperation=fx==='shade'||fx==='dust'?'source-over':'lighter';
   for(const e of embers){
-    const life=((t/1000*e.v/300)+e.p)%1, x=e.x+Math.sin(t/900+e.w)*14+life*30, y=e.y-life*300;
-    if(x<cam.x-10||x>cam.x+cw+10||y<cam.y-10||y>cam.y+ch+10) continue;
-    const a=Math.sin(life*Math.PI)*(0.55+0.45*Math.sin(t/90+e.w*7));
-    ctx.fillStyle=`rgba(255,${120+Math.round(80*(1-life))},40,${a.toFixed(2)})`;
-    ctx.fillRect(x,y,e.s*1.6,e.s*1.6);
+    const life=((sec*e.v/300)+e.p)%1;
+    if(fx==='embers'||fx==='motes'){                              // rise and flicker
+      const x=e.x+Math.sin(t/900+e.w)*14+life*30, y=e.y-life*300; if(!vis(x,y,10)) continue;
+      const a=Math.sin(life*Math.PI)*(0.55+0.45*Math.sin(t/90+e.w*7));
+      ctx.fillStyle=fx==='embers'?`rgba(255,${120+Math.round(80*(1-life))},40,${a.toFixed(2)})`:`rgba(${170+Math.round(60*life)},120,255,${a.toFixed(2)})`;
+      ctx.fillRect(x,y,e.s*1.6,e.s*1.6);
+    } else if(fx==='snow'){                                       // fall, swaying
+      const x=e.x+Math.sin(t/1300+e.w)*22, y=e.y-150+life*300; if(!vis(x,y,10)) continue;
+      ctx.fillStyle=`rgba(240,248,255,${(0.75*Math.sin(life*Math.PI)).toFixed(2)})`; ctx.fillRect(x,y,e.s*1.8,e.s*1.8);
+    } else if(fx==='rain'){                                       // fast, slanted streaks
+      const x=e.x+life*80, y=e.y-150+life*300; if(!vis(x,y,20)) continue;
+      ctx.strokeStyle='rgba(170,200,240,0.32)'; ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-4,y-14); ctx.stroke();
+    } else if(fx==='dust'){                                       // drifting grit
+      const x=e.x+life*300, y=e.y+Math.sin(t/1700+e.w)*18; if(!vis(x,y,10)) continue;
+      ctx.fillStyle=`rgba(200,170,110,${(0.45*Math.sin(life*Math.PI)).toFixed(2)})`; ctx.fillRect(x,y,e.s*2,e.s*2);
+    } else if(fx==='wind'){                                       // gusts: long streaks and blown leaves
+      const x=e.x-150+life*300, y=e.y+Math.sin(life*6+e.w)*10; if(!vis(x,y,40)) continue;
+      const a=Math.sin(life*Math.PI);
+      if(e.s>2.2){ ctx.fillStyle=`rgba(230,170,90,${(0.8*a).toFixed(2)})`; ctx.fillRect(x,y,3,2); }
+      else { ctx.strokeStyle=`rgba(240,245,255,${(0.3*a).toFixed(2)})`; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-36,y-2); ctx.stroke(); }
+    } else if(fx==='shade'){                                      // slow drifting smudges of dark
+      const x=e.x+Math.sin(t/2500+e.w)*30, y=e.y-life*120; if(!vis(x,y,40)) continue;
+      const g=ctx.createRadialGradient(x,y,0,x,y,22+e.s*8);
+      g.addColorStop(0,`rgba(20,0,35,${(0.35*Math.sin(life*Math.PI)).toFixed(2)})`); g.addColorStop(1,'rgba(20,0,35,0)');
+      ctx.fillStyle=g; ctx.fillRect(x-40,y-40,80,80);
+    }
   }
   ctx.globalCompositeOperation='source-over';
+  // Spirewatch's lightning: a flash, a second flicker, every few seconds
+  if(MAP.storm){
+    const k=t%6300, f=k<90?1:k>200&&k<260?0.6:0;
+    if(f){ ctx.fillStyle=`rgba(200,215,255,${0.28*f})`; ctx.fillRect(cam.x,cam.y,cw,ch); }
+  }
 }
 function drawMini(){
   const m=el.mini.getContext('2d');

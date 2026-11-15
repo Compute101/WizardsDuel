@@ -108,5 +108,6 @@ module.exports = function cindergate(rects){
 
   m.spawns={gate:[GX,40*T+20], start:[GX,40*T+20]};
   m.exits=[{x:GX-40,y:42*T+14,w:80,h:40,dir:'S',label:'The Corvanthe Road',to:{map:'corvanthe_road',spawn:'gate'}}];
+  require('./sector').ringExits(m,'cindergate');   // Wallside, west and east, round the ring of sectors
   return m;
 };

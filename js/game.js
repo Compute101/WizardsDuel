@@ -242,7 +242,7 @@ function fillSceneBands(){
 const ARENA_DEFAULT='library';   // 'library' (gothic library) or 'ruins' (moonlit ruined streets)
 const ARENA_DIM=0.22;   // dark wash over the painting so wizards and spell effects stand out
 const arenaImgs={};     // name -> {img, ready}, loaded on first use
-function arenaName(key){ return (CHAR_DEFS&&CHAR_DEFS[key]&&CHAR_DEFS[key].arena)||ARENA_DEFAULT; }
+function arenaName(key){ const d=defOf(key); return (d&&d.arena)||ARENA_DEFAULT; }   // fighters (Echoes) carry an arena too
 function arenaFor(key){
   const name=arenaName(key); if(!name) return null;
   let a=arenaImgs[name];

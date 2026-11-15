@@ -7,6 +7,9 @@
  "flow": "S",
  "fx": null,
  "haze": null,
+ "palette": null,
+ "windowGlow": null,
+ "storm": 0,
  "ground": [
   "GGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
   "GGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
@@ -598,5 +601,6 @@
    "r": 160,
    "c": "200,150,255"
   }
- ]
+ ],
+ "echoes": []
 }

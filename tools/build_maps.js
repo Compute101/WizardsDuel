@@ -10,13 +10,21 @@ const fs=require('fs'), path=require('path');
 const ROOT=path.join(__dirname,'..');
 
 const rects={};
-for(const f of fs.readdirSync(path.join(ROOT,'sprites/ruins')).filter(f=>/^ruins\d*\.json$/.test(f)).sort())
+for(const f of fs.readdirSync(path.join(ROOT,'sprites/ruins')).filter(f=>/^(ruins\d*|sector_\w+)\.json$/.test(f)).sort())
   Object.assign(rects, JSON.parse(fs.readFileSync(path.join(ROOT,'sprites/ruins',f),'utf8')));
 
 const GENERATORS={
   hollowmere: require('./mapgen/hollowmere'),
   corvanthe_road: require('./mapgen/corvanthe_road'),
   cindergate: require('./mapgen/cindergate'),
+  heights: rects=>require('./mapgen/sector')(rects,'heights'),
+  spirewatch: rects=>require('./mapgen/sector')(rects,'spirewatch'),
+  collegium: rects=>require('./mapgen/sector')(rects,'collegium'),
+  drowned_quarter: rects=>require('./mapgen/sector')(rects,'drowned_quarter'),
+  quarry_ward: rects=>require('./mapgen/sector')(rects,'quarry_ward'),
+  frostmarket: rects=>require('./mapgen/sector')(rects,'frostmarket'),
+  gloamside: rects=>require('./mapgen/sector')(rects,'gloamside'),
+
 };
 const only=process.argv[2];
 fs.mkdirSync(path.join(ROOT,'maps'),{recursive:true});

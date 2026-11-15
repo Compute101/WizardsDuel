@@ -18,6 +18,7 @@ atlas and quantised to 256 colours.
     python3 tools/cut_ruins_tileset.py            # writes the atlas + json
     python3 tools/cut_ruins_tileset.py --preview out.png   # labelled sheet
     python3 tools/cut_ruins_tileset.py --sheet 2 --preview out.png
+    python3 tools/cut_ruins_tileset.py --sheet sectors   # just the sector palettes (PALETTES)
 
 js/explore.js loads ruins.json at runtime; window and lantern light spots
 (LIGHTS there) are in each piece's trimmed-crop pixels. Needs Pillow, numpy
@@ -207,6 +208,39 @@ def recolour(c, roof=None, stone=None, whole=None):
     return Image.fromarray(out.astype(np.uint8), 'RGBA')
 
 
+# ── sector palettes: Corvanthe's other seven sectors, one atlas each (sector_<palette>.png/json).
+# Every piece keeps its name plus _<palette>. ground = whole-image tint for the ground pieces
+# (saturation, brightness, RGB tint, brightness for grass); house = recolour() args for buildings.
+SECTOR_GROUND = ['grass', 'grass2', 'dirtGrass', 'flagCracked', 'flagMoss'] + \
+    ['tr_%s_%s' % (st, c) for st in ['cobble', 'dirt', 'shore'] for c in _TR]
+SECTOR_HOUSES = ['house1', 'house2', 'house3', 'house4', 'house5', 'house6', 'backTerra1', 'backTerra2', 'backSlate',
+                 'backPurple', 'backSlateRuin', 'backPurpleRuin', 'sideTerra', 'sideSlate', 'sidePurple', 'sidePurpleRuin',
+                 'tavern', 'chapel', 'tower']
+# props in the streets and yards: the house tint without the roof shift
+SECTOR_PROPS = ['barrel', 'crate1', 'crate2', 'logs', 'fence', 'flowerbush', 'lowwall', 'crate3', 'barrel3', 'brokenFence',
+                'planks1', 'rubble6', 'sacks', 'rubble1', 'rubble2', 'rubble3', 'rubble4', 'rubble5', 'rubble7', 'rubble9',
+                'blocks1', 'blocks2', 'crateBroken', 'barrelsBroken', 'rocks1', 'rocks2', 'ruinWall1', 'ruinWall2', 'wallLow1',
+                'wallLow2', 'gravel', 'lamppost', 'statue', 'brokenArch', 'bush', 'stump', 'stone']
+PALETTES = {
+    'frost':   dict(ground=(0.06, 1.2, (0.92, 1.0, 1.12), 1.75),   house=dict(roof=(205, 0.25, 1.1), whole=(0.55, 1.05, (0.92, 1.0, 1.15)))),
+    'drowned': dict(ground=(0.4, 0.6, (0.72, 0.92, 1.18), 0.5), house=dict(roof=(170, 0.3, 0.7), whole=(0.6, 0.72, (0.8, 0.95, 1.05)))),
+    'storm':   dict(ground=(0.4, 0.6, (0.85, 0.88, 1.15), 0.55),  house=dict(roof=(230, 0.3, 0.7), whole=(0.5, 0.72, (0.85, 0.9, 1.15)))),
+    'quarry':  dict(ground=(0.5, 0.92, (1.15, 1.0, 0.78), 0.75),  house=dict(whole=(0.6, 0.9, (1.12, 1.0, 0.82)))),
+    'gale':    dict(ground=(0.22, 1.05, (1.04, 1.02, 0.94), 1.15),   house=dict(roof=(250, 0.3, 0.95), whole=(0.6, 1.05, (0.98, 0.98, 1.08)))),
+    'aether':  dict(ground=(0.55, 0.7, (0.95, 0.82, 1.25), 0.6),  house=dict(roof=(280, 0.6, 0.85), whole=(0.7, 0.78, (0.95, 0.85, 1.2)))),
+    'gloom':   dict(ground=(0.3, 0.45, (0.95, 0.85, 1.15), 0.4),  house=dict(roof=(285, 0.35, 0.55), whole=(0.45, 0.55, (0.92, 0.85, 1.12)))),
+}
+
+
+def sector_atlases(base):
+    for pal, P in PALETTES.items():
+        crops = {}
+        for k in SECTOR_GROUND: crops[k + '_' + pal] = recolour(base[k], whole=P['ground'])
+        for k in SECTOR_HOUSES: crops[k + '_' + pal] = recolour(base[k], **P['house'])
+        for k in SECTOR_PROPS: crops[k + '_' + pal] = recolour(base[k], whole=P['house']['whole'])
+        pack(crops, 'sector_' + pal)
+
+
 def transparent_sheet(path, bg):
     src = Image.open(path).convert('RGB')
     a = np.array(src).astype(int)
@@ -219,12 +253,15 @@ def transparent_sheet(path, bg):
 
 def main():
     which = sys.argv[sys.argv.index('--sheet') + 1] if '--sheet' in sys.argv else None
+    base = {}
     for key, sh in SHEETS.items():
-        if which and which != key: continue
-        cut(sh)
+        if which and which not in (key, 'sectors'): continue
+        base.update(cut(sh, write=which != 'sectors'))
+    if not which or which == 'sectors':
+        sector_atlases(base)
 
 
-def cut(sh):
+def cut(sh, write=True):
     sheet = transparent_sheet(os.path.join(DIR, sh['src']), sh['bg'])
     crops = {}
     for k, (x, y, w, h) in sh['rects'].items():
@@ -234,6 +271,8 @@ def cut(sh):
         elif sh.get('square'):             # transition cells: every cell the same square size
             c = c.convert('RGB').resize((sh['square'], sh['square']), Image.LANCZOS).convert('RGBA')
         crops[k] = c
+    plain = dict(crops)
+    if not write: return plain
     for base, styles in RECOLOUR.get(sh['key'], {}).items():
         for st in styles:
             crops[base + '_' + st] = recolour(crops[base], **STYLES[st])
@@ -245,7 +284,12 @@ def cut(sh):
             w, h = c.size
             if x + w + 10 > W: x = 10; y += rh + 24; rh = 0
             img.paste(c, (x, y), c); d.text((x, y + h + 2), k, fill=(0, 0, 0)); x += w + 10; rh = max(rh, h)
-        img.crop((0, 0, W, y + rh + 30)).save(out); print('preview ->', out); return
+        img.crop((0, 0, W, y + rh + 30)).save(out); print('preview ->', out); return plain
+    pack(crops, sh['out'])
+    return plain
+
+
+def pack(crops, name):
     order = sorted(crops, key=lambda k: -crops[k].size[1])
     W = 1024; x = y = rh = 0; pos = {}
     for k in order:
@@ -256,10 +300,10 @@ def cut(sh):
     for k, (x, y, w, h) in pos.items():
         atlas.paste(crops[k], (x, y))
     atlas = atlas.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
-    atlas.save(os.path.join(DIR, sh['out'] + '.png'), optimize=True)
-    with open(os.path.join(DIR, sh['out'] + '.json'), 'w') as f:
+    atlas.save(os.path.join(DIR, name + '.png'), optimize=True)
+    with open(os.path.join(DIR, name + '.json'), 'w') as f:
         json.dump(pos, f, separators=(',', ':'))
-    print(sh['out'], W, 'x', y + rh, '-', len(pos), 'pieces')
+    print(name, W, 'x', y + rh, '-', len(pos), 'pieces')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,936 @@
+{
+ "id": "gloamside",
+ "name": "Corvanthe: Gloamside",
+ "cols": 56,
+ "rows": 44,
+ "seed": 6701,
+ "flow": "S",
+ "fx": "shade",
+ "haze": "30,10,50,0.22",
+ "palette": "gloom",
+ "windowGlow": "170,90,230",
+ "storm": 0,
+ "ground": [
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+  "RRRRRRRRRRRRRRRGGGGGGGGGGGGRRGGRRRRRRRRRRRRRRGGGGGGGGGGG",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "GGGGGGGGGGGGGRRRRRRRRRRRRRRRRRRRGGGRGGGGGGGRRRRRRRRRRRRR",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGRRRGGGGGGRGGGGGGGGGGGGGGRGGGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGRRGGGGGGGRGGGGGGGGGGGGGGRGGGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGRRGGGGGGGRGGGGGGGGGGGGGGGRGGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGRRGGGGGGGRGGGGGGGGGGGGGGGRGGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGRRGGGGGGGRGGGGGGGGGGGGGGGRGGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGRRGGGGGGRGGGGGGGGGGGGGGGGRRGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGRRGGGGGGRGGGGGGGGGGGGGGGGRGGGG",
+  "GGGGGGGGGGGGRGGRRRRRRRRGGGRRGGGGGRRGGGGGGGGGGGGGRRGRGGGR",
+  "RRRGGGGGGGGRRRRRRRRRRRRRGRRRRRRRGRRRRRRRRRRRRGRRRRRRRRRR",
+  "RRRRRGGGGRRRRRRRRGGGGRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "GRRRRRRRRRRRRRGGGRGGGGGRRRRRRRRRRRRGGGGGGGGRRRRRGGRRRRRR",
+  "GGGGRRRRRRRGGGGGGRGGGGGGGGGGRRRGGRGGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGGRGGGGGGGGRGGRRRRGGGGRRRRGRPGGGGGGGRRRRRGGGGGGGGG",
+  "GGGGGGGGRGGGGRRRGRRRRRRRRGRRRRRPPPPPPPRRRRRRRRRRRGGGGGGG",
+  "RRRRRGGGRGGGRRRRRRRRRRRRRRRRRRRPPPPPPPRRRRRRGRRRRRRGGGGG",
+  "RRRRRRRGGGGRRRRRRRRRGGGGRRRRGGPPPPPPPPGGGGGGGGGRRRRRRRRR",
+  "GGGRRRRRRRRRRRGGGGGGGGGGGGGGGGGPPPPPPGGGGGGGGGGGGRRRRRRR",
+  "GGGGGRRRRRRRGGGGGGGGGGGGGGGGGGGGRPPPGGGGGGGGGGGGGGGRGGGR",
+  "GGGGGRGGGGGGGGGGGGGGGGGGGGGGGGGRRRRGGGGGGGGGGGGGGGGRGGGG",
+  "GGGGGRGGGGGGGGGGGGGGGGGGGGGGGGRRRGRGGGGGGGGGGGGGGGGGRGGG",
+  "GGGGRRGGGGGGGGGGGGGGGGGGGGGGGRRRGGRGGGGGGGGGGGGGGGGGRGGG",
+  "GGGGGRRRRGGGGGGGGGGGGGGGGGGRRRRRRRRRGGGGGGRRGGRRRRRRRRRR",
+  "RRRRRRRRRRRGGGGGGGRRRRRRRRRRRRRRRRRRRGGRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRGGGGRRRRRRRRRRRRRRGGGGGRRR",
+  "GGGGGGGGGRRRRRRRRRRGGGGGGGGRRRGGGGGRRRRRGRRRRRGGGGGGGRRR",
+  "GGGGGGGGGGGGGRGGGGRRGGGGGGGRRGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGGGGGGGRGGGGRRGGGGGGGRRGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGGGGGGGRGGGGRGGGGGGGGRRGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGGGGGGRGGGGRGGGGGGGGGRRGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGGGGGGRGGGGRGGGGGGGGGRRGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGRRGGRRGGGRGGGGGGGGGGRRGGGGGGGGGGRRRRRRRRRRRGGGGGG",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRGGGGGRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRGGGGGGGRRRRRRRR",
+  "GGGGGGGGGGGGGGGGGGGGGGGGRRRRRRRRRRRGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+  "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+ ],
+ "objects": [
+  ["statue_gloom",2208,1482,{"lore":"statue"}],
+  ["lamppost_gloom",2028,1402],
+  ["lamppost_gloom",2388,1402],
+  ["lamppost_gloom",2028,1622],
+  ["lamppost_gloom",2388,1622],
+  ["gravel_gloom",2138,1392,{"lore":"square"}],
+  ["chapel_gloom",832,1980,{"lore":"chapel"}],
+  ["chapel_gloom",2688,1020,{"lore":"chapel2"}],
+  ["tavern_gloom",1280,956,{"lore":"tavern"}],
+  ["brokenArch_gloom",1792,276,{"lore":"arch"}],
+  ["rubble9_gloom",27.3,279],
+  ["rubble1_gloom",85.1,278],
+  ["ruinWall2_gloom",238.4,278],
+  ["rubble3_gloom",322,279],
+  ["rubble4_gloom",411.8,280],
+  ["rubble2_gloom",495.1,278,{"lore":"line"}],
+  ["blocks1_gloom",611.1,281],
+  ["ruinWall1_gloom",673.9,281],
+  ["rubble9_gloom",735.8,281],
+  ["rubble1_gloom",793.7,276],
+  ["ruinWall2_gloom",858.7,276],
+  ["rubble3_gloom",942.2,280],
+  ["rubble4_gloom",1032,276],
+  ["ruinWall1_gloom",1107.3,282,{"lore":"line"}],
+  ["rubble4_gloom",1182.5,277],
+  ["rubble4_gloom",1257.7,279],
+  ["rubble4_gloom",1410.8,281],
+  ["rubble2_gloom",1494.1,279],
+  ["rubble2_gloom",1585.4,278],
+  ["rubble9_gloom",1974.3,276],
+  ["blocks1_gloom",2023.7,278,{"lore":"line"}],
+  ["rubble4_gloom",2086.6,279],
+  ["rubble9_gloom",2148.5,281],
+  ["ruinWall2_gloom",2204.1,277],
+  ["blocks1_gloom",2349.1,281],
+  ["ruinWall1_gloom",2411.9,282],
+  ["rubble2_gloom",2495.2,279,{"lore":"line"}],
+  ["rubble3_gloom",2593,279],
+  ["rubble2_gloom",2690.9,278],
+  ["rubble1_gloom",2770.1,278],
+  ["rubble3_gloom",2855.9,277],
+  ["rubble4_gloom",2945.7,276],
+  ["rubble4_gloom",3085.9,276],
+  ["rubble9_gloom",3147.7,281],
+  ["rubble9_gloom",3196.3,279],
+  ["ruinWall1_gloom",3258.2,278],
+  ["rubble3_gloom",3348,278],
+  ["ruinWall2_gloom",3431.6,278],
+  ["ruinWall2_gloom",3494.4,279],
+  ["rubble3_gloom",3578,281],
+  ["wallLow2_gloom",83.8,2720],
+  ["ruinWall2_gloom",199.5,2723],
+  ["wallLow2_gloom",260.2,2723,{"lore":"wall"}],
+  ["wallLow1_gloom",334.5,2722],
+  ["wallLow2_gloom",463.8,2723],
+  ["ruinWall2_gloom",524.5,2720],
+  ["wallLow2_gloom",585.1,2721],
+  ["ruinWall2_gloom",645.8,2719,{"lore":"wall"}],
+  ["ruinWall2_gloom",708.6,2719],
+  ["wallLow2_gloom",769.2,2721],
+  ["wallLow1_gloom",843.5,2719],
+  ["ruinWall2_gloom",920,2722],
+  ["ruinWall2_gloom",1037.9,2719,{"lore":"wall"}],
+  ["wallLow2_gloom",1098.5,2724],
+  ["wallLow2_gloom",1212,2720],
+  ["ruinWall1_gloom",1278.9,2719],
+  ["wallLow1_gloom",1361.6,2723],
+  ["wallLow2_gloom",1435.8,2724,{"lore":"wall"}],
+  ["wallLow2_gloom",1494.3,2721],
+  ["ruinWall1_gloom",1561.2,2719],
+  ["ruinWall2_gloom",1630.2,2719],
+  ["wallLow2_gloom",1745.9,2719],
+  ["wallLow1_gloom",1897.1,2720,{"lore":"wall"}],
+  ["ruinWall2_gloom",1973.5,2722],
+  ["wallLow2_gloom",2034.2,2723],
+  ["wallLow2_gloom",2199.3,2722],
+  ["wallLow1_gloom",2273.6,2722],
+  ["ruinWall2_gloom",2350.1,2721,{"lore":"wall"}],
+  ["ruinWall2_gloom",2529.4,2721],
+  ["wallLow2_gloom",2590.1,2719],
+  ["wallLow2_gloom",2648.6,2722],
+  ["wallLow1_gloom",2774.4,2719],
+  ["ruinWall1_gloom",2857.1,2719,{"lore":"wall"}],
+  ["ruinWall2_gloom",2926.1,2719],
+  ["wallLow1_gloom",3002.6,2719],
+  ["wallLow2_gloom",3076.9,2721],
+  ["ruinWall2_gloom",3137.5,2721],
+  ["wallLow2_gloom",3198.2,2718,{"lore":"wall"}],
+  ["ruinWall1_gloom",3265,2721],
+  ["ruinWall1_gloom",3391.8,2722],
+  ["wallLow1_gloom",3602.9,2719],
+  ["blocks1_gloom",666,310],
+  ["barrelsBroken_gloom",1817.8,310],
+  ["ruinWall1_gloom",1905.3,310],
+  ["rubble5_gloom",2246.7,310],
+  ["crateBroken_gloom",2415.3,310],
+  ["rubble9_gloom",2881.5,310],
+  ["rocks1_gloom",1033.8,374],
+  ["crateBroken_gloom",1207.6,374],
+  ["crateBroken_gloom",1296.2,374],
+  ["rubble9_gloom",1547,374],
+  ["ruinWall1_gloom",1945.8,374],
+  ["blocks1_gloom",3250.4,374],
+  ["house5_gloom",3337.8,636],
+  ["house3_gloom",3396.5,828],
+  ["house5_gloom",841.8,956],
+  ["house4_gloom",1031,956],
+  ["house6_gloom",3140.5,956],
+  ["house5_gloom",162.3,1020],
+  ["house3_gloom",1540.5,1020],
+  ["house6_gloom",1860.5,1020],
+  ["house5_gloom",2014.1,1020],
+  ["house6_gloom",2308.5,1020],
+  ["house5_gloom",2462.1,1020],
+  ["house6_gloom",3396.5,1020],
+  ["house4_gloom",345.2,1084],
+  ["house3_gloom",644.5,1084],
+  ["house3_gloom",492.1,1148],
+  ["house3_gloom",1348.5,1276],
+  ["house3_gloom",900.5,1340],
+  ["house3_gloom",1604.5,1340],
+  ["house3_gloom",1753.8,1340],
+  ["house5_gloom",2591,1340],
+  ["house5_gloom",3081.8,1340],
+  ["house4_gloom",71,1404],
+  ["house4_gloom",224.3,1404],
+  ["house5_gloom",380.4,1404],
+  ["house4_gloom",3228.3,1404],
+  ["house4_gloom",3459.9,1468],
+  ["house4_gloom",668.2,1532],
+  ["house3_gloom",3396.5,1724],
+  ["house1_gloom",452.2,1852],
+  ["house2_gloom",599.6,1852],
+  ["house1_gloom",1796.2,1852],
+  ["house5_gloom",2313.8,1852],
+  ["house5_gloom",2761.8,1852],
+  ["house4_gloom",3015,1852],
+  ["house1_gloom",3247,1852],
+  ["house1_gloom",3460.2,1852],
+  ["house1_gloom",68.2,1916],
+  ["house2_gloom",215.6,1916],
+  ["house2_gloom",1219.9,1916],
+  ["house2_gloom",1367,1916],
+  ["house3_gloom",1574.9,1916],
+  ["house2_gloom",2435.9,1980],
+  ["house2_gloom",515.9,2428],
+  ["house1_gloom",2564.2,2428],
+  ["house1_gloom",2711.9,2428],
+  ["house2_gloom",2859.4,2428],
+  ["house2_gloom",3006.5,2428],
+  ["house4_gloom",3156.7,2428],
+  ["house4_gloom",71,2492],
+  ["house1_gloom",221.5,2492],
+  ["house4_gloom",647,2492],
+  ["house4_gloom",903,2492],
+  ["house2_gloom",1237.7,2492],
+  ["house1_gloom",1385.2,2492],
+  ["house4_gloom",1535.7,2492],
+  ["house1_gloom",2244.2,2492],
+  ["house1_gloom",2391.9,2492],
+  ["house2_gloom",3289.2,2492],
+  ["house2_gloom",3436.3,2492],
+  ["house1_gloom",1924.2,2556],
+  ["house1_gloom",2071.9,2556],
+  ["rubble3_gloom",70.7,526],
+  ["backPurpleRuin_gloom",197.5,532],
+  ["backSlateRuin_gloom",349.6,532],
+  ["backPurpleRuin_gloom",501.7,532],
+  ["backPurpleRuin_gloom",653.1,532],
+  ["backSlateRuin_gloom",2118.7,532],
+  ["backPurpleRuin_gloom",2374.1,532],
+  ["backSlateRuin_gloom",2526.1,532],
+  ["backSlateRuin_gloom",902.7,596],
+  ["backPurple_gloom",1054.4,596],
+  ["backSlateRuin_gloom",1206.2,596],
+  ["backPurpleRuin_gloom",1358.3,596],
+  ["backPurpleRuin_gloom",1509.7,596],
+  ["backSlateRuin_gloom",1926.7,596],
+  ["backPurple_gloom",2821.8,596],
+  ["backPurple_gloom",3035.3,596],
+  ["backPurpleRuin_gloom",3482.9,596],
+  ["backSlateRuin_gloom",2310.7,916],
+  ["backSlateRuin_gloom",1222.7,1172],
+  ["backPurple_gloom",965.8,1236],
+  ["backSlateRuin_gloom",2586.4,1236],
+  ["backSlate_gloom",3139.9,1236],
+  ["backPurple_gloom",215.2,1300],
+  ["backPurple_gloom",3291.1,1300],
+  ["backSlate_gloom",3440.1,1300],
+  ["backSlate_gloom",643.9,1364],
+  ["backSlateRuin_gloom",1350.7,1556],
+  ["backTerra2_gloom",1502.4,1556],
+  ["backTerra1_gloom",2589.9,1556],
+  ["backPurple_gloom",2743.5,1556],
+  ["backSlateRuin_gloom",70.7,1620],
+  ["backSlate_gloom",963.9,1620],
+  ["backTerra1_gloom",1115.7,1620],
+  ["backPurple_gloom",1648.4,1620],
+  ["backSlate_gloom",1797.4,1620],
+  ["backSlateRuin_gloom",3078.7,1620],
+  ["backTerra2_gloom",261.8,1684],
+  ["backSlate_gloom",451.9,1748],
+  ["backTerra2_gloom",600.9,1748],
+  ["backSlate_gloom",1987.9,2068],
+  ["backPurple_gloom",3141.8,2068],
+  ["backTerra1_gloom",3295.4,2068],
+  ["backSlate_gloom",67.9,2132],
+  ["backTerra1_gloom",219.7,2132],
+  ["backTerra2_gloom",373.3,2132],
+  ["backSlate_gloom",522.3,2132],
+  ["backTerra1_gloom",1352.5,2132],
+  ["backTerra2_gloom",1506.2,2132],
+  ["backTerra2_gloom",667.1,2196],
+  ["backTerra2_gloom",965.8,2196],
+  ["backPurple_gloom",1116.6,2196],
+  ["backTerra1_gloom",1928.5,2196],
+  ["backSlate_gloom",2307.9,2196],
+  ["backSlate_gloom",2455,2196],
+  ["backPurple_gloom",2693.8,2196],
+  ["backTerra2_gloom",2844.6,2196],
+  ["backTerra2_gloom",2995.4,2196],
+  ["backSlate_gloom",3459.9,2196],
+  ["backPurple_gloom",1285.8,2324],
+  ["backPurple_gloom",901.8,2388],
+  ["sideSlate_gloom",264.7,1786],
+  ["sidePurple_gloom",391.8,2490],
+  ["sidePurpleRuin_gloom",510.5,1530],
+  ["sidePurple_gloom",760.3,1274],
+  ["sidePurpleRuin_gloom",769.6,1402],
+  ["sidePurple_gloom",775.8,2298],
+  ["sidePurple_gloom",952.3,2298],
+  ["sideSlate_gloom",1032.7,1338],
+  ["sideSlate_gloom",1032.7,2362],
+  ["sideTerra_gloom",1094.5,1978],
+  ["sidePurple_gloom",1095.8,2298],
+  ["sideSlate_gloom",1224.7,1338],
+  ["sideSlate_gloom",1335.3,2234],
+  ["sidePurpleRuin_gloom",1601.6,698],
+  ["sidePurpleRuin_gloom",1601.6,826],
+  ["sideTerra_gloom",1670.5,2106],
+  ["sideSlate_gloom",1672.7,2234],
+  ["sideTerra_gloom",1670.5,2362],
+  ["sidePurpleRuin_gloom",1854.5,698],
+  ["sidePurpleRuin_gloom",1854.5,826],
+  ["sideSlate_gloom",1847.3,1530],
+  ["sidePurple_gloom",1912.3,2298],
+  ["sideTerra_gloom",2105.5,1850],
+  ["sidePurpleRuin_gloom",2113.6,890],
+  ["sideTerra_gloom",2118.5,2042],
+  ["sidePurple_gloom",2183.8,762],
+  ["sideTerra_gloom",2182.5,2106],
+  ["sidePurpleRuin_gloom",2302.5,1210],
+  ["sidePurpleRuin_gloom",2366.5,698],
+  ["sidePurpleRuin_gloom",2366.5,826],
+  ["sideTerra_gloom",2630.5,1914],
+  ["sidePurple_gloom",2951.8,1530],
+  ["sidePurple_gloom",3000.3,2106],
+  ["sideSlate_gloom",3016.7,1018],
+  ["sideTerra_gloom",3014.5,2618],
+  ["sidePurpleRuin_gloom",3201.6,698],
+  ["sidePurpleRuin_gloom",3201.6,826],
+  ["sideSlate_gloom",3208.7,1722],
+  ["lowwall_gloom",1897.4,2433.9],
+  ["brokenFence_gloom",2429.9,881.1],
+  ["flowerbush_gloom",1248.4,1790.6],
+  ["lowwall_gloom",2842.1,2335.4],
+  ["logs_gloom",2089.6,924.1],
+  ["brokenFence_gloom",2864.3,1574.4],
+  ["logs_gloom",293.1,2385.1],
+  ["rubble6_gloom",2636.3,1625.4],
+  ["fence_gloom",2350.8,2315.3],
+  ["barrel_gloom",3497.3,2342.5],
+  ["crate1_gloom",2452.7,1868],
+  ["rubble9_gloom",176.3,628],
+  ["crate3_gloom",1514.5,1661.6],
+  ["fence_gloom",1585.3,2250.3],
+  ["barrel_gloom",423.7,2190.4],
+  ["logs_gloom",2635.6,1805],
+  ["fence_gloom",1998.6,2403.1],
+  ["rubble1_gloom",1086.9,738.7],
+  ["barrel3_gloom",1104.1,781.6],
+  ["logs_gloom",3293.2,1459.3],
+  ["planks1_gloom",224.2,845.9],
+  ["rubble6_gloom",3507.7,1363.6],
+  ["crate2_gloom",986.8,1830.2],
+  ["rubble6_gloom",2614.4,752.5],
+  ["barrel_gloom",176.4,2211.6],
+  ["crate2_gloom",2603.2,2229.4],
+  ["barrel_gloom",2478.9,2253.6],
+  ["blocks1_gloom",601.3,590.4],
+  ["rubble6_gloom",2450.8,1189.4],
+  ["blocks1_gloom",3125.7,731.1],
+  ["crate1_gloom",191.4,2317.8],
+  ["crate1_gloom",2964,1583.2],
+  ["barrel_gloom",3322.2,2394.6],
+  ["crateBroken_gloom",2836.4,975.8],
+  ["barrel_gloom",492,2316.7],
+  ["logs_gloom",2580.8,1676.1],
+  ["fence_gloom",2696.2,2334.8],
+  ["flowerbush_gloom",117.3,1682.7],
+  ["brokenFence_gloom",2722.5,1751.4],
+  ["blocks1_gloom",359,685.6],
+  ["logs_gloom",1437.6,1587.5],
+  ["crate2_gloom",2028,2455.6],
+  ["rocks1_gloom",2903.5,907.8],
+  ["planks1_gloom",2516.6,698.7],
+  ["crate2_gloom",2376.5,1719.6],
+  ["lowwall_gloom",2546,2304.7],
+  ["lowwall_gloom",2648.8,1728],
+  ["lowwall_gloom",3315.1,2142.8],
+  ["rubble9_gloom",338.8,872.9],
+  ["fence_gloom",3195,2208.4],
+  ["sacks_gloom",1095.1,1788.1],
+  ["barrel3_gloom",1198.7,628.5],
+  ["fence_gloom",398,2364.4],
+  ["logs_gloom",2794,2285.1],
+  ["planks1_gloom",461.6,773.9],
+  ["crate3_gloom",935.9,1685.3],
+  ["rubble5_gloom",3501.5,323.8],
+  ["crate3_gloom",2843.6,710.3],
+  ["barrel_gloom",1348.7,2356.6],
+  ["barrel3_gloom",938.6,969.3],
+  ["flowerbush_gloom",3457.5,2249],
+  ["barrel_gloom",2728.9,1706.1],
+  ["crate3_gloom",2923,1069.3],
+  ["barrelsBroken_gloom",1605.7,907.8],
+  ["rocks1_gloom",1411.6,669],
+  ["barrel_gloom",999.7,1794.9],
+  ["rubble3_gloom",1326.5,325.1],
+  ["planks1_gloom",2659.5,685.1],
+  ["crate2_gloom",1388.1,1622.8],
+  ["rubble1_gloom",3495.6,920.9],
+  ["rubble3_gloom",2425.3,589.9],
+  ["lowwall_gloom",2596.8,2263.2],
+  ["logs_gloom",2938.1,1615.3],
+  ["crate1_gloom",2729,1654],
+  ["fence_gloom",497.5,2189],
+  ["rubble6_gloom",2517.8,1841.8],
+  ["flowerbush_gloom",829.4,1672.7],
+  ["lowwall_gloom",2464,2371.6],
+  ["blocks1_gloom",830.3,656.1],
+  ["barrelsBroken_gloom",3508,711.4],
+  ["lowwall_gloom",2271.1,2399.2],
+  ["rubble6_gloom",205.8,736.1],
+  ["logs_gloom",2300,2257.6],
+  ["fence_gloom",1496.9,2378.5],
+  ["barrel_gloom",1924.5,2374.8],
+  ["brokenFence_gloom",1593.9,1668.4],
+  ["brokenFence_gloom",742.9,863.2],
+  ["rocks1_gloom",1048.2,777.3],
+  ["rubble5_gloom",405.3,742.8],
+  ["crateBroken_gloom",247.9,798.3],
+  ["rubble3_gloom",2172,577.7],
+  ["crateBroken_gloom",3383.2,726.7],
+  ["rubble3_gloom",2111.2,636.7],
+  ["planks1_gloom",484.4,1310.4],
+  ["logs_gloom",2367.5,2387],
+  ["planks1_gloom",523.7,1053.3],
+  ["crate2_gloom",256.1,2285.5],
+  ["barrel_gloom",252.9,2330.4],
+  ["rubble3_gloom",88.6,655.6],
+  ["rubble9_gloom",399.7,884.8],
+  ["crateBroken_gloom",774.6,579.5],
+  ["sacks_gloom",785,1703.2],
+  ["crate1_gloom",2837.6,2589.7],
+  ["rubble9_gloom",801.2,700.1],
+  ["lowwall_gloom",1438.5,2214.2],
+  ["flowerbush_gloom",3086.1,2266],
+  ["blocks1_gloom",1461.9,865.2],
+  ["brokenFence_gloom",602.7,812.7],
+  ["lowwall_gloom",3410.5,2352],
+  ["rubble1_gloom",82.7,716.3],
+  ["brokenFence_gloom",522.4,1001.3],
+  ["crate3_gloom",3390.4,1370.8],
+  ["fence_gloom",2141.7,2365.6],
+  ["crate2_gloom",1072.8,1861.3],
+  ["crate3_gloom",1320.2,1647.8],
+  ["flowerbush_gloom",798.3,2183.9],
+  ["blocks1_gloom",3515.6,809.7],
+  ["crateBroken_gloom",1463.1,821.1],
+  ["planks1_gloom",76.6,1272.6],
+  ["blocks1_gloom",1179.5,329.1],
+  ["sacks_gloom",1043.8,1753.4],
+  ["rubble5_gloom",3163.2,620.2],
+  ["crate2_gloom",662.9,2342],
+  ["crate1_gloom",395.5,2402.4],
+  ["crateBroken_gloom",2000.9,815.3],
+  ["logs_gloom",723.7,2333.2],
+  ["planks1_gloom",1672.9,1660.2],
+  ["rubble5_gloom",3017.6,755.9],
+  ["crate2_gloom",481.9,2266.6],
+  ["rubble5_gloom",3040.6,330],
+  ["rubble5_gloom",2523.2,801.8],
+  ["barrel_gloom",1463.9,1685.9],
+  ["lowwall_gloom",2283.3,2316.7],
+  ["crateBroken_gloom",1279.6,655.7],
+  ["barrelsBroken_gloom",3004.7,635.8],
+  ["crate2_gloom",2590.4,2127.6],
+  ["barrel_gloom",3365.5,2385.4],
+  ["planks1_gloom",2909.2,1257],
+  ["crate1_gloom",2208.2,2189.2],
+  ["rubble3_gloom",2976.2,808.5],
+  ["rubble9_gloom",905.5,640.3],
+  ["rocks1_gloom",425.7,580.8],
+  ["sacks_gloom",597.7,986],
+  ["rubble9_gloom",2100.9,815],
+  ["brokenFence_gloom",644.9,893.1],
+  ["flowerbush_gloom",2848.2,1752.2],
+  ["logs_gloom",183.1,2259.5],
+  ["flowerbush_gloom",151.9,2179.8],
+  ["sacks_gloom",1551.1,1730.7],
+  ["barrel3_gloom",65.8,1697.3],
+  ["barrel_gloom",2760.6,2249],
+  ["flowerbush_gloom",117.1,2280.3],
+  ["brokenFence_gloom",639.9,1438.9],
+  ["blocks1_gloom",2793.3,626.1],
+  ["sacks_gloom",158.5,784.9],
+  ["logs_gloom",1729,1646.6],
+  ["lowwall_gloom",2562.8,1749.9],
+  ["rubble1_gloom",773.2,517.3]
+ ],
+ "lore": {
+  "line": [
+   "The Gloaming",
+   "The light gives out here. It doesn't fade; it stops, like a wall, and the dark beyond it is breathing."
+  ],
+  "arch": [
+   "The Catacomb Gate",
+   "The old way down to the catacombs. Every name carved on it has been scratched out, and a new one carved in its place: yours."
+  ],
+  "square": [
+   "Candle Square",
+   "Where the processions gathered. Thousands of candle stubs cover the flags, and every one of them is still warm."
+  ],
+  "statue": [
+   "The Veiled Mother",
+   "The temple district's patron, hooded like the Watcher in Hollowmere. Her shadow falls the wrong way."
+  ],
+  "tavern": [
+   "The Last Lamp",
+   "The only tavern in Gloamside, and the only lit window. Nobody has worked out who lights it."
+  ],
+  "chapel": [
+   "The Mortuary Chapel",
+   "Where the dead were laid out for their families. The biers are empty. All of them."
+  ],
+  "chapel2": [
+   "The Mortuary Chapel",
+   "Where the dead were laid out for their families. The biers are empty. All of them."
+  ],
+  "wall": [
+   "The City Wall",
+   "The outer wall of Corvanthe. From this side, every stone is scratched with tally marks, in groups of five."
+  ],
+  "crane": [
+   "The Harbour Crane",
+   "Its hook hangs in the water of the street below, and the chain is taut. Something down there is holding on."
+  ],
+  "gallows": [
+   "The Quarry Hoist",
+   "The great hoist that lifted blocks out of the pit. The rope is still running, slowly, up out of the ground."
+  ],
+  "wagon": [
+   "A Trader's Wagon",
+   "Frozen solid with its goods still on it: bolts of cloth, sacks of salt, a cage with a frozen songbird in it, mid-song."
+  ]
+ },
+ "spawns": {
+  "west": [
+   90,
+   2538
+  ],
+  "east": [
+   3494,
+   2538
+  ],
+  "start": [
+   90,
+   2538
+  ]
+ },
+ "exits": [
+  {
+   "x": 0,
+   "y": 2432,
+   "w": 48,
+   "h": 256,
+   "label": "Wallside to Frostmarket",
+   "to": {
+    "map": "frostmarket",
+    "spawn": "east"
+   }
+  },
+  {
+   "x": 3536,
+   "y": 2432,
+   "w": 48,
+   "h": 256,
+   "label": "Wallside to Cindergate",
+   "to": {
+    "map": "cindergate",
+    "spawn": "west"
+   }
+  }
+ ],
+ "blocks": [
+  {
+   "x": 0,
+   "y": 0,
+   "w": 3584,
+   "h": 280
+  },
+  {
+   "x": 0,
+   "y": 2728,
+   "w": 3584,
+   "h": 128
+  }
+ ],
+ "glows": [
+  {
+   "x": 80,
+   "y": 237.92057190835476,
+   "r": 204.87880116328597,
+   "c": "170,90,230"
+  },
+  {
+   "x": 326.2006669398397,
+   "y": 236.20856226980686,
+   "r": 211.31728891283274,
+   "c": "170,90,230"
+  },
+  {
+   "x": 639.7805351484567,
+   "y": 220.17107723653316,
+   "r": 230.22466253489256,
+   "c": "170,90,230"
+  },
+  {
+   "x": 923.7612492684275,
+   "y": 239.97644791007042,
+   "r": 209.3818655051291,
+   "c": "170,90,230"
+  },
+  {
+   "x": 1179.9269531294703,
+   "y": 225.4446248859167,
+   "r": 246.01584462448955,
+   "c": "170,90,230"
+  },
+  {
+   "x": 1412.0669609028846,
+   "y": 239.20026786625385,
+   "r": 263.56081107631326,
+   "c": "170,90,230"
+  },
+  {
+   "x": 1670.0986684951931,
+   "y": 252.37716254591942,
+   "r": 230.68890100345016,
+   "c": "170,90,230"
+  },
+  {
+   "x": 1925.259346459061,
+   "y": 231.84545050561428,
+   "r": 272.6134219393134,
+   "c": "170,90,230"
+  },
+  {
+   "x": 2248.009954141453,
+   "y": 238.38548627495766,
+   "r": 211.60694733262062,
+   "c": "170,90,230"
+  },
+  {
+   "x": 2528.052318599075,
+   "y": 252.01110431551933,
+   "r": 218.48474219441414,
+   "c": "170,90,230"
+  },
+  {
+   "x": 2852.278350200504,
+   "y": 217.3489954918623,
+   "r": 251.31710849702358,
+   "c": "170,90,230"
+  },
+  {
+   "x": 3163.2914693001658,
+   "y": 222.7992348819971,
+   "r": 241.04587009176612,
+   "c": "170,90,230"
+  },
+  {
+   "x": 3471.869835909456,
+   "y": 234.3538847565651,
+   "r": 262.63168442994356,
+   "c": "170,90,230"
+  },
+  {
+   "x": 1792,
+   "y": 192,
+   "r": 300,
+   "c": "170,90,230"
+  }
+ ],
+ "echoes": [
+  {
+   "id": "glo0",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_weak",
+     1
+    ],
+    [
+     "echo_dark_weak",
+     1
+    ]
+   ],
+   "x": 2112,
+   "y": 1386,
+   "r": 150
+  },
+  {
+   "id": "glo1",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_strong",
+     0
+    ]
+   ],
+   "x": 1408,
+   "y": 1386,
+   "r": 150
+  },
+  {
+   "id": "glo2",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_weak",
+     1
+    ],
+    [
+     "echo_dark_weak",
+     1
+    ]
+   ],
+   "x": 768,
+   "y": 1194,
+   "r": 150
+  },
+  {
+   "id": "glo3",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_strong",
+     0
+    ]
+   ],
+   "x": 320,
+   "y": 1194,
+   "r": 150
+  },
+  {
+   "id": "glo4",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_weak",
+     0
+    ],
+    [
+     "echo_fire_weak",
+     0
+    ]
+   ],
+   "x": 2560,
+   "y": 2026,
+   "r": 150
+  },
+  {
+   "id": "glo5",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_strong",
+     2
+    ],
+    [
+     "echo_dark_weak",
+     2
+    ],
+    [
+     "echo_dark_weak",
+     2
+    ]
+   ],
+   "x": 2688,
+   "y": 426,
+   "r": 150
+  },
+  {
+   "id": "glo6",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_weak",
+     0
+    ]
+   ],
+   "x": 896,
+   "y": 2026,
+   "r": 150
+  },
+  {
+   "id": "glo7",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_strong",
+     2
+    ],
+    [
+     "echo_dark_strong",
+     2
+    ]
+   ],
+   "x": 1408,
+   "y": 426,
+   "r": 150
+  },
+  {
+   "id": "glo8",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_strong",
+     0
+    ]
+   ],
+   "x": 2880,
+   "y": 1194,
+   "r": 150
+  },
+  {
+   "id": "glo9",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_weak",
+     0
+    ]
+   ],
+   "x": 1536,
+   "y": 1962,
+   "r": 150
+  },
+  {
+   "id": "glo10",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_weak",
+     0
+    ]
+   ],
+   "x": 192,
+   "y": 1962,
+   "r": 150
+  },
+  {
+   "id": "glo11",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_strong",
+     2
+    ],
+    [
+     "echo_dark_weak",
+     2
+    ],
+    [
+     "echo_dark_weak",
+     2
+    ]
+   ],
+   "x": 448,
+   "y": 426,
+   "r": 150
+  },
+  {
+   "id": "glo12",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_strong",
+     1
+    ],
+    [
+     "echo_dark_weak",
+     1
+    ]
+   ],
+   "x": 3392,
+   "y": 1066,
+   "r": 150
+  },
+  {
+   "id": "glo13",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_weak",
+     0
+    ]
+   ],
+   "x": 3328,
+   "y": 1962,
+   "r": 150
+  },
+  {
+   "id": "glo14",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_weak",
+     0
+    ]
+   ],
+   "x": 1792,
+   "y": 2346,
+   "r": 150
+  },
+  {
+   "id": "glo15",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_strong",
+     2
+    ],
+    [
+     "echo_dark_weak",
+     2
+    ],
+    [
+     "echo_dark_weak",
+     2
+    ]
+   ],
+   "x": 1920,
+   "y": 490,
+   "r": 150
+  },
+  {
+   "id": "glo16",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_strong",
+     2
+    ],
+    [
+     "echo_dark_strong",
+     2
+    ]
+   ],
+   "x": 3200,
+   "y": 490,
+   "r": 150
+  }
+ ]
+}
