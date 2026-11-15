@@ -1,10 +1,10 @@
 // Cindergate, outer ring: Corvanthe's forge district, the Fire sector. You come in from the
-// Corvanthe Road through the Wardgate (south). The street grid runs north toward the Wound;
+// Corvanthe Road through the Wardgate (south). Winding streets run north toward the Wound;
 // the nearer it, the more burnt-out the terraces. The Burning Line closes the north edge:
 // past it the streets still burn (the inner rings, later).
 'use strict';
 const {MapBuilder, T, P} = require('./builder');
-const {fillBlock} = require('./city');
+const {City} = require('./city');
 
 const LORE = {
   gate:    ['The Wardgate', 'Cut open from the inside, not the outside. The gleaners only widened the hole.'],
@@ -23,61 +23,72 @@ module.exports = function cindergate(rects){
   const {W, H} = m;
   m.lore=LORE; m.fx='embers'; m.haze='70,30,10,0.16';
   const burnt=k=>rects[k+'_burnt']?k+'_burnt':k;
-  // how far gone: worse toward the Wound (north), a little worse near the avenue's fires
+  // how far gone: worse toward the Wound (north)
   const ruin=(x,y)=>Math.max(0,Math.min(1,(1-y/H)*1.15-0.12));
-
-  // ── street grid ──
-  const HS=[[4,5],[12,13],[21,22],[30,31],[38,41]];           // east–west streets (tile rows)
-  const VS=[[5,6],[16,17],[27,28],[38,39],[49,50]];            // north–south streets (tile cols); 27–28 the avenue
+  const city=new City(m,{street:'c', square:'f', ruin, style:burnt});
   m.fill(0,0,m.cols-1,m.rows-1,'a');
-  for(const [a,b] of HS) m.fill(0,a,m.cols-1,b,'c');
-  for(const [a,b] of VS) m.fill(a,4,b,41,'c');
-  const SQ={c0:29,c1:37,r0:23,r1:29};                          // Forge Square
-  m.fill(SQ.c0,SQ.r0,SQ.c1,SQ.r1,'f');
 
-  // ── landmarks first, so the terraces leave room ──
-  const reserved=[];
-  const land=(kind,x,y,lore)=>{ const o=m.place(kind,x,y,{lore}); const s=m.size(kind); reserved.push({x0:x-s.w/2-10,x1:x+s.w/2+10,y0:y-s.h,y1:y+4}); return o; };
-  land('tavern_burnt',22*T,38*T-4,'tavern');                   // facing the gate street
-  land('chapel_burnt',11*T,30*T-4,'chapel');
-  // Forge Square
-  const SX=(SQ.c0+SQ.c1+1)/2*T, SY=(SQ.r0+SQ.r1+1)/2*T;
-  reserved.push({x0:SQ.c0*T,x1:(SQ.c1+1)*T,y0:SQ.r0*T-40,y1:(SQ.r1+1)*T});
-  m.place('brokenStatue',SX,SY+10,{lore:'smith'});
-  for(const [dx,dy] of [[-1,-1],[1,-1],[-1,1],[1,1]]) m.place('lamppost',SX+dx*230,SY+dy*170+40);
-  for(const [k,x,y,o] of [['blocks2',SX-170,SY-60],['logs',SX+170,SY-70],['barrelBroken',SX-200,SY+150],['planksPile',SX+200,SY+150],
-    ['wheel3',SX+90,SY+120],['gravel',SX-80,SY-110,{lore:'square'}]]) m.place(k,x,y,o);
+  // ── streets: an old city's, grown rather than planned ──
+  // the Forge Road, from the Wardgate up to the Furnace Arch, bending round Forge Square
+  city.road([[27,41],[27,35],[30,28],[25,19],[28,11],[27,4]],{w:2,bend:1,wander:1.2});
+  city.road([[0,39],[14,40],[27,39],[42,40],[55,39]],{w:2,bend:1,wander:0.8});      // Wallside, inside the wall
+  city.road([[0,5],[18,6],[36,5],[55,6]],{w:2,bend:1,wander:0.6});                  // under the Burning Line
+  city.road([[0,16],[10,14],[19,17],[26,15],[40,13],[55,15]],{w:2});                // Bellows Street
+  city.road([[0,28],[12,26],[22,29],[30,27],[46,27],[55,24]],{w:2});                // Slag Street
+  // lanes and alleys between them
+  city.road([[8,6],[6,16],[9,27],[7,39]],{w:2});
+  city.road([[17,16],[15,22],[18,28]],{w:1});
+  city.road([[21,6],[22,11],[20,16]],{w:1});
+  city.road([[41,6],[42,13]],{w:1});
+  city.road([[38,15],[41,25],[39,39]],{w:2});
+  city.road([[50,6],[48,15],[51,27],[49,39]],{w:1});
+  city.road([[12,27],[20,34],[24,39]],{w:1});
+  city.road([[33,28],[33,33],[36,39]],{w:1});
+  city.road([[45,14],[46,20],[44,27]],{w:1});
+  city.road([[2,21],[6,22]],{w:1,bend:0});
+  // squares where the roads meet
+  const SQ={x:31.5,y:27.5};
+  city.square(SQ.x,SQ.y,4.4,3.3);                                              // Forge Square
+  city.square(9.5,15.5,2.8,2.2,'c');                                           // Tinkers' Corner
+  city.square(28.5,39.5,3.5,1.8,'c');                                          // inside the gate
 
-  // ── the terraces ──
-  const xs=[[0,VS[0][0]*T]]; for(let i=0;i<VS.length-1;i++) xs.push([(VS[i][1]+1)*T,VS[i+1][0]*T]); xs.push([(VS[VS.length-1][1]+1)*T,W]);
-  for(let j=0;j<HS.length-1;j++){
-    const y0=(HS[j][1]+1)*T, y1=HS[j+1][0]*T;
-    for(const [x0,x1] of xs) fillBlock(m,{x0,y0,x1,y1},{ruin,style:burnt,reserved});
-  }
+  // ── landmarks, then the terraces round them ──
+  const SX=SQ.x*T, SY=SQ.y*T;
+  city.reserve(SX-5*T,SX+5*T,SY-4.5*T,SY+3.6*T);
+  m.place('brokenStatue',SX,SY+20,{lore:'smith'});
+  for(const [dx,dy] of [[-1,-1],[1,-1],[-1,1],[1,1]]) m.place('lamppost',SX+dx*190,SY+dy*120+40);
+  for(const [k,x,y,o] of [['blocks2',SX-150,SY-40],['logs',SX+150,SY-50],['barrelBroken',SX-170,SY+130],['planksPile',SX+170,SY+130],
+    ['wheel3',SX+80,SY+100],['gravel',SX-70,SY-90,{lore:'square'}]]) m.place(k,x,y,o);
+  city.landmark('tavern_burnt',20,38,'tavern');
+  city.landmark('chapel_burnt',10,26,'chapel');
 
   // ── the Burning Line: the north edge, rubble and fire ──
   m.place('brokenArch',28*T,4*T+20,{lore:'furnace'});
   m.wallRun(4*T+20,0,W,[[28*T-90,28*T+90]],['rubble2','rubble3','ruinWall1','rubble4','blocks1','rubble1','ruinWall2','rubble9']);
   m.objs.filter(o=>/^(rubble2|ruinWall1)$/.test(o.kind)&&o.y<5*T).forEach((o,i)=>{ if(i%3===0) o.lore='burning'; });
   m.blocks.push({x:0,y:0,w:W,h:4*T+24});
-  for(let x=80;x<W;x+=210+m.r()*120) m.glows.push({x, y:3*T+m.r()*T, r:200+m.r()*80, c:'255,110,30'});
-  m.glows.push({x:28*T, y:3*T, r:300, c:'255,140,50'});
-  // smouldering ruins deeper in
-  for(const o of m.objs) if(/^(rubble|blocks|ruinWall)/.test(o.kind) && o.y<22*T && m.r()<0.35)
-    m.glows.push({x:o.x, y:o.y-20, r:110+m.r()*60, c:'255,100,30'});
+  city.reserve(0,W,0,5*T);
 
   // ── the city wall, the Wardgate, the gleaners' camp ──
   const WALL_Y=42*T+30, GX=28*T;
   m.place('arch',GX,WALL_Y,{lore:'gate'});
   m.wallRun(WALL_Y,0,W,[[GX-60,GX+80]],['wallLow1','ruinWall2','wallLow2','ruinWall1','wallLow1','wallLow2']);
   m.blocks.push({x:0,y:42*T+40,w:W,h:2*T});
-  const CX=31*T, CY=40*T+20;
-  for(const [k,x,y,o] of [['wagon',CX+60,CY,{lore:'camp'}],['crate3',CX+170,CY-10],['crate5',CX+210,CY-6],['sacks',CX+280,CY],
-    ['lamp4',CX-30,CY-30,{lore:'lamppost'}],['bannerTorn',CX+340,CY-20],['barrel2',CX+150,CY+60],['planksPile',CX+240,CY+64]]) m.place(k,x,y,o);
-  m.glows.push({x:CX+110,y:CY+40,r:130,c:'255,170,80'});        // their fire
-  for(const x of [10*T,18*T,40*T,47*T]) m.place('lamp3',x,38*T-6);
+  city.reserve(0,W,41*T,H);
+  const CX=30*T, CY=40*T+40;
+  for(const [k,x,y,o] of [['wagon',CX+60,CY,{lore:'camp'}],['crate3',CX+170,CY-10],['crate5',CX+210,CY-6],['sacks',CX+150,CY+50],
+    ['lamp4',CX-20,CY-20,{lore:'lamppost'}],['barrel2',CX+230,CY+40]]) m.place(k,x,y,o);
+  m.glows.push({x:CX+110,y:CY+30,r:130,c:'255,170,80'});        // their fire
 
-  m.spawns={gate:[GX,40*T+40], start:[GX,40*T+40]};
+  city.build();
+
+  // fire along the Burning Line, and smouldering ruins deeper in
+  for(let x=80;x<W;x+=210+m.r()*120) m.glows.push({x, y:3*T+m.r()*T, r:200+m.r()*80, c:'255,110,30'});
+  m.glows.push({x:28*T, y:3*T, r:300, c:'255,140,50'});
+  for(const o of m.objs) if(/^(rubble|blocks|ruinWall)/.test(o.kind) && o.y>5*T && o.y<22*T && m.r()<0.35)
+    m.glows.push({x:o.x, y:o.y-20, r:110+m.r()*60, c:'255,100,30'});
+
+  m.spawns={gate:[GX,40*T+20], start:[GX,40*T+20]};
   m.exits=[{x:GX-40,y:42*T+14,w:80,h:40,dir:'S',label:'The Corvanthe Road',to:{map:'corvanthe_road',spawn:'gate'}}];
   return m;
 };
