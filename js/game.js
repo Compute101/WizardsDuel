@@ -1654,12 +1654,12 @@ function drawSkeletons(x,y,sz,who,flip,skels,t){
   });
 }
 
-// Bodyguards (Thessaly's hired swords): the encounter soldier's still, smaller, standing in front of
+// Bodyguards (Thessaly's hired swords): the halberdier still (sprites/halberdier.png), smaller, standing in front of
 // her on the foe's side like skeletons do (same slots), facing the way she faces.
 const BODYGUARD_HEIGHT=0.7;   // fraction of the master's drawn height
 const bodyguardImg={img:new Image(),ready:false};
 bodyguardImg.img.onload=()=>{ bodyguardImg.ready=true; };
-bodyguardImg.img.src='sprites/soldier.png';
+bodyguardImg.img.src='sprites/halberdier.png';
 function drawBodyguards(x,y,sz,who,flip,n,t){
   const dir=flip?1:-1, hsz=sz*SPRITE_SCALE/seatSpriteHeight(who);
   const slots=[[0.62,-.05,.92],[0.32,0,1]].slice(0,Math.min(n,2));   // the far one first, so the near one overlaps it
