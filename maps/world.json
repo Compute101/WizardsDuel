@@ -6,8 +6,8 @@
    "blurb": "A river town half-emptied by the Unweaving. The west still stands; across the Hollow it is falling down."},
   {"id": "corvanthe_road", "name": "The Corvanthe Road", "kind": "road", "x": 535, "y": 345, "map": "corvanthe_road", "spawn": "west", "seenFrom": ["hollowmere"],
    "blurb": "The old cobbled road from Hollowmere to the walls of Corvanthe. Gleaners camp along it."},
-  {"id": "corvanthe", "name": "Corvanthe", "kind": "city", "x": 700, "y": 230, "known": true, "locked": true,
-   "blurb": "The great university city, ruined in the Unweaving. Its citizens walk its streets still, as Echoes. The Wardgate is barred."}
+  {"id": "corvanthe", "name": "Corvanthe", "kind": "city", "x": 700, "y": 230, "known": true, "map": "cindergate", "spawn": "gate", "seenFrom": ["corvanthe_road"],
+   "blurb": "The great university city, ruined in the Unweaving. Its citizens walk its streets still, as Echoes. The gleaners have cut a way in through the Wardgate, into Cindergate."}
  ],
  "roads": [["hollowmere", "corvanthe_road"], ["corvanthe_road", "corvanthe"]],
  "river": [[330, 0], [350, 140], [338, 300], [362, 430], [352, 560], [370, 700]]

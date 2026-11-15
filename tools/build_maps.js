@@ -16,6 +16,7 @@ for(const f of fs.readdirSync(path.join(ROOT,'sprites/ruins')).filter(f=>/^ruins
 const GENERATORS={
   hollowmere: require('./mapgen/hollowmere'),
   corvanthe_road: require('./mapgen/corvanthe_road'),
+  cindergate: require('./mapgen/cindergate'),
 };
 const only=process.argv[2];
 fs.mkdirSync(path.join(ROOT,'maps'),{recursive:true});

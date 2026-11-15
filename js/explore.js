@@ -25,7 +25,7 @@ const FADE_MS = 280;
 let atlases=[], rects=null, chars=null, wizKeys=[], wizIdx=0, wizImg=null, world=null;
 const mapCache={};
 let MAP=null, COLS=0, ROWS=0, WORLD_W=0, WORLD_H=0;
-let ground=null, groundKind=null, objs=[], boxes=[], bridges=[], fireflies=[], mini=null;
+let ground=null, groundKind=null, objs=[], boxes=[], bridges=[], fireflies=[], embers=[], mini=null;
 let built=false, running=false, busy=false, last=0, night=true, saveT=0;
 let el={}, ctx=null, dark=null, dctx=null;
 const wiz={x:0,y:0,face:1,walk:0,moving:false};
@@ -56,6 +56,11 @@ function setupMap(data){
       // roads use the transition set's cobble throughout, so edges and junctions match
       case 'R': return r()<.03?(r()<.5?'grate1':'grate2'):'tr_cobble_11';    // the odd drain
       case 'M': return 'tr_cobble_11';
+      // burnt ground (Cindergate)
+      case 'a': r(); return 'grass_ash';            // (grass2 burns paler and reads as patches)
+      case 'e': return 'dirtGrass_ash';
+      case 'c': return 'tr_cobble_11_ash';
+      case 'f': return r()<.7?'flagCracked_ash':'flagMoss_ash';
       default:  return 'grass';
     }
   }));
@@ -71,7 +76,10 @@ function setupMap(data){
     else for(const b of P.footBoxes(rects,o)) boxes.push(b);
     objs.push(o);
   });
-  fireflies=[]; for(let i=0;i<Math.round(COLS*ROWS/23);i++) fireflies.push({x:r()*WORLD_W,y:r()*WORLD_H,a:r()*6.28,s:8+r()*14,p:r()*6.28});
+  fireflies=[];
+  if(data.fx!=='embers') for(let i=0;i<Math.round(COLS*ROWS/23);i++) fireflies.push({x:r()*WORLD_W,y:r()*WORLD_H,a:r()*6.28,s:8+r()*14,p:r()*6.28});
+  embers=[];
+  if(data.fx==='embers') for(let i=0;i<Math.round(COLS*ROWS/6);i++) embers.push({x:r()*WORLD_W,y:r()*WORLD_H,v:18+r()*30,p:r(),w:r()*6.28,s:1+r()*1.6});
   buildMinimap();
   if(el.title){ el.title.textContent=data.name; sizeMini(); }
 }
@@ -86,6 +94,7 @@ const EDGE_SET = {
   D:{set:'dirt',   out:c=>c==='G'||c==='d'},
   W:{set:'quay',   out:c=>c!=='W'},
   O:{set:'shore',  out:c=>c!=='O'},
+  c:{set:'cobble', sfx:'_ash', out:c=>c==='a'||c==='e'},
 };
 function edgeTile(E,x,y,r){
   const k=groundKind, at=(xx,yy)=>(k[yy]||[])[xx];
@@ -96,20 +105,21 @@ function edgeTile(E,x,y,r){
   const cells=[cell(n,w,0,0),cell(n,e,0,1),cell(s,w,1,0),cell(s,e,1,1)];
   if(cells.every(c=>c===cells[0])){
     const c=cells[0];
-    if(c[0]!=='1'&&c[1]!=='1'&&r()<.5) return 'tr_'+E.set+'_alt'+c;   // a second drawing of that corner
-    return 'tr_'+E.set+'_'+c;
+    const sfx=E.sfx||'';
+    if(c[0]!=='1'&&c[1]!=='1'&&r()<.5) return 'tr_'+E.set+'_alt'+c+sfx;   // a second drawing of that corner
+    return 'tr_'+E.set+'_'+c+sfx;
   }
-  return {set:E.set, cells};
+  return {set:E.set, sfx:E.sfx||'', cells};
 }
 const quarterCache=new Map();
 function quarterTile(g){
-  const key=g.set+g.cells.join('');
+  const key=g.set+g.sfx+g.cells.join('');
   let c=quarterCache.get(key);
   if(!c){
     c=document.createElement('canvas'); c.width=c.height=120;
     const m=c.getContext('2d');
     g.cells.forEach((cc,i)=>{
-      const q=rects['tr_'+g.set+'_'+cc], dx=i%2, dy=i>>1, hw=q[2]/2, hh=q[3]/2;
+      const q=rects['tr_'+g.set+'_'+cc+g.sfx], dx=i%2, dy=i>>1, hw=q[2]/2, hh=q[3]/2;
       m.drawImage(atlases[q[4]],q[0]+dx*hw,q[1]+dy*hh,hw,hh,dx*60,dy*60,60,60);
     });
     quarterCache.set(key,c);
@@ -134,14 +144,14 @@ function wet(px,py){
 function buildMinimap(){
   const S=4, c=document.createElement('canvas'); c.width=COLS*S; c.height=ROWS*S;
   const m=c.getContext('2d');
-  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a'};
+  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70'};
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ m.fillStyle=col[groundKind[y][x]]||col.G; m.fillRect(x*S,y*S,S,S); }
   const k=S/T;
   for(const b of MAP.blocks||[]){ m.fillStyle='rgba(10,8,20,0.55)'; m.fillRect(b.x*k,b.y*k,b.w*k,b.h*k); }
   for(const o of objs){
     const s=sizeOf(o.kind,o.scale);
     if(o.decal){ m.fillStyle=o.kind.endsWith('Broken')?'#5a4a3a':'#b7a58a'; for(const b of o.fb) m.fillRect(b.x*k,b.y*k,b.w*k,Math.max(2,b.h*k)); }
-    else if(/^(house|back|side|tavern|chapel|tower)/.test(o.kind)){ m.fillStyle={slate:'#7d8ea6',moss:'#5f8a4a',dusk:'#7a55a0',char:'#5e5650'}[o.kind.split('_')[1]]||(/Slate/.test(o.kind)?'#7d8ea6':/Purple|tower/.test(o.kind)?'#7a55a0':o.kind==='chapel'?'#9a948a':'#b4582e'); m.fillRect((o.x-s.w/2)*k,(o.y-s.h*.6)*k,s.w*k,s.h*.6*k); }
+    else if(/^(house|back|side|tavern|chapel|tower)/.test(o.kind)){ m.fillStyle={slate:'#7d8ea6',moss:'#5f8a4a',dusk:'#7a55a0',char:'#5e5650',burnt:'#4a4038'}[o.kind.split('_')[1]]||(/Slate/.test(o.kind)?'#7d8ea6':/Purple|tower/.test(o.kind)?'#7a55a0':o.kind==='chapel'?'#9a948a':'#b4582e'); m.fillRect((o.x-s.w/2)*k,(o.y-s.h*.6)*k,s.w*k,s.h*.6*k); }
     else if(o.kind==='tree'||o.kind==='bush'){ m.fillStyle='#1f3d16'; m.fillRect(o.x*k-1,o.y*k-2,2,2); }
     else if(o.kind==='deadtree'){ m.fillStyle='#4a3424'; m.fillRect(o.x*k-1,o.y*k-2,2,2); }
     else if(o.kind.match(/^(rubble|ruinWall|wallLow|lowwall|arch)/)){ m.fillStyle='#c9c3b6'; m.fillRect((o.x-s.w/2)*k,o.y*k-2,s.w*k,2); }
@@ -581,12 +591,15 @@ function draw(t){
     const my=(near.decal?near.fb[0].y:near.y-Math.min(s.h,120))-8+bob;
     ctx.strokeText('?',near.x,my); ctx.fillText('?',near.x,my);
   }
+  if(MAP.haze){ const [r,g,b,a]=MAP.haze.split(','); ctx.fillStyle=`rgba(${r},${g},${b},${a})`; ctx.fillRect(cam.x,cam.y,cw,ch); }
   if(night) drawNight(t,cw,ch);
+  if(embers.length) drawEmbers(t,cw,ch);
   drawExitLabel();
   drawMini();
 }
 // ways out: gold chevrons on the ground pointing off the map
 function exitDir(e){
+  if(e.dir) return {N:[0,-1],S:[0,1],E:[1,0],W:[-1,0]}[e.dir];
   if(e.x<=1) return [-1,0]; if(e.x+e.w>=WORLD_W-1) return [1,0];
   if(e.y<=1) return [0,-1]; return [0,1];
 }
@@ -621,7 +634,8 @@ function lightsInView(cw,ch){
     const s=sizeOf(o.kind);
     for(const [lx,ly,type] of L){
       const x=o.x-s.w/2+lx*PS, y=o.y-s.h+ly*PS;
-      if(near(x,y)) out.push({x,y,r:type==='lamp'?150:105,seed:o.id});
+      // a burnt house's windows glow ember-orange: what's inside isn't a hearth
+      if(near(x,y)) out.push({x,y,r:type==='lamp'?150:105,seed:o.id,c:o.kind.endsWith('_burnt')&&type!=='lamp'?'255,120,50':undefined});
     }
   }
   for(const g of MAP.glows||[]) if(near(g.x,g.y)) out.push({x:g.x,y:g.y,r:g.r,c:g.c,seed:g.x});
@@ -661,6 +675,18 @@ function drawNight(t,cw,ch){
     const g=ctx.createRadialGradient(x,y,0,x,y,7);
     g.addColorStop(0,`rgba(220,255,140,${0.9*a})`); g.addColorStop(1,'rgba(160,255,80,0)');
     ctx.fillStyle=g; ctx.fillRect(x-7,y-7,14,14);
+  }
+  ctx.globalCompositeOperation='source-over';
+}
+// rising embers: each climbs 300 px over its life, drifting and flickering, then starts again
+function drawEmbers(t,cw,ch){
+  ctx.globalCompositeOperation='lighter';
+  for(const e of embers){
+    const life=((t/1000*e.v/300)+e.p)%1, x=e.x+Math.sin(t/900+e.w)*14+life*30, y=e.y-life*300;
+    if(x<cam.x-10||x>cam.x+cw+10||y<cam.y-10||y>cam.y+ch+10) continue;
+    const a=Math.sin(life*Math.PI)*(0.55+0.45*Math.sin(t/90+e.w*7));
+    ctx.fillStyle=`rgba(255,${120+Math.round(80*(1-life))},40,${a.toFixed(2)})`;
+    ctx.fillRect(x,y,e.s*1.6,e.s*1.6);
   }
   ctx.globalCompositeOperation='source-over';
 }

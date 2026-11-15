@@ -5,6 +5,8 @@
  "rows": 26,
  "seed": 2207,
  "flow": "S",
+ "fx": null,
+ "haze": null,
  "ground": [
   "GGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
   "GGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
@@ -503,7 +505,7 @@
  "lore": {
   "gate": [
    "The Wardgate of Corvanthe",
-   "Barred from the outside, under a city watch seal gone green with age. Bruise-coloured light flickers along the top of the wall, and the air tastes of copper. Not yet."
+   "Barred from the outside under a city watch seal gone green with age, but somebody has cut a man-sized door through the bar. Bruise-coloured light flickers along the top of the wall, and the air tastes of copper."
   ],
   "camp": [
    "Gleaner Camp",
@@ -542,6 +544,18 @@
    "to": {
     "map": "hollowmere",
     "spawn": "east"
+   }
+  },
+  {
+   "x": 2136,
+   "y": 350,
+   "w": 80,
+   "h": 30,
+   "dir": "N",
+   "label": "Corvanthe: Cindergate",
+   "to": {
+    "map": "cindergate",
+    "spawn": "gate"
    }
   }
  ],

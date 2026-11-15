@@ -4,6 +4,7 @@
 'use strict';
 const P = require('../../js/explore_pieces.js');
 const {T} = P;
+const GRASSY=['G','d','a','e'];   // ground scatter may stand on: grass, worn grass, ash, ash dirt
 
 class MapBuilder {
   constructor(rects, {id, name, cols, rows, seed}){
@@ -15,7 +16,8 @@ class MapBuilder {
     this.lore={}; this.spawns={}; this.exits=[]; this.blocks=[]; this.glows=[];
   }
   // ── ground kinds: G grass, d worn grass, D dirt lane, R road, M mossy road, P plaza flags,
-  //    W river water, O pond water, K plank docks ──
+  //    W river water, O pond water, K plank docks; burnt (Cindergate): a ash, e ash dirt,
+  //    c ash cobble street, f ash flagstones ──
   fill(x0,y0,x1,y1,c){ for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) if(this.k[y]&&this.k[y][x]!==undefined) this.k[y][x]=c; }
   at(x,y){ return (this.k[y]||[])[x]; }
   tileAt(px,py){ return this.at(Math.floor(px/T),Math.floor(py/T)); }
@@ -36,7 +38,7 @@ class MapBuilder {
     for(const b of P.footBoxes(this.rects,o)){
       if(b.x<4||b.y<4||b.x+b.w>this.W-4||b.y+b.h>this.H-4) return false;
       for(const c of this.boxes) if(P.overlap(b,c,margin)) return false;
-      for(const [px,py] of [[b.x,b.y],[b.x+b.w,b.y],[b.x,b.y+b.h],[b.x+b.w,b.y+b.h]]){ const t=this.tileAt(px,py); if(t&&t!=='G'&&t!=='d') return false; }
+      for(const [px,py] of [[b.x,b.y],[b.x+b.w,b.y],[b.x,b.y+b.h],[b.x+b.w,b.y+b.h]]){ const t=this.tileAt(px,py); if(t&&!GRASSY.includes(t)) return false; }
     }
     for(const b of this.blocks) if(P.overlap({x:x-2,y:y-2,w:4,h:4},b)) return false;
     // a house's image must not swallow anything already placed
@@ -88,11 +90,13 @@ class MapBuilder {
        exits:  [{x, y, w, h, label, to:{map, spawn} | 'world'}]   walk in to leave
        blocks: [{x, y, w, h}]                              invisible walls
        glows:  [{x, y, r, c}]                              extra night lights, c = 'r,g,b'
-       flow:   'S'                                         which way the river's current runs } */
+       flow:   'S'                                         which way the river's current runs
+       fx:     'embers'                                    drifting particles, day and night
+       haze:   'r,g,b,a'                                   a colour wash over the whole map } */
   toJSON(){
     const round=v=>Math.round(v*10)/10;
     return {
-      id:this.id, name:this.name, cols:this.cols, rows:this.rows, seed:this.seed, flow:this.flow||'S',
+      id:this.id, name:this.name, cols:this.cols, rows:this.rows, seed:this.seed, flow:this.flow||'S', fx:this.fx||null, haze:this.haze||null,
       ground:this.k.map(r=>r.join('')),
       objects:this.objs.map(o=>{
         const e={}; if(o.lore) e.lore=o.lore; if(o.scale) e.scale=round(o.scale*1000)/1000; if(o.decal) e.decal=1;

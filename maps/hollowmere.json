@@ -5,6 +5,8 @@
  "rows": 34,
  "seed": 9031,
  "flow": "S",
+ "fx": null,
+ "haze": null,
  "ground": [
   "GGGGGGGGGGGGGGGGGGGGGMMGGGGGWWWGGGGGGGGGGGGGGGGG",
   "GGGGGGGGGGGGGGGGGGGGGMMGGGGGWWWGGGGGGGGGGGGGGGGG",

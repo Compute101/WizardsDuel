@@ -5,7 +5,7 @@ Baldur's Gate: countries, cities, towns and villages, with wizards stationed aro
 You meet them, they start stories, and some join your party. Battles use the existing duel
 screen. Nothing here is built yet beyond Hollowmere (see "Explore mode" in `CLAUDE.md`).
 
-Status: **vision and names agreed; step 1 (maps as data, travel, world map) built.**
+Status: **vision and names agreed; step 1 (maps, travel, world map) built; step 2 started: Cindergate's outer ring.**
 
 ## Decisions so far
 
@@ -106,7 +106,10 @@ in battle: you pick for each, or set one to AI.
    Hollowmere is the last town outside Corvanthe; the Corvanthe Road leads from it to the city's
    barred gate. See "Explore mode" in `CLAUDE.md`.
 2. **City-block generator** for the sectors: streets, blocks filled with terraces (fronts, backs and
-   sides of houses face the right way), squares, then hand-placed landmarks.
+   sides of houses face the right way), squares, then hand-placed landmarks. *Started:*
+   `tools/mapgen/city.js` and Cindergate's outer ring (`tools/mapgen/cindergate.js`), built from
+   burnt recolours of the existing art. Next: the other seven sectors' outer rings (each needs its
+   own look: recolours where they work, new art where they don't), then the inner rings.
 3. **Elementals on the map:** roaming, battle on contact, loot, respawn.
 4. **Inventory and save game**, per profile.
 5. **Characters, dialogue and quests:** wizards in places, conversations, quest state.

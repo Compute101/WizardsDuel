@@ -158,13 +158,25 @@ STYLES = {
     'sand':  dict(stone=((1.16, 0.98, 0.72), 1.0)),               # terracotta on sandstone
     'dusk':  dict(roof=(275, 0.55, 0.75), stone=((0.85, 0.85, 1.0), 0.72)),   # college purple, dark stone
     'char':  dict(roof=(20, 0.12, 0.55), stone=((0.95, 0.95, 1.0), 0.85)),    # burnt, weathered
+    'ash':   dict(whole=(0.32, 0.9, (1.06, 0.98, 0.92), 0.5)),                # burnt ground: grass goes dark ash, stone stays light
+    'burnt': dict(roof=(20, 0.12, 0.6), whole=(0.45, 0.74, (1.08, 0.95, 0.86))),  # Cindergate: soot-dark, dead ivy
 }
-RECOLOUR = {'1': {h: list(STYLES) for h in ['house1', 'house2', 'house3', 'house4', 'house5', 'house6']}}
+HOUSE_STYLES = ['slate', 'moss', 'sand', 'dusk', 'char']
+_TR = ['%d%d' % (r, c) for r in range(3) for c in range(3)] + ['alt00', 'alt02', 'alt20', 'alt22']
+RECOLOUR = {
+    '1': dict({h: HOUSE_STYLES + ['burnt'] for h in ['house1', 'house2', 'house3', 'house4', 'house5', 'house6']},
+              **{g: ['ash'] for g in ['grass', 'grass2', 'dirtGrass', 'flagCracked', 'flagMoss']}),
+    '3': {'tr_%s_%s' % (st, c): ['ash'] for st in ['cobble', 'dirt'] for c in _TR},     # Cindergate's streets
+    '4': {k: ['burnt'] for k in ['backTerra1', 'backTerra2', 'backSlate', 'backPurple', 'backSlateRuin',
+                                'backPurpleRuin', 'sideTerra', 'sideSlate', 'sidePurple', 'sidePurpleRuin',
+                                'tavern', 'chapel']},
+}
 
 
-def recolour(c, roof=None, stone=None):
+def recolour(c, roof=None, stone=None, whole=None):
     """Roof = saturated red-orange in the top 62% (the brown timbers, doors and
-    lit windows are yellower and stay put); stone = the near-grey pixels."""
+    lit windows are yellower and stay put); stone = the near-grey pixels;
+    whole = (saturation, brightness, RGB tint[, brightness for green pixels]) over every pixel, for ground."""
     a = np.array(c).astype(float)
     hsv = np.array(c.convert('RGB').convert('HSV')).astype(float) / 255
     H, S, V = hsv[..., 0] * 360, hsv[..., 1], hsv[..., 2]
@@ -183,6 +195,15 @@ def recolour(c, roof=None, stone=None):
         tint, k = stone
         m = (a[..., 3] > 0) & (S < 0.2) & (V > 0.18)
         out[..., :3][m] = np.clip(a[..., :3][m] * np.array(tint) * k, 0, 255)
+    if whole:
+        sat, val, tint = whole[:3]
+        rgb = out[..., :3]
+        grey = rgb.mean(2, keepdims=True)
+        v = np.full(rgb.shape[:2] + (1,), float(val))
+        if len(whole) > 3:                     # grass and moss burn darker than stone
+            green = (H > 50) & (H < 160) & (S > 0.25)
+            v[green] = whole[3]
+        out[..., :3] = np.clip((grey + (rgb - grey) * sat) * v * np.array(tint), 0, 255)
     return Image.fromarray(out.astype(np.uint8), 'RGBA')
 
 

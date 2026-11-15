@@ -5,7 +5,7 @@
 const {MapBuilder, T, P} = require('./builder');
 
 const LORE = {
-  gate:   ['The Wardgate of Corvanthe', 'Barred from the outside, under a city watch seal gone green with age. Bruise-coloured light flickers along the top of the wall, and the air tastes of copper. Not yet.'],
+  gate:   ['The Wardgate of Corvanthe', 'Barred from the outside under a city watch seal gone green with age, but somebody has cut a man-sized door through the bar. Bruise-coloured light flickers along the top of the wall, and the air tastes of copper.'],
   camp:   ['Gleaner Camp', 'Bedrolls, a cold firepit, crates stencilled with a crowned skull. Whoever camped here went over the wall and left their supper on the coals.'],
   sign:   ['Waymarker', '"CORVANTHE, 2 MILES." Someone has scratched out the 2 and carved NEVER.'],
   debris: ['Blast Debris', 'Stones from inside the city, thrown clean over the wall. Each one is glassy on the side that faced the Wound.'],
@@ -42,7 +42,7 @@ module.exports = function corvantheRoad(rects){
   m.place('arch',GATE_X,WALL_Y,{lore:'gate'});
   m.wallRun(WALL_Y,14*T,W-30,[[GATE_X-50,GATE_X+50]],
     ['wallLow1','ruinWall2','wallLow2','ruinWall1','wallLow1','rubble2','wallLow2']);
-  m.blocks.push({x:0,y:0,w:W,h:WALL_Y+2});      // nobody goes over the wall. Yet.
+  m.blocks.push({x:0,y:0,w:W,h:WALL_Y+2});      // nobody goes over the wall, only through the gate
   // the Unweaving's light, flickering over the city at night
   for(const x of [18*T,26*T,GATE_X,40*T]) m.glows.push({x, y:WALL_Y-140, r:300, c:'170,110,255'});
   m.glows.push({x:GATE_X, y:WALL_Y-40, r:160, c:'200,150,255'});
@@ -68,6 +68,7 @@ module.exports = function corvantheRoad(rects){
 
   // ── arrivals and ways out ──
   m.spawns={west:[100,19*T+10], gate:[GATE_X,WALL_Y+120]};
-  m.exits=[{x:0,y:18*T,w:48,h:2*T,label:'Hollowmere',to:{map:'hollowmere',spawn:'east'}}];
+  m.exits=[{x:0,y:18*T,w:48,h:2*T,label:'Hollowmere',to:{map:'hollowmere',spawn:'east'}},
+    {x:GATE_X-40,y:WALL_Y-10,w:80,h:30,dir:'N',label:'Corvanthe: Cindergate',to:{map:'cindergate',spawn:'gate'}}];
   return m;
 };
