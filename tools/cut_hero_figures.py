@@ -131,21 +131,42 @@ def boxes(im):
     if nb: sk.append(nb)                                 # neck, no cap: no wood near it (after the hands: skin[0] is the face)
     # the hair, exactly: silver strands grown up to 4 px into their pinkish- and blue-grey edges, in
     # clumps near the head (a beard can reach the belt; potion and buckle glints are small and apart)
-    grown, q = set(silver), deque((p, 0) for p in silver)
+    core = set()
+    for (x, y) in [(x, y) for y in range(int(H * 0.62)) for x in range(int(W * 0.2), int(W * 0.76))]:
+        r, g, b, a = px[x, y]
+        if not a: continue
+        h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255); h *= 360
+        if v > 0.42 and (s < 0.2 or (s < 0.34 and (h >= 190 or h < 12))): core.add((x, y))   # warmer greys too
+    grown, q = set(core), deque((p, 0) for p in core)
     while q:
         (x, y), d = q.popleft()
-        if d >= 4: continue
+        if d >= 6: continue
         for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
             if n in grown or not (0 <= n[0] < W and 0 <= n[1] < H * 0.62): continue
             r, g, b, a = px[n]
             if not a: continue
             h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255); h *= 360
-            if s < 0.34 and v > 0.3 and not (255 <= h <= 320):
+            if s < 0.46 and v > 0.4 and (h < 60 or h >= 180) and not (255 <= h <= 320):   # into the cream and pinkish strands
                 grown.add(n); q.append((n, d + 1))
     if hb:
         ax0, ax1, ay0, ay1 = (hb[0] - 0.16) * W, (hb[2] + 0.16) * W, (hb[1] - 0.06) * H, (hb[3] + 0.28) * H
-        keep = [c for c in clumps(grown, W, H) if len(c) >= 30 and any(ax0 <= x <= ax1 and ay0 <= y <= ay1 for x, y in c[::7])]
-        pts = [p for c in keep for p in c]
+        fx0, fy0, fx1, fy1 = hb[0] * W, hb[1] * H, hb[2] * W, hb[3] * H
+        inface = lambda c: all(fx0 <= x <= fx1 and fy0 <= y <= fy1 for x, y in c)
+        brow = lambda c: sum(y for _, y in c) / len(c) < fy0 + 0.45 * (fy1 - fy0)   # eyebrows sit in the face's upper part
+        def ok(c):
+            if inface(c) and len(c) < 150: return len(c) >= 5 and brow(c)   # smallish and inside the face: an eyebrow, not a cheek or lip highlight (beards are bigger)
+            return len(c) >= 30
+        keep = [c for c in clumps(grown, W, H) if ok(c) and any(ax0 <= x <= ax1 and ay0 <= y <= ay1 for x, y in c[::7])]
+        pts = {p for c in keep for p in c}
+        # eye whites aren't hair: drop what lies within 3 px of an iris (strong blue inside the face)
+        iris = set()
+        for y in range(int(fy0), int(fy1) + 1):
+            for x in range(int(fx0), int(fx1) + 1):
+                r, g, b, a = px[x, y]
+                if not a: continue
+                h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255); h *= 360
+                if 185 <= h < 255 and s > 0.45 and v > 0.3: iris.add((x, y))
+        pts = [p for p in pts if not any((p[0] + dx, p[1] + dy) in iris for dx in range(-5, 6) for dy in range(-5, 3))]   # beside and below an iris; eyebrows just above it stay
         if pts:
             hairMask = Image.new('L', (W, H), 0); mp = hairMask.load()
             for p in pts: mp[p] = 255
