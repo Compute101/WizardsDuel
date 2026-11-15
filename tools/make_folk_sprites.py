@@ -72,10 +72,39 @@ def cut_backdrop(im):
     out.putalpha(out.getchannel('A').point(lambda v: 255 if v >= 128 else 0))
     return out
 
+# where a base figure's magic is, as fractions of its cut-out (x0, y0, x1, y1): the painted glow
+# round it is stripped there (deglow), leaving the flame and swirl strokes crisp, like old_eldrin
+MAGIC = {'old_witch': [(0, 0, 0.29, 0.27), (0.69, 0.19, 1, 0.47)]}
+
+def deglow(im, boxes, keep_g=110):
+    """Strip the soft blue glow inside the boxes: deep, dark-to-mid blue pixels (blue over green,
+    green at least red, green under keep_g) go transparent; the lighter cyan and white strokes stay.
+    Then drop specks of under 6 px left floating."""
+    px = im.load(); W, H = im.size
+    for (fx0, fy0, fx1, fy1) in boxes:
+        for y in range(int(fy0 * H), int(fy1 * H)):
+            for x in range(int(fx0 * W), min(W, int(fx1 * W) + 1)):
+                r, g, b, a = px[x, y]
+                if a and b > g and g >= r - 6 and r < 80 and g < keep_g: px[x, y] = (r, g, b, 0)
+    seen = bytearray(W * H)
+    for sy in range(H):
+        for sx in range(W):
+            if not px[sx, sy][3] or seen[sy * W + sx]: continue
+            comp, q = [], deque([(sx, sy)]); seen[sy * W + sx] = 1
+            while q:
+                x, y = q.popleft(); comp.append((x, y))
+                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if 0 <= nx < W and 0 <= ny < H and not seen[ny * W + nx] and px[nx, ny][3]:
+                        seen[ny * W + nx] = 1; q.append((nx, ny))
+            if len(comp) < 6:
+                for p in comp: px[p] = px[p][:3] + (0,)
+    return im
+
 def base(name):
     path = os.path.join(SRC, name + '.png')
     if name == 'old_witch' and not os.path.exists(path):
-        cut_backdrop(Image.open(os.path.join(SRC, 'old_witch_raw.png'))).save(path, optimize=True)
+        cut = cut_backdrop(Image.open(os.path.join(SRC, 'old_witch_raw.png')))
+        deglow(cut, MAGIC['old_witch']).save(path, optimize=True)
         print('cut', os.path.relpath(path, ROOT))
     return Image.open(path).convert('RGBA')
 
