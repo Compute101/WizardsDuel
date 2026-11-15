@@ -6,7 +6,7 @@
 //  (dialogs, gold, potions, spill, healing, practice duels, quest state).
 //  Three kinds of people (FOLK[role].kind), so the town has continuity:
 //   - 'local': Wrenford's own people (the dons, the Porter, the Bulldogs),
-//     who stay here for good; generic sprites until they get their own art.
+//     who stay here for good (the invented dons use recolours of Eldrin's old art, sprites/folk/).
 //   - 'roster' with fate 'metLater': a roster wizard who is here now, doesn't
 //     join you, and turns up later elsewhere ("we met at uni"). Absent if
 //     you're playing them.
@@ -41,10 +41,10 @@ const FOLK = {
   porter:  {kind:'local', title:'The Head Porter', fighter:'soldier'},
   bulldog: {kind:'local', title:'A Bulldog', sprite:'sprites/halberdier.png'},
   bulldog2:{kind:'local', title:'A Bulldog', sprite:'sprites/halberdier.png'},
-  tutor:   {kind:'local', title:'The Senior Tutor', name:'Dr Penhallow', sprite:'sprites/mage-light.png'},
-  keeper:  {kind:'local', title:'The Keeper of the Library', name:'Mr Quill', sprite:'sprites/mage-yellow.png'},
-  chaplain:{kind:'local', title:'The University Chaplain', name:'Canon Marrow', sprite:'sprites/mage-dark.png'},
-  dealer:  {kind:'local', title:'A Licensed Dealer', name:'Widow Coyle', sprite:'sprites/mage-green.png'},
+  tutor:   {kind:'local', title:'The Senior Tutor', name:'Dr Penhallow', sprite:'sprites/folk/tutor.png'},
+  keeper:  {kind:'local', title:'The Keeper of the Library', name:'Mr Quill', sprite:'sprites/folk/keeper.png'},
+  chaplain:{kind:'local', title:'The University Chaplain', name:'Canon Marrow', sprite:'sprites/folk/chaplain.png'},
+  dealer:  {kind:'local', title:'A Licensed Dealer', name:'Widow Coyle', sprite:'sprites/folk/dealer.png'},
   // roster wizards who stay, and join you later on University quests (field trips)
   weizan:  {kind:'roster', fate:'fieldTrip', title:'The Master of the Schools',    cast:['weizan','durin','skadi']},
   fizzwick:{kind:'roster', fate:'fieldTrip', title:'The Master of the Laboratory', cast:['fizzwick','zakkit','cinder']},
