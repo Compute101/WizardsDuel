@@ -1684,3 +1684,49 @@ body {
 #ovprof { margin: -18px 0 24px; font-size: 13px; color: #e8dcc0; line-height: 1.6; }
 .ovp-line b { color: #f0cc6a; }
 .pf-rankup { color: #f0cc6a; font-weight: 700; text-shadow: 0 0 10px #c9a84c; }
+
+/* ── EXPLORE (js/explore.js) ── */
+#explore-screen { display:none; position:fixed; inset:0; z-index:400; background:#10131a; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
+#explore-screen.active { display:block; }
+#ex-canvas { position:absolute; inset:0; display:block; cursor:pointer; }
+#explore-screen .ex-top { position:absolute; top:0; left:0; right:0; display:flex; align-items:center; gap:10px; padding:10px 16px; padding-top:max(10px, env(safe-area-inset-top)); background:linear-gradient(rgba(8,6,20,0.85),rgba(8,6,20,0)); pointer-events:none; }
+#explore-screen .ex-top > * { pointer-events:auto; }
+#explore-screen .ex-btn { font-family:'Cinzel', serif; font-size:13px; color:#f0e0b0; background:rgba(20,14,40,0.85); border:1px solid rgba(201,168,76,0.6); border-radius:6px; padding:6px 10px; cursor:pointer; }
+#explore-screen .ex-btn:hover { border-color:#c9a84c; background:rgba(40,28,70,0.9); }
+#explore-screen .ex-title { font-family:'Cinzel Decorative', serif; color:#c9a84c; font-size:18px; letter-spacing:2px; text-shadow:0 2px 6px #000; flex:1; }
+#explore-screen .ex-wiz { display:flex; align-items:center; gap:6px; background:rgba(20,14,40,0.75); border:1px solid rgba(201,168,76,0.35); border-radius:22px; padding:3px 6px; }
+#explore-screen .ex-wiz img { width:30px; height:30px; border-radius:50%; border:1px solid #c9a84c; object-fit:cover; }
+#explore-screen .ex-wiz span { font-family:'Cinzel', serif; font-size:12px; color:#f0e0b0; min-width:70px; text-align:center; }
+#explore-screen .ex-arrow { padding:3px 7px; font-size:11px; border-radius:50%; }
+#ex-mini { position:absolute; right:16px; bottom:16px; border:1px solid rgba(201,168,76,0.6); border-radius:4px; image-rendering:pixelated; opacity:0.85; box-shadow:0 2px 10px #000; pointer-events:none; }
+#explore-screen .ex-hint { position:absolute; left:50%; bottom:16px; transform:translateX(-50%); font-family:'Cinzel', serif; font-size:12px; color:#f0e0b0; background:rgba(8,6,20,0.7); padding:6px 12px; border-radius:6px; transition:opacity 1.5s; pointer-events:none; text-align:center; max-width:calc(100% - 32px); }
+#explore-screen .ex-hint.fade { opacity:0; }
+#explore-screen .ex-act { position:absolute; left:50%; bottom:58px; transform:translateX(-50%); font-size:14px; padding:9px 16px; box-shadow:0 0 14px rgba(201,168,76,0.4); }
+#explore-screen .ex-say { position:absolute; left:50%; bottom:20px; transform:translateX(-50%); width:min(520px, calc(100% - 32px)); background:rgba(14,10,30,0.94); border:1px solid #c9a84c; border-radius:8px; padding:12px 16px; box-shadow:0 4px 20px #000; cursor:pointer; }
+#explore-screen .ex-say-name { font-family:'Cinzel', serif; color:#c9a84c; font-size:14px; letter-spacing:1px; margin-bottom:4px; }
+#explore-screen .ex-say-text { font-family:Georgia, 'Times New Roman', serif; color:#efe6d0; font-size:15px; line-height:1.45; }
+#explore-screen .ex-loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Cinzel', serif; color:#c9a84c; }
+#explore-screen [hidden] { display:none !important; }
+@media (max-width:560px){
+  #explore-screen .ex-title { display:none; }
+  #explore-screen .ex-top { justify-content:space-between; }
+  #ex-mini { bottom:auto; top:58px; }
+}
+#explore-screen .ex-fade { position:absolute; inset:0; background:#000; opacity:0; pointer-events:none; transition:opacity .28s; z-index:5; }
+#explore-screen .ex-fade.on { opacity:1; }
+#explore-screen .ex-toast { position:absolute; left:50%; top:64px; transform:translateX(-50%); font-family:'Cinzel', serif; font-size:13px; color:#f0e0b0; background:rgba(14,10,30,0.92); border:1px solid rgba(201,168,76,0.6); border-radius:6px; padding:7px 14px; z-index:6; }
+#explore-screen .ex-world { position:absolute; inset:0; z-index:4; background:rgba(8,6,4,0.94); display:flex; flex-direction:column; }
+#explore-screen .ex-world-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 16px; padding-top:max(10px, env(safe-area-inset-top)); font-family:'Cinzel Decorative', serif; color:#c9a84c; font-size:18px; letter-spacing:1px; }
+#ex-world-cv { flex:1; width:100%; min-height:0; display:block; cursor:pointer; }
+#explore-screen .ex-world-panel { margin:10px auto 16px; width:min(560px, calc(100% - 32px)); background:rgba(14,10,30,0.94); border:1px solid #c9a84c; border-radius:8px; padding:12px 16px; display:grid; grid-template-columns:1fr auto; gap:4px 14px; align-items:center; }
+#explore-screen .ex-wp-name { font-family:'Cinzel', serif; color:#c9a84c; font-size:15px; letter-spacing:1px; }
+#explore-screen .ex-wp-text { grid-column:1; font-family:Georgia, 'Times New Roman', serif; color:#efe6d0; font-size:14px; line-height:1.4; }
+#explore-screen .ex-wp-go { grid-column:2; grid-row:1 / span 2; font-size:14px; padding:9px 16px; }
+#explore-screen .ex-wp-go:disabled { opacity:0.45; cursor:default; }
+@media (max-width:560px){
+  #explore-screen .ex-world-panel { grid-template-columns:1fr; }
+  #explore-screen .ex-wp-go { grid-column:1; grid-row:auto; }
+}
+#explore-screen .ex-spill { display:flex; gap:8px; align-items:center; background:rgba(20,14,40,0.75); border:1px solid rgba(201,168,76,0.35); border-radius:14px; padding:4px 10px; font-family:'Cinzel', serif; font-size:12px; color:#f0e0b0; }
+#explore-screen .ex-spill span { display:flex; align-items:center; gap:4px; }
+#explore-screen .ex-spill i { width:9px; height:9px; border-radius:2px; transform:rotate(45deg); box-shadow:0 0 6px currentColor; display:inline-block; }

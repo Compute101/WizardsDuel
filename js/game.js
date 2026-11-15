@@ -3794,7 +3794,12 @@ function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}
 //     stops blows), so striking a guarding soldier is a waste: hit someone else, or Grapple him.
 //   ranged (Archer): her Attack is a bow shot: it slips past a Guard (no block, no counter), and she keeps
 //     her distance, so a Grapple at her fails.
-const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'}};
+const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'},
+  echo:{name:'Echo',icon:'✦'}};
+// Echoes (Explore: Corvanthe's citizens remade in one element, fighters.json `echo`): their blow is a
+// strike in that element (magic: a ward stops it, a Guard doesn't), they shrug off their own element
+// and their element's opposite tears them apart.
+const ECHO_RULES={own:0.5, opposite:1.5};
 function isFighter(who){ return !!(gs[who]&&seatCfg(who).fighter); }
 function traitOf(who){ return gs[who]?seatCfg(who).trait||null:null; }
 // ── SURVIVAL (Encounters): a fixed ladder of waves ─────────────────────────────────
@@ -3857,7 +3862,7 @@ function renderEncounterSetup(){
   }).join('')+'</ol>'+
   (bestList.length?'<div class="enc-best">🏆 Best runs: '+bestList.map(([k,n])=>`${CHAR_DEFS[k]?CHAR_DEFS[k].name:k} ${n===SURVIVAL_WAVES.length?'all '+n:n}`).join(' · ')+'</div>':'')+
   '<button class="btn" id="btn-enc-go">Choose Your Wizard →</button>'+
-  '<div class="enc-traits">'+Object.keys(FIGHTER_DEFS).map(k=>{
+  '<div class="enc-traits">'+Object.keys(FIGHTER_DEFS).filter(k=>!FIGHTER_DEFS[k].echo).map(k=>{
     const f=FIGHTER_DEFS[k], t=FIGHTER_TRAITS[f.trait]||{};
     return `<div class="enc-trait"><b>${t.icon||''} ${f.title}</b> — ${f.desc}</div>`;
   }).join('')+'</div>';
@@ -3867,6 +3872,24 @@ function startEncounter(wizKey){
   startMultiBattle(waveSeats(wizKey,0,true));
   waveBanner();
 }
+// ── EXPLORE BATTLES: a fight on the map (js/explore.js) played here, then back to the map ──
+// foes: [{key, level}] fighters (Echoes); onEnd(won) is called when the player leaves the result screen.
+let exploreFight=null;
+function startExploreBattle({wizKey, foes, onEnd}){
+  survival=null; encounterPending=false;
+  const seen={}, count=k=>foes.filter(f=>f.key===k).length;
+  const seats=[{key:wizKey,human:true,team:'A'}].concat(foes.map(f=>{
+    const cfg=fighterCfg(f.key,f.level||0);
+    seen[f.key]=(seen[f.key]||0)+1;
+    if(count(f.key)>1) cfg.name+=' '+['I','II','III','IV'][seen[f.key]-1];
+    return {key:f.key,cfg,human:false,team:'B'};
+  }));
+  exploreFight={onEnd, foes};
+  multiMode=true; trainingMode=false; twoPlayerMode=false;
+  if(window.Profiles&&Profiles.setSeats) Profiles.setSeats({});
+  startMultiBattle(seats);
+}
+window.startExploreBattle=startExploreBattle;
 // The breather between waves: heal, mana, curses gone (the rest carries on)
 function survivalBreather(){
   const st=gs.p1, B=SURVIVAL_BREATHER, hp0=st.hp, mana0=st.mana;
@@ -4680,6 +4703,11 @@ function executeAction(who,action,cb){
   const intoGrapple=ta&&ta.act==='grapple'&&ta.target===who;
   const power=Math.round(ph.atk*(intoGrapple?ACT_RULES.attackVsGrapple:1));
   if(intoGrapple) addFloat(seatX(tgt),bH*.36,'⚔️ Caught mid-grapple!','#ffd75a',13);
+  const echo=seatCfg(who).echo;
+  if(echo){
+    // An Echo's blow: an inner-ring strike of its element, with that element's own look
+    executeWheel(who,{cat:'damage',elem:echo,tier:1,power,target:tgt},cb); return;
+  }
   if(traitOf(who)==='ranged'){
     // An archer's shot: an arrow flies (it slips past a Guard, in strikeResolve)
     anim(who,'cast',500);
@@ -4694,7 +4722,7 @@ function executeAction(who,action,cb){
 function executeWheel(who,action,cb){
   const st=gs[who], x=seatX(who), y=wizMidY(who);
   const cat=ELEM_CATS[action.cat], el=elemById(action.elem);
-  const power=cat.power[action.tier-1];
+  const power=action.power||cat.power[action.tier-1];   // action.power: an Echo's blow
   if(action.cat==='protect'){
     const ally=protectTarget(who,action);
     raiseWard(ally,action.elem,power,0);
@@ -5306,6 +5334,9 @@ function strikeResolve(who,tgt,o,b){
   // Drenched: the next Lightning strike conducts, the next Fire strike is doused (either uses it up)
   const wet=(o.elem==='lightning'||o.elem==='fire')&&strikeKind(o)!=='physical'&&effectsOf(ts,'drenched')[0];
   if(wet){ dmg*=DRENCH[o.elem]; ts.effects=ts.effects.filter(e=>e!==wet); b.drenchHit=o.elem; }
+  const echo=tgt!==who&&strikeKind(o)!=='physical'&&seatCfg(tgt).echo;
+  if(echo&&o.elem===echo){ dmg*=ECHO_RULES.own; if(!simMode) addFloat(seatX(tgt),bH*.36,'✦ Drinks the '+elemById(echo).name,'#c8c0b0',12); }
+  else if(echo&&o.elem===opposedElem(echo)){ dmg*=ECHO_RULES.opposite; if(!simMode) addFloat(seatX(tgt),bH*.36,'✦ Unravels!','#ffd75a',13); }
   effectsOf(ts,'vuln').forEach(e=>{ dmg*=1+e.pct; });
   // magicOnly resists skip blows; physOnly ones (Stonesoul, Iron Patience, Dragon Scales: physical defence) skip magic
   const resist=effectsOf(ts,'resist').filter(e=>!(e.magicOnly&&strikeKind(o)==='physical')&&!(e.physOnly&&strikeKind(o)!=='physical'))
@@ -6232,6 +6263,22 @@ function showMultiEnd(team){
   gameEnded=true;
   gs.myTurn=false; gs.busy=true;
   const winners=team?PLAYERS.filter(w=>seatTeam(w)===team):[];
+  if(exploreFight){
+    const won=team===seatTeam('p1');
+    exploreFight.won=won;
+    setTimeout(()=>{
+      battleRunning=false;
+      document.getElementById('ovico').textContent=won?'✦':'☠';
+      const title=document.getElementById('ovtitle');
+      title.textContent=won?'The Echoes Scatter':gs.timeUp?'Driven Back':'Overcome';
+      title.style.color=won?seatCfg('p1').col:'#ff6677';
+      document.getElementById('ovdesc').textContent=won?'They will gather again at the Wound, in time. For now, the street is yours.':
+        seatCfg('p1').name+' falls back, burnt and bruised, to the last safe place.';
+      document.getElementById('btn-continue').textContent='Back to the Map';
+      document.getElementById('overlay').classList.add('active');
+    },1800);
+    return;
+  }
   recordMulti(team,winners);
   const names=ws=>ws.map(w=>seatCfg(w).name).join(' & ');
   if(survival){
@@ -10473,6 +10520,12 @@ window.addEventListener('DOMContentLoaded', ()=>{
 
   document.getElementById('btn-continue').addEventListener('click',()=>{
     document.getElementById('overlay').classList.remove('active');
+    if(exploreFight){
+      const f=exploreFight; exploreFight=null;
+      battleRunning=false; gameEnded=false; endMultiMode(); showScreen('title-screen');
+      if(f.onEnd) f.onEnd(!!f.won);
+      return;
+    }
     if(multiMode){ battleRunning=false; gameEnded=false; endMultiMode(); showScreen('title-screen'); return; }
     if(twoPlayerMode){
       const isMatchOver=p1MatchWins>=2||p2MatchWins>=2||matchRound>=3;

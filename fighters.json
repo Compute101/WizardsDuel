@@ -54,5 +54,373 @@
         }
       }
     }
+  },
+  "echo_fire_weak": {
+    "name": "EMBER APPRENTICE",
+    "title": "A forge apprentice of living flame",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "fire",
+    "echoTier": "weak",
+    "sprite": "sprites/echoes/fire_weak.png",
+    "spriteHeight": 1.0,
+    "col": "#ff8a3a",
+    "hp": 26,
+    "phys": {
+      "atk": 5
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in fire. Its blow is a fire strike (a ward stops it); it shrugs off fire and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_fire_strong": {
+    "name": "FORGE-MASTER",
+    "title": "Molten iron, an anvil on a chain",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "fire",
+    "echoTier": "strong",
+    "sprite": "sprites/echoes/fire_strong.png",
+    "spriteHeight": 1.3,
+    "col": "#ff8a3a",
+    "hp": 58,
+    "phys": {
+      "atk": 8
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in fire. Its blow is a fire strike (a ward stops it); it shrugs off fire and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_water_weak": {
+    "name": "DROWNED DOCKHAND",
+    "title": "A dockhand of churning black water",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "water",
+    "echoTier": "weak",
+    "sprite": "sprites/echoes/water_weak.png",
+    "spriteHeight": 1.0,
+    "col": "#4aa8e0",
+    "hp": 26,
+    "phys": {
+      "atk": 5
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in water. Its blow is a water strike (a ward stops it); it shrugs off water and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_water_strong": {
+    "name": "HARBOUR-WARDEN",
+    "title": "Deep water in barnacled armour",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "water",
+    "echoTier": "strong",
+    "sprite": "sprites/echoes/water_strong.png",
+    "spriteHeight": 1.3,
+    "col": "#4aa8e0",
+    "hp": 58,
+    "phys": {
+      "atk": 8
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in water. Its blow is a water strike (a ward stops it); it shrugs off water and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_earth_weak": {
+    "name": "STONE MASON",
+    "title": "A mason of cracked grey rock",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "earth",
+    "echoTier": "weak",
+    "sprite": "sprites/echoes/earth_weak.png",
+    "spriteHeight": 1.0,
+    "col": "#a89070",
+    "hp": 26,
+    "phys": {
+      "atk": 5
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in earth. Its blow is a earth strike (a ward stops it); it shrugs off earth and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_earth_strong": {
+    "name": "QUARRY-BOSS",
+    "title": "Boulders and ore, a pick the size of a man",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "earth",
+    "echoTier": "strong",
+    "sprite": "sprites/echoes/earth_strong.png",
+    "spriteHeight": 1.3,
+    "col": "#a89070",
+    "hp": 58,
+    "phys": {
+      "atk": 8
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in earth. Its blow is a earth strike (a ward stops it); it shrugs off earth and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_lightning_weak": {
+    "name": "BELL-RINGER",
+    "title": "A bell-ringer of crackling storm",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "lightning",
+    "echoTier": "weak",
+    "sprite": "sprites/echoes/lightning_weak.png",
+    "spriteHeight": 1.0,
+    "col": "#9aa8ff",
+    "hp": 26,
+    "phys": {
+      "atk": 5
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in lightning. Its blow is a lightning strike (a ward stops it); it shrugs off lightning and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_lightning_strong": {
+    "name": "SPIRE-WARDEN",
+    "title": "Storm cloud and forked lightning",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "lightning",
+    "echoTier": "strong",
+    "sprite": "sprites/echoes/lightning_strong.png",
+    "spriteHeight": 1.3,
+    "col": "#9aa8ff",
+    "hp": 58,
+    "phys": {
+      "atk": 8
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in lightning. Its blow is a lightning strike (a ward stops it); it shrugs off lightning and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_ice_weak": {
+    "name": "FROST TRADER",
+    "title": "A market trader frozen mid-sale",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "ice",
+    "echoTier": "weak",
+    "sprite": "sprites/echoes/ice_weak.png",
+    "spriteHeight": 1.0,
+    "col": "#a8e0ff",
+    "hp": 26,
+    "phys": {
+      "atk": 5
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in ice. Its blow is a ice strike (a ward stops it); it shrugs off ice and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_ice_strong": {
+    "name": "RIME ALDERMAN",
+    "title": "A giant of jagged ice and a chain of office",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "ice",
+    "echoTier": "strong",
+    "sprite": "sprites/echoes/ice_strong.png",
+    "spriteHeight": 1.3,
+    "col": "#a8e0ff",
+    "hp": 58,
+    "phys": {
+      "atk": 8
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in ice. Its blow is a ice strike (a ward stops it); it shrugs off ice and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_air_weak": {
+    "name": "GALE LADY",
+    "title": "A lady of the hill houses, all wind and veil",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "air",
+    "echoTier": "weak",
+    "sprite": "sprites/echoes/air_weak.png",
+    "spriteHeight": 1.0,
+    "col": "#d8d4f0",
+    "hp": 26,
+    "phys": {
+      "atk": 5
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in air. Its blow is a air strike (a ward stops it); it shrugs off air and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_air_strong": {
+    "name": "WHIRLWIND NOBLE",
+    "title": "Storm wind and orbiting wreckage",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "air",
+    "echoTier": "strong",
+    "sprite": "sprites/echoes/air_strong.png",
+    "spriteHeight": 1.3,
+    "col": "#d8d4f0",
+    "hp": 58,
+    "phys": {
+      "atk": 8
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in air. Its blow is a air strike (a ward stops it); it shrugs off air and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_arcane_weak": {
+    "name": "ECHO SCHOLAR",
+    "title": "A student of blue-violet light",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "arcane",
+    "echoTier": "weak",
+    "sprite": "sprites/echoes/arcane_weak.png",
+    "spriteHeight": 1.0,
+    "col": "#b07aff",
+    "hp": 26,
+    "phys": {
+      "atk": 5
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in arcane. Its blow is a arcane strike (a ward stops it); it shrugs off arcane and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_arcane_strong": {
+    "name": "HOURGLASS PROFESSOR",
+    "title": "Pure arcane force, runes orbiting",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "arcane",
+    "echoTier": "strong",
+    "sprite": "sprites/echoes/arcane_strong.png",
+    "spriteHeight": 1.3,
+    "col": "#b07aff",
+    "hp": 58,
+    "phys": {
+      "atk": 8
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in arcane. Its blow is a arcane strike (a ward stops it); it shrugs off arcane and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_dark_weak": {
+    "name": "SHADOW ACOLYTE",
+    "title": "A temple acolyte of living shadow",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "dark",
+    "echoTier": "weak",
+    "sprite": "sprites/echoes/dark_weak.png",
+    "spriteHeight": 1.0,
+    "col": "#8a5ab8",
+    "hp": 26,
+    "phys": {
+      "atk": 5
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in dark. Its blow is a dark strike (a ward stops it); it shrugs off dark and its opposite tears it apart.",
+    "arena": "ruins"
+  },
+  "echo_dark_strong": {
+    "name": "GLOAM BISHOP",
+    "title": "Deep darkness, chains of shadow",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "dark",
+    "echoTier": "strong",
+    "sprite": "sprites/echoes/dark_strong.png",
+    "spriteHeight": 1.3,
+    "col": "#8a5ab8",
+    "hp": 58,
+    "phys": {
+      "atk": 8
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(it does not see you; it sees the street as it was)",
+      "(the light in it flares)"
+    ],
+    "desc": "An Echo of Corvanthe, remade in dark. Its blow is a dark strike (a ward stops it); it shrugs off dark and its opposite tears it apart.",
+    "arena": "ruins"
   }
 }
