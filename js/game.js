@@ -9625,7 +9625,6 @@ function showWizardDetail(key){
   chooseBtn.style.borderColor=col;
   chooseBtn.style.color=col;
   chooseBtn.dataset.key=key;
-  document.getElementById('wd-info').scrollTop=0;
   document.getElementById('wizard-detail').classList.add('active');
 }
 
