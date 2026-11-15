@@ -18,11 +18,30 @@ const WIZ_H = 62;             // wizard drawn height, world px (a door is ~70 at
 const SPEED = 175;            // world px / s
 const INSPECT_R = 46;         // how close (to its footprint's edge) to stand to inspect something
 const START = {map:'wrenford', spawn:'start'};   // a new game starts in Wrenford, the University town (the tutorial)
-// One save per player profile (js/profiles.js), Guest included: wd-explore-save:<profile id> holds where
-// you are, what you carry, what you've found and done. The old device-wide save moves to the first
-// profile that opens Explore.
+// Save slots: each player profile (js/profiles.js, Guest included) keeps one save per wizard it has made,
+// wd-explore-save:<profile id>:<slot>, holding where you are, what you carry, what you've found and done.
+// New Game makes a slot; Load Game lists them. The older single save per profile (wd-explore-save:<id>)
+// and the device-wide one before that (wd-explore-state) become slots the first time the list is read.
 const LEGACY_SAVE = 'wd-explore-state';
 const saveKeyFor = id => 'wd-explore-save:'+id;
+const slotPrefix = id => 'wd-explore-save:'+id+':';
+const newSlotKey = id => slotPrefix(id)+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+function slotsOf(id){
+  try{
+    for(const old of [saveKeyFor(id),LEGACY_SAVE]){
+      const v=localStorage.getItem(old);
+      if(v){ localStorage.setItem(newSlotKey(id),v); localStorage.removeItem(old); }
+    }
+  }catch(e){}
+  const out=[];
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i); if(!k||!k.startsWith(slotPrefix(id))) continue;
+      try{ const v=JSON.parse(localStorage.getItem(k)); if(v&&v.map) out.push({key:k,s:v}); }catch(e){}
+    }
+  }catch(e){}
+  return out.sort((a,b)=>(b.s.t||0)-(a.s.t||0));
+}
 function profileNow(){ try{ const p=typeof Profiles!=='undefined'&&Profiles.active(); return p?{id:p.id,name:p.name}:{id:'guest',name:'Guest'}; }catch(e){ return {id:'guest',name:'Guest'}; } }
 const MAP_NAMES = {wrenford:'Wrenford', hollowmere:'Hollowmere', corvanthe_road:'the Corvanthe Road', cindergate:'Cindergate', heights:'the Heights', spirewatch:'Spirewatch',
   collegium:'the Collegium', drowned_quarter:'the Drowned Quarter', quarry_ward:'the Quarry Ward', frostmarket:'Frostmarket', gloamside:'Gloamside'};
@@ -71,7 +90,7 @@ let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
 let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null, quests={};
 const POTION_HEAL=0.3, POTION_PRICE={shop:8, safehouse:10}, MAX_ALLIES=2;
-let found=new Set(), spill={}, cleared={}, actors=[], grace=0, crews=[], bandState={}, parley=null, clashes=[], visited=new Set(), saveOwner=null, hero=null, creating=false, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
+let found=new Set(), spill={}, cleared={}, actors=[], grace=0, crews=[], bandState={}, parley=null, clashes=[], visited=new Set(), saveOwner=null, saveKey=null, lastPlace='', hero=null, creating=false, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
 const imgCache={};
 function imgOf(src){ if(!imgCache[src]){ const i=new Image(); i.src=src; imgCache[src]=i; } return imgCache[src]; }
 
@@ -731,7 +750,7 @@ function bagClick(e){
 }
 async function startOver(){
   closeBag();
-  try{ localStorage.removeItem(saveKeyFor(saveOwner)); }catch(e){}
+  try{ if(saveKey) localStorage.removeItem(saveKey); }catch(e){}
   applySave(null); renderSpill(); renderHp(); renderClock();
   await createHero(false);
   await enterMap(START.map,START.spawn);
@@ -865,22 +884,19 @@ async function enterMap(id,at,instant){
   finally{ busy=false; fade(false); }
 }
 function save(){
-  if(!MAP||!saveOwner) return;
-  try{ localStorage.setItem(saveKeyFor(saveOwner),JSON.stringify({v:2, t:Date.now(), map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,hero,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
+  if(!MAP||!saveKey||!hero) return;                // nothing is kept until the wizard has been made
+  if(!MAP.interior&&MAP.name) lastPlace=MAP.name;    // a room is listed under the town it's in
+  try{ localStorage.setItem(saveKey,JSON.stringify({v:2, t:Date.now(), place:lastPlace, map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,hero,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
 }
-function loadSave(id){
-  try{
-    let raw=localStorage.getItem(saveKeyFor(id));
-    if(!raw){ const old=localStorage.getItem(LEGACY_SAVE); if(old){ raw=old; localStorage.setItem(saveKeyFor(id),old); localStorage.removeItem(LEGACY_SAVE); } }
-    return JSON.parse(raw||'null');
-  }catch(e){ return null; }
+function loadSave(key){
+  try{ return key?JSON.parse(localStorage.getItem(key)||'null'):null; }catch(e){ return null; }
 }
 // everything a save holds, from a save (or a fresh start with none)
 function applySave(s){
   s=s||{};
   found=new Set(s.found||[]); visited=new Set(s.visited||[]); spill=s.spill||{}; cleared=s.cleared||{};
   clock=s.clock!=null?s.clock:9*60; lightMode=s.lightMode||'auto'; vit=s.vit||{};
-  gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; quests=s.quests||{}; hero=s.hero||null; roomSpec=s.roomSpec||null; bandState=s.bands||{};
+  gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; quests=s.quests||{}; hero=s.hero||null; roomSpec=s.roomSpec||null; bandState=s.bands||{}; lastPlace=s.place||'';
   if(s.map&&!s.map.startsWith('room:')) visited.add(s.map);
   for(const id of found){ const l=world&&world.locations.find(x=>x.id===id); if(l&&l.map) visited.add(l.map); }   // older saves knew only world-map places
 }
@@ -1146,9 +1162,33 @@ async function useHero(){
   el.root.querySelectorAll('#ex-prev,#ex-next').forEach(b=>b.hidden=true);
   setWizard(0);
 }
+// The character-creation theme loops while the creator is open, and fades out when it closes.
+// playTheme is also called straight from the New Game tap, so phones count it as user-started.
+const THEME_SRC='audio/creation_theme.mp3', THEME_VOL=0.7;
+let theme=null, themeFade=0;
+function playTheme(){
+  try{
+    if(!theme){ theme=new Audio(THEME_SRC); theme.loop=true; theme.preload='auto'; }
+    clearInterval(themeFade); theme.volume=THEME_VOL;
+    if(!theme.paused) return;
+    theme.currentTime=0;
+    const p=theme.play(); if(p&&p.catch) p.catch(()=>{});
+  }catch(e){}
+}
+function stopTheme(){
+  if(!theme||theme.paused) return;
+  clearInterval(themeFade);
+  themeFade=setInterval(()=>{
+    theme.volume=Math.max(0,theme.volume-0.05);
+    if(theme.volume<=0){ clearInterval(themeFade); theme.pause(); }
+  },40);
+}
 async function createHero(edit){
   creating=true; keys.clear(); target=null; hideSay();
-  const h=await window.ExploreHero.open(el.root,{hero:edit?hero:null, edit:!!edit});
+  playTheme();
+  let h;
+  try{ h=await window.ExploreHero.open(el.root,{hero:edit?hero:null, edit:!!edit}); }
+  finally{ stopTheme(); }
   creating=false;
   if(h){ hero=h; await useHero(); save(); }
   return h;
@@ -1576,16 +1616,21 @@ async function load(){
   wizKeys=Object.keys(chars).filter(k=>chars[k].sprite);
   built=true;
 }
-async function open(){
+// open({fresh:true}) is New Game: a new save slot, so the creator opens in Wrenford.
+// open({slot:key}) loads that slot (Load Game); open() (Test → Explore) the profile's latest, or a new one.
+async function open(opts){
+  opts=opts||{};
   if(!el.root) buildDom();
   el.root.classList.add('active'); el.loading.hidden=false;
   running=true; resize();
   try{
     await load();
     const who=profileNow();
-    if(who.id!==saveOwner) MAP=null;                 // another profile's game: load theirs from the start
-    saveOwner=who.id;
-    var s=loadSave(who.id);
+    let key=opts.fresh?newSlotKey(who.id):opts.slot;
+    if(!key) key=(who.id===saveOwner&&saveKey)||((slotsOf(who.id)[0]||{}).key)||newSlotKey(who.id);
+    if(key!==saveKey||who.id!==saveOwner) MAP=null;  // another game: load it from the start
+    saveOwner=who.id; saveKey=key;
+    var s=loadSave(key);
     applySave(s); renderSpill();
     if(!MAP){
       if(s&&s.map) await enterMap(s.map,[s.x,s.y],true);
@@ -1604,16 +1649,78 @@ async function open(){
   setTimeout(()=>{ if(el.hint) el.hint.classList.add('fade'); },7000);
 }
 function close(){
-  save();
+  save(); stopTheme();
   running=false; keys.clear(); target=null; hideSay(); closeWorld();
   el.root.classList.remove('active');
+  refreshTitle();
 }
 
+// ── title screen: New Game, Load Game (a list of this profile's wizards), the rest behind Test ──
+function refreshTitle(){
+  const load=document.getElementById('btn-load-game'), note=document.getElementById('title-load-note');
+  if(!load) return;
+  const n=slotsOf(profileNow().id).length;
+  load.disabled=!n;
+  if(note) note.textContent=n?n+' saved wizard'+(n>1?'s':''):'No saved game yet';
+}
+const escHtml=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let loadEl=null, loadConfirm=null;
+function openLoad(){
+  if(!loadEl){
+    loadEl=document.createElement('div'); loadEl.id='load-overlay';
+    loadEl.innerHTML='<div class="pf-box ld-box"><div class="ld-head">Load Game</div><div class="ld-sub"></div><div class="ld-list"></div><button class="btn wd-back-btn ld-back" type="button">← Back</button></div>';
+    document.body.appendChild(loadEl);
+    loadEl.addEventListener('click',e=>{
+      const t=e.target.closest('button'); if(!t) return;
+      if(t.classList.contains('ld-back')){ closeLoad(); return; }
+      const key=t.dataset.key; if(!key) return;
+      if(t.classList.contains('ld-del')){
+        if(loadConfirm!==key){ loadConfirm=key; renderLoad(); return; }
+        try{ localStorage.removeItem(key); }catch(e){}
+        if(key===saveKey){ saveKey=null; MAP=null; }
+        loadConfirm=null; renderLoad(); refreshTitle();
+        if(!slotsOf(profileNow().id).length) closeLoad();
+        return;
+      }
+      closeLoad(); open({slot:key});
+    });
+  }
+  loadConfirm=null; renderLoad(); loadEl.classList.add('show');
+}
+function closeLoad(){ if(loadEl) loadEl.classList.remove('show'); loadConfirm=null; refreshTitle(); }
+function renderLoad(){
+  const who=profileNow(), list=slotsOf(who.id), H=window.ExploreHero;
+  loadEl.querySelector('.ld-sub').textContent=who.name+'’s wizards';
+  const ago=t=>t?new Date(t).toLocaleString(undefined,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+  loadEl.querySelector('.ld-list').innerHTML=list.length?list.map(({key,s})=>{
+    const h=s.hero, el=H&&h?(H.ELEMS.find(e=>e.id===h.elem)||{}):{};
+    const title=h?({young:'Novice',middle:'Journeyman',old:'Hedge-Mage'}[h.age]||'Wizard')+' of '+(el.name||'?'):'Not made yet';
+    const where=[s.place, ago(s.t)].filter(Boolean).join(' · ');
+    const conf=loadConfirm===key;
+    return `<div class="ld-slot"><button type="button" class="pf-row ld-row" data-key="${key}">`+
+      `<span class="ld-face" style="--ec:${el.col||'#c9a84c'}"><img alt="" data-face="${key}"></span>`+
+      `<span class="pf-row-txt"><b>${escHtml(h&&h.name||'Unnamed wizard')}</b><small>${escHtml(title)}</small><small>${escHtml(where)}</small></span>`+
+      `<span class="ld-gold">${s.gold||0} gold</span></button>`+
+      `<button type="button" class="ld-del${conf?' on':''}" data-key="${key}" title="Delete this save">${conf?'Delete?':'🗑'}</button></div>`;
+  }).join(''):'<div class="pf-empty">No saved wizards yet. Start a New Game.</div>';
+  // faces are painted from each hero's look (as in the game), after the list is up
+  if(H) list.forEach(({key,s})=>{ if(!s.hero) return;
+    H.def(s.hero).then(d=>{ const img=loadEl.querySelector(`img[data-face="${key}"]`); if(img) img.src=d.face; }).catch(()=>{}); });
+}
 window.addEventListener('DOMContentLoaded',()=>{
   const b=document.getElementById('btn-explore');
-  if(b) b.addEventListener('click',open);
+  if(b) b.addEventListener('click',()=>open());
+  const nb=document.getElementById('btn-new-game'), lb=document.getElementById('btn-load-game');
+  const tb=document.getElementById('btn-test'), tp=document.getElementById('title-test');
+  if(nb) nb.addEventListener('click',()=>{ playTheme(); open({fresh:true}); });
+  if(lb) lb.addEventListener('click',()=>{ if(!lb.disabled) openLoad(); });
+  if(tb&&tp) tb.addEventListener('click',()=>{
+    tp.hidden=!tp.hidden; tb.setAttribute('aria-expanded',String(!tp.hidden));
+  });
+  refreshTitle();
+  document.addEventListener('wd-profile-changed',refreshTitle);
 });
-window.Explore={open, close, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
+window.Explore={open, close, refreshTitle, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
   _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
   // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
   _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;

@@ -61,7 +61,11 @@ const Profiles=(()=>{
     delete db.list[id];
     Object.values(db.list).forEach(p=>delete p.vsPlayer[id]);
     if(db.active===id) db.active=null;
-    try{ localStorage.removeItem('wd-explore-save:'+id); }catch(e){}   // their Explore game goes with them
+    try{   // their Explore games go with them (the old single save, and every slot)
+      const pre='wd-explore-save:'+id, gone=[];
+      for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k===pre||(k&&k.startsWith(pre+':'))) gone.push(k); }
+      gone.forEach(k=>localStorage.removeItem(k));
+    }catch(e){}
     save();
   }
   function setActive(id){ db.active=id&&db.list[id]?id:null; db.asked=true; save(); refreshChip(); }
@@ -149,6 +153,7 @@ const Profiles=(()=>{
     const p=active();
     if(p){ const r=rankOf(p.xp); chip.innerHTML=`<span class="pfc-ico">${r.ico}</span><span class="pfc-txt"><b>${esc(p.name)}</b><small>${r.name}</small></span>`; }
     else chip.innerHTML='<span class="pfc-ico">👤</span><span class="pfc-txt"><b>Guest</b><small>Tap to sign in</small></span>';
+    try{ document.dispatchEvent(new Event('wd-profile-changed')); }catch(e){}
   }
   function open(v,id){ view=v||'main'; viewId=id||null; render(); $('profile-overlay').classList.add('show'); }
   function close(){ $('profile-overlay').classList.remove('show'); pickCb=null; if(!db.asked){ db.asked=true; save(); } refreshChip(); }
@@ -193,9 +198,16 @@ const Profiles=(()=>{
       rows.map(([k,r])=>`<tr><td><img src="portraits/small/${esc(k)}.jpg" alt=""><span style="color:${charCol(k)}">${esc(charName(k))}</span></td>`+
         `<td>${r.g}</td><td>${r.w}</td><td>${r.l}</td><td>${pct(r)}</td></tr>`).join('')+'</table>';
   }
-  // their Explore game (js/explore.js keeps one save per profile)
+  // their Explore game: the most recently played of their save slots (js/explore.js)
   function exploreStats(id,tile){
-    let s=null; try{ s=JSON.parse(localStorage.getItem('wd-explore-save:'+id)||'null'); }catch(e){}
+    let s=null;
+    try{
+      const pre='wd-explore-save:'+id;
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i); if(k!==pre&&!(k&&k.startsWith(pre+':'))) continue;
+        const v=JSON.parse(localStorage.getItem(k)||'null'); if(v&&(!s||(v.t||0)>(s.t||0))) s=v;
+      }
+    }catch(e){}
     if(!s) return '';
     const books=window.ExploreRooms?window.ExploreRooms.BOOKS.length:20;
     const spill=Object.values(s.spill||{}).reduce((a,b)=>a+b,0);

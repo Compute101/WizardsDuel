@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wizard's Duel</title>
-<link rel="stylesheet" href="css/style.css?v=0.33">
+<link rel="stylesheet" href="css/style.css?v=0.35">
 </head>
 <body>
 <div id="app">
@@ -22,12 +22,18 @@
     <button class="profile-chip" id="btn-profile" type="button" aria-label="Player profile"></button>
     <div class="title-text">Wizard's<br>Duel</div>
     <div class="title-sub">★ &nbsp;Master of Arcane Arts&nbsp; ★</div>
-    <button class="btn btn-duel-main" id="btn-duel">⚔ Duel</button>
-    <button class="btn" id="btn-practice">🎯 Practice Mode</button>
-    <button class="btn" id="btn-tutorial">📜 Tutorial</button>
-    <button class="btn" id="btn-tabletop">🎲 Tabletop</button>
-    <button class="btn" id="btn-explore">🗺 Explore</button>
-    <button class="btn" id="btn-options">⚙ Options</button>
+    <button class="btn btn-duel-main" id="btn-new-game" type="button">✨ New Game</button>
+    <button class="btn" id="btn-load-game" type="button">📖 Load Game</button>
+    <div class="title-load-note" id="title-load-note"></div>
+    <button class="btn btn-test" id="btn-test" type="button" aria-expanded="false" aria-controls="title-test">🧪 Test</button>
+    <div class="title-test" id="title-test" hidden>
+      <button class="btn" id="btn-duel">⚔ Duel</button>
+      <button class="btn" id="btn-practice">🎯 Practice Mode</button>
+      <button class="btn" id="btn-tutorial">📜 Tutorial</button>
+      <button class="btn" id="btn-tabletop">🎲 Tabletop</button>
+      <button class="btn" id="btn-explore">🗺 Explore</button>
+      <button class="btn" id="btn-options">⚙ Options</button>
+    </div>
     <div class="hint">STRIKE · WARD · DISPEL<br>OUTGUESS YOUR RIVAL WIZARD</div>
     <div style="position:absolute;bottom:12px;right:16px;font-size:10px;color:rgba(201,168,76,0.4);letter-spacing:1px;">v0.9</div>
   </div>
@@ -454,7 +460,7 @@
 
 </div>
 
-<script src="js/profiles.js?v=3"></script>
+<script src="js/profiles.js?v=5"></script>
 <script src="js/game.js?v=0.55"></script>
 <!-- Tabletop screen: the tiddlywink rules and tutorial (read only; the game itself never uses them) -->
 <script src="js/tabletop.js?v=1"></script>
@@ -464,6 +470,6 @@
 <script src="js/explore_folk.js?v=3"></script>
 <script src="js/explore_bands.js?v=2"></script>
 <script src="js/explore_hero.js?v=21"></script>
-<script src="js/explore.js?v=25"></script>
+<script src="js/explore.js?v=27"></script>
 </body>
 </html>
