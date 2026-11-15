@@ -44,6 +44,10 @@ const TYPES = {
   inn:      {name:'The Drowned Crow',   floor:'w', wall:'plaster', back:[['hearthPot'],['cupboard'],['pantry']], floor_:[['diningTable'],['roundTable'],['bed']], big:true},
   library:  {name:'The Collegium Library', floor:'y', wall:'panel', back:[['bookcase2'],['bookLadder'],['bookcase2'],['bookcase']], floor_:[['lectern'],['readingDesk'],['bookPile'],['rug']], big:true, size:[15,10], shelves:true, open:true},
   wenna:    {name:'Wenna\'s Bakehouse', floor:'l', wall:'plaster', back:[['hearthPot'],['cupboard']], floor_:[['diningTable'],['pantry']]},
+  // Wrenford (a safe town)
+  wrenInn:  {name:'The Wren\'s Nest',     floor:'w', wall:'plaster', back:[['hearthPot'],['cupboard'],['wineRack']], floor_:[['diningTable'],['roundTable'],['bed'],['rug']], big:true},
+  remnant:  {name:'The Remnant Library', floor:'y', wall:'panel', back:[['bookcase2'],['bookLadder'],['bookcase2'],['bookcase']], floor_:[['lectern'],['readingDesk'],['bookPile'],['rug']], big:true, size:[15,10], shelves:true, open:true},
+  lab:      {name:'The Warded Laboratory', floor:'l', wall:'stone', back:[['jarShelf'],['crystalDisplay'],['jarShelf']], floor_:[['cauldron'],['alembic'],['workbench'],['herbs'],['alembic']], big:true},
   lamplighter:{name:'The Lamplighter\'s House', floor:'w', wall:'stone', back:[['bookcase'],['cupboard']], floor_:[['roundTable'],['rockingChair'],['bookPile']]},
 };
 // extra furniture for the rooms a partitioned house gains (TYPES[t].more overrides)
@@ -53,7 +57,8 @@ const WALLS = {plaster:['wallPlaster','wallPlasterWin'], stone:['wallStone','wal
 const SIDES = {plaster:'sidePlaster', stone:'sideStone', panel:'sidePlaster'};
 const FRONTS = {plaster:'frontPlaster', stone:'frontStone', panel:'frontPlaster2'};
 
-// ── lore books: short stories found in rooms. lib:true ones only in the Collegium library ──
+// ── lore books: short stories found in rooms. lib:true ones only in the Collegium library,
+//    lib:'wren' ones only in Wrenford's Remnant Library (three of them count toward Matriculation) ──
 const BOOKS = [
   {id:'b1', title:'A Baker\'s Ledger', text:'Forty loaves to the Collegium, as every Thursday. The porter says the scholars have not slept in three days and the great hall hums at night. Paid in full, and a tip. Strange times.'},
   {id:'b2', title:'A Child\'s Slate', text:'Chalked in a child\'s hand: "Mama says the sky went white and then everyone stood still. I am not allowed to go out. The man in our kitchen is made of fire but he is very polite."'},
@@ -74,6 +79,13 @@ const BOOKS = [
   {id:'L3', lib:true, title:'Arcana: The Twelve Glyphs', text:'Every working is written in the twelve glyphs. ϟ for the bolt, Δ for rising, ∇ for descent, Ψ for the fork, Ω for endings, ∞ for the eternal, ☽ the moon, ✸ the burst, ⊕ binding, ⊗ impact, θ the hidden, Φ the axis. Learn them by heart, students; you will not have time to look.'},
   {id:'L4', lib:true, title:'On Quintessence', text:'When a working is unmade, its substance does not vanish; it settles, as frost settles from cold air. The settled stuff, which the vulgar call "spill", is pure element. It will make any spell stronger, and any fool richer, and many fools dead.'},
   {id:'L5', lib:true, title:'The Wound: A Survey', text:'The surveyors who went to the Wound returned with notebooks full of measurements in a handwriting none of them recognised. The figures, when checked, were correct. The surveyors were not.'},
+  {id:'W1', lib:'wren', title:'The Founding of Wrenford', text:'Forty-one scholars of Corvanthe survived the Unweaving by not being in it. They met at a coaching inn in a market town on the Wren, because it was far, and small, and nobody had ever done anything dangerous there. The minutes of that meeting are one line long: "Resolved: that we will teach, and that we will be careful."'},
+  {id:'W2', lib:'wren', title:'The Statutes of Caution, with Commentary', text:'I. No working larger than its maker. (Commentary: the Unweaving Word was larger than the whole Council.) II. None without a witness. III. None that cannot be undone. IV. None in the street. V. No Word to be spoken that is not understood. (Commentary, in a different hand: nobody understood it. Everybody voted for it.)'},
+  {id:'W3', lib:'wren', title:'A Primer of the Wheel', text:'Every working is one of three: Damage, Protection, Dispel. A ward stops a strike; a dispel tears a ward; a strike punishes the wizard who spent their turn dispelling. Choose in secret, and read your opponent, not your spellbook. Beneath every wheel lie the three Actions, Attack, Guard and Grapple, which need no magic at all and which most wizards forget, fatally.'},
+  {id:'W4', lib:'wren', title:'On Opposites', text:'Fire and Water. Air and Earth. Lightning and Ice. The Arcane and the Dark. Each strand of the Weave is braided with the one across from it. Strike a ward with its opposite and the two strands unpick one another. Ward against what your enemy cannot cast. A first-year who learns only this will outlive a Magister who forgets it.'},
+  {id:'W5', lib:'wren', title:'Roll of the Absent (vol. III of IX)', text:'Page after page of names, each with a college, a subject and a line: "Collegium, Natural Philosophy; was working on the tides." "Spirewatch Observatory; had just been married." "Third year, Arcane; owed the Inkwell four crowns, which the Inkwell has asked us to forgive." The volume ends mid-page, as if the clerk had to stop.'},
+  {id:'W6', lib:'wren', title:'On Echoes, for the Gentle Reader', text:'The Echoes of Corvanthe are not ghosts and not monsters. They are workings that will not finish, wearing the shape of whoever stood in them. You may fight them; you will have to. But you are, in the strict sense, interrupting someone. Be quick, and be sorry.'},
+  {id:'W7', lib:'wren', title:'A Letter from Magister Orrin', text:'Found folded in a borrowed book, years after: "If they vote for it, I will stay with my students, because they will be frightened, and frightened students make mistakes. If I am wrong, I will buy everyone a drink at the Inkwell. If I am right, then whoever reads this: be careful. Be so careful it bores you. — O."'},
   {id:'L6', lib:true, title:'Catalogue Card', text:'"Hollowmere and its River: a History." Shelved: Aisle 9. Status: Missing. Borrower: Magister Orrin. Due back: the day after the Unweaving.'},
 ];
 
@@ -97,6 +109,7 @@ function typeFor(spec,r){
 // the encounter: weights by how near the Wound (depth 0..1); outside the city nothing hostile
 function rollEvent(spec,r){
   if(spec.fixed) return {type:spec.fixed};
+  if(spec.safe) return {type:'empty'};                // a safe town: people's houses, nothing to fight or take
   const d=spec.depth, W=spec.city?{empty:26,treasure:14,spill:14,echoes:16+d*12,party:9+d*9,wounded:8}:{empty:7,treasure:3};
   let tot=0; for(const k in W) tot+=W[k];
   let q=r()*tot, type='empty'; for(const k in W){ if((q-=W[k])<0){ type=k; break; } }
@@ -126,7 +139,7 @@ function rollEvent(spec,r){
 function build(spec,rects){
   const r=P.rng(hash(spec.id));
   const type=typeFor(spec,r), D=TYPES[type];
-  const ruined=!D.big&&!['wenna','lamplighter'].includes(type)&&(spec.ruined||spec.depth>0.6&&r()<0.6);
+  const ruined=!D.big&&!spec.safe&&!['wenna','lamplighter'].includes(type)&&(spec.ruined||spec.depth>0.6&&r()<0.6);
   const C=D.size?D.size[0]:D.big?13:D.open?9+Math.floor(r()*3):10+Math.floor(r()*4), R=D.size?D.size[1]:D.big?8:D.open?6+Math.floor(r()*2):7+Math.floor(r()*2);
   const cols=C+2, rows=R+4, W=cols*T, H=rows*T;
   const floor=ruined&&D.floor==='w'?'b':D.floor;
@@ -255,14 +268,14 @@ function build(spec,rects){
   } else if(type==='wenna'||type==='lamplighter'){
     const p=spot(70,80,24)||centre;
     npcs.push({role:type, x:p[0], y:p[1]}); boxes.push({x:p[0]-20,y:p[1]-60,w:40,h:60});
-  } else if(type==='safehouse'||type==='inn'){
-    lore.rest=[type==='inn'?'The Fire':'The Keeper\'s Hearth', type==='inn'?'A good fire and a bed upstairs. The landlady asks no questions.':'Old Marda keeps the Rest for any gleaner who keeps the peace inside it. "No blades drawn under my roof, and no spill sold either. Sit. Eat."'];
+  } else if(type==='safehouse'||type==='inn'||type==='wrenInn'){
+    lore.rest=[type==='safehouse'?'The Keeper\'s Hearth':'The Fire', type==='wrenInn'?'A good fire, a bed upstairs and a landlady who has seen every kind of traveller come in off the east road. "Potions behind the bar, if you need one. Eight gold."':type==='inn'?'A good fire and a bed upstairs. The landlady asks no questions.':'Old Marda keeps the Rest for any gleaner who keeps the peace inside it. "No blades drawn under my roof, and no spill sold either. Sit. Eat."'];
     const k=objects.find(o=>o[0]==='safeHearth'||o[0]==='hearthPot'); if(k) k[3].lore='rest';
   }
   // lore books
   const books=[];
-  const nBooks=type==='library'?6:type==='study'?2:(r()<0.38?1:0);
-  const pool=BOOKS.filter(b=>type==='library'?b.lib:!b.lib);
+  const nBooks=type==='library'?6:type==='remnant'?7:type==='study'?2:(r()<0.38?1:0);
+  const pool=BOOKS.filter(b=>type==='library'?b.lib===true:type==='remnant'?b.lib==='wren':!b.lib);
   for(let n=0;n<nBooks;n++){
     const b=pool[(hash(spec.id+':'+n)+n*7)%pool.length]; if(books.includes(b.id)) continue;
     const k=pick(['bookOpen','bookClosed','scroll','letter','journal']), p=spot(50,40,8);

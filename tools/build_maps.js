@@ -24,6 +24,7 @@ const GENERATORS={
   quarry_ward: rects=>require('./mapgen/sector')(rects,'quarry_ward'),
   frostmarket: rects=>require('./mapgen/sector')(rects,'frostmarket'),
   gloamside: rects=>require('./mapgen/sector')(rects,'gloamside'),
+  wrenford: require('./mapgen/wrenford'),
 
 };
 const only=process.argv[2];

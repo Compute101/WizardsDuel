@@ -246,7 +246,7 @@ function fillSceneBands(){
 const ARENA_DEFAULT='library';   // 'library' (gothic library) or 'ruins' (moonlit ruined streets)
 const ARENA_DIM=0.22;   // dark wash over the painting so wizards and spell effects stand out
 const arenaImgs={};     // name -> {img, ready}, loaded on first use
-function arenaName(key){ if(exploreFight) return 'ruins'; const d=defOf(key); return (d&&d.arena)||ARENA_DEFAULT; }   // Explore fights: the ruined streets   // fighters (Echoes) carry an arena too
+function arenaName(key){ if(exploreFight) return exploreFight.arena||'ruins'; const d=defOf(key); return (d&&d.arena)||ARENA_DEFAULT; }   // Explore fights: the ruined streets   // fighters (Echoes) carry an arena too
 function arenaFor(key){
   const name=arenaName(key); if(!name) return null;
   let a=arenaImgs[name];
@@ -2024,7 +2024,7 @@ function battleLoop(ts){
 
 // ── HUD ────────────────────────────────────────────────────
 function refreshHUD(){
-  if(PLAYERS.length>2){ refreshMultiHUD(); refreshActionBar(); return; }
+  if(PLAYERS.length>2||multiMode){ refreshMultiHUD(); refreshActionBar(); return; }
   document.getElementById('p1hpf').style.height=Math.max(0,gs.p1.hp/gs.p1.maxHp*100)+'%';
   document.getElementById('p2hpf').style.height=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
   document.getElementById('sh1').style.opacity=hasWard(gs.p1)?'1':'0.18';
@@ -3886,7 +3886,7 @@ function startEncounter(wizKey){
 let exploreFight=null;
 // allies: [{key, level, hp, name}] fighters on your side (rescued gleaners), seated while there's room
 // (4 seats in all); a foe with wizard:true is a roster wizard leading a rival party. text: {win, lose}.
-function startExploreBattle({wizKey, foes, onEnd, hp, allies, text}){
+function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena}){
   survival=null; encounterPending=false;
   const seen={}, count=k=>foes.filter(f=>f.key===k).length;
   const fighterSeat=(f,team)=>{
@@ -3899,7 +3899,7 @@ function startExploreBattle({wizKey, foes, onEnd, hp, allies, text}){
   const foeSeats=foes.slice(0,3).map(f=>f.wizard?{key:f.key,human:false,team:'B'}:fighterSeat(f,'B'));
   const room=Math.max(0,3-foeSeats.length), allyList=(allies||[]).slice(0,room);
   const seats=[{key:wizKey,human:true,team:'A',hp}].concat(allyList.map(a=>fighterSeat(a,'A')),foeSeats);
-  exploreFight={onEnd, foes, low:Infinity, allies:allyList.length, text:text||{}};
+  exploreFight={onEnd, foes, low:Infinity, allies:allyList.length, text:text||{}, arena:arena||null};
   multiMode=true; trainingMode=false; twoPlayerMode=false;
   if(window.Profiles&&Profiles.setSeats) Profiles.setSeats({});
   startMultiBattle(seats);
@@ -6288,10 +6288,10 @@ function showMultiEnd(team){
       document.getElementById('ovico').textContent=won?'✦':'☠';
       const title=document.getElementById('ovtitle');
       const T=exploreFight.text||{};
-      title.textContent=won?(T.winTitle||'The Echoes Scatter'):gs.timeUp?'Driven Back':'Overcome';
+      title.textContent=won?(T.winTitle||'The Echoes Scatter'):T.loseTitle||(gs.timeUp?'Driven Back':'Overcome');
       title.style.color=won?seatCfg('p1').col:'#ff6677';
       document.getElementById('ovdesc').textContent=won?(T.win||'They will gather again at the Wound, in time. For now, the street is yours.'):
-        seatCfg('p1').name+' falls back, burnt and bruised, to the last safe place.';
+        (T.lose||seatCfg('p1').name+' falls back, burnt and bruised, to the last safe place.');
       document.getElementById('btn-continue').textContent='Back to the Map';
       document.getElementById('overlay').classList.add('active');
     },1800);
