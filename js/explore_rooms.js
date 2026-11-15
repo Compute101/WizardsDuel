@@ -35,17 +35,19 @@ const TYPES = {
   rich:     {name:'A Fine House',   floor:'y', wall:'panel',   back:[['wardrobe'],['bookcase'],['readingDesk']], floor_:[['bed'],['rug'],['diningTable']]},
   shop:     {name:'A Shop',         floor:'y', wall:'panel',   back:[['jarShelf'],['crystalDisplay']], floor_:[['counter'],['pantry']]},
   tavern:   {name:'A Tavern',       floor:'w', wall:'plaster', back:[['pantry'],['cupboard'],['hearthPot']], floor_:[['diningTable'],['roundTable'],['roundTable']]},
-  chapel:   {name:'A Chapel',       floor:'l', wall:'stone',   back:[['altar']], floor_:[['pew'],['pew2'],['pew'],['pew2']], rows:true},
-  study:    {name:'A Study',        floor:'w', wall:'panel',   back:[['bookcase2'],['bookLadder']], floor_:[['lectern'],['readingDesk'],['bookPile']]},
+  chapel:   {name:'A Chapel',       floor:'l', wall:'stone',   back:[['altar']], floor_:[['pew'],['pew2'],['pew'],['pew2']], rows:true, open:true},
+  study:    {name:'A Study',        floor:'w', wall:'panel',   back:[['bookcase2'],['bookLadder']], floor_:[['lectern'],['readingDesk'],['bookPile'],['bookcase']], more:[['bookcase'],['bookPile'],['readingDesk']]},
   forge:    {name:'A Forge',        floor:'l', wall:'stone',   back:[['hearthPot'],['workbench']], floor_:[['pantry'],['washtub']]},
-  crypt:    {name:'A Crypt',        floor:'l', wall:'stone',   back:[['altar']], floor_:[['pew'],['bookPile']]},
+  crypt:    {name:'A Crypt',        floor:'l', wall:'stone',   back:[['altar']], floor_:[['pew'],['bookPile']], open:true},
   // fixed rooms
   safehouse:{name:'The Gleaners\' Rest', floor:'w', wall:'stone', back:[['safeHearth'],['weaponRack'],['barricade']], floor_:[['safeTable'],['bedrolls'],['bedrolls']], big:true},
   inn:      {name:'The Drowned Crow',   floor:'w', wall:'plaster', back:[['hearthPot'],['cupboard'],['pantry']], floor_:[['diningTable'],['roundTable'],['bed']], big:true},
-  library:  {name:'The Collegium Library', floor:'y', wall:'panel', back:[['bookcase2'],['bookLadder'],['bookcase2'],['bookcase']], floor_:[['lectern'],['readingDesk'],['bookPile'],['bookPile'],['rug']], big:true},
+  library:  {name:'The Collegium Library', floor:'y', wall:'panel', back:[['bookcase2'],['bookLadder'],['bookcase2'],['bookcase']], floor_:[['lectern'],['readingDesk'],['bookPile'],['rug']], big:true, size:[15,10], shelves:true, open:true},
   wenna:    {name:'Wenna\'s Bakehouse', floor:'l', wall:'plaster', back:[['hearthPot'],['cupboard']], floor_:[['diningTable'],['pantry']]},
   lamplighter:{name:'The Lamplighter\'s House', floor:'w', wall:'stone', back:[['bookcase'],['cupboard']], floor_:[['roundTable'],['rockingChair'],['bookPile']]},
 };
+// extra furniture for the rooms a partitioned house gains (TYPES[t].more overrides)
+const MORE = [['cupboard','wardrobe'],['bed','cot'],['washtub','pantry'],['rockingChair','roundTable'],['bookPile','cradle']];
 const BROKEN = {bed:'brokenBed', cot:'brokenBed', diningTable:'brokenTable', roundTable:'brokenTable', rockingChair:'brokenChair', cradle:'brokenChair', spinningWheel:'brokenChair'};
 const WALLS = {plaster:['wallPlaster','wallPlasterWin'], stone:['wallStone','wallStoneWin'], panel:['wallPanel','wallPanel']};
 const SIDES = {plaster:'sidePlaster', stone:'sideStone', panel:'sidePlaster'};
@@ -125,7 +127,7 @@ function build(spec,rects){
   const r=P.rng(hash(spec.id));
   const type=typeFor(spec,r), D=TYPES[type];
   const ruined=!D.big&&!['wenna','lamplighter'].includes(type)&&(spec.ruined||spec.depth>0.6&&r()<0.6);
-  const C=D.big?13:9+Math.floor(r()*3), R=D.big?8:6+Math.floor(r()*2);
+  const C=D.size?D.size[0]:D.big?13:D.open?9+Math.floor(r()*3):10+Math.floor(r()*4), R=D.size?D.size[1]:D.big?8:D.open?6+Math.floor(r()*2):7+Math.floor(r()*2);
   const cols=C+2, rows=R+4, W=cols*T, H=rows*T;
   const floor=ruined&&D.floor==='w'?'b':D.floor;
   const ground=[]; for(let y=0;y<rows;y++){ let row=''; for(let x=0;x<cols;x++) row+=(x>=1&&x<=C&&y>=2&&y<2+R)?floor:'v'; ground.push(row); }
@@ -150,16 +152,53 @@ function build(spec,rects){
   // side and front walls
   for(let y=Y0+T;y<=Y1;y+=T){ const k=SIDES[D.wall]; objects.push([k,X0-6,y,{scale:RS}]); objects.push([k,X1+6,y,{scale:RS}]); }
   const fk=FRONTS[D.wall], fw=sz(fk).w;
-  for(let x=X0-8;x<X1;x+=fw-4){ if(x+fw>DX-T&&x<DX+T) continue; objects.push([fk,Math.round(x+fw/2),Y1+24,{scale:RS}]); }
+  for(let x0=X0-8;x0<X1;x0+=fw-4){ const x=Math.min(x0,X1+8-fw); if(x+fw>DX-T&&x<DX+T) continue; objects.push([fk,Math.round(x+fw/2),Y1+24,{scale:RS}]); }   // the last piece tucks in, not past the corner
   const blocks=[{x:0,y:0,w:W,h:Y0+14},{x:0,y:0,w:X0-4,h:H},{x:X1+4,y:0,w:W,h:H},
     {x:0,y:Y1+4,w:DX-T,h:H},{x:DX+T,y:Y1+4,w:W,h:H}];
-  // furniture
   const pick=a=>a[Math.floor(r()*a.length)];
+  // interior walls, cut away like the front wall: one running across (low front-wall pieces) splits
+  // a hall at the front from the rooms behind, one running front to back (side-wall pieces) splits
+  // left from right. Every room gets a doorway; ruined houses lose a few pieces as well.
+  let vx=null, hy=null;
+  const wallBlock=(x,y,w,h)=>{ blocks.push({x,y,w,h}); boxes.push({x,y,w,h}); };
+  const keepClear=(x,y,w,h)=>boxes.push({x,y,w,h});
+  if(!D.open){
+    const big=C>=11&&R>=7;
+    if(big&&r()<0.7) hy=Y0+Math.round(R*0.5+(r()<0.5?0:1)-0.5)*T;
+    if(hy&&Y1-hy<3*T) hy=Y1-3*T;
+    if(C>=10&&(!hy||r()<0.75)){
+      const lo=Math.ceil(X0/T+3), hi=Math.floor(X1/T-3), opts=[];
+      for(let c=lo;c<=hi;c++) if(Math.abs(c*T-DX)>1.4*T) opts.push(c*T);
+      if(opts.length) vx=pick(opts);
+    }
+    if(hy){                                            // across: a doorway into each room behind it
+      const fk2=FRONTS[D.wall], fw2=sz(fk2).w, gaps=[];
+      const spans=vx?[[X0,vx],[vx,X1]]:[[X0,X1]];
+      for(const [a,b] of spans){ const g=a+T*1.2+r()*Math.max(0,b-a-T*2.4); gaps.push([g-T*0.75,g+T*0.75]); keepClear(g-T,hy-T*1.1,2*T,T*2.2); }
+      for(let x0=X0-8;x0<X1;x0+=fw2-4){
+        const x=Math.min(x0,X1+8-fw2), a=x, b=x+fw2; if(gaps.some(g=>b>g[0]&&a<g[1])) continue;
+        if(ruined&&r()<0.15) continue;
+        objects.push([fk2,Math.round(x+fw2/2),hy+18,{scale:RS}]); wallBlock(a,hy-6,fw2,18);
+      }
+    }
+    if(vx){                                            // front to back, with a door
+      const yEnd=hy||Y1, n=Math.round((yEnd-Y0)/T), door=1+Math.floor(r()*Math.max(1,n-1)), sk=SIDES[D.wall];
+      for(let k=1;k<=n;k++){
+        const y=Y0+k*T;
+        if(k===door&&(hy||n>2)){ keepClear(vx-T*1.1,y-T,2.2*T,T); continue; }
+        if(!hy&&k===n&&Math.abs(vx-DX)<2*T) continue;
+        if(ruined&&r()<0.15) continue;
+        objects.push([sk,vx,y,{scale:RS}]); wallBlock(vx-10,y-T,20,T);
+      }
+    }
+  }
+  // furniture
   let bx=X0+20;
   for(const choices of D.back){
     const k=pick(choices), s=sz(k);
     if(bx+s.w>X1-10) break;
-    const x=bx+s.w/2+r()*20; if(Math.abs(x-DX)<s.w/2+10&&D.back.length<3){ bx+=s.w+20; }
+    let x=bx+s.w/2+r()*20; if(Math.abs(x-DX)<s.w/2+10&&D.back.length<3){ bx+=s.w+20; }
+    if(vx&&Math.abs(x-vx)<s.w/2+14){ x=vx+s.w/2+16; if(x+s.w/2>X1-10) break; }
     put(k,x,Y0+34); bx=x+s.w/2+14+r()*30;
   }
   const free=(x,y,w,h,m)=>{
@@ -168,8 +207,20 @@ function build(spec,rects){
     const fb={x:x-w*0.45,y:y-Math.min(h,30),w:w*0.9,h:Math.min(h,30)};
     return !boxes.some(b=>P.overlap(b,fb,m));
   };
-  const spot=(w,h,m,tries)=>{ for(let t=0;t<(tries||80);t++){ const x=X0+w/2+r()*(C*T-w), y=Y0+h*0.6+40+r()*(R*T-60-h*0.6); if(free(x,y,w,h,m)) return [x,y]; } return null; };
-  if(D.rows){                                       // chapel pews in two columns of rows
+  let yMin=0;                                        // the library keeps its tables in the reading area, out of the stacks
+  const spot=(w,h,m,tries)=>{ for(let t=0;t<(tries||80);t++){ const x=X0+w/2+r()*(C*T-w), y=Y0+h*0.6+40+r()*(R*T-60-h*0.6); if(y-h<yMin) continue; if(free(x,y,w,h,m)) return [x,y]; } return null; };
+  if(D.shelves){                                    // the library: aisles of shelving either side of a walk up the middle
+    let last=Y0;
+    for(let y=Y0+T*2.3;y<Y1-T*3;y+=T*1.85){ last=y;
+      for(const [a,b] of [[X0+T*0.4,DX-T*1.1],[DX+T*1.1,X1-T*0.4]]){
+        let x=a; while(true){ const k=r()<0.15?'bookLadder':r()<0.5?'bookcase2':'bookcase', w=sz(k).w; if(x+w>b) break; put(k,x+w/2,y); x+=w-2; }
+      }
+    }
+    yMin=last+12;
+    for(const choices of D.floor_){ const k=pick(choices), s=sz(k), p=spot(s.w,s.h,12,200);
+      if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:RS,decal:1}]); else put(k,p[0],p[1]); } }
+    yMin=0;                                         // books may lie anywhere, aisles included
+  } else if(D.rows){                                       // chapel pews in two columns of rows
     for(let y=Y0+2.4*T;y<Y1-T*0.6;y+=T*1.15){ put(pick(['pew','pew2']),DX-T*2.1,y); put(pick(['pew','pew2']),DX+T*2.1,y); }
   } else {
     for(const choices of D.floor_){
@@ -177,10 +228,14 @@ function build(spec,rects){
       const s=sz(k), p=spot(s.w,s.h,12);
       if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:RS,decal:1}]); else put(k,p[0],p[1]); }
     }
+    if(vx||hy) for(const choices of (D.more||MORE).slice(0,(vx&&hy)?4:2)){   // the extra rooms want furnishing too
+      let k=pick(choices); if(ruined&&BROKEN[k]&&r()<0.7) k=BROKEN[k];
+      const s=sz(k), p=spot(s.w,s.h,12); if(p) put(k,p[0],p[1]);
+    }
   }
   if(ruined) for(let n=0;n<2;n++){ const p=spot(60,30,6); if(p) put('crockery',p[0],p[1]); }
   // the encounter's pieces
-  const centre=[DX,Y0+(Y1-Y0)*0.55];
+  const centre=spot(50,60,16)||[DX,Y1-T*1.5];
   const npcs=[], echoes=[];
   if(ev.type==='treasure'){
     const p=spot(80,60,10)||centre;
@@ -191,9 +246,9 @@ function build(spec,rects){
     put('q_'+ev.el,p[0],p[1],{lore:'ev'});
     lore.ev=['Quintessence','Raw '+ev.el+', grown out of the floor like a crystal where something was unmade.'];
   } else if(ev.type==='echoes'){
-    echoes.push({id:'in', el:ev.el, foes:ev.foes, x:centre[0], y:Y0+(Y1-Y0)*0.4, r:50});
+    echoes.push({id:'in', el:ev.el, foes:ev.foes, x:centre[0], y:centre[1], r:40});
   } else if(ev.type==='party'){
-    npcs.push({role:'party', x:centre[0], y:Y0+(Y1-Y0)*0.4});
+    npcs.push({role:'party', x:centre[0], y:centre[1]});
   } else if(ev.type==='wounded'){
     const p=spot(70,80,24)||centre;
     npcs.push({role:'wounded', x:p[0], y:p[1]}); boxes.push({x:p[0]-20,y:p[1]-60,w:40,h:60});

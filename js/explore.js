@@ -74,7 +74,7 @@ const inside=(px,py,b)=>px>=b.x&&px<=b.x+b.w&&py>=b.y&&py<=b.y+b.h;
 // A map file holds ground kinds and placed pieces (format in tools/mapgen/builder.js);
 // which grass or cobble drawing each tile gets is picked here, from the map's seed.
 function setupMap(data){
-  MAP=data; COLS=data.cols; ROWS=data.rows; WORLD_W=COLS*T; WORLD_H=ROWS*T;
+  MAP=data; COLS=data.cols; ROWS=data.rows; WORLD_W=COLS*T; WORLD_H=ROWS*T; navGrid=null;
   groundKind=data.ground.map(row=>row.split(''));
   const r=P.rng(data.seed*7+13);
   ground=groundKind.map((row,y)=>row.map((c,x)=>{
@@ -156,8 +156,9 @@ function updateEchoes(dt){
       a.wait-=dt;
       if(a.wait<=0){ const ang=Math.random()*Math.PI*2, r=Math.random()*a.e.r; a.tx=a.e.x+Math.cos(ang)*r; a.ty=a.e.y+Math.sin(ang)*r*0.6; a.wait=1+Math.random()*2.5; }
     }
-    const dx=a.tx-a.x, dy=a.ty-a.y, len=Math.hypot(dx,dy);
-    a.moving=len>6;
+    const w=chasing?routeStep(a,a.tx,a.ty):{x:a.tx,y:a.ty};
+    const dx=w.x-a.x, dy=w.y-a.y, len=Math.hypot(dx,dy)||1;
+    a.moving=Math.hypot(a.tx-a.x,a.ty-a.y)>6;
     if(a.moving){
       const step=(chasing?ECHO.chase:ECHO.wander)*dt, ux=dx/len, uy=dy/len;
       const ox=a.x, oy=a.y;
@@ -802,6 +803,36 @@ function blocked(x,y){
   if(wet(b.x,b.y)||wet(b.x+b.w,b.y)||wet(b.x,b.y+b.h)||wet(b.x+b.w,b.y+b.h)) return true;
   return false;
 }
+// Indoors, interior walls split the rooms: anything walking somewhere (you by tap, a charging Echo)
+// finds its way round them on a coarse grid (NAV px cells, worked out once per room), then heads for
+// the farthest point along the way it can walk straight to.
+const NAV=24; let navGrid=null;
+function navOpen(){
+  if(navGrid) return navGrid;
+  const nc=Math.ceil(WORLD_W/NAV), nr=Math.ceil(WORLD_H/NAV), g=new Uint8Array(nc*nr);
+  for(let j=0;j<nr;j++) for(let i=0;i<nc;i++) g[j*nc+i]=blocked(i*NAV+NAV/2,j*NAV+NAV/2)?0:1;
+  return navGrid={nc,nr,g};
+}
+function clearLine(x0,y0,x1,y1){ const n=Math.ceil(Math.hypot(x1-x0,y1-y0)/8); for(let k=1;k<=n;k++) if(blocked(x0+(x1-x0)*k/n,y0+(y1-y0)*k/n)) return false; return true; }
+function navPath(x0,y0,x1,y1){
+  const {nc,nr,g}=navOpen(), cl=(v,m)=>Math.max(0,Math.min(m-1,v));
+  const s=cl(Math.floor(y0/NAV),nr)*nc+cl(Math.floor(x0/NAV),nc), e=cl(Math.floor(y1/NAV),nr)*nc+cl(Math.floor(x1/NAV),nc);
+  const prev=new Int32Array(nc*nr).fill(-1), q=[s]; prev[s]=s;
+  for(let h=0;h<q.length;h++){ const c=q[h]; if(c===e) break; const cx=c%nc;
+    for(const n of [c-nc,c+nc,cx>0?c-1:-1,cx<nc-1?c+1:-1]) if(n>=0&&n<nc*nr&&prev[n]<0&&(g[n]||n===e)){ prev[n]=c; q.push(n); } }
+  if(prev[e]<0) return null;
+  const out=[{x:x1,y:y1}]; for(let c=prev[e];c!==s;c=prev[c]) out.unshift({x:(c%nc)*NAV+NAV/2,y:Math.floor(c/nc)*NAV+NAV/2});
+  return out;
+}
+function routeStep(m,tx,ty){   // m = a mover with x, y; where it should head next to reach (tx, ty)
+  if(!MAP.interior||clearLine(m.x,m.y,tx,ty)){ m.path=null; return {x:tx,y:ty}; }
+  const now=performance.now();
+  if(!m.path||now-(m.pathT||0)>300){ m.path=navPath(m.x,m.y,tx,ty); m.pathT=now; }
+  if(!m.path) return {x:tx,y:ty};
+  while(m.path.length>1&&Math.hypot(m.path[0].x-m.x,m.path[0].y-m.y)<8) m.path.shift();
+  for(let k=Math.min(m.path.length-1,10);k>0;k--) if(clearLine(m.x,m.y,m.path[k].x,m.path[k].y)) return m.path[k];
+  return m.path[0];
+}
 // an exit reaches a little past the map's edge, where you can't walk, so test generously
 function exitAt(x,y){
   for(const e of MAP.exits||[]) if(overlap({x:x-14,y:y-10,w:28,h:10},e)) return e;
@@ -815,8 +846,8 @@ function update(dt){
   if(keys.has('arrowup')||keys.has('w')) dy--;
   if(keys.has('arrowdown')||keys.has('s')) dy++;
   if(!dx&&!dy&&target){
-    const tx=target.x-wiz.x, ty=target.y-wiz.y, dist=Math.hypot(tx,ty);
-    if(dist<5) target=null; else { dx=tx/dist; dy=ty/dist; }
+    const dist=Math.hypot(target.x-wiz.x,target.y-wiz.y), w=dist<5?null:routeStep(wiz,target.x,target.y);
+    if(!w) target=null; else { const tx=w.x-wiz.x, ty=w.y-wiz.y, d=Math.hypot(tx,ty)||1; dx=tx/d; dy=ty/d; }
   }
   const len=Math.hypot(dx,dy);
   wiz.moving=len>0;
@@ -1178,5 +1209,8 @@ window.addEventListener('DOMContentLoaded',()=>{
   const b=document.getElementById('btn-explore');
   if(b) b.addEventListener('click',open);
 });
-window.Explore={open, close, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _mapId:()=>MAP.id, _exit:()=>MAP.exits[0]};
+window.Explore={open, close, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
+  _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor((sp[1]-10)/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;
+    for(let h=0;h<q.length;h++){ const c=q[h], cx=c%nc; for(const n of [c-nc,c+nc,cx>0?c-1:-1,cx<nc-1?c+1:-1]) if(n>=0&&n<nc*nr&&!seen[n]&&g[n]){ seen[n]=1; q.push(n); } }
+    let open=0, un=0; for(let i=0;i<g.length;i++) if(g[i]){ open++; if(!seen[i]) un++; } return {open, unreached:un}; }};
 })();
