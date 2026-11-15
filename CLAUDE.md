@@ -218,6 +218,14 @@ Made harder than the others on purpose (Dispels were too easy). The sequence gly
 - **Recording:** `recordDuel` (from `endGame`; every 2 Player round counts as a game) and `recordMulti` (from `showMultiEnd`; Encounter by band, 3–4 Wizards with place; a loss counts only against the winners). Training and the sim never record. The XP / rank-up / first-win line under the result is `#ovprof` (`Profiles.showSummary`).
 - **Progression:** XP (`Profiles.XP`: win 100, draw 40, loss 25, +50 for a first win over a wizard, Arcade +15 × stage and +300 for a clear, Encounter win +60) climbs `RANKS` (Novice → Grand Archmage).
 
+## Explore mode (Hollowmere)
+🗺 Explore on the title screen opens `js/explore.js`: a walkable ruined town built from the user's pixel-art tileset. Self-contained (builds its own `#explore-screen` overlay, styles at the end of `css/style.css`); the duel game doesn't use it.
+- **Art:** `sprites/ruins/tileset_source.png` is the user's sheet (loose pieces on a dark background, not a grid). `python3 tools/cut_ruins_tileset.py` cuts it (hand-checked rects in `RECTS`, background flood-filled out, props trimmed) into `sprites/ruins/ruins.png` (256-colour atlas) + `ruins.json` (name → `[x,y,w,h]`), loaded at runtime. `--preview out.png` draws a labelled contact sheet. The interior wall/floor pieces in the sheet's second column aren't cut (dirt floors baked in).
+- **Map:** 44×34 tiles of 64 px, generated from fixed seeds (same town every time): `buildGround` (grass, cobbled main and market streets, flagstone plaza, dirt lanes; roads east of col 28 are mossy) and `buildObjects` (houses intact in the west, falling down in the east; the Hooded Watcher in the plaza; a broken north wall with a gate; shrine and fallen hero to the south; woods round the edge, dead trees in the east). Props draw at `PS` 0.62 of atlas size, sorted by base y.
+- **Walking:** WASD / arrows, or tap / click (hold to steer) to walk there. Collision is per-piece footprints (`FOOT`, matched by kind prefix; houses block the bottom half of their height, the arch only its pillars). A tall piece in front of the wizard turns see-through. The wizard is the chosen character's battle sprite at `WIZ_H` (◀ ▶ in the top bar; remembered in `localStorage` `wd-explore-wiz`).
+- **Inspect:** pieces with an entry in `LORE` (or a `lore` option on `place`) show ✋ / E when you stand within `INSPECT_R` of their footprint.
+- **Night** (default; ☾ / ☀ toggles): a dark layer with light cut out at house windows and lanterns (`LIGHTS`, in atlas px of each trimmed piece) and around the wizard, a warm additive glow, and fireflies. Minimap bottom-right (top-right on phones).
+
 ## Tabletop mode
 A separate, simplified rule set for playing on a real table. **It never touches the standard game:** `js/game.js` doesn't use it (the app loads it only for the Tabletop rules screen), and the standard game stays the default.
 - **Counters are tiddlywinks:** HP, mana and wards are whole counters. HP is capped at 12 (`RULES.maxHp`) so both players can share one colour of 25 health winks; mana and ward stay at 20 (`RULES.max`).
@@ -316,6 +324,7 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 | Survival (Encounters): fighters, waves, sim | `fighters.json`, `SURVIVAL_WAVES` in `js/game.js`, `tools/encounter_sim.js` | whole files |
 | Tabletop mode (rules, engine, AI, sim) | `js/tabletop.js`, `tabletop.json`, `docs/tabletop-rules.md` | whole files |
 | Player profiles (stats, ranks, UI) | `js/profiles.js` | whole file |
+| Explore map (Hollowmere), tileset cutter | `js/explore.js`, `tools/cut_ruins_tileset.py`, `sprites/ruins/` | whole files |
 | Puzzle screen HTML | `index.html` | ~242 |
 | Canvas styling | `css/style.css` | ~530–560 |
 
