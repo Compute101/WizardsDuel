@@ -1146,9 +1146,33 @@ async function useHero(){
   el.root.querySelectorAll('#ex-prev,#ex-next').forEach(b=>b.hidden=true);
   setWizard(0);
 }
+// The character-creation theme loops while the creator is open, and fades out when it closes.
+// playTheme is also called straight from the New Game tap, so phones count it as user-started.
+const THEME_SRC='audio/creation_theme.mp3', THEME_VOL=0.7;
+let theme=null, themeFade=0;
+function playTheme(){
+  try{
+    if(!theme){ theme=new Audio(THEME_SRC); theme.loop=true; theme.preload='auto'; }
+    clearInterval(themeFade); theme.volume=THEME_VOL;
+    if(!theme.paused) return;
+    theme.currentTime=0;
+    const p=theme.play(); if(p&&p.catch) p.catch(()=>{});
+  }catch(e){}
+}
+function stopTheme(){
+  if(!theme||theme.paused) return;
+  clearInterval(themeFade);
+  themeFade=setInterval(()=>{
+    theme.volume=Math.max(0,theme.volume-0.05);
+    if(theme.volume<=0){ clearInterval(themeFade); theme.pause(); }
+  },40);
+}
 async function createHero(edit){
   creating=true; keys.clear(); target=null; hideSay();
-  const h=await window.ExploreHero.open(el.root,{hero:edit?hero:null, edit:!!edit});
+  playTheme();
+  let h;
+  try{ h=await window.ExploreHero.open(el.root,{hero:edit?hero:null, edit:!!edit}); }
+  finally{ stopTheme(); }
   creating=false;
   if(h){ hero=h; await useHero(); save(); }
   return h;
@@ -1576,7 +1600,9 @@ async function load(){
   wizKeys=Object.keys(chars).filter(k=>chars[k].sprite);
   built=true;
 }
-async function open(){
+// open({fresh:true}) is New Game: the profile's save is wiped first, so the creator opens in Wrenford.
+async function open(opts){
+  opts=opts||{};
   if(!el.root) buildDom();
   el.root.classList.add('active'); el.loading.hidden=false;
   running=true; resize();
@@ -1585,6 +1611,7 @@ async function open(){
     const who=profileNow();
     if(who.id!==saveOwner) MAP=null;                 // another profile's game: load theirs from the start
     saveOwner=who.id;
+    if(opts.fresh){ try{ localStorage.removeItem(saveKeyFor(who.id)); }catch(e){} MAP=null; }
     var s=loadSave(who.id);
     applySave(s); renderSpill();
     if(!MAP){
@@ -1604,16 +1631,53 @@ async function open(){
   setTimeout(()=>{ if(el.hint) el.hint.classList.add('fade'); },7000);
 }
 function close(){
-  save();
+  save(); stopTheme();
   running=false; keys.clear(); target=null; hideSay(); closeWorld();
   el.root.classList.remove('active');
+  refreshTitle();
 }
 
+// ── title screen: New Game / Load Game (this profile's save), the rest behind Test ──
+function saveSummary(){
+  const s=loadSave(profileNow().id);
+  if(!s||!s.map) return null;
+  const name=s.hero&&s.hero.name, when=s.t?new Date(s.t).toLocaleDateString(undefined,{day:'numeric',month:'short'}):'';
+  return {s, text:(name||'Your wizard')+(when?' · saved '+when:'')};
+}
+let newConfirm=0;
+function refreshTitle(){
+  const load=document.getElementById('btn-load-game'), note=document.getElementById('title-load-note');
+  if(!load) return;
+  const sum=saveSummary();
+  load.disabled=!sum;
+  if(note) note.textContent=sum?sum.text:'No saved game yet';
+  const nb=document.getElementById('btn-new-game');
+  if(nb&&!newConfirm){ nb.textContent='✨ New Game'; nb.classList.remove('btn-confirm'); }
+}
 window.addEventListener('DOMContentLoaded',()=>{
   const b=document.getElementById('btn-explore');
-  if(b) b.addEventListener('click',open);
+  if(b) b.addEventListener('click',()=>open());
+  const nb=document.getElementById('btn-new-game'), lb=document.getElementById('btn-load-game');
+  const tb=document.getElementById('btn-test'), tp=document.getElementById('title-test');
+  if(nb) nb.addEventListener('click',()=>{
+    // a save would be lost: the first tap asks, a second within 4 s starts over
+    if(saveSummary()&&!newConfirm){
+      nb.textContent='⚠ Replace saved game?'; nb.classList.add('btn-confirm');
+      newConfirm=setTimeout(()=>{ newConfirm=0; refreshTitle(); },4000);
+      return;
+    }
+    clearTimeout(newConfirm); newConfirm=0; refreshTitle();
+    playTheme();
+    open({fresh:true});
+  });
+  if(lb) lb.addEventListener('click',()=>{ if(!lb.disabled) open(); });
+  if(tb&&tp) tb.addEventListener('click',()=>{
+    tp.hidden=!tp.hidden; tb.setAttribute('aria-expanded',String(!tp.hidden));
+  });
+  refreshTitle();
+  document.addEventListener('wd-profile-changed',refreshTitle);
 });
-window.Explore={open, close, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
+window.Explore={open, close, refreshTitle, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
   _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
   // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
   _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;

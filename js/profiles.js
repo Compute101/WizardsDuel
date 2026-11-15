@@ -149,6 +149,7 @@ const Profiles=(()=>{
     const p=active();
     if(p){ const r=rankOf(p.xp); chip.innerHTML=`<span class="pfc-ico">${r.ico}</span><span class="pfc-txt"><b>${esc(p.name)}</b><small>${r.name}</small></span>`; }
     else chip.innerHTML='<span class="pfc-ico">👤</span><span class="pfc-txt"><b>Guest</b><small>Tap to sign in</small></span>';
+    try{ document.dispatchEvent(new Event('wd-profile-changed')); }catch(e){}
   }
   function open(v,id){ view=v||'main'; viewId=id||null; render(); $('profile-overlay').classList.add('show'); }
   function close(){ $('profile-overlay').classList.remove('show'); pickCb=null; if(!db.asked){ db.asked=true; save(); } refreshChip(); }
