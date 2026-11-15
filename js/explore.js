@@ -236,6 +236,7 @@ function wet(px,py){
   }
   if(t!=='W') return false;
   for(const b of bridges) for(const w of b.fb) if(inside(px,py,w)) return false;
+  for(const w of MAP.walk||[]) if(inside(px,py,w)) return false;
   return true;
 }
 

@@ -212,7 +212,7 @@ def recolour(c, roof=None, stone=None, whole=None):
 # Every piece keeps its name plus _<palette>. ground = whole-image tint for the ground pieces
 # (saturation, brightness, RGB tint, brightness for grass); house = recolour() args for buildings.
 SECTOR_GROUND = ['grass', 'grass2', 'dirtGrass', 'flagCracked', 'flagMoss'] + \
-    ['tr_%s_%s' % (st, c) for st in ['cobble', 'dirt', 'shore'] for c in _TR]
+    ['tr_%s_%s' % (st, c) for st in ['cobble', 'dirt', 'shore', 'quay'] for c in _TR]
 SECTOR_HOUSES = ['house1', 'house2', 'house3', 'house4', 'house5', 'house6', 'backTerra1', 'backTerra2', 'backSlate',
                  'backPurple', 'backSlateRuin', 'backPurpleRuin', 'sideTerra', 'sideSlate', 'sidePurple', 'sidePurpleRuin',
                  'tavern', 'chapel', 'tower']

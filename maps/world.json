@@ -1,14 +1,92 @@
 {
  "name": "The Vale of the Hollow",
- "note": "Hand-written. Coordinates are on a 1000 x 700 parchment. A location's map/spawn is where travelling there puts you; 'locked' ones show on the map but can't be reached yet; 'known' ones are on the map from the start, the rest appear once visited (or once a neighbour is visited, if 'seen' lists it).",
+ "note": "Hand-written. Coordinates are on a 1000 x 700 parchment. A location's map/spawn is where travelling there puts you; 'locked' ones show on the map but can't be reached yet; 'known' ones are on the map from the start, the rest appear once visited (or once a neighbour is visited, if 'seen' lists it). The river is the Hollow: it rises north of Corvanthe, runs through the Wound and the city, then south-west past Hollowmere.",
  "locations": [
-  {"id": "hollowmere", "name": "Hollowmere", "kind": "town", "x": 360, "y": 430, "map": "hollowmere", "spawn": "west", "known": true,
-   "blurb": "A river town half-emptied by the Unweaving. The west still stands; across the Hollow it is falling down."},
-  {"id": "corvanthe_road", "name": "The Corvanthe Road", "kind": "road", "x": 535, "y": 345, "map": "corvanthe_road", "spawn": "west", "seenFrom": ["hollowmere"],
-   "blurb": "The old cobbled road from Hollowmere to the walls of Corvanthe. Gleaners camp along it."},
-  {"id": "corvanthe", "name": "Corvanthe", "kind": "city", "x": 700, "y": 230, "known": true, "map": "cindergate", "spawn": "gate", "seenFrom": ["corvanthe_road"],
-   "blurb": "The great university city, ruined in the Unweaving. Its citizens walk its streets still, as Echoes. The gleaners have cut a way in through the Wardgate, into Cindergate."}
+  {
+   "id": "hollowmere",
+   "name": "Hollowmere",
+   "kind": "town",
+   "x": 360,
+   "y": 430,
+   "map": "hollowmere",
+   "spawn": "west",
+   "known": true,
+   "blurb": "A river town half-emptied by the Unweaving. The west still stands; across the Hollow it is falling down."
+  },
+  {
+   "id": "corvanthe_road",
+   "name": "The Corvanthe Road",
+   "kind": "road",
+   "x": 535,
+   "y": 345,
+   "map": "corvanthe_road",
+   "spawn": "west",
+   "seenFrom": [
+    "hollowmere"
+   ],
+   "blurb": "The old cobbled road from Hollowmere to the walls of Corvanthe. Gleaners camp along it."
+  },
+  {
+   "id": "corvanthe",
+   "name": "Corvanthe",
+   "kind": "city",
+   "x": 700,
+   "y": 230,
+   "known": true,
+   "map": "cindergate",
+   "spawn": "gate",
+   "seenFrom": [
+    "corvanthe_road"
+   ],
+   "blurb": "The great university city, ruined in the Unweaving. Its citizens walk its streets still, as Echoes. The gleaners have cut a way in through the Wardgate, into Cindergate."
+  }
  ],
- "roads": [["hollowmere", "corvanthe_road"], ["corvanthe_road", "corvanthe"]],
- "river": [[330, 0], [350, 140], [338, 300], [362, 430], [352, 560], [370, 700]]
+ "roads": [
+  [
+   "hollowmere",
+   "corvanthe_road"
+  ],
+  [
+   "corvanthe_road",
+   "corvanthe"
+  ]
+ ],
+ "river": [
+  [
+   760,
+   0
+  ],
+  [
+   722,
+   130
+  ],
+  [
+   700,
+   230
+  ],
+  [
+   640,
+   300
+  ],
+  [
+   520,
+   330
+  ],
+  [
+   400,
+   360
+  ],
+  [
+   362,
+   430
+  ],
+  [
+   352,
+   560
+  ],
+  [
+   370,
+   700
+  ]
+ ]
 }

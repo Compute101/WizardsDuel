@@ -13,7 +13,7 @@ class MapBuilder {
     this.r=P.rng(seed);
     this.k=[]; for(let y=0;y<rows;y++) this.k.push(new Array(cols).fill('G'));
     this.objs=[]; this.boxes=[];
-    this.lore={}; this.spawns={}; this.exits=[]; this.blocks=[]; this.glows=[]; this.echoes=[];
+    this.lore={}; this.spawns={}; this.exits=[]; this.blocks=[]; this.glows=[]; this.echoes=[]; this.walk=[];
   }
   // ── ground kinds: G grass, d worn grass, D dirt lane, R road, M mossy road, P plaza flags,
   //    W river water, O pond water, K plank docks; burnt (Cindergate): a ash, e ash dirt,
@@ -90,6 +90,7 @@ class MapBuilder {
        exits:  [{x, y, w, h, label, to:{map, spawn} | 'world'}]   walk in to leave
        blocks: [{x, y, w, h}]                              invisible walls
        glows:  [{x, y, r, c}]                              extra night lights, c = 'r,g,b'
+       walk:   [{x, y, w, h}]                              water you can stand on (a city bridge's full street width)
        flow:   'S'                                         which way the river's current runs
        fx:     'embers'                                    drifting particles, day and night
        haze:   'r,g,b,a'                                   a colour wash over the whole map
@@ -106,7 +107,7 @@ class MapBuilder {
         const e={}; if(o.lore) e.lore=o.lore; if(o.scale) e.scale=round(o.scale*1000)/1000; if(o.decal) e.decal=1;
         return Object.keys(e).length?[o.kind,round(o.x),round(o.y),e]:[o.kind,round(o.x),round(o.y)];
       }),
-      lore:this.lore, spawns:this.spawns, exits:this.exits, blocks:this.blocks, glows:this.glows, echoes:this.echoes,
+      lore:this.lore, spawns:this.spawns, exits:this.exits, blocks:this.blocks, glows:this.glows, echoes:this.echoes, walk:this.walk,
     };
   }
 }

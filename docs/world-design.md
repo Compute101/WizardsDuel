@@ -161,3 +161,10 @@ the strong kind is bigger and more monstrous, someone who was powerful or near t
 sprites in the same format as the character stills: full body, facing right, feet on the bottom
 edge, about 512 × 768 for the weak kind (taller for the strong kind), detailed pixel art like
 `sprites/eldrin.png` and `sprites/gretch.png`.
+
+## The Hollow
+
+The river of Hollowmere rises north of Corvanthe and runs through the city: in under the harbour wall
+in the Drowned Quarter, through the Wound, and out of Cindergate boiling, then south-west to
+Hollowmere. That is why Hollowmere's folk say it runs the other way at night. Only those two sectors
+(opposites, Water and Fire) carry it; the inner rings will carry it on to the Wound.

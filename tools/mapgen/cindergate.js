@@ -5,6 +5,7 @@
 'use strict';
 const {MapBuilder, T, P} = require('./builder');
 const {City} = require('./city');
+const {river} = require('./sector');
 
 const LORE = {
   gate:    ['The Wardgate', 'Cut open from the inside, not the outside. The gleaners only widened the hole.'],
@@ -15,6 +16,9 @@ const LORE = {
   square:  ['Forge Square', 'Where the guild forges stood round a square of iron-grey flags. The flags are cracked in rings, as if something very hot had walked in circles here.'],
   tavern:  ['The Anvil and Ember', 'The forgers\' tavern. Tankards stand half-full on every table, the ale boiled away inside them.'],
   chapel:  ['Chapel of the Hearth', 'Every candle in the chapel is lit, and none of them burns down.'],
+  river:   ['The Hollow, Boiling', 'The river comes out of the Wound scalding. Steam rolls off it day and night, and fish swim in it, cooked white, and do not die.'],
+  bridge:  ['Foundry Bridge', 'Iron plates bolted over stone. They are warm underfoot, from the water.'],
+  bridgeBroken:['Melted Bridge', 'The iron span sagged into the river like wax. The far half still glows dull red where the water touches it.'],
   lamppost:['Lantern', 'The glass is black with soot, but something inside is still burning.'],
 };
 
@@ -51,6 +55,9 @@ module.exports = function cindergate(rects){
   city.square(SQ.x,SQ.y,4.4,3.3);                                              // Forge Square
   city.square(9.5,15.5,2.8,2.2,'c');                                           // Tinkers' Corner
   city.square(28.5,39.5,3.5,1.8,'c');                                          // inside the gate
+  // the Hollow, boiling: it comes out of the Wound and leaves the city here, under the wall
+  const rgap=river(m,city,44,46,'S');
+  for(let y=3*T;y<42*T;y+=150+m.r()*120) m.glows.push({x:45.5*T,y,r:140,c:'255,150,70'});   // the scalding water glows
 
   // ── landmarks, then the terraces round them ──
   const SX=SQ.x*T, SY=SQ.y*T;
@@ -64,7 +71,7 @@ module.exports = function cindergate(rects){
 
   // ── the Burning Line: the north edge, rubble and fire ──
   m.place('brokenArch',28*T,4*T+20,{lore:'furnace'});
-  m.wallRun(4*T+20,0,W,[[28*T-90,28*T+90]],['rubble2','rubble3','ruinWall1','rubble4','blocks1','rubble1','ruinWall2','rubble9']);
+  m.wallRun(4*T+20,0,W,[[28*T-90,28*T+90],rgap],['rubble2','rubble3','ruinWall1','rubble4','blocks1','rubble1','ruinWall2','rubble9']);
   m.objs.filter(o=>/^(rubble2|ruinWall1)$/.test(o.kind)&&o.y<5*T).forEach((o,i)=>{ if(i%3===0) o.lore='burning'; });
   m.blocks.push({x:0,y:0,w:W,h:4*T+24});
   city.reserve(0,W,0,5*T);
@@ -72,7 +79,7 @@ module.exports = function cindergate(rects){
   // ── the city wall, the Wardgate, the gleaners' camp ──
   const WALL_Y=42*T+30, GX=28*T;
   m.place('arch',GX,WALL_Y,{lore:'gate'});
-  m.wallRun(WALL_Y,0,W,[[GX-60,GX+80]],['wallLow1','ruinWall2','wallLow2','ruinWall1','wallLow1','wallLow2']);
+  m.wallRun(WALL_Y,0,W,[[GX-60,GX+80],rgap],['wallLow1','ruinWall2','wallLow2','ruinWall1','wallLow1','wallLow2']);
   m.blocks.push({x:0,y:42*T+40,w:W,h:2*T});
   city.reserve(0,W,41*T,H);
   const CX=30*T, CY=40*T+40;

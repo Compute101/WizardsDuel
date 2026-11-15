@@ -42,14 +42,17 @@ const SECTORS = {
     chapel:['The Lecture Hall', 'A lecture was under way when it happened. The chalk is still writing on the board, by itself, the same line over and over.'],
     landmarks:['tower','tavern','chapel'],
     tower:['The Hall of Study', 'The college tower. Its orrery counts down to something, and the count is getting low.']},
-  drowned_quarter: {el:'water', pal:'drowned', seed:6401, fx:'rain', flood:true, haze:'20,60,80,0.16', glow:'110,200,230', strays:['ice','earth'],
+  drowned_quarter: {el:'water', pal:'drowned', seed:6401, fx:'rain', flood:true, river:'N', haze:'20,60,80,0.16', glow:'110,200,230', strays:['ice','earth'],
     line:['The Drowning Line', 'The harbour rose and never fell. Past here the streets are under black water, and lanterns still burn beneath it.'],
     arch:['The Harbour Arch', 'The gate to the old docks, half sunk. Something has scored the stone at the waterline, again and again, from the inside.'],
     square:['Fishmarket Square', 'The fishmongers\' slabs are still laid out. What is on them now came up out of the water by itself.'],
     statue:['The Harbour-Master', 'His bronze spyglass points out to sea. Barnacles have grown over it, though the sea is a mile away.'],
     tavern:['The Mermaid\'s Rest', 'Sailors\' tavern. The floor is a hand deep in water, and the tide in it comes and goes on the hour.'],
     chapel:['Chapel of the Drowned', 'Every pew is wet, as though the congregation has only just stood up and walked out of the sea.'],
-    landmarks:['tavern','chapel','crane']},
+    landmarks:['tavern','chapel','crane'],
+    riverLore:['The Hollow', 'The river comes in under the harbour wall clean and green, and runs north toward the Wound. You do not want to see what comes out the other side.'],
+    bridge:['Harbour Bridge', 'Barges once passed under it to the docks. The water underneath is deep and very still, and the reflection of the bridge has people on it.'],
+    bridgeBroken:['Fallen Bridge', 'The current took the middle span. Something has tied the two ends together with weed and rope, but it would never take your weight.']},
   quarry_ward: {el:'earth', pal:'quarry', seed:6501, fx:'dust', haze:'120,90,50,0.13', glow:'230,190,120', strays:['air','water'], rubble:true,
     line:['The Upheaval', 'The ground stood up here. Bedrock has broken through the streets in walls and spires, and it is still, slowly, rising.'],
     arch:['The Masons\' Gate', 'The guild of masons built it to last a thousand years. The ground has tilted it over like a doorstop.'],
@@ -85,6 +88,7 @@ module.exports = function sector(rects,id){
     wall:['The City Wall', 'The outer wall of Corvanthe. From this side, every stone is scratched with tally marks, in groups of five.'],
     crane:['The Harbour Crane', 'Its hook hangs in the water of the street below, and the chain is taut. Something down there is holding on.'],
     gallows:['The Quarry Hoist', 'The great hoist that lifted blocks out of the pit. The rope is still running, slowly, up out of the ground.'],
+    river:S.riverLore, bridge:S.bridge, bridgeBroken:S.bridgeBroken,
     wagon:['A Trader\'s Wagon', 'Frozen solid with its goods still on it: bolts of cloth, sacks of salt, a cage with a frozen songbird in it, mid-song.']};
   const sty=k=>rects[k+'_'+S.pal]?k+'_'+S.pal:k;
   const ruin=(x,y)=>Math.max(0,Math.min(1,(1-y/H)*1.15-0.12));
@@ -118,6 +122,9 @@ module.exports = function sector(rects,id){
   city.square(SQ.x,SQ.y,rnd(3.6,4.6),rnd(2.8,3.4));
   city.square(rnd(8,14),crossY[0]+1,2.4,1.8,'R');
   city.square(rnd(42,48),crossY[2]+1,2.4,1.8,'R');
+  // the Hollow, where it runs through this sector
+  const gaps=[];
+  if(S.river){ const c0=AX<28?38:15; gaps.push(river(m,city,c0,c0+2,S.river)); }
   // the Drowned Quarter's flooded plots: still pools between the houses
   if(S.flood) for(let i=0;i<9;i++){
     const cx=Math.round(rnd(4,51)), cy=Math.round(rnd(8,36));
@@ -142,14 +149,14 @@ module.exports = function sector(rects,id){
   // ── the north edge: this sector's barrier, an arch through it to the inner rings ──
   const ARCH_X=avenue[avenue.length-1][0]*T+T;
   m.place('brokenArch',ARCH_X,4*T+20,{lore:'arch'});
-  m.wallRun(4*T+20,0,W,[[ARCH_X-90,ARCH_X+90]],S.rubble?['blocks1','blocks2','rubble3','ruinWall1','rocks2','blocks1','rubble4']:
+  m.wallRun(4*T+20,0,W,[[ARCH_X-90,ARCH_X+90],...gaps],S.rubble?['blocks1','blocks2','rubble3','ruinWall1','rocks2','blocks1','rubble4']:
     ['rubble2','rubble3','ruinWall1','rubble4','blocks1','rubble1','ruinWall2','rubble9']);
   m.objs.filter(o=>o.y<5*T&&/^(rubble2|ruinWall1|blocks1)$/.test(o.kind)).forEach((o,i)=>{ if(i%3===0) o.lore='line'; });
   m.blocks.push({x:0,y:0,w:W,h:4*T+24});
   city.reserve(0,W,0,5*T);
   // ── the city wall to the south (no gate here: the way in is Cindergate's Wardgate) ──
   const WALL_Y=42*T+30;
-  m.wallRun(WALL_Y,0,W,[],['wallLow1','ruinWall2','wallLow2','ruinWall1','wallLow1','wallLow2']);
+  m.wallRun(WALL_Y,0,W,gaps,['wallLow1','ruinWall2','wallLow2','ruinWall1','wallLow1','wallLow2']);
   m.objs.filter(o=>o.y>42*T).forEach((o,i)=>{ if(i%5===2) o.lore='wall'; });
   m.blocks.push({x:0,y:42*T+40,w:W,h:2*T});
   city.reserve(0,W,41*T,H);
@@ -184,6 +191,25 @@ module.exports = function sector(rects,id){
   return m;
 };
 
+// The Hollow through the city: water from edge to edge in columns c0..c1, flowing `flow` ('N' / 'S'),
+// and a bridge wherever a street meets both banks (broken ones nearer the Wound). Call it after the
+// streets are painted and before landmarks and houses.
+function river(m,city,c0,c1,flow){
+  m.fill(c0,0,c1,m.rows-1,'W'); m.flow=flow;
+  const rows=[];
+  for(let y=6;y<m.rows-2;y++) if(city.isStreet(c0-1,y)&&city.isStreet(c1+1,y)) rows.push(y);
+  const groups=[]; for(const y of rows){ const g=groups[groups.length-1]; if(g&&y-g[g.length-1]<=1) g.push(y); else groups.push([y]); }
+  groups.forEach((g,i)=>{
+    const cy=(g[0]+g[g.length-1]+1)/2*T, near=cy<15*T;
+    const kind=near?(i%2?'bridgeTopWoodBroken':'bridgeTopStoneBroken'):(i%2?'bridgeTopWood':'bridgeTopStone');
+    const o=m.placeBridge(kind,c0,c1,cy,near?'bridgeBroken':'bridge');
+    // the whole street's width is walkable over a sound bridge, not just the drawn deck
+    if(!near) m.walk.push({x:c0*T-8, y:g[0]*T-6, w:(c1-c0+1)*T+16, h:g.length*T+12});
+  });
+  city.reserve(c0*T-30,(c1+1)*T+30,0,m.H);
+  m.place('postRing',c0*T-14,22*T,{lore:'river'});
+  return [c0*T-20,(c1+1)*T+20];       // a gap for walls laid across it
+}
 // Wallside's two ends lead on to the neighbouring sectors (Cindergate uses this too)
 function ringExits(m,id){
   const i=RING.indexOf(id), west=RING[(i+RING.length-1)%RING.length], east=RING[(i+1)%RING.length];
@@ -192,4 +218,4 @@ function ringExits(m,id){
   m.exits.push({x:0,y:38*T,w:48,h:4*T,label:'Wallside to '+RING_NAMES[west],to:{map:west,spawn:'east'}});
   m.exits.push({x:m.W-48,y:38*T,w:48,h:4*T,label:'Wallside to '+RING_NAMES[east],to:{map:east,spawn:'west'}});
 }
-module.exports.SECTORS=SECTORS; module.exports.RING=RING; module.exports.ringExits=ringExits;
+module.exports.river=river; module.exports.SECTORS=SECTORS; module.exports.RING=RING; module.exports.ringExits=ringExits;
