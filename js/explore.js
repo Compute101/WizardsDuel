@@ -202,6 +202,7 @@ function fight(a){
 }
 function afterFight(a,won,low,key,fighting,allyHp){
   el.root.classList.add('active'); running=true; busy=false; resize();
+  navGrid=null;                                // the door may have just opened
   clock=(clock+20)%1440;                       // a fight takes a while
   if(won) vit[key]=Math.max(1,Math.round(Math.min(isFinite(low)?low:hpOf(key),hpOf(key))));
   else vit[key]=Math.max(1,Math.round(maxHp(key)*0.25));
@@ -717,7 +718,7 @@ function buildDom(){
   el.worldCv.addEventListener('click',worldClick);
   el.night.onclick=()=>{ lightMode={auto:'day',day:'night',night:'auto'}[lightMode]; renderClock(); save(); };
   el.spill.onclick=()=>{ if(!busy) openInventory(); };
-  el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy) takeExit(nearExit); };
+  el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy&&!roomLocked()) takeExit(nearExit); };
   el.say.onclick=hideSay;
   el.cv.addEventListener('pointerdown',e=>{ el.cv.setPointerCapture(e.pointerId); setTarget(e); hideSay(); dragging=true; });
   el.cv.addEventListener('pointermove',e=>{ if(dragging) setTarget(e); });
@@ -795,8 +796,13 @@ let toastTimer=0;
 function toast(msg){ el.toast.textContent=msg; el.toast.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.toast.hidden=true; },2200); }
 
 // ═══ LOOP ══════════════════════════════════════════════════════════
+// a room with foes still in it can't be left: they're between you and the door (no slipping in
+// and out to dodge a fight; losing still throws you out, through takeExit directly)
+function roomLocked(){ return !!(MAP&&MAP.interior&&actors.length); }
+let lockToastT=0;
 function blocked(x,y){
   const b={x:x-12,y:y-9,w:24,h:9};
+  if(roomLocked()) for(const e of MAP.exits||[]) if(overlap(b,{x:e.x,y:e.y-14,w:e.w,h:e.h+14})) return true;
   if(b.x<T*0.3||b.y<T*0.5||b.x+b.w>WORLD_W-T*0.3||b.y+b.h>WORLD_H-4) return true;
   for(const c of boxes) if(overlap(b,c)) return true;
   for(const c of MAP.blocks||[]) if(overlap(b,c)) return true;
@@ -867,7 +873,7 @@ function update(dt){
   // a way out? (you must step out of the one you arrived in first)
   const ex=exitAt(wiz.x,wiz.y);
   if(!ex) exitArmed=true;
-  else if(exitArmed){ exitArmed=false; takeExit(ex); return; }
+  else if(exitArmed&&!roomLocked()){ exitArmed=false; takeExit(ex); return; }
   nearExit=null;
   for(const e of MAP.exits||[]) if(Math.hypot(e.x+e.w/2-wiz.x,e.y+e.h/2-wiz.y)<260) nearExit=e;
   // something to inspect nearby?
@@ -883,7 +889,10 @@ function update(dt){
   nearDoor=null;
   if(!near){ let bd=40; for(const dr of doors){ const d=Math.hypot(dr.x-wiz.x,(dr.y-wiz.y)*1.4); if(d<bd){ bd=d; nearDoor=dr; } } }
   // the action button: inspect what's near, enter a door, or take the way out you're close to
-  const exitClose=nearExit&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y+nearExit.h/2-wiz.y)<(MAP.interior?110:170);
+  if(roomLocked()&&nearExit&&wiz.moving&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y-wiz.y)<50&&performance.now()>lockToastT){
+    lockToastT=performance.now()+3000; toast(MAP.ev&&MAP.ev.type==='party'?'They\'ve got the door. No way out but through them.':'The Echoes won\'t let you leave. Deal with them first.');
+  }
+  const exitClose=!roomLocked()&&nearExit&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y+nearExit.h/2-wiz.y)<(MAP.interior?110:170);
   el.act.hidden=!(near||nearDoor||exitClose)||!el.say.hidden;
   if(near) el.act.textContent=(near.npc?'💬 ':'✋ ')+(near.npc?npcTitle(near.npc):loreOf(near)[0]);
   else if(nearDoor) el.act.textContent='🚪 '+(nearDoor.label||'Enter');
@@ -1210,7 +1219,10 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(b) b.addEventListener('click',open);
 });
 window.Explore={open, close, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
-  _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor((sp[1]-10)/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;
+  _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y),
+  // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
+  _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;
     for(let h=0;h<q.length;h++){ const c=q[h], cx=c%nc; for(const n of [c-nc,c+nc,cx>0?c-1:-1,cx<nc-1?c+1:-1]) if(n>=0&&n<nc*nr&&!seen[n]&&g[n]){ seen[n]=1; q.push(n); } }
-    let open=0, un=0; for(let i=0;i<g.length;i++) if(g[i]){ open++; if(!seen[i]) un++; } return {open, unreached:un}; }};
+    let open=0, un=0; for(let i=0;i<g.length;i++) if(g[i]&&Math.floor(i/nc)*NAV<sp[1]){ open++; if(!seen[i]) un++; }
+    return {open, unreached:un}; }};
 })();

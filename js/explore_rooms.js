@@ -203,8 +203,8 @@ function build(spec,rects){
   }
   const free=(x,y,w,h,m)=>{
     if(x-w/2<X0+6||x+w/2>X1-6||y-h<Y0+20||y>Y1-6) return false;
-    if(Math.abs(x-DX)<T*0.9&&y>Y0+(Y1-Y0)*0.45) return false;          // the way in stays clear
     const fb={x:x-w*0.45,y:y-Math.min(h,30),w:w*0.9,h:Math.min(h,30)};
+    if(P.overlap(fb,{x:DX-T*0.9,y:Y0+(Y1-Y0)*0.45,w:T*1.8,h:Y1})) return false;   // the way in stays clear, the whole piece, not just its middle
     return !boxes.some(b=>P.overlap(b,fb,m));
   };
   let yMin=0;                                        // the library keeps its tables in the reading area, out of the stacks
