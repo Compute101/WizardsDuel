@@ -197,7 +197,7 @@ feels the same each time you come back. Roster wizards here follow one of two th
 | Aurelia, doctoral student | roster | **met at uni**: met again later, further east (her reading says so) |
 | Ponder, third-year student | roster | **met at uni**: met again later elsewhere |
 
-Still to do: their own art for the four invented dons (for now, recolours of Eldrin's old sprite: a black gown, russet, crimson, bottle green; `tools/make_folk_sprites.py`); the field
+Still to do: their own art for the four invented dons (for now, recolours of Eldrin's old sprite and a female wizard in the same style: Dr Penhallow in a black gown and Widow Coyle in bottle green on the female figure, Mr Quill in russet and Canon Marrow in crimson on Eldrin's; `tools/make_folk_sprites.py`); the field
 trip quests (the party work, step 7, lets these two fight beside you); the later meetings, which can
 check `ExploreFolk.metAtUni(key)` to say "we met at uni"; and more townsfolk, not yet invented
 (students, a rival, the landlady of the Wren's Nest, the Proctors themselves).
