@@ -18,7 +18,15 @@ const WIZ_H = 62;             // wizard drawn height, world px (a door is ~70 at
 const SPEED = 175;            // world px / s
 const INSPECT_R = 46;         // how close (to its footprint's edge) to stand to inspect something
 const START = {map:'hollowmere', spawn:'start'};
-const SAVE_KEY = 'wd-explore-state';   // {map, x, y, found:[location ids], spill:{element:n}, cleared:{'map:echo id':time}}; per device for now
+// One save per player profile (js/profiles.js), Guest included: wd-explore-save:<profile id> holds where
+// you are, what you carry, what you've found and done. The old device-wide save moves to the first
+// profile that opens Explore.
+const LEGACY_SAVE = 'wd-explore-state';
+const saveKeyFor = id => 'wd-explore-save:'+id;
+function profileNow(){ try{ const p=typeof Profiles!=='undefined'&&Profiles.active(); return p?{id:p.id,name:p.name}:{id:'guest',name:'Guest'}; }catch(e){ return {id:'guest',name:'Guest'}; } }
+const MAP_NAMES = {hollowmere:'Hollowmere', corvanthe_road:'the Corvanthe Road', cindergate:'Cindergate', heights:'the Heights', spirewatch:'Spirewatch',
+  collegium:'the Collegium', drowned_quarter:'the Drowned Quarter', quarry_ward:'the Quarry Ward', frostmarket:'Frostmarket', gloamside:'Gloamside'};
+const RING_ELS = ['fire','air','lightning','arcane','water','earth','ice','dark'];   // the spell wheel's order, as the sectors lie
 const FADE_MS = 280;
 // ── Echoes on the map ──
 const ECHO = {wander:42, chase:118, sight:210, touch:26, respawnMs:8*60*1000, grace:2.5};
@@ -62,7 +70,7 @@ let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
 let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null;
 const POTION_HEAL=0.3, POTION_PRICE={shop:8, safehouse:10}, MAX_ALLIES=2;
-let found=new Set(), spill={}, cleared={}, actors=[], grace=0;
+let found=new Set(), spill={}, cleared={}, actors=[], grace=0, visited=new Set(), saveOwner=null, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
 const imgCache={};
 function imgOf(src){ if(!imgCache[src]){ const i=new Image(); i.src=src; imgCache[src]=i; } return imgCache[src]; }
 
@@ -371,7 +379,7 @@ function talkTo(n){
       const promised=rescues.some(r=>r.room===MAP.id);
       showDialog(ev.name+', wounded', promised?'"You\'ll tell Marda? At the Gleaners\' Rest, inside the Wardgate. Please."':
         ev.name+' cannot stand. "There\'s a safe house in Cindergate, the Gleaners\' Rest. Tell old Marda where I am. She\'ll send someone. She always sends someone."',
-        promised?[]:[{label:'I\'ll tell her', fn:()=>{ rescues.push({name:ev.name, room:MAP.id}); toast('Find Marda at the Gleaners\' Rest, in Cindergate.'); }}, {label:'Not my problem'}]);
+        promised?[]:[{label:'I\'ll tell her', fn:()=>{ rescues.push({name:ev.name, room:MAP.id, where:roomSpec&&roomSpec.outside.map}); toast('Find Marda at the Gleaners\' Rest, in Cindergate.'); }}, {label:'Not my problem'}]);
     }
     return;
   }
@@ -402,13 +410,83 @@ function drawNpc(n,t){
   ctx.restore();
 }
 
-// ── what you carry ──
-function openInventory(){
-  const key=wizKeys[wizIdx], sp=Object.keys(spill).filter(k=>spill[k]>0).map(k=>spill[k]+' '+SPILL[k][0]).join(', ')||'none';
-  const al=allies.length?allies.map(a=>a.name+' ('+(fighters[a.key]?fighters[a.key].title:a.key)+')').join(', '):'nobody';
-  const rs=rescues.length?'\nPromised to tell Marda about: '+rescues.map(r=>r.name).join(', ')+'.':'';
-  showDialog('What You Carry','Gold: '+gold+'.  Potions: '+potions+'.\nSpill: '+sp+'.\nWith you: '+al+'.'+rs+'\nLore found: '+booksRead.length+' of '+window.ExploreRooms.BOOKS.length+'.',
-    [{label:'🧪 Drink a potion (+'+Math.round(POTION_HEAL*100)+'% HP)', disabled:potions<1||hpOf(key)>=maxHp(key), fn:drinkPotion}]);
+// ── the satchel: what you carry, who's with you, what you've found ──
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const crystalCache={};
+function crystalSrc(elm){                      // the loot sheet's quintessence crystal, as a small image
+  if(crystalCache[elm]) return crystalCache[elm];
+  const q=rects['q_'+elm]; if(!q) return '';
+  const c=document.createElement('canvas'); c.width=q[2]; c.height=q[3];
+  c.getContext('2d').drawImage(atlases[q[4]],q[0],q[1],q[2],q[3],0,0,q[2],q[3]);
+  return crystalCache[elm]=c.toDataURL();
+}
+function allyMax(a){ const f=fighters[a.key]; return f?f.hp:30; }
+function openBag(tab){ bagOpen=true; keys.clear(); target=null; hideSay(); if(tab) bagTab=tab; bagRead=null; bagConfirm=null; renderBag(); el.bag.hidden=false; }
+function closeBag(){ bagOpen=false; el.bag.hidden=true; bagConfirm=null; }
+function bar(hp,mx){ const f=Math.max(0,Math.min(1,hp/mx)); return `<span class="ex-bag-bar"><i style="width:${Math.round(f*100)}%;background:${f>0.5?'#5cc85c':f>0.25?'#e0b040':'#e05050'}"></i></span><small>${Math.round(hp)} / ${mx}</small>`; }
+function renderBag(){
+  const who=profileNow();
+  el.bagWho.textContent=who.id==='guest'?'Guest (not saved to a profile)':who.name+'’s game';
+  const tabs=[['pack','Pack'],['party','Companions'],['journal','Journal']];
+  el.bagTabs.innerHTML=tabs.map(([k,n])=>`<button class="ex-bag-tab${bagTab===k?' on':''}" data-tab="${k}" type="button">${n}</button>`).join('');
+  const key=wizKeys[wizIdx];
+  let h='';
+  if(bagTab==='pack'){
+    h+=`<div class="ex-bag-row"><span class="ex-bag-coin"></span><b>${gold}</b> gold</div>`;
+    h+=`<div class="ex-bag-row"><span class="ex-bag-ico">🧪</span><b>${potions}</b> potion${potions===1?'':'s'}<span class="ex-bag-sp"></span>`+
+       `<button class="ex-btn" data-act="drink" type="button"${potions<1||hpOf(key)>=maxHp(key)?' disabled':''}>Drink (+${Math.round(POTION_HEAL*100)}% HP)</button></div>`;
+    h+=`<div class="ex-bag-sec">Quintessence</div><div class="ex-bag-grid">`+RING_ELS.map(e=>{ const n=spill[e]||0;
+      return `<div class="ex-bag-q${n?'':' none'}"><img src="${crystalSrc(e)}" alt=""><b>${n}</b><small style="color:${SPILL[e][1]}">${SPILL[e][0]}</small></div>`; }).join('')+`</div>`;
+    h+=`<div class="ex-bag-note">Spill from broken Echoes. Wenna in Cindergate bakes with cinderglass; the Lamplighter in Gloamside trades for nightglass.</div>`;
+  } else if(bagTab==='party'){
+    const wizzes=wizKeys.filter(k=>k===key||(vit[k]!=null&&vit[k]<maxHp(k)));
+    h+=`<div class="ex-bag-sec">Wizards</div>`+wizzes.map(k=>`<div class="ex-bag-row"><img class="ex-bag-face" src="portraits/small/${k}.jpg" alt=""><span class="ex-bag-name">${esc(chars[k].name)}${k===key?' <em>(walking)</em>':''}</span>${bar(hpOf(k),maxHp(k))}</div>`).join('');
+    h+=`<div class="ex-bag-note">Wounds carry from fight to fight. Rest at an inn or a gleaner camp, or drink a potion.</div>`;
+    h+=`<div class="ex-bag-sec">Allies · ${allies.length} / ${MAX_ALLIES}</div>`;
+    h+=allies.length?allies.map((a,i)=>{ const f=fighters[a.key]||{}, mx=allyMax(a);
+      return `<div class="ex-bag-row"><img class="ex-bag-face" src="portraits/small/${esc(a.key)}.jpg" alt=""><span class="ex-bag-name">${esc(a.name)}<small>${esc(f.title||f.name||a.key)}</small></span>${bar(a.hp==null?mx:a.hp,mx)}`+
+        `<button class="ex-btn" data-act="dismiss" data-i="${i}" type="button">${bagConfirm==='dismiss'+i?'Sure?':'Send home'}</button></div>`; }).join('')
+      :'<div class="ex-bag-empty">Nobody. Wounded gleaners in the ruins may join you.</div>';
+  } else {
+    h+=`<div class="ex-bag-sec">Tasks</div>`+(rescues.length?rescues.map(r=>`<div class="ex-bag-task">Tell Old Marda at the Gleaners’ Rest, in Cindergate, that <b>${esc(r.name)}</b> is alive${r.where&&MAP_NAMES[r.where]?' in '+MAP_NAMES[r.where]:''}.</div>`).join('')
+      :'<div class="ex-bag-empty">Nothing promised.</div>');
+    const places=Object.keys(MAP_NAMES);
+    h+=`<div class="ex-bag-sec">Places · ${places.filter(p=>visited.has(p)).length} / ${places.length}</div><div class="ex-bag-places">`+
+      places.map(p=>`<span class="${visited.has(p)?'':'none'}">${visited.has(p)?esc(MAP_NAMES[p].replace(/^the /,'The ')):'???'}</span>`).join('')+`</div>`;
+    const B=window.ExploreRooms.BOOKS, read=B.filter(b=>booksRead.includes(b.id));
+    h+=`<div class="ex-bag-sec">Lore · ${read.length} / ${B.length}</div>`;
+    if(bagRead){ const b=B.find(x=>x.id===bagRead); h+=`<div class="ex-bag-book"><b>${esc(b.title)}</b><p>${esc(b.text)}</p><button class="ex-btn" data-act="unread" type="button">← All lore</button></div>`; }
+    else h+=read.length?`<div class="ex-bag-books">`+read.map(b=>`<button class="ex-bag-bk" data-book="${b.id}" type="button">📜 ${esc(b.title)}</button>`).join('')+`</div>`
+      :'<div class="ex-bag-empty">Books, letters and scraps turn up in the houses. The Collegium Library keeps its own.</div>';
+    h+=`<div class="ex-bag-sec">Game</div><div class="ex-bag-row"><span class="ex-bag-name"><small>Saved automatically${who.id==='guest'?' on this device as Guest':' to '+esc(who.name)+'’s profile'}.</small></span>`+
+      `<button class="ex-btn ex-bag-danger" data-act="restart" type="button">${bagConfirm==='restart'?'Lose everything? Tap again':'Start over'}</button></div>`;
+  }
+  el.bagBody.innerHTML=h;
+}
+function bagClick(e){
+  const t=e.target.closest('[data-tab],[data-act],[data-book]'); if(!t) return;
+  if(t.dataset.tab){ bagTab=t.dataset.tab; bagRead=null; bagConfirm=null; }
+  else if(t.dataset.book){ bagRead=t.dataset.book; }
+  else {
+    const a=t.dataset.act;
+    if(a==='drink'){ drinkPotion(); renderHp(); renderSpill(); save(); }
+    else if(a==='unread') bagRead=null;
+    else if(a==='dismiss'){ const i=+t.dataset.i;
+      if(bagConfirm==='dismiss'+i){ const al=allies[i]; allies.splice(i,1); bagConfirm=null; toast(al.name+' heads back to the gate.'); renderSpill(); save(); }
+      else { bagConfirm='dismiss'+i; } }
+    else if(a==='restart'){
+      if(bagConfirm==='restart'){ bagConfirm=null; startOver(); return; }
+      bagConfirm='restart';
+    }
+  }
+  renderBag();
+}
+async function startOver(){
+  closeBag();
+  try{ localStorage.removeItem(saveKeyFor(saveOwner)); }catch(e){}
+  applySave(null); renderSpill(); renderHp(); renderClock();
+  await enterMap(START.map,START.spawn);
+  toast('A new road. Nothing in your pockets but the dust of Hollowmere.');
 }
 
 // ── ground transitions ──
@@ -532,15 +610,31 @@ async function enterMap(id,at,instant){
     wiz.x=p[0]; wiz.y=p[1]; wiz.face=1;
     exitArmed=false;                          // arriving in an exit doesn't send you straight back
     const loc=locationOfMap(id); if(loc) found.add(loc.id);
+    if(!id.startsWith('room:')) visited.add(id);
     save();
   }catch(err){ console.error(err); toast('That way is blocked.'); }
   finally{ busy=false; fade(false); }
 }
 function save(){
-  if(!MAP) return;
-  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,roomSpec:MAP.interior?roomSpec:null})); }catch(e){}
+  if(!MAP||!saveOwner) return;
+  try{ localStorage.setItem(saveKeyFor(saveOwner),JSON.stringify({v:2, t:Date.now(), map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
 }
-function loadSave(){ try{ return JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); }catch(e){ return null; } }
+function loadSave(id){
+  try{
+    let raw=localStorage.getItem(saveKeyFor(id));
+    if(!raw){ const old=localStorage.getItem(LEGACY_SAVE); if(old){ raw=old; localStorage.setItem(saveKeyFor(id),old); localStorage.removeItem(LEGACY_SAVE); } }
+    return JSON.parse(raw||'null');
+  }catch(e){ return null; }
+}
+// everything a save holds, from a save (or a fresh start with none)
+function applySave(s){
+  s=s||{};
+  found=new Set(s.found||[]); visited=new Set(s.visited||[]); spill=s.spill||{}; cleared=s.cleared||{};
+  clock=s.clock!=null?s.clock:9*60; lightMode=s.lightMode||'auto'; vit=s.vit||{};
+  gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; roomSpec=s.roomSpec||null;
+  if(s.map&&!s.map.startsWith('room:')) visited.add(s.map);
+  for(const id of found){ const l=world&&world.locations.find(x=>x.id===id); if(l&&l.map) visited.add(l.map); }   // older saves knew only world-map places
+}
 function takeExit(x){
   if(x.to==='out'){ const o=roomSpec.outside; enterMap(o.map,[o.x,o.y+30]); return; }
   if(x.to==='world') openWorld('travel');
@@ -685,6 +779,7 @@ function buildDom(){
         <button class="ex-btn ex-arrow" id="ex-next" type="button" aria-label="Next wizard">▶</button>
       </div>
       <div class="ex-spill" id="ex-spill" hidden></div>
+      <button class="ex-btn" id="ex-bagbtn" type="button" title="Satchel (I)">🎒</button>
       <button class="ex-btn" id="ex-mapbtn" type="button" title="World map">🗺</button>
       <button class="ex-btn" id="ex-night" type="button" title="Time of day: auto / day / night"></button>
     </div>
@@ -699,6 +794,13 @@ function buildDom(){
       <div class="ex-world-panel"><div class="ex-wp-name" id="ex-wp-name"></div><div class="ex-wp-text" id="ex-wp-text"></div>
         <button class="ex-btn ex-wp-go" id="ex-wp-go" type="button">Travel</button></div>
     </div>
+    <div class="ex-bag" id="ex-bag" hidden>
+      <div class="ex-bag-box">
+        <div class="ex-bag-head"><span class="ex-bag-title">Satchel</span><span class="ex-bag-who" id="ex-bag-who"></span><button class="ex-btn" id="ex-bag-close" type="button">✕</button></div>
+        <div class="ex-bag-tabs" id="ex-bag-tabs"></div>
+        <div class="ex-bag-body" id="ex-bag-body"></div>
+      </div>
+    </div>
     <div class="ex-fade" id="ex-fade"></div>
     <div class="ex-loading" id="ex-loading">Loading…</div>`;
   document.getElementById('app').appendChild(d);
@@ -706,7 +808,7 @@ function buildDom(){
   el={root:d, cv:$('#ex-canvas'), mini:$('#ex-mini'), say:$('#ex-say'), act:$('#ex-act'), hint:$('#ex-hint'),
       face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), loading:$('#ex-loading'), title:$('#ex-title'),
       fade:$('#ex-fade'), toast:$('#ex-toast'), world:$('#ex-world'), worldCv:$('#ex-world-cv'), worldTitle:$('#ex-world-title'),
-      hp:$('#ex-hp'), spill:$('#ex-spill'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
+      hp:$('#ex-hp'), spill:$('#ex-spill'), bag:$('#ex-bag'), bagBody:$('#ex-bag-body'), bagTabs:$('#ex-bag-tabs'), bagWho:$('#ex-bag-who'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
   ctx=el.cv.getContext('2d');
   dark=document.createElement('canvas'); dctx=dark.getContext('2d');
   $('#ex-back').onclick=close;
@@ -717,7 +819,10 @@ function buildDom(){
   el.wpGo.onclick=worldGo;
   el.worldCv.addEventListener('click',worldClick);
   el.night.onclick=()=>{ lightMode={auto:'day',day:'night',night:'auto'}[lightMode]; renderClock(); save(); };
-  el.spill.onclick=()=>{ if(!busy) openInventory(); };
+  el.spill.onclick=()=>{ if(!busy) openBag('pack'); };
+  $('#ex-bagbtn').onclick=()=>{ if(!busy&&MAP) openBag(); };
+  $('#ex-bag-close').onclick=closeBag;
+  el.bag.addEventListener('click',e=>{ if(e.target===el.bag) closeBag(); else bagClick(e); });
   el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy&&!roomLocked()) takeExit(nearExit); };
   el.say.onclick=hideSay;
   el.cv.addEventListener('pointerdown',e=>{ el.cv.setPointerCapture(e.pointerId); setTarget(e); hideSay(); dragging=true; });
@@ -737,6 +842,7 @@ function setTarget(e){
 function onKey(e){
   if(!running) return;
   const k=e.key.toLowerCase();
+  if(bagOpen){ if(k==='escape'||k==='i'){ closeBag(); e.preventDefault(); } return; }
   if(worldOpen){
     if(k==='escape'){ closeWorld(); e.preventDefault(); }
     else if(k==='enter'&&!el.wpGo.disabled){ worldGo(); e.preventDefault(); }
@@ -745,6 +851,7 @@ function onKey(e){
   if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)){ keys.add(k); target=null; hideSay(); e.preventDefault(); }
   else if(k==='e'||k===' '||k==='enter'){ if(!el.say.hidden) hideSay(); else if(near) inspect(); else if(nearDoor) enterDoor(nearDoor); e.preventDefault(); }
   else if(k==='m'){ if(!busy&&MAP) openWorld('view'); }
+  else if(k==='i'){ if(!busy&&MAP) openBag(); }
   else if(k==='escape'){ if(!el.say.hidden) hideSay(); else close(); }
 }
 function resize(){
@@ -845,7 +952,7 @@ function exitAt(x,y){
   return null;
 }
 function update(dt){
-  if(busy||worldOpen){ wiz.moving=false; return; }
+  if(busy||worldOpen||bagOpen){ wiz.moving=false; return; }
   let dx=0, dy=0;
   if(keys.has('arrowleft')||keys.has('a')) dx--;
   if(keys.has('arrowright')||keys.has('d')) dx++;
@@ -1189,10 +1296,11 @@ async function open(){
   running=true; resize();
   try{
     await load();
-    const s=loadSave();
-    found=new Set(s&&s.found||[]); spill=(s&&s.spill)||{}; cleared=(s&&s.cleared)||{}; renderSpill();
-    if(s&&s.clock!=null) clock=s.clock; if(s&&s.lightMode) lightMode=s.lightMode; vit=(s&&s.vit)||{};
-    gold=(s&&s.gold)||0; potions=(s&&s.potions)||0; allies=(s&&s.allies)||[]; rescues=(s&&s.rescues)||[]; rooms=(s&&s.rooms)||{}; booksRead=(s&&s.booksRead)||[]; roomSpec=(s&&s.roomSpec)||null; renderSpill();
+    const who=profileNow();
+    if(who.id!==saveOwner) MAP=null;                 // another profile's game: load theirs from the start
+    saveOwner=who.id;
+    var s=loadSave(who.id);
+    applySave(s); renderSpill();
     if(!MAP){
       if(s&&s.map) await enterMap(s.map,[s.x,s.y],true);
       else await enterMap(START.map,START.spawn,true);
@@ -1202,7 +1310,7 @@ async function open(){
   catch(err){ el.loading.textContent='Couldn\'t load the map.'; console.error(err); return; }
   el.loading.hidden=true;
   sizeMini();
-  let saved=null; try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}
+  let saved=s&&s.wiz; if(!saved) try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}
   setWizard(Math.max(0,wizKeys.indexOf(saved||'eldrin'))); renderClock();
   last=performance.now(); requestAnimationFrame(frame);
   el.hint.classList.remove('fade');

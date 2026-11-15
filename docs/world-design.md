@@ -5,7 +5,7 @@ Baldur's Gate: countries, cities, towns and villages, with wizards stationed aro
 You meet them, they start stories, and some join your party. Battles use the existing duel
 screen. Nothing here is built yet beyond Hollowmere (see "Explore mode" in `CLAUDE.md`).
 
-Status: **vision and names agreed; step 1 (maps, travel, world map) built; step 2 started: Cindergate's outer ring.**
+Status: **vision and names agreed; steps 1, 3 and 4 built; step 2 has all eight outer rings (inner rings next); interiors built.**
 
 ## Decisions so far
 
@@ -115,7 +115,7 @@ in battle: you pick for each, or set one to AI.
    each sector now has its own pieces from four sheets (`tools/mapgen/own.js`).
 3. **Elementals on the map:** roaming, battle on contact, loot, respawn. *Done for Cindergate* (see
    "Echoes" in `CLAUDE.md`); balancing the Echo numbers against created wizards waits for step 7.
-4. **Inventory and save game**, per profile.
+4. **Inventory and save game**, per profile. *Done:* one Explore save per profile (Guest too), the satchel (pack, companions, journal with lore to reread), Start over, and a Corvanthe section on the profile page. What quintessence buys is still deferred.
 5. **Characters, dialogue and quests:** wizards in places, conversations, quest state.
 6. **Warbands.**
 7. **Character creation and the party** (needs the 6-seat battle work) can start any time after 1.
