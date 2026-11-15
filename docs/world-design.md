@@ -5,7 +5,7 @@ Baldur's Gate: countries, cities, towns and villages, with wizards stationed aro
 You meet them, they start stories, and some join your party. Battles use the existing duel
 screen. Nothing here is built yet beyond Hollowmere (see "Explore mode" in `CLAUDE.md`).
 
-Status: **vision and names agreed; step 1 (maps, travel, world map) built; step 2 started: Cindergate's outer ring.**
+Status: **vision and names agreed; step 1 (maps, travel, world map) built; step 2 started: Cindergate's outer ring. Wrenford, the University town and tutorial, built.**
 
 ## Decisions so far
 
@@ -162,6 +162,22 @@ the strong kind is bigger and more monstrous, someone who was powerful or near t
 sprites in the same format as the character stills: full body, facing right, feet on the bottom
 edge, about 512 × 768 for the weak kind (taller for the strong kind), detailed pixel art like
 `sprites/eldrin.png` and `sprites/gretch.png`.
+
+## Wrenford, the University town
+
+Far west of Corvanthe (as far as two English cities apart), on the river Wren: the new University,
+founded by the scholars of Corvanthe who weren't in the city on the day. As if Oxford had blown up
+and its survivors had founded the next university somewhere quiet; Oxford-coded throughout (the
+High, Carfax, Broad Street, quads behind gate towers, Bulldogs and Proctors, the Meadow and punts).
+It is not ruined, and it is chastened: the Statutes of Caution (no working larger than its maker,
+none without a witness, none that can't be undone, none in the street, no Word not understood; "VI.
+Don't be clever" in pencil), a memorial to Magister Orrin (the one councillor who voted against the
+Word), All Absent College (Fellows who keep the work of the lost), a bell rung nightly for the dead.
+
+It is the safe zone and the giant tutorial: a new game starts here, the dons (roster wizards) teach
+the basics through the Matriculation quest, and later it is where you make spells (a workshop at
+Lantern College, not built yet). Built: see "Wrenford" in `CLAUDE.md`. Next: more quests and
+colourful characters, the spell workshop, and a road map between Wrenford and Hollowmere.
 
 ## The Hollow
 

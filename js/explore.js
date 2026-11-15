@@ -17,7 +17,7 @@ const {T, PS} = P;
 const WIZ_H = 62;             // wizard drawn height, world px (a door is ~70 atlas px → ~43, shoulders reach the lintel)
 const SPEED = 175;            // world px / s
 const INSPECT_R = 46;         // how close (to its footprint's edge) to stand to inspect something
-const START = {map:'hollowmere', spawn:'start'};
+const START = {map:'wrenford', spawn:'start'};   // a new game starts in Wrenford, the University town (the tutorial)
 const SAVE_KEY = 'wd-explore-state';   // {map, x, y, found:[location ids], spill:{element:n}, cleared:{'map:echo id':time}}; per device for now
 const FADE_MS = 280;
 // ── Echoes on the map ──
@@ -51,7 +51,8 @@ function clockLabel(){ const h=Math.floor(clock/60), m=Math.floor(clock%60); ret
 let vit={};                                   // key → hp
 const REST = {hollowmere:{tavern:[1,'You take a room at the Drowned Crow and sleep till morning. The chairs still face the door.']},
   corvanthe_road:{camp:[0.6,'You sleep a few hours by the gleaners\' cold firepit, one eye open.']},
-  cindergate:{camp:[0.6,'You rest in the gate\'s shadow. The pot on the fire is still warm.']}};
+  cindergate:{camp:[0.6,'You rest in the gate\'s shadow. The pot on the fire is still warm.']},
+  wrenford:{inn:[1,'You take a room at the Wren\'s Nest and sleep till morning. Somewhere a bell is ringing, a long time, for the Absent.']}};
 function maxHp(key){ return (chars[key]&&chars[key].hp)||50; }
 function hpOf(key){ return vit[key]==null?maxHp(key):vit[key]; }
 let el={}, ctx=null, dark=null, dctx=null;
@@ -60,7 +61,7 @@ const keys=new Set();
 let target=null, stuckT=0, near=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, cam={x:0,y:0}, vw=0, vh=0;
 let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
-let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null;
+let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null, quests={};
 const POTION_HEAL=0.3, POTION_PRICE={shop:8, safehouse:10}, MAX_ALLIES=2;
 let found=new Set(), spill={}, cleared={}, actors=[], grace=0;
 const imgCache={};
@@ -114,6 +115,7 @@ function setupMap(data){
   data.objects.forEach(([kind,x,y,e],i)=>{
     if(!rects[kind]){ console.warn('explore: no piece',kind); return; }
     const o={kind,x,y,id:i,lore:e&&e.lore,scale:e&&e.scale,decal:!!(e&&e.decal)};
+    if(o.lore&&Folk&&Folk.hidden(o,folkApi)) return;                   // a quest item you already took
     if(o.decal){ o.fb=P.BRIDGE[kind]?P.bridgeDeck(rects,o):[]; bridges.push(o); }   // a bridge, or flat ground art (a crack, glazed cobbles)
     else for(const b of P.footBoxes(rects,o)) boxes.push(b);
     objs.push(o);
@@ -196,7 +198,7 @@ function fight(a){
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false);
     const key=wizKeys[wizIdx];
-    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:fighting.map(x=>({key:x.key,level:x.level,name:x.name,hp:x.hp})), text,
+    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:fighting.map(x=>({key:x.key,level:x.level,name:x.name,hp:x.hp})), text, arena:MAP.arena,
       onEnd:(won,low,allyHp)=>afterFight(a,won,low,key,fighting,allyHp)});
   });
 }
@@ -236,7 +238,7 @@ function renderHp(){
   el.hp.querySelector('i').style.width=Math.round(f*100)+'%';
   el.hp.querySelector('i').style.background=f>0.6?'#4caf50':f>0.3?'#e0a030':'#d04040';
   el.hp.querySelector('b').textContent=hp+'/'+mx;
-  el.hp.title='HP '+hp+' of '+mx+(hp<mx?': rest at the Drowned Crow in Hollowmere, or a gleaner camp':'');
+  el.hp.title='HP '+hp+' of '+mx+(hp<mx?': rest at the Wren\'s Nest in Wrenford, the Drowned Crow in Hollowmere, or a gleaner camp':'');
 }
 function renderClock(){
   if(!el.night) return;
@@ -262,12 +264,14 @@ function renderSpill(){
 // from its seed). Some are always the same place (FIXED_DOORS).
 const DOOR_BASES = ['house1','house2','house3','house4','house5','house6','tavern','chapel','hall','temple','townhouse','forge','tiltedHouse','sunkHouse','mausoleum','tower'];
 const FIXED_LABEL = {safehouse:'Enter the Gleaners\' Rest', inn:'Enter the Drowned Crow', library:'Enter the Collegium Library',
+  wrenInn:'Enter the Wren\'s Nest', remnant:'Enter the Remnant Library', lab:'Enter the Warded Laboratory',
   wenna:'Knock at Wenna\'s Bakehouse', lamplighter:'Knock at the Lamplighter\'s House'};
 const CITY_MAPS = ['cindergate','heights','spirewatch','collegium','drowned_quarter','quarry_ward','frostmarket','gloamside'];
 function findDoors(){
   doors=[];
   if(MAP.interior) return;
-  const fronts=objs.filter(o=>!o.decal&&DOOR_BASES.includes(P.baseKind(o.kind)));
+  const bases=MAP.safe?DOOR_BASES.concat('watchTower'):DOOR_BASES;      // a safe town's towers have doors too
+  const fronts=objs.filter(o=>!o.decal&&bases.includes(P.baseKind(o.kind)));
   const fixed={};
   const nearestTo=(x,y,test)=>fronts.filter(test).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
   const tav=fronts.find(o=>o.lore==='tavern');
@@ -275,6 +279,7 @@ function findDoors(){
   if(MAP.id==='cindergate'&&tav) fixed[tav.id]='safehouse';
   if(MAP.id==='cindergate'){ const w=nearestTo(28*T,38*T,o=>/^house/.test(o.kind)&&o!==tav); if(w) fixed[w.id]='wenna'; }
   if(MAP.id==='collegium'){ const h=fronts.find(o=>P.baseKind(o.kind)==='hall'); if(h) fixed[h.id]='library'; }
+  if(MAP.id==='wrenford') for(const o of fronts){ const f={inn:'wrenInn', library:'remnant', lab:'lab'}[o.lore]; if(f) fixed[o.id]=f; }
   if(MAP.id==='gloamside'){ const sp=MAP.spawns.west||[0,0], l=nearestTo(sp[0],sp[1],o=>/^house/.test(o.kind)); if(l) fixed[l.id]='lamplighter'; }
   const els={}; for(const e of MAP.echoes||[]) els[e.el]=(els[e.el]||0)+1;
   const el=Object.keys(els).sort((a,b)=>els[b]-els[a])[0]||'fire';
@@ -283,7 +288,7 @@ function findDoors(){
     const depth=Math.max(0,Math.min(1,(1-o.y/WORLD_H)*1.15-0.12));
     const ruined=/_(burnt|char)$/.test(o.kind)||['house5','house6','tiltedHouse','sunkHouse'].includes(base);
     const spec={id:'room:'+MAP.id+'#'+o.id, base, outside:{map:MAP.id,x:o.x,y:o.y+6}, el, depth, city:CITY_MAPS.includes(MAP.id),
-      ruined, fixed:f||null, wizards:wizKeys};
+      ruined, fixed:f||null, wizards:wizKeys, safe:!!MAP.safe};
     doors.push({x:o.x, y:o.y+14, spec, label:f?FIXED_LABEL[f]:'Enter'});
   }
 }
@@ -320,6 +325,41 @@ function drinkPotion(){ if(potions<1) return; const key=wizKeys[wizIdx]; potions
 function restFull(morning){ const key=wizKeys[wizIdx]; vit[key]=maxHp(key); allies.forEach(a=>a.hp=null); if(morning) clock=7*60; renderClock(); }
 const buyPotion=price=>({label:'Buy a potion ('+price+' gold)', disabled:gold<price, fn:()=>{ gold-=price; potions++; toast('A potion, wrapped in a rag.'); }});
 
+// ── townsfolk (js/explore_folk.js): what they need to act on the world ──
+const Folk = window.ExploreFolk||null;
+const folkApi = {
+  get chars(){ return chars; }, get fighters(){ return fighters; },
+  wizKey:()=>wizKeys[wizIdx], wizName:()=>{ const n=chars[wizKeys[wizIdx]].name; return n.charAt(0)+n.slice(1).toLowerCase(); },
+  dialog:(t,x,ch)=>showDialog(t,x,ch), toast:m=>toast(m), save:()=>{ renderSpill(); renderHp(); save(); },
+  quest:id=>quests[id]||(quests[id]={}), booksRead:()=>booksRead, lore:k=>(MAP.lore||{})[k],
+  gold:()=>gold, addGold:n=>{ gold=Math.max(0,gold+n); }, addPotions:n=>{ potions+=n; },
+  hp:()=>hpOf(wizKeys[wizIdx]), maxHp:()=>maxHp(wizKeys[wizIdx]), healFull:()=>{ restFull(false); renderHp(); save(); },
+  spillTotal:()=>Object.values(spill).reduce((a,n)=>a+n,0),
+  addSpill:(e,n)=>{ spill[e]=(spill[e]||0)+n; },
+  takeSpill:n=>{ for(const k of Object.keys(spill).sort((a,b)=>spill[b]-spill[a])){ const t=Math.min(n,spill[k]); spill[k]-=t; n-=t; if(!n) break; } },
+  sellSpill:price=>{ const n=Object.values(spill).reduce((a,v)=>a+v,0); spill={}; gold+=n*price; return n*price; },
+  removeObj:o=>removeObj(o),
+  spar:o=>spar(o),
+};
+// a practice bout (the Schools, the Laboratory): fought at full strength, and you come back as you went
+// in (the University's healers see to that); nothing is lost on a defeat
+function spar({foes, text, onWin, onLose}){
+  if(busy||typeof window.startExploreBattle!=='function') return;
+  busy=true; keys.clear(); target=null; hideSay(); save();
+  const key=wizKeys[wizIdx], before=hpOf(key);
+  fade(true).then(()=>{
+    running=false; el.root.classList.remove('active'); fade(false);
+    window.startExploreBattle({wizKey:key, foes, hp:maxHp(key), allies:[], text, arena:MAP.arena||'library',
+      onEnd:won=>{
+        el.root.classList.add('active'); running=true; busy=false; resize();
+        clock=(clock+20)%1440; vit[key]=Math.max(before,1);
+        if(won){ onWin&&onWin(); } else { onLose&&onLose(); }
+        renderHp(); renderSpill(); save(); grace=1.5;
+        last=performance.now(); requestAnimationFrame(frame);
+      }});
+  });
+}
+
 // things in rooms: returns true if it handled the inspect
 function roomAct(o){
   if(!MAP.interior) return false;
@@ -343,7 +383,8 @@ function roomAct(o){
   }
   if(o.lore==='shop'){ showDialog(MAP.lore.shop[0],MAP.lore.shop[1],[buyPotion(POTION_PRICE.shop)]); return true; }
   if(o.lore==='rest'){
-    const L=MAP.lore.rest, ch=[{label:'🛏 Rest till morning ('+hpOf(key)+' → '+maxHp(key)+' HP)', disabled:hpOf(key)>=maxHp(key)&&allies.every(a=>a.hp==null), fn:()=>{ restFull(true); toast(MAP.type==='inn'?'You sleep in a real bed. It is morning.':'You sleep by Marda\'s fire. Nothing comes to the door.'); }}];
+    const L=MAP.lore.rest, ch=[{label:'🛏 Rest till morning ('+hpOf(key)+' → '+maxHp(key)+' HP)', disabled:hpOf(key)>=maxHp(key)&&allies.every(a=>a.hp==null), fn:()=>{ restFull(true); toast(MAP.type==='safehouse'?'You sleep by Marda\'s fire. Nothing comes to the door.':'You sleep in a real bed. It is morning.'); }}];
+    if(MAP.type==='wrenInn') ch.push(buyPotion(POTION_PRICE.shop));
     if(MAP.type==='safehouse'){
       ch.push(buyPotion(POTION_PRICE.safehouse));
       rescues.forEach((rs,i)=>ch.push({label:'Tell Marda about '+rs.name, fn:()=>{
@@ -359,8 +400,10 @@ function roomAct(o){
 // ── people in rooms ──
 const NPC_SPRITE = {wenna:'sprites/echoes/fire_weak.png', lamplighter:'sprites/echoes/air_weak.png'};   // stand-ins until their own art
 function npcTitle(n){ const ev=MAP.ev||{};
+  if(Folk&&Folk.knows(n.role)) return Folk.title(n,folkApi);
   return n.role==='wounded'?ev.name+', wounded':n.role==='wenna'?'Wenna the Baker':n.role==='lamplighter'?'The Lamplighter':'Someone'; }
 function talkTo(n){
+  if(Folk&&Folk.knows(n.role)){ Folk.talk(n,folkApi); return; }
   const ev=MAP.ev||{}, st=roomState();
   if(n.role==='wounded'){
     if(ev.mode==='join'){
@@ -390,6 +433,7 @@ function talkTo(n){
 }
 function drawNpc(n,t){
   let src=NPC_SPRITE[n.role];
+  if(!src&&Folk&&Folk.knows(n.role)) src=Folk.sprite(n,folkApi);
   if(n.role==='wounded'){ const f=fighters[(MAP.ev||{}).key]; src=f&&f.sprite; }
   if(!src) return;
   const img=imgOf(src); if(!img.complete||!img.naturalWidth) return;
@@ -407,7 +451,8 @@ function openInventory(){
   const key=wizKeys[wizIdx], sp=Object.keys(spill).filter(k=>spill[k]>0).map(k=>spill[k]+' '+SPILL[k][0]).join(', ')||'none';
   const al=allies.length?allies.map(a=>a.name+' ('+(fighters[a.key]?fighters[a.key].title:a.key)+')').join(', '):'nobody';
   const rs=rescues.length?'\nPromised to tell Marda about: '+rescues.map(r=>r.name).join(', ')+'.':'';
-  showDialog('What You Carry','Gold: '+gold+'.  Potions: '+potions+'.\nSpill: '+sp+'.\nWith you: '+al+'.'+rs+'\nLore found: '+booksRead.length+' of '+window.ExploreRooms.BOOKS.length+'.',
+  const jr=Folk?'\n'+Folk.journal(folkApi):'';
+  showDialog('What You Carry','Gold: '+gold+'.  Potions: '+potions+'.\nSpill: '+sp+'.\nWith you: '+al+'.'+rs+'\nLore found: '+booksRead.length+' of '+window.ExploreRooms.BOOKS.length+'.'+jr,
     [{label:'🧪 Drink a potion (+'+Math.round(POTION_HEAL*100)+'% HP)', disabled:potions<1||hpOf(key)>=maxHp(key), fn:drinkPotion}]);
 }
 
@@ -538,7 +583,7 @@ async function enterMap(id,at,instant){
 }
 function save(){
   if(!MAP) return;
-  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,roomSpec:MAP.interior?roomSpec:null})); }catch(e){}
+  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,roomSpec:MAP.interior?roomSpec:null})); }catch(e){}
 }
 function loadSave(){ try{ return JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); }catch(e){ return null; } }
 function takeExit(x){
@@ -649,6 +694,17 @@ function drawWorld(t){
       g.strokeStyle='#3a2810'; g.lineWidth=3; g.beginPath(); g.arc(l.x,l.y,34,0,Math.PI*2); g.stroke();
       g.lineWidth=1.5; for(let i=0;i<10;i++){ const a=i/10*Math.PI*2; g.beginPath(); g.moveTo(l.x+Math.cos(a)*34,l.y+Math.sin(a)*34); g.lineTo(l.x+Math.cos(a)*40,l.y+Math.sin(a)*40); g.stroke(); }
       g.fillStyle='#3a2810'; for(let i=0;i<6;i++){ const x=l.x-20+i*8, h=8+((i*37)%14); g.fillRect(x,l.y-h/2,5,h); }
+    } else if(l.kind==='university'){
+      // dreaming spires: a ring of towers, standing, with a warm light among them
+      const gl=g.createRadialGradient(l.x,l.y,4,l.x,l.y,60);
+      gl.addColorStop(0,'rgba(255,215,130,0.45)'); gl.addColorStop(1,'rgba(255,215,130,0)');
+      g.fillStyle=gl; g.fillRect(l.x-60,l.y-60,120,120);
+      g.fillStyle='#3a2810';
+      for(const [dx,h,w] of [[-18,16,6],[-9,24,5],[0,30,6],[9,20,5],[18,14,6]]){
+        g.fillRect(l.x+dx-w/2,l.y+8-h,w,h);
+        g.beginPath(); g.moveTo(l.x+dx-w/2-1,l.y+8-h); g.lineTo(l.x+dx,l.y+8-h-9); g.lineTo(l.x+dx+w/2+1,l.y+8-h); g.fill();
+      }
+      g.fillRect(l.x-24,l.y+6,48,5);
     } else if(l.kind==='town'){
       g.fillStyle='#3a2810';
       for(const [dx,dy] of [[-10,4],[2,-6],[12,6]]){ g.fillRect(l.x+dx-5,l.y+dy-3,10,8); g.beginPath(); g.moveTo(l.x+dx-7,l.y+dy-3); g.lineTo(l.x+dx,l.y+dy-10); g.lineTo(l.x+dx+7,l.y+dy-3); g.fill(); }
@@ -791,7 +847,7 @@ function showSay(o){
   el.say.hidden=false; el.hint.classList.add('fade');
 }
 function hideSay(){ if(el.say) el.say.hidden=true; }
-function inspect(){ if(!near) return; if(near.npc) talkTo(near.npc); else if(!roomAct(near)) showSay(near); }
+function inspect(){ if(!near) return; if(near.npc) talkTo(near.npc); else if(!(Folk&&Folk.inspect(near,folkApi))&&!roomAct(near)) showSay(near); }
 let toastTimer=0;
 function toast(msg){ el.toast.textContent=msg; el.toast.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.toast.hidden=true; },2200); }
 
@@ -1060,7 +1116,7 @@ function lightsInView(cw,ch){
     }
   }
   for(const g of MAP.glows||[]) if(near(g.x,g.y)) out.push({x:g.x,y:g.y,r:g.r,c:g.c,seed:g.x});
-  for(const n of npcs) if(!n.gone&&NPC_SPRITE[n.role]) out.push({x:n.x,y:n.y-WIZ_H*0.6,r:120,c:n.role==='wenna'?'255,140,60':'255,215,120',seed:n.x});
+  for(const n of npcs) if(!n.gone&&NPC_SPRITE[n.role]&&near(n.x,n.y)) out.push({x:n.x,y:n.y-WIZ_H*0.6,r:120,c:n.role==='wenna'?'255,140,60':'255,215,120',seed:n.x});
   for(const a of actors) if(a.e.el&&near(a.x,a.y)){ const h=parseInt(SPILL[a.e.el][1].slice(1),16); out.push({x:a.x,y:a.y-WIZ_H*0.6,r:a.strong?150:110,c:[h>>16,(h>>8)&255,h&255].join(','),seed:a.e.x}); }
   return out;
 }
@@ -1192,7 +1248,7 @@ async function open(){
     const s=loadSave();
     found=new Set(s&&s.found||[]); spill=(s&&s.spill)||{}; cleared=(s&&s.cleared)||{}; renderSpill();
     if(s&&s.clock!=null) clock=s.clock; if(s&&s.lightMode) lightMode=s.lightMode; vit=(s&&s.vit)||{};
-    gold=(s&&s.gold)||0; potions=(s&&s.potions)||0; allies=(s&&s.allies)||[]; rescues=(s&&s.rescues)||[]; rooms=(s&&s.rooms)||{}; booksRead=(s&&s.booksRead)||[]; roomSpec=(s&&s.roomSpec)||null; renderSpill();
+    gold=(s&&s.gold)||0; potions=(s&&s.potions)||0; allies=(s&&s.allies)||[]; rescues=(s&&s.rescues)||[]; rooms=(s&&s.rooms)||{}; booksRead=(s&&s.booksRead)||[]; quests=(s&&s.quests)||{}; roomSpec=(s&&s.roomSpec)||null; renderSpill();
     if(!MAP){
       if(s&&s.map) await enterMap(s.map,[s.x,s.y],true);
       else await enterMap(START.map,START.spawn,true);

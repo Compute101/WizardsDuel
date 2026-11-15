@@ -88,9 +88,11 @@ class City {
     this.reserve(best.cx-s.w/2-12,best.cx+s.w/2+12,best.base-s.h,best.base+8);
     return best;
   }
-  // terraces along every street edge, then gable ends and yards
-  build({gap=0.07, yards=0.35}={}){
+  // terraces along every street edge, then gable ends and yards; `sets` swaps in other house sets
+  // ({fronts, backs, sides, yard}, each keyed by state 0–2, like FRONTS) for a town that isn't ruined
+  build({gap=0.07, yards=0.35, sets={}}={}){
     const m=this.m, pick=a=>P.pick(m.r,a);
+    const FRONTS=sets.fronts||FRONTS_, BACKS=sets.backs||BACKS_, SIDES=sets.sides||SIDES_, YARD=sets.yard||YARD_;
     const edgeRows=(test,baseOf,set,clear)=>{
       for(let y=1;y<m.rows-1;y++){
         let x=0;
@@ -132,4 +134,5 @@ class City {
     }
   }
 }
+const FRONTS_=FRONTS, BACKS_=BACKS, SIDES_=SIDES, YARD_=YARD;
 module.exports={City, FRONTS, BACKS, SIDES, YARD};
