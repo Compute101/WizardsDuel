@@ -1872,17 +1872,17 @@ body {
   0%,100% { box-shadow: 0 0 22px rgba(138,58,170,.7), 0 0 4px rgba(240,204,106,.6) inset; }
   50%     { box-shadow: 0 0 40px rgba(204,136,255,.9), 0 0 8px rgba(240,204,106,.8) inset; }
 }
-/* Portrait: the whole landscape picture across the width, over a blurred copy that fills the rest */
+/* Portrait: the portrait painting across the width, over a blurred copy that fills the rest */
 @media (orientation: portrait) {
   #splash-screen { background: #0d0820; overflow: hidden; }
   #splash-screen::before, #splash-screen::after {
     content: ''; position: absolute; pointer-events: none;
-    background: url('../backgrounds/splash.jpg') center / cover no-repeat;
+    background: url('../backgrounds/splash_portrait.jpg') center / cover no-repeat;
   }
   #splash-screen::before { inset: -40px; filter: blur(22px) brightness(.45) saturate(1.2); }
   #splash-screen::after {
     left: 0; right: 0; top: 50%; transform: translateY(-50%);
-    aspect-ratio: 1672 / 941; background-size: contain;
+    aspect-ratio: 1086 / 1448; max-height: 100%; background-size: cover;
     -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 91%, transparent 100%);
             mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 91%, transparent 100%);
   }
