@@ -10229,6 +10229,14 @@ function renderTutConvo(){
 }
 
 window.addEventListener('DOMContentLoaded', ()=>{
+  // Splash screen: Play fades it out onto the title menu
+  document.getElementById('btn-splash-play').addEventListener('click',()=>{
+    const sp=document.getElementById('splash-screen');
+    if(sp.classList.contains('leaving')) return;
+    sp.classList.add('leaving');
+    setTimeout(()=>{ sp.classList.remove('leaving'); showScreen('title-screen'); document.dispatchEvent(new Event('wd-splash-done')); },
+      matchMedia('(prefers-reduced-motion: reduce)').matches?0:430);
+  });
   // Wire up all buttons immediately — independent of the fetch below
   // Phase Shift needs no ritual: it's a bet on being targeted, committed straight away
   document.getElementById('bel-phase').addEventListener('click',e=>{

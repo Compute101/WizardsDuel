@@ -4,13 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wizard's Duel</title>
-<link rel="stylesheet" href="css/style.css?v=0.30">
+<link rel="stylesheet" href="css/style.css?v=0.33">
 </head>
 <body>
 <div id="app">
 
+  <!-- SPLASH -->
+  <div id="splash-screen" class="screen active">
+    <div class="splash-shade"></div>
+    <h1 class="splash-title">Wizard's Duel</h1>
+    <button class="splash-play" id="btn-splash-play" type="button">Play</button>
+  </div>
+
   <!-- TITLE -->
-  <div id="title-screen" class="screen active">
+  <div id="title-screen" class="screen">
     <div class="title-grid"></div>
     <button class="profile-chip" id="btn-profile" type="button" aria-label="Player profile"></button>
     <div class="rune-icon">🧙</div>

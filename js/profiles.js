@@ -297,7 +297,11 @@ const Profiles=(()=>{
     });
     refreshChip();
     // First visit: ask for a name
-    if(!db.asked&&!all().length) open('main');
+    // (wait until the splash screen's Play is pressed, so it doesn't cover the art)
+    const firstVisit=()=>{ if(!db.asked&&!all().length) open('main'); };
+    const splash=document.getElementById('splash-screen');
+    if(splash&&splash.classList.contains('active')) document.addEventListener('wd-splash-done',firstVisit,{once:true});
+    else firstVisit();
   }
   document.addEventListener('DOMContentLoaded',wire);
 
