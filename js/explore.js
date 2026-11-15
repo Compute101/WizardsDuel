@@ -1187,10 +1187,13 @@ async function createHero(edit){
   creating=true; keys.clear(); target=null; hideSay();
   playTheme();
   let h;
-  try{ h=await window.ExploreHero.open(el.root,{hero:edit?hero:null, edit:!!edit}); }
-  finally{ stopTheme(); }
-  creating=false;
-  if(h){ hero=h; await useHero(); save(); }
+  try{
+    h=await window.ExploreHero.open(el.root,{hero:edit?hero:null, edit:!!edit});
+    if(h){ hero=h; await useHero(); save(); }          // saved before the intro, so closing during it loses nothing
+    // a new wizard gets the introduction scroll, with the theme playing on under it
+    if(h&&!edit&&window.ExploreIntro) await window.ExploreIntro.play(el.root,h);
+  }
+  finally{ stopTheme(); creating=false; }
   return h;
 }
 function setWizard(i){
