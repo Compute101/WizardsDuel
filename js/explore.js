@@ -1,15 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
 //  EXPLORE — walk a wizard around the ruined town of Hollowmere.
 //  Self-contained: builds its own full-screen overlay, loads the
-//  tileset atlas (sprites/ruins/ruins.png + ruins.json, cut by
-//  tools/cut_ruins_tileset.py) and characters.json for the wizards.
+//  tileset atlases (sprites/ruins/ruins.png + ruins2.png and their .json,
+//  cut by tools/cut_ruins_tileset.py) and characters.json for the wizards.
 //  The map is generated from a fixed seed, so it's the same town every time.
 // ═══════════════════════════════════════════════════════════════════
 (function(){
 'use strict';
 
 const T = 64;                 // ground tile size, world px
-const COLS = 44, ROWS = 34;
+const COLS = 48, ROWS = 34;
+const RIVER = {c0:28, c1:30};  // the Hollow, a river running north–south (tile columns)
 const WORLD_W = COLS*T, WORLD_H = ROWS*T;
 const PS = 0.62;              // prop scale: atlas px → world px (a ground tile is ~100 atlas px)
 const WIZ_H = 62;             // wizard drawn height, world px (a door is ~70 atlas px → ~43, shoulders reach the lintel)
@@ -31,17 +32,29 @@ const FOOT = {
   pillar:  [{w:.85,h:18}],
   arch:    [{ox:.11,w:.22,h:22},{ox:.89,w:.22,h:22}],
   fence:   [{w:.95,h:14}], brokenFence:[{w:.9,h:14}], logs:[{w:.8,h:16}], wheel:[{w:.7,h:12}],
+  // river & docks sheet
+  crate:[{w:.85,h:22}], crateStand:[{w:.85,h:20}], sacks:[{w:.85,h:18}], planks:[{w:.8,h:14}],
+  wagon:[{w:.85,h:26}], cart:[{w:.8,h:22}], brokenCart:[{w:.8,h:22}], gravel:[{w:.7,h:10}],
+  chainFence:[{w:.95,h:12}], postTall:[{w:.8,h:14}], post2:[{w:.8,h:12}], postRing:[{w:.8,h:12}],
+  bannerP:[{ox:.5,w:.2,h:10}], bannerTorn:[{ox:.5,w:.2,h:10}],
+  lamp2:[{ox:.72,w:.2,h:10}], lamp3:[{ox:.5,w:.3,h:10}], lamp4:[{ox:.72,w:.2,h:10}],
+  blocks:[{w:.85,h:20}], stoneArch:[{ox:.12,w:.24,h:22},{ox:.88,w:.24,h:22}], woodArch:[{ox:.15,w:.2,h:12},{ox:.85,w:.2,h:12}],
+  brokenArch:[{ox:.2,w:.34,h:20},{ox:.82,w:.34,h:20}],
+  crane:[{ox:.07,w:.12,h:14},{ox:.93,w:.12,h:14},{ox:.5,w:.34,h:14}],
+  craneBroken:[{ox:.3,w:.2,h:14},{ox:.75,w:.15,h:14}], gallowsHook:[{ox:.2,w:.15,h:14},{ox:.7,w:.15,h:14}],
+  gallows:[{ox:.85,w:.18,h:14}],
 };
 function footOf(kind){
-  for(const k in FOOT) if(kind===k || kind.startsWith(k)) return FOOT[k];
-  return [{w:.8,h:16}];
+  if(FOOT[kind]) return FOOT[kind];
+  let best=null; for(const k in FOOT) if(kind.startsWith(k) && (!best||k.length>best.length)) best=k;
+  return best?FOOT[best]:[{w:.8,h:16}];
 }
 
 // light sources inside a piece, in atlas px of its trimmed crop
 const LIGHTS = {
   house1:[[165,208]], house2:[[70,205],[158,205]], house3:[[170,205]],
   house4:[[170,208]], house5:[[180,190]], house6:[[77,185]],
-  lamppost:[[79,65,'lamp']],
+  lamppost:[[79,65,'lamp']], lamp2:[[23,45,'lamp']], lamp3:[[20,41,'lamp']], lamp4:[[21,41,'lamp']],
 };
 
 // things to inspect (the first piece of that kind near you)
@@ -56,6 +69,16 @@ const LORE = {
   well:        ['Old Well', 'Your voice comes back from the dark, a moment too late, and not quite in your own words.'],
   house1:      ['The Lit House', 'Locked. Warm light behind the shutters, and someone inside is humming an old duelling song.'],
   lamppost:    ['Lantern', 'Still burning. No one in Hollowmere admits to lighting them.'],
+  crane:       ['Dock Crane', 'A crate still hangs from the hook, swaying though there is no wind. You decide not to open it.'],
+  gallows:     ['The Gallows', 'The town has been empty for years. The rope is new.'],
+  wagon:       ['Covered Wagon', 'Packed for a journey: blankets, salt pork, a lute with no strings. Whoever owned it left on foot.'],
+  sacks:       ['Grain Sacks', 'Rye, gone to black mould. Something has been nibbling at the corner of one, and it wasn\'t a rat.'],
+  bridgeBanner:['Banner Bridge', 'Purple and gold: the colours of the old duelling college that stood across the river. Duels were fought on this bridge at midsummer.'],
+  bridgeBannerBroken:['Fallen Bridge', 'Brought down on purpose. The keystones were cut through, and the cuts glow faintly when you look away.'],
+  bridgeWood:  ['Mill Bridge', 'The planks flex under you. Far below, something pale turns over in the water and is gone.'],
+  bridgeStone: ['Old Stone Bridge', 'Older than the town. The mason\'s marks on the parapet are Arcana glyphs: θ Φ ☽ ∞, the Ice word.'],
+  bridgeWoodBroken:['Broken Footbridge', 'Snapped in the middle. The far half still creaks as though someone were crossing it.'],
+  river:       ['The Hollow', 'Black water, slow and cold. It runs north to south, and the townsfolk said it ran the other way at night.'],
 };
 
 // ── seeded random ──
@@ -63,7 +86,7 @@ function rng(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0; let t=Ma
 const pick=(r,a)=>a[Math.floor(r()*a.length)];
 
 // ── state ──
-let atlas=null, rects=null, chars=null, wizKeys=[], wizIdx=0, wizImg=null;
+let atlases=[], rects=null, bridges=[], chars=null, wizKeys=[], wizIdx=0, wizImg=null;
 let ground=null, groundKind=null, objs=[], boxes=[], fireflies=[];
 let built=false, running=false, last=0, night=true;
 let el={}, ctx=null, dark=null, dctx=null, mini=null;
@@ -76,12 +99,15 @@ function buildGround(){
   const r=rng(1427);
   const k=[]; for(let y=0;y<ROWS;y++){ k.push(new Array(COLS).fill('G')); }
   const fill=(x0,y0,x1,y1,c)=>{ for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) if(k[y]&&k[y][x]!==undefined) k[y][x]=c; };
-  fill(3,7,40,7,'D'); fill(3,26,40,26,'D');          // lanes
-  fill(8,3,8,30,'D'); fill(35,3,35,30,'D');
+  fill(3,7,44,7,'D'); fill(3,26,44,26,'D');          // lanes
+  fill(8,3,8,30,'D'); fill(39,3,39,30,'D');
+  fill(23,30,39,30,'D');                            // the path to the old stone bridge
   fill(0,16,COLS-1,17,'R');                         // main street
   fill(21,0,22,ROWS-1,'R');                         // market street
   fill(17,13,26,20,'P');                            // plaza
-  for(let y=0;y<ROWS;y++) for(let x=28;x<COLS;x++) if(k[y][x]==='R') k[y][x]='M';   // the ruined east
+  for(let y=0;y<ROWS;y++) for(let x=RIVER.c1+1;x<COLS;x++) if(k[y][x]==='R') k[y][x]='M';   // the ruined east
+  fill(RIVER.c0,0,RIVER.c1,ROWS-1,'W');             // the river
+  fill(RIVER.c1+1,9,RIVER.c1+6,12,'K');             // the docks on its east bank
   for(let y=0;y<7;y++) for(let x=21;x<=22;x++) k[y][x]='M';
   for(let y=28;y<ROWS;y++) for(let x=21;x<=22;x++) k[y][x]='M';
   // a few worn patches
@@ -95,15 +121,18 @@ function buildGround(){
       case 'd': return 'dirtGrass';
       case 'D': return r()<.8?'dirt':'dirtGrass';
       case 'P': return r()<.7?'flagCracked':'flagMoss';
+      case 'W': return null;                         // drawn by drawRiver
+      case 'K': { const q=r(); return q<.06?'planksBroken':q<.09?'planksHole':y%2?'planksH':'planksV'; }
       case 'R': if(edge&&r()<.25) return 'grassCobble';
-                return r()<.18?pick(r,['cobbleMoss1','cobbleMoss4','cobbleMoss5']):pick(r,['cobble','cobble2','cobble3','cobble4','cobble5','cobbleRound']);
+                if(r()<.03) return r()<.5?'grate1':'grate2';     // drains
+                return r()<.18?pick(r,['cobbleMoss1','cobbleMoss4','cobbleMoss5']):pick(r,['cobble','cobble2','cobble3','cobble4','cobble5','cobbleRound','cobbleB1','cobbleB2','cobbleB5']);
       case 'M': if(edge&&r()<.4) return 'grassCobble';
-                return pick(r,['cobbleMoss1','cobbleMoss2','cobbleMoss3','cobbleMoss4','cobbleMoss5','cobbleMoss6','cobbleMoss7','cobble3']);
+                return pick(r,['cobbleMoss1','cobbleMoss2','cobbleMoss3','cobbleMoss4','cobbleMoss5','cobbleMoss6','cobbleMoss7','cobble3','cobbleB3','cobbleB4','cobbleB6']);
     }
   }));
 }
 
-function sizeOf(kind){ const q=rects[kind]; return {w:q[2]*PS, h:q[3]*PS}; }
+function sizeOf(kind,sc=PS){ const q=rects[kind]; return {w:q[2]*sc, h:q[3]*sc}; }
 function footBoxes(o){
   const s=sizeOf(o.kind), out=[];
   for(const f of footOf(o.kind)){
@@ -114,6 +143,31 @@ function footBoxes(o){
 }
 const overlap=(a,b,m=0)=>a.x<b.x+b.w+m && b.x<a.x+a.w+m && a.y<b.y+b.h+m && b.y<a.y+a.h+m;
 function tileAt(px,py){ const x=Math.floor(px/T), y=Math.floor(py/T); return (groundKind[y]||[])[x]; }
+const inside=(px,py,b)=>px>=b.x&&px<=b.x+b.w&&py>=b.y&&py<=b.y+b.h;
+// water you can't stand in: the river, less whatever a bridge spans
+function wet(px,py){
+  if(tileAt(px,py)!=='W') return false;
+  for(const b of bridges) for(const w of b.fb) if(inside(px,py,w)) return false;
+  return true;
+}
+
+// ── bridges: side-on art laid flat across the river as walkable decals ──
+// walk = spans you can stand on, as fractions of the width (a broken one has a gap);
+// band = the deck's depth, as fractions of the drawn height from its top.
+const BRIDGE = {
+  bridgeBanner:      {walk:[[0,1]]},
+  bridgeWood:        {walk:[[0,1]]},
+  bridgeStone:       {walk:[[0,1]]},
+  bridgeBannerBroken:{walk:[[0,.45],[.8,1]]},
+  bridgeWoodBroken:  {walk:[[0,.44],[.63,1]]},
+};
+function placeBridge(kind,cy){
+  const span=(RIVER.c1-RIVER.c0+1)*T+112, sc=span/rects[kind][2], s=sizeOf(kind,sc);
+  const cx=(RIVER.c0+RIVER.c1+1)/2*T, top=cy-s.h*0.56;
+  const fb=BRIDGE[kind].walk.map(([a,b])=>({x:cx-s.w/2+a*s.w, y:top+s.h*0.34, w:(b-a)*s.w, h:s.h*0.44}));
+  const o={kind,x:cx,y:top+s.h,scale:sc,decal:true,fb,lore:kind};
+  bridges.push(o); objs.push(o); return o;
+}
 
 function place(kind,x,y,opts){
   if(!rects[kind]) return null;
@@ -135,22 +189,22 @@ function tryPlace(kind,x,y,margin=6){
 }
 
 function buildObjects(){
-  objs=[]; boxes=[];
+  objs=[]; boxes=[]; bridges=[];
   const r=rng(9031);
   const STREET_N=16*T-6, STREET_S=17*T+T+4, LANE_N=7*T-6, LANE_S=26*T-6;
   // houses: the west stands, the east is falling down
-  const west=[180,360,700,880], east=[1880,2060,2440,2620];
+  const west=[180,360,700,880], east=[2136,2316,2696,2876];
   [['house1','house2','house1','house4'],['house3','house4','house5','house6']].forEach((ks,i)=>{
     (i?east:west).forEach((x,j)=>place(ks[j],x,STREET_N,i||j?null:{lore:'house1'}));
   });
   ['house4','house1','house2'].forEach((k,j)=>place(k,west[j],LANE_N));
-  ['house6','house5','house3'].forEach((k,j)=>place(k,[1880,2440,2620][j],LANE_N));
+  ['house6','house5','house3'].forEach((k,j)=>place(k,[2136,2696,2876][j],LANE_N));
   ['house2','house1','house3','house2'].forEach((k,j)=>place(k,west[j],LANE_S));
-  ['house5','house6','house6'].forEach((k,j)=>place(k,[1880,2060,2620][j],LANE_S));
-  place('ruinWall1',2400,LANE_S); place('rubble3',2470,LANE_S+8);
+  ['house5','house6','house6'].forEach((k,j)=>place(k,[2136,2316,2876][j],LANE_S));
+  place('ruinWall1',2656,LANE_S); place('rubble3',2726,LANE_S+8);
   // houses south of the main street, backs to it, gardens behind
   place('house2',360,STREET_S+180); place('house4',880,STREET_S+180);
-  place('house6',2060,STREET_S+180); place('house5',2440,STREET_S+180);
+  place('house6',2316,STREET_S+180); place('house5',2696,STREET_S+180);
 
   // plaza: the Watcher, the banner, lanterns at its corners
   const PX=(17*T+27*T)/2, PY=(13*T+21*T)/2;
@@ -159,7 +213,7 @@ function buildObjects(){
   for(const [x,y] of [[17*T+18,21*T-6],[27*T-46,21*T-6]]) place('lamppost',x,y);
   place('barrel',17*T+90,21*T-10); place('crate2',17*T+130,21*T-8); place('crate1',27*T-110,13*T+40);
   // lanterns down the main street
-  for(const x of [270,790,990,1970,2530]) place('lamppost',x,STREET_N+2);
+  for(const x of [270,790,990,2226,2786]) place('lamppost',x,STREET_N+2);
 
   // the broken town wall and its gate, north
   const WALL_Y=4*T+30;
@@ -168,7 +222,8 @@ function buildObjects(){
   let x=60;
   while(x<WORLD_W-60){
     if(x>22*T-120 && x<22*T+120){ x=22*T+120; continue; }        // the gate
-    const lane=[8*T,35*T].find(l=>x>l-110 && x<l+T+10);             // leave the lanes open
+    if(x>RIVER.c0*T-110 && x<(RIVER.c1+1)*T+10){ x=(RIVER.c1+1)*T+14; continue; }   // the river
+    const lane=[8*T,39*T].find(l=>x>l-110 && x<l+T+10);             // leave the lanes open
     if(lane!==undefined){ x=lane+T+14; continue; }
     const k=wallBits[Math.floor(r()*wallBits.length)], s=sizeOf(k);
     if(r()<.18){ x+=s.w*0.8; continue; }          // gaps in the wall
@@ -180,14 +235,43 @@ function buildObjects(){
     ['fence',560,LANE_N+170],['fence',614,LANE_N+170],['fence',668,LANE_N+170],['barrel',1000,STREET_N-10],['lowwall',1010,LANE_S-10],
     ['flowerbush',260,LANE_S+90],['flowerbush',980,LANE_S+120],['crate1',1040,LANE_N-4]]) place(k,x,y);
   // the east: what's left
-  for(const [k,x,y] of [['rubble5',1760,STREET_N-4],['wheel',2250,STREET_N-6],['logs',2190,STREET_N+2],['brokenFence',2760,STREET_N-10],
-    ['rocks2',2300,LANE_N+90],['rubble6',2730,LANE_N-4],['logs',1960,LANE_S+100],['rocks1',2560,STREET_S+220],['brokenFence',2300,LANE_S-6],
-    ['rubble1',2770,LANE_S+140],['deadtree',2180,LANE_N+150],['pillar2',2700,STREET_S+40],['pillar3',2780,STREET_S+44],['pillar1',2620,STREET_S+300]]) place(k,x,y);
+  for(const [k,x,y] of [['rubble5',2016,STREET_N-4],['wheel',2506,STREET_N-6],['logs',2446,STREET_N+2],['brokenFence',3016,STREET_N-10],
+    ['rocks2',2556,LANE_N+90],['rubble6',2986,LANE_N-4],['logs',2216,LANE_S+100],['rocks1',2816,STREET_S+220],['brokenFence',2556,LANE_S-6],
+    ['rubble1',3026,LANE_S+140],['deadtree',2436,LANE_N+150],['pillar2',2956,STREET_S+40],['pillar3',3036,STREET_S+44],['pillar1',2876,STREET_S+300]]) place(k,x,y);
 
   // the south: a garden of remembrance — shrine, the fallen hero, a well of stones
-  place('shrine',600,30*T+20); place('brokenStatue',1700,29*T+30);
-  for(const [k,x,y] of [['stone',560,30*T+40],['flowerbush',690,30*T+30],['bush',1640,29*T+40],['rocks1',1780,29*T+50],['post',1120,28*T+20],['stump',1200,30*T+10]]) place(k,x,y);
-  place('rocks2',2350,30*T+30,{lore:'well'});
+  place('shrine',600,30*T+20); place('brokenStatue',RIVER.c0*T-70,27*T+70);
+  for(const [k,x,y] of [['stone',560,30*T+40],['flowerbush',690,30*T+30],['bush',1640,29*T+40],['rocks1',1640,28*T+40],['post',1120,28*T+20],['stump',1200,30*T+10]]) place(k,x,y);
+  place('rocks2',2606,30*T+30,{lore:'well'});
+
+  // the river: five crossings, two of them down
+  const LANE_C=k=>k*T+T/2;
+  placeBridge('bridgeWoodBroken',LANE_C(2));
+  placeBridge('bridgeWood',LANE_C(7));
+  placeBridge('bridgeBanner',17*T);
+  placeBridge('bridgeBannerBroken',LANE_C(26));
+  placeBridge('bridgeStone',LANE_C(30));
+  const RX0=RIVER.c0*T, RX1=(RIVER.c1+1)*T;
+  for(const [k,x,y] of [['bannerP',RX0-26,16*T-4],['bannerTorn',RX1+28,16*T-4],['lamp2',RX0-30,18*T+20],['lamp4',RX1+12,18*T+20],
+    ['lamp3',RX0-24,8*T+24],['lamp3',RX0-24,24*T],['lamp2',RX1+14,31*T+30],['postTall',RX0-20,26*T+6],['postTall',RX1+20,26*T+6]]) place(k,x,y);
+  place('postRing',RX0-14,12*T,{lore:'river'});     // a mooring ring on the west bank
+  // the docks: a crane over the water, cargo nobody came back for
+  const DX=RX1, DY0=9*T, DY1=13*T;
+  place('crane',DX+70,DY0+90,{lore:'crane'});
+  for(const [k,x,y,o] of [['sacks',DX+180,DY0+70,{lore:'sacks'}],['crate3',DX+250,DY0+62],['crate5',DX+300,DY0+66],['barrel2',DX+350,DY0+60],
+    ['crateStand',DX+190,DY1-30],['barrel3',DX+250,DY1-26],['planksPile',DX+320,DY1-30],['cart',DX+120,DY1-14],['chainFence1',DX+90,DY1+18],
+    ['crate4',DX+380,DY1-40],['lamp4',DX+12,DY1-6]]) place(k,x,y,o);
+  // the west: more of the market
+  place('wagon',150,18*T+30,{lore:'wagon'});
+  for(const [k,x,y] of [['sacks',560,STREET_N-2],['crate3',620,STREET_N-6],['barrel3',1040,STREET_N-40],['fence2',210,LANE_N+170],['fence3',320,LANE_N+170],
+    ['fence4',820,LANE_S+170],['crate6',1060,LANE_S-40],['chainFence2',17*T+60,21*T+40],['chainFence2',27*T-60,21*T+40],['postRing',1150,LANE_N-6],
+    ['stoneArch',8*T+T/2,4*T+30],['woodArch',22*T,27*T+30]]) place(k,x,y);
+  // the east: worse
+  for(const [k,x,y] of [['brokenCart',2620,STREET_N+40],['barrelsBroken',2400,LANE_N-6],['crateBroken',2700,STREET_N-8],['planks2',2960,LANE_N+120],
+    ['blocks1',2380,STREET_S+40],['blocks2',3000,STREET_S+330],['rubble7',2620,LANE_S+120],['rubble9',2780,LANE_S+40],['rubble10',2900,LANE_N+80],
+    ['wheel3',2720,STREET_N+56],['craneBroken1',2860,13*T],['craneBroken2',2960,13*T+20],['gallowsHook',2200,23*T],['brokenArch',39*T+T/2,4*T+30],
+    ['gravel',2500,22*T],['barrelBroken',2260,STREET_S+20]]) place(k,x,y);
+  place('gallows',2560,22*T+10,{lore:'gallows'});
 
   // the edges: woods, thinning to dead trees in the east
   const edgeTries=900;
@@ -205,7 +289,7 @@ function buildObjects(){
     if(x>WORLD_W*0.62&&k==='flowerbush') k='rocks1';
     tryPlace(k,x,y,18);
   }
-  objs.forEach((o,i)=>{ o.id=i; if(!o.lore&&LORE[o.kind]&&o.kind!=='house1') o.lore=o.kind; });
+  objs.forEach((o,i)=>{ o.id=i; if(!o.lore&&LORE[o.kind]&&!['house1','crane','gallows','wagon','sacks'].includes(o.kind)) o.lore=o.kind; });
   // fireflies drift over the grass
   fireflies=[]; for(let i=0;i<70;i++) fireflies.push({x:r()*WORLD_W,y:r()*WORLD_H,a:r()*6.28,s:8+r()*14,p:r()*6.28});
   // start on the plaza, south of the Watcher
@@ -215,12 +299,13 @@ function buildObjects(){
 function buildMinimap(){
   const S=4, c=document.createElement('canvas'); c.width=COLS*S; c.height=ROWS*S;
   const m=c.getContext('2d');
-  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e'};
+  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30'};
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ m.fillStyle=col[groundKind[y][x]]; m.fillRect(x*S,y*S,S,S); }
   const k=S/T;
   for(const o of objs){
-    const s=sizeOf(o.kind);
-    if(o.kind.startsWith('house')){ m.fillStyle=o.kind==='house6'||o.kind==='house5'?'#7a4a32':'#b4582e'; m.fillRect((o.x-s.w/2)*k,(o.y-s.h*.6)*k,s.w*k,s.h*.6*k); }
+    const s=sizeOf(o.kind,o.scale);
+    if(o.decal){ m.fillStyle=o.kind.endsWith('Broken')?'#5a4a3a':'#b7a58a'; for(const b of o.fb) m.fillRect(b.x*k,b.y*k,b.w*k,Math.max(2,b.h*k)); }
+    else if(o.kind.startsWith('house')){ m.fillStyle=o.kind==='house6'||o.kind==='house5'?'#7a4a32':'#b4582e'; m.fillRect((o.x-s.w/2)*k,(o.y-s.h*.6)*k,s.w*k,s.h*.6*k); }
     else if(o.kind==='tree'||o.kind==='bush'){ m.fillStyle='#1f3d16'; m.fillRect(o.x*k-1,o.y*k-2,2,2); }
     else if(o.kind==='deadtree'){ m.fillStyle='#4a3424'; m.fillRect(o.x*k-1,o.y*k-2,2,2); }
     else if(o.kind.match(/^(rubble|ruinWall|wallLow|lowwall|arch)/)){ m.fillStyle='#c9c3b6'; m.fillRect((o.x-s.w/2)*k,o.y*k-2,s.w*k,2); }
@@ -315,6 +400,7 @@ function blocked(x,y){
   const b={x:x-12,y:y-9,w:24,h:9};
   if(b.x<T*0.3||b.y<T*0.5||b.x+b.w>WORLD_W-T*0.3||b.y+b.h>WORLD_H-4) return true;
   for(const c of boxes) if(overlap(b,c)) return true;
+  if(wet(b.x,b.y)||wet(b.x+b.w,b.y)||wet(b.x,b.y+b.h)||wet(b.x+b.w,b.y+b.h)) return true;
   return false;
 }
 function update(dt){
@@ -358,10 +444,10 @@ function update(dt){
   if(cw>WORLD_W) cam.x=(WORLD_W-cw)/2; if(ch>WORLD_H) cam.y=(WORLD_H-ch)/2;
 }
 
-function drawPiece(kind,x,y,alpha){
-  const q=rects[kind], w=q[2]*PS, h=q[3]*PS;
+function drawPiece(kind,x,y,alpha,sc=PS){
+  const q=rects[kind], w=q[2]*sc, h=q[3]*sc;
   if(alpha!==undefined) ctx.globalAlpha=alpha;
-  ctx.drawImage(atlas,q[0],q[1],q[2],q[3],x-w/2,y-h,w,h);
+  ctx.drawImage(atlases[q[4]],q[0],q[1],q[2],q[3],x-w/2,y-h,w,h);
   ctx.globalAlpha=1;
 }
 function drawWizard(t){
@@ -383,6 +469,31 @@ function drawWizard(t){
   ctx.drawImage(wizImg,0,0,sw,sh,-w/2,-h,w,h);
   ctx.restore();
 }
+// the Hollow: dark water flowing south, stone-walled banks cut from the canal piece
+function drawRiver(t,y0,y1){
+  const X0=RIVER.c0*T, X1=(RIVER.c1+1)*T, W=X1-X0;
+  ctx.fillStyle='#174a72'; ctx.fillRect(X0,y0*T,W,(y1-y0+1)*T);
+  // current: light streaks drifting downstream, each lane at its own pace
+  const flow=t*0.025;
+  for(let lane=0;lane<12;lane++){
+    const lx=X0+14+lane*(W-28)/11, sp=0.7+((lane*37)%10)/14;
+    for(let k=-1;k<(y1-y0+2)*T/90;k++){
+      const y=Math.floor(y0*T/90)*90+k*90+((lane*53+flow*sp)%90);
+      if(y<y0*T-20||y>(y1+1)*T) continue;
+      const len=8+((lane*13+k*7)%3)*5, a=0.18+((lane+k)%3)*0.08;
+      ctx.fillStyle=`rgba(120,190,225,${a})`; ctx.fillRect(Math.round(lx),Math.round(y),2,len);
+      if((lane+k)%5===0){ ctx.fillStyle='rgba(190,235,240,0.55)'; ctx.fillRect(Math.round(lx)+3,Math.round(y)+len/2,2,3); }
+    }
+  }
+  // a darker shadow under each bank
+  ctx.fillStyle='rgba(5,20,40,0.45)'; ctx.fillRect(X0,y0*T,16,(y1-y0+1)*T); ctx.fillRect(X1-16,y0*T,16,(y1-y0+1)*T);
+  // banks: the stone walls of the canal piece, down both sides
+  const q=rects.canal, sc=T/q[3], lw=25, rw=q[2]-59;
+  for(let y=y0;y<=y1;y++){
+    ctx.drawImage(atlases[q[4]],q[0],q[1],lw,q[3],X0,y*T,lw*sc,T+0.6);
+    ctx.drawImage(atlases[q[4]],q[0]+59,q[1],rw,q[3],X1-rw*sc,y*T,rw*sc,T+0.6);
+  }
+}
 function draw(t){
   const cw=vw/zoom, ch=vh/zoom;
   ctx.setTransform(dpr*zoom,0,0,dpr*zoom,-cam.x*dpr*zoom,-cam.y*dpr*zoom);
@@ -392,8 +503,15 @@ function draw(t){
   const x0=Math.max(0,Math.floor(cam.x/T)), x1=Math.min(COLS-1,Math.floor((cam.x+cw)/T));
   const y0=Math.max(0,Math.floor(cam.y/T)), y1=Math.min(ROWS-1,Math.floor((cam.y+ch)/T));
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
-    const q=rects[ground[y][x]];
-    ctx.drawImage(atlas,q[0]+1,q[1]+1,q[2]-2,q[3]-2,x*T,y*T,T+0.6,T+0.6);
+    const g=ground[y][x]; if(!g) continue;
+    const q=rects[g];
+    ctx.drawImage(atlases[q[4]],q[0]+1,q[1]+1,q[2]-2,q[3]-2,x*T,y*T,T+0.6,T+0.6);
+  }
+  drawRiver(t,y0,y1);
+  for(const b of bridges){
+    const s=sizeOf(b.kind,b.scale);
+    if(b.y<cam.y||b.y-s.h>cam.y+ch) continue;
+    drawPiece(b.kind,b.x,b.y,undefined,b.scale);
   }
   // walk-to marker
   if(target){
@@ -405,6 +523,7 @@ function draw(t){
   const wizBox={x:wiz.x-16,y:wiz.y-WIZ_H,w:32,h:WIZ_H};
   const list=[];
   for(const o of objs){
+    if(o.decal) continue;
     const s=sizeOf(o.kind);
     if(o.x+s.w/2<cam.x||o.x-s.w/2>cam.x+cw||o.y-s.h>cam.y+ch||o.y<cam.y) continue;
     list.push(o);
@@ -433,7 +552,7 @@ function lightsInView(cw,ch){
   const out=[];
   for(const o of objs){
     const L=LIGHTS[o.kind]; if(!L) continue;
-    const s=sizeOf(o.kind);
+    const s=sizeOf(o.kind);   // (no bridge carries a light)
     for(const [lx,ly,type] of L){
       const x=o.x-s.w/2+lx*PS, y=o.y-s.h+ly*PS;
       if(x<cam.x-200||x>cam.x+cw+200||y<cam.y-200||y>cam.y+ch+200) continue;
@@ -496,12 +615,15 @@ function frame(now){
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 async function load(){
   if(built) return;
-  const [img,rj,cj]=await Promise.all([
-    loadImage('sprites/ruins/ruins.png'),
-    fetch('sprites/ruins/ruins.json').then(r=>r.json()),
+  const [a1,r1,a2,r2,cj]=await Promise.all([
+    loadImage('sprites/ruins/ruins.png'),  fetch('sprites/ruins/ruins.json').then(r=>r.json()),
+    loadImage('sprites/ruins/ruins2.png'), fetch('sprites/ruins/ruins2.json').then(r=>r.json()),
     fetch('characters.json').then(r=>r.json()),
   ]);
-  atlas=img; rects=rj; chars=cj;
+  // one name space across both sheets: [x, y, w, h, atlas index]
+  atlases=[a1,a2]; rects={};
+  for(const [i,rj] of [[0,r1],[1,r2]]) for(const k in rj) rects[k]=[...rj[k],i];
+  chars=cj;
   wizKeys=Object.keys(chars).filter(k=>chars[k].sprite);
   buildGround(); buildObjects(); buildMinimap();
   built=true;

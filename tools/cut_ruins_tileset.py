@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Cut the ruined-town tileset (sprites/ruins/tileset_source.png) into the
-packed atlas the Explore map uses (sprites/ruins/ruins.png + ruins.json).
+"""Cut the ruined-town tilesets into the packed atlases the Explore map uses:
+sprites/ruins/tileset_source.png  → ruins.png  + ruins.json  (town, houses)
+sprites/ruins/tileset2_source.png → ruins2.png + ruins2.json (river, bridges,
+docks, cranes, carts).
 
 The source is a loose sheet on a flat dark background, not a grid, so each
 piece has a hand-checked rect (RECTS below). The background is removed by a
@@ -10,6 +12,7 @@ atlas and quantised to 256 colours.
 
     python3 tools/cut_ruins_tileset.py            # writes the atlas + json
     python3 tools/cut_ruins_tileset.py --preview out.png   # labelled sheet
+    python3 tools/cut_ruins_tileset.py --sheet 2 --preview out.png
 
 js/explore.js loads ruins.json at runtime; window and lantern light spots
 (LIGHTS there) are in each piece's trimmed-crop pixels. Needs Pillow, numpy
@@ -22,8 +25,6 @@ from scipy import ndimage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIR = os.path.join(HERE, '..', 'sprites', 'ruins')
-SRC = os.path.join(DIR, 'tileset_source.png')
-BG = (16, 18, 23)
 
 # Ground tiles: a 4 x 5 grid in the sheet's top-left corner.
 GX = [(20, 123), (130, 234), (241, 345), (352, 455)]
@@ -60,10 +61,51 @@ RECTS.update(PROPS)
 GROUND_NAMES = {n for row in GROUND for n in row}
 
 
-def transparent_sheet():
-    src = Image.open(SRC).convert('RGB')
+# ── sheet 2: river, bridges, docks ──
+GX2 = [(14, 121), (127, 231), (239, 348), (350, 461)]
+GY2 = [(15, 126), (131, 239), (244, 348)]
+GROUND2 = [['cobbleB1', 'cobbleB2', 'cobbleB3', 'cobbleB4'],
+           ['planksV', 'planksH', 'planksBroken', 'planksHole'],
+           ['grate1', 'cobbleB5', 'grate2', 'cobbleB6']]
+RECTS2 = {}
+for r, row in enumerate(GROUND2):
+    for c, name in enumerate(row):
+        x0, x1 = GX2[c]; y0, y1 = GY2[r]
+        RECTS2[name] = (x0 + 2, y0 + 2, x1 - x0 - 4, y1 - y0 - 4)
+RECTS2.update({
+    'bridgeStone': (814, 17, 351, 158), 'bridgeStoneBroken': (1189, 16, 332, 159),
+    'bridgeWood': (817, 186, 345, 131), 'bridgeWoodBroken': (1190, 186, 331, 131),
+    'bridgeBanner': (817, 327, 349, 153), 'bridgeBannerBroken': (1192, 327, 330, 153),
+    'stoneArch': (16, 360, 153, 127), 'woodArch': (194, 360, 80, 127), 'brokenArch': (319, 360, 147, 100),
+    'canal': (17, 614, 85, 80), 'canal2': (17, 707, 87, 78),
+    'crate3': (433, 624, 67, 66), 'crate4': (511, 637, 39, 48), 'crate5': (561, 619, 61, 69),
+    'crateBroken': (634, 625, 62, 62), 'crate6': (761, 626, 45, 55), 'crateStand': (830, 619, 75, 78),
+    'planks1': (705, 631, 50, 51), 'barrel2': (431, 708, 48, 53), 'barrel3': (489, 701, 51, 61),
+    'barrelsBroken': (557, 704, 104, 57), 'sacks': (685, 699, 105, 57), 'planksPile': (812, 707, 85, 49),
+    'wagon': (358, 767, 140, 115), 'cart': (505, 784, 123, 83), 'brokenCart': (635, 779, 129, 97),
+    'gravel': (759, 770, 54, 30), 'rocks3': (810, 767, 93, 51), 'wheel2': (773, 847, 44, 29), 'barrelBroken': (821, 829, 49, 48),
+    'fence2': (19, 909, 97, 38), 'fence3': (18, 961, 118, 44), 'fence4': (152, 906, 86, 40),
+    'chainFence1': (275, 897, 120, 50), 'chainFence2': (171, 959, 99, 48),
+    'postTall': (416, 898, 31, 107), 'post2': (305, 951, 31, 54), 'postRing': (362, 966, 28, 40),
+    'bannerP': (465, 889, 58, 117), 'bannerTorn': (535, 891, 55, 115),
+    'lamp2': (613, 892, 55, 115), 'lamp3': (680, 889, 40, 118), 'lamp4': (734, 892, 61, 115),
+    'rubble7': (812, 904, 149, 47), 'rubble8': (817, 965, 96, 41), 'rubble9': (930, 939, 88, 64),
+    'rubble10': (1027, 959, 61, 46), 'wheel3': (1106, 964, 45, 42), 'planks2': (1168, 947, 99, 58),
+    'blocks1': (1284, 938, 92, 67), 'blocks2': (1395, 941, 125, 65),
+    'crane': (1005, 773, 177, 164), 'craneBroken1': (1270, 623, 121, 142), 'craneBroken2': (1405, 623, 114, 154),
+    'gallowsHook': (1219, 779, 151, 156), 'gallows': (1384, 797, 135, 136),
+})
+GROUND2_NAMES = {n for row in GROUND2 for n in row}
+SHEETS = {
+    '1': dict(src='tileset_source.png', bg=(16, 18, 23), rects=RECTS, ground=GROUND_NAMES, out='ruins'),
+    '2': dict(src='tileset2_source.png', bg=(9, 12, 18), rects=RECTS2, ground=GROUND2_NAMES, out='ruins2'),
+}
+
+
+def transparent_sheet(path, bg):
+    src = Image.open(path).convert('RGB')
     a = np.array(src).astype(int)
-    bgish = np.abs(a - BG).sum(2) < 34
+    bgish = np.abs(a - bg).sum(2) < 34
     lab, _ = ndimage.label(bgish)
     edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {0}
     alpha = np.where(np.isin(lab, list(edge)), 0, 255).astype(np.uint8)
@@ -71,11 +113,18 @@ def transparent_sheet():
 
 
 def main():
-    sheet = transparent_sheet()
+    which = sys.argv[sys.argv.index('--sheet') + 1] if '--sheet' in sys.argv else None
+    for key, sh in SHEETS.items():
+        if which and which != key: continue
+        cut(sh)
+
+
+def cut(sh):
+    sheet = transparent_sheet(os.path.join(DIR, sh['src']), sh['bg'])
     crops = {}
-    for k, (x, y, w, h) in RECTS.items():
+    for k, (x, y, w, h) in sh['rects'].items():
         c = sheet.crop((x, y, x + w, y + h))
-        if k not in GROUND_NAMES:
+        if k not in sh['ground']:
             c = c.crop(c.getbbox())
         crops[k] = c
     if '--preview' in sys.argv:
@@ -97,10 +146,10 @@ def main():
     for k, (x, y, w, h) in pos.items():
         atlas.paste(crops[k], (x, y))
     atlas = atlas.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
-    atlas.save(os.path.join(DIR, 'ruins.png'), optimize=True)
-    with open(os.path.join(DIR, 'ruins.json'), 'w') as f:
+    atlas.save(os.path.join(DIR, sh['out'] + '.png'), optimize=True)
+    with open(os.path.join(DIR, sh['out'] + '.json'), 'w') as f:
         json.dump(pos, f, separators=(',', ':'))
-    print('atlas', W, 'x', y + rh, '-', len(pos), 'pieces')
+    print(sh['out'], W, 'x', y + rh, '-', len(pos), 'pieces')
 
 
 if __name__ == '__main__':
