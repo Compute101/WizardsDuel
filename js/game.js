@@ -3799,8 +3799,8 @@ function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}
 // it Attacks, Guards or Grapples. Each has one passive `trait` (FIGHTER_TRAITS):
 //   shieldwall (Soldier): while he Guards, his shield also halves a spell aimed at him (a Guard already
 //     stops blows), so striking a guarding soldier is a waste: hit someone else, or Grapple him.
-//   ranged (Archer): her Attack is a bow shot: it slips past a Guard (no block, no counter), and she keeps
-//     her distance, so a Grapple at her fails.
+//   ranged (Archer): his Attack is a bow shot: it slips past a Guard (no block, no counter), and he keeps
+//     his distance, so a Grapple at him fails.
 const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'},
   echo:{name:'Echo',icon:'✦'}};
 // Echoes (Explore: Corvanthe's citizens remade in one element, fighters.json `echo`): their blow is a
