@@ -58,7 +58,10 @@ let el={}, ctx=null, dark=null, dctx=null;
 const wiz={x:0,y:0,face:1,walk:0,moving:false};
 const keys=new Set();
 let target=null, stuckT=0, near=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, cam={x:0,y:0}, vw=0, vh=0;
-let PAL='';
+let PAL='', fighters={};
+// ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
+let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null;
+const POTION_HEAL=0.3, POTION_PRICE={shop:8, safehouse:10}, MAX_ALLIES=2;
 let found=new Set(), spill={}, cleared={}, actors=[], grace=0;
 const imgCache={};
 function imgOf(src){ if(!imgCache[src]){ const i=new Image(); i.src=src; imgCache[src]=i; } return imgCache[src]; }
@@ -71,7 +74,7 @@ const inside=(px,py,b)=>px>=b.x&&px<=b.x+b.w&&py>=b.y&&py<=b.y+b.h;
 // A map file holds ground kinds and placed pieces (format in tools/mapgen/builder.js);
 // which grass or cobble drawing each tile gets is picked here, from the map's seed.
 function setupMap(data){
-  MAP=data; COLS=data.cols; ROWS=data.rows; WORLD_W=COLS*T; WORLD_H=ROWS*T;
+  MAP=data; COLS=data.cols; ROWS=data.rows; WORLD_W=COLS*T; WORLD_H=ROWS*T; navGrid=null;
   groundKind=data.ground.map(row=>row.split(''));
   const r=P.rng(data.seed*7+13);
   ground=groundKind.map((row,y)=>row.map((c,x)=>{
@@ -91,6 +94,12 @@ function setupMap(data){
       case 'e': return 'dirtGrass_ash';
       case 'c': return 'tr_cobble_11_ash';
       case 'f': return r()<.7?'flagCracked_ash':'flagMoss_ash';
+      // interiors (js/explore_rooms.js): floors, and the dark beyond the walls
+      case 'w': return 'floorWood'+(1+Math.floor(r()*4));
+      case 'l': return 'floorFlag'+(1+Math.floor(r()*4));
+      case 'y': return 'floorTerra'+(1+Math.floor(r()*4));
+      case 'b': return r()<.3?'floorBroken'+(1+Math.floor(r()*3)):'floorWood'+(1+Math.floor(r()*4));
+      case 'v': return null;
       default:  return 'grass';
     }
   }));
@@ -114,6 +123,9 @@ function setupMap(data){
   embers=[];
   const FX=FX_TYPES[data.fx];
   if(FX) for(let i=0;i<Math.round(COLS*ROWS*FX.n);i++) embers.push({x:r()*WORLD_W,y:r()*WORLD_H,v:FX.v[0]+r()*FX.v[1],p:r(),w:r()*6.28,s:1+r()*1.6});
+  findDoors();
+  npcs=(data.npcs||[]).map(n=>Object.assign({},n));
+  applyRoomState();
   spawnEchoes();
   buildMinimap();
   if(el.title){ el.title.textContent=data.name; sizeMini(); }
@@ -123,23 +135,30 @@ function setupMap(data){
 function echoLeader(e){ const k=e.foes.find(f=>f[0].endsWith('_strong'))||e.foes[0]; return k[0]; }
 function spawnEchoes(){
   const now=Date.now();
-  actors=(MAP.echoes||[]).filter(e=>!(cleared[MAP.id+':'+e.id]>now-ECHO.respawnMs)).map(e=>{
+  // a rival crew in a room: they fight on sight
+  const party=MAP.interior&&!roomState().done&&(MAP.ev||{}).type==='party'?npcs.filter(n=>n.role==='party'):[];
+  npcs=npcs.filter(n=>n.role!=='party');
+  const crews=party.map(n=>{ const ev=MAP.ev, lead=ev.wizard&&chars[ev.wizard]?chars[ev.wizard].sprite:(fighters[ev.foes[0][0]]||{}).sprite;
+    return {e:{id:'party', party:true, x:n.x, y:n.y, r:40, foes:ev.foes, wizard:ev.wizard}, x:n.x, y:n.y, tx:n.x, ty:n.y, wait:1, face:-1, walk:0,
+      strong:false, img:imgOf(lead), n:ev.foes.length+(ev.wizard?1:0)}; });
+  actors=crews.concat((MAP.echoes||[]).filter(e=>!(cleared[MAP.id+':'+e.id]>now-ECHO.respawnMs)).map(e=>{
     const strong=echoLeader(e).endsWith('_strong');
     return {e, x:e.x, y:e.y, tx:e.x, ty:e.y, wait:Math.random()*2, face:Math.random()<.5?1:-1, walk:Math.random()*6,
       strong, img:imgOf('sprites/echoes/'+e.el+'_'+(strong?'strong':'weak')+'.png'), n:e.foes.length};
-  });
+  }));
 }
 function updateEchoes(dt){
   for(const a of actors){
     const d=Math.hypot(wiz.x-a.x,(wiz.y-a.y)*1.3);
-    const chasing=grace<=0&&d<ECHO.sight;
+    const chasing=grace<=0&&(d<ECHO.sight||MAP.interior);   // indoors there's nowhere to hide
     if(chasing){ a.tx=wiz.x; a.ty=wiz.y; }
     else if(Math.hypot(a.tx-a.x,a.ty-a.y)<6){
       a.wait-=dt;
       if(a.wait<=0){ const ang=Math.random()*Math.PI*2, r=Math.random()*a.e.r; a.tx=a.e.x+Math.cos(ang)*r; a.ty=a.e.y+Math.sin(ang)*r*0.6; a.wait=1+Math.random()*2.5; }
     }
-    const dx=a.tx-a.x, dy=a.ty-a.y, len=Math.hypot(dx,dy);
-    a.moving=len>6;
+    const w=chasing?routeStep(a,a.tx,a.ty):{x:a.tx,y:a.ty};
+    const dx=w.x-a.x, dy=w.y-a.y, len=Math.hypot(dx,dy)||1;
+    a.moving=Math.hypot(a.tx-a.x,a.ty-a.y)>6;
     if(a.moving){
       const step=(chasing?ECHO.chase:ECHO.wander)*dt, ux=dx/len, uy=dy/len;
       const ox=a.x, oy=a.y;
@@ -158,33 +177,42 @@ function drawEcho(a,t){
   const bob=a.moving?Math.abs(Math.sin(a.walk))*3:Math.sin(t/500+a.e.x)*1.5;
   ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(a.x,a.y-2,w*0.32,6,0,0,Math.PI*2); ctx.fill();
   ctx.save(); ctx.translate(a.x,a.y-bob); if(a.face<0) ctx.scale(-1,1);
-  ctx.globalAlpha=0.88+0.12*Math.sin(t/180+a.e.y);          // they flicker, a little
+  ctx.globalAlpha=a.e.el?0.88+0.12*Math.sin(t/180+a.e.y):1;          // Echoes flicker, a little
   ctx.drawImage(img,-w/2,-h,w,h);
   ctx.restore();
   if(a.n>1){                                                // how many in the group
     ctx.font='bold 13px Cinzel, serif'; ctx.textAlign='center';
     ctx.fillStyle='rgba(14,10,30,0.8)'; ctx.fillRect(a.x+w*0.25,a.y-h-4,22,17);
-    ctx.fillStyle=SPILL[a.e.el][1]; ctx.fillText('×'+a.n,a.x+w*0.25+11,a.y-h+9);
+    ctx.fillStyle=a.e.el?SPILL[a.e.el][1]:'#ff8060'; ctx.fillText('×'+a.n,a.x+w*0.25+11,a.y-h+9);
   }
 }
 // walk into an Echo: the battle plays on the duel screen, then we come back here
 function fight(a){
   if(busy||typeof window.startExploreBattle!=='function') return;
   busy=true; keys.clear(); target=null; hideSay(); save();
-  const foes=a.e.foes.map(([key,level])=>({key,level}));
+  const foes=(a.e.wizard?[{key:a.e.wizard,wizard:true}]:[]).concat(a.e.foes.map(([key,level])=>({key,level})));
+  const fighting=allies.slice();
+  const text=a.e.party?{winTitle:'The Crew Breaks', win:'They scatter into the dark streets, leaving their takings behind.'}:null;
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false);
     const key=wizKeys[wizIdx];
-    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), onEnd:(won,low)=>afterFight(a,won,low,key)});
+    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:fighting.map(x=>({key:x.key,level:x.level,name:x.name,hp:x.hp})), text,
+      onEnd:(won,low,allyHp)=>afterFight(a,won,low,key,fighting,allyHp)});
   });
 }
-function afterFight(a,won,low,key){
+function afterFight(a,won,low,key,fighting,allyHp){
   el.root.classList.add('active'); running=true; busy=false; resize();
+  navGrid=null;                                // the door may have just opened
   clock=(clock+20)%1440;                       // a fight takes a while
   if(won) vit[key]=Math.max(1,Math.round(Math.min(isFinite(low)?low:hpOf(key),hpOf(key))));
   else vit[key]=Math.max(1,Math.round(maxHp(key)*0.25));
   renderHp();
-  if(won){
+  // allies who fought: they keep their wounds; the fallen are gone
+  (allyHp||[]).forEach((hp,i)=>{ const al=fighting[i]; if(!al) return; if(hp<=0){ allies=allies.filter(x=>x!==al); toast(al.name+' fell. You leave them where they lie.'); } else al.hp=hp; });
+  if(won&&a.e.party){
+    roomState().done=true; actors=actors.filter(x=>x!==a); gold+=(MAP.ev||{}).gold||0;
+    toast('+'+((MAP.ev||{}).gold||0)+' gold from their packs'); grace=ECHO.grace;
+  } else if(won){
     cleared[MAP.id+':'+a.e.id]=Date.now();
     actors=actors.filter(x=>x!==a);
     const got=a.e.foes.reduce((n,[k])=>n+SPILL_YIELD[k.endsWith('_strong')?'strong':'weak'],0);
@@ -194,6 +222,7 @@ function afterFight(a,won,low,key){
   } else {
     const p=MAP.spawns.gate||MAP.spawns.start||Object.values(MAP.spawns)[0];
     wiz.x=p[0]; wiz.y=p[1];
+    if(MAP.interior) setTimeout(()=>takeExit({to:'out'}),50);     // thrown out into the street
     a.x=a.e.x; a.y=a.e.y; a.tx=a.x; a.ty=a.y;
     toast('You come to, singed and aching, with a quarter of your strength. Find somewhere to rest.');
     grace=ECHO.grace*2;
@@ -216,10 +245,170 @@ function renderClock(){
   el.night.textContent=lightMode==='day'?SUN+' Day':lightMode==='night'?MOON+' Night':(d>0.5?MOON:d>0?'\u25D0':SUN)+' '+clockLabel();
 }
 function renderSpill(){
+  if(!el.spill) return;
   const keys=Object.keys(spill).filter(k=>spill[k]>0);
-  el.spill.hidden=!keys.length;
-  el.spill.innerHTML=keys.map(k=>`<span title="${SPILL[k][0]}"><i style="background:${SPILL[k][1]}"></i>${spill[k]}</span>`).join('');
-  el.spill.title='Spill: '+keys.map(k=>spill[k]+' '+SPILL[k][0]).join(', ');
+  const parts=keys.map(k=>`<span title="${SPILL[k][0]}"><i style="background:${SPILL[k][1]}"></i>${spill[k]}</span>`);
+  if(gold) parts.unshift(`<span title="gold"><i style="background:#f0c040;border-radius:50%;transform:none"></i>${gold}</span>`);
+  if(potions) parts.push(`<span title="potions">🧪${potions}</span>`);
+  if(allies.length) parts.push(`<span title="allies">⚔${allies.length}</span>`);
+  el.spill.hidden=!parts.length;
+  el.spill.innerHTML=parts.join('');
+  el.spill.title='What you carry (tap)';
+}
+
+
+// ═══ DOORS AND ROOMS ═══════════════════════════════════════════════
+// Every house front, tavern, chapel and the like can be entered (js/explore_rooms.js builds the room
+// from its seed). Some are always the same place (FIXED_DOORS).
+const DOOR_BASES = ['house1','house2','house3','house4','house5','house6','tavern','chapel','hall','temple','townhouse','forge','tiltedHouse','sunkHouse','mausoleum','tower'];
+const FIXED_LABEL = {safehouse:'Enter the Gleaners\' Rest', inn:'Enter the Drowned Crow', library:'Enter the Collegium Library',
+  wenna:'Knock at Wenna\'s Bakehouse', lamplighter:'Knock at the Lamplighter\'s House'};
+const CITY_MAPS = ['cindergate','heights','spirewatch','collegium','drowned_quarter','quarry_ward','frostmarket','gloamside'];
+function findDoors(){
+  doors=[];
+  if(MAP.interior) return;
+  const fronts=objs.filter(o=>!o.decal&&DOOR_BASES.includes(P.baseKind(o.kind)));
+  const fixed={};
+  const nearestTo=(x,y,test)=>fronts.filter(test).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
+  const tav=fronts.find(o=>o.lore==='tavern');
+  if(MAP.id==='hollowmere'&&tav) fixed[tav.id]='inn';
+  if(MAP.id==='cindergate'&&tav) fixed[tav.id]='safehouse';
+  if(MAP.id==='cindergate'){ const w=nearestTo(28*T,38*T,o=>/^house/.test(o.kind)&&o!==tav); if(w) fixed[w.id]='wenna'; }
+  if(MAP.id==='collegium'){ const h=fronts.find(o=>P.baseKind(o.kind)==='hall'); if(h) fixed[h.id]='library'; }
+  if(MAP.id==='gloamside'){ const sp=MAP.spawns.west||[0,0], l=nearestTo(sp[0],sp[1],o=>/^house/.test(o.kind)); if(l) fixed[l.id]='lamplighter'; }
+  const els={}; for(const e of MAP.echoes||[]) els[e.el]=(els[e.el]||0)+1;
+  const el=Object.keys(els).sort((a,b)=>els[b]-els[a])[0]||'fire';
+  for(const o of fronts){
+    const base=P.baseKind(o.kind), f=fixed[o.id];
+    const depth=Math.max(0,Math.min(1,(1-o.y/WORLD_H)*1.15-0.12));
+    const ruined=/_(burnt|char)$/.test(o.kind)||['house5','house6','tiltedHouse','sunkHouse'].includes(base);
+    const spec={id:'room:'+MAP.id+'#'+o.id, base, outside:{map:MAP.id,x:o.x,y:o.y+6}, el, depth, city:CITY_MAPS.includes(MAP.id),
+      ruined, fixed:f||null, wizards:wizKeys};
+    doors.push({x:o.x, y:o.y+14, spec, label:f?FIXED_LABEL[f]:'Enter'});
+  }
+}
+function enterDoor(dr){
+  roomSpec=Object.assign({},dr.spec,{wizards:wizKeys.filter(k=>k!==wizKeys[wizIdx])});
+  enterMap(roomSpec.id,'door').then(()=>{ grace=1.5; });
+}
+function roomState(){ return rooms[MAP.id]||(rooms[MAP.id]={}); }
+function removeObj(o){ objs=objs.filter(x=>x!==o); boxes=boxes.filter(b=>!o.lb||!o.lb.includes(b)); }
+// a room's state: what you already took, who you already met
+function applyRoomState(){
+  if(!MAP.interior) return;
+  const st=roomState();
+  if(st.done){ objs.filter(o=>o.lore==='ev').forEach(removeObj); npcs.forEach(n=>{ if(n.role==='party'||n.role==='wounded') n.gone=true; }); }
+  if(st.taken) objs.filter(o=>o.lore==='ev').forEach(removeObj);
+}
+
+// ── dialogs: the inspect box with buttons ──
+function showDialog(title,text,choices){
+  el.say.querySelector('.ex-say-name').textContent=title;
+  el.say.querySelector('.ex-say-text').textContent=text;
+  el.say.querySelectorAll('.ex-rest,.ex-choice').forEach(b=>b.remove());
+  const row=document.createElement('div'); row.className='ex-choice';
+  for(const c of choices||[]){
+    const b=document.createElement('button'); b.className='ex-btn'; b.type='button'; b.textContent=c.label; b.disabled=!!c.disabled;
+    b.onclick=ev=>{ ev.stopPropagation(); hideSay(); c.fn&&c.fn(); renderSpill(); renderHp(); save(); };
+    row.appendChild(b);
+  }
+  if(choices&&choices.length) el.say.appendChild(row);
+  el.say.hidden=false; el.hint.classList.add('fade');
+}
+const heal=(key,amt)=>{ vit[key]=Math.min(maxHp(key),hpOf(key)+amt); };
+function drinkPotion(){ if(potions<1) return; const key=wizKeys[wizIdx]; potions--; heal(key,Math.ceil(maxHp(key)*POTION_HEAL)); toast('You drink the potion. Warmth spreads through you.'); }
+function restFull(morning){ const key=wizKeys[wizIdx]; vit[key]=maxHp(key); allies.forEach(a=>a.hp=null); if(morning) clock=7*60; renderClock(); }
+const buyPotion=price=>({label:'Buy a potion ('+price+' gold)', disabled:gold<price, fn:()=>{ gold-=price; potions++; toast('A potion, wrapped in a rag.'); }});
+
+// things in rooms: returns true if it handled the inspect
+function roomAct(o){
+  if(!MAP.interior) return false;
+  const ev=MAP.ev||{}, st=roomState(), key=wizKeys[wizIdx];
+  if(o.lore&&o.lore.startsWith('book:')){
+    const id=o.lore.slice(5), L=MAP.lore[o.lore], fresh=!booksRead.includes(id);
+    if(fresh) booksRead.push(id);
+    showDialog(L[0],L[1]+(fresh?'\n\n(Lore found: '+booksRead.length+' of '+window.ExploreRooms.BOOKS.length+')':''),[]);
+    save(); return true;
+  }
+  if(o.lore==='ev'&&ev.type==='treasure'){
+    showDialog(MAP.lore.ev[0],MAP.lore.ev[1],[{label:ev.chest?'Open it':'Take it', fn:()=>{
+      gold+=ev.gold; if(ev.potion) potions++; st.taken=true; removeObj(o);
+      toast('+'+ev.gold+' gold'+(ev.potion?' and a potion':''));
+    }}]); return true;
+  }
+  if(o.lore==='ev'&&ev.type==='spill'){
+    showDialog(MAP.lore.ev[0],MAP.lore.ev[1],[{label:'Prise it loose', fn:()=>{
+      spill[ev.el]=(spill[ev.el]||0)+ev.n; st.taken=true; removeObj(o); toast('+'+ev.n+' '+SPILL[ev.el][0]);
+    }}]); return true;
+  }
+  if(o.lore==='shop'){ showDialog(MAP.lore.shop[0],MAP.lore.shop[1],[buyPotion(POTION_PRICE.shop)]); return true; }
+  if(o.lore==='rest'){
+    const L=MAP.lore.rest, ch=[{label:'🛏 Rest till morning ('+hpOf(key)+' → '+maxHp(key)+' HP)', disabled:hpOf(key)>=maxHp(key)&&allies.every(a=>a.hp==null), fn:()=>{ restFull(true); toast(MAP.type==='inn'?'You sleep in a real bed. It is morning.':'You sleep by Marda\'s fire. Nothing comes to the door.'); }}];
+    if(MAP.type==='safehouse'){
+      ch.push(buyPotion(POTION_PRICE.safehouse));
+      rescues.forEach((rs,i)=>ch.push({label:'Tell Marda about '+rs.name, fn:()=>{
+        rescues.splice(i,1); gold+=15; potions++; (rooms[rs.room]||(rooms[rs.room]={})).done=true;
+        toast('Marda sends two of hers for '+rs.name+'. She presses 15 gold and a potion on you.');
+      }}));
+    }
+    showDialog(L[0],L[1],ch); return true;
+  }
+  return false;
+}
+
+// ── people in rooms ──
+const NPC_SPRITE = {wenna:'sprites/echoes/fire_weak.png', lamplighter:'sprites/echoes/air_weak.png'};   // stand-ins until their own art
+function npcTitle(n){ const ev=MAP.ev||{};
+  return n.role==='wounded'?ev.name+', wounded':n.role==='wenna'?'Wenna the Baker':n.role==='lamplighter'?'The Lamplighter':'Someone'; }
+function talkTo(n){
+  const ev=MAP.ev||{}, st=roomState();
+  if(n.role==='wounded'){
+    if(ev.mode==='join'){
+      showDialog(ev.name+', wounded', ev.name+' is propped against the wall, a leg bound with a torn sleeve. "Don\'t. I\'m done fighting. My crew left me." A pause. "Take me with you? I can still '+(ev.key==='archer'?'draw a bow':'swing a sword')+'."',[
+        {label:'Take '+ev.name+' with you', disabled:allies.length>=MAX_ALLIES, fn:()=>{ allies.push({key:ev.key, level:0, name:ev.name, hp:null}); st.done=true; n.gone=true; toast(ev.name+' limps after you. (Allies fight beside you when there is room.)'); }},
+        {label:'Leave them some bread', fn:()=>{ st.done=true; }}]);
+    } else {
+      const promised=rescues.some(r=>r.room===MAP.id);
+      showDialog(ev.name+', wounded', promised?'"You\'ll tell Marda? At the Gleaners\' Rest, inside the Wardgate. Please."':
+        ev.name+' cannot stand. "There\'s a safe house in Cindergate, the Gleaners\' Rest. Tell old Marda where I am. She\'ll send someone. She always sends someone."',
+        promised?[]:[{label:'I\'ll tell her', fn:()=>{ rescues.push({name:ev.name, room:MAP.id}); toast('Find Marda at the Gleaners\' Rest, in Cindergate.'); }}, {label:'Not my problem'}]);
+    }
+    return;
+  }
+  if(n.role==='wenna'){
+    showDialog('Wenna the Baker','A round woman of ember-light, kneading dough that glows. "Customers! Nobody comes any more but the gleaners, and they never pay." She doesn\'t seem to know what she is. "Bring me two of the little orange stones and you shall have a loaf, still warm."',[
+      {label:'Trade 2 cinderglass for a loaf (+20 HP)', disabled:(spill.fire||0)<2, fn:()=>{ spill.fire-=2; heal(wizKeys[wizIdx],20); toast('The bread is hot enough to burn. It is the best thing you have ever eaten.'); }},
+      {label:'Ask about the city', fn:()=>showDialog('Wenna the Baker','"The Collegium bought forty loaves every Thursday. Then one Thursday the sky went white, and now it is always Thursday." She smiles. "Isn\'t that nice?"',[])}]);
+    return;
+  }
+  if(n.role==='lamplighter'){
+    showDialog('The Lamplighter','A tall, gentle figure of soft golden light, his pole still in his hand. "Every lamp in the city, every night. Somebody has to." He tips his hat. "The dark ones will trade for nightglass, if you have it. I will trade you light."',[
+      {label:'Trade 2 nightglass for a potion', disabled:(spill.dark||0)<2, fn:()=>{ spill.dark-=2; potions++; toast('He pours a little of his own light into a bottle.'); }},
+      {label:'Ask about Hollowmere\'s lanterns', fn:()=>showDialog('The Lamplighter','"Hollowmere? I walk out there some nights. Old habits. They never see me, but the lamps get lit." He looks pleased. "Somebody has to."',[])}]);
+    return;
+  }
+}
+function drawNpc(n,t){
+  let src=NPC_SPRITE[n.role];
+  if(n.role==='wounded'){ const f=fighters[(MAP.ev||{}).key]; src=f&&f.sprite; }
+  if(!src) return;
+  const img=imgOf(src); if(!img.complete||!img.naturalWidth) return;
+  const h=WIZ_H*(n.role==='wounded'?0.8:1.05), w=h*img.naturalWidth/img.naturalHeight;
+  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(n.x,n.y-2,w*0.3,5,0,0,Math.PI*2); ctx.fill();
+  ctx.save(); ctx.translate(n.x,n.y);
+  if(n.role==='wounded'){ ctx.filter='saturate(0.5) brightness(0.85)'; ctx.scale(-1,0.8); }   // slumped, facing in
+  else ctx.globalAlpha=0.9+0.1*Math.sin(t/200);
+  ctx.drawImage(img,-w/2,-h,w,h);
+  ctx.restore();
+}
+
+// ── what you carry ──
+function openInventory(){
+  const key=wizKeys[wizIdx], sp=Object.keys(spill).filter(k=>spill[k]>0).map(k=>spill[k]+' '+SPILL[k][0]).join(', ')||'none';
+  const al=allies.length?allies.map(a=>a.name+' ('+(fighters[a.key]?fighters[a.key].title:a.key)+')').join(', '):'nobody';
+  const rs=rescues.length?'\nPromised to tell Marda about: '+rescues.map(r=>r.name).join(', ')+'.':'';
+  showDialog('What You Carry','Gold: '+gold+'.  Potions: '+potions+'.\nSpill: '+sp+'.\nWith you: '+al+'.'+rs+'\nLore found: '+booksRead.length+' of '+window.ExploreRooms.BOOKS.length+'.',
+    [{label:'🧪 Drink a potion (+'+Math.round(POTION_HEAL*100)+'% HP)', disabled:potions<1||hpOf(key)>=maxHp(key), fn:drinkPotion}]);
 }
 
 // ── ground transitions ──
@@ -320,6 +509,11 @@ async function loadPalette(pal){
 }
 function locationOfMap(id){ return world&&world.locations.find(l=>l.map===id); }
 async function getMap(id){
+  if(id.startsWith('room:')){
+    const spec=roomSpec&&roomSpec.id===id?roomSpec:null;
+    if(!spec) throw new Error('no room '+id);
+    return window.ExploreRooms.build(spec,rects);
+  }
   if(!mapCache[id]) mapCache[id]=await fetch('maps/'+id+'.json').then(r=>{ if(!r.ok) throw new Error('map '+id); return r.json(); });
   return mapCache[id];
 }
@@ -333,6 +527,7 @@ async function enterMap(id,at,instant){
     const data=await getMap(id);
     await loadPalette(data.palette);
     setupMap(data);
+    resize();
     const p=Array.isArray(at)?at:(data.spawns[at]||data.spawns.start||Object.values(data.spawns)[0]);
     wiz.x=p[0]; wiz.y=p[1]; wiz.face=1;
     exitArmed=false;                          // arriving in an exit doesn't send you straight back
@@ -343,10 +538,11 @@ async function enterMap(id,at,instant){
 }
 function save(){
   if(!MAP) return;
-  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],spill,cleared,clock:Math.round(clock),lightMode,vit})); }catch(e){}
+  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,roomSpec:MAP.interior?roomSpec:null})); }catch(e){}
 }
 function loadSave(){ try{ return JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); }catch(e){ return null; } }
 function takeExit(x){
+  if(x.to==='out'){ const o=roomSpec.outside; enterMap(o.map,[o.x,o.y+30]); return; }
   if(x.to==='world') openWorld('travel');
   else enterMap(x.to.map,x.to.spawn);
 }
@@ -521,7 +717,8 @@ function buildDom(){
   el.wpGo.onclick=worldGo;
   el.worldCv.addEventListener('click',worldClick);
   el.night.onclick=()=>{ lightMode={auto:'day',day:'night',night:'auto'}[lightMode]; renderClock(); save(); };
-  el.act.onclick=()=>{ if(near) inspect(); else if(nearExit&&!busy) takeExit(nearExit); };
+  el.spill.onclick=()=>{ if(!busy) openInventory(); };
+  el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy&&!roomLocked()) takeExit(nearExit); };
   el.say.onclick=hideSay;
   el.cv.addEventListener('pointerdown',e=>{ el.cv.setPointerCapture(e.pointerId); setTarget(e); hideSay(); dragging=true; });
   el.cv.addEventListener('pointermove',e=>{ if(dragging) setTarget(e); });
@@ -546,7 +743,7 @@ function onKey(e){
     return;
   }
   if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)){ keys.add(k); target=null; hideSay(); e.preventDefault(); }
-  else if(k==='e'||k===' '||k==='enter'){ if(!el.say.hidden) hideSay(); else inspect(); e.preventDefault(); }
+  else if(k==='e'||k===' '||k==='enter'){ if(!el.say.hidden) hideSay(); else if(near) inspect(); else if(nearDoor) enterDoor(nearDoor); e.preventDefault(); }
   else if(k==='m'){ if(!busy&&MAP) openWorld('view'); }
   else if(k==='escape'){ if(!el.say.hidden) hideSay(); else close(); }
 }
@@ -557,6 +754,9 @@ function resize(){
   for(const c of [el.cv,dark]){ c.width=Math.round(vw*dpr); c.height=Math.round(vh*dpr); }
   el.cv.style.width=vw+'px'; el.cv.style.height=vh+'px';
   zoom=Math.max(0.62,Math.min(1.35,Math.min(vw/620,vh/620)));
+  // a room fits the screen, walls and all
+  if(MAP&&MAP.interior) zoom=Math.max(0.55,Math.min(1.6,Math.min(vw/(WORLD_W+20),(vh-70)/(WORLD_H-T*0.6))));
+  if(el.mini) el.mini.style.display=MAP&&MAP.interior?'none':'';
   sizeMini();
 }
 function sizeMini(){
@@ -573,13 +773,13 @@ function setWizard(i){
   const img=new Image(); img.src=c.sprite; img.onload=()=>{ if(wizKeys[wizIdx]===key) wizImg=img; };
 }
 
-function loreOf(o){ return (MAP.lore||{})[o.lore]; }
+function loreOf(o){ return o.npc?['…','']:(MAP.lore||{})[o.lore]; }
 function showSay(o){
   const L=loreOf(o); if(!L) return;
   el.say.querySelector('.ex-say-name').textContent=L[0];
   el.say.querySelector('.ex-say-text').textContent=L[1];
   const R=(REST[MAP.id]||{})[o.lore], key=wizKeys[wizIdx];
-  let btn=el.say.querySelector('.ex-rest'); if(btn) btn.remove();
+  el.say.querySelectorAll('.ex-rest,.ex-choice').forEach(b=>b.remove()); let btn;
   if(R){
     btn=document.createElement('button'); btn.className='ex-btn ex-rest'; btn.type='button';
     const to=Math.max(hpOf(key),Math.ceil(maxHp(key)*R[0]));
@@ -591,18 +791,53 @@ function showSay(o){
   el.say.hidden=false; el.hint.classList.add('fade');
 }
 function hideSay(){ if(el.say) el.say.hidden=true; }
-function inspect(){ if(near) showSay(near); }
+function inspect(){ if(!near) return; if(near.npc) talkTo(near.npc); else if(!roomAct(near)) showSay(near); }
 let toastTimer=0;
 function toast(msg){ el.toast.textContent=msg; el.toast.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.toast.hidden=true; },2200); }
 
 // ═══ LOOP ══════════════════════════════════════════════════════════
+// a room with foes still in it can't be left: they're between you and the door (no slipping in
+// and out to dodge a fight; losing still throws you out, through takeExit directly)
+function roomLocked(){ return !!(MAP&&MAP.interior&&actors.length); }
+let lockToastT=0;
 function blocked(x,y){
   const b={x:x-12,y:y-9,w:24,h:9};
+  if(roomLocked()) for(const e of MAP.exits||[]) if(overlap(b,{x:e.x,y:e.y-14,w:e.w,h:e.h+14})) return true;
   if(b.x<T*0.3||b.y<T*0.5||b.x+b.w>WORLD_W-T*0.3||b.y+b.h>WORLD_H-4) return true;
   for(const c of boxes) if(overlap(b,c)) return true;
   for(const c of MAP.blocks||[]) if(overlap(b,c)) return true;
   if(wet(b.x,b.y)||wet(b.x+b.w,b.y)||wet(b.x,b.y+b.h)||wet(b.x+b.w,b.y+b.h)) return true;
   return false;
+}
+// Indoors, interior walls split the rooms: anything walking somewhere (you by tap, a charging Echo)
+// finds its way round them on a coarse grid (NAV px cells, worked out once per room), then heads for
+// the farthest point along the way it can walk straight to.
+const NAV=24; let navGrid=null;
+function navOpen(){
+  if(navGrid) return navGrid;
+  const nc=Math.ceil(WORLD_W/NAV), nr=Math.ceil(WORLD_H/NAV), g=new Uint8Array(nc*nr);
+  for(let j=0;j<nr;j++) for(let i=0;i<nc;i++) g[j*nc+i]=blocked(i*NAV+NAV/2,j*NAV+NAV/2)?0:1;
+  return navGrid={nc,nr,g};
+}
+function clearLine(x0,y0,x1,y1){ const n=Math.ceil(Math.hypot(x1-x0,y1-y0)/8); for(let k=1;k<=n;k++) if(blocked(x0+(x1-x0)*k/n,y0+(y1-y0)*k/n)) return false; return true; }
+function navPath(x0,y0,x1,y1){
+  const {nc,nr,g}=navOpen(), cl=(v,m)=>Math.max(0,Math.min(m-1,v));
+  const s=cl(Math.floor(y0/NAV),nr)*nc+cl(Math.floor(x0/NAV),nc), e=cl(Math.floor(y1/NAV),nr)*nc+cl(Math.floor(x1/NAV),nc);
+  const prev=new Int32Array(nc*nr).fill(-1), q=[s]; prev[s]=s;
+  for(let h=0;h<q.length;h++){ const c=q[h]; if(c===e) break; const cx=c%nc;
+    for(const n of [c-nc,c+nc,cx>0?c-1:-1,cx<nc-1?c+1:-1]) if(n>=0&&n<nc*nr&&prev[n]<0&&(g[n]||n===e)){ prev[n]=c; q.push(n); } }
+  if(prev[e]<0) return null;
+  const out=[{x:x1,y:y1}]; for(let c=prev[e];c!==s;c=prev[c]) out.unshift({x:(c%nc)*NAV+NAV/2,y:Math.floor(c/nc)*NAV+NAV/2});
+  return out;
+}
+function routeStep(m,tx,ty){   // m = a mover with x, y; where it should head next to reach (tx, ty)
+  if(!MAP.interior||clearLine(m.x,m.y,tx,ty)){ m.path=null; return {x:tx,y:ty}; }
+  const now=performance.now();
+  if(!m.path||now-(m.pathT||0)>300){ m.path=navPath(m.x,m.y,tx,ty); m.pathT=now; }
+  if(!m.path) return {x:tx,y:ty};
+  while(m.path.length>1&&Math.hypot(m.path[0].x-m.x,m.path[0].y-m.y)<8) m.path.shift();
+  for(let k=Math.min(m.path.length-1,10);k>0;k--) if(clearLine(m.x,m.y,m.path[k].x,m.path[k].y)) return m.path[k];
+  return m.path[0];
 }
 // an exit reaches a little past the map's edge, where you can't walk, so test generously
 function exitAt(x,y){
@@ -617,8 +852,8 @@ function update(dt){
   if(keys.has('arrowup')||keys.has('w')) dy--;
   if(keys.has('arrowdown')||keys.has('s')) dy++;
   if(!dx&&!dy&&target){
-    const tx=target.x-wiz.x, ty=target.y-wiz.y, dist=Math.hypot(tx,ty);
-    if(dist<5) target=null; else { dx=tx/dist; dy=ty/dist; }
+    const dist=Math.hypot(target.x-wiz.x,target.y-wiz.y), w=dist<5?null:routeStep(wiz,target.x,target.y);
+    if(!w) target=null; else { const tx=w.x-wiz.x, ty=w.y-wiz.y, d=Math.hypot(tx,ty)||1; dx=tx/d; dy=ty/d; }
   }
   const len=Math.hypot(dx,dy);
   wiz.moving=len>0;
@@ -638,7 +873,7 @@ function update(dt){
   // a way out? (you must step out of the one you arrived in first)
   const ex=exitAt(wiz.x,wiz.y);
   if(!ex) exitArmed=true;
-  else if(exitArmed){ exitArmed=false; takeExit(ex); return; }
+  else if(exitArmed&&!roomLocked()){ exitArmed=false; takeExit(ex); return; }
   nearExit=null;
   for(const e of MAP.exits||[]) if(Math.hypot(e.x+e.w/2-wiz.x,e.y+e.h/2-wiz.y)<260) nearExit=e;
   // something to inspect nearby?
@@ -650,10 +885,17 @@ function update(dt){
       if(d<best){ best=d; near=o; }
     }
   }
-  // the action button: inspect what's near, or take the way out you're close to (easier than tapping the edge)
-  const exitClose=nearExit&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y+nearExit.h/2-wiz.y)<170;
-  el.act.hidden=!(near||exitClose)||!el.say.hidden;
-  if(near) el.act.textContent='✋ '+loreOf(near)[0];
+  for(const n of npcs){ if(n.gone) continue; const d=Math.hypot(n.x-wiz.x,(n.y-wiz.y)*1.3); if(d<best+12){ best=d-12; near=Object.assign(n,{npc:n,lore:'npc'}); } }
+  nearDoor=null;
+  if(!near){ let bd=40; for(const dr of doors){ const d=Math.hypot(dr.x-wiz.x,(dr.y-wiz.y)*1.4); if(d<bd){ bd=d; nearDoor=dr; } } }
+  // the action button: inspect what's near, enter a door, or take the way out you're close to
+  if(roomLocked()&&nearExit&&wiz.moving&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y-wiz.y)<50&&performance.now()>lockToastT){
+    lockToastT=performance.now()+3000; toast(MAP.ev&&MAP.ev.type==='party'?'They\'ve got the door. No way out but through them.':'The Echoes won\'t let you leave. Deal with them first.');
+  }
+  const exitClose=!roomLocked()&&nearExit&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y+nearExit.h/2-wiz.y)<(MAP.interior?110:170);
+  el.act.hidden=!(near||nearDoor||exitClose)||!el.say.hidden;
+  if(near) el.act.textContent=(near.npc?'💬 ':'✋ ')+(near.npc?npcTitle(near.npc):loreOf(near)[0]);
+  else if(nearDoor) el.act.textContent='🚪 '+(nearDoor.label||'Enter');
   else if(exitClose) el.act.textContent='⟶ '+(nearExit.to==='world'?(nearExit.label||'Travel')+' (world map)':nearExit.label);
   // remember where you are
   saveT+=dt; if(saveT>2){ saveT=0; save(); }
@@ -720,7 +962,7 @@ function draw(t){
   const x0=Math.max(0,Math.floor(cam.x/T)), x1=Math.min(COLS-1,Math.floor((cam.x+cw)/T));
   const y0=Math.max(0,Math.floor(cam.y/T)), y1=Math.min(ROWS-1,Math.floor((cam.y+ch)/T));
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
-    const g=ground[y][x];
+    const g=ground[y][x]; if(!g) continue;
     if(typeof g==='object'){ ctx.drawImage(quarterTile(g),x*T,y*T,T+0.6,T+0.6); continue; }
     const q=rects[g];
     ctx.drawImage(atlases[q[4]],q[0]+1,q[1]+1,q[2]-2,q[3]-2,x*T,y*T,T+0.6,T+0.6);
@@ -743,31 +985,33 @@ function draw(t){
   const list=[];
   for(const o of objs){
     if(o.decal) continue;
-    const s=sizeOf(o.kind);
+    const s=sizeOf(o.kind,o.scale);
     if(o.x+s.w/2<cam.x||o.x-s.w/2>cam.x+cw||o.y-s.h>cam.y+ch||o.y<cam.y) continue;
     list.push(o);
   }
   list.push({wiz:true,y:wiz.y});
   for(const a of actors) if(a.x>cam.x-80&&a.x<cam.x+cw+80&&a.y>cam.y&&a.y<cam.y+ch+120) list.push({actor:a,y:a.y});
+  for(const n of npcs) if(!n.gone) list.push({npc:n,y:n.y});
   list.sort((a,b)=>a.y-b.y);
   for(const o of list){
     if(o.wiz){ drawWizard(t); continue; }
     if(o.actor){ drawEcho(o.actor,t); continue; }
-    const s=sizeOf(o.kind);
+    if(o.npc){ drawNpc(o.npc,t); continue; }
+    const s=sizeOf(o.kind,o.scale);
     // a tall piece in front of the wizard turns see-through
     const hides=o.y>wiz.y && s.h>90 && overlap(wizBox,{x:o.x-s.w/2,y:o.y-s.h,w:s.w,h:s.h-12});
-    drawPiece(o.kind,o.x,o.y,hides?0.5:undefined);
+    drawPiece(o.kind,o.x,o.y,hides?0.5:undefined,o.scale);
   }
   // inspect marker
   if(near && el.say.hidden){
-    const s=near.decal?{h:40}:sizeOf(near.kind), bob=Math.sin(t/250)*3;
+    const s=near.npc?{h:WIZ_H}:near.decal?{h:40}:sizeOf(near.kind,near.scale), bob=Math.sin(t/250)*3;
     ctx.fillStyle='#ffd866'; ctx.strokeStyle='#3a2a08'; ctx.lineWidth=2;
     ctx.font='bold 18px Cinzel, serif'; ctx.textAlign='center';
-    const my=(near.decal?near.fb[0].y:near.y-Math.min(s.h,120))-8+bob;
+    const my=(near.decal&&near.fb&&near.fb[0]?near.fb[0].y:near.y-Math.min(s.h,120))-8+bob;
     ctx.strokeText('?',near.x,my); ctx.fillText('?',near.x,my);
   }
   if(MAP.haze){ const [r,g,b,a]=MAP.haze.split(','); ctx.fillStyle=`rgba(${r},${g},${b},${a})`; ctx.fillRect(cam.x,cam.y,cw,ch); }
-  const D=darkness();
+  const D=MAP.interior?0.55:darkness();
   if(D>0) drawNight(t,cw,ch,D);
   else if(MAP.storm) drawNight(t,cw,ch,0.25);   // Spirewatch is never quite light
   if(embers.length) drawEmbers(t,cw,ch);
@@ -794,7 +1038,7 @@ function drawExits(t){
   }
 }
 function drawExitLabel(){
-  const e=nearExit; if(!e) return;
+  const e=nearExit; if(!e||MAP.interior) return;
   const [dx,dy]=exitDir(e), x=e.x+e.w/2-dx*90, y=e.y+e.h/2-dy*70-28;
   ctx.font='bold 15px Cinzel, serif'; ctx.textAlign='center';
   const text=e.to==='world'?'⟶ '+(e.label||'Travel')+' (world map)':'⟶ '+e.label;
@@ -808,15 +1052,16 @@ function lightsInView(cw,ch){
   const near=(x,y)=>!(x<cam.x-300||x>cam.x+cw+300||y<cam.y-300||y>cam.y+ch+300);
   for(const o of objs){
     const L=P.lightsOf(o.kind); if(!L||(o.decal&&P.BRIDGE[o.kind])) continue;
-    const s=sizeOf(o.kind);
+    const s=sizeOf(o.kind,o.scale);
     for(const [lx,ly,type] of L){
-      const fr=lx<=1&&ly<=1, x=o.x-s.w/2+(fr?lx*s.w:lx*PS), y=o.y-s.h+(fr?ly*s.h:ly*PS);
+      const sc=o.scale||PS, fr=lx<=1&&ly<=1, x=o.x-s.w/2+(fr?lx*s.w:lx*sc), y=o.y-s.h+(fr?ly*s.h:ly*sc);
       // a burnt house's windows glow ember-orange: what's inside isn't a hearth
-      if(near(x,y)) out.push({x,y,r:type==='lamp'?150:105,seed:o.id,c:type==='lamp'?undefined:o.kind.endsWith('_burnt')?'255,120,50':MAP.windowGlow&&PAL&&o.kind.endsWith(PAL)?MAP.windowGlow:undefined});
+      if(near(x,y)) out.push({x,y,r:(type==='lamp'?150:105)*(MAP.interior?0.8:1),seed:o.id,c:type==='lamp'?undefined:o.kind.endsWith('_burnt')?'255,120,50':MAP.windowGlow&&PAL&&o.kind.endsWith(PAL)?MAP.windowGlow:undefined});
     }
   }
   for(const g of MAP.glows||[]) if(near(g.x,g.y)) out.push({x:g.x,y:g.y,r:g.r,c:g.c,seed:g.x});
-  for(const a of actors) if(near(a.x,a.y)){ const h=parseInt(SPILL[a.e.el][1].slice(1),16); out.push({x:a.x,y:a.y-WIZ_H*0.6,r:a.strong?150:110,c:[h>>16,(h>>8)&255,h&255].join(','),seed:a.e.x}); }
+  for(const n of npcs) if(!n.gone&&NPC_SPRITE[n.role]) out.push({x:n.x,y:n.y-WIZ_H*0.6,r:120,c:n.role==='wenna'?'255,140,60':'255,215,120',seed:n.x});
+  for(const a of actors) if(a.e.el&&near(a.x,a.y)){ const h=parseInt(SPILL[a.e.el][1].slice(1),16); out.push({x:a.x,y:a.y-WIZ_H*0.6,r:a.strong?150:110,c:[h>>16,(h>>8)&255,h&255].join(','),seed:a.e.x}); }
   return out;
 }
 function drawNight(t,cw,ch,D){
@@ -908,7 +1153,7 @@ function drawMini(){
   const k=4/T;
   m.strokeStyle='rgba(255,255,255,0.7)'; m.lineWidth=1;
   m.strokeRect(cam.x*k+0.5,cam.y*k+0.5,vw/zoom*k,vh/zoom*k);
-  for(const a of actors){ m.fillStyle=SPILL[a.e.el][1]; m.fillRect(a.x*k-1.5,a.y*k-1.5,3,3); }
+  for(const a of actors){ m.fillStyle=a.e.el?SPILL[a.e.el][1]:'#ff5050'; m.fillRect(a.x*k-1.5,a.y*k-1.5,3,3); }
   m.fillStyle='#fff'; m.beginPath(); m.arc(wiz.x*k,wiz.y*k,2.5,0,Math.PI*2); m.fill();
 }
 let clockT=0;
@@ -924,16 +1169,17 @@ function frame(now){
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 async function load(){
   if(built) return;
-  const names=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9'];
-  const [cj,wj,...sheets]=await Promise.all([
+  const names=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13'];
+  const [cj,wj,fj,...sheets]=await Promise.all([
     fetch('characters.json').then(r=>r.json()),
-    fetch('maps/world.json').then(r=>r.json()),
+    fetch('maps/world.json').then(r=>r.json()).then(w=>w),
+    fetch('fighters.json').then(r=>r.json()),
     ...names.map(n=>Promise.all([loadImage('sprites/ruins/'+n+'.png'), fetch('sprites/ruins/'+n+'.json').then(r=>r.json())])),
   ]);
   // one name space across every sheet: [x, y, w, h, atlas index]
   atlases=sheets.map(s=>s[0]); rects={};
   sheets.forEach(([,rj],i)=>{ for(const k in rj) rects[k]=[...rj[k],i]; });
-  chars=cj; world=wj;
+  chars=cj; world=wj; fighters=fj;
   wizKeys=Object.keys(chars).filter(k=>chars[k].sprite);
   built=true;
 }
@@ -946,6 +1192,7 @@ async function open(){
     const s=loadSave();
     found=new Set(s&&s.found||[]); spill=(s&&s.spill)||{}; cleared=(s&&s.cleared)||{}; renderSpill();
     if(s&&s.clock!=null) clock=s.clock; if(s&&s.lightMode) lightMode=s.lightMode; vit=(s&&s.vit)||{};
+    gold=(s&&s.gold)||0; potions=(s&&s.potions)||0; allies=(s&&s.allies)||[]; rescues=(s&&s.rescues)||[]; rooms=(s&&s.rooms)||{}; booksRead=(s&&s.booksRead)||[]; roomSpec=(s&&s.roomSpec)||null; renderSpill();
     if(!MAP){
       if(s&&s.map) await enterMap(s.map,[s.x,s.y],true);
       else await enterMap(START.map,START.spawn,true);
@@ -971,5 +1218,11 @@ window.addEventListener('DOMContentLoaded',()=>{
   const b=document.getElementById('btn-explore');
   if(b) b.addEventListener('click',open);
 });
-window.Explore={open, close, enterMap:(id,at)=>enterMap(id,at||'start')};
+window.Explore={open, close, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
+  _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y),
+  // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
+  _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;
+    for(let h=0;h<q.length;h++){ const c=q[h], cx=c%nc; for(const n of [c-nc,c+nc,cx>0?c-1:-1,cx<nc-1?c+1:-1]) if(n>=0&&n<nc*nr&&!seen[n]&&g[n]){ seen[n]=1; q.push(n); } }
+    let open=0, un=0; for(let i=0;i<g.length;i++) if(g[i]&&Math.floor(i/nc)*NAV<sp[1]){ open++; if(!seen[i]) un++; }
+    return {open, unreached:un}; }};
 })();

@@ -9,6 +9,7 @@ grass/cobble, grass/dirt, grass shore, stone quay).
 sprites/ruins/tileset4_source.png → ruins4 (house backs and sides, tavern, chapel, tower).
 sprites/ruins/tileset5_source.png → ruins5 (bridges seen from above).
 sprites/ruins/tileset6..9_source.png → ruins6..9 (each sector's own pieces, two sectors a sheet).
+sprites/ruins/tileset10..13_source.png → ruins10..13 (interiors: floors and walls, furniture, special rooms, loot).
 
 The source is a loose sheet on a flat dark background, not a grid, so each
 piece has a hand-checked rect (RECTS below). The background is removed by a
@@ -168,6 +169,44 @@ RECTS9 = {k: _pad(v) for k, v in {   # Gloamside, Cindergate
     'forge': (17, 483, 346, 426), 'anvil': (388, 728, 197, 181), 'slag': (592, 727, 200, 182),
     'bellows': (799, 668, 253, 239), 'lavaCrack': (1068, 681, 211, 224), 'swordRack': (1298, 661, 225, 246)}.items()}
 
+# ── sheets 10–13: interiors (floors and walls, furniture, special rooms, loot and lore) ──
+_F10 = [(133,44),(273,43),(466,42),(606,43),(797,42),(936,42),(1131,43),(1271,42),
+        (132,185),(272,186),(466,186),(606,186),(797,185),(936,185),(1131,186),(1271,186)]
+_FN = ['floorWood1','floorWood2','floorFlag1','floorFlag2','floorTerra1','floorTerra2','floorBroken1','floorBroken2',
+       'floorWood3','floorWood4','floorFlag3','floorFlag4','floorTerra3','floorTerra4','floorBroken3','floorBroken4']
+RECTS10 = {n: (x + 4, y + 4, 124, 124) for n, (x, y) in zip(_FN, _F10)}
+RECTS10.update({k: _pad(v) for k, v in {
+    'wallPlaster': (47, 383, 151, 215), 'wallPlasterWin': (226, 383, 153, 215), 'wallStone': (406, 383, 151, 215),
+    'wallStoneWin': (584, 383, 153, 215), 'wallPanel': (766, 383, 151, 215), 'wallCracked': (945, 383, 150, 215),
+    'wallHearth': (1125, 383, 358, 233), 'sidePlaster': (84, 679, 39, 136), 'sideStone': (183, 678, 44, 137),
+    'cornerPlasterL': (296, 679, 75, 136), 'cornerPlasterR': (424, 680, 73, 135), 'cornerStoneL': (589, 677, 81, 134),
+    'cornerStoneR': (720, 678, 82, 133), 'wallRubble': (942, 675, 489, 268), 'frontPlaster': (61, 875, 157, 93),
+    'frontStone': (278, 875, 161, 93), 'frontPlaster2': (491, 875, 127, 93), 'frontPlaster3': (729, 875, 127, 93)}.items()})
+RECTS11 = {k: _pad(v) for k, v in {
+    'bed': (27, 33, 246, 262), 'cot': (307, 96, 159, 187), 'diningTable': (494, 54, 306, 231), 'roundTable': (821, 93, 221, 188),
+    'wardrobe': (1077, 23, 186, 258), 'cupboard': (1300, 18, 206, 269), 'hearthPot': (26, 325, 352, 234),
+    'workbench': (417, 354, 272, 186), 'spinningWheel': (759, 347, 225, 201), 'cradle': (1036, 371, 220, 165),
+    'rockingChair': (1303, 337, 187, 205), 'rug': (26, 584, 405, 189), 'pantry': (469, 578, 285, 206),
+    'washtub': (786, 619, 186, 136), 'brokenTable': (1018, 579, 256, 199), 'brokenChair': (1324, 592, 153, 171),
+    'brokenBed': (242, 788, 425, 212), 'crockery': (763, 842, 181, 99)}.items()}
+RECTS12 = {k: _pad(v) for k, v in {
+    'bookcase': (47, 10, 163, 223), 'bookcase2': (253, 5, 311, 228), 'lectern': (598, 48, 161, 179), 'bookPile': (778, 81, 158, 150),
+    'bookLadder': (960, 10, 207, 219), 'readingDesk': (1205, 7, 265, 246), 'counter': (52, 244, 444, 181),
+    'jarShelf': (544, 240, 304, 186), 'crystalDisplay': (904, 247, 266, 170), 'strongbox': (1252, 274, 191, 140),
+    'safeHearth': (43, 432, 246, 185), 'bedrolls': (321, 483, 240, 138), 'safeTable': (592, 438, 343, 179),
+    'weaponRack': (983, 434, 250, 187), 'barricade': (1268, 425, 208, 197), 'alembic': (48, 630, 314, 198),
+    'cauldron': (394, 628, 148, 188), 'herbs': (570, 651, 199, 162), 'wineRack': (806, 630, 314, 185),
+    'altar': (1166, 646, 332, 344), 'stairs': (309, 830, 210, 169), 'trapdoor': (55, 862, 211, 119),
+    'pew': (600, 848, 210, 148), 'pew2': (837, 852, 227, 150)}.items()}
+RECTS13 = {k: _pad(v) for k, v in {
+    'chest': (38, 75, 202, 161), 'chestOpen': (264, 43, 203, 192), 'ironBox': (506, 102, 166, 128), 'coinsS': (710, 152, 122, 61),
+    'coinsM': (865, 117, 172, 106), 'coinsL': (1066, 67, 241, 161), 'coinSack': (1335, 64, 171, 167),
+    'q_fire': (52, 311, 137, 149), 'q_water': (243, 306, 133, 152), 'q_ice': (426, 308, 130, 151), 'q_lightning': (597, 307, 154, 151),
+    'q_earth': (786, 309, 143, 151), 'q_air': (974, 307, 131, 154), 'q_arcane': (1143, 305, 155, 156), 'q_dark': (1334, 294, 157, 167),
+    'bookOpen': (40, 548, 264, 162), 'bookClosed': (344, 542, 194, 171), 'scroll': (582, 554, 175, 142), 'scrollPinned': (818, 515, 167, 203),
+    'letter': (1054, 568, 180, 114), 'journal': (1293, 537, 174, 196), 'potionRed': (133, 775, 140, 188), 'potionBlue': (374, 779, 139, 184),
+    'potionGreen': (610, 780, 136, 183), 'pouch': (866, 789, 177, 174), 'key': (1141, 798, 218, 141)}.items()}
+
 SHEETS = {
     '1': dict(src='tileset_source.png', bg=(16, 18, 23), rects=RECTS, ground=GROUND_NAMES, out='ruins', key='1'),
     '2': dict(src='tileset2_source.png', bg=(9, 12, 18), rects=RECTS2, ground=GROUND2_NAMES, out='ruins2', key='2'),
@@ -177,6 +216,10 @@ SHEETS = {
     '7': dict(src='tileset7_source.png', bg=(14, 16, 22), rects=RECTS7, ground=set(), out='ruins7', key='7', clean=True),
     '8': dict(src='tileset8_source.png', bg=(15, 17, 22), rects=RECTS8, ground=set(), out='ruins8', key='8', clean=True),
     '9': dict(src='tileset9_source.png', bg=(11, 13, 21), rects=RECTS9, ground=set(), out='ruins9', key='9', clean=True),
+    '10': dict(src='tileset10_source.png', bg=(14, 16, 24), rects=RECTS10, ground=set(_FN), out='ruins10', key='10', clean=True),
+    '11': dict(src='tileset11_source.png', bg=(13, 15, 21), rects=RECTS11, ground=set(), out='ruins11', key='11', clean=True),
+    '12': dict(src='tileset12_source.png', bg=(12, 15, 22), rects=RECTS12, ground=set(), out='ruins12', key='12', clean=True),
+    '13': dict(src='tileset13_source.png', bg=(13, 15, 21), rects=RECTS13, ground=set(), out='ruins13', key='13', clean=True),
     '3': dict(src='tileset3_source.png', bg=(13, 16, 21), rects=RECTS3, ground=set(RECTS3), out='ruins3', key='3', square=TR),
 }
 

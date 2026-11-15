@@ -246,7 +246,7 @@ function fillSceneBands(){
 const ARENA_DEFAULT='library';   // 'library' (gothic library) or 'ruins' (moonlit ruined streets)
 const ARENA_DIM=0.22;   // dark wash over the painting so wizards and spell effects stand out
 const arenaImgs={};     // name -> {img, ready}, loaded on first use
-function arenaName(key){ const d=defOf(key); return (d&&d.arena)||ARENA_DEFAULT; }   // fighters (Echoes) carry an arena too
+function arenaName(key){ if(exploreFight) return 'ruins'; const d=defOf(key); return (d&&d.arena)||ARENA_DEFAULT; }   // Explore fights: the ruined streets   // fighters (Echoes) carry an arena too
 function arenaFor(key){
   const name=arenaName(key); if(!name) return null;
   let a=arenaImgs[name];
@@ -3799,8 +3799,8 @@ function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}
 // it Attacks, Guards or Grapples. Each has one passive `trait` (FIGHTER_TRAITS):
 //   shieldwall (Soldier): while he Guards, his shield also halves a spell aimed at him (a Guard already
 //     stops blows), so striking a guarding soldier is a waste: hit someone else, or Grapple him.
-//   ranged (Archer): her Attack is a bow shot: it slips past a Guard (no block, no counter), and she keeps
-//     her distance, so a Grapple at her fails.
+//   ranged (Archer): his Attack is a bow shot: it slips past a Guard (no block, no counter), and he keeps
+//     his distance, so a Grapple at him fails.
 const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'},
   echo:{name:'Echo',icon:'✦'}};
 // Echoes (Explore: Corvanthe's citizens remade in one element, fighters.json `echo`): their blow is a
@@ -3883,16 +3883,22 @@ function startEncounter(wizKey){
 // foes: [{key, level}] fighters (Echoes); hp: the wizard's HP coming in (wounds carry between fights);
 // onEnd(won, lowestHp) is called when the player leaves the result screen.
 let exploreFight=null;
-function startExploreBattle({wizKey, foes, onEnd, hp}){
+// allies: [{key, level, hp, name}] fighters on your side (rescued gleaners), seated while there's room
+// (4 seats in all); a foe with wizard:true is a roster wizard leading a rival party. text: {win, lose}.
+function startExploreBattle({wizKey, foes, onEnd, hp, allies, text}){
   survival=null; encounterPending=false;
   const seen={}, count=k=>foes.filter(f=>f.key===k).length;
-  const seats=[{key:wizKey,human:true,team:'A',hp}].concat(foes.map(f=>{
+  const fighterSeat=(f,team)=>{
     const cfg=fighterCfg(f.key,f.level||0);
+    if(f.name) cfg.name=f.name.toUpperCase();
     seen[f.key]=(seen[f.key]||0)+1;
-    if(count(f.key)>1) cfg.name+=' '+['I','II','III','IV'][seen[f.key]-1];
-    return {key:f.key,cfg,human:false,team:'B'};
-  }));
-  exploreFight={onEnd, foes, low:Infinity};
+    if(!f.name&&count(f.key)>1) cfg.name+=' '+['I','II','III','IV'][seen[f.key]-1];
+    return {key:f.key,cfg,human:false,team,hp:f.hp};
+  };
+  const foeSeats=foes.slice(0,3).map(f=>f.wizard?{key:f.key,human:false,team:'B'}:fighterSeat(f,'B'));
+  const room=Math.max(0,3-foeSeats.length), allyList=(allies||[]).slice(0,room);
+  const seats=[{key:wizKey,human:true,team:'A',hp}].concat(allyList.map(a=>fighterSeat(a,'A')),foeSeats);
+  exploreFight={onEnd, foes, low:Infinity, allies:allyList.length, text:text||{}};
   multiMode=true; trainingMode=false; twoPlayerMode=false;
   if(window.Profiles&&Profiles.setSeats) Profiles.setSeats({});
   startMultiBattle(seats);
@@ -6274,13 +6280,15 @@ function showMultiEnd(team){
   if(exploreFight){
     const won=team===seatTeam('p1');
     exploreFight.won=won;
+    exploreFight.allyHp=[...Array(exploreFight.allies)].map((_,i)=>{ const w='p'+(i+2); return gs[w]&&!gs[w].out?Math.max(0,gs[w].hp):0; });
     setTimeout(()=>{
       battleRunning=false;
       document.getElementById('ovico').textContent=won?'✦':'☠';
       const title=document.getElementById('ovtitle');
-      title.textContent=won?'The Echoes Scatter':gs.timeUp?'Driven Back':'Overcome';
+      const T=exploreFight.text||{};
+      title.textContent=won?(T.winTitle||'The Echoes Scatter'):gs.timeUp?'Driven Back':'Overcome';
       title.style.color=won?seatCfg('p1').col:'#ff6677';
-      document.getElementById('ovdesc').textContent=won?'They will gather again at the Wound, in time. For now, the street is yours.':
+      document.getElementById('ovdesc').textContent=won?(T.win||'They will gather again at the Wound, in time. For now, the street is yours.'):
         seatCfg('p1').name+' falls back, burnt and bruised, to the last safe place.';
       document.getElementById('btn-continue').textContent='Back to the Map';
       document.getElementById('overlay').classList.add('active');
@@ -10531,7 +10539,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     if(exploreFight){
       const f=exploreFight; exploreFight=null;
       battleRunning=false; gameEnded=false; endMultiMode(); showScreen('title-screen');
-      if(f.onEnd) f.onEnd(!!f.won, f.low);
+      if(f.onEnd) f.onEnd(!!f.won, f.low, f.allyHp||[]);
       return;
     }
     if(multiMode){ battleRunning=false; gameEnded=false; endMultiMode(); showScreen('title-screen'); return; }

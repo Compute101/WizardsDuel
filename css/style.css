@@ -1737,3 +1737,8 @@ body {
 #explore-screen .ex-rest { margin-top:10px; font-size:13px; padding:7px 14px; }
 #explore-screen .ex-rest:disabled { opacity:0.5; cursor:default; }
 #explore-screen #ex-night { min-width:68px; white-space:nowrap; }
+#explore-screen .ex-say-text { white-space:pre-line; }
+#explore-screen .ex-choice { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+#explore-screen .ex-choice .ex-btn { font-size:13px; padding:7px 12px; }
+#explore-screen .ex-choice .ex-btn:disabled { opacity:0.45; cursor:default; }
+#explore-screen .ex-spill { cursor:pointer; }

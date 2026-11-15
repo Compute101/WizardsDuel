@@ -169,3 +169,15 @@ The river of Hollowmere rises north of Corvanthe and runs through the city: in u
 in the Drowned Quarter, through the Wound, and out of Cindergate boiling, then south-west to
 Hollowmere. That is why Hollowmere's folk say it runs the other way at night. Only those two sectors
 (opposites, Water and Fire) carry it; the inner rings will carry it on to the Wound.
+
+## Interiors
+
+Houses can be entered; each room is generated from its seed and holds one encounter, rolled by how
+near the Wound it is: nothing, treasure, spill, Echoes, a rival gleaner crew (sometimes led by a
+wizard; they always fight), or wounded gleaners who won't fight (one may join you, one may ask you to
+fetch help from the safe house). Lore books, short stories, turn up anywhere. Fixed places: the
+Gleaners' Rest safe house (Cindergate), the Drowned Crow (Hollowmere), the Collegium Library, and the
+homes of named Echoes you can talk and trade with (Wenna the Baker in Cindergate, the Lamplighter in
+Gloamside). Built (see "Interiors" in `CLAUDE.md`); floors, walls, furniture and loot art in; the
+character art is still to come: gleaner adventurers, wounded gleaners, the safe-house keeper, a
+trader, and the named Echoes (sheets 5–10 of the interior brief).

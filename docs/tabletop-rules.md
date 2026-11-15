@@ -243,7 +243,7 @@ How many waves can your wizard last? Ten waves of soldiers and archers come at y
 
 - **Fighters** cast nothing. Every round each one picks an Action (Attack, Guard or Grapple) and aims it at you. Your spells, Attacks and Grapples are each aimed at one fighter (say which when you reveal). Your minions strike whoever you last aimed at.
   - **Soldier** (*Shield Wall*): while he Guards, his shield also halves a spell aimed at him (round down). A Guard already stops blows, so hit someone else, or Grapple him.
-  - **Archer** (*At Range*): her Attack is a bow shot. It slips past a Guard (no block, no counter), and she keeps her distance: a Grapple at her fails.
+  - **Archer** (*At Range*): his Attack is a bow shot. It slips past a Guard (no block, no counter), and he keeps his distance: a Grapple at him fails.
 - Fighters have no mana, wards, flicks or Meditate, and don't take sudden death. A fighter at 0 HP is out. A wave is cleared when every fighter in it is out.
 - **Catch your breath** between waves: heal **half** your HP (round up), gain **4 mana**, and remove all your curses. Everything else carries on: your HP, wards, skins, buffs and minions. Start the next wave at round 1.
 - **Recruits, veterans, elites and champions.** Waves 1–3 are recruits, who just swing: each Attacks every round. From wave 4 they're veterans and better, and read you: each Attacks unless you Attacked them last round (then they Guard) or you Guarded last round (then soldiers Grapple). A friend can play them instead.
