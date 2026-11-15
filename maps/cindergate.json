@@ -7,6 +7,9 @@
  "flow": "S",
  "fx": "embers",
  "haze": "70,30,10,0.16",
+ "palette": null,
+ "windowGlow": null,
+ "storm": 0,
  "ground": [
   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -546,6 +549,14 @@
   "start": [
    1792,
    2580
+  ],
+  "west": [
+   90,
+   2538
+  ],
+  "east": [
+   3494,
+   2538
   ]
  },
  "exits": [
@@ -559,6 +570,28 @@
    "to": {
     "map": "corvanthe_road",
     "spawn": "gate"
+   }
+  },
+  {
+   "x": 0,
+   "y": 2432,
+   "w": 48,
+   "h": 256,
+   "label": "Wallside to Gloamside",
+   "to": {
+    "map": "gloamside",
+    "spawn": "east"
+   }
+  },
+  {
+   "x": 3536,
+   "y": 2432,
+   "w": 48,
+   "h": 256,
+   "label": "Wallside to The Heights",
+   "to": {
+    "map": "heights",
+    "spawn": "west"
    }
   }
  ],

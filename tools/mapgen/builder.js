@@ -93,12 +93,14 @@ class MapBuilder {
        flow:   'S'                                         which way the river's current runs
        fx:     'embers'                                    drifting particles, day and night
        haze:   'r,g,b,a'                                   a colour wash over the whole map
+       palette: 'frost'   a sector atlas (sprites/ruins/sector_<palette>): ground tiles take _<palette>
+       windowGlow: 'r,g,b'  lit windows of palette houses glow this colour; storm: 1 = lightning flashes
        echoes: [{id, el, foes:[[fighter key, level],…], x, y, r}]   Echo groups: roam within r of
                (x, y); walking into one starts a battle (js/explore.js, game.js startExploreBattle) } */
   toJSON(){
     const round=v=>Math.round(v*10)/10;
     return {
-      id:this.id, name:this.name, cols:this.cols, rows:this.rows, seed:this.seed, flow:this.flow||'S', fx:this.fx||null, haze:this.haze||null,
+      id:this.id, name:this.name, cols:this.cols, rows:this.rows, seed:this.seed, flow:this.flow||'S', fx:this.fx||null, haze:this.haze||null, palette:this.palette||null, windowGlow:this.windowGlow||null, storm:this.storm||0,
       ground:this.k.map(r=>r.join('')),
       objects:this.objs.map(o=>{
         const e={}; if(o.lore) e.lore=o.lore; if(o.scale) e.scale=round(o.scale*1000)/1000; if(o.decal) e.decal=1;

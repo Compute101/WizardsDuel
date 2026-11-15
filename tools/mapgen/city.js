@@ -60,8 +60,10 @@ class City {
       if(b.x<4||b.x+b.w>m.W-4||b.y<4||b.y+b.h>m.H-4) return false;
       for(const c of m.boxes) if(P.overlap(b,c,6)) return false;
       for(const c of m.blocks) if(P.overlap(b,c)) return false;
-      for(let px=b.x;px<=b.x+b.w;px+=Math.min(T/2,b.w)) for(const py of [b.y,b.y+b.h])
-        if(this.isStreet(Math.floor(px/T),Math.floor(py/T))) return false;
+      for(let px=b.x;px<=b.x+b.w;px+=Math.min(T/2,b.w)) for(const py of [b.y,b.y+b.h]){
+        const tx=Math.floor(px/T), ty=Math.floor(py/T), k=m.at(tx,ty);
+        if(this.isStreet(tx,ty)||k==='O'||k==='W') return false;
+      }
     }
     const img={x0:x-s.w/2,x1:x+s.w/2,y0:base-s.h,y1:base};
     if(this.reserved.some(r=>img.x0<r.x1&&img.x1>r.x0&&img.y0<r.y1&&img.y1>r.y0)) return false;
