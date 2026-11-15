@@ -20,12 +20,22 @@
 // isn't trim (the staff, the belt and pouches, the boots): trim is gold that touches the robe outside them.
 // Two per sex and age are wanted (the art brief in docs/world-design.md, "Character creation");
 // until a slot has its own, the same sex's figures stand in (standIn in the creator).
+// The figures from the user's art are in sprites/hero/figures.json (cut, with their boxes, by
+// tools/cut_hero_figures.py; trimLo: their gold trim sits above wood and leather in hue, so they need
+// no noTrim boxes). The old witch (Wrenford's dons' base) is old woman figure 1, hand-boxed here.
 const BASES = [
-  {id:'m_old_1', sex:'m', age:'old', src:'sprites/folk/source/old_eldrin.png', hair:[0.28,0.18,0.64,0.48], face:[0.38,0.15,0.30],
-    skin:[[0.44,0.228,0.62,0.31],[0.09,0.34,0.20,0.42,0.88],[0.70,0.31,0.86,0.43,0.88]], noTrim:[[0,0,0.22,1],[0.30,0.42,0.62,0.62],[0,0.89,1,1]]},
   {id:'f_old_1', sex:'f', age:'old', src:'sprites/folk/source/old_witch.png',  hair:[0.18,0.18,0.60,0.42], face:[0.37,0.15,0.30],
     skin:[[0.44,0.20,0.62,0.345],[0.10,0.33,0.22,0.41,0.88],[0.70,0.30,0.87,0.42,0.88]], noTrim:[[0,0,0.22,1],[0.28,0.43,0.66,0.62],[0,0.9,1,1]]},
 ];
+let basesReady=null;
+function loadBases(){
+  return basesReady||(basesReady=fetch('sprites/hero/figures.json').then(r=>r.json()).then(list=>{
+    const order=['young','middle','old'];
+    list.sort((a,b)=>order.indexOf(a.age)-order.indexOf(b.age)||a.id.localeCompare(b.id));
+    for(const f of list) if(!BASES.some(b=>b.id===f.id)) BASES.push(f);
+    BASES.sort((a,b)=>order.indexOf(a.age)-order.indexOf(b.age)||(a.id==='f_old_1'?-1:b.id==='f_old_1'?1:a.id.localeCompare(b.id)));
+  }).catch(()=>{}));
+}
 const AGES = [['young','Young'],['middle','Middle-aged'],['old','Old']];
 // trim: hue°, saturation ×, value × (null keeps the gold)
 const TRIMS = [
@@ -111,7 +121,7 @@ function paint(img, base, look){
         continue;
       }
     }
-    if(trim&&h>=8&&h<=60&&s>0.35&&v>0.3){                         // trim: gold on the robe, not the staff, belt or boots
+    if(trim&&h>=(base.trimLo||8)&&h<=60&&s>0.35&&v>0.3){                         // trim: gold on the robe, not the staff, belt or boots
       const j=i/4, px=j%W, py=Math.floor(j/W);
       if(nearRobe[j]&&!inAny(noTrimB,px,py)){ out=hsv2rgb(trim[0],Math.min(1,s*trim[1]),Math.min(1,v*trim[2])); p[i]=out[0]*255; p[i+1]=out[1]*255; p[i+2]=out[2]*255; continue; }
     }
@@ -139,8 +149,9 @@ const defCache = {};
 // the character entry for the duel engine and Explore. A new wizard is plain: the wheel's spells
 // and the free Actions, no signatures yet, nothing barred yet (step 7's magic comes next).
 async function def(hero){
+  await loadBases();
   const k=JSON.stringify(hero); if(defCache[k]) return defCache[k];
-  const base=BASES.find(b=>b.id===hero.fig)||figuresFor(hero.sex,hero.age).list[0];
+  const base=BASES.find(b=>b.id===hero.fig)||figuresFor(hero.sex,hero.age).list[0];   // a figure that's gone (Eldrin's old sprite) gives way to the slot's first
   const img=await loadImg(base.src), cv=paint(img,base,hero);
   const el=ELEMS.find(e=>e.id===hero.elem)||ELEMS[0], robe=ROBES.find(r=>r.name===hero.robe)||ROBES[0];
   return defCache[k]={
@@ -153,13 +164,14 @@ async function def(hero){
 
 // ── the creator ──
 let box=null;
-function open(root, opts){
+async function open(root, opts){
   opts=opts||{};
+  await loadBases();
   return new Promise(resolve=>{
     const h0=opts.hero;
     const sex=h0?h0.sex:rnd(['m','f']);
     const st=h0?Object.assign({},h0):{sex, age:'young', fig:null, robe:'Violet', trim:'Gold', hair:'Brown', skin:'Natural', elem:rnd(ELEMS).id, name:rnd(NAMES[sex])};
-    if(!st.fig) st.fig=figuresFor(st.sex,st.age).list[0].id;
+    if(!st.fig||!BASES.some(b=>b.id===st.fig)) st.fig=figuresFor(st.sex,st.age).list[0].id;
     st.trim=st.trim||'Gold'; st.skin=st.skin||'Natural';   // heroes made before trim and skin
     if(box) box.remove();
     box=document.createElement('div'); box.className='hc'; root.appendChild(box);
@@ -219,5 +231,5 @@ function open(root, opts){
     render();
   });
 }
-window.ExploreHero={open, def, BASES, ROBES, TRIMS, HAIRS, SKINS, ELEMS, NAMES};
+window.ExploreHero={open, def, loadBases, BASES, ROBES, TRIMS, HAIRS, SKINS, ELEMS, NAMES};
 })();

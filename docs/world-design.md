@@ -229,7 +229,9 @@ your magic takes. The look is a recolour of a base figure, done in the browser. 
 the plain wheel and the Actions; their element's first spells, the barred opposite and levelling up are
 the next part of step 7.
 
-### Base figures wanted (the art brief)
+### Base figures (the art brief, delivered)
+
+All twelve are in: eleven from the brief below plus the old witch (`tools/cut_hero_figures.py`).
 
 Twelve figures, two for each sex and age, so the Figure choice has something to choose between:
 
