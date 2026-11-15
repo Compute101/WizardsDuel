@@ -357,6 +357,7 @@ body {
 .cstat-r { font-weight: 700; color: rgba(255,255,255,0.85); text-align: right; }
 
 /* ── WIZARD DETAIL OVERLAY ── */
+/* The portrait stays put; only the info below (or beside it, on wide screens) scrolls. */
 #wizard-detail {
   display: none;
   position: fixed; inset: 0;
@@ -365,20 +366,53 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 28px 20px 32px;
+  overflow: hidden;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 16px 0;
 }
 #wizard-detail.active { display: flex; }
 .wd-portrait {
   width: 100%; max-width: 360px;
-  height: 230px;
+  height: clamp(200px, 42vh, 420px);
+  flex-shrink: 0;
   object-fit: cover;
   object-position: center 20%;
   border-radius: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   border: 2px solid rgba(201,168,76,0.35);
   display: block;
+}
+.wd-info {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 4px calc(28px + env(safe-area-inset-bottom, 0px));
+  /* fade the text out under the portrait's edge as it scrolls */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 12px);
+}
+@media (orientation: landscape) and (min-width: 640px) {
+  #wizard-detail {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: 24px;
+    padding: 20px 24px 0;
+  }
+  .wd-portrait {
+    width: auto; max-width: 45vw;
+    height: auto; max-height: calc(100% - 20px);
+    aspect-ratio: 720 / 900;
+    object-fit: cover;
+    align-self: flex-start;
+    margin-bottom: 0;
+  }
+  .wd-info { flex: 0 1 420px; padding-top: 8px; -webkit-mask-image: none; mask-image: none; }
 }
 .wd-name {
   font-family: 'Cinzel Decorative', serif;
