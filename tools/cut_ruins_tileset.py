@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Cut the ruined-town tilesets into the packed atlases the Explore map uses:
-sprites/ruins/tileset_source.png  → ruins.png  + ruins.json  (town, houses)
+sprites/ruins/tileset_source.png  → ruins.png  + ruins.json  (town, houses,
+                                    plus recoloured houses: STYLES / RECOLOUR)
 sprites/ruins/tileset2_source.png → ruins2.png + ruins2.json (river, bridges,
 docks, cranes, carts).
 
@@ -97,9 +98,47 @@ RECTS2.update({
 })
 GROUND2_NAMES = {n for row in GROUND2 for n in row}
 SHEETS = {
-    '1': dict(src='tileset_source.png', bg=(16, 18, 23), rects=RECTS, ground=GROUND_NAMES, out='ruins'),
-    '2': dict(src='tileset2_source.png', bg=(9, 12, 18), rects=RECTS2, ground=GROUND2_NAMES, out='ruins2'),
+    '1': dict(src='tileset_source.png', bg=(16, 18, 23), rects=RECTS, ground=GROUND_NAMES, out='ruins', key='1'),
+    '2': dict(src='tileset2_source.png', bg=(9, 12, 18), rects=RECTS2, ground=GROUND2_NAMES, out='ruins2', key='2'),
 }
+
+
+# ── recolours: extra variants made from the cut pieces ──
+# A style recolours the roof tiles (hue in degrees, saturation and value
+# multipliers) and/or tints the grey stone (RGB multipliers, brightness).
+# Each listed piece gets a copy named '<piece>_<style>' in the same atlas.
+STYLES = {
+    'slate': dict(roof=(215, 0.35, 0.85)),                       # blue-grey slate
+    'moss':  dict(roof=(95, 0.55, 0.75)),                        # green-glazed tiles
+    'sand':  dict(stone=((1.16, 0.98, 0.72), 1.0)),               # terracotta on sandstone
+    'dusk':  dict(roof=(275, 0.55, 0.75), stone=((0.85, 0.85, 1.0), 0.72)),   # college purple, dark stone
+    'char':  dict(roof=(20, 0.12, 0.55), stone=((0.95, 0.95, 1.0), 0.85)),    # burnt, weathered
+}
+RECOLOUR = {'1': {h: list(STYLES) for h in ['house1', 'house2', 'house3', 'house4', 'house5', 'house6']}}
+
+
+def recolour(c, roof=None, stone=None):
+    """Roof = saturated red-orange in the top 62% (the brown timbers, doors and
+    lit windows are yellower and stay put); stone = the near-grey pixels."""
+    a = np.array(c).astype(float)
+    hsv = np.array(c.convert('RGB').convert('HSV')).astype(float) / 255
+    H, S, V = hsv[..., 0] * 360, hsv[..., 1], hsv[..., 2]
+    yy = np.arange(a.shape[0])[:, None] / a.shape[0]
+    out = a.copy()
+    if roof:
+        hue, sat, val = roof
+        m = (a[..., 3] > 0) & ((H < 23) | (H > 340)) & (S > 0.5) & (V > 0.3) & (yy < 0.62)
+        hs = hsv.copy()
+        hs[..., 0][m] = hue / 360
+        hs[..., 1][m] = np.clip(hs[..., 1][m] * sat, 0, 1)
+        hs[..., 2][m] = np.clip(hs[..., 2][m] * val, 0, 1)
+        rgb = np.array(Image.fromarray((hs * 255).astype(np.uint8), 'HSV').convert('RGB')).astype(float)
+        out[..., :3][m] = rgb[m]
+    if stone:
+        tint, k = stone
+        m = (a[..., 3] > 0) & (S < 0.2) & (V > 0.18)
+        out[..., :3][m] = np.clip(a[..., :3][m] * np.array(tint) * k, 0, 255)
+    return Image.fromarray(out.astype(np.uint8), 'RGBA')
 
 
 def transparent_sheet(path, bg):
@@ -127,9 +166,12 @@ def cut(sh):
         if k not in sh['ground']:
             c = c.crop(c.getbbox())
         crops[k] = c
+    for base, styles in RECOLOUR.get(sh['key'], {}).items():
+        for st in styles:
+            crops[base + '_' + st] = recolour(crops[base], **STYLES[st])
     if '--preview' in sys.argv:
         out = sys.argv[sys.argv.index('--preview') + 1]
-        W = 1800; img = Image.new('RGB', (W, 1400), (200, 60, 200)); d = ImageDraw.Draw(img)
+        W = 1800; img = Image.new('RGB', (W, 2600), (200, 60, 200)); d = ImageDraw.Draw(img)
         x = y = 10; rh = 0
         for k, c in crops.items():
             w, h = c.size

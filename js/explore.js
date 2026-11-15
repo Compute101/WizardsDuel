@@ -57,6 +57,14 @@ const LIGHTS = {
   lamppost:[[79,65,'lamp']], lamp2:[[23,45,'lamp']], lamp3:[[20,41,'lamp']], lamp4:[[21,41,'lamp']],
 };
 
+// house colour schemes by district (recolours made by tools/cut_ruins_tileset.py,
+// named '<house>_<style>'; '' is the original terracotta and grey stone)
+const HOUSE_STYLES = {
+  west: ['', '', 'slate', 'slate', 'sand', 'moss'],   // the standing town
+  east: ['char', 'char', 'dusk', ''],                 // burnt-out, and the old college's purple
+};
+const baseKind=k=>k.split('_')[0];
+
 // things to inspect (the first piece of that kind near you)
 const LORE = {
   statue:      ['The Hooded Watcher', 'Rain has worn its face away. Someone still leaves candle stubs at its feet, and the wax is fresh.'],
@@ -289,6 +297,12 @@ function buildObjects(){
     if(x>WORLD_W*0.62&&k==='flowerbush') k='rocks1';
     tryPlace(k,x,y,18);
   }
+  // paint the houses by district (the Lit House keeps its terracotta)
+  const rs=rng(5150);
+  for(const o of objs) if(/^house\d$/.test(o.kind) && o.lore!=='house1'){
+    const st=pick(rs,HOUSE_STYLES[o.x<RIVER.c0*T?'west':'east']);
+    if(st) o.kind+='_'+st;
+  }
   objs.forEach((o,i)=>{ o.id=i; if(!o.lore&&LORE[o.kind]&&!['house1','crane','gallows','wagon','sacks'].includes(o.kind)) o.lore=o.kind; });
   // fireflies drift over the grass
   fireflies=[]; for(let i=0;i<70;i++) fireflies.push({x:r()*WORLD_W,y:r()*WORLD_H,a:r()*6.28,s:8+r()*14,p:r()*6.28});
@@ -305,7 +319,7 @@ function buildMinimap(){
   for(const o of objs){
     const s=sizeOf(o.kind,o.scale);
     if(o.decal){ m.fillStyle=o.kind.endsWith('Broken')?'#5a4a3a':'#b7a58a'; for(const b of o.fb) m.fillRect(b.x*k,b.y*k,b.w*k,Math.max(2,b.h*k)); }
-    else if(o.kind.startsWith('house')){ m.fillStyle=o.kind==='house6'||o.kind==='house5'?'#7a4a32':'#b4582e'; m.fillRect((o.x-s.w/2)*k,(o.y-s.h*.6)*k,s.w*k,s.h*.6*k); }
+    else if(o.kind.startsWith('house')){ m.fillStyle={slate:'#7d8ea6',moss:'#5f8a4a',dusk:'#7a55a0',char:'#5e5650'}[o.kind.split('_')[1]]||'#b4582e'; m.fillRect((o.x-s.w/2)*k,(o.y-s.h*.6)*k,s.w*k,s.h*.6*k); }
     else if(o.kind==='tree'||o.kind==='bush'){ m.fillStyle='#1f3d16'; m.fillRect(o.x*k-1,o.y*k-2,2,2); }
     else if(o.kind==='deadtree'){ m.fillStyle='#4a3424'; m.fillRect(o.x*k-1,o.y*k-2,2,2); }
     else if(o.kind.match(/^(rubble|ruinWall|wallLow|lowwall|arch)/)){ m.fillStyle='#c9c3b6'; m.fillRect((o.x-s.w/2)*k,o.y*k-2,s.w*k,2); }
@@ -551,7 +565,7 @@ function draw(t){
 function lightsInView(cw,ch){
   const out=[];
   for(const o of objs){
-    const L=LIGHTS[o.kind]; if(!L) continue;
+    const L=LIGHTS[o.kind]||LIGHTS[baseKind(o.kind)]; if(!L) continue;
     const s=sizeOf(o.kind);   // (no bridge carries a light)
     for(const [lx,ly,type] of L){
       const x=o.x-s.w/2+lx*PS, y=o.y-s.h+ly*PS;
