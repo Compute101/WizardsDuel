@@ -4,6 +4,8 @@ sprites/ruins/tileset_source.png  → ruins.png  + ruins.json  (town, houses,
                                     plus recoloured houses: STYLES / RECOLOUR)
 sprites/ruins/tileset2_source.png → ruins2.png + ruins2.json (river, bridges,
 docks, cranes, carts).
+sprites/ruins/tileset3_source.png → ruins3.png + ruins3.json (ground transitions:
+grass/cobble, grass/dirt, grass shore, stone quay).
 
 The source is a loose sheet on a flat dark background, not a grid, so each
 piece has a hand-checked rect (RECTS below). The background is removed by a
@@ -97,9 +99,34 @@ RECTS2.update({
     'gallowsHook': (1219, 779, 151, 156), 'gallows': (1384, 797, 135, 136),
 })
 GROUND2_NAMES = {n for row in GROUND2 for n in row}
+
+# ── sheet 3: ground transitions (3x3 edge/corner blocks, each cell scaled to TR px) ──
+# Cells are named tr_<set>_<row><col> (row/col 0-2, 1 = centre); the four small
+# tiles beside each block are extra outer corners, tr_<set>_alt<row><col>.
+TR = 120
+def _cells(name, cols, rows, scols, srows):
+    out = {}
+    for r, (y0, y1) in enumerate(rows):
+        for c, (x0, x1) in enumerate(cols):
+            out['tr_%s_%d%d' % (name, r, c)] = (x0 + 1, y0 + 1, x1 - x0 - 2, y1 - y0 - 2)
+    for r, (y0, y1) in enumerate(srows):
+        for c, (x0, x1) in enumerate(scols):
+            out['tr_%s_alt%d%d' % (name, r * 2, c * 2)] = (x0 + 1, y0 + 1, x1 - x0 - 2, y1 - y0 - 2)
+    return out
+RECTS3 = {}
+RECTS3.update(_cells('cobble', [(54, 169), (174, 298), (303, 420)], [(88, 210), (216, 339), (345, 460)],
+                     [(469, 587), (610, 726)], [(113, 236), (277, 405)]))
+RECTS3.update(_cells('dirt', [(797, 912), (917, 1041), (1047, 1164)], [(87, 209), (216, 338), (344, 459)],
+                     [(1213, 1329), (1356, 1474)], [(112, 236), (277, 405)]))
+RECTS3.update(_cells('shore', [(55, 169), (176, 298), (304, 421)], [(555, 679), (686, 808), (815, 933)],
+                     [(470, 587), (613, 728)], [(581, 708), (746, 875)]))
+RECTS3.update(_cells('quay', [(798, 913), (920, 1042), (1049, 1166)], [(559, 680), (687, 809), (815, 931)],
+                     [(1216, 1332), (1360, 1477)], [(582, 709), (749, 877)]))
+
 SHEETS = {
     '1': dict(src='tileset_source.png', bg=(16, 18, 23), rects=RECTS, ground=GROUND_NAMES, out='ruins', key='1'),
     '2': dict(src='tileset2_source.png', bg=(9, 12, 18), rects=RECTS2, ground=GROUND2_NAMES, out='ruins2', key='2'),
+    '3': dict(src='tileset3_source.png', bg=(13, 16, 21), rects=RECTS3, ground=set(RECTS3), out='ruins3', key='3', square=TR),
 }
 
 
@@ -165,6 +192,8 @@ def cut(sh):
         c = sheet.crop((x, y, x + w, y + h))
         if k not in sh['ground']:
             c = c.crop(c.getbbox())
+        elif sh.get('square'):             # transition cells: every cell the same square size
+            c = c.convert('RGB').resize((sh['square'], sh['square']), Image.LANCZOS).convert('RGBA')
         crops[k] = c
     for base, styles in RECOLOUR.get(sh['key'], {}).items():
         for st in styles:

@@ -86,6 +86,7 @@ const LORE = {
   bridgeWood:  ['Mill Bridge', 'The planks flex under you. Far below, something pale turns over in the water and is gone.'],
   bridgeStone: ['Old Stone Bridge', 'Older than the town. The mason\'s marks on the parapet are Arcana glyphs: θ Φ ☽ ∞, the Ice word.'],
   bridgeWoodBroken:['Broken Footbridge', 'Snapped in the middle. The far half still creaks as though someone were crossing it.'],
+  pond:        ['Mill Pond', 'Fat carp circle in the shallows, unafraid. Someone still comes down here to feed them.'],
   river:       ['The Hollow', 'Black water, slow and cold. It runs north to south, and the townsfolk said it ran the other way at night.'],
 };
 
@@ -120,24 +121,69 @@ function buildGround(){
   for(let y=28;y<ROWS;y++) for(let x=21;x<=22;x++) k[y][x]='M';
   // a few worn patches
   for(let i=0;i<14;i++){ const x=Math.floor(r()*COLS), y=Math.floor(r()*ROWS); if(k[y][x]==='G') k[y][x]='d'; }
+  fill(13,22,17,24,'O');                            // the mill pond
   groundKind=k;
-  const isG=(x,y)=>k[y]&&(k[y][x]==='G'||k[y][x]==='d');
   ground=k.map((row,y)=>row.map((c,x)=>{
-    const edge=isG(x-1,y)||isG(x+1,y)||isG(x,y-1)||isG(x,y+1);
     switch(c){
       case 'G': return r()<.8?'grass':'grass2';
       case 'd': return 'dirtGrass';
-      case 'D': return r()<.8?'dirt':'dirtGrass';
+      case 'D': return 'tr_dirt_11';
       case 'P': return r()<.7?'flagCracked':'flagMoss';
-      case 'W': return null;                         // drawn by drawRiver
+      case 'W': return 'tr_quay_11';
+      case 'O': return 'tr_shore_11';
       case 'K': { const q=r(); return q<.06?'planksBroken':q<.09?'planksHole':y%2?'planksH':'planksV'; }
-      case 'R': if(edge&&r()<.25) return 'grassCobble';
-                if(r()<.03) return r()<.5?'grate1':'grate2';     // drains
-                return r()<.18?pick(r,['cobbleMoss1','cobbleMoss4','cobbleMoss5']):pick(r,['cobble','cobble2','cobble3','cobble4','cobble5','cobbleRound','cobbleB1','cobbleB2','cobbleB5']);
-      case 'M': if(edge&&r()<.4) return 'grassCobble';
-                return pick(r,['cobbleMoss1','cobbleMoss2','cobbleMoss3','cobbleMoss4','cobbleMoss5','cobbleMoss6','cobbleMoss7','cobble3','cobbleB3','cobbleB4','cobbleB6']);
+      // roads use the transition set's cobble throughout, so edges and junctions match
+      case 'R': return r()<.03?(r()<.5?'grate1':'grate2'):'tr_cobble_11';    // the odd drain
+      case 'M': return 'tr_cobble_11';
     }
   }));
+  // edges: where a road, lane, river or pond meets something else, build the tile
+  // from quarters of a 3x3 transition set (see edgeTile)
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+    const set=EDGE_SET[k[y][x]]; if(!set) continue;
+    const t=edgeTile(set,x,y,r); if(t) ground[y][x]=t;
+  }
+}
+
+// ── ground transitions ──
+// Each set is a 3x3 block (tr_<set>_<row><col>, 1 = centre) from tileset3. A tile's
+// four quarters are chosen separately: the top-left quarter looks north and west, and
+// takes the top-left quarter of the edge, corner or centre cell that matches, and so on.
+// That covers one-tile lanes, ends and junctions too, which a plain 3x3 can't.
+const EDGE_SET = {
+  R:{set:'cobble', out:c=>c==='G'||c==='d'}, M:{set:'cobble', out:c=>c==='G'||c==='d'},
+  D:{set:'dirt',   out:c=>c==='G'||c==='d'},
+  W:{set:'quay',   out:c=>c!=='W'},
+  O:{set:'shore',  out:c=>c!=='O'},
+};
+function edgeTile(E,x,y,r){
+  const k=groundKind, at=(xx,yy)=>(k[yy]||[])[xx];
+  const out=(xx,yy)=>{ const c=at(xx,yy); return c!==undefined && E.out(c); };   // off the map counts as more of the same
+  const n=out(x,y-1), s=out(x,y+1), w=out(x-1,y), e=out(x+1,y);
+  if(!n&&!s&&!w&&!e) return null;                     // keep the plain tile (and its variety)
+  const cell=(v,h,dy,dx)=>(v?(dy?2:0):1)+''+(h?(dx?2:0):1);
+  const cells=[cell(n,w,0,0),cell(n,e,0,1),cell(s,w,1,0),cell(s,e,1,1)];
+  if(cells.every(c=>c===cells[0])){
+    const c=cells[0];
+    if(c[0]!=='1'&&c[1]!=='1'&&r()<.5) return 'tr_'+E.set+'_alt'+c;   // a second drawing of that corner
+    return 'tr_'+E.set+'_'+c;
+  }
+  return {set:E.set, cells};
+}
+const quarterCache=new Map();
+function quarterTile(g){
+  const key=g.set+g.cells.join('');
+  let c=quarterCache.get(key);
+  if(!c){
+    c=document.createElement('canvas'); c.width=c.height=120;
+    const m=c.getContext('2d');
+    g.cells.forEach((cc,i)=>{
+      const q=rects['tr_'+g.set+'_'+cc], dx=i%2, dy=i>>1, hw=q[2]/2, hh=q[3]/2;
+      m.drawImage(atlases[q[4]],q[0]+dx*hw,q[1]+dy*hh,hw,hh,dx*60,dy*60,60,60);
+    });
+    quarterCache.set(key,c);
+  }
+  return c;
 }
 
 function sizeOf(kind,sc=PS){ const q=rects[kind]; return {w:q[2]*sc, h:q[3]*sc}; }
@@ -154,7 +200,13 @@ function tileAt(px,py){ const x=Math.floor(px/T), y=Math.floor(py/T); return (gr
 const inside=(px,py,b)=>px>=b.x&&px<=b.x+b.w&&py>=b.y&&py<=b.y+b.h;
 // water you can't stand in: the river, less whatever a bridge spans
 function wet(px,py){
-  if(tileAt(px,py)!=='W') return false;
+  const t=tileAt(px,py);
+  if(t==='O'){                     // the pond: its shore tiles' grassy rim is dry land
+    const tx=Math.floor(px/T), ty=Math.floor(py/T), fx=px-tx*T, fy=py-ty*T, R=T*0.36;
+    const dry=(xx,yy)=>(groundKind[yy]||[])[xx]!=='O';
+    return !((dry(tx-1,ty)&&fx<R)||(dry(tx+1,ty)&&fx>T-R)||(dry(tx,ty-1)&&fy<R)||(dry(tx,ty+1)&&fy>T-R));
+  }
+  if(t!=='W') return false;
   for(const b of bridges) for(const w of b.fb) if(inside(px,py,w)) return false;
   return true;
 }
@@ -262,7 +314,8 @@ function buildObjects(){
   const RX0=RIVER.c0*T, RX1=(RIVER.c1+1)*T;
   for(const [k,x,y] of [['bannerP',RX0-26,16*T-4],['bannerTorn',RX1+28,16*T-4],['lamp2',RX0-30,18*T+20],['lamp4',RX1+12,18*T+20],
     ['lamp3',RX0-24,8*T+24],['lamp3',RX0-24,24*T],['lamp2',RX1+14,31*T+30],['postTall',RX0-20,26*T+6],['postTall',RX1+20,26*T+6]]) place(k,x,y);
-  place('postRing',RX0-14,12*T,{lore:'river'});     // a mooring ring on the west bank
+  place('postRing',RX0-14,12*T,{lore:'river'});
+  place('stone',18*T+30,22*T+20,{lore:'pond'});      // a sitting stone by the mill pond     // a mooring ring on the west bank
   // the docks: a crane over the water, cargo nobody came back for
   const DX=RX1, DY0=9*T, DY1=13*T;
   place('crane',DX+70,DY0+90,{lore:'crane'});
@@ -313,7 +366,7 @@ function buildObjects(){
 function buildMinimap(){
   const S=4, c=document.createElement('canvas'); c.width=COLS*S; c.height=ROWS*S;
   const m=c.getContext('2d');
-  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30'};
+  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a'};
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ m.fillStyle=col[groundKind[y][x]]; m.fillRect(x*S,y*S,S,S); }
   const k=S/T;
   for(const o of objs){
@@ -483,29 +536,21 @@ function drawWizard(t){
   ctx.drawImage(wizImg,0,0,sw,sh,-w/2,-h,w,h);
   ctx.restore();
 }
-// the Hollow: dark water flowing south, stone-walled banks cut from the canal piece
+// the Hollow: the quay tiles draw the water and its stone banks; this adds the
+// current, light streaks drifting south inside the quays
+const QUAY = 0.4;               // the quay stone's share of an edge tile
 function drawRiver(t,y0,y1){
-  const X0=RIVER.c0*T, X1=(RIVER.c1+1)*T, W=X1-X0;
-  ctx.fillStyle='#174a72'; ctx.fillRect(X0,y0*T,W,(y1-y0+1)*T);
-  // current: light streaks drifting downstream, each lane at its own pace
+  const X0=RIVER.c0*T+QUAY*T, X1=(RIVER.c1+1)*T-QUAY*T, W=X1-X0;
   const flow=t*0.025;
-  for(let lane=0;lane<12;lane++){
-    const lx=X0+14+lane*(W-28)/11, sp=0.7+((lane*37)%10)/14;
+  for(let lane=0;lane<9;lane++){
+    const lx=X0+6+lane*(W-12)/8, sp=0.7+((lane*37)%10)/14;
     for(let k=-1;k<(y1-y0+2)*T/90;k++){
       const y=Math.floor(y0*T/90)*90+k*90+((lane*53+flow*sp)%90);
       if(y<y0*T-20||y>(y1+1)*T) continue;
-      const len=8+((lane*13+k*7)%3)*5, a=0.18+((lane+k)%3)*0.08;
+      const len=8+((lane*13+k*7)%3)*5, a=0.14+((lane+k)%3)*0.07;
       ctx.fillStyle=`rgba(120,190,225,${a})`; ctx.fillRect(Math.round(lx),Math.round(y),2,len);
-      if((lane+k)%5===0){ ctx.fillStyle='rgba(190,235,240,0.55)'; ctx.fillRect(Math.round(lx)+3,Math.round(y)+len/2,2,3); }
+      if((lane+k)%5===0){ ctx.fillStyle='rgba(190,235,240,0.5)'; ctx.fillRect(Math.round(lx)+3,Math.round(y)+len/2,2,3); }
     }
-  }
-  // a darker shadow under each bank
-  ctx.fillStyle='rgba(5,20,40,0.45)'; ctx.fillRect(X0,y0*T,16,(y1-y0+1)*T); ctx.fillRect(X1-16,y0*T,16,(y1-y0+1)*T);
-  // banks: the stone walls of the canal piece, down both sides
-  const q=rects.canal, sc=T/q[3], lw=25, rw=q[2]-59;
-  for(let y=y0;y<=y1;y++){
-    ctx.drawImage(atlases[q[4]],q[0],q[1],lw,q[3],X0,y*T,lw*sc,T+0.6);
-    ctx.drawImage(atlases[q[4]],q[0]+59,q[1],rw,q[3],X1-rw*sc,y*T,rw*sc,T+0.6);
   }
 }
 function draw(t){
@@ -517,7 +562,8 @@ function draw(t){
   const x0=Math.max(0,Math.floor(cam.x/T)), x1=Math.min(COLS-1,Math.floor((cam.x+cw)/T));
   const y0=Math.max(0,Math.floor(cam.y/T)), y1=Math.min(ROWS-1,Math.floor((cam.y+ch)/T));
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
-    const g=ground[y][x]; if(!g) continue;
+    const g=ground[y][x];
+    if(typeof g==='object'){ ctx.drawImage(quarterTile(g),x*T,y*T,T+0.6,T+0.6); continue; }
     const q=rects[g];
     ctx.drawImage(atlases[q[4]],q[0]+1,q[1]+1,q[2]-2,q[3]-2,x*T,y*T,T+0.6,T+0.6);
   }
@@ -629,14 +675,15 @@ function frame(now){
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 async function load(){
   if(built) return;
-  const [a1,r1,a2,r2,cj]=await Promise.all([
+  const [a1,r1,a2,r2,a3,r3,cj]=await Promise.all([
     loadImage('sprites/ruins/ruins.png'),  fetch('sprites/ruins/ruins.json').then(r=>r.json()),
     loadImage('sprites/ruins/ruins2.png'), fetch('sprites/ruins/ruins2.json').then(r=>r.json()),
+    loadImage('sprites/ruins/ruins3.png'), fetch('sprites/ruins/ruins3.json').then(r=>r.json()),
     fetch('characters.json').then(r=>r.json()),
   ]);
   // one name space across both sheets: [x, y, w, h, atlas index]
-  atlases=[a1,a2]; rects={};
-  for(const [i,rj] of [[0,r1],[1,r2]]) for(const k in rj) rects[k]=[...rj[k],i];
+  atlases=[a1,a2,a3]; rects={};
+  for(const [i,rj] of [[0,r1],[1,r2],[2,r3]]) for(const k in rj) rects[k]=[...rj[k],i];
   chars=cj;
   wizKeys=Object.keys(chars).filter(k=>chars[k].sprite);
   buildGround(); buildObjects(); buildMinimap();
