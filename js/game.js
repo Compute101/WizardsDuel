@@ -2024,7 +2024,7 @@ function battleLoop(ts){
 
 // ── HUD ────────────────────────────────────────────────────
 function refreshHUD(){
-  if(PLAYERS.length>2){ refreshMultiHUD(); refreshActionBar(); return; }
+  if(PLAYERS.length>2||multiMode){ refreshMultiHUD(); refreshActionBar(); return; }
   document.getElementById('p1hpf').style.height=Math.max(0,gs.p1.hp/gs.p1.maxHp*100)+'%';
   document.getElementById('p2hpf').style.height=Math.max(0,gs.p2.hp/gs.p2.maxHp*100)+'%';
   document.getElementById('sh1').style.opacity=hasWard(gs.p1)?'1':'0.18';
