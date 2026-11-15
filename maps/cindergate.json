@@ -162,6 +162,8 @@
   ["sacks",2070,2650],
   ["lamp4",1900,2580,{"lore":"lamppost"}],
   ["barrel2",2150,2640],
+  ["forge",992,2556,{"lore":"forge"}],
+  ["forge",2464,1724,{"lore":"forge"}],
   ["rubble9",247.6,310],
   ["barrelsBroken",330.9,310],
   ["rocks1",413.1,310],
@@ -195,13 +197,12 @@
   ["house1_burnt",1092.2,1532],
   ["house2_burnt",3395.9,1532],
   ["house3_burnt",1156.5,1724],
-  ["house5_burnt",2420.4,1724],
-  ["house4_burnt",3121.7,1724],
-  ["house2_burnt",67.9,1788],
-  ["house3_burnt",215.6,1788],
-  ["house2_burnt",1305.2,1788],
-  ["house5_burnt",1458.2,1788],
-  ["house2_burnt",2563.9,1788],
+  ["house2_burnt",3118.6,1724],
+  ["house4_burnt",71,1788],
+  ["house2_burnt",306.4,1788],
+  ["house5_burnt",1311.1,1788],
+  ["house3_burnt",1464.7,1788],
+  ["house1_burnt",1625.4,1852],
   ["house1_burnt",1284.2,2044],
   ["house1_burnt",3268.2,2108],
   ["house4_burnt",1415,2172],
@@ -219,16 +220,15 @@
   ["house1_burnt",388.2,2556],
   ["house4_burnt",647,2556],
   ["house2_burnt",797.2,2556],
-  ["house1_burnt",944.6,2556],
   ["house2_burnt",2691.9,2556],
-  ["backSlateRuin_burnt",70.7,532],
-  ["ruinWall1",222.8,526],
-  ["backSlate_burnt",410.8,532],
-  ["backPurpleRuin_burnt",1990.1,532],
-  ["rubble9",2120.8,526],
-  ["backPurpleRuin_burnt",2226.3,532],
-  ["backPurpleRuin_burnt",2377.8,532],
-  ["barrelsBroken",2529.9,526],
+  ["backPurpleRuin_burnt",70.1,532],
+  ["backSlate_burnt",219.3,532],
+  ["backPurpleRuin_burnt",368.6,532],
+  ["backSlateRuin_burnt",1990.7,532],
+  ["backPurpleRuin_burnt",2142.8,532],
+  ["backPurpleRuin_burnt",2294.2,532],
+  ["barrelsBroken",2424.9,526],
+  ["backSlateRuin_burnt",2531.1,532],
   ["rubble3",710.7,590],
   ["backSlateRuin_burnt",838.2,596],
   ["backSlateRuin_burnt",1075.7,596],
@@ -292,7 +292,6 @@
   ["sidePurpleRuin_burnt",1534.5,1146],
   ["sideSlate_burnt",1544.7,1402],
   ["sideSlate_burnt",1608.7,1466],
-  ["sideSlate_burnt",1608.7,1850],
   ["sidePurple_burnt",1656.3,2362],
   ["sideTerra_burnt",1670.5,2426],
   ["sidePurpleRuin_burnt",1729.6,698],
@@ -306,29 +305,24 @@
   ["sideSlate_burnt",2440.7,1274],
   ["sideSlate_burnt",2440.7,1402],
   ["sideSlate_burnt",2440.7,2298],
-  ["sideTerra_burnt",2502.5,1466],
   ["sideTerra_burnt",2502.5,2106],
-  ["sidePurple_burnt",2567.8,698],
-  ["sideSlate_burnt",2568.7,826],
-  ["sideTerra_burnt",2566.5,1658],
+  ["sidePurple_burnt",2567.8,634],
   ["sidePurpleRuin_burnt",2561.6,1978],
-  ["sidePurpleRuin_burnt",2625.6,570],
-  ["sideSlate_burnt",2679.3,1210],
-  ["sidePurple_burnt",2680.3,2426],
-  ["sidePurple_burnt",3128.3,1210],
-  ["sidePurple_burnt",3143.8,1274],
-  ["sidePurpleRuin_burnt",3137.6,1914],
-  ["sidePurple_burnt",3143.8,2362],
+  ["sidePurple_burnt",2680.3,1210],
+  ["sideSlate_burnt",2679.3,2426],
+  ["sidePurpleRuin_burnt",3134.5,1210],
+  ["sideSlate_burnt",3144.7,1274],
+  ["sidePurple_burnt",3143.8,2234],
+  ["sideTerra_burnt",3142.5,2426],
   ["sidePurpleRuin_burnt",3262.5,698],
-  ["sidePurple_burnt",3207.8,1466],
-  ["sideTerra_burnt",3206.5,1594],
-  ["sideSlate_burnt",3383.3,1850],
+  ["sideSlate_burnt",3208.7,1466],
+  ["sidePurpleRuin_burnt",3201.6,1594],
+  ["sidePurple_burnt",3384.3,1850],
+  ["barrel",3169.7,2308],
   ["rubble9",826.3,733.4],
   ["crate2",236.6,2367.7],
   ["rubble9",2401.2,1121.6],
   ["rubble5",3519.2,787.5],
-  ["flowerbush",3162.6,2252.4],
-  ["barrel",1084.1,2294.7],
   ["logs",1209.4,1423.1],
   ["barrel3",2169.2,1177.4],
   ["planks1",438.1,1383.1],
@@ -340,12 +334,10 @@
   ["rocks1",1283.3,952.3],
   ["planks1",2276.1,1267.1],
   ["lowwall",273.5,2264.5],
-  ["brokenFence",2405.7,1477.4],
   ["logs",922.1,1501.3],
   ["planks1",1959.5,1213.1],
   ["sacks",2276.2,1452.2],
   ["flowerbush",740.5,2059.7],
-  ["lowwall",961.7,2302],
   ["lowwall",2208.8,2043.3],
   ["fence",323.3,2444.4],
   ["rubble5",2722.4,707],
@@ -363,17 +355,18 @@
   ["fence",3075.7,2043.6],
   ["sacks",1071.3,756.4],
   ["rubble9",189.4,622.1],
+  ["logs",1339.8,2080.3],
   ["planks1",2745.2,1005.5],
   ["crate3",2114.6,1210.4],
   ["logs",130.7,673.2],
   ["barrel3",853.5,688],
-  ["fence",1011,2437.3],
   ["brokenFence",2785.4,975.9],
   ["rubble5",325.2,584.6],
   ["crate3",2313.1,1223.8],
   ["sacks",2114.9,1376.7],
   ["brokenFence",833.2,1269.7],
   ["barrel3",2269.7,1238.9],
+  ["barrel3",2495.5,1440.8],
   ["crate2",416.8,2283.7],
   ["rocks1",1117.5,816.3],
   ["barrel3",1457.5,1387.3],
@@ -381,6 +374,7 @@
   ["barrel",338.7,1690.6],
   ["logs",1523.7,1625.4],
   ["blocks1",1317,325.9],
+  ["rubble5",2654.2,542.4],
   ["barrel",820.6,2214.5],
   ["crate2",1125.8,2402.8],
   ["barrel3",2282.5,2010.9],
@@ -430,6 +424,7 @@
   ["lowwall",3063.8,2006],
   ["logs",2314.5,1365.2],
   ["rubble6",2198.3,1339.1],
+  ["crate2",1228.8,1552.9],
   ["barrel",3401.2,2308.6],
   ["ruinWall1",1283.2,381.2],
   ["fence",924.9,2246],
@@ -444,14 +439,109 @@
   ["lowwall",76.5,2199.3],
   ["rubble9",2199.3,1145.1],
   ["logs",2313.9,2086.8],
+  ["sacks",2568.5,1754],
   ["planks1",1680.5,1694.1],
   ["crate2",2780.8,2086.1],
   ["lowwall",2333.9,2156.8],
-  ["barrel",1063.4,2498.2],
   ["crate3",3450.7,655.1],
-  ["crate2",1041.3,2405]
+  ["anvil",204.6,2318.4],
+  ["anvil",2277.7,1406.5],
+  ["anvil",1604.5,1681.7],
+  ["anvil",2100.5,1330.5],
+  ["slag",2273.2,585.9],
+  ["slag",3360.2,2140.6],
+  ["slag",286,620.4],
+  ["slag",3409.9,716.7],
+  ["slag",1925,1268.3],
+  ["bellows",1560.6,2108.5],
+  ["bellows",857,793],
+  ["swordRack",259.5,1233],
+  ["swordRack",2369.3,1552.8],
+  ["swordRack",1277.7,882.9],
+  ["lavaCrack",550.5,1901.7,{"decal":1}],
+  ["lavaCrack",1217.1,1193.4,{"decal":1}],
+  ["lavaCrack",425.6,1043.4,{"decal":1}],
+  ["lavaCrack",2712.1,480,{"decal":1}],
+  ["lavaCrack",1798.3,1009.4,{"decal":1}],
+  ["lavaCrack",1839,482.5,{"decal":1}]
  ],
  "lore": {
+  "forge": [
+   "A Guild Forge",
+   "The furnace has not gone out since the Unweaving, and nobody feeds it. Something in there is still working the bellows."
+  ],
+  "townhouse": [
+   "A Merchant Prince's House",
+   "The finest house on the hill. The windows are lit, the table is laid for twelve, and the wind has blown every chair to face the Wound."
+  ],
+  "gazebo": [
+   "The Summer Gazebo",
+   "Half its dome blew away. The musicians' stands are still set out, the sheet music pinned down by stones."
+  ],
+  "weathervane": [
+   "The Great Weathervane",
+   "The golden cockerel turns and turns. It points at the Wound every time it passes."
+  ],
+  "floatRoom": [
+   "A Drifting Parlour",
+   "Somebody's drawing room, hanging in the air with the chandelier still lit. The carpet is still on the floor; the floor is not on anything."
+  ],
+  "bellTower": [
+   "The Great Belfry",
+   "Its bell is the only one in Spirewatch still hanging. It rings by itself when lightning strikes, so it never stops."
+  ],
+  "watchTower": [
+   "A Storm-Watch Tower",
+   "The watchmen lit their beacon to warn the city. The smoke is still rising from it, the same smoke, years later."
+  ],
+  "fallenBell": [
+   "The Fallen Bell",
+   "The great bell of Bell Square, cracked through. Lay your hand on it and you can feel it ringing."
+  ],
+  "hall": [
+   "A Lecture Hall",
+   "The students were taking their examinations. The papers are still on the desks, every one answered in the same handwriting."
+  ],
+  "portal": [
+   "The Unwritten Door",
+   "An archway onto purple light. The far side of it is the Collegium too, a few seconds earlier."
+  ],
+  "orrery": [
+   "The Great Orrery",
+   "The college's model of the heavens, bent and frozen mid-turn. One of its brass planets is not in our sky."
+  ],
+  "sunkHouse": [
+   "A Sunken House",
+   "Flooded to the sills, and the lamps still lit inside. Shapes move past the windows, under the water."
+  ],
+  "tiltedHouse": [
+   "A Heaved House",
+   "The ground stood up under it and tipped it on its side. Its hearth is still burning, at an angle."
+  ],
+  "quarryCrane": [
+   "The Quarry Crane",
+   "A stone block hangs from it, turning slowly. It was being lowered when the Unweaving came, and it has not finished."
+  ],
+  "temple": [
+   "The Temple of the Veiled Mother",
+   "The great temple of Gloamside. The rose window is lit from within, by no light anybody can find."
+  ],
+  "mausoleum": [
+   "A Family Mausoleum",
+   "The iron doors are locked from the inside."
+  ],
+  "catacomb": [
+   "The Catacomb Stair",
+   "Down into the dark under Gloamside. Torches are lit all the way down, as far as you can see, and further."
+  ],
+  "frostStall": [
+   "A Market Stall",
+   "Frozen mid-sale: a hand of ice still reaching for a coin on the counter."
+  ],
+  "frozenFountain": [
+   "The Frozen Fountain",
+   "The fountain froze in the moment the Unweaving struck. You can see the shape of the coin someone was throwing in, caught in the spray."
+  ],
   "gate": [
    "The Wardgate",
    "Cut open from the inside, not the outside. The gleaners only widened the hole."
@@ -656,86 +746,80 @@
   },
   {
    "x": 80,
-   "y": 252.36408936977386,
-   "r": 214.80936190113425,
+   "y": 195.93296392261982,
+   "r": 263.2914238423109,
    "c": "255,110,30"
   },
   {
-   "x": 294.881482552737,
-   "y": 252.4488267749548,
-   "r": 269.93689047172666,
+   "x": 355.3971616271883,
+   "y": 205.60510624945164,
+   "r": 227.29828346520662,
    "c": "255,110,30"
   },
   {
-   "x": 513.4650468826294,
-   "y": 231.37698057293892,
-   "r": 252.79544500634074,
+   "x": 568.0000759940594,
+   "y": 239.4916158914566,
+   "r": 266.4695315621793,
    "c": "255,110,30"
   },
   {
-   "x": 810.082114841789,
-   "y": 210.86314749717712,
-   "r": 209.93388958275318,
+   "x": 868.4712818358094,
+   "y": 239.21085833013058,
+   "r": 259.79671876877546,
    "c": "255,110,30"
   },
   {
-   "x": 1049.4398312829435,
-   "y": 205.3564536422491,
-   "r": 223.62863326445222,
+   "x": 1123.6937731411308,
+   "y": 245.8790144175291,
+   "r": 262.6160013116896,
    "c": "255,110,30"
   },
   {
-   "x": 1269.4517748430371,
-   "y": 254.5733088850975,
-   "r": 269.3082347512245,
+   "x": 1401.3081225845963,
+   "y": 232.845653668046,
+   "r": 273.3461623080075,
    "c": "255,110,30"
   },
   {
-   "x": 1516.3379467558116,
-   "y": 239.79092168807983,
-   "r": 233.07556303218007,
+   "x": 1690.1741042081267,
+   "y": 210.83428917825222,
+   "r": 272.34967071563005,
    "c": "255,110,30"
   },
   {
-   "x": 1823.891189917922,
-   "y": 197.16366797685623,
-   "r": 268.9974398724735,
+   "x": 1977.4873980600387,
+   "y": 197.38559578359127,
+   "r": 260.51723811775446,
    "c": "255,110,30"
   },
   {
-   "x": 2148.6562198214233,
-   "y": 214.63395109772682,
-   "r": 263.36318338289857,
+   "x": 2305.1767545659095,
+   "y": 208.9060186892748,
+   "r": 208.39879997074604,
    "c": "255,110,30"
   },
   {
-   "x": 2477.8151123505086,
-   "y": 215.57418170571327,
-   "r": 278.2761370949447,
+   "x": 2598.2878391165286,
+   "y": 229.17367841303349,
+   "r": 263.8347068056464,
    "c": "255,110,30"
   },
   {
-   "x": 2784.124378208071,
-   "y": 227.88435973227024,
-   "r": 231.4944488555193,
+   "x": 2893.917615553364,
+   "y": 227.0141293555498,
+   "r": 203.1219263933599,
    "c": "255,110,30"
   },
   {
-   "x": 2995.538807241246,
-   "y": 231.5559972077608,
-   "r": 243.32444982603192,
+   "x": 3123.5049175005406,
+   "y": 241.1276780962944,
+   "r": 239.00254797190428,
    "c": "255,110,30"
   },
   {
-   "x": 3219.7851192206144,
-   "y": 240.99394337832928,
-   "r": 206.662132833153,
-   "c": "255,110,30"
-  },
-  {
-   "x": 3491.3227498251945,
-   "y": 231.9320249557495,
-   "r": 224.50499150902033,
+   "x": 3394.420058913529,
+   "y": 244.63176546990871,
+   "r": 215.97998198121786,
    "c": "255,110,30"
   },
   {
@@ -745,63 +829,87 @@
    "c": "255,140,50"
   },
   {
+   "x": 751.176666666667,
+   "y": 354,
+   "r": 155.93158392701298,
+   "c": "255,100,30"
+  },
+  {
    "x": 961.3886666666672,
    "y": 354,
-   "r": 151.85172903351486,
+   "r": 148.17280997522175,
    "c": "255,100,30"
   },
   {
-   "x": 222.75333333333333,
-   "y": 506,
-   "r": 168.0670757126063,
+   "x": 3308.0553333333346,
+   "y": 354,
+   "r": 136.20639284141362,
    "c": "255,100,30"
   },
   {
-   "x": 2120.7999999999997,
-   "y": 506,
-   "r": 137.32334023807198,
+   "x": 710.68,
+   "y": 570,
+   "r": 163.71288670226932,
    "c": "255,100,30"
   },
   {
-   "x": 2118.06,
-   "y": 1018,
-   "r": 148.43225496821105,
+   "x": 3072.3181055784225,
+   "y": 587.9313146620989,
+   "r": 111.416583112441,
    "c": "255,100,30"
   },
   {
-   "x": 2401.211748510599,
-   "y": 1101.5592082589865,
-   "r": 121.61213770974427,
+   "x": 2722.380274027586,
+   "y": 687.0047429054976,
+   "r": 152.26991991046816,
    "c": "255,100,30"
   },
   {
-   "x": 951.9512432515621,
-   "y": 548.7458571642637,
-   "r": 146.36787801980972,
+   "x": 3462.3075251579285,
+   "y": 357.7813905775547,
+   "r": 151.46244802512228,
    "c": "255,100,30"
   },
   {
-   "x": 1317.0198404490948,
-   "y": 305.9110239893198,
-   "r": 136.80401222780347,
+   "x": 189.41405883431435,
+   "y": 602.0714759081602,
+   "r": 130.755096510984,
    "c": "255,100,30"
   },
   {
-   "x": 3394.104722291231,
-   "y": 778.164376154542,
-   "r": 120.29936728999019,
+   "x": 2654.2346327900887,
+   "y": 522.4050294011831,
+   "r": 167.08514279685915,
+   "c": "255,100,30"
+  },
+  {
+   "x": 2064.0940968692303,
+   "y": 1057.438085258007,
+   "r": 125.16959593631327,
    "c": "255,100,30"
   },
   {
    "x": 2313.5906699597836,
    "y": 612.5233733206987,
-   "r": 131.6125185182318,
+   "r": 154.02488197665662,
    "c": "255,100,30"
   },
   {
    "x": 3228.234379172325,
    "y": 1097.2049027830362,
-   "r": 126.71246824786067,
+   "r": 117.62524127960205,
+   "c": "255,100,30"
+  },
+  {
+   "x": 2198.3333518505096,
+   "y": 1319.1485290974379,
+   "r": 127.63545798603445,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1283.1571160554886,
+   "y": 361.18569695949554,
+   "r": 169.64157281909138,
    "c": "255,100,30"
   }
  ],
@@ -812,11 +920,15 @@
    "foes": [
     [
      "echo_fire_weak",
-     0
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
     ]
    ],
-   "x": 960,
-   "y": 1898,
+   "x": 1024,
+   "y": 1706,
    "r": 150
   },
   {
@@ -825,6 +937,83 @@
    "foes": [
     [
      "echo_fire_strong",
+     0
+    ]
+   ],
+   "x": 512,
+   "y": 1770,
+   "r": 150
+  },
+  {
+   "id": "cg2",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
+    ]
+   ],
+   "x": 2752,
+   "y": 874,
+   "r": 150
+  },
+  {
+   "id": "cg3",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
+    ]
+   ],
+   "x": 3328,
+   "y": 1066,
+   "r": 150
+  },
+  {
+   "id": "cg4",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_weak",
+     0
+    ]
+   ],
+   "x": 2368,
+   "y": 1834,
+   "r": 150
+  },
+  {
+   "id": "cg5",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_weak",
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
+    ]
+   ],
+   "x": 1728,
+   "y": 1258,
+   "r": 150
+  },
+  {
+   "id": "cg6",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_weak",
      1
     ],
     [
@@ -833,96 +1022,7 @@
     ]
    ],
    "x": 512,
-   "y": 810,
-   "r": 150
-  },
-  {
-   "id": "cg2",
-   "el": "lightning",
-   "foes": [
-    [
-     "echo_lightning_weak",
-     1
-    ],
-    [
-     "echo_lightning_weak",
-     1
-    ]
-   ],
-   "x": 1920,
-   "y": 1770,
-   "r": 150
-  },
-  {
-   "id": "cg3",
-   "el": "fire",
-   "foes": [
-    [
-     "echo_fire_weak",
-     0
-    ],
-    [
-     "echo_fire_weak",
-     0
-    ]
-   ],
-   "x": 2752,
-   "y": 1898,
-   "r": 150
-  },
-  {
-   "id": "cg4",
-   "el": "fire",
-   "foes": [
-    [
-     "echo_fire_strong",
-     2
-    ],
-    [
-     "echo_fire_weak",
-     2
-    ],
-    [
-     "echo_fire_weak",
-     2
-    ]
-   ],
-   "x": 1792,
-   "y": 426,
-   "r": 150
-  },
-  {
-   "id": "cg5",
-   "el": "fire",
-   "foes": [
-    [
-     "echo_fire_strong",
-     2
-    ],
-    [
-     "echo_fire_strong",
-     2
-    ]
-   ],
-   "x": 3200,
-   "y": 490,
-   "r": 150
-  },
-  {
-   "id": "cg6",
-   "el": "fire",
-   "foes": [
-    [
-     "echo_fire_strong",
-     2
-    ],
-    [
-     "echo_fire_strong",
-     2
-    ]
-   ],
-   "x": 2240,
-   "y": 426,
+   "y": 1194,
    "r": 150
   },
   {
@@ -931,15 +1031,11 @@
    "foes": [
     [
      "echo_fire_weak",
-     1
-    ],
-    [
-     "echo_fire_weak",
-     1
+     0
     ]
    ],
-   "x": 512,
-   "y": 1450,
+   "x": 1408,
+   "y": 1962,
    "r": 150
   },
   {
@@ -951,25 +1047,29 @@
      0
     ]
    ],
-   "x": 128,
-   "y": 1834,
+   "x": 1920,
+   "y": 1898,
    "r": 150
   },
   {
    "id": "cg9",
-   "el": "fire",
+   "el": "dark",
    "foes": [
     [
-     "echo_fire_strong",
-     1
+     "echo_dark_strong",
+     2
     ],
     [
-     "echo_fire_weak",
-     1
+     "echo_dark_weak",
+     2
+    ],
+    [
+     "echo_dark_weak",
+     2
     ]
    ],
-   "x": 2688,
-   "y": 810,
+   "x": 3456,
+   "y": 490,
    "r": 150
   },
   {
@@ -985,42 +1085,50 @@
      1
     ]
    ],
-   "x": 1792,
-   "y": 1002,
+   "x": 1024,
+   "y": 1130,
    "r": 150
   },
   {
    "id": "cg11",
-   "el": "earth",
-   "foes": [
-    [
-     "echo_earth_weak",
-     0
-    ],
-    [
-     "echo_earth_weak",
-     0
-    ]
-   ],
-   "x": 3200,
-   "y": 1834,
-   "r": 150
-  },
-  {
-   "id": "cg12",
    "el": "fire",
    "foes": [
     [
      "echo_fire_strong",
-     1
+     2
     ],
     [
      "echo_fire_weak",
-     1
+     2
+    ],
+    [
+     "echo_fire_weak",
+     2
     ]
    ],
-   "x": 3136,
-   "y": 938,
+   "x": 2112,
+   "y": 426,
+   "r": 150
+  },
+  {
+   "id": "cg12",
+   "el": "lightning",
+   "foes": [
+    [
+     "echo_lightning_strong",
+     2
+    ],
+    [
+     "echo_lightning_weak",
+     2
+    ],
+    [
+     "echo_lightning_weak",
+     2
+    ]
+   ],
+   "x": 576,
+   "y": 490,
    "r": 150
   },
   {
@@ -1036,8 +1144,8 @@
      1
     ]
    ],
-   "x": 1280,
-   "y": 1130,
+   "x": 2304,
+   "y": 1002,
    "r": 150
   },
   {
@@ -1045,29 +1153,33 @@
    "el": "fire",
    "foes": [
     [
-     "echo_fire_weak",
-     0
+     "echo_fire_strong",
+     2
+    ],
+    [
+     "echo_fire_strong",
+     2
     ]
    ],
    "x": 1472,
-   "y": 1898,
+   "y": 426,
    "r": 150
   },
   {
    "id": "cg15",
-   "el": "fire",
+   "el": "dark",
    "foes": [
     [
-     "echo_fire_weak",
-     1
+     "echo_dark_weak",
+     0
     ],
     [
-     "echo_fire_weak",
-     1
+     "echo_dark_weak",
+     0
     ]
    ],
-   "x": 2624,
-   "y": 1450,
+   "x": 3200,
+   "y": 1834,
    "r": 150
   },
   {
@@ -1076,15 +1188,11 @@
    "foes": [
     [
      "echo_fire_weak",
-     1
-    ],
-    [
-     "echo_fire_weak",
-     1
+     0
     ]
    ],
-   "x": 3264,
-   "y": 1386,
+   "x": 512,
+   "y": 2282,
    "r": 150
   }
  ],

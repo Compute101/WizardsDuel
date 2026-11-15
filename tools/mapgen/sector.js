@@ -8,6 +8,7 @@
 'use strict';
 const {MapBuilder, T, P} = require('./builder');
 const {City} = require('./city');
+const {OWN, OWN_LORE, placeOwnLand, placeOwnProps} = require('./own');
 
 // the ring, in wheel order: east from one leads to the next
 const RING = ['cindergate','heights','spirewatch','collegium','drowned_quarter','quarry_ward','frostmarket','gloamside'];
@@ -84,7 +85,7 @@ module.exports = function sector(rects,id){
   const m=new MapBuilder(rects,{id, name:'Corvanthe: '+RING_NAMES[id], cols:56, rows:44, seed:S.seed});
   const {W, H} = m;
   m.palette=S.pal; m.fx=S.fx; m.haze=S.haze; m.windowGlow=S.glow; if(S.storm) m.storm=1;
-  m.lore={line:S.line, arch:S.arch, square:S.square, statue:S.statue, tavern:S.tavern, chapel:S.chapel, chapel2:S.chapel, tower:S.tower,
+  m.lore={...OWN_LORE, line:S.line, arch:S.arch, square:S.square, statue:S.statue, tavern:S.tavern, chapel:S.chapel, chapel2:S.chapel, tower:S.tower,
     wall:['The City Wall', 'The outer wall of Corvanthe. From this side, every stone is scratched with tally marks, in groups of five.'],
     crane:['The Harbour Crane', 'Its hook hangs in the water of the street below, and the chain is taut. Something down there is holding on.'],
     gallows:['The Quarry Hoist', 'The great hoist that lifted blocks out of the pit. The rope is still running, slowly, up out of the ground.'],
@@ -135,7 +136,8 @@ module.exports = function sector(rects,id){
   // ── the square and its statue ──
   const SX=SQ.x*T, SY=SQ.y*T;
   city.reserve(SX-4.6*T,SX+4.6*T,SY-4*T,SY+3.4*T);
-  m.place(id==='collegium'?'statue':'statue',SX,SY+10,{lore:'statue'});
+  const ctr=OWN[id]&&OWN[id].center;
+  m.place(ctr||'statue',SX,SY+10,{lore:ctr&&OWN_LORE[ctr]?ctr:'statue'});
   for(const [dx,dy] of [[-1,-1],[1,-1],[-1,1],[1,1]]) m.place('lamppost',SX+dx*180,SY+dy*110+40);
   m.place('gravel',SX-70,SY-80,{lore:'square'});
   // ── landmarks, each on the nearest street-facing spot to its corner of the map ──
@@ -161,7 +163,9 @@ module.exports = function sector(rects,id){
   m.blocks.push({x:0,y:42*T+40,w:W,h:2*T});
   city.reserve(0,W,41*T,H);
 
+  placeOwnLand(m,city,id);
   city.build();
+  placeOwnProps(m,city,id);
   // quarry rubble everywhere; lights along the north edge in the sector's colour
   if(S.rubble) for(let i=0;i<90;i++) m.tryPlace(P.pick(r,['blocks1','blocks2','rocks1','rocks2','rubble7','rubble9','gravel']),rnd(T,W-T),rnd(6*T,38*T),8);
   for(let x=80;x<W;x+=220+r()*120) m.glows.push({x, y:3*T+r()*T, r:200+r()*80, c:S.glow});

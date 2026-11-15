@@ -111,7 +111,8 @@ in battle: you pick for each, or set one to AI.
    burnt recolours of the existing art. *All eight outer rings done* (`tools/mapgen/sector.js`), joined in a
    ring along Wallside in the wheel's order, each from recolours of the existing art plus its own
    weather. Next: the inner rings beyond each sector's north barrier, and sector-specific art
-   (ice spires, floating rubble, rock spires, drowned streets) where recolours fall short.
+   (ice spires, floating rubble, rock spires, drowned streets) where recolours fall short. *Done:*
+   each sector now has its own pieces from four sheets (`tools/mapgen/own.js`).
 3. **Elementals on the map:** roaming, battle on contact, loot, respawn. *Done for Cindergate* (see
    "Echoes" in `CLAUDE.md`); balancing the Echo numbers against created wizards waits for step 7.
 4. **Inventory and save game**, per profile.

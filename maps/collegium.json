@@ -57,7 +57,7 @@
   "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
  ],
  "objects": [
-  ["statue_aether",1632,1482,{"lore":"statue"}],
+  ["orrery",1632,1482,{"lore":"orrery"}],
   ["lamppost_aether",1452,1402],
   ["lamppost_aether",1812,1402],
   ["lamppost_aether",1452,1622],
@@ -150,6 +150,9 @@
   ["wallLow2_aether",3464.1,2722],
   ["wallLow2_aether",3522.5,2720],
   ["ruinWall2_aether",3583.2,2721],
+  ["hall",1280,2172,{"lore":"hall"}],
+  ["portal",2528,1980,{"lore":"portal"}],
+  ["hall",384,2044,{"lore":"hall"}],
   ["rubble9_aether",733,310],
   ["rocks1_aether",2140.1,310],
   ["barrelsBroken_aether",2271.3,310],
@@ -186,145 +189,134 @@
   ["house3_aether",3353.7,1532],
   ["house3_aether",2116.5,1788],
   ["house5_aether",2271.1,1852],
-  ["house5_aether",2420.4,1916],
   ["house2_aether",2819.9,1980],
   ["house4_aether",3288.8,1980],
   ["house4_aether",3442.1,1980],
-  ["house4_aether",199,2044],
-  ["house1_aether",349.5,2044],
-  ["house4_aether",500,2044],
-  ["house4_aether",1927,2044],
-  ["house2_aether",3011.9,2044],
-  ["house2_aether",942.6,2108],
-  ["house1_aether",1732.2,2108],
-  ["house2_aether",1219.9,2172],
-  ["house2_aether",1367,2172],
-  ["house1_aether",1514.4,2172],
-  ["house1_aether",1860.2,2364],
-  ["house4_aether",3399,2364],
-  ["house2_aether",149.4,2492],
-  ["house2_aether",296.5,2492],
-  ["house1_aether",443.9,2492],
-  ["house2_aether",591.3,2492],
-  ["house4_aether",826.7,2492],
-  ["house2_aether",976.9,2492],
-  ["house4_aether",1127.1,2492],
-  ["house1_aether",1277.7,2492],
-  ["house1_aether",1425.4,2492],
-  ["house1_aether",1573.1,2492],
+  ["house4_aether",586.2,2044],
+  ["house5_aether",1929.8,2044],
+  ["house4_aether",3015,2044],
+  ["house2_aether",67.9,2108],
+  ["house4_aether",1735,2108],
+  ["house2_aether",1475.9,2172],
+  ["house2_aether",1859.9,2364],
+  ["house2_aether",3395.9,2364],
+  ["house4_aether",71,2492],
+  ["house2_aether",221.2,2492],
+  ["house4_aether",371.4,2492],
+  ["house1_aether",521.9,2492],
+  ["house1_aether",669.7,2492],
+  ["house1_aether",817.4,2492],
+  ["house4_aether",967.9,2492],
+  ["house2_aether",1118.1,2492],
+  ["house4_aether",1268.4,2492],
+  ["house1_aether",1418.9,2492],
+  ["house2_aether",1566.3,2492],
   ["house2_aether",2307.9,2492],
-  ["house2_aether",2455,2492],
-  ["house4_aether",2605.2,2492],
-  ["house2_aether",2883.9,2492],
-  ["house4_aether",3098,2492],
-  ["house1_aether",3460.2,2492],
+  ["house4_aether",2522,2492],
+  ["house1_aether",2884.2,2492],
+  ["house1_aether",3031.9,2492],
+  ["house1_aether",3179.7,2492],
+  ["house2_aether",3459.9,2492],
   ["backPurpleRuin_aether",70.1,532],
-  ["backPurpleRuin_aether",221.5,532],
-  ["backPurpleRuin_aether",373,532],
-  ["backSlateRuin_aether",525,532],
-  ["backSlateRuin_aether",761.8,532],
+  ["backSlateRuin_aether",222.1,532],
+  ["backPurpleRuin_aether",374.2,532],
+  ["backSlateRuin_aether",526.3,532],
+  ["backSlateRuin_aether",679,532],
   ["backPurpleRuin_aether",1862.1,532],
-  ["backSlateRuin_aether",2014.1,532],
-  ["backPurpleRuin_aether",2374.1,532],
-  ["crateBroken_aether",2525.5,526],
-  ["backSlateRuin_aether",2631.5,532],
-  ["backPurpleRuin_aether",2822.1,532],
-  ["backSlateRuin_aether",2974.1,532],
-  ["backPurpleRuin_aether",3126.2,532],
+  ["backPurpleRuin_aether",2013.5,532],
+  ["backSlateRuin_aether",2374.7,532],
+  ["backSlateRuin_aether",2527.4,532],
+  ["backSlateRuin_aether",2906.8,532],
+  ["backPurpleRuin_aether",3058.8,532],
+  ["backSlateRuin_aether",3210.9,532],
   ["backSlateRuin_aether",966.7,596],
-  ["backSlateRuin_aether",1182.1,596],
-  ["backPurpleRuin_aether",1334.2,596],
-  ["backSlateRuin_aether",1486.3,596],
-  ["backPurpleRuin_aether",3334.1,596],
-  ["backSlateRuin_aether",3486.1,596],
-  ["backSlateRuin_aether",1862.7,1108],
-  ["backSlate_aether",2096.3,1108],
-  ["backSlateRuin_aether",2309.7,1108],
-  ["backSlate_aether",2459.6,1108],
-  ["backSlateRuin_aether",134.7,1236],
+  ["backPurpleRuin_aether",1181.1,596],
+  ["backSlateRuin_aether",1333.2,596],
+  ["backPurple_aether",1485,596],
+  ["barrelsBroken_aether",1615.4,590],
+  ["backPurpleRuin_aether",3355.4,596],
+  ["backPurple_aether",1861.8,1108],
+  ["backSlate_aether",2010.7,1108],
+  ["backPurpleRuin_aether",2182.1,1108],
+  ["backSlate_aether",2416.2,1108],
+  ["backSlate_aether",2563.3,1108],
+  ["backPurple_aether",3141.8,1172],
+  ["rubble1_aether",3271.6,1166],
+  ["backSlate_aether",131.9,1236],
   ["backSlateRuin_aether",390.7,1236],
-  ["backSlate_aether",2924.4,1236],
-  ["backSlateRuin_aether",3074.3,1236],
-  ["backPurpleRuin_aether",3479.5,1236],
-  ["backPurple_aether",858.6,1300],
-  ["backSlate_aether",1006.6,1364],
-  ["backTerra2_aether",69.8,1620],
-  ["backSlate_aether",281.1,1620],
-  ["backPurple_aether",430.1,1620],
-  ["backSlateRuin_aether",2502.7,1620],
-  ["backSlate_aether",2652.6,1620],
-  ["backSlate_aether",2051.9,1684],
-  ["backPurple_aether",2200.9,1684],
-  ["backTerra2_aether",2351.7,1684],
+  ["backSlateRuin_aether",2992.3,1236],
+  ["backSlateRuin_aether",3398.7,1236],
+  ["backSlateRuin_aether",774.7,1300],
+  ["backSlateRuin_aether",966.7,1364],
+  ["backSlate_aether",67.9,1620],
+  ["backPurple_aether",216.9,1620],
+  ["backSlate_aether",387.9,1620],
+  ["backPurple_aether",536.9,1620],
+  ["backSlate_aether",2499.9,1620],
+  ["backPurple_aether",2648.9,1620],
+  ["backPurple_aether",2053.8,1684],
+  ["backPurple_aether",2204.6,1684],
+  ["backPurple_aether",2355.4,1684],
   ["backSlate_aether",2883.9,1684],
-  ["backSlate_aether",771.9,1748],
-  ["backPurple_aether",920.9,1748],
+  ["backTerra2_aether",773.8,1748],
+  ["backSlate_aether",922.7,1748],
   ["backSlate_aether",3075.9,1748],
-  ["backTerra2_aether",3224.9,1748],
-  ["backSlateRuin_aether",3376.6,1748],
-  ["backPurple_aether",1797.8,1876],
+  ["backSlate_aether",3223,1748],
+  ["backTerra1_aether",3434.9,1748],
+  ["backSlate_aether",1795.9,1876],
   ["backPurple_aether",1947.1,1940],
   ["backPurple_aether",325.8,2260],
-  ["backSlate_aether",474.7,2260],
-  ["backPurple_aether",623.7,2260],
-  ["backPurple_aether",2501.8,2260],
+  ["backPurple_aether",476.6,2260],
+  ["backSlate_aether",625.6,2260],
+  ["backTerra2_aether",2501.8,2260],
   ["backTerra2_aether",3397.8,2260],
-  ["backSlate_aether",67.9,2324],
-  ["backSlate_aether",835.9,2324],
-  ["backSlate_aether",983,2324],
-  ["backSlate_aether",2691.9,2324],
+  ["backTerra2_aether",69.8,2324],
+  ["backTerra1_aether",840.5,2324],
   ["backSlate_aether",3075.9,2324],
-  ["backTerra1_aether",1117.9,2388],
-  ["backPurple_aether",1353,2388],
-  ["backSlate_aether",1501.9,2388],
-  ["backTerra2_aether",2396.8,2388],
+  ["backPurple_aether",1093.8,2388],
+  ["backSlate_aether",1242.7,2388],
+  ["backSlate_aether",1389.8,2388],
+  ["backTerra2_aether",1625.9,2388],
+  ["backSlate_aether",2307.9,2388],
   ["backTerra1_aether",2888.5,2388],
-  ["sideSlate_aether",72.7,2106],
-  ["sidePurple_aether",519.8,1210],
-  ["sideSlate_aether",1032.7,1850],
+  ["sideSlate_aether",311.3,1338],
+  ["sideSlate_aether",584.7,954],
+  ["sidePurpleRuin_aether",833.6,506],
+  ["sideTerra_aether",966.5,2106],
+  ["sideSlate_aether",968.7,2298],
+  ["sideSlate_aether",1032.7,1082],
+  ["sidePurple_aether",1031.8,1850],
   ["sideSlate_aether",1032.7,1978],
-  ["sideTerra_aether",1145.5,1722],
+  ["sidePurple_aether",1144.3,1722],
   ["sideSlate_aether",1207.3,1658],
-  ["sideSlate_aether",1207.3,1786],
-  ["sideTerra_aether",1209.5,1978],
-  ["sidePurple_aether",1543.8,954],
+  ["sidePurpleRuin_aether",1214.5,1786],
+  ["sideTerra_aether",1209.5,1914],
+  ["sidePurpleRuin_aether",1537.6,954],
+  ["sidePurple_aether",1592.3,1210],
   ["sidePurpleRuin_aether",1601.6,698],
   ["sidePurpleRuin_aether",1601.6,826],
-  ["sidePurple_aether",1607.8,1210],
-  ["sideTerra_aether",1734.5,2426],
+  ["sideTerra_aether",1606.5,2170],
   ["sidePurpleRuin_aether",1854.5,634],
-  ["sidePurpleRuin_aether",1854.5,762],
   ["sidePurpleRuin_aether",1854.5,890],
-  ["sidePurple_aether",1848.3,1210],
+  ["sidePurpleRuin_aether",1854.5,1210],
   ["sideTerra_aether",1977.5,2554],
-  ["sidePurple_aether",2040.3,2234],
-  ["sidePurpleRuin_aether",2113.6,698],
-  ["sideSlate_aether",2167.3,2490],
+  ["sideSlate_aether",1992.7,2298],
+  ["sidePurple_aether",2055.8,2234],
+  ["sidePurple_aether",2119.8,2042],
   ["sidePurpleRuin_aether",2561.6,634],
-  ["sidePurple_aether",2616.3,2042],
   ["sidePurpleRuin_aether",2625.6,698],
-  ["sidePurpleRuin_aether",2625.6,1786],
-  ["sidePurpleRuin_aether",2625.6,1914],
-  ["sideTerra_aether",2809.5,1850],
-  ["sideSlate_aether",2871.3,2106],
+  ["sidePurple_aether",2695.8,2362],
+  ["sidePurple_aether",2808.3,1786],
+  ["sidePurpleRuin_aether",2878.5,2106],
   ["sidePurpleRuin_aether",2942.5,954],
-  ["sidePurple_aether",2951.8,1018],
-  ["sidePurple_aether",3128.3,1146],
-  ["sidePurple_aether",3192.3,2234],
-  ["sidePurpleRuin_aether",3265.6,1146],
-  ["sidePurple_aether",3271.8,2490],
-  ["sidePurpleRuin_aether",3518.5,1018],
-  ["barrel3_aether",1279.9,724.7],
-  ["blocks1_aether",3412.1,802.7],
-  ["planks1_aether",376.8,1929.2],
+  ["sidePurpleRuin_aether",2945.6,1018],
+  ["sidePurple_aether",3207.8,2234],
   ["planks1_aether",2424.4,1171.5],
   ["fence_aether",2949.1,1755.9],
   ["sacks_aether",3213.6,1229.1],
-  ["logs_aether",1631.2,2148.4],
   ["sacks_aether",2945,1730.9],
   ["rubble6_aether",448.5,794.9],
   ["planks1_aether",2286.1,1286.4],
-  ["barrel_aether",2272,2358.7],
   ["sacks_aether",1595.1,1903],
   ["crate2_aether",1417.7,2058.1],
   ["logs_aether",1657.9,1820.9],
@@ -332,12 +324,12 @@
   ["crate1_aether",998.1,1896.1],
   ["crate1_aether",522.4,1762.2],
   ["logs_aether",3058.8,1836],
-  ["ruinWall1_aether",602.1,919.1],
   ["crate2_aether",346.6,2295.3],
   ["rubble6_aether",3460.4,761],
   ["rubble9_aether",3073.5,748.9],
   ["barrel3_aether",1983.6,1247],
   ["brokenFence_aether",2054.7,1231.8],
+  ["fence_aether",1610.3,1938.1],
   ["logs_aether",1388.9,1695.2],
   ["barrel_aether",3030.9,2396.3],
   ["blocks1_aether",339,571.7],
@@ -360,38 +352,35 @@
   ["logs_aether",3161.9,1810.1],
   ["crate1_aether",271.6,1704.7],
   ["sacks_aether",3122.4,1343.4],
-  ["lowwall_aether",1053,2044.8],
   ["rubble5_aether",326.1,762.8],
   ["barrel_aether",2663.6,1947.7],
-  ["logs_aether",277.1,1746.9],
   ["sacks_aether",2347,1157.3],
   ["crate1_aether",2929.8,1887.1],
-  ["planks1_aether",2580.5,1104.3],
   ["ruinWall1_aether",3028.2,704.4],
   ["ruinWall1_aether",3129.5,675.4],
   ["planks1_aether",2553.6,773.1],
   ["barrel3_aether",3330.5,1420.4],
   ["barrel_aether",2603.9,1709],
   ["brokenFence_aether",2292,1231.3],
-  ["crateBroken_aether",1015.6,1047.2],
+  ["flowerbush_aether",2858,1870.5],
   ["rubble5_aether",2399.7,785.6],
   ["sacks_aether",1408,1825.2],
   ["lowwall_aether",556.9,2330.8],
-  ["flowerbush_aether",618.5,1976.8],
+  ["barrel3_aether",877,1260.7],
   ["crate2_aether",2541,2354.6],
   ["crateBroken_aether",1350.5,355.4],
   ["sacks_aether",862.7,738.5],
   ["rubble1_aether",225.7,655.6],
-  ["logs_aether",267.2,1855.1],
+  ["sacks_aether",1298.5,1393.3],
   ["rocks1_aether",3466,893.1],
+  ["rubble9_aether",2100.8,729.2],
   ["barrel_aether",663.4,2352.5],
+  ["crateBroken_aether",3483.1,971.7],
   ["barrel3_aether",609,1694.9],
   ["fence_aether",895.2,1795.4],
   ["flowerbush_aether",305.4,1796.4],
-  ["crate1_aether",1645.8,2368],
   ["logs_aether",2388.7,1750.2],
   ["crate2_aether",1508.1,1763.2],
-  ["crate2_aether",2560.3,1821.6],
   ["logs_aether",463,2369.3],
   ["rubble5_aether",1217.6,650.3],
   ["blocks1_aether",447.7,849.3],
@@ -399,54 +388,143 @@
   ["rubble3_aether",277.5,803.1],
   ["crateBroken_aether",1103.9,635.7],
   ["crate3_aether",290.7,1021.4],
-  ["lowwall_aether",2081.5,2031.7],
   ["rocks1_aether",545.4,730.9],
-  ["flowerbush_aether",1191.9,1853.3],
   ["crate1_aether",3064,1874.4],
   ["blocks1_aether",1076,759.4],
+  ["flowerbush_aether",126.7,1953.7],
   ["barrelsBroken_aether",2007.5,622.1],
   ["planks1_aether",3380.6,858.8],
   ["logs_aether",2372.5,568.3],
   ["crate3_aether",3146.7,807.5],
   ["barrel3_aether",3475.2,2046.9],
   ["barrel_aether",1533.6,2018.2],
+  ["crate3_aether",3108.5,1245.6],
   ["logs_aether",2469.7,1317.4],
   ["crate3_aether",3206.7,1859.9],
   ["rubble1_aether",1041.8,824],
   ["blocks1_aether",712.6,603.3],
+  ["barrel3_aether",1822.5,764.7],
   ["logs_aether",525.4,1379.6],
   ["logs_aether",730.1,2374.4],
-  ["lowwall_aether",1246.3,2335.2],
   ["lowwall_aether",3477.4,1802.7],
   ["sacks_aether",1503.2,786.2],
   ["barrel_aether",552.9,2292],
-  ["sacks_aether",3339.9,1194.2],
   ["rubble1_aether",373,827.5],
   ["rubble3_aether",707.8,725.5],
   ["crateBroken_aether",655.8,659],
   ["crate3_aether",1458.8,2026.1],
   ["ruinWall1_aether",1082.1,710.3],
   ["flowerbush_aether",285.5,2305.7],
-  ["barrel3_aether",1992.3,1112.9],
   ["brokenFence_aether",3267.5,764.2],
   ["flowerbush_aether",241.2,1886.5],
   ["planks1_aether",413.4,1713.6],
   ["rocks1_aether",2831.1,617.3],
-  ["barrel_aether",178.4,1575.3],
+  ["crate2_aether",206.1,2011.4],
   ["sacks_aether",3176.8,1301.7],
   ["rubble9_aether",1135.9,762.3],
   ["blocks1_aether",414.7,629.5],
-  ["sacks_aether",303.9,1301.2],
-  ["barrel3_aether",356.6,1869],
+  ["logs_aether",2289.3,1056.7],
   ["rubble3_aether",116.6,746.9],
+  ["lowwall_aether",1053.3,2032.6],
   ["rubble9_aether",2819.4,659],
   ["rubble1_aether",976.8,646.2],
+  ["rocks1_aether",1836.4,717.1],
   ["crate3_aether",600.6,1371.1],
   ["rocks1_aether",2393.1,605.9],
   ["crate3_aether",565.6,1888.2],
-  ["blocks1_aether",3035.3,607.3]
+  ["blocks1_aether",3035.3,607.3],
+  ["sacks_aether",3188.1,847.9],
+  ["bookshelves",1373.7,1762.2],
+  ["bookshelves",3444.5,1860.9],
+  ["bookshelves",3500.9,567.7],
+  ["bookshelves",1730.5,1990.7],
+  ["bookshelves",2238.2,1448.7],
+  ["bookshelves",2691.4,543.2],
+  ["bookshelves",860,2369],
+  ["runeCircle",2793.8,1208.2],
+  ["runeCircle",132.6,1689.9],
+  ["runeCircle",627.3,842.3],
+  ["scholarStatue",1300.4,2075],
+  ["scholarStatue",1924.4,1557.9],
+  ["scholarStatue",2416.3,1901.9]
  ],
  "lore": {
+  "forge": [
+   "A Guild Forge",
+   "The furnace has not gone out since the Unweaving, and nobody feeds it. Something in there is still working the bellows."
+  ],
+  "townhouse": [
+   "A Merchant Prince's House",
+   "The finest house on the hill. The windows are lit, the table is laid for twelve, and the wind has blown every chair to face the Wound."
+  ],
+  "gazebo": [
+   "The Summer Gazebo",
+   "Half its dome blew away. The musicians' stands are still set out, the sheet music pinned down by stones."
+  ],
+  "weathervane": [
+   "The Great Weathervane",
+   "The golden cockerel turns and turns. It points at the Wound every time it passes."
+  ],
+  "floatRoom": [
+   "A Drifting Parlour",
+   "Somebody's drawing room, hanging in the air with the chandelier still lit. The carpet is still on the floor; the floor is not on anything."
+  ],
+  "bellTower": [
+   "The Great Belfry",
+   "Its bell is the only one in Spirewatch still hanging. It rings by itself when lightning strikes, so it never stops."
+  ],
+  "watchTower": [
+   "A Storm-Watch Tower",
+   "The watchmen lit their beacon to warn the city. The smoke is still rising from it, the same smoke, years later."
+  ],
+  "fallenBell": [
+   "The Fallen Bell",
+   "The great bell of Bell Square, cracked through. Lay your hand on it and you can feel it ringing."
+  ],
+  "hall": [
+   "A Lecture Hall",
+   "The students were taking their examinations. The papers are still on the desks, every one answered in the same handwriting."
+  ],
+  "portal": [
+   "The Unwritten Door",
+   "An archway onto purple light. The far side of it is the Collegium too, a few seconds earlier."
+  ],
+  "orrery": [
+   "The Great Orrery",
+   "The college's model of the heavens, bent and frozen mid-turn. One of its brass planets is not in our sky."
+  ],
+  "sunkHouse": [
+   "A Sunken House",
+   "Flooded to the sills, and the lamps still lit inside. Shapes move past the windows, under the water."
+  ],
+  "tiltedHouse": [
+   "A Heaved House",
+   "The ground stood up under it and tipped it on its side. Its hearth is still burning, at an angle."
+  ],
+  "quarryCrane": [
+   "The Quarry Crane",
+   "A stone block hangs from it, turning slowly. It was being lowered when the Unweaving came, and it has not finished."
+  ],
+  "temple": [
+   "The Temple of the Veiled Mother",
+   "The great temple of Gloamside. The rose window is lit from within, by no light anybody can find."
+  ],
+  "mausoleum": [
+   "A Family Mausoleum",
+   "The iron doors are locked from the inside."
+  ],
+  "catacomb": [
+   "The Catacomb Stair",
+   "Down into the dark under Gloamside. Torches are lit all the way down, as far as you can see, and further."
+  ],
+  "frostStall": [
+   "A Market Stall",
+   "Frozen mid-sale: a hand of ice still reaching for a coin on the counter."
+  ],
+  "frozenFountain": [
+   "The Frozen Fountain",
+   "The fountain froze in the moment the Unweaving struck. You can see the shape of the coin someone was throwing in, caught in the spray."
+  ],
   "line": [
    "The Unwritten Edge",
    "Here the Collegium simply stops: the street, the air, the light, cut off as clean as a page torn from a book. This is where it began."
@@ -551,74 +629,86 @@
  "glows": [
   {
    "x": 80,
-   "y": 206.86454764008522,
-   "r": 224.4662969559431,
+   "y": 239.40677152574062,
+   "r": 271.6286328807473,
    "c": "190,140,255"
   },
   {
-   "x": 365.2120319008827,
-   "y": 198.8602610975504,
-   "r": 244.03271842747927,
+   "x": 309.30672945454717,
+   "y": 250.77499540150166,
+   "r": 209.90475971251726,
    "c": "190,140,255"
   },
   {
-   "x": 597.6880351919681,
-   "y": 216.20317162573338,
-   "r": 239.57237822934985,
+   "x": 596.4220584649593,
+   "y": 201.48000909388065,
+   "r": 219.45099841803312,
    "c": "190,140,255"
   },
   {
-   "x": 926.1633719876409,
-   "y": 209.55934812128544,
-   "r": 208.09016205370426,
+   "x": 817.3600627761334,
+   "y": 235.50856487452984,
+   "r": 267.4216663092375,
    "c": "190,140,255"
   },
   {
-   "x": 1262.7108196914196,
-   "y": 209.3204905539751,
-   "r": 228.14134005457163,
+   "x": 1109.1290791891515,
+   "y": 222.9793971925974,
+   "r": 204.9560415931046,
    "c": "190,140,255"
   },
   {
-   "x": 1590.933534251526,
-   "y": 235.1223360747099,
-   "r": 204.8415901325643,
+   "x": 1355.9510266501456,
+   "y": 233.37541083991528,
+   "r": 264.86555291339755,
    "c": "190,140,255"
   },
   {
-   "x": 1898.641455611214,
-   "y": 247.11942246556282,
-   "r": 245.34523766487837,
+   "x": 1595.279775634408,
+   "y": 238.81215097010136,
+   "r": 263.4732229076326,
    "c": "190,140,255"
   },
   {
-   "x": 2172.24006713368,
-   "y": 250.88601548969746,
-   "r": 229.11524696275592,
+   "x": 1918.549329182133,
+   "y": 223.7180037200451,
+   "r": 268.41808481141925,
    "c": "190,140,255"
   },
   {
-   "x": 2475.5801411997527,
-   "y": 216.25428979098797,
-   "r": 253.83701734244823,
+   "x": 2170.7891847658902,
+   "y": 223.98290646076202,
+   "r": 263.6389163509011,
    "c": "190,140,255"
   },
   {
-   "x": 2790.846582520753,
-   "y": 234.30972178280354,
-   "r": 278.2522496767342,
+   "x": 2413.0455507244915,
+   "y": 209.1732644289732,
+   "r": 242.35691629350185,
    "c": "190,140,255"
   },
   {
-   "x": 3097.386256987229,
-   "y": 250.2395050674677,
-   "r": 220.2108876593411,
+   "x": 2730.1172840595245,
+   "y": 253.12605342268944,
+   "r": 207.40638038143516,
    "c": "190,140,255"
   },
   {
-   "x": 3410.109814601019,
-   "y": 234.57853972911835,
-   "r": 206.23908154666424,
+   "x": 2978.287691147998,
+   "y": 236.35898272693157,
+   "r": 268.77930488437414,
+   "c": "190,140,255"
+  },
+  {
+   "x": 3241.331099467352,
+   "y": 201.37496450543404,
+   "r": 245.77935861423612,
+   "c": "190,140,255"
+  },
+  {
+   "x": 3487.619323655963,
+   "y": 238.86496132612228,
+   "r": 259.64357079938054,
    "c": "190,140,255"
   },
   {
@@ -631,53 +721,49 @@
  "echoes": [
   {
    "id": "col0",
-   "el": "arcane",
+   "el": "dark",
    "foes": [
     [
-     "echo_arcane_weak",
-     1
+     "echo_dark_weak",
+     0
     ],
     [
-     "echo_arcane_weak",
-     1
+     "echo_dark_weak",
+     0
     ]
    ],
-   "x": 3136,
-   "y": 1578,
+   "x": 2112,
+   "y": 1962,
    "r": 150
   },
   {
    "id": "col1",
-   "el": "arcane",
+   "el": "dark",
    "foes": [
     [
-     "echo_arcane_weak",
-     1
+     "echo_dark_strong",
+     2
     ],
     [
-     "echo_arcane_weak",
-     1
+     "echo_dark_strong",
+     2
     ]
    ],
-   "x": 640,
-   "y": 1578,
+   "x": 1472,
+   "y": 490,
    "r": 150
   },
   {
    "id": "col2",
-   "el": "fire",
+   "el": "arcane",
    "foes": [
     [
-     "echo_fire_weak",
-     0
-    ],
-    [
-     "echo_fire_weak",
+     "echo_arcane_strong",
      0
     ]
    ],
-   "x": 2048,
-   "y": 2410,
+   "x": 1536,
+   "y": 1322,
    "r": 150
   },
   {
@@ -693,8 +779,8 @@
      1
     ]
    ],
-   "x": 1984,
-   "y": 1002,
+   "x": 704,
+   "y": 938,
    "r": 150
   },
   {
@@ -703,35 +789,27 @@
    "foes": [
     [
      "echo_arcane_strong",
-     2
-    ],
-    [
-     "echo_arcane_weak",
-     2
-    ],
-    [
-     "echo_arcane_weak",
-     2
+     0
     ]
    ],
-   "x": 1472,
-   "y": 426,
+   "x": 960,
+   "y": 1578,
    "r": 150
   },
   {
    "id": "col5",
-   "el": "arcane",
+   "el": "fire",
    "foes": [
     [
-     "echo_arcane_strong",
+     "echo_fire_strong",
      1
     ],
     [
-     "echo_arcane_weak",
+     "echo_fire_weak",
      1
     ]
    ],
-   "x": 3328,
+   "x": 3136,
    "y": 1066,
    "r": 150
   },
@@ -740,6 +818,23 @@
    "el": "arcane",
    "foes": [
     [
+     "echo_arcane_weak",
+     1
+    ],
+    [
+     "echo_arcane_weak",
+     1
+    ]
+   ],
+   "x": 2688,
+   "y": 1450,
+   "r": 150
+  },
+  {
+   "id": "col7",
+   "el": "arcane",
+   "foes": [
+    [
      "echo_arcane_strong",
      2
     ],
@@ -748,21 +843,8 @@
      2
     ]
    ],
-   "x": 3008,
+   "x": 3392,
    "y": 426,
-   "r": 150
-  },
-  {
-   "id": "col7",
-   "el": "arcane",
-   "foes": [
-    [
-     "echo_arcane_weak",
-     0
-    ]
-   ],
-   "x": 1408,
-   "y": 2218,
    "r": 150
   },
   {
@@ -771,15 +853,19 @@
    "foes": [
     [
      "echo_arcane_strong",
-     1
+     2
     ],
     [
      "echo_arcane_weak",
-     1
+     2
+    ],
+    [
+     "echo_arcane_weak",
+     2
     ]
    ],
-   "x": 2624,
-   "y": 938,
+   "x": 2880,
+   "y": 426,
    "r": 150
   },
   {
@@ -787,29 +873,33 @@
    "el": "arcane",
    "foes": [
     [
-     "echo_arcane_strong",
-     2
+     "echo_arcane_weak",
+     0
     ],
     [
-     "echo_arcane_strong",
-     2
+     "echo_arcane_weak",
+     0
     ]
    ],
-   "x": 3456,
-   "y": 490,
+   "x": 1344,
+   "y": 2218,
    "r": 150
   },
   {
    "id": "col10",
-   "el": "fire",
+   "el": "arcane",
    "foes": [
     [
-     "echo_fire_weak",
+     "echo_arcane_weak",
+     0
+    ],
+    [
+     "echo_arcane_weak",
      0
     ]
    ],
-   "x": 192,
-   "y": 2218,
+   "x": 256,
+   "y": 2090,
    "r": 150
   },
   {
@@ -818,15 +908,11 @@
    "foes": [
     [
      "echo_arcane_strong",
-     1
-    ],
-    [
-     "echo_arcane_weak",
-     1
+     0
     ]
    ],
-   "x": 832,
-   "y": 1002,
+   "x": 320,
+   "y": 1450,
    "r": 150
   },
   {
@@ -834,7 +920,7 @@
    "el": "arcane",
    "foes": [
     [
-     "echo_arcane_weak",
+     "echo_arcane_strong",
      1
     ],
     [
@@ -842,8 +928,8 @@
      1
     ]
    ],
-   "x": 1792,
-   "y": 1706,
+   "x": 2048,
+   "y": 938,
    "r": 150
   },
   {
@@ -851,12 +937,12 @@
    "el": "arcane",
    "foes": [
     [
-     "echo_arcane_strong",
+     "echo_arcane_weak",
      0
     ]
    ],
-   "x": 2624,
-   "y": 1450,
+   "x": 3264,
+   "y": 2282,
    "r": 150
   },
   {
@@ -865,15 +951,15 @@
    "foes": [
     [
      "echo_arcane_strong",
-     1
+     2
     ],
     [
-     "echo_arcane_weak",
-     1
+     "echo_arcane_strong",
+     2
     ]
    ],
-   "x": 320,
-   "y": 1066,
+   "x": 192,
+   "y": 426,
    "r": 150
   },
   {
@@ -881,29 +967,29 @@
    "el": "arcane",
    "foes": [
     [
-     "echo_arcane_weak",
-     1
+     "echo_arcane_strong",
+     2
     ],
     [
-     "echo_arcane_weak",
-     1
+     "echo_arcane_strong",
+     2
     ]
    ],
-   "x": 1472,
-   "y": 1386,
+   "x": 1920,
+   "y": 426,
    "r": 150
   },
   {
    "id": "col16",
-   "el": "dark",
+   "el": "fire",
    "foes": [
     [
-     "echo_dark_weak",
+     "echo_fire_strong",
      0
     ]
    ],
-   "x": 896,
-   "y": 2154,
+   "x": 2048,
+   "y": 1450,
    "r": 150
   }
  ],

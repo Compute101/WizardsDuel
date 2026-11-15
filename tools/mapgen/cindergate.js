@@ -6,6 +6,7 @@
 const {MapBuilder, T, P} = require('./builder');
 const {City} = require('./city');
 const {river} = require('./sector');
+const {OWN_LORE, placeOwnLand, placeOwnProps} = require('./own');
 
 const LORE = {
   gate:    ['The Wardgate', 'Cut open from the inside, not the outside. The gleaners only widened the hole.'],
@@ -25,7 +26,7 @@ const LORE = {
 module.exports = function cindergate(rects){
   const m=new MapBuilder(rects,{id:'cindergate', name:'Corvanthe: Cindergate', cols:56, rows:44, seed:5101});
   const {W, H} = m;
-  m.lore=LORE; m.fx='embers'; m.haze='70,30,10,0.16';
+  m.lore={...OWN_LORE, ...LORE}; m.fx='embers'; m.haze='70,30,10,0.16';
   const burnt=k=>rects[k+'_burnt']?k+'_burnt':k;
   // how far gone: worse toward the Wound (north)
   const ruin=(x,y)=>Math.max(0,Math.min(1,(1-y/H)*1.15-0.12));
@@ -87,7 +88,9 @@ module.exports = function cindergate(rects){
     ['lamp4',CX-20,CY-20,{lore:'lamppost'}],['barrel2',CX+230,CY+40]]) m.place(k,x,y,o);
   m.glows.push({x:CX+110,y:CY+30,r:130,c:'255,170,80'});        // their fire
 
+  placeOwnLand(m,city,'cindergate');
   city.build();
+  placeOwnProps(m,city,'cindergate');
 
   // fire along the Burning Line, and smouldering ruins deeper in
   for(let x=80;x<W;x+=210+m.r()*120) m.glows.push({x, y:3*T+m.r()*T, r:200+m.r()*80, c:'255,110,30'});

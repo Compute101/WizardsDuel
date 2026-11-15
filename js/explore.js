@@ -84,7 +84,7 @@ function setupMap(data){
   data.objects.forEach(([kind,x,y,e],i)=>{
     if(!rects[kind]){ console.warn('explore: no piece',kind); return; }
     const o={kind,x,y,id:i,lore:e&&e.lore,scale:e&&e.scale,decal:!!(e&&e.decal)};
-    if(o.decal){ o.fb=P.bridgeDeck(rects,o); bridges.push(o); }
+    if(o.decal){ o.fb=P.BRIDGE[kind]?P.bridgeDeck(rects,o):[]; bridges.push(o); }   // a bridge, or flat ground art (a crack, glazed cobbles)
     else for(const b of P.footBoxes(rects,o)) boxes.push(b);
     objs.push(o);
   });
@@ -752,10 +752,10 @@ function lightsInView(cw,ch){
   const out=[];
   const near=(x,y)=>!(x<cam.x-300||x>cam.x+cw+300||y<cam.y-300||y>cam.y+ch+300);
   for(const o of objs){
-    const L=P.lightsOf(o.kind); if(!L||o.decal) continue;
+    const L=P.lightsOf(o.kind); if(!L||(o.decal&&P.BRIDGE[o.kind])) continue;
     const s=sizeOf(o.kind);
     for(const [lx,ly,type] of L){
-      const x=o.x-s.w/2+lx*PS, y=o.y-s.h+ly*PS;
+      const fr=lx<=1&&ly<=1, x=o.x-s.w/2+(fr?lx*s.w:lx*PS), y=o.y-s.h+(fr?ly*s.h:ly*PS);
       // a burnt house's windows glow ember-orange: what's inside isn't a hearth
       if(near(x,y)) out.push({x,y,r:type==='lamp'?150:105,seed:o.id,c:type==='lamp'?undefined:o.kind.endsWith('_burnt')?'255,120,50':MAP.windowGlow&&PAL&&o.kind.endsWith(PAL)?MAP.windowGlow:undefined});
     }
@@ -867,7 +867,7 @@ function frame(now){
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 async function load(){
   if(built) return;
-  const names=['ruins','ruins2','ruins3','ruins4','ruins5'];
+  const names=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9'];
   const [cj,wj,...sheets]=await Promise.all([
     fetch('characters.json').then(r=>r.json()),
     fetch('maps/world.json').then(r=>r.json()),
