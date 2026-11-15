@@ -44,7 +44,7 @@
       "Hold still, wizard.",
       "One more arrow."
     ],
-    "desc": "Fragile, with a weaker shot. At Range: her arrows slip past a Guard (no block, no counter), and she keeps her distance, so a Grapple can't reach her.",
+    "desc": "Fragile, with a weaker shot. At Range: his arrows slip past a Guard (no block, no counter), and he keeps his distance, so a Grapple can't reach him.",
     "tabletop": {
       "hp": 1,
       "atk": 1,
