@@ -95,7 +95,7 @@ def boxes(im):
             fx = x / W
             if v > 0.42 and (s < 0.16 or (s < 0.34 and (h >= 190 or h < 12))) and 0.2 < fx < 0.74: silver.add((x, y))
             if 4 <= h <= 34 and 0.22 < s < 0.74 and v > 0.4: skin.add((x, y))
-            if 4 <= h <= 28 and 0.22 < s < 0.97 and v > 0.3: loose.add((x, y))   # darker skin is as saturated as wood
+            if 4 <= h <= 28 and 0.22 < s and v > 0.18: loose.add((x, y))   # darker skin and deep shadow are as saturated as wood
     hairc = [c for c in clumps(silver, W, H) if len(c) >= 120]
     hair = bbox([p for c in hairc for p in c], W, H, 0.008)
     def pick(zone, least=40, src=None):
@@ -105,6 +105,10 @@ def boxes(im):
     # and the trim's gold is above its hue range; the staff hand keeps to its usual spot)
     head = pick(lambda fx, fy: 0.3 < fx < 0.72 and fy < 0.42, 150) or pick(lambda fx, fy: 0.3 < fx < 0.72 and fy < 0.42, 150, loose)
     hb = bbox(head, W, H, 0.01)
+    if hb:   # grow it over the face's shadowed side (more saturated than the strict class) next to it
+        x0, y0, x1, y1 = hb[0] - 0.04, hb[1] - 0.035, hb[2] + 0.04, hb[3] + 0.01   # the forehead under a hood too
+        near = [p for c in clumps({p for p in loose if x0 < p[0] / W < x1 and y0 < p[1] / H < y1}, W, H) if len(c) >= 12 for p in c]
+        hb = bbox(head + near, W, H, 0.008)
     face = None
     if hb:
         cx, cy = (hb[0] + hb[2]) / 2 * W, (hb[1] + hb[3]) / 2 * H
@@ -113,8 +117,16 @@ def boxes(im):
     lc = pick(lambda fx, fy: fx <= 0.34 and 0.18 < fy < 0.6); dark = not lc
     lh = bbox(lc or pick(lambda fx, fy: 0.08 < fx <= 0.3 and 0.28 < fy < 0.45, 40, loose), W, H, 0.012)
     rh = bbox(pick(lambda fx, fy: fx >= 0.64 and 0.18 < fy < 0.6) or pick(lambda fx, fy: fx >= 0.64 and 0.18 < fy < 0.6, 40, loose), W, H, 0.012)
+    # the neck: often its own clump under the jaw's dark line; the skin in a band just below the head
+    # box and a little wider (loose skin, which stops short of the trim's gold in hue)
+    nb = None
+    if hb:
+        x0, x1, y0, y1 = hb[0] - 0.04, hb[2] + 0.04, hb[3] - 0.01, hb[3] + 0.11
+        neck = [p for c in clumps({p for p in loose if x0 < p[0] / W < x1 and y0 < p[1] / H < y1}, W, H) if len(c) >= 12 for p in c]
+        nb = bbox(neck, W, H, 0.01)
     sk = [b for b in (hb, lh, rh) if b]
     for b in sk[1:]: b.append(0.92 if dark else 0.95)   # hands: leave the most saturated wood out
+    if nb: sk.append(nb)                                 # neck, no cap: no wood near it (after the hands: skin[0] is the face)
     return {'hair': hair, 'face': face, 'skin': sk, 'noTrim': [], 'trimLo': 27}
 
 def main():

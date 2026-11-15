@@ -112,7 +112,7 @@ function paint(img, base, look){
     if(!p[i+3]) continue;
     const r=p[i]/255, g=p[i+1]/255, b=p[i+2]/255, [h,s,v]=rgb2hsv(r,g,b);
     let out=null;
-    if((skin||trim)&&(h<40||h>=345)&&s>0.15){
+    if((skin||trim)&&(h<30||h>=345||(h<40&&s<0.7))&&s>0.15){   // skin sits below 30° (its pale highlights to 40°); gold trim and jewellery, above 30°, are strongly saturated
       const j=i/4, px=j%W, py=Math.floor(j/W);
       const sb=skinB.find(b=>inBox(b,px,py));
       if(sb&&s<=sb[4]){                                            // skin: face and hands
