@@ -5,7 +5,7 @@
 'use strict';
 const {MapBuilder, T, P} = require('./builder');
 const {City} = require('./city');
-const {river} = require('./sector');
+const {river, echoElement} = require('./sector');
 const {OWN_LORE, placeOwnLand, placeOwnProps} = require('./own');
 
 const LORE = {
@@ -57,8 +57,8 @@ module.exports = function cindergate(rects){
   city.square(9.5,15.5,2.8,2.2,'c');                                           // Tinkers' Corner
   city.square(28.5,39.5,3.5,1.8,'c');                                          // inside the gate
   // the Hollow, boiling: it comes out of the Wound and leaves the city here, under the wall
-  const rgap=river(m,city,44,46,'S');
-  for(let y=3*T;y<42*T;y+=150+m.r()*120) m.glows.push({x:45.5*T,y,r:140,c:'255,150,70'});   // the scalding water glows
+  const riv=river(m,city,44,46,'S'), rgap=riv.gap;
+  for(let y=3*T;y<42*T;y+=150+m.r()*120) m.glows.push({x:riv.mid(Math.floor(y/T)),y,r:140,c:'255,150,70'});   // the scalding water glows
 
   // ── landmarks, then the terraces round them ──
   const SX=SQ.x*T, SY=SQ.y*T;
@@ -99,8 +99,6 @@ module.exports = function cindergate(rects){
     m.glows.push({x:o.x, y:o.y-20, r:110+m.r()*60, c:'255,100,30'});
 
   // ── Echoes: Cindergate's forge-folk, weak and few by the gate, strong and many toward the Wound ──
-  // a few strays from other sectors have drifted in
-  const STRAYS=['earth','lightning','dark'];
   const open=[];
   for(let y=6;y<38;y++) for(let x=1;x<m.cols-2;x++) if(city.isStreet(x,y)&&city.isStreet(x+1,y)) open.push([x,y]);
   let tries=0;
@@ -108,7 +106,7 @@ module.exports = function cindergate(rects){
     const [tx,ty]=open[Math.floor(m.r()*open.length)], x=(tx+1)*T, y=ty*T+T/2+10;
     if(Math.hypot(x-GX,y-40*T)<9*T) continue;                                   // a quiet street inside the gate
     if(m.echoes.some(e=>Math.hypot(e.x-x,e.y-y)<7*T)) continue;
-    const v=ruin(x,y), el=m.r()<0.15?P.pick(m.r,STRAYS):'fire', w='echo_'+el+'_weak', st='echo_'+el+'_strong';
+    const v=ruin(x,y), el=echoElement('cindergate',x,W,m.r), w='echo_'+el+'_weak', st='echo_'+el+'_strong';
     const foes=v<0.3?(m.r()<0.5?[[w,0]]:[[w,0],[w,0]]):
                v<0.55?(m.r()<0.5?[[w,1],[w,1]]:[[st,0]]):
                v<0.8?[[st,1],[w,1]]:

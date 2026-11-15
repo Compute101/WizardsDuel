@@ -790,16 +790,16 @@
    "el": "air",
    "foes": [
     [
-     "echo_air_weak",
-     0
+     "echo_air_strong",
+     1
     ],
     [
      "echo_air_weak",
-     0
+     1
     ]
    ],
-   "x": 2816,
-   "y": 2218,
+   "x": 640,
+   "y": 1002,
    "r": 150
   },
   {
@@ -811,12 +811,29 @@
      0
     ]
    ],
-   "x": 1024,
-   "y": 2026,
+   "x": 2816,
+   "y": 2218,
    "r": 150
   },
   {
    "id": "hei4",
+   "el": "air",
+   "foes": [
+    [
+     "echo_air_weak",
+     0
+    ],
+    [
+     "echo_air_weak",
+     0
+    ]
+   ],
+   "x": 1216,
+   "y": 2154,
+   "r": 150
+  },
+  {
+   "id": "hei5",
    "el": "air",
    "foes": [
     [
@@ -837,7 +854,7 @@
    "r": 150
   },
   {
-   "id": "hei5",
+   "id": "hei6",
    "el": "air",
    "foes": [
     [
@@ -854,11 +871,24 @@
    "r": 150
   },
   {
-   "id": "hei6",
+   "id": "hei7",
    "el": "air",
    "foes": [
     [
-     "echo_air_strong",
+     "echo_air_weak",
+     0
+    ]
+   ],
+   "x": 704,
+   "y": 2026,
+   "r": 150
+  },
+  {
+   "id": "hei8",
+   "el": "air",
+   "foes": [
+    [
+     "echo_air_weak",
      1
     ],
     [
@@ -866,33 +896,20 @@
      1
     ]
    ],
-   "x": 576,
-   "y": 1002,
-   "r": 150
-  },
-  {
-   "id": "hei7",
-   "el": "air",
-   "foes": [
-    [
-     "echo_air_strong",
-     0
-    ]
-   ],
    "x": 2304,
    "y": 1578,
    "r": 150
   },
   {
-   "id": "hei8",
-   "el": "earth",
+   "id": "hei9",
+   "el": "lightning",
    "foes": [
     [
-     "echo_earth_strong",
+     "echo_lightning_strong",
      1
     ],
     [
-     "echo_earth_weak",
+     "echo_lightning_weak",
      1
     ]
    ],
@@ -901,33 +918,20 @@
    "r": 150
   },
   {
-   "id": "hei9",
-   "el": "arcane",
-   "foes": [
-    [
-     "echo_arcane_weak",
-     0
-    ]
-   ],
-   "x": 128,
-   "y": 2154,
-   "r": 150
-  },
-  {
    "id": "hei10",
-   "el": "arcane",
+   "el": "air",
    "foes": [
     [
-     "echo_arcane_strong",
-     1
+     "echo_air_strong",
+     2
     ],
     [
-     "echo_arcane_weak",
-     1
+     "echo_air_strong",
+     2
     ]
    ],
-   "x": 1856,
-   "y": 618,
+   "x": 1024,
+   "y": 490,
    "r": 150
   },
   {
@@ -943,21 +947,25 @@
      2
     ]
    ],
-   "x": 1280,
+   "x": 1920,
    "y": 426,
    "r": 150
   },
   {
    "id": "hei12",
-   "el": "arcane",
+   "el": "air",
    "foes": [
     [
-     "echo_arcane_strong",
-     0
+     "echo_air_strong",
+     2
+    ],
+    [
+     "echo_air_strong",
+     2
     ]
    ],
-   "x": 1344,
-   "y": 1642,
+   "x": 2496,
+   "y": 426,
    "r": 150
   },
   {
@@ -973,29 +981,33 @@
      1
     ]
    ],
-   "x": 1856,
-   "y": 1770,
+   "x": 1344,
+   "y": 1642,
    "r": 150
   },
   {
    "id": "hei14",
-   "el": "air",
+   "el": "lightning",
    "foes": [
     [
-     "echo_air_weak",
+     "echo_lightning_weak",
+     0
+    ],
+    [
+     "echo_lightning_weak",
      0
     ]
    ],
-   "x": 3392,
+   "x": 3456,
    "y": 2090,
    "r": 150
   },
   {
    "id": "hei15",
-   "el": "air",
+   "el": "lightning",
    "foes": [
     [
-     "echo_air_strong",
+     "echo_lightning_strong",
      0
     ]
    ],
@@ -1008,12 +1020,16 @@
    "el": "air",
    "foes": [
     [
-     "echo_air_strong",
+     "echo_air_weak",
+     0
+    ],
+    [
+     "echo_air_weak",
      0
     ]
    ],
-   "x": 3008,
-   "y": 1642,
+   "x": 2112,
+   "y": 2026,
    "r": 150
   }
  ],
