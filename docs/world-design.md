@@ -328,5 +328,12 @@ still purple. The eyepatch and its strap are dark brown leather. No knives, swor
 | `old_man_5.png` | OLD MAN: a leather eyepatch, a battered pointed hat with a torn brim, a long unkempt beard with a few small gold rings tied in it, a missing tooth in a crooked grin |
 | `old_woman_5.png` | OLD WOMAN: a leather eyepatch, wild tangled hair, a tattered shawl over the head and shoulders, gold hoop earrings, a hard and cunning face |
 
+**Delivered (round 3):** six. `mid_man_7` (bald, scarred), `mid_man_8` (grey hair, patched hood),
+`old_man_5` (torn hat, ringed beard), `mid_woman_7` (hooded, braid, robe whole), `mid_woman_8` (the
+same look, tattered and patched) and `old_woman_5` (wild hair, hoops, in rags). That makes 17 male figures to 15 female, so
+`mid_woman_5` and `mid_woman_6` (round 2's prompts) are still owed to even it up. The staff hand of
+`mid_woman_8` is boxed by hand (`FIX`): a brown robe patch passed for skin. Patches and eyepatches are
+brown leather and fall inside the skin boxes, so they take a darker shade of the chosen skin.
+
 Idea (not built): the base figures, recoloured, as Explore's NPC wizards (gleaner bosses, townsfolk),
 leaving out the figure and colours the player picked so no NPC looks like you.
