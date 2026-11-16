@@ -100,7 +100,8 @@ class MapBuilder {
                (x, y); walking into one starts a battle (js/explore.js, game.js startExploreBattle)
        npcs:   [{role, x, y}]   people standing about; what they say is js/explore_folk.js
        safe:   1 = a safe town: rooms hold no fights or loot (Wrenford)
-       arena:  the battle backdrop for fights here ('library'; default the ruined streets) } */
+       arena:  the battle backdrop for fights here ('library'; default the ruined streets)
+       music:  a theme that loops while you're on the map or in its rooms ('audio/wrenford_theme.mp3') } */
   toJSON(){
     const round=v=>Math.round(v*10)/10;
     return {
@@ -111,7 +112,7 @@ class MapBuilder {
         return Object.keys(e).length?[o.kind,round(o.x),round(o.y),e]:[o.kind,round(o.x),round(o.y)];
       }),
       lore:this.lore, spawns:this.spawns, exits:this.exits, blocks:this.blocks, glows:this.glows, echoes:this.echoes, walk:this.walk,
-      ...(this.npcs?{npcs:this.npcs.map(n=>Object.assign({},n,{x:round(n.x),y:round(n.y)}))}:{}), ...(this.safe?{safe:1}:{}), ...(this.arena?{arena:this.arena}:{}),
+      ...(this.npcs?{npcs:this.npcs.map(n=>Object.assign({},n,{x:round(n.x),y:round(n.y)}))}:{}), ...(this.safe?{safe:1}:{}), ...(this.arena?{arena:this.arena}:{}), ...(this.music?{music:this.music}:{}),
     };
   }
 }

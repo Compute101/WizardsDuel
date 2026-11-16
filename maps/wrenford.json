@@ -1049,5 +1049,6 @@
   }
  ],
  "safe": 1,
- "arena": "library"
+ "arena": "library",
+ "music": "audio/wrenford_theme.mp3"
 }
