@@ -408,7 +408,7 @@ function fight(a){
   const text=a.e.band?{winTitle:cap(a.e.band.name)+' Broken', win:a.e.band.beaten+' They scatter, leaving their purse and their haul.'}
     :a.e.party?{winTitle:'The Crew Breaks', win:'They scatter into the dark streets, leaving their takings behind.'}:null;
   fade(true).then(()=>{
-    running=false; el.root.classList.remove('active'); fade(false);
+    running=false; el.root.classList.remove('active'); fade(false); syncMusic();
     const key=wizKeys[wizIdx];
     if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
     window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:fighting.map(x=>({key:x.key,level:x.level,name:x.name,hp:x.hp})), text, arena:MAP.arena,
@@ -416,7 +416,7 @@ function fight(a){
   });
 }
 function afterFight(a,won,low,key,fighting,allyHp){
-  el.root.classList.add('active'); running=true; busy=false; resize();
+  el.root.classList.add('active'); running=true; busy=false; resize(); syncMusic();
   navGrid=null;                                // the door may have just opened
   clock=(clock+20)%1440;                       // a fight takes a while
   if(won) vit[key]=Math.max(1,Math.round(Math.min(isFinite(low)?low:hpOf(key),hpOf(key))));
@@ -563,11 +563,11 @@ function spar({foes, text, onWin, onLose}){
   busy=true; keys.clear(); target=null; hideSay(); save();
   const key=wizKeys[wizIdx], before=hpOf(key);
   fade(true).then(()=>{
-    running=false; el.root.classList.remove('active'); fade(false);
+    running=false; el.root.classList.remove('active'); fade(false); syncMusic();
     if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
     window.startExploreBattle({wizKey:key, foes, hp:maxHp(key), allies:[], text, arena:MAP.arena||'library',
       onEnd:won=>{
-        el.root.classList.add('active'); running=true; busy=false; resize();
+        el.root.classList.add('active'); running=true; busy=false; resize(); syncMusic();
         clock=(clock+20)%1440; vit[key]=Math.max(before,1);
         if(won){ onWin&&onWin(); } else { onLose&&onLose(); }
         renderHp(); renderSpill(); save(); grace=1.5;
@@ -871,6 +871,7 @@ async function enterMap(id,at,instant){
   try{
     if(!instant) await fade(true);
     const data=await getMap(id);
+    if(data.interior&&roomSpec&&roomSpec.outside) await getMap(roomSpec.outside.map).catch(()=>{});   // a room plays its town's theme
     await loadPalette(data.palette);
     setupMap(data);
     resize();
@@ -879,7 +880,7 @@ async function enterMap(id,at,instant){
     exitArmed=false;                          // arriving in an exit doesn't send you straight back
     const loc=locationOfMap(id); if(loc) found.add(loc.id);
     if(!id.startsWith('room:')) visited.add(id);
-    save();
+    save(); syncMusic();
   }catch(err){ console.error(err); toast('That way is blocked.'); }
   finally{ busy=false; fade(false); }
 }
@@ -1183,9 +1184,46 @@ function stopTheme(){
     if(theme.volume<=0){ clearInterval(themeFade); theme.pause(); }
   },40);
 }
+// A map's own theme (`music` in its file; a room plays its town's) loops while you walk there,
+// fading in and out. It stays quiet during battles, the creator (which has its own theme) and
+// once Explore closes; syncMusic() works out what should be playing and is called at each change.
+const MUSIC_VOL=0.55;
+let music=null, musicSrc=null, musicFade=0;
+function mapMusic(){
+  if(!MAP) return null;
+  if(MAP.interior){ const o=roomSpec&&roomSpec.outside, d=o&&mapCache[o.map]; return d&&d.music||null; }
+  return MAP.music||null;
+}
+function fadeMusic(to,done){
+  clearInterval(musicFade);
+  const a=music; if(!a) return;
+  musicFade=setInterval(()=>{
+    const v=a.volume+(to>a.volume?0.03:-0.05);
+    a.volume=Math.max(0,Math.min(MUSIC_VOL,to>a.volume?Math.min(v,to):Math.max(v,to)));
+    if(Math.abs(a.volume-to)<0.001){ clearInterval(musicFade); if(done) done(); }
+  },40);
+}
+function syncMusic(){
+  const want=(running&&!creating&&hero)?mapMusic():null;
+  try{
+    if(want&&music&&musicSrc===want){
+      if(music.paused){ const p=music.play(); if(p&&p.catch) p.catch(()=>{}); }
+      fadeMusic(MUSIC_VOL); return;
+    }
+    if(music&&!music.paused){ const a=music; fadeMusic(0,()=>{ a.pause(); if(want) syncMusic(); }); if(want) musicSrc=null; return; }
+    if(!want) return;
+    if(musicSrc!==want){ music=new Audio(want); music.loop=true; music.preload='auto'; musicSrc=want; }
+    music.volume=0; music.currentTime=0;
+    const p=music.play(); if(p&&p.catch) p.catch(()=>{ musicBlocked=true; });
+    fadeMusic(MUSIC_VOL);
+  }catch(e){}
+}
+// a browser that refused to start it (no tap yet) gets another go at the next tap or key
+let musicBlocked=false;
+['pointerdown','keydown'].forEach(t=>window.addEventListener(t,()=>{ if(musicBlocked){ musicBlocked=false; syncMusic(); } },true));
 async function createHero(edit){
   creating=true; keys.clear(); target=null; hideSay();
-  playTheme();
+  syncMusic(); playTheme();
   let h;
   try{
     h=await window.ExploreHero.open(el.root,{hero:edit?hero:null, edit:!!edit});
@@ -1193,7 +1231,7 @@ async function createHero(edit){
     // a new wizard gets the introduction scroll, with the theme playing on under it
     if(h&&!edit&&window.ExploreIntro) await window.ExploreIntro.play(el.root,h);
   }
-  finally{ stopTheme(); creating=false; }
+  finally{ stopTheme(); creating=false; syncMusic(); }
   return h;
 }
 function setWizard(i){
@@ -1653,7 +1691,7 @@ async function open(opts){
 }
 function close(){
   save(); stopTheme();
-  running=false; keys.clear(); target=null; hideSay(); closeWorld();
+  running=false; keys.clear(); target=null; hideSay(); closeWorld(); syncMusic();
   el.root.classList.remove('active');
   refreshTitle();
 }

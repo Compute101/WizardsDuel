@@ -77,7 +77,7 @@ const SETS = {
 module.exports = function wrenford(rects){
   const m=new MapBuilder(rects,{id:'wrenford', name:'Wrenford', cols:COLS, rows:ROWS, seed:7201});
   const {W, H} = m;
-  m.lore=LORE; m.safe=true; m.arena='library';
+  m.lore=LORE; m.safe=true; m.arena='library'; m.music='audio/wrenford_theme.mp3';
   const city=new City(m,{street:'R', square:'P', ruin:()=>0});
   const RES_=(x0,x1,y0,y1)=>city.reserve(x0*T,x1*T,y0*T,y1*T);
 
