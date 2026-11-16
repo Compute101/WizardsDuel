@@ -209,7 +209,7 @@ async function open(root, opts){
         <div class="hc-preview"><canvas class="hc-cv" width="300" height="420"></canvas><div class="hc-who"></div><div class="hc-note"></div></div>
         <div class="hc-opts"></div>
       </div>
-      <div class="hc-foot">${opts.edit?'<button class="ex-btn hc-cancel" type="button">Cancel</button>':''}<button class="ex-btn hc-go" type="button">${opts.edit?'Keep this look':'Begin'}</button></div>
+      <div class="hc-foot"><button class="ex-btn hc-rand" type="button" title="A random wizard">🎲 Random</button>${opts.edit?'<button class="ex-btn hc-cancel" type="button">Cancel</button>':''}<button class="ex-btn hc-go" type="button">${opts.edit?'Keep this look':'Begin'}</button></div>
     </div>`;
     const $=s=>box.querySelector(s), cv=$('.hc-cv'), ctx=cv.getContext('2d');
     let drawn=0;
@@ -226,6 +226,13 @@ async function open(root, opts){
     };
     const pills=(key,items,cls)=>`<div class="hc-row"><span class="hc-lab">${cls}</span><div class="hc-pills">`+items.map(([v,l])=>`<button type="button" class="hc-pill${st[key]===v?' on':''}" data-k="${key}" data-v="${v}">${l}</button>`).join('')+`</div></div>`;
     const swatches=(key,items,lab)=>`<div class="hc-row"><span class="hc-lab">${lab}</span><div class="hc-sw">`+items.map(it=>`<button type="button" class="hc-swb${st[key]===it.name?' on':''}" data-k="${key}" data-v="${it.name}" title="${it.name}" style="background:${it.sw}"></button>`).join('')+`<span class="hc-swname">${st[key]}</span></div></div>`;
+    // 🎲 Random: a whole new look (and, for a new wizard, sex, element and name; Change look keeps those)
+    const randomize=()=>{
+      if(!opts.edit){ st.sex=rnd(['m','f']); st.elem=rnd(ELEMS).id; st.name=rnd(NAMES[st.sex]); }
+      st.age=rnd(AGES)[0]; st.fig=rnd(figuresFor(st.sex,st.age).list).id;
+      st.robe=rnd(ROBES).name; st.trim=rnd(TRIMS).name; st.skin=rnd(SKINS).name; st.eyes=rnd(EYES).name;
+      st.hair=(st.age==='old'&&Math.random()<0.6)?rnd(['Silver','White']):rnd(HAIRS).name;   // the old mostly grey
+    };
     const render=()=>{
       const F=figuresFor(st.sex,st.age), i=Math.max(0,F.list.findIndex(b=>b.id===st.fig)), op=opposite(st.elem);
       $('.hc-opts').innerHTML=
@@ -241,6 +248,7 @@ async function open(root, opts){
     };
     box.addEventListener('click',e=>{
       const t=e.target.closest('button'); if(!t) return;
+      if(t.classList.contains('hc-rand')){ randomize(); render(); return; }
       if(t.classList.contains('hc-dice')){ st.name=rnd(NAMES[st.sex].filter(n=>n!==st.name)); render(); return; }
       if(t.dataset.fig){ const F=figuresFor(st.sex,st.age).list, i=F.findIndex(b=>b.id===st.fig); st.fig=F[(i+(+t.dataset.fig)+F.length)%F.length].id; render(); return; }
       if(t.dataset.k){

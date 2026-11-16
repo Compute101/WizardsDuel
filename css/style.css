@@ -1857,6 +1857,7 @@ body {
 #explore-screen .hc-elnote { color:#a99a7a; font-family:Georgia,serif; font-size:12px; font-style:italic; margin-left:84px; }
 #explore-screen .hc-foot { display:flex; justify-content:flex-end; gap:10px; padding:10px 16px 14px; border-top:1px solid rgba(201,168,76,0.25); }
 #explore-screen .hc-go { font-size:16px; padding:9px 26px; }
+#explore-screen .hc-rand { margin-right:auto; }
 @media (max-width:640px){
   #explore-screen .hc { padding:6px; align-items:stretch; overflow:hidden; }
   #explore-screen .hc-box { height:100%; }
