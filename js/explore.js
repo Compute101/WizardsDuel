@@ -504,7 +504,7 @@ function findDoors(){
     const ruined=/_(burnt|char)$/.test(o.kind)||['house5','house6','tiltedHouse','sunkHouse'].includes(base);
     const spec={id:'room:'+MAP.id+'#'+o.id, base, outside:{map:MAP.id,x:o.x,y:o.y+6}, el, depth, city:CITY_MAPS.includes(MAP.id),
       ruined, fixed:f||null, wizards:wizKeys.filter(k=>k!=='hero'), safe:!!MAP.safe};
-    doors.push({x:o.x, y:o.y+14, spec, label:f?FIXED_LABEL[f]:'Enter'});
+    doors.push({x:o.x, y:o.y+14, spec, obj:o, label:f?FIXED_LABEL[f]:'Enter'});
   }
 }
 function enterDoor(dr){
@@ -1356,8 +1356,11 @@ function update(dt){
     }
   }
   for(const n of npcs){ if(!present(n)) continue; const d=Math.hypot(n.x-wiz.x,(n.y-wiz.y)*1.3); if(d<best+12){ best=d-12; near=Object.assign(n,{npc:n,lore:'npc'}); } }
+  // a door beats inspecting things: standing at it, the building itself (and the lamps and statues by
+  // it) are always in inspect range, which used to hide the door (Wrenford's Remnant Library); people still win
   nearDoor=null;
-  if(!near){ let bd=40; for(const dr of doors){ const d=Math.hypot(dr.x-wiz.x,(dr.y-wiz.y)*1.4); if(d<bd){ bd=d; nearDoor=dr; } } }
+  if(!near||!near.npc){ let bd=40; for(const dr of doors){ const d=Math.hypot(dr.x-wiz.x,(dr.y-wiz.y)*1.4); if(d<bd){ bd=d; nearDoor=dr; } } }
+  if(nearDoor) near=null;
   // the action button: inspect what's near, enter a door, or take the way out you're close to
   if(roomLocked()&&nearExit&&wiz.moving&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y-wiz.y)<50&&performance.now()>lockToastT){
     lockToastT=performance.now()+3000; toast(MAP.ev&&MAP.ev.type==='party'?'They\'ve got the door. No way out but through them.':'The Echoes won\'t let you leave. Deal with them first.');
@@ -1762,7 +1765,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   document.addEventListener('wd-profile-changed',refreshTitle);
 });
 window.Explore={open, close, refreshTitle, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
-  _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
+  _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _place:(x,y)=>{ wiz.x=x; wiz.y=y; target=null; }, _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
   // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
   _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;
     for(let h=0;h<q.length;h++){ const c=q[h], cx=c%nc; for(const n of [c-nc,c+nc,cx>0?c-1:-1,cx<nc-1?c+1:-1]) if(n>=0&&n<nc*nr&&!seen[n]&&g[n]){ seen[n]=1; q.push(n); } }
