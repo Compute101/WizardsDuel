@@ -209,7 +209,7 @@ Candlekeep, the Senior Tutor offers the whole Year:
   the country and the road east are open. Good for returning players and for playtesting.
 - **A debug grant** (Test menu / `Explore.knowAll()`) does the same with no exam, for testing only.
 - **What skipping costs:** the Year's quests are where the loot is. Every lesson, club rung, incident and
-  plot beat pays (table below), and a skipper misses all of it, plus Ironskin from the Boxing Club and
+  plot beat pays (table below), and a skipper misses all of it, plus the Boxing Club's prize and
   the tutorial partner as an ally. The mystery doesn't vanish: a skipper hears rumours of the Echo in
   the market, and All Absent's plot can still be played after graduating (the Undercroft grate stays
   there), as a side story with its rewards. The Tutor's offer says so plainly ("you'll miss a good deal,
@@ -223,7 +223,7 @@ a skipper, about 250 gold, 12–15 potions and 20 spill all told):
 | Each Library primer passed | 5 gold (the Keeper's "book prize") |
 | Each lecture's questions right | a potion |
 | Each Laboratory practical | 2 spill of that element (Fizzwick's leftovers) |
-| Each Boxing Club rung | 10 gold purse; the champion: Ironskin and a title |
+| Each Boxing Club rung | 10 gold purse; the champion: a title and the club's prize (+1 Attack) |
 | Each spar won against your tutorial partner | 5 gold (a wager); they join you in Trinity |
 | Collections (each) | 30 gold, 2 potions; a First (no retakes) adds a trinket |
 | Incidents | 5–20 gold, spill from the Echo, sometimes a clue |
@@ -242,7 +242,7 @@ record gets `magic`, saved with it:
 | `elems` | none | a lecture on that element **and** its 4 glyphs **and** a Laboratory practical |
 | `cats` | none | Damage (Michaelmas), Protection (Hilary), Dispel (Trinity); Seal Ward and Cleanse Self come with their category |
 | `rings` | 1 (inner) | middle ring: Collections (end of Michaelmas); outer ring: Finals |
-| `skin` | no | the boxing club's last rung (Ironskin is "the boxer's ward") |
+| `skin` | no | Hilary, with Protection: the Master of the Schools' practical on blows (wards stop magic; Ironskin stops fists and blades). Core, not optional |
 
 **In battle** (`js/game.js`): a seat's `cfg.known` (only the hero has one; the roster is unaffected).
 An unknown element's sector draws like a forbidden one but with a 📖 instead of ⛔, and its hover says
@@ -310,7 +310,8 @@ missed lecture just comes round again the next day, so nothing is lost by explor
   a **pattern** you can learn to read: one always Guards after two Attacks, one Grapples whenever you
   Guarded last, one mirrors your last pick, the champion changes pattern when hurt. These are fighters
   (`fighters.json`) with a scripted `pattern` instead of `fighterAIChoose`'s reading; the ring is the
-  duel screen with only Actions. Beating the ladder: Ironskin, and a title. Later clubs (one is enough
+  duel screen with only Actions. Beating the ladder: a title and **+1 Attack** for good (`phys.atk`), the one
+  thing only the club gives; clubs are optional, so nothing core is locked behind one. Later clubs (one is enough
   to start): the **Duelling Society** (wizard spars, Hilary) and the **Boat Club** (a rowing timing
   minigame on the Wren; optional, for the rhythm crowd).
 - **The pub game: Winks at the Wren's Nest.** The regulars play the Tabletop version of Wizard's Duel
