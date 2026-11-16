@@ -3800,7 +3800,26 @@ function elemUnlearnt(who,elem,cat){
 // Cleanse Self: Dispel's category and its glyphs, at a ring you know
 function cleanseUnlearnt(who,tier){ const k=knownOf(who); return !!k&&(catUnlearnt(who,'dispel')||!knowsGlyphs(k,GLYPH_SETS.dispel)||ringUnlearnt(who,tier)); }
 // the minigame keyboards blank glyphs the caster hasn't learnt (only hard mode shows non-spell glyphs at all)
-function mgKnows(ai){ const k=gs&&gs.turnPlayer&&knownOf(gs.turnPlayer); return !k||(k.glyphs||[]).includes(ai); }
+function mgKnows(ai){
+  const k=mgKnownOverride!==undefined?mgKnownOverride:gs&&gs.turnPlayer&&knownOf(gs.turnPlayer);
+  return !k||(k.glyphs||[]).includes(ai);
+}
+// ── A cast outside any battle (Explore's Laboratory practicals, later the exams) ──
+// practiseCast({cat, elem, tier, known, screen}, cb): the cast's minigame on the puzzle screen, then
+// cb(ok) and the `screen` (default the title screen, which Explore covers) instead of a battle.
+let mgStandalone=null, mgKnownOverride=undefined;
+function practiseCast(o,cb){
+  const el=o.cat==='dispel'&&!o.elem?{icon:'✦',col:'#e070ff',name:'Dispel'}:elemById(o.elem), tier=o.tier||1;
+  const spell={name:o.name||describeElemAction({cat:o.cat,elem:o.elem||'arcane',tier}).name, icon:el.icon,
+    element:o.elem, col:el.col, tier, glyphs:o.cat==='damage'?ELEM_GLYPHS[o.elem]:undefined};
+  mgKnownOverride=o.known||null;
+  mgStandalone=ok=>{ showScreen(o.screen||'title-screen'); cb&&cb(ok); };
+  const none=()=>{};
+  if(o.cat==='protect') launchBuffTileMatch(spell,ELEM_WARD_THEME[o.elem],'p1',none);
+  else if(o.cat==='dispel') launchDispelPattern(spell,none);
+  else ELEM_MINIGAME[o.elem](spell,none);
+}
+window.practiseCast=practiseCast;
 // what the wheel says about a sector you haven't learnt
 function unlearntWhy(who,cat,elem){
   const k=knownOf(who); if(!k) return '';
@@ -6619,6 +6638,7 @@ const mc=document.getElementById('mcanvas');
 const mx=mc.getContext('2d');
 
 function puzzleFinish(ok,cb){
+  if(mgStandalone){ const f=mgStandalone; mgStandalone=null; mgKnownOverride=undefined; f(ok); return; }
   battleRunning=true;
   lastFrameTime=0;
   showScreen('battle-screen');

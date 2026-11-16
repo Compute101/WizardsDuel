@@ -1988,3 +1988,30 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .splash-title, .splash-play, #splash-screen.leaving { animation: none; }
 }
+
+/* ── The Library's primers: study card and flash-card test (js/explore_study.js) ── */
+#explore-screen .st-wrap { position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(4,3,10,0.72); }
+#explore-screen .st-card { width:min(560px, 100%); max-height:100%; overflow:auto; background:rgba(14,10,30,0.97); border:1px solid #c9a84c; border-radius:10px; padding:18px 18px 14px; box-shadow:0 6px 30px #000; text-align:center; font-family:Georgia, 'Times New Roman', serif; color:#efe6d0; }
+#explore-screen .st-title { font-family:'Cinzel', serif; color:#f0cc6a; font-size:18px; letter-spacing:1px; margin-bottom:6px; }
+#explore-screen .st-sub { font-size:15px; line-height:1.45; margin:8px 0; }
+#explore-screen .st-row { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin:12px 0; }
+#explore-screen .st-cell { display:flex; flex-direction:column; align-items:center; gap:2px; background:rgba(255,255,255,0.04); border:1px solid rgba(201,168,76,0.3); border-radius:8px; padding:8px 4px; }
+#explore-screen .st-cell small { color:#9a90b0; font-size:11px; }
+#explore-screen .st-cell b { font-family:'Cinzel', serif; font-size:12px; color:#f0e0b0; font-weight:normal; }
+#explore-screen .st-cell em { font-size:12px; color:#b8b0c8; }
+#explore-screen .st-g { font-family:serif; color:#fff; text-shadow:0 0 6px var(--gc), 0 0 14px var(--gc); font-size:24px; line-height:1; }
+#explore-screen .st-g.big { font-size:40px; }
+#explore-screen .st-word { margin:6px 0 4px; font-size:14px; color:#c9c0d8; }
+#explore-screen .st-word .st-g { font-size:22px; margin:0 3px; }
+#explore-screen .st-show { margin:14px 0 6px; }
+#explore-screen .st-show .st-g.big { font-size:64px; }
+#explore-screen .st-ask { font-size:16px; margin:8px 0 12px; }
+#explore-screen .st-opts { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+#explore-screen .st-opt { font-size:15px; padding:10px 8px; min-height:48px; }
+#explore-screen .st-opt .st-g { font-size:30px; }
+#explore-screen .st-opt.right { border-color:#6ad08a; background:rgba(40,110,60,0.55); }
+#explore-screen .st-opt.wrong { border-color:#e05a5a; background:rgba(120,30,30,0.55); }
+#explore-screen .st-score { margin-top:10px; font-size:12px; color:#9a90b0; }
+#explore-screen .st-big { font-family:'Cinzel', serif; font-size:30px; color:#f0cc6a; margin:6px 0; }
+#explore-screen .st-foot { display:flex; justify-content:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
+@media (max-width:480px){ #explore-screen .st-row { grid-template-columns:repeat(2, 1fr); } #explore-screen .st-g.big { font-size:34px; } }

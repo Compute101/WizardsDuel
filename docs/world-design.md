@@ -5,7 +5,7 @@ Baldur's Gate: countries, cities, towns and villages, with wizards stationed aro
 You meet them, they start stories, and some join your party. Battles use the existing duel
 screen. Nothing here is built yet beyond Hollowmere (see "Explore mode" in `CLAUDE.md`).
 
-Status: **vision and names agreed; steps 1, 3, 4 and 6 built; step 2 has all eight outer rings (inner rings next); interiors built; Wrenford, the University town and tutorial, built; the University Year (learning magic): step 1 built.**
+Status: **vision and names agreed; steps 1, 3, 4 and 6 built; step 2 has all eight outer rings (inner rings next); interiors built; Wrenford, the University town and tutorial, built; the University Year (learning magic): steps 1–2 built.**
 
 ## Decisions so far
 
@@ -383,7 +383,7 @@ About 45–60 minutes a term, 2½–3 hours to graduation, with a fight (real or
 1. *Done.* **`magic` on the hero and the battle locks** (sectors, categories, rings, glyphs on the keyboard),
    the debug grant, and **Sit Finals now** (at first as a plain grant from the Tutor, the exam once step 4
    exists), so playtesting can skip the Year from day one. Matriculation rewires to grant the first unlocks.
-2. **Library flash-cards** and **Laboratory practicals** (glyphs and elements become learnable).
+2. *Done.* **Library flash-cards** and **Laboratory practicals** (glyphs and elements become learnable).
 3. **The Boxing Club** (pattern fighters) and the tutorial partner (a fighter-wizard who levels with you).
 4. **Lectures** (a lecture-theatre room, the lecturers) and **exams** (call-outs through the minigames).
 5. **Plot beats 1–2 and incidents**, so Michaelmas is playable end to end. Play it; check it's fun.

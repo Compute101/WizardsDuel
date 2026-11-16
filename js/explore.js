@@ -559,6 +559,7 @@ const folkApi = {
   magic:()=>wizKeys[wizIdx]==='hero'?magic:null, homeElem:()=>hero&&hero.elem, barred:()=>hero&&oppOf(hero.elem),
   get elems(){ return ELEM_IDS; }, get glyphSets(){ return GLYPH_SETS; }, get glyphs(){ return GLYPHS; },
   learn:o=>{ if(wizKeys[wizIdx]==='hero') learn(o); }, graduate:els=>graduate(els),
+  primer:id=>primerTest(id), practise:o=>practise(o),
 };
 // a practice bout (the Schools, the Laboratory): fought at full strength, and you come back as you went
 // in (the University's healers see to that); nothing is lost on a defeat
@@ -577,6 +578,29 @@ function spar({foes, text, onWin, onLose}){
         renderHp(); renderSpill(); save(); grace=1.5;
         last=performance.now(); requestAnimationFrame(frame);
       }});
+  });
+}
+
+// the Keeper's primer test (js/explore_study.js): resolves {passed, score, of}
+async function primerTest(id){
+  if(busy||!window.ExploreStudy) return {passed:false};
+  busy=true; keys.clear(); target=null; hideSay();
+  try{ return await window.ExploreStudy.primer(el.root,{id, keeper:'Mr Quill'}); }
+  finally{ busy=false; last=performance.now(); }
+}
+// a Laboratory practical: one cast's minigame, outside any battle (game.js practiseCast); resolves ok
+function practise(o){
+  if(busy||typeof window.practiseCast!=='function') return Promise.resolve(false);
+  busy=true; keys.clear(); target=null; hideSay();
+  return new Promise(res=>{
+    fade(true).then(()=>{
+      running=false; el.root.classList.remove('active'); fade(false);
+      window.practiseCast(Object.assign({known:magic},o), ok=>{
+        el.root.classList.add('active'); running=true; busy=false; resize();
+        last=performance.now(); requestAnimationFrame(frame);
+        res(ok);
+      });
+    });
   });
 }
 
