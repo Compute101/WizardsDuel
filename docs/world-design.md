@@ -342,7 +342,7 @@ sex there (the old witch included).
 Idea (not built): the base figures, recoloured, as Explore's NPC wizards (gleaner bosses, townsfolk),
 leaving out the figure and colours the player picked so no NPC looks like you.
 
-### Staff toppers (art brief, not built)
+### Staff toppers (built: all five sheets in, the creator's Topper row)
 
 Alternative heads for the hero's staff. The plan is that a topper replaces the painted head: the staff
 mask hides the original above the hand, and the topper is drawn at an anchor point and angle per

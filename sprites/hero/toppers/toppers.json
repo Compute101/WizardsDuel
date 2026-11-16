@@ -1,0 +1,242 @@
+[
+ {
+  "id": "crystal",
+  "name": "Gripped Crystal",
+  "src": "sprites/hero/toppers/crystal.png",
+  "w": 357,
+  "h": 652,
+  "neck": [
+   0.4944,
+   0.1569
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "hoop",
+  "name": "Orb in a Hoop",
+  "src": "sprites/hero/toppers/hoop.png",
+  "w": 398,
+  "h": 664,
+  "neck": [
+   0.5063,
+   0.1608
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "crescent",
+  "name": "Crescent Moon",
+  "src": "sprites/hero/toppers/crescent.png",
+  "w": 388,
+  "h": 621,
+  "neck": [
+   0.4781,
+   0.1753
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "crook",
+  "name": "Shepherd's Crook",
+  "src": "sprites/hero/toppers/crook.png",
+  "w": 339,
+  "h": 632,
+  "neck": [
+   0.2286,
+   0.1829
+  ],
+  "wood": "all"
+ },
+ {
+  "id": "shard",
+  "name": "Quintessence Shard",
+  "src": "sprites/hero/toppers/shard.png",
+  "w": 299,
+  "h": 658,
+  "neck": [
+   0.5217,
+   0.204
+  ],
+  "wood": "all"
+ },
+ {
+  "id": "orrery",
+  "name": "Orrery",
+  "src": "sprites/hero/toppers/orrery.png",
+  "w": 416,
+  "h": 648,
+  "neck": [
+   0.5144,
+   0.1562
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "cage",
+  "name": "Caged Wisp",
+  "src": "sprites/hero/toppers/cage.png",
+  "w": 344,
+  "h": 658,
+  "neck": [
+   0.5044,
+   0.1977
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "lantern",
+  "name": "Finder's Lantern",
+  "src": "sprites/hero/toppers/lantern.png",
+  "w": 282,
+  "h": 658,
+  "neck": [
+   0.4965,
+   0.2305
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "omega",
+  "name": "Omega",
+  "src": "sprites/hero/toppers/omega.png",
+  "w": 367,
+  "h": 668,
+  "neck": [
+   0.4973,
+   0.1635
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "psi",
+  "name": "Psi",
+  "src": "sprites/hero/toppers/psi.png",
+  "w": 395,
+  "h": 668,
+  "neck": [
+   0.5038,
+   0.1544
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "cross",
+  "name": "Circled Cross",
+  "src": "sprites/hero/toppers/cross.png",
+  "w": 416,
+  "h": 641,
+  "neck": [
+   0.4988,
+   0.149
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "star",
+  "name": "Octagram",
+  "src": "sprites/hero/toppers/star.png",
+  "w": 453,
+  "h": 658,
+  "neck": [
+   0.4989,
+   0.1347
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "skull",
+  "name": "Skull",
+  "src": "sprites/hero/toppers/skull.png",
+  "w": 295,
+  "h": 575,
+  "neck": [
+   0.5254,
+   0.2136
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "blade",
+  "name": "Broken Blade",
+  "src": "sprites/hero/toppers/blade.png",
+  "w": 333,
+  "h": 657,
+  "neck": [
+   0.518,
+   0.1862
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "antlers",
+  "name": "Antlers",
+  "src": "sprites/hero/toppers/antlers.png",
+  "w": 471,
+  "h": 632,
+  "neck": [
+   0.4915,
+   0.1316
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "feathers",
+  "name": "Feathers and Bones",
+  "src": "sprites/hero/toppers/feathers.png",
+  "w": 426,
+  "h": 640,
+  "neck": [
+   0.5317,
+   0.1455
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "hourglass",
+  "name": "Hourglass",
+  "src": "sprites/hero/toppers/hourglass.png",
+  "w": 290,
+  "h": 645,
+  "neck": [
+   0.4966,
+   0.231
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "hand",
+  "name": "Golden Hand",
+  "src": "sprites/hero/toppers/hand.png",
+  "w": 298,
+  "h": 626,
+  "neck": [
+   0.5487,
+   0.2215
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "wren",
+  "name": "Wren",
+  "src": "sprites/hero/toppers/wren.png",
+  "w": 265,
+  "h": 626,
+  "neck": [
+   0.4943,
+   0.2528
+  ],
+  "wood": "neck"
+ },
+ {
+  "id": "key",
+  "name": "Key",
+  "src": "sprites/hero/toppers/key.png",
+  "w": 389,
+  "h": 645,
+  "neck": [
+   0.4949,
+   0.1748
+  ],
+  "wood": "neck"
+ }
+]
