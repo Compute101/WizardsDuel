@@ -85,7 +85,7 @@ function hpOf(key){ return vit[key]==null?maxHp(key):vit[key]; }
 let el={}, ctx=null, dark=null, dctx=null;
 const wiz={x:0,y:0,face:1,walk:0,moving:false};
 const keys=new Set();
-let target=null, stuckT=0, near=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, cam={x:0,y:0}, vw=0, vh=0;
+let target=null, stuckT=0, near=null, nearLook=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, cam={x:0,y:0}, vw=0, vh=0;
 let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
 let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null, quests={};
@@ -1061,8 +1061,9 @@ function buildDom(){
       <button class="ex-btn" id="ex-night" type="button" title="Time of day: auto / day / night"></button>
     </div>
     <canvas id="ex-mini" aria-hidden="true"></canvas>
-    <div class="ex-hint" id="ex-hint">WASD / arrows to walk · tap or click to walk there · E to inspect · walk off a road to travel</div>
+    <div class="ex-hint" id="ex-hint">WASD / arrows to walk · tap or click to walk there · E to inspect or enter · Q to inspect a building at its door · walk off a road to travel</div>
     <button class="ex-btn ex-act" id="ex-act" type="button" hidden>✋ Inspect</button>
+    <button class="ex-btn ex-look" id="ex-look" type="button" hidden>✋ Inspect</button>
     <div class="ex-say" id="ex-say" hidden><div class="ex-say-name"></div><div class="ex-say-text"></div></div>
     <div class="ex-toast" id="ex-toast" hidden></div>
     <div class="ex-world" id="ex-world" hidden>
@@ -1082,7 +1083,7 @@ function buildDom(){
     <div class="ex-loading" id="ex-loading">Loading…</div>`;
   document.getElementById('app').appendChild(d);
   const $=s=>d.querySelector(s);
-  el={root:d, cv:$('#ex-canvas'), mini:$('#ex-mini'), say:$('#ex-say'), act:$('#ex-act'), hint:$('#ex-hint'),
+  el={root:d, cv:$('#ex-canvas'), mini:$('#ex-mini'), say:$('#ex-say'), act:$('#ex-act'), look:$('#ex-look'), hint:$('#ex-hint'),
       face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), loading:$('#ex-loading'), title:$('#ex-title'),
       fade:$('#ex-fade'), toast:$('#ex-toast'), world:$('#ex-world'), worldCv:$('#ex-world-cv'), worldTitle:$('#ex-world-title'),
       hp:$('#ex-hp'), spill:$('#ex-spill'), bag:$('#ex-bag'), bagBody:$('#ex-bag-body'), bagTabs:$('#ex-bag-tabs'), bagWho:$('#ex-bag-who'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
@@ -1100,6 +1101,7 @@ function buildDom(){
   $('#ex-bagbtn').onclick=()=>{ if(!busy&&MAP) openBag(); };
   $('#ex-bag-close').onclick=closeBag;
   el.bag.addEventListener('click',e=>{ if(e.target===el.bag) closeBag(); else bagClick(e); });
+  el.look.onclick=()=>lookAtDoor();
   el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy&&!roomLocked()) takeExit(nearExit); };
   el.say.onclick=hideSay;
   el.cv.addEventListener('pointerdown',e=>{ el.cv.setPointerCapture(e.pointerId); setTarget(e); hideSay(); dragging=true; });
@@ -1128,6 +1130,7 @@ function onKey(e){
   }
   if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)){ keys.add(k); target=null; hideSay(); e.preventDefault(); }
   else if(k==='e'||k===' '||k==='enter'){ if(!el.say.hidden) hideSay(); else if(near) inspect(); else if(nearDoor) enterDoor(nearDoor); e.preventDefault(); }
+  else if(k==='q'){ if(!el.say.hidden) hideSay(); else lookAtDoor(); e.preventDefault(); }
   else if(k==='m'){ if(!busy&&MAP) openWorld('view'); }
   else if(k==='i'){ if(!busy&&MAP) openBag(); }
   else if(k==='escape'){ if(!el.say.hidden) hideSay(); else close(); }
@@ -1259,6 +1262,8 @@ function showSay(o){
   }
   el.say.hidden=false; el.hint.classList.add('fade');
 }
+// at a door, the building (or the lamp or statue by it) can still be inspected: the second button, or Q
+function lookAtDoor(){ if(!nearLook||busy) return; near=nearLook; inspect(); }
 function hideSay(){ if(el.say) el.say.hidden=true; }
 function inspect(){ if(!near) return; if(near.npc) talkTo(near.npc); else if(!(Folk&&Folk.inspect(near,folkApi))&&!roomAct(near)) showSay(near); }
 let toastTimer=0;
@@ -1360,13 +1365,16 @@ function update(dt){
   // it) are always in inspect range, which used to hide the door (Wrenford's Remnant Library); people still win
   nearDoor=null;
   if(!near||!near.npc){ let bd=40; for(const dr of doors){ const d=Math.hypot(dr.x-wiz.x,(dr.y-wiz.y)*1.4); if(d<bd){ bd=d; nearDoor=dr; } } }
-  if(nearDoor) near=null;
+  nearLook=null;
+  if(nearDoor&&near){ nearLook=near; near=null; }
   // the action button: inspect what's near, enter a door, or take the way out you're close to
   if(roomLocked()&&nearExit&&wiz.moving&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y-wiz.y)<50&&performance.now()>lockToastT){
     lockToastT=performance.now()+3000; toast(MAP.ev&&MAP.ev.type==='party'?'They\'ve got the door. No way out but through them.':'The Echoes won\'t let you leave. Deal with them first.');
   }
   const exitClose=!roomLocked()&&nearExit&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y+nearExit.h/2-wiz.y)<(MAP.interior?110:170);
   el.act.hidden=!(near||nearDoor||exitClose)||!el.say.hidden;
+  el.look.hidden=!nearLook||!el.say.hidden;
+  if(nearLook) el.look.textContent='✋ '+loreOf(nearLook)[0];
   if(near) el.act.textContent=(near.npc?'💬 ':'✋ ')+(near.npc?npcTitle(near.npc):loreOf(near)[0]);
   else if(nearDoor) el.act.textContent='🚪 '+(nearDoor.label||'Enter');
   else if(exitClose) el.act.textContent='⟶ '+(nearExit.to==='world'?(nearExit.label||'Travel')+' (world map)':nearExit.label);
