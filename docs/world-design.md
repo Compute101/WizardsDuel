@@ -197,9 +197,39 @@ in a bin fire in the Covered Market that turns out to be an Echo, the ward lectu
 sewers open. And **the plot interrupts the timetable**, never the other way round: about every second
 lesson, something happens.
 
-Second rule: **testing out.** Every exam can be sat early, with as many retakes as you like. A player who
-already knows the duel game can sit Collections on day one and skip the lessons it covers (they still
-get the plot). Nobody is ever made to sit through a lecture to unlock something they can prove.
+Second rule: **you can skip it.** Every exam can be sat early, with as many retakes as you like, so a
+player can test out of one term's lessons. And on day one, like telling Gorion you're ready to leave
+Candlekeep, the Senior Tutor offers the whole Year:
+
+> "You've the look of someone who's done this before. If you like, you can sit Finals this afternoon."
+
+- **Sit Finals now:** the Finals exam and viva straight away (retakes without limit). Pass and you
+  graduate with the standard knowledge (home + 3 electives you pick on the spot, all glyphs, all three
+  wheels, every ring), your BA hood, and the starting kit only. The Proctors' licence comes with it, so
+  the country and the road east are open. Good for returning players and for playtesting.
+- **A debug grant** (Test menu / `Explore.knowAll()`) does the same with no exam, for testing only.
+- **What skipping costs:** the Year's quests are where the loot is. Every lesson, club rung, incident and
+  plot beat pays (table below), and a skipper misses all of it, plus Ironskin from the Boxing Club and
+  the tutorial partner as an ally. The mystery doesn't vanish: a skipper hears rumours of the Echo in
+  the market, and All Absent's plot can still be played after graduating (the Undercroft grate stays
+  there), as a side story with its rewards. The Tutor's offer says so plainly ("you'll miss a good deal,
+  mind"), so nobody skips by accident.
+
+**What the Year pays** (rough targets, to be tuned; a full Year should leave you clearly better off than
+a skipper, about 250 gold, 12–15 potions and 20 spill all told):
+
+| Source | Pays |
+|---|---|
+| Each Library primer passed | 5 gold (the Keeper's "book prize") |
+| Each lecture's questions right | a potion |
+| Each Laboratory practical | 2 spill of that element (Fizzwick's leftovers) |
+| Each Boxing Club rung | 10 gold purse; the champion: Ironskin and a title |
+| Each spar won against your tutorial partner | 5 gold (a wager); they join you in Trinity |
+| Collections (each) | 30 gold, 2 potions; a First (no retakes) adds a trinket |
+| Incidents | 5–20 gold, spill from the Echo, sometimes a clue |
+| Plot beats | the smugglers' cache: spill of every kind, potions, gold |
+| Winks at the pub | stakes (small, rising with the rule set) |
+| Finals passed the long way | 50 gold, and the College's gift (a choice of a staff or a charm, once items exist) |
 
 ### What you know (the hero's magic)
 
@@ -219,9 +249,19 @@ An unknown element's sector draws like a forbidden one but with a 📖 instead o
 where it's taught; an unknown category's whole wheel is locked; unknown rings don't take taps. The
 minigame keyboard blanks glyphs you haven't learnt (the hard-mode "nothing greyed out" still only shows
 the ones you know). Dispel needs ∞ ⊕ ∇ θ, glyphs from three other elements' sets, so it's naturally
-last. Your **home element** (picked at creation) is the first lecture; its opposite stays barred, as
-already planned for step 7. By graduation you know your home element plus two more of your choice and
-Arcane; the rest come later in the world (a reason to find teachers out there).
+last.
+
+**Elements and the ban.** Your **home element** (picked at creation) is your first lecture, and its
+opposite is **barred** for good, as the engine's bans already work: Fire ↔ Water, Air ↔ Earth,
+Lightning ↔ Ice, Arcane ↔ Dark. So there's no compulsory element: a Dark student can never cast Arcane,
+and an Arcane student never Dark. A graduate knows **home + 3 electives**, chosen from the six elements
+that are neither home nor barred (the lecture list offers exactly those; the barred one's lecture hall
+door says why: "Not for you, I'm afraid. Your gift runs the other way."). The other three of the six come
+later, from teachers out in the world.
+
+**Glyphs are never barred.** A glyph isn't owned by one element (∇ is in five sets), and Dispel needs
+∞ ⊕ ∇ θ whatever your element, so every student can learn all 12. The ban stops the element's *sector*,
+not its runes.
 
 ### The three terms
 
@@ -340,7 +380,8 @@ About 45–60 minutes a term, 2½–3 hours to graduation, with a fight (real or
 ### Build order for the Year
 
 1. **`magic` on the hero and the battle locks** (sectors, categories, rings, glyphs on the keyboard),
-   and a debug toggle to know everything. Matriculation rewires to grant the first unlocks.
+   the debug grant, and **Sit Finals now** (at first as a plain grant from the Tutor, the exam once step 4
+   exists), so playtesting can skip the Year from day one. Matriculation rewires to grant the first unlocks.
 2. **Library flash-cards** and **Laboratory practicals** (glyphs and elements become learnable).
 3. **The Boxing Club** (pattern fighters) and the tutorial partner (a fighter-wizard who levels with you).
 4. **Lectures** (a lecture-theatre room, the lecturers) and **exams** (call-outs through the minigames).
@@ -349,8 +390,8 @@ About 45–60 minutes a term, 2½–3 hours to graduation, with a fight (real or
 7. Trinity: Dispel, the finale, Finals, graduation into the field trips.
 8. Winks at the Wren's Nest (can go in any time: the engine exists).
 
-Open questions: how many elements a graduate knows (proposed home + 2 + Arcane); whether a returning
-player can skip the Year entirely by sitting Finals on day one (proposed: yes, they keep the plot);
+Decided: a graduate knows home + 3 electives (never the barred opposite; glyphs are never barred);
+anyone can skip the Year on day one by sitting Finals, missing its rewards but not the plot. Open:
 names for the tutorial partner, the lecturers and the All Absent Fellow.
 
 ## Wrenford's people
