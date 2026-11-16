@@ -324,7 +324,7 @@ function meetBand(c,st){
   keys.clear(); target=null; st.met=true;
   if(b.mood==='hostile'){ toast(b.leader+': '+b.shout); bandFight(c); return; }
   const toll=B.toll[b.level], spillHave=Object.values(spill).reduce((x,y)=>x+y,0), inSpill=Math.max(1,Math.ceil(toll/5));
-  parley=c; sayFace=b.wizard?faceSrc(b.wizard):'portraits/small/'+b.members[0]+'.jpg';
+  parley=c; talkFocus={x:c.x, y:c.y}; sayFace=b.wizard?faceSrc(b.wizard):'portraits/small/'+b.members[0]+'.jpg';
   showDialog(b.leader+', of '+b.name, b.toll+'\n\nThe toll is '+toll+' gold.',[
     {label:'Pay '+toll+' gold', disabled:gold<toll, fn:()=>{ parley=null; st.robbed=false; gold-=toll; st.gold+=toll; st.tollUntil=Date.now()+B.tollMs; toast('They step aside. "Pleasure doing business."'); }},
     {label:'Pay in spill ('+inSpill+')', disabled:spillHave<inSpill, fn:()=>{ parley=null; payInSpill(inSpill,st); st.tollUntil=Date.now()+B.tollMs; toast('They weigh the crystals and wave you on.'); }},
@@ -1295,7 +1295,10 @@ function showSay(o){
 // at a door, the building (or the lamp or statue by it) can still be inspected: the second button, or Q
 function lookAtDoor(){ if(!nearLook||busy) return; near=nearLook; inspect(); }
 function hideSay(){ if(el.say) el.say.hidden=true; }
-function inspect(){ if(!near) return; sayFace=near.npc?npcFace(near.npc):null; if(near.npc) talkTo(near.npc); else if(!(Folk&&Folk.inspect(near,folkApi))&&!roomAct(near)) showSay(near); }
+function inspect(){ if(!near) return; sayFace=near.npc?npcFace(near.npc):null;
+  talkFocus=near.npc?{x:near.npc.x, y:near.npc.y, who:near.npc}:null;
+  if(near.npc&&Math.abs(near.npc.x-wiz.x)>4) wiz.face=near.npc.x>wiz.x?1:-1;     // turn to them
+  if(near.npc) talkTo(near.npc); else if(!(Folk&&Folk.inspect(near,folkApi))&&!roomAct(near)) showSay(near); }
 let toastTimer=0;
 function toast(msg){ el.toast.textContent=msg; el.toast.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.toast.hidden=true; },2200); }
 
@@ -1424,13 +1427,26 @@ function setZoom(z,now){
 }
 function stepZoom(){ setZoom(ZOOM_STEPS.find(z=>z>zoomGoal+0.05)||1); }
 function renderZoom(){ if(el&&el.zoom){ el.zoom.textContent=zoomGoal>1.05?'🔍 ×'+(Math.round(zoomGoal*10)/10):'🔍'; el.zoom.classList.toggle('on',zoomGoal>1.05); } }
+// ── a close-up while you talk: the camera eases in on you and whoever you're talking to (talkFocus, set
+// by inspect() / meetBand), framed above the dialog box, and back out when the box closes. It never
+// changes your own zoom setting: it's TALK_ZOOM × the fitted view (at least TALK_ABS), or yours if that's closer.
+const TALK_ZOOM=2, TALK_ABS=1.7;   // ×2 on your view, and at least 1.7 drawn size (phones start at 0.62)
+let talkFocus=null, talkLast=null, talkBlend=0;
 function updateCam(){
   const t=performance.now(), dt=Math.min(0.1,(t-(zoomT||t))/1000); zoomT=t;
-  zoomMul+=(zoomGoal-zoomMul)*Math.min(1,dt*9); if(Math.abs(zoomGoal-zoomMul)<0.002) zoomMul=zoomGoal;
+  if(talkFocus&&el.say.hidden) talkFocus=null;
+  if(talkFocus&&talkFocus.who&&talkFocus.who.gone) talkFocus=null;
+  talkBlend+=((talkFocus?1:0)-talkBlend)*Math.min(1,dt*6); if(talkBlend<0.002) talkBlend=0;
+  const goal=talkFocus?Math.max(zoomGoal,Math.min(3,Math.max(TALK_ZOOM,TALK_ABS/baseZoom))):zoomGoal;   // phones start further out
+  zoomMul+=(goal-zoomMul)*Math.min(1,dt*6); if(Math.abs(goal-zoomMul)<0.002) zoomMul=goal;
   zoom=baseZoom*zoomMul;
   const cw=vw/zoom, ch=vh/zoom;
-  cam.x=Math.max(0,Math.min(WORLD_W-cw,wiz.x-cw/2));
-  cam.y=Math.max(0,Math.min(WORLD_H-ch,wiz.y-WIZ_H/2-ch/2));
+  if(talkFocus) talkLast=talkFocus;                     // keep easing away from them after the box closes
+  const b=talkLast?talkBlend:0, mx=talkLast?(wiz.x+talkLast.x)/2:wiz.x, my=talkLast?(wiz.y+talkLast.y)/2:wiz.y;
+  if(!b) talkLast=null;
+  const fx=wiz.x+(mx-wiz.x)*b, fy=wiz.y+(my-wiz.y)*b;
+  cam.x=Math.max(0,Math.min(WORLD_W-cw,fx-cw/2));
+  cam.y=Math.max(0,Math.min(WORLD_H-ch,fy-WIZ_H/2-ch*(0.5-0.14*b)));   // the pair sits above the box
   if(cw>WORLD_W) cam.x=(WORLD_W-cw)/2; if(ch>WORLD_H) cam.y=(WORLD_H-ch)/2;
 }
 
