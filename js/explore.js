@@ -324,7 +324,7 @@ function meetBand(c,st){
   keys.clear(); target=null; st.met=true;
   if(b.mood==='hostile'){ toast(b.leader+': '+b.shout); bandFight(c); return; }
   const toll=B.toll[b.level], spillHave=Object.values(spill).reduce((x,y)=>x+y,0), inSpill=Math.max(1,Math.ceil(toll/5));
-  parley=c;
+  parley=c; sayFace=b.wizard?faceSrc(b.wizard):'portraits/small/'+b.members[0]+'.jpg';
   showDialog(b.leader+', of '+b.name, b.toll+'\n\nThe toll is '+toll+' gold.',[
     {label:'Pay '+toll+' gold', disabled:gold<toll, fn:()=>{ parley=null; st.robbed=false; gold-=toll; st.gold+=toll; st.tollUntil=Date.now()+B.tollMs; toast('They step aside. "Pleasure doing business."'); }},
     {label:'Pay in spill ('+inSpill+')', disabled:spillHave<inSpill, fn:()=>{ parley=null; payInSpill(inSpill,st); st.tollUntil=Date.now()+B.tollMs; toast('They weigh the crystals and wave you on.'); }},
@@ -522,7 +522,15 @@ function applyRoomState(){
 }
 
 // ── dialogs: the inspect box with buttons ──
+// sayFace: whose face the box shows (set by inspect() when you talk to someone, null for things)
+let sayFace=null;
+function setSayFace(src){
+  const f=el.say.querySelector('.ex-say-face');
+  if(src){ f.onerror=()=>{ f.hidden=true; el.say.classList.remove('has-face'); }; f.src=src; f.hidden=false; el.say.classList.add('has-face'); }
+  else { f.hidden=true; f.removeAttribute('src'); el.say.classList.remove('has-face'); }
+}
 function showDialog(title,text,choices){
+  setSayFace(sayFace);
   el.say.querySelector('.ex-say-name').textContent=title;
   el.say.querySelector('.ex-say-text').textContent=text;
   el.say.querySelectorAll('.ex-rest,.ex-choice').forEach(b=>b.remove());
@@ -615,6 +623,12 @@ function roomAct(o){
 
 // ── people in rooms ──
 const NPC_SPRITE = {wenna:'sprites/echoes/fire_weak.png', lamplighter:'sprites/echoes/air_weak.png'};   // stand-ins until their own art
+const NPC_FACE = {wenna:'echo_fire_weak', lamplighter:'echo_air_weak'};                          // ditto
+function npcFace(n){
+  if(Folk&&Folk.knows(n.role)) return Folk.face(n,folkApi);
+  const k=n.role==='wounded'?(MAP.ev||{}).key:NPC_FACE[n.role];
+  return k?'portraits/small/'+k+'.jpg':null;
+}
 function npcTitle(n){ const ev=MAP.ev||{};
   if(Folk&&Folk.knows(n.role)) return Folk.title(n,folkApi);
   return n.role==='wounded'?ev.name+', wounded':n.role==='wenna'?'Wenna the Baker':n.role==='lamplighter'?'The Lamplighter':'Someone'; }
@@ -1064,7 +1078,7 @@ function buildDom(){
     <div class="ex-hint" id="ex-hint">WASD / arrows to walk · tap or click to walk there · E to inspect or enter · Q to inspect a building at its door · walk off a road to travel</div>
     <button class="ex-btn ex-act" id="ex-act" type="button" hidden>✋ Inspect</button>
     <button class="ex-btn ex-look" id="ex-look" type="button" hidden>✋ Inspect</button>
-    <div class="ex-say" id="ex-say" hidden><div class="ex-say-name"></div><div class="ex-say-text"></div></div>
+    <div class="ex-say" id="ex-say" hidden><img class="ex-say-face" alt="" hidden><div class="ex-say-name"></div><div class="ex-say-text"></div></div>
     <div class="ex-toast" id="ex-toast" hidden></div>
     <div class="ex-world" id="ex-world" hidden>
       <div class="ex-world-head"><span id="ex-world-title"></span><button class="ex-btn" id="ex-world-close" type="button">✕ Close</button></div>
@@ -1248,6 +1262,7 @@ function setWizard(i){
 function loreOf(o){ return o.npc?['…','']:(MAP.lore||{})[o.lore]; }
 function showSay(o){
   const L=loreOf(o); if(!L) return;
+  setSayFace(null);
   el.say.querySelector('.ex-say-name').textContent=L[0];
   el.say.querySelector('.ex-say-text').textContent=L[1];
   const R=(REST[MAP.id]||{})[o.lore], key=wizKeys[wizIdx];
@@ -1265,7 +1280,7 @@ function showSay(o){
 // at a door, the building (or the lamp or statue by it) can still be inspected: the second button, or Q
 function lookAtDoor(){ if(!nearLook||busy) return; near=nearLook; inspect(); }
 function hideSay(){ if(el.say) el.say.hidden=true; }
-function inspect(){ if(!near) return; if(near.npc) talkTo(near.npc); else if(!(Folk&&Folk.inspect(near,folkApi))&&!roomAct(near)) showSay(near); }
+function inspect(){ if(!near) return; sayFace=near.npc?npcFace(near.npc):null; if(near.npc) talkTo(near.npc); else if(!(Folk&&Folk.inspect(near,folkApi))&&!roomAct(near)) showSay(near); }
 let toastTimer=0;
 function toast(msg){ el.toast.textContent=msg; el.toast.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.toast.hidden=true; },2200); }
 

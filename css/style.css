@@ -1989,3 +1989,10 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .splash-title, .splash-play, #splash-screen.leaving { animation: none; }
 }
+/* the face of whoever you're talking to, in the dialog box (showDialog's sayFace) */
+#explore-screen .ex-say.has-face { padding-left:94px; min-height:88px; }
+#explore-screen .ex-say-face { position:absolute; left:12px; top:12px; width:70px; height:70px; border-radius:6px; border:1px solid #c9a84c; object-fit:cover; background:#18141e; box-shadow:0 2px 8px #000; }
+@media (max-width:520px){
+  #explore-screen .ex-say.has-face { padding-left:76px; min-height:70px; }
+  #explore-screen .ex-say-face { width:54px; height:54px; left:10px; }
+}
