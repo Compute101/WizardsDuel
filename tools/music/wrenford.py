@@ -1,9 +1,9 @@
 # Wrenford, the University town: a town theme that loops (Fable's version, an alternative to
-# audio/wrenford_theme.mp3, which this never touches).
-#   python3 tools/music/wrenford.py           -> audio/wrenford_theme_fable.mid / .mp3 (a seamless loop)
+# audio/wrenford_college_theme.mp3, which this never touches).
+#   python3 tools/music/wrenford.py           -> audio/wrenford_theme.mid / .mp3 (a seamless loop)
 #   python3 tools/music/wrenford.py --midi    -> the MIDI only
 #   python3 tools/music/wrenford.py --check   -> also print ranges, voice-leading, loudness and the seam check
-#   python3 tools/music/wrenford.py --x3      -> also wrenford_theme_fable_x3.mp3 (the loop three times, for the seam)
+#   python3 tools/music/wrenford.py --x3      -> also wrenford_theme_x3.mp3 (the loop three times, for the seam)
 #
 # The exiles' new home: the Corvanthe theme (corvanthe.THEME, D minor with a Phrygian Eb) turned to
 # D major. Its rising triad (D F A) opens the tune as D F# A in quavers, its dotted fall (Bb. G Eb)
@@ -25,7 +25,7 @@ import corvanthe as cv
 
 TPB = cv.TPB
 OUTDIR = os.path.join(cv.HERE, '..', '..', 'audio')
-NAME = 'wrenford_theme_fable'
+NAME = 'wrenford_theme'
 SF2 = os.environ.get('SF2', '/usr/share/sounds/sf2/FluidR3_GM.sf2')
 BPM = 84
 TAIL_BEATS = 8

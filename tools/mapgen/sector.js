@@ -85,6 +85,8 @@ module.exports = function sector(rects,id){
   const m=new MapBuilder(rects,{id, name:'Corvanthe: '+RING_NAMES[id], cols:56, rows:44, seed:S.seed});
   const {W, H} = m;
   m.palette=S.pal; m.fx=S.fx; m.haze=S.haze; m.windowGlow=S.glow; if(S.storm) m.storm=1;
+  // each district's variation on the Corvanthe theme (tools/music/corvanthe.py)
+  m.music='audio/corvanthe/'+({drowned_quarter:'drowned', quarry_ward:'quarry'}[id]||id)+'.mp3';
   m.lore={...OWN_LORE, line:S.line, arch:S.arch, square:S.square, statue:S.statue, tavern:S.tavern, chapel:S.chapel, chapel2:S.chapel, tower:S.tower,
     wall:['The City Wall', 'The outer wall of Corvanthe. From this side, every stone is scratched with tally marks, in groups of five.'],
     crane:['The Harbour Crane', 'Its hook hangs in the water of the street below, and the chain is taut. Something down there is holding on.'],
