@@ -1195,19 +1195,32 @@ async function useHero(){
   el.root.querySelectorAll('#ex-prev,#ex-next').forEach(b=>b.hidden=true);
   setWizard(0);
 }
-// The character-creation theme loops while the creator is open, and fades out when it closes.
-// playTheme is also called straight from the New Game tap, so phones count it as user-started.
-const THEME_SRC='audio/creation_theme.mp3', THEME_VOL=0.7;
-let theme=null, themeFade=0;
+// The main theme plays on the title screen and carries on, unbroken, through the character
+// creator and the introduction scroll, fading out as the first map's own music comes in.
+// playTheme doesn't restart a theme that's already playing. It's also called straight from the
+// New Game tap, so phones count it as user-started; a browser that blocked it before any tap
+// gets another go at the next tap or key (themeBlocked).
+const THEME_SRC='audio/main_theme.mp3', THEME_VOL=0.7;
+let theme=null, themeFade=0, themeBlocked=false;
 function playTheme(){
   try{
     if(!theme){ theme=new Audio(THEME_SRC); theme.loop=true; theme.preload='auto'; }
     clearInterval(themeFade); theme.volume=THEME_VOL;
     if(!theme.paused) return;
     theme.currentTime=0;
-    const p=theme.play(); if(p&&p.catch) p.catch(()=>{});
+    const p=theme.play(); if(p&&p.catch) p.catch(()=>{ themeBlocked=true; });
   }catch(e){}
 }
+// the title screen's share: playing while it shows and Explore isn't open, else fading out
+// (the creator keeps it going itself)
+function titleMusic(){
+  const t=document.getElementById('title-screen');
+  if(t&&t.classList.contains('active')&&!running) playTheme();
+  else if(!creating) stopTheme();
+}
+['pointerdown','keydown'].forEach(t=>window.addEventListener(t,()=>{
+  if(themeBlocked){ themeBlocked=false; if(creating) playTheme(); else titleMusic(); }
+},true));
 function stopTheme(){
   if(!theme||theme.paused) return;
   clearInterval(themeFade);
@@ -1757,7 +1770,7 @@ async function open(opts){
   sizeMini();
   let saved=s&&s.wiz; if(!saved) try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}
   setWizard(Math.max(0,wizKeys.indexOf(saved||'eldrin'))); renderClock();
-  if(!hero&&window.ExploreHero) await createHero(false); else await useHero();
+  if(!hero&&window.ExploreHero) await createHero(false); else { stopTheme(); await useHero(); }
   last=performance.now(); requestAnimationFrame(frame);
   el.hint.classList.remove('fade');
   setTimeout(()=>{ if(el.hint) el.hint.classList.add('fade'); },7000);
@@ -1766,7 +1779,7 @@ function close(){
   save(); stopTheme();
   running=false; keys.clear(); target=null; hideSay(); closeWorld(); syncMusic();
   el.root.classList.remove('active');
-  refreshTitle();
+  refreshTitle(); titleMusic();
 }
 
 // ── title screen: New Game, Load Game (a list of this profile's wizards), the rest behind Test ──
@@ -1833,6 +1846,13 @@ window.addEventListener('DOMContentLoaded',()=>{
   });
   refreshTitle();
   document.addEventListener('wd-profile-changed',refreshTitle);
+  // the main theme follows the title screen as other screens come and go
+  const ts=document.getElementById('title-screen');
+  if(ts) new MutationObserver(titleMusic).observe(ts,{attributes:true,attributeFilter:['class']});
+  // the splash's Play tap leads to the title: start the theme inside that tap, so phones allow it
+  const sp=document.getElementById('btn-splash-play');
+  if(sp) sp.addEventListener('click',playTheme);
+  titleMusic();
 });
 window.Explore={open, close, refreshTitle, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
   _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _place:(x,y)=>{ wiz.x=x; wiz.y=y; target=null; }, _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
