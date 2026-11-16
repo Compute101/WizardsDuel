@@ -85,7 +85,7 @@ function hpOf(key){ return vit[key]==null?maxHp(key):vit[key]; }
 let el={}, ctx=null, dark=null, dctx=null;
 const wiz={x:0,y:0,face:1,walk:0,moving:false};
 const keys=new Set();
-let target=null, stuckT=0, near=null, nearLook=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, cam={x:0,y:0}, vw=0, vh=0;
+let target=null, stuckT=0, near=null, nearLook=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, baseZoom=1, cam={x:0,y:0}, vw=0, vh=0;
 let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
 let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null, quests={};
@@ -324,7 +324,7 @@ function meetBand(c,st){
   keys.clear(); target=null; st.met=true;
   if(b.mood==='hostile'){ toast(b.leader+': '+b.shout); bandFight(c); return; }
   const toll=B.toll[b.level], spillHave=Object.values(spill).reduce((x,y)=>x+y,0), inSpill=Math.max(1,Math.ceil(toll/5));
-  parley=c;
+  parley=c; talkFocus={x:c.x, y:c.y}; sayFace=b.wizard?faceSrc(b.wizard):'portraits/small/'+b.members[0]+'.jpg';
   showDialog(b.leader+', of '+b.name, b.toll+'\n\nThe toll is '+toll+' gold.',[
     {label:'Pay '+toll+' gold', disabled:gold<toll, fn:()=>{ parley=null; st.robbed=false; gold-=toll; st.gold+=toll; st.tollUntil=Date.now()+B.tollMs; toast('They step aside. "Pleasure doing business."'); }},
     {label:'Pay in spill ('+inSpill+')', disabled:spillHave<inSpill, fn:()=>{ parley=null; payInSpill(inSpill,st); st.tollUntil=Date.now()+B.tollMs; toast('They weigh the crystals and wave you on.'); }},
@@ -522,7 +522,15 @@ function applyRoomState(){
 }
 
 // ── dialogs: the inspect box with buttons ──
+// sayFace: whose face the box shows (set by inspect() when you talk to someone, null for things)
+let sayFace=null;
+function setSayFace(src){
+  const f=el.say.querySelector('.ex-say-face');
+  if(src){ f.onerror=()=>{ f.hidden=true; el.say.classList.remove('has-face'); }; f.src=src; f.hidden=false; el.say.classList.add('has-face'); }
+  else { f.hidden=true; f.removeAttribute('src'); el.say.classList.remove('has-face'); }
+}
 function showDialog(title,text,choices){
+  setSayFace(sayFace);
   el.say.querySelector('.ex-say-name').textContent=title;
   el.say.querySelector('.ex-say-text').textContent=text;
   el.say.querySelectorAll('.ex-rest,.ex-choice').forEach(b=>b.remove());
@@ -615,6 +623,12 @@ function roomAct(o){
 
 // ── people in rooms ──
 const NPC_SPRITE = {wenna:'sprites/echoes/fire_weak.png', lamplighter:'sprites/echoes/air_weak.png'};   // stand-ins until their own art
+const NPC_FACE = {wenna:'echo_fire_weak', lamplighter:'echo_air_weak'};                          // ditto
+function npcFace(n){
+  if(Folk&&Folk.knows(n.role)) return Folk.face(n,folkApi);
+  const k=n.role==='wounded'?(MAP.ev||{}).key:NPC_FACE[n.role];
+  return k?'portraits/small/'+k+'.jpg':null;
+}
 function npcTitle(n){ const ev=MAP.ev||{};
   if(Folk&&Folk.knows(n.role)) return Folk.title(n,folkApi);
   return n.role==='wounded'?ev.name+', wounded':n.role==='wenna'?'Wenna the Baker':n.role==='lamplighter'?'The Lamplighter':'Someone'; }
@@ -1058,13 +1072,14 @@ function buildDom(){
       <div class="ex-spill" id="ex-spill" hidden></div>
       <button class="ex-btn" id="ex-bagbtn" type="button" title="Satchel (I)">🎒</button>
       <button class="ex-btn" id="ex-mapbtn" type="button" title="World map">🗺</button>
+      <button class="ex-btn" id="ex-zoom" type="button" title="Zoom in for a closer look (Z, mouse wheel or pinch)">🔍</button>
       <button class="ex-btn" id="ex-night" type="button" title="Time of day: auto / day / night"></button>
     </div>
     <canvas id="ex-mini" aria-hidden="true"></canvas>
-    <div class="ex-hint" id="ex-hint">WASD / arrows to walk · tap or click to walk there · E to inspect or enter · Q to inspect a building at its door · walk off a road to travel</div>
+    <div class="ex-hint" id="ex-hint">WASD / arrows to walk · tap or click to walk there · E to inspect or enter · Q to inspect a building at its door · Z, wheel or pinch to zoom · walk off a road to travel</div>
     <button class="ex-btn ex-act" id="ex-act" type="button" hidden>✋ Inspect</button>
     <button class="ex-btn ex-look" id="ex-look" type="button" hidden>✋ Inspect</button>
-    <div class="ex-say" id="ex-say" hidden><div class="ex-say-name"></div><div class="ex-say-text"></div></div>
+    <div class="ex-say" id="ex-say" hidden><img class="ex-say-face" alt="" hidden><div class="ex-say-name"></div><div class="ex-say-text"></div></div>
     <div class="ex-toast" id="ex-toast" hidden></div>
     <div class="ex-world" id="ex-world" hidden>
       <div class="ex-world-head"><span id="ex-world-title"></span><button class="ex-btn" id="ex-world-close" type="button">✕ Close</button></div>
@@ -1084,7 +1099,7 @@ function buildDom(){
   document.getElementById('app').appendChild(d);
   const $=s=>d.querySelector(s);
   el={root:d, cv:$('#ex-canvas'), mini:$('#ex-mini'), say:$('#ex-say'), act:$('#ex-act'), look:$('#ex-look'), hint:$('#ex-hint'),
-      face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), loading:$('#ex-loading'), title:$('#ex-title'),
+      face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), zoom:$('#ex-zoom'), loading:$('#ex-loading'), title:$('#ex-title'),
       fade:$('#ex-fade'), toast:$('#ex-toast'), world:$('#ex-world'), worldCv:$('#ex-world-cv'), worldTitle:$('#ex-world-title'),
       hp:$('#ex-hp'), spill:$('#ex-spill'), bag:$('#ex-bag'), bagBody:$('#ex-bag-body'), bagTabs:$('#ex-bag-tabs'), bagWho:$('#ex-bag-who'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
   ctx=el.cv.getContext('2d');
@@ -1104,9 +1119,21 @@ function buildDom(){
   el.look.onclick=()=>lookAtDoor();
   el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy&&!roomLocked()) takeExit(nearExit); };
   el.say.onclick=hideSay;
-  el.cv.addEventListener('pointerdown',e=>{ el.cv.setPointerCapture(e.pointerId); setTarget(e); hideSay(); dragging=true; });
-  el.cv.addEventListener('pointermove',e=>{ if(dragging) setTarget(e); });
-  const up=()=>{ dragging=false; };
+  el.zoom.onclick=()=>stepZoom(); renderZoom();
+  // two fingers pinch the zoom instead of walking
+  const touches=new Map(); let pinch=null;
+  const spread=()=>{ const [a,b]=[...touches.values()]; return Math.hypot(a.x-b.x,a.y-b.y)||1; };
+  el.cv.addEventListener('pointerdown',e=>{
+    el.cv.setPointerCapture(e.pointerId); touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(touches.size===2){ pinch={d:spread(), z:zoomGoal}; dragging=false; target=null; return; }
+    if(touches.size>2) return;
+    setTarget(e); hideSay(); dragging=true; });
+  el.cv.addEventListener('pointermove',e=>{
+    if(touches.has(e.pointerId)) touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinch&&touches.size===2){ setZoom(pinch.z*spread()/pinch.d,true); return; }
+    if(dragging) setTarget(e); });
+  el.cv.addEventListener('wheel',e=>{ e.preventDefault(); setZoom(zoomGoal*Math.exp(-e.deltaY*0.0015)); },{passive:false});
+  const up=e=>{ touches.delete(e.pointerId); if(touches.size<2) pinch=null; dragging=false; };
   el.cv.addEventListener('pointerup',up); el.cv.addEventListener('pointercancel',up);
   window.addEventListener('keydown',onKey); window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
   window.addEventListener('resize',resize);
@@ -1132,6 +1159,7 @@ function onKey(e){
   else if(k==='e'||k===' '||k==='enter'){ if(!el.say.hidden) hideSay(); else if(near) inspect(); else if(nearDoor) enterDoor(nearDoor); e.preventDefault(); }
   else if(k==='q'){ if(!el.say.hidden) hideSay(); else lookAtDoor(); e.preventDefault(); }
   else if(k==='m'){ if(!busy&&MAP) openWorld('view'); }
+  else if(k==='z'){ stepZoom(); }
   else if(k==='i'){ if(!busy&&MAP) openBag(); }
   else if(k==='escape'){ if(!el.say.hidden) hideSay(); else close(); }
 }
@@ -1141,9 +1169,10 @@ function resize(){
   vw=window.innerWidth; vh=window.innerHeight;
   for(const c of [el.cv,dark]){ c.width=Math.round(vw*dpr); c.height=Math.round(vh*dpr); }
   el.cv.style.width=vw+'px'; el.cv.style.height=vh+'px';
-  zoom=Math.max(0.62,Math.min(1.35,Math.min(vw/620,vh/620)));
+  baseZoom=Math.max(0.62,Math.min(1.35,Math.min(vw/620,vh/620)));
   // a room fits the screen, walls and all
-  if(MAP&&MAP.interior) zoom=Math.max(0.55,Math.min(1.6,Math.min(vw/(WORLD_W+20),(vh-70)/(WORLD_H-T*0.6))));
+  if(MAP&&MAP.interior) baseZoom=Math.max(0.55,Math.min(1.6,Math.min(vw/(WORLD_W+20),(vh-70)/(WORLD_H-T*0.6))));
+  zoom=baseZoom*zoomMul;
   if(el.mini) el.mini.style.display=MAP&&MAP.interior?'none':'';
   sizeMini();
 }
@@ -1248,6 +1277,7 @@ function setWizard(i){
 function loreOf(o){ return o.npc?['…','']:(MAP.lore||{})[o.lore]; }
 function showSay(o){
   const L=loreOf(o); if(!L) return;
+  setSayFace(null);
   el.say.querySelector('.ex-say-name').textContent=L[0];
   el.say.querySelector('.ex-say-text').textContent=L[1];
   const R=(REST[MAP.id]||{})[o.lore], key=wizKeys[wizIdx];
@@ -1265,7 +1295,10 @@ function showSay(o){
 // at a door, the building (or the lamp or statue by it) can still be inspected: the second button, or Q
 function lookAtDoor(){ if(!nearLook||busy) return; near=nearLook; inspect(); }
 function hideSay(){ if(el.say) el.say.hidden=true; }
-function inspect(){ if(!near) return; if(near.npc) talkTo(near.npc); else if(!(Folk&&Folk.inspect(near,folkApi))&&!roomAct(near)) showSay(near); }
+function inspect(){ if(!near) return; sayFace=near.npc?npcFace(near.npc):null;
+  talkFocus=near.npc?{x:near.npc.x, y:near.npc.y, who:near.npc}:null;
+  if(near.npc&&Math.abs(near.npc.x-wiz.x)>4) wiz.face=near.npc.x>wiz.x?1:-1;     // turn to them
+  if(near.npc) talkTo(near.npc); else if(!(Folk&&Folk.inspect(near,folkApi))&&!roomAct(near)) showSay(near); }
 let toastTimer=0;
 function toast(msg){ el.toast.textContent=msg; el.toast.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.toast.hidden=true; },2200); }
 
@@ -1381,10 +1414,39 @@ function update(dt){
   // remember where you are
   saveT+=dt; if(saveT>2){ saveT=0; save(); }
 }
+// ── close-up zoom: on top of the fitted view (baseZoom, the most usable, and the default), so people
+// can be seen more clearly. 🔍 / Z steps through ZOOM_STEPS, the mouse wheel and a pinch zoom freely
+// between 1 and ZOOM_MAX; it eases there (zoomMul → zoomGoal). Remembered on this device.
+const ZOOM_STEPS=[1,1.5,2.1], ZOOM_MAX=2.4;
+let zoomMul=1, zoomGoal=1, zoomT=0;
+try{ zoomGoal=zoomMul=Math.max(1,Math.min(ZOOM_MAX,+localStorage.getItem('wd-explore-zoom')||1)); }catch(e){}
+function setZoom(z,now){
+  zoomGoal=Math.max(1,Math.min(ZOOM_MAX,z)); if(now) zoomMul=zoomGoal;
+  try{ localStorage.setItem('wd-explore-zoom',zoomGoal.toFixed(2)); }catch(e){}
+  renderZoom();
+}
+function stepZoom(){ setZoom(ZOOM_STEPS.find(z=>z>zoomGoal+0.05)||1); }
+function renderZoom(){ if(el&&el.zoom){ el.zoom.textContent=zoomGoal>1.05?'🔍 ×'+(Math.round(zoomGoal*10)/10):'🔍'; el.zoom.classList.toggle('on',zoomGoal>1.05); } }
+// ── a close-up while you talk: the camera eases in on you and whoever you're talking to (talkFocus, set
+// by inspect() / meetBand), framed above the dialog box, and back out when the box closes. It never
+// changes your own zoom setting: it's TALK_ZOOM × the fitted view (at least TALK_ABS), or yours if that's closer.
+const TALK_ZOOM=2, TALK_ABS=1.7;   // ×2 on your view, and at least 1.7 drawn size (phones start at 0.62)
+let talkFocus=null, talkLast=null, talkBlend=0;
 function updateCam(){
+  const t=performance.now(), dt=Math.min(0.1,(t-(zoomT||t))/1000); zoomT=t;
+  if(talkFocus&&el.say.hidden) talkFocus=null;
+  if(talkFocus&&talkFocus.who&&talkFocus.who.gone) talkFocus=null;
+  talkBlend+=((talkFocus?1:0)-talkBlend)*Math.min(1,dt*6); if(talkBlend<0.002) talkBlend=0;
+  const goal=talkFocus?Math.max(zoomGoal,Math.min(3,Math.max(TALK_ZOOM,TALK_ABS/baseZoom))):zoomGoal;   // phones start further out
+  zoomMul+=(goal-zoomMul)*Math.min(1,dt*6); if(Math.abs(goal-zoomMul)<0.002) zoomMul=goal;
+  zoom=baseZoom*zoomMul;
   const cw=vw/zoom, ch=vh/zoom;
-  cam.x=Math.max(0,Math.min(WORLD_W-cw,wiz.x-cw/2));
-  cam.y=Math.max(0,Math.min(WORLD_H-ch,wiz.y-WIZ_H/2-ch/2));
+  if(talkFocus) talkLast=talkFocus;                     // keep easing away from them after the box closes
+  const b=talkLast?talkBlend:0, mx=talkLast?(wiz.x+talkLast.x)/2:wiz.x, my=talkLast?(wiz.y+talkLast.y)/2:wiz.y;
+  if(!b) talkLast=null;
+  const fx=wiz.x+(mx-wiz.x)*b, fy=wiz.y+(my-wiz.y)*b;
+  cam.x=Math.max(0,Math.min(WORLD_W-cw,fx-cw/2));
+  cam.y=Math.max(0,Math.min(WORLD_H-ch,fy-WIZ_H/2-ch*(0.5-0.14*b)));   // the pair sits above the box
   if(cw>WORLD_W) cam.x=(WORLD_W-cw)/2; if(ch>WORLD_H) cam.y=(WORLD_H-ch)/2;
 }
 
