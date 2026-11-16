@@ -405,20 +405,23 @@ live long (the intro says so), so the Fellows haven't aged much since.
 
 ### The cast of the Year
 
-**Your tutorial partner: Wil Ashby** if you're playing a woman, **Tamsin Ashby** if a man (same
-story, same lines). About 19, from a gleaner family on the Corvanthe Road. Their older sister **Bryony
-Ashby** was a first-year at Corvanthe on the day, when Wil / Tamsin was four; she's an Echo now (Water,
+**Your tutorial partner: Wil Ashby** if you're playing a woman, **Nell Ashby** if a man (same
+story, same lines). About 19, from a gleaner family on the Corvanthe Road. Their older sister **Clemency
+Ashby** was a first-year at Corvanthe on the day, when Wil / Nell was four; she's an Echo now (Water,
 the Drowned Quarter) and the family turned to gleaning to look for her. Practical, cheerful, a
 scrapper who can't sit still in lectures. **Their home element is your barred one** (you're Fire,
 they're Water), so each can cast what the other never can, and in spars their strikes unravel your
-wards and yours theirs. Wil / Tamsin are the reason the plot matters: Ashgrove's promise to bring the
+wards and yours theirs. Wil / Nell are the reason the plot matters: Ashgrove's promise to bring the
 Echoes back as people is aimed at them, they're tempted in Trinity, and the finale is talking them down
 as much as stopping him. Won back, they're your first companion. (If your barred element is Water,
-Bryony is still Water: she's their sister, not yours; only their own element changes.)
+Clemency is still Water: she's their sister, not yours; only their own element changes.)
 
 **The villain: Dr Edwin Ashgrove, Sub-Warden of All Absent College.** Kindly; gives you tea and good
 advice in Michaelmas. The forbidden book was borrowed in the name of **Dr Margery Ashgrove**, a
 Fellow lost on the day: his wife.
+
+**Names:** nobody in the cast shares a name with the creator's name lists (`NAMES` in
+`js/explore_hero.js`), so your wizard is never mistaken for one of them; check new characters against it.
 
 **Lecturers** (each student meets their home element's and their three electives'):
 
@@ -471,7 +474,7 @@ the figures, so Earth's lecturer is in browns):
 | `lect_arcane.png` | Dr Oriel Nightingale, the Arcane lecturer: a slight elderly scholar of indeterminate age, neat silver hair, a deep violet gown embroidered with tiny stars, half-moon spectacles, an open book in one hand with glowing violet runes floating off its pages |
 | `lect_dark.png` | Dr Lavinia Crowe, the Dark lecturer: a gaunt woman in her sixties, white streak in black hair, a high-collared black gown, a faint scar over one eye, a hooded shuttered lantern held low giving almost no light, purple shadow curling at her feet, calm and unsettling |
 | `wil.png` | Wil Ashby, a tutorial partner: a wiry young man about 19, tousled brown hair, freckles, a student's short black commoner's gown thrown over a patched gleaner's leather jerkin and boots, a satchel, a knife at his belt, a cocky grin, fists half-raised |
-| `tamsin.png` | Tamsin Ashby, a tutorial partner: a wiry young woman about 19, cropped brown hair, freckles, a student's short black commoner's gown thrown over a patched gleaner's leather jerkin and boots, a satchel, a knife at her belt, a cocky grin, fists half-raised |
+| `nell.png` | Nell Ashby, a tutorial partner: a wiry young woman about 19, cropped brown hair, freckles, a student's short black commoner's gown thrown over a patched gleaner's leather jerkin and boots, a satchel, a knife at her belt, a cocky grin, fists half-raised |
 | `ashgrove.png` | Dr Edwin Ashgrove, Sub-Warden of All Absent College: a kindly grey-haired man in his sixties, neat beard, a full black doctor's gown with a dove-grey hood, a mourning band on one sleeve, holding a teacup and saucer, gentle smile, tired eyes |
 | `proctor.png` | Mr Ravel, the Senior Proctor: a severe thin man, black gown with velvet bands, white bands at the throat, a tall black hat, a short black staff of office |
 | `landlady.png` | Mrs Dorcas Pegg, landlady of the Wren's Nest: a broad rosy-cheeked woman, apron over a brown dress, sleeves rolled, a tankard in each hand (no gown) |
