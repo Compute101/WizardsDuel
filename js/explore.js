@@ -1116,8 +1116,8 @@ function buildDom(){
   $('#ex-bagbtn').onclick=()=>{ if(!busy&&MAP) openBag(); };
   $('#ex-bag-close').onclick=closeBag;
   el.bag.addEventListener('click',e=>{ if(e.target===el.bag) closeBag(); else bagClick(e); });
-  el.look.onclick=()=>lookAtDoor();
-  el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy&&!roomLocked()) takeExit(nearExit); };
+  el.look.onclick=()=>{ lookAtDoor(); dropFocus(); };
+  el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy&&!roomLocked()) takeExit(nearExit); dropFocus(); };
   el.say.onclick=hideSay;
   el.zoom.onclick=()=>stepZoom(); renderZoom();
   // two fingers pinch the zoom instead of walking
@@ -1307,7 +1307,10 @@ function showSay(o){
 }
 // at a door, the building (or the lamp or statue by it) can still be inspected: the second button, or Q
 function lookAtDoor(){ if(!nearLook||busy) return; near=nearLook; inspect(); }
-function hideSay(){ if(el.say) el.say.hidden=true; }
+function hideSay(){ if(el.say) el.say.hidden=true; dropFocus(); }
+// a tapped button (✋ Inspect, a dialog choice) keeps focus after it hides, and Chrome then flashes
+// a highlight on later taps; hand focus back to the page
+function dropFocus(){ const a=document.activeElement; if(a&&a!==document.body&&el.root&&el.root.contains(a)&&a.blur) a.blur(); }
 function inspect(){ if(!near) return; sayFace=near.npc?npcFace(near.npc):null;
   talkFocus=near.npc?{x:near.npc.x, y:near.npc.y, who:near.npc}:null;
   if(near.npc&&Math.abs(near.npc.x-wiz.x)>4) wiz.face=near.npc.x>wiz.x?1:-1;     // turn to them

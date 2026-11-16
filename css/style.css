@@ -1720,7 +1720,8 @@ body {
 .pf-rankup { color: #f0cc6a; font-weight: 700; text-shadow: 0 0 10px #c9a84c; }
 
 /* ── EXPLORE (js/explore.js) ── */
-#explore-screen { display:none; position:fixed; inset:0; z-index:400; background:#10131a; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
+#explore-screen { display:none; position:fixed; inset:0; z-index:400; background:#10131a; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; }
+#ex-canvas:focus, #explore-screen .ex-btn:focus:not(:focus-visible), #explore-screen .ex-say:focus { outline:none; }
 #explore-screen.active { display:block; }
 #ex-canvas { position:absolute; inset:0; display:block; cursor:pointer; }
 #explore-screen .ex-top { position:absolute; top:0; left:0; right:0; display:flex; align-items:center; gap:10px; padding:10px 16px; padding-top:max(10px, env(safe-area-inset-top)); background:linear-gradient(rgba(8,6,20,0.85),rgba(8,6,20,0)); pointer-events:none; }
