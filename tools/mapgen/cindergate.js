@@ -26,7 +26,7 @@ const LORE = {
 module.exports = function cindergate(rects){
   const m=new MapBuilder(rects,{id:'cindergate', name:'Corvanthe: Cindergate', cols:56, rows:44, seed:5101});
   const {W, H} = m;
-  m.lore={...OWN_LORE, ...LORE}; m.fx='embers'; m.haze='70,30,10,0.16';
+  m.lore={...OWN_LORE, ...LORE}; m.fx='embers'; m.haze='70,30,10,0.16'; m.music='audio/corvanthe/cindergate.mp3';
   const burnt=k=>rects[k+'_burnt']?k+'_burnt':k;
   // how far gone: worse toward the Wound (north)
   const ruin=(x,y)=>Math.max(0,Math.min(1,(1-y/H)*1.15-0.12));

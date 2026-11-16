@@ -1033,5 +1033,6 @@
    "r": 150
   }
  ],
- "walk": []
+ "walk": [],
+ "music": "audio/corvanthe/heights.mp3"
 }
