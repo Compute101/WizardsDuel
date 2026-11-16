@@ -372,9 +372,31 @@ def staff_region(im, hand, skin_mask):
         if y > yh: c = mx + sl * (y - my); return c - hw <= x <= c + hw
         return x <= xr
     m_ = Image.new('L', (W, H), 0); mp = m_.load()
-    for y in range(H):
-        for x in range(0, min(W, xr + 1) if y <= yh else W):
+    for y in range(yh + 1):
+        for x in range(0, min(W, xr + 1)):
             if ok(x, y): mp[x, y] = 255
+    # below the hand, row by row: the run of wood round the line (found within a band's width of it, so a
+    # bend is followed), out to the shaft's own edges; its bright rim is as saturated as anything on it
+    free = lambda x, y: not sk[x, y] and woodish(px[x, y])
+    prev = None
+    yf = min(H, yh + int(0.06 * H))                      # just under the fist: the narrow band only, so no knuckle is taken
+    for y in range(yh + 1, yf):
+        for x in range(W):
+            if ok(x, y): mp[x, y] = 255
+    for y in range(yf, H):
+        c = int(round(mx + sl * (y - my))) if prev is None else prev
+        c = min(W - 1, max(0, c))
+        start = next((x for d in range(int(hw * 1.5) + 1) for x in (c - d, c + d) if 0 <= x < W and free(x, y)), None)
+        if start is None: prev = None; continue
+        l = r_ = start
+        lim = hw + 5                                      # a little past the band either side of the tracked middle, never into a fist
+        while l > 0 and free(l - 1, y) and c - (l - 1) <= lim: l -= 1
+        while r_ < W - 1 and free(r_ + 1, y) and (r_ + 1) - c <= lim: r_ += 1
+        if r_ - l > 4 * hw: prev = None; continue        # spilled onto something wide (a boot): skip the row
+        line = mx + sl * (y - my)
+        if abs((l + r_) / 2 - line) > 3 * hw: prev = None; continue   # strayed off the staff
+        for x in range(l, r_ + 1): mp[x, y] = 255
+        prev = (l + r_) // 2
     return m_
 
 def main():
