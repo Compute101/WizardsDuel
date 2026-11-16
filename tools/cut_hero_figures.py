@@ -29,6 +29,9 @@ HEIGHT = 768
 SLOTS = {'young_man': ('m', 'young'), 'young_woman': ('f', 'young'), 'mid_man': ('m', 'middle'),
          'mid_woman': ('f', 'middle'), 'old_man': ('m', 'old'), 'old_woman': ('f', 'old')}
 
+# the ragged bandits: for NPCs only, kept out of the creator (an even number of each sex, so the creator stays even too)
+NPC_ONLY = {'mid_man_7', 'old_man_5', 'mid_woman_8', 'old_woman_5'}
+
 # boxes set by hand where the pixels mislead (wide brims whose underside reads as skin, robe patches)
 FIX = {
     'old_man_4':   {'face': [0.34, 0.075, 0.30], 'head': [0.40, 0.125, 0.58, 0.26], 'neck': [0.43, 0.24, 0.53, 0.30]},
@@ -220,6 +223,7 @@ def main():
             if 'face' in f: bx['face'] = f['face']; bx['skin'] = [f['head']] + bx['skin'][1:3] + [f['neck']]
             if 'lh' in f: bx['skin'][1] = f['lh']   # the staff hand (a robe patch can pass for skin)
         fig = dict(id=name, sex=sex, age=age, src='sprites/hero/' + name + '.png', **bx)
+        if name in NPC_ONLY: fig['npc'] = True
         if mask:
             mask.save(os.path.join(OUT, name + '_hair.png'), optimize=True); fig['hairMask'] = 'sprites/hero/' + name + '_hair.png'
         figs.append(fig)

@@ -82,7 +82,8 @@ const NAMES = {
 };
 const AGE_HAIR = {young:'Brown', middle:'Black', old:'Silver'};   // a new look's starting hair
 
-const figuresFor = (sex,age) => { const own=BASES.filter(b=>b.sex===sex&&b.age===age); return own.length?{list:own,standIn:false}:{list:BASES.filter(b=>b.sex===sex),standIn:true}; };
+// the creator's figures for a sex and age; figures marked npc (the ragged bandits) are for NPCs only, though def() still paints them
+const figuresFor = (sex,age) => { const ok=BASES.filter(b=>!b.npc), own=ok.filter(b=>b.sex===sex&&b.age===age); return own.length?{list:own,standIn:false}:{list:ok.filter(b=>b.sex===sex),standIn:true}; };
 const rnd = a => a[Math.floor(Math.random()*a.length)];
 
 // ── recolouring ──
@@ -199,7 +200,7 @@ async function open(root, opts){
     const h0=opts.hero;
     const sex=h0?h0.sex:rnd(['m','f']);
     const st=h0?Object.assign({},h0):{sex, age:'young', fig:null, robe:'Violet', trim:'Gold', hair:'Brown', skin:'Natural', eyes:'Brown', elem:rnd(ELEMS).id, name:rnd(NAMES[sex])};
-    if(!st.fig||!BASES.some(b=>b.id===st.fig)) st.fig=figuresFor(st.sex,st.age).list[0].id;
+    if(!st.fig||!figuresFor(st.sex,st.age).list.some(b=>b.id===st.fig)) st.fig=figuresFor(st.sex,st.age).list[0].id;
     st.trim=st.trim||'Gold'; st.skin=st.skin||'Natural'; st.eyes=st.eyes||'Blue';   // heroes made before trim, skin and eyes
     if(box) box.remove();
     box=document.createElement('div'); box.className='hc'; root.appendChild(box);

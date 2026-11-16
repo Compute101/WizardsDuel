@@ -333,6 +333,7 @@
   ],
   "noTrim": [],
   "trimLo": 27,
+  "npc": true,
   "hairMask": "sprites/hero/mid_man_7_hair.png"
  },
  {
@@ -765,6 +766,7 @@
   ],
   "noTrim": [],
   "trimLo": 27,
+  "npc": true,
   "hairMask": "sprites/hero/mid_woman_8_hair.png"
  },
  {
@@ -1005,6 +1007,7 @@
   ],
   "noTrim": [],
   "trimLo": 27,
+  "npc": true,
   "hairMask": "sprites/hero/old_man_5_hair.png"
  },
  {
@@ -1197,6 +1200,7 @@
   ],
   "noTrim": [],
   "trimLo": 27,
+  "npc": true,
   "hairMask": "sprites/hero/old_woman_5_hair.png"
  },
  {

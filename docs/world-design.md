@@ -335,5 +335,9 @@ same look, tattered and patched) and `old_woman_5` (wild hair, hoops, in rags). 
 `mid_woman_8` is boxed by hand (`FIX`): a brown robe patch passed for skin. Patches and eyepatches are
 brown leather and fall inside the skin boxes, so they take a darker shade of the chosen skin.
 
+The four ragged ones (`mid_man_7`, `old_man_5`, `mid_woman_8`, `old_woman_5`) are for NPCs only
+(`NPC_ONLY` in the cutter, `npc` in `figures.json`): the creator doesn't offer them, which leaves 15 figures of each
+sex there.
+
 Idea (not built): the base figures, recoloured, as Explore's NPC wizards (gleaner bosses, townsfolk),
 leaving out the figure and colours the player picked so no NPC looks like you.
