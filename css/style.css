@@ -1115,6 +1115,7 @@ body {
 #wheel-svg .wname-sig { fill: #f0cc6a; }
 #wheel-svg .wname-banned { fill: #ff6677; opacity: 0.7; }
 #wheel-svg .wicon-banned { opacity: 0.25; }
+#wheel-svg .wname-unlearnt { fill: #9a94a8; opacity: 0.75; }   /* not learnt yet (Explore's University Year) */
 
 /* ── REVEAL OVERLAY ── */
 #reveal-overlay {

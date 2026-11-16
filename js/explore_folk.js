@@ -21,13 +21,14 @@
 'use strict';
 
 const cap = s => s.charAt(0)+s.slice(1).toLowerCase();
+const up = s => s.charAt(0).toUpperCase()+s.slice(1);
 
 // the Matriculation quest: the Senior Tutor sends you to the Schools, the Library and the Laboratory
 const MATRIC = {
-  tasks: [
+  tasks: [   // in the order they're best done: glyphs, then a first working, then a bout that uses it
+    ['library', 'Read three books in the Remnant Library (Broad Street), and take your element\'s primer'],
+    ['lab',     'Learn your first working and pass the Laboratory\'s safety test (the Warded Laboratory, in the Parks)'],
     ['schools', 'Pass a bout at the Schools (the Master of the Schools, the duelling court off Pembroke Street)'],
-    ['library', 'Read three books in the Remnant Library (Broad Street)'],
-    ['lab',     'Pass the Laboratory\'s safety test (the Warded Laboratory, in the Parks)'],
   ],
   reward: {gold:30, potions:2},
   booksNeeded: 3,
@@ -35,6 +36,13 @@ const MATRIC = {
 const LAB_BREW = 2;                  // spill (any kind) the Laboratory takes to distil a potion
 const SPILL_PRICE = 4;               // what the licensed dealer pays a piece
 const MARKET_POTION = 8;
+// where each element's Echoes come from (the bottled one in the Laboratory says so)
+const SECTOR_OF = {fire:'Cindergate', air:'the Heights', lightning:'Spirewatch', arcane:'the Collegium', water:'the Drowned Quarter', earth:'the Quarry Ward', ice:'Frostmarket', dark:'Gloamside'};
+const WHO_WAS = {fire:'a baker\'s boy', air:'a weathervane-mender', lightning:'a bell-ringer', arcane:'an under-librarian', water:'a ferryman', earth:'a quarryman', ice:'an iceman\'s daughter', dark:'a lamplighter'};
+// the University Year (docs/world-design.md): what the hero knows; null when walking as a roster wizard
+const mg = api => api.magic&&api.magic();
+const knowsSet = (api,set) => { const m=mg(api); return !m||set.every(g=>m.glyphs.includes(g)); };
+const knowsElem = (api,e) => { const m=mg(api); return !m||m.elems.includes(e); };
 
 const FOLK = {
   // Wrenford's own: they stay
@@ -88,7 +96,7 @@ function journal(api){
   else if(s.stage===1){
     const left=tasksLeft(api);
     out.push(left.length?'Matriculation: '+left.map(t=>t[1]+(t[0]==='library'?' ('+Math.min(libBooks(api),MATRIC.booksNeeded)+' of '+MATRIC.booksNeeded+')':'')).join('; ')+'.':'Matriculation: everything done. Go back to the Senior Tutor.');
-  } else out.push('Matriculated at the University of Wrenford.');
+  } else out.push(s.finals?'Graduated from the University of Wrenford (sat Finals on the first day).':'Matriculated at the University of Wrenford.');
   if(s.satchel&&!s.satchelDone) out.push('Ponder\'s satchel: take it back to its owner, asleep on the Meadow.');
   return out.join('\n');
 }
@@ -96,7 +104,7 @@ function journal(api){
 // ── what they say ──
 function talk(n, api){
   const s=q(api), me=api.wizName(), say=(_,x,ch)=>api.dialog(title(n,api),x,ch||[]);
-  const nm=r=>nameOf(r,api), F_=FOLK[n.role];
+  const nm=r=>nameOf(r,api), F_=FOLK[n.role], home0=()=>mg(api)&&api.homeElem();
   if(F_&&F_.kind==='roster'){ const k=castOf(n.role,api), met=api.quest('met'); if(k&&!met[k]){ met[k]=true; api.save(); } }
   switch(n.role){
 
@@ -124,17 +132,39 @@ function talk(n, api){
 
   case 'tutor': {
     const D=nm('tutor');
+    // Like telling Gorion you're ready to leave Candlekeep: sit Finals now and skip the Year. You graduate
+    // knowing everything a graduate does, but miss what the Year pays (docs/world-design.md). Until the
+    // exam exists (build step 4) it's taken on the Tutor's word.
+    function sitFinals(){
+      const m=mg(api); if(!m||m.grad) return null;
+      return {label:'Sit Finals now', fn:()=>say(0,'"You\'ve the look of someone who\'s done this before." '+D+' studies you over the book. "If you like, you can sit Finals this afternoon, and go east with a degree in your pocket."\n\n"You\'ll miss a good deal, mind. The lectures, the clubs, the prizes and purses that go with them, the friends you\'d have made. And whatever else is going on in this town that nobody tells the Senior Tutor." A dry look. "Most people stay."',[
+        {label:'Sit Finals', fn:()=>pickElectives([])},
+        {label:'On reflection, I\'ll stay'}])};
+    }
+    function pickElectives(chosen){
+      const home=api.homeElem(), ban=api.barred(), left=api.elems.filter(e=>e!==home&&e!==ban&&!chosen.includes(e));
+      if(chosen.length>=3){ graduateNow(chosen); return; }
+      say(0,(chosen.length?'"'+chosen.map(up).join(', ')+'. And?"':'The papers are long, and the viva is longer, and at the end of it '+D+' asks: "Your own element is '+up(home)+'. '+up(ban)+' you\'ll never have, and there\'s no shame in that. Which three more did you read for?"')+' ('+(3-chosen.length)+' to choose)',
+        left.map(e=>({label:up(e), fn:()=>pickElectives(chosen.concat(e))})));
+    }
+    function graduateNow(els){
+      api.graduate(els);
+      s.stage=2; s.finals=true; s.library=s.lab=s.schools=s.spar1=true; api.save();
+      api.toast('Graduated! You know '+[api.homeElem()].concat(els).map(up).join(', ')+', every glyph, wheel and ring.');
+      say(0,'"Then by the authority of the University, '+me+', you are a graduate of it." The lamp on the bench lights itself, softly, and goes out. "There. You saw nothing."\n\n"The east road goes to Hollowmere, and past Hollowmere to Corvanthe. Bring back what you can. Books, if you find them. Names, if you find those."');
+    }
     if(!s.stage){
       say(0,D+', small and grey and very upright, is reading on the bench by the chapel, an unlit lamp alongside. The book closes on a finger. "Another one from the east road. Sit." A long look at you for a long moment, as if reading the end of the story first.\n\n"Everyone who teaches here was away from Corvanthe on the day. A visit, a dig, a funeral. We came here because it was far, and small, and nobody had ever done anything dangerous in it. We teach what we should have been taught: that a working is a promise you make to the world, and the world holds you to it."\n\n"Matriculate, and we will teach you to keep it."',[
         {label:'Matriculate', fn:()=>{ s.stage=1; api.save();
-          say(0,'"Good." '+D+' writes your name in a ledger, slowly, in ink. "Three things before you are one of us. Pass a bout at the Schools: the Master will teach you to fight, because you will be fought. Read in the Remnant Library: the Keeper will tell you what we lost. And pass the Laboratory\'s safety test: the Master there will show you what a working really is, which nobody ever believes until they see it." A card with a crest on it is pressed into your hand. "Come back when it\'s done."');
-          api.toast('Matriculation begun: the Schools, the Library and the Laboratory.'); }},
-        {label:'Not yet'}]);
+          say(0,'"Good." '+D+' writes your name in a ledger, slowly, in ink. "Three things before you are one of us. First, the Remnant Library: the Keeper will tell you what we lost, and give you your first glyphs, because you cannot cast what you cannot write. Then the Laboratory: the Master there will show you your first working, and what a working really is, which nobody ever believes until they see it. And last, a bout at the Schools: the Master will teach you to fight, because you will be fought." A card with a crest on it is pressed into your hand. "Come back when it\'s done."');
+          api.toast('Matriculation begun: the Library, the Laboratory and the Schools.'); }},
+        sitFinals(),
+        {label:'Not yet'}].filter(Boolean));
       return;
     }
     if(s.stage===1){
       const left=tasksLeft(api);
-      if(left.length){ say(0,'"Still to do: '+left.map(t=>t[1]).join('; ')+'." Back to the book, then, without looking up: "There\'s no hurry. Hurry is how we got here."'); return; }
+      if(left.length){ say(0,'"Still to do: '+left.map(t=>t[1]).join('; ')+'." Back to the book, then, without looking up: "There\'s no hurry. Hurry is how we got here."',[sitFinals(),{label:'Thank you'}].filter(Boolean)); return; }
       say(0,D+' reads the card back, each mark on it, and nods. "The Master of the Schools says you fight like someone who means to come home. The Keeper says you read like someone who is listening. And the Laboratory says you are still alive, which from them is high praise."\n\n"Then by the authority of the University, '+me+', you are matriculated." For a moment the lamp on the bench lights itself, very softly, and goes out again. "There. You saw nothing."',[
         {label:'Take your gown', fn:()=>{ s.stage=2; api.addGold(MATRIC.reward.gold); api.addPotions(MATRIC.reward.potions); api.save();
           api.toast('Matriculated! +'+MATRIC.reward.gold+' gold and '+MATRIC.reward.potions+' potions.');
@@ -154,16 +184,22 @@ function talk(n, api){
       foes:[{key:'soldier',level:0,name:'Bulldog Hobbes'}],
       text:{winTitle:'A Clean Bout', win:'Hobbes picks himself up and shakes your hand. "Not bad. You looked at my feet."', loseTitle:'Down in the Chalk', lose:'Hobbes helps you up. "Again. Watch my feet, not my sword."'},
       onWin:()=>{ if(!s.spar1){ s.spar1=true; api.save(); api.toast('The Master nods. Now a bout with the Master.'); } }})};
+    // the Master fights a new student with only what they know: a strike from the inner ring
+    const m=mg(api), holdBack=m&&!m.grad?{elems:api.elems.slice(), cats:['damage'], rings:1, glyphs:api.glyphs.map((_,i)=>i), skin:false}:null;
     const duelMaster={label:s.schools?'Duel the Master again':'Duel the Master', fn:()=>api.spar({
-      foes:[{key:mk,wizard:true}],
+      foes:[holdBack?{key:mk,wizard:true,known:holdBack,hp:36}:{key:mk,wizard:true}],
       text:{winTitle:'Bout to You', win:M+' lowers '+'the guard'+'. "Good. You struck the ward with its opposite, you guarded when I meant to strike, and you didn\'t do anything clever. Pass."', loseTitle:'Not Yet', lose:'"Again, when you\'re ready," says '+M+'. "There\'s no shame on this court. The shame is out there, if you go before you\'re ready."'},
       onWin:()=>{ if(!s.schools){ s.schools=true; api.save(); api.toast('The Schools: passed.'); } }})};
     if(!s.spar1){
       say(0,M+' looks you over. "Most wizards die to a man with a stick. You\'re clever, so you think about the spell, and he\'s already hit you." '+M+' taps the court with a foot.\n\n"Three things you can always do, free, and they always go off: Attack, Guard, Grapple. Guard beats Attack, and hits back. Grapple beats Guard. Attack beats Grapple. They sit in the middle of your three wheels. Learn them before you learn anything else."\n\n"Bulldog Hobbes has kindly volunteered. He hasn\'t, but he will. Inside the circle nothing you do will last past the bout, and the University\'s healers will patch you up after."',[sparHobbes,{label:'Not now'}]);
       return;
     }
+    if(!s.schools&&m&&!m.cats.length){
+      say(0,'"Good. Now go and learn to cast something." '+M+' nods toward Parks Road. "The Laboratory. I\'m not duelling a wizard with no spells: that\'s not a bout, it\'s an assault. Come back when you can strike."',[sparHobbes,{label:'Not now'}]);
+      return;
+    }
     if(!s.schools){
-      say(0,'"Now me." '+M+' steps into the circle. "The wheel: Damage, Protection, Dispel, chosen in secret, and they meet. A ward stops a strike; a dispel tears a ward; a strike punishes a dispel. Each element has its opposite across the wheel: Fire and Water, Air and Earth, Lightning and Ice, the Arcane and the Dark. Strike a ward with its opposite and it comes apart in your hands."\n\n"Show me you were listening."',[duelMaster,sparHobbes,{label:'Not now'}]);
+      say(0,'"Now me." '+M+' steps into the circle.'+(holdBack?' "I\'ll fight you with what you have: a strike from the inner ring, and the Actions. Nothing else. Fair\'s fair."':'')+' "The wheel: Damage, Protection, Dispel, chosen in secret, and they meet. A ward stops a strike; a dispel tears a ward; a strike punishes a dispel. Each element has its opposite across the wheel: Fire and Water, Air and Earth, Lightning and Ice, the Arcane and the Dark. Strike a ward with its opposite and it comes apart in your hands."\n\n"Show me you were listening."',[duelMaster,sparHobbes,{label:'Not now'}]);
       return;
     }
     say(0,'"'+me+'." '+M+' doesn\'t stop the drill. "The court is open whenever you want it. Use it. The Echoes in Corvanthe don\'t give second bouts."'+(s.stage>=2?'\n\n"And keep yourself sharp. When the Schools next take a party east, to walk the Corvanthe Road and see what we\'re training for, I\'ll want students who can hold a line. I\'ll be going. You might be."':''),[duelMaster,sparHobbes,{label:'Not now'}]);
@@ -172,14 +208,23 @@ function talk(n, api){
 
   case 'keeper': {
     const K=nm('keeper'), read=libBooks(api);
+    // your element's primer: its four glyphs (until the flash-card tests, build step 2)
+    function givePrimer(){
+      const home=api.homeElem(), set=home&&api.glyphSets[home];
+      if(!mg(api)||!set||knowsSet(api,set)){ api.toast('The Library: done.'); return; }
+      api.learn({glyphs:set});
+      say(0,'"And this." '+K+' slides a thin, much-mended book across the desk: A Primer of '+up(home)+'. "Four glyphs. Learn them by heart, in order: you cannot cast what you cannot write." A sniff. "The Laboratory will want to see that you have."');
+      api.toast('Learnt the glyphs of '+up(home)+': '+set.map(i=>api.glyphs[i]).join(' '));
+    }
     if(!s.stage){ say(0,K+' stands on the Library steps with a ring of keys, watching readers in and out like a shepherd counting sheep. "The Remnant is open to members of the University. You are not one yet. The Senior Tutor, in Founders\' Quad, can mend that."'); return; }
     if(!s.library){
       if(read>=MATRIC.booksNeeded){
         say(0,'"You read them." '+K+' looks almost surprised. "Most skim. You can tell: they come out talking." A long breath. "Every book in there came out of Corvanthe in somebody\'s arms, or was written here since by somebody who should have been there. That is what a library is, now. A list of the people who were carrying things."',[
-          {label:'Take your reader\'s ticket', fn:()=>{ s.library=true; api.save(); api.toast('The Library: done.'); }}]);
+          {label:'Take your reader\'s ticket', fn:()=>{ s.library=true; api.save(); givePrimer(); }}]);
       } else say(0,'"Inside, through the doors behind me. The reading room is at the front; the stacks go back further than they should. Read '+MATRIC.booksNeeded+' of the Remnant books and come and tell me about them." '+(read?K+' checks a slip. "You\'ve read '+read+'."':'"No candles. No reading aloud."'));
       return;
     }
+    if(home0()&&!knowsSet(api,api.glyphSets[home0()])){ givePrimer(); return; }
     say(0,'"'+me+'." '+K+' unlocks a door for someone without looking. "Forty years I\'ve kept libraries, and I never kept one that was all lost property before." A sniff. "If you find books in Corvanthe, bring them here. If you find a Collegium seal on them, bring them here faster. Some of our colleagues\' last work is still lying in those streets."');
     return;
   }
@@ -188,13 +233,27 @@ function talk(n, api){
     const F=nm('fizzwick');
     if(!s.stage){ say(0,F+' is sitting on an upturned bucket outside the Laboratory, eyebrows singed, drinking tea that smokes. "No, no. Matriculate first. The Statutes won\'t let me blow up anyone who isn\'t a member of the University." A beam. "Founders\' Quad."'); return; }
     const brew={label:'Distil a potion ('+LAB_BREW+' spill of any kind)', disabled:api.spillTotal()<LAB_BREW, fn:()=>{ api.takeSpill(LAB_BREW); api.addPotions(1); api.save(); api.toast('Bubbling, a flash, a smell of burnt sugar: one potion.'); }};
+    // the bottled Echo is of your barred element, so your own is its opposite (×1.5): the lesson
+    const home=home0(), eEl=home?api.barred():'fire', sector=SECTOR_OF[eEl], wasWho=WHO_WAS[eEl];
+    const echoFight={label:'Face the bottled Echo', fn:()=>api.spar({
+      foes:[{key:'echo_'+eEl+'_weak',level:0,name:'The Bottled Echo'}],
+      text:{winTitle:'Back in the Bottle', win:'It flickers and shrinks and pours itself back into the bottle like a sulking cat. '+F+' corks it, delighted. "Passed! It always reforms. It leaves a little behind, though; here, keep that."', loseTitle:'Singed', lose:'The wards flare and the Echo is back in its bottle, sulking. '+F+' pats out your sleeve. "Everybody fails the first time. Except the ones who fail the second."'},
+      onWin:()=>{ if(!s.lab){ s.lab=true; api.addSpill(eEl,1); api.save(); api.toast('The Laboratory: passed. +1 spill'); } }})};
     if(!s.lab){
-      say(0,F+' bounds up. "The safety test! Wonderful. Nobody\'s failed it in weeks." You are led to a warded ring in the grass, where a bottle sits on a stone. Inside it something small and orange is pacing.\n\n"An Echo. A little one, out of Cindergate: a baker\'s boy, we think. Everyone here thinks a spell is a thing you do. It isn\'t. It\'s a thing you let loose, and this is what it looks like when it won\'t go back. Fire, so: what\'s its opposite? Yes. Water. And a strong ward, and a quick dispel. Ready?"\n\n'+F+' unstoppers it before you can answer.',[
-        {label:'Face the bottled Echo', fn:()=>api.spar({
-          foes:[{key:'echo_fire_weak',level:0,name:'The Bottled Echo'}],
-          text:{winTitle:'Back in the Bottle', win:'It flickers and shrinks and pours itself back into the bottle like a sulking cat. '+F+' corks it, delighted. "Passed! It always reforms. It leaves a little behind, though; here, keep that."', loseTitle:'Singed', lose:'The wards flare and the Echo is back in its bottle, sulking. '+F+' pats out your sleeve. "Everybody fails the first time. Except the ones who fail the second."'},
-          onWin:()=>{ if(!s.lab){ s.lab=true; api.addSpill('fire',1); api.save(); api.toast('The Laboratory: passed. +1 cinderglass'); } }})},
-        {label:'Not now'}]);
+      if(home&&!knowsSet(api,api.glyphSets[home])){
+        say(0,F+' bounds up, then stops. "Oh. You can\'t write yet, can you? Not a single glyph." A sympathetic wince. "Can\'t cast what you can\'t write. Library first, there\'s a dear: the Keeper has a primer for your element. Then come back and I\'ll show you something marvellous."');
+        return;
+      }
+      if(home&&!knowsElem(api,home)){
+        say(0,F+' bounds up. "The primer! You\'ve learnt it? Show me." You trace the four glyphs of '+up(home)+' in the air, a little shakily. "Good! Now: a glyph is a word. A working is a sentence, and the world is listening." You are led into the Laboratory, to a scorched bench and a straw dummy in a warded ring.\n\n"Four glyphs, in order, quick and clean, and let it go at the dummy. Small. The smallest ring. The Statutes are very firm about small."',[
+          {label:'Try your first working', fn:()=>{
+            api.learn({elems:[home], cats:['damage']});
+            api.toast('You can cast: '+up(home)+' strikes, inner ring.');
+            say(0,'It comes out of you all at once, too fast, and the dummy is suddenly a smoking ruin. '+F+' claps. "Marvellous! Disgraceful! Exactly right." The dummy is swept into a bucket.\n\n"Now the safety test. Everyone here thinks a spell is a thing you do. It isn\'t. It\'s a thing you let loose, and this is what it looks like when it won\'t go back." A bottle is set on the bench. Inside it something small is pacing: an Echo, out of '+sector+'. '+up(wasWho)+', we think. "'+up(eEl)+'. And what\'s its opposite, across the wheel? Yes. Yours."\n\n'+F+' unstoppers it before you can answer.',[echoFight,{label:'Not now'}]); }},
+          {label:'Not now'}]);
+        return;
+      }
+      say(0,F+' bounds up. "The safety test! Wonderful. Nobody\'s failed it in weeks." You are led to a warded ring in the grass, where a bottle sits on a stone. Inside it something small is pacing.\n\n"An Echo. A little one, out of '+sector+': '+wasWho+', we think. Everyone here thinks a spell is a thing you do. It isn\'t. It\'s a thing you let loose, and this is what it looks like when it won\'t go back. '+up(eEl)+', so: what\'s its opposite? Yes. And a strong ward, and a quick dispel. Ready?"\n\n'+F+' unstoppers it before you can answer.',[echoFight,{label:'Not now'}]);
       return;
     }
     say(0,'"'+me+'! Still in one piece, I see." '+F+' waves at the smoking chimney. "Bring me spill from Corvanthe, any kind, and I\'ll distil you a potion. Two pieces a bottle. The Statutes say I mustn\'t do anything more interesting with it, and I never do anything they say I mustn\'t." A pause. "Lately."'+(s.stage>=2?'\n\n"Oh! And the Laboratory wants fresh samples from Cindergate, properly collected, by somebody with a licence and an escort. Field work. I\'ve put my name down. When it\'s approved, I\'ll want a pair of hands that has passed the safety test."':''),[brew,{label:'Ask about spill', fn:()=>say(0,'"Quintessence. What\'s left when a working is unmade: pure element, settled out like frost. Every bit of it in Corvanthe was a person, once, more or less." A sip of tea. "We try not to think about it. We\'re very good at not thinking about things, here. It\'s the one thing we learned."',[brew])}]);

@@ -90,7 +90,7 @@ let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
 let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null, quests={};
 const POTION_HEAL=0.3, POTION_PRICE={shop:8, safehouse:10}, MAX_ALLIES=2;
-let found=new Set(), spill={}, cleared={}, actors=[], grace=0, crews=[], bandState={}, parley=null, clashes=[], visited=new Set(), saveOwner=null, saveKey=null, lastPlace='', hero=null, creating=false, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
+let found=new Set(), spill={}, cleared={}, actors=[], grace=0, crews=[], bandState={}, parley=null, clashes=[], visited=new Set(), saveOwner=null, saveKey=null, lastPlace='', hero=null, magic=null, creating=false, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
 const imgCache={};
 function imgOf(src){ if(!imgCache[src]){ const i=new Image(); i.src=src; imgCache[src]=i; } return imgCache[src]; }
 
@@ -555,6 +555,10 @@ const folkApi = {
   sellSpill:price=>{ const n=Object.values(spill).reduce((a,v)=>a+v,0); spill={}; gold+=n*price; return n*price; },
   removeObj:o=>removeObj(o),
   spar:o=>spar(o),
+  // the University Year: what the hero knows (null when walking as a roster wizard, who knows it all)
+  magic:()=>wizKeys[wizIdx]==='hero'?magic:null, homeElem:()=>hero&&hero.elem, barred:()=>hero&&oppOf(hero.elem),
+  get elems(){ return ELEM_IDS; }, get glyphSets(){ return GLYPH_SETS; }, get glyphs(){ return GLYPHS; },
+  learn:o=>{ if(wizKeys[wizIdx]==='hero') learn(o); }, graduate:els=>graduate(els),
 };
 // a practice bout (the Schools, the Laboratory): fought at full strength, and you come back as you went
 // in (the University's healers see to that); nothing is lost on a defeat
@@ -698,7 +702,8 @@ function renderBag(){
   } else if(bagTab==='party'){
     const wizzes=wizKeys.filter(k=>k===key||(vit[k]!=null&&vit[k]<maxHp(k)));
     h+=`<div class="ex-bag-sec">Wizards</div>`+wizzes.map(k=>`<div class="ex-bag-row"><img class="ex-bag-face" src="${faceSrc(k)}" alt=""><span class="ex-bag-name">${esc(chars[k].name)}${k===key?' <em>(walking)</em>':''}</span>${bar(hpOf(k),maxHp(k))}</div>`).join('');
-    if(hero) h+=`<div class="ex-bag-row"><span class="ex-bag-name"><small>${esc(hero.name)}, ${esc(chars.hero.title)}</small></span><button class="ex-btn" data-act="look" type="button">Change look</button></div>`;
+    if(hero) h+=`<div class="ex-bag-row"><span class="ex-bag-name"><small>${esc(hero.name)}, ${esc(chars.hero.title)}</small></span><button class="ex-btn" data-act="look" type="button">Change look</button></div>`+
+      `<div class="ex-bag-note">${esc(magicLine())}</div>`;
     h+=`<div class="ex-bag-note">Wounds carry from fight to fight. Rest at an inn or a gleaner camp, or drink a potion.</div>`;
     h+=`<div class="ex-bag-sec">Allies · ${allies.length} / ${MAX_ALLIES}</div>`;
     h+=allies.length?allies.map((a,i)=>{ const f=fighters[a.key]||{}, mx=allyMax(a);
@@ -887,7 +892,7 @@ async function enterMap(id,at,instant){
 function save(){
   if(!MAP||!saveKey||!hero) return;                // nothing is kept until the wizard has been made
   if(!MAP.interior&&MAP.name) lastPlace=MAP.name;    // a room is listed under the town it's in
-  try{ localStorage.setItem(saveKey,JSON.stringify({v:2, t:Date.now(), place:lastPlace, map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,hero,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
+  try{ localStorage.setItem(saveKey,JSON.stringify({v:2, t:Date.now(), place:lastPlace, map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,hero,magic,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
 }
 function loadSave(key){
   try{ return key?JSON.parse(localStorage.getItem(key)||'null'):null; }catch(e){ return null; }
@@ -897,7 +902,7 @@ function applySave(s){
   s=s||{};
   found=new Set(s.found||[]); visited=new Set(s.visited||[]); spill=s.spill||{}; cleared=s.cleared||{};
   clock=s.clock!=null?s.clock:9*60; lightMode=s.lightMode||'auto'; vit=s.vit||{};
-  gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; quests=s.quests||{}; hero=s.hero||null; roomSpec=s.roomSpec||null; bandState=s.bands||{}; lastPlace=s.place||'';
+  gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; quests=s.quests||{}; hero=s.hero||null; magic=hero?(s.magic||fullMagic(hero.elem)):freshMagic(); roomSpec=s.roomSpec||null; bandState=s.bands||{}; lastPlace=s.place||'';
   if(s.map&&!s.map.startsWith('room:')) visited.add(s.map);
   for(const id of found){ const l=world&&world.locations.find(x=>x.id===id); if(l&&l.map) visited.add(l.map); }   // older saves knew only world-map places
 }
@@ -1150,6 +1155,44 @@ function sizeMini(){
   el.mini.style.width=mw+'px'; el.mini.style.height=Math.round(mw*ROWS/COLS)+'px';
 }
 
+// ── what your wizard knows (the University Year, docs/world-design.md) ──
+// `magic` (saved): {glyphs (indices into the 12), elems, cats, rings, skin, grad}. A new wizard knows
+// nothing but the Actions; the Library, Laboratory, lectures and exams teach the rest. It goes into
+// battle as chars.hero.known (game.js: elemUnlearnt / ringUnlearnt / mgKnows), with the home element's
+// opposite barred for good. Saves from before the Year know everything but the barred element.
+const ELEM_IDS=['fire','air','lightning','arcane','water','earth','ice','dark'];   // the wheel's order
+const oppOf=e=>ELEM_IDS[(ELEM_IDS.indexOf(e)+4)%8];
+const GLYPH_SETS={fire:[0,1,8,4], lightning:[3,2,9,7], ice:[10,11,6,5], arcane:[4,5,3,10],
+  earth:[1,2,3,8], dark:[6,9,2,4], air:[1,0,7,11], water:[2,5,4,11], dispel:[5,8,2,10]};   // as in game.js
+const GLYPHS=['ϟ','Δ','∇','Ψ','Ω','∞','☽','✸','⊕','⊗','θ','Φ'];
+function freshMagic(){ return {glyphs:[], elems:[], cats:[], rings:1, skin:false}; }
+function fullMagic(home,electives){
+  const ban=oppOf(home), els=electives?[home].concat(electives):ELEM_IDS.filter(e=>e!==ban);
+  return {glyphs:GLYPHS.map((_,i)=>i), elems:els, cats:['damage','protect','dispel'], rings:3, skin:true, grad:true};
+}
+function applyMagic(){
+  const d=chars&&chars.hero; if(!d||!hero) return;
+  if(!magic) magic=freshMagic();
+  d.known=magic; d.forbidden=[oppOf(hero.elem)];
+}
+// add to what you know: {glyphs, elems, cats, rings, skin}
+function learn(o){
+  if(!magic) magic=freshMagic();
+  ['glyphs','elems','cats'].forEach(k=>{ (o[k]||[]).forEach(v=>{ if(!magic[k].includes(v)) magic[k].push(v); }); });
+  if(o.rings) magic.rings=Math.max(magic.rings||1,o.rings);
+  if(o.skin) magic.skin=true;
+  applyMagic(); save();
+}
+function graduate(electives){ magic=fullMagic(hero.elem,electives); applyMagic(); save(); }
+// one line for the satchel: what you can cast
+function magicLine(){
+  if(!hero||!magic) return '';
+  if(magic.grad&&magic.rings>=3) return 'Graduate: '+magic.elems.map(e=>cap(e)).join(', ')+'; every wheel and ring. Barred: '+cap(oppOf(hero.elem))+'.';
+  const cats=magic.cats.map(c=>({damage:'strikes',protect:'wards',dispel:'dispels'}[c]));
+  return (cats.length?'You can cast '+cats.join(', ')+' ('+['inner','middle','outer'][(magic.rings||1)-1]+' ring)'+(magic.elems.length?' in '+magic.elems.map(cap).join(', '):'')+'.':'No magic yet: Attack, Guard and Grapple only.')+
+    (magic.glyphs.length?' Glyphs: '+magic.glyphs.map(i=>GLYPHS[i]).join(' ')+'.':'')+' Barred: '+cap(oppOf(hero.elem))+'.';
+}
+
 // a small face: the portrait thumbnail, or a made wizard's own
 function faceSrc(key){ const c=chars&&chars[key]; return c&&c.face||'portraits/small/'+key+'.jpg'; }
 // ── your own wizard (js/explore_hero.js) ──
@@ -1159,6 +1202,7 @@ async function useHero(){
   if(!hero||!window.ExploreHero) return;
   const d=await window.ExploreHero.def(hero);
   chars.hero=d; if(typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=d;
+  applyMagic();
   if(wizKeys[0]!=='hero') wizKeys.unshift('hero');
   el.root.querySelectorAll('#ex-prev,#ex-next').forEach(b=>b.hidden=true);
   setWizard(0);
@@ -1761,7 +1805,10 @@ window.addEventListener('DOMContentLoaded',()=>{
   refreshTitle();
   document.addEventListener('wd-profile-changed',refreshTitle);
 });
-window.Explore={open, close, refreshTitle, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
+window.Explore={open, close, refreshTitle,
+  _talk:n=>talkTo(n), _magic:()=>magic,
+  knowAll:()=>{ if(!hero) return false; magic=fullMagic(hero.elem); applyMagic(); save(); return true; },   // testing: the whole Year at once
+  enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
   _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
   // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
   _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;
