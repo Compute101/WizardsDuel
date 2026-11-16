@@ -862,7 +862,7 @@
     "aiStyle": "grudge",
     "rivals": {
       "gretch": "You're in my book of grudges, troggoth.",
-      "fizzwick": "Another goblin for the grudge list!",
+      "fizzwick": "Keep your fizzing muck away from me, gnome.",
       "zakkit": "Ratmen! Fetch the big grudge book!"
     },
     "taunts": [
@@ -1426,6 +1426,7 @@
     "name": "FIZZWICK",
     "title": "The Concoctor",
     "sprite": "sprites/fizzwick.png",
+    "spriteHeight": 0.6,
     "arena": "library",
     "col": "#99cc44",
     "aiStyle": "chaotic",
