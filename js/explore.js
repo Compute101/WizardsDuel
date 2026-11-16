@@ -1489,8 +1489,15 @@ function drawWizard(t){
   const flip=sheet?wiz.face>0:wiz.face<0;    // stills face right, the old sheets face left
   if(flip) ctx.scale(-1,1);
   ctx.drawImage(wizImg,0,0,sw,sh,-w/2,-h,w,h);
+  const g=c.glow; wizGlow=null;
+  if(g&&!sheet&&window.StaffGlow){                                 // a made wizard's staff light (js/staff_glow.js)
+    const lx=-w/2+g.x*w, ly=-h+g.y*h;
+    StaffGlow.draw(ctx,lx,ly,Math.max(g.r*h,h*0.03),g.col,g.elem,t,1);
+    wizGlow={x:wiz.x+(flip?-lx:lx), y:wiz.y-bob+ly, c:StaffGlow.rgb(g.col).join(','), lamp:g.lamp};
+  }
   ctx.restore();
 }
+let wizGlow=null;    // where the hero's staff light was drawn this frame (world px), for the night (drawNight)
 // running water: the quay tiles draw the water and its stone banks; this adds the current,
 // light streaks drifting downstream (MAP.flow: S or N) inside the quays
 const QUAY = 0.4;               // the quay stone's share of an edge tile
@@ -1629,6 +1636,7 @@ function lightsInView(cw,ch){
 function drawNight(t,cw,ch,D){
   const lights=lightsInView(cw,ch);
   lights.push({x:wiz.x,y:wiz.y-WIZ_H*0.6,r:140,wiz:true,seed:0});
+  if(wizGlow) lights.push({x:wizGlow.x,y:wizGlow.y,r:wizGlow.lamp?190:120,c:wizGlow.c,seed:7});   // your staff lights the street
   dctx.setTransform(dpr*zoom,0,0,dpr*zoom,-cam.x*dpr*zoom,-cam.y*dpr*zoom);
   dctx.globalCompositeOperation='source-over';
   dctx.clearRect(cam.x,cam.y,cw,ch);
