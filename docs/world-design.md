@@ -302,11 +302,9 @@ witch, so the old woman's new ones are 3 and 4). Then run `python3 tools/cut_her
 | `old_woman_3.png` | OLD WOMAN: no hat, hair in a bun, small round gold-framed spectacles, kindly face |
 | `old_woman_4.png` | OLD WOMAN: pointed wizard hat, long loose hair, tall and upright, sharp-eyed |
 
-**Delivered (round 2):** all fourteen. Twelve are in the game, giving four figures in every slot (the old
-witch counts as old woman 1). **Equal for both sexes:** there are never more male figures than female ones, and the user wants it that way. So
-`mid_man_5` (wide-brimmed hat, goatee) and `mid_man_6` (stocky battle-mage) wait in
-`sprites/hero/source/pending/` (the cutter skips sub-folders) until two more middle-aged women come.
-Move them up beside the new women and re-run the cutter. Prompts for the two women:
+**Delivered (round 2):** all fourteen are in: 14 male figures, 12 female (the old witch counts as old
+woman 1). **Equal for both sexes** (the user's rule): the next two figures are middle-aged women, which evens it at 14 each.
+Prompts for them:
 
 | File | Bracketed part |
 |---|---|
