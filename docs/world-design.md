@@ -392,8 +392,91 @@ About 45–60 minutes a term, 2½–3 hours to graduation, with a fight (real or
 8. Winks at the Wren's Nest (can go in any time: the engine exists).
 
 Decided: a graduate knows home + 3 electives (never the barred opposite; glyphs are never barred);
-anyone can skip the Year on day one by sitting Finals, missing its rewards but not the plot. Open:
-names for the tutorial partner, the lecturers and the All Absent Fellow.
+anyone can skip the Year on day one by sitting Finals, missing its rewards but not the plot; Ironskin is
+a core Hilary lesson, the Boxing Club gives +1 Attack.
+
+### When it happened
+
+The intro never fixed a date. **The Unweaving was 15 years ago.** Long enough for the gleaner trade to
+be an industry and for Wrenford to have grown a University in an old river town's buildings; recent
+enough that its founders (the scholars who were away on the day) still teach there, the bell is still
+rung for the dead every night, and the grief is still raw, which is what the villain runs on. Mages
+live long (the intro says so), so the Fellows haven't aged much since.
+
+### The cast of the Year
+
+**Your tutorial partner: Wil Ashby** if you're playing a woman, **Tamsin Ashby** if a man (same
+story, same lines). About 19, from a gleaner family on the Corvanthe Road. Their older sister **Bryony
+Ashby** was a first-year at Corvanthe on the day, when Wil / Tamsin was four; she's an Echo now (Water,
+the Drowned Quarter) and the family turned to gleaning to look for her. Practical, cheerful, a
+scrapper who can't sit still in lectures. **Their home element is your barred one** (you're Fire,
+they're Water), so each can cast what the other never can, and in spars their strikes unravel your
+wards and yours theirs. Wil / Tamsin are the reason the plot matters: Ashgrove's promise to bring the
+Echoes back as people is aimed at them, they're tempted in Trinity, and the finale is talking them down
+as much as stopping him. Won back, they're your first companion. (If your barred element is Water,
+Bryony is still Water: she's their sister, not yours; only their own element changes.)
+
+**The villain: Dr Edwin Ashgrove, Sub-Warden of All Absent College.** Kindly; gives you tea and good
+advice in Michaelmas. The forbidden book was borrowed in the name of **Dr Margery Ashgrove**, a
+Fellow lost on the day: his wife.
+
+**Lecturers** (each student meets their home element's and their three electives'):
+
+| Element | Lecturer | Quirk |
+|---|---|---|
+| Fire | Dr Ignatius Pyle | no eyebrows; the front row is always empty |
+| Water | Miss Perpetua Wells | everything's damp; teaches from the punt stage in summer |
+| Air | Professor Halcyon Drift | never stops pacing; his notes blow away mid-sentence |
+| Earth | Dr Agnes Barrow | an archaeologist; lectures among crates of rocks she won't let you touch |
+| Lightning | Dr Erasmus Fulmer | hair on end (*fulmen*, lightning) |
+| Ice | Professor Ingrid Rime | fur hat indoors; the inkwells freeze |
+| Arcane | Dr Oriel Nightingale | speaks almost entirely in footnotes |
+| Dark | Dr Lavinia Crowe | lectures with the lights off; the only Fellow who went into Corvanthe after the Unweaving and came back |
+
+**The Wrenford Fancy** (the Boxing Club), coached by the Head Porter: Two-Step Tolley (Attack, Attack,
+Guard, again), Mirror Meg (copies your last pick), Horace "the Clinch" Webb (Grapples when you Guarded
+last), Gentleman Jem, the champion (changes pattern below half HP).
+
+**Others:** Mrs Dorcas Pegg, landlady of the Wren's Nest; Old Bartholomew "Squop" Hale, undefeated at
+winks; Mr Ravel, the Senior Proctor (chases you over the rooftops, later grants the licence).
+
+### Art brief: the cast of the Year
+
+Townsfolk sprites (`sprites/folk/<role>.png`, drawn by `drawNpc`), painted in their **final colours**
+(unlike the hero bases, nothing is recoloured). Same format as the battle stills: full body, three-quarter
+view facing right, feet on the bottom edge, about 768 px tall. Put the files in `sprites/folk/source/`
+named by role (`lect_fire.png`, `wil.png`, `ashgrove.png`, …); a cutter (green keyed out, cropped, sized,
+like `tools/cut_hero_figures.py`) is still to write. Faces for dialogue are cropped from the sprites.
+
+Prompt for ChatGPT (one figure at a time; attach `sprites/folk/source/old_eldrin.png` and
+`old_witch.png` as style references):
+
+> Pixel-art full-body sprite in exactly the same style, scale, pose conventions and level of detail as
+> the attached two wizards: three-quarter view facing right, feet flat at the bottom of the image. This
+> is [DESCRIPTION]. A human, ordinary proportions. Hard pixel edges, no glow halo around the figure.
+> Plain flat pure green (#00FF00) background, nothing else in the picture, no text, no shadow on the
+> ground. No green anywhere on the figure. Portrait image, the figure about 768 pixels tall.
+
+The descriptions (all wear a black academic gown over their own clothes unless said; keep green off
+the figures, so Earth's lecturer is in browns):
+
+| File | [DESCRIPTION] |
+|---|---|
+| `lect_fire.png` | Dr Ignatius Pyle, the Fire lecturer: a stout middle-aged man, bald, no eyebrows, soot smudges on his face, a scorched black gown with singed hem over a red waistcoat, holding a pair of long iron tongs with a small flame at their tip, cheerful |
+| `lect_water.png` | Miss Perpetua Wells, the Water lecturer: a tall thin woman in her forties, damp hair plastered flat in a bun, a sea-blue gown dripping at the hem, rolled-up sleeves, a punt pole over her shoulder, a small swirl of water above her other palm |
+| `lect_air.png` | Professor Halcyon Drift, the Air lecturer: a lanky old man mid-stride, long white hair and gown swept sideways by wind, loose papers flying from his hand, a pale grey-white waistcoat, a small whirl of wind at his fingertips |
+| `lect_earth.png` | Dr Agnes Barrow, the Earth lecturer: a sturdy middle-aged woman, sun-browned, short practical hair under a wide-brimmed brown field hat, a brown canvas coat with many pockets over her gown, a geologist's hammer in one hand and a rough stone in the other, dusty boots |
+| `lect_lightning.png` | Dr Erasmus Fulmer, the Lightning lecturer: a wiry young-looking man, wild hair standing straight up on end, round spectacles, a yellow-and-black waistcoat, small blue-white sparks crackling between his raised fingers, an eager grin |
+| `lect_ice.png` | Professor Ingrid Rime, the Ice lecturer: a tall stern woman in her fifties, a big white fur hat and fur-collared pale blue coat over her gown, frost on her shoulders, a slim staff tipped with an ice crystal, breath misting |
+| `lect_arcane.png` | Dr Oriel Nightingale, the Arcane lecturer: a slight elderly scholar of indeterminate age, neat silver hair, a deep violet gown embroidered with tiny stars, half-moon spectacles, an open book in one hand with glowing violet runes floating off its pages |
+| `lect_dark.png` | Dr Lavinia Crowe, the Dark lecturer: a gaunt woman in her sixties, white streak in black hair, a high-collared black gown, a faint scar over one eye, a hooded shuttered lantern held low giving almost no light, purple shadow curling at her feet, calm and unsettling |
+| `wil.png` | Wil Ashby, a tutorial partner: a wiry young man about 19, tousled brown hair, freckles, a student's short black commoner's gown thrown over a patched gleaner's leather jerkin and boots, a satchel, a knife at his belt, a cocky grin, fists half-raised |
+| `tamsin.png` | Tamsin Ashby, a tutorial partner: a wiry young woman about 19, cropped brown hair, freckles, a student's short black commoner's gown thrown over a patched gleaner's leather jerkin and boots, a satchel, a knife at her belt, a cocky grin, fists half-raised |
+| `ashgrove.png` | Dr Edwin Ashgrove, Sub-Warden of All Absent College: a kindly grey-haired man in his sixties, neat beard, a full black doctor's gown with a dove-grey hood, a mourning band on one sleeve, holding a teacup and saucer, gentle smile, tired eyes |
+| `proctor.png` | Mr Ravel, the Senior Proctor: a severe thin man, black gown with velvet bands, white bands at the throat, a tall black hat, a short black staff of office |
+| `landlady.png` | Mrs Dorcas Pegg, landlady of the Wren's Nest: a broad rosy-cheeked woman, apron over a brown dress, sleeves rolled, a tankard in each hand (no gown) |
+| `squop.png` | Old Bartholomew "Squop" Hale, pub regular: a little old man in a shabby tweed coat and flat cap, a small cup and a handful of coloured tiddlywinks counters (no gown) |
+| `boxer_tolley.png` … `boxer_jem.png` | the four boxers, bare-knuckle in shirtsleeves and braces, no gowns: Two-Step Tolley (light, quick, on his toes), Mirror Meg (a lean woman boxer, hair tied back, watchful), Horace Webb (a huge bald grappler, arms wide), Gentleman Jem (tall, moustached, elegant, fists up in a classic stance) |
 
 ## Wrenford's people
 
