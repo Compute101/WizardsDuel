@@ -313,3 +313,20 @@ Prompts for them:
 
 Old man 4 and old woman 4's hat brims (gold-orange underneath) fooled the skin finder, so their face
 and neck boxes are set by hand (`FIX` in `tools/cut_hero_figures.py`).
+
+### Base figures, round 3: bandit wizards (eyepatch)
+
+Rough hedge-mages and gleaner bosses, so the figures can also serve as bandit and warband wizards.
+They come as pairs, one man and one woman, so the sexes stay even. Same round 1 prompt and the round 2 colour lines,
+plus: *A bandit wizard: the robe is worn and patched, with ragged hems and a frayed hood or hat, but
+still purple. The eyepatch and its strap are dark brown leather. No knives, swords or steel.*
+
+| File | Bracketed part |
+|---|---|
+| `mid_man_7.png` | MIDDLE-AGED MAN: a leather eyepatch over his right eye, hood down on his shoulders, shaved head, a short rough beard, a scar running out from under the patch, a sly sneer |
+| `mid_woman_7.png` | MIDDLE-AGED WOMAN: a leather eyepatch over her left eye, a frayed hood up, a long braid down the front, a cold stare, a thin scar on the chin |
+| `old_man_5.png` | OLD MAN: a leather eyepatch, a battered pointed hat with a torn brim, a long unkempt beard with a few small gold rings tied in it, a missing tooth in a crooked grin |
+| `old_woman_5.png` | OLD WOMAN: a leather eyepatch, wild tangled hair, a tattered shawl over the head and shoulders, gold hoop earrings, a hard and cunning face |
+
+Idea (not built): the base figures, recoloured, as Explore's NPC wizards (gleaner bosses, townsfolk),
+leaving out the figure and colours the player picked so no NPC looks like you.
