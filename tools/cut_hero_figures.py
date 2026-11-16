@@ -322,6 +322,83 @@ def skin_region(im, skin, no_arm=()):
         for (x, y) in seen: mp[x, y] = 255
     return m
 
+def woodish(p):
+    """The staff's wood: brown to orange, its pale highlights too; not its near-black outline."""
+    r, g, b, a = p
+    if not a: return False
+    h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255); h *= 360
+    return ((h <= 40 or h >= 345) and s_ > 0.3 and v > 0.1) or (h <= 46 and s_ > 0.12 and v > 0.75)
+
+def staff_region(im, hand, skin_mask):
+    """The staff, as a mask, for recolouring its wood. Its straight shaft below the staff hand is found
+    as in skin_region (wood runs between the robe, a line fitted through their middles); from there the
+    staff is every wood pixel below the hand within that line's band (the sleeve, belt and boots lie beside
+    it), and above it anywhere left of the hand (the twisted head round the flame), never the skin."""
+    W, H = im.size; px = im.load(); sk = skin_mask.load()
+    # the shaft below the hand: the straight line (from a point across the fist's bottom, at a lean)
+    # that runs through the most wood over the next 40% of the height
+    isw = [[False] * W for _ in range(H)]
+    for y in range(H):
+        for x in range(W):
+            r, g, b_, a_ = px[x, y]
+            if a_:
+                h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b_ / 255)
+                isw[y][x] = 10 <= h * 360 <= 32 and s_ > 0.7 and v > 0.18
+    y0 = int(hand[3] * H); y1 = min(H - 1, int((hand[3] + 0.4) * H))
+    best = (0, None, None)
+    for c0 in range(int(hand[0] * W), int(hand[2] * W) + 1):
+        for k in range(-10, 61):
+            sl = k / 100; n = 0
+            for y in range(y0, y1, 2):
+                x = int(c0 + sl * (y - y0))
+                if 0 <= x < W and isw[y][x]: n += 1
+            if n > best[0]: best = (n, c0, sl)
+    n, c0, sl = best
+    if not c0 or n < 0.4 * (y1 - y0) / 2: return None
+    ws = []
+    for y in range(y0, y1, 4):
+        x = int(c0 + sl * (y - y0))
+        if not isw[y][x]: continue
+        l = x
+        while l > 0 and isw[y][l - 1]: l -= 1
+        r_ = x
+        while r_ < W - 1 and isw[y][r_ + 1]: r_ += 1
+        ws.append(r_ - l)
+    hw = (sorted(ws)[len(ws) // 2] if ws else 12) / 2 + 3
+    my, mx = y0, c0
+    yh = int(hand[3] * H); xr = int((hand[2] + 0.03) * W)
+    def ok(x, y):
+        if sk[x, y] or not woodish(px[x, y]): return False
+        if y > yh: c = mx + sl * (y - my); return c - hw <= x <= c + hw
+        return x <= xr
+    m_ = Image.new('L', (W, H), 0); mp = m_.load()
+    for y in range(yh + 1):
+        for x in range(0, min(W, xr + 1)):
+            if ok(x, y): mp[x, y] = 255
+    # below the hand, row by row: the run of wood round the line (found within a band's width of it, so a
+    # bend is followed), out to the shaft's own edges; its bright rim is as saturated as anything on it
+    free = lambda x, y: not sk[x, y] and woodish(px[x, y])
+    prev = None
+    yf = min(H, yh + int(0.06 * H))                      # just under the fist: the narrow band only, so no knuckle is taken
+    for y in range(yh + 1, yf):
+        for x in range(W):
+            if ok(x, y): mp[x, y] = 255
+    for y in range(yf, H):
+        c = int(round(mx + sl * (y - my))) if prev is None else prev
+        c = min(W - 1, max(0, c))
+        start = next((x for d in range(int(hw * 1.5) + 1) for x in (c - d, c + d) if 0 <= x < W and free(x, y)), None)
+        if start is None: prev = None; continue
+        l = r_ = start
+        lim = hw + 5                                      # a little past the band either side of the tracked middle, never into a fist
+        while l > 0 and free(l - 1, y) and c - (l - 1) <= lim: l -= 1
+        while r_ < W - 1 and free(r_ + 1, y) and (r_ + 1) - c <= lim: r_ += 1
+        if r_ - l > 4 * hw: prev = None; continue        # spilled onto something wide (a boot): skip the row
+        line = mx + sl * (y - my)
+        if abs((l + r_) / 2 - line) > 3 * hw: prev = None; continue   # strayed off the staff
+        for x in range(l, r_ + 1): mp[x, y] = 255
+        prev = (l + r_) // 2
+    return m_
+
 def main():
     figs = []
     for f in sorted(os.listdir(SRC)):
@@ -342,9 +419,17 @@ def main():
         if mask and FIX.get(name, {}).get('paleHair'): pale_hair(im, mask, bx['skin'][0])
         if mask:
             mask.save(os.path.join(OUT, name + '_hair.png'), optimize=True); fig['hairMask'] = 'sprites/hero/' + name + '_hair.png'
-        skin_region(im, bx['skin'], FIX.get(name, {}).get('noArm', ())).save(os.path.join(OUT, name + '_skin.png'), optimize=True); fig['skinMask'] = 'sprites/hero/' + name + '_skin.png'
+        sm = skin_region(im, bx['skin'], FIX.get(name, {}).get('noArm', ()))
+        sm.save(os.path.join(OUT, name + '_skin.png'), optimize=True); fig['skinMask'] = 'sprites/hero/' + name + '_skin.png'
+        stm = staff_region(im, bx['skin'][1], sm)
+        if stm: stm.save(os.path.join(OUT, name + '_staff.png'), optimize=True); fig['staffMask'] = 'sprites/hero/' + name + '_staff.png'
         figs.append(fig)
         print(name, im.size)
+    # the old witch (hand-boxed in js/explore_hero.js BASES): her staff mask only
+    witch = Image.open(os.path.join(ROOT, 'sprites/folk/source/old_witch.png')).convert('RGBA')
+    wskin = [[0.44, 0.20, 0.62, 0.345], [0.10, 0.33, 0.22, 0.41], [0.70, 0.30, 0.87, 0.42]]
+    stm = staff_region(witch, wskin[1], skin_region(witch, wskin, (1, 2)))
+    if stm: stm.save(os.path.join(OUT, 'f_old_1_staff.png'), optimize=True)
     with open(os.path.join(OUT, 'figures.json'), 'w') as fh:
         json.dump(figs, fh, indent=1)
     print('sprites/hero/figures.json:', len(figs), 'figures')
