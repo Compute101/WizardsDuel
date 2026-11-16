@@ -301,3 +301,17 @@ witch, so the old woman's new ones are 3 and 4). Then run `python3 tools/cut_her
 | `old_man_4.png` | OLD MAN: wide-brimmed wizard hat, a big drooping moustache, no beard, upright and wiry |
 | `old_woman_3.png` | OLD WOMAN: no hat, hair in a bun, small round gold-framed spectacles, kindly face |
 | `old_woman_4.png` | OLD WOMAN: pointed wizard hat, long loose hair, tall and upright, sharp-eyed |
+
+**Delivered (round 2):** all fourteen. Twelve are in the game, giving four figures in every slot (the old
+witch counts as old woman 1). **Equal for both sexes:** there are never more male figures than female ones, and the user wants it that way. So
+`mid_man_5` (wide-brimmed hat, goatee) and `mid_man_6` (stocky battle-mage) wait in
+`sprites/hero/source/pending/` (the cutter skips sub-folders) until two more middle-aged women come.
+Move them up beside the new women and re-run the cutter. Prompts for the two women:
+
+| File | Bracketed part |
+|---|---|
+| `mid_woman_5.png` | MIDDLE-AGED WOMAN: no hat, short practical hair swept back, a strong jaw, a battle-mage look, broad-shouldered |
+| `mid_woman_6.png` | MIDDLE-AGED WOMAN: wide-brimmed wizard hat, long hair tied in a low knot, a sharp knowing smile |
+
+Old man 4 and old woman 4's hat brims (gold-orange underneath) fooled the skin finder, so their face
+and neck boxes are set by hand (`FIX` in `tools/cut_hero_figures.py`).

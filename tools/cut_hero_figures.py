@@ -29,6 +29,12 @@ HEIGHT = 768
 SLOTS = {'young_man': ('m', 'young'), 'young_woman': ('f', 'young'), 'mid_man': ('m', 'middle'),
          'mid_woman': ('f', 'middle'), 'old_man': ('m', 'old'), 'old_woman': ('f', 'old')}
 
+# boxes set by hand where the pixels mislead (wide brims whose underside reads as skin)
+FIX = {
+    'old_man_4':   {'face': [0.34, 0.075, 0.30], 'head': [0.40, 0.125, 0.58, 0.26], 'neck': [0.43, 0.24, 0.53, 0.30]},
+    'old_woman_4': {'face': [0.35, 0.07, 0.30],  'head': [0.43, 0.115, 0.56, 0.24], 'neck': [0.45, 0.22, 0.55, 0.29]},
+}
+
 def key_out(im):
     """Green to transparent; green spill on the figure's edge pulled back to its other channels."""
     im = im.convert('RGBA'); px = im.load(); W, H = im.size
@@ -208,6 +214,8 @@ def main():
         im.save(os.path.join(OUT, name + '.png'), optimize=True)
         sex, age = SLOTS[slot]
         bx = boxes(im); mask = bx.pop('_mask')
+        if name in FIX:   # a hat brim's gold-orange underside joined the head's skin clump: face and neck by hand
+            f = FIX[name]; bx['face'] = f['face']; bx['skin'] = [f['head']] + bx['skin'][1:3] + [f['neck']]
         fig = dict(id=name, sex=sex, age=age, src='sprites/hero/' + name + '.png', **bx)
         if mask:
             mask.save(os.path.join(OUT, name + '_hair.png'), optimize=True); fig['hairMask'] = 'sprites/hero/' + name + '_hair.png'
