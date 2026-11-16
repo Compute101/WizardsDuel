@@ -1996,3 +1996,5 @@ body {
   #explore-screen .ex-say.has-face { padding-left:76px; min-height:70px; }
   #explore-screen .ex-say-face { width:54px; height:54px; left:10px; }
 }
+#explore-screen #ex-zoom { white-space:nowrap; }
+#explore-screen #ex-zoom.on { border-color:#e8c860; color:#ffe9a8; }

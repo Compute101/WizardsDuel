@@ -85,7 +85,7 @@ function hpOf(key){ return vit[key]==null?maxHp(key):vit[key]; }
 let el={}, ctx=null, dark=null, dctx=null;
 const wiz={x:0,y:0,face:1,walk:0,moving:false};
 const keys=new Set();
-let target=null, stuckT=0, near=null, nearLook=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, cam={x:0,y:0}, vw=0, vh=0;
+let target=null, stuckT=0, near=null, nearLook=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, baseZoom=1, cam={x:0,y:0}, vw=0, vh=0;
 let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
 let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null, quests={};
@@ -1072,10 +1072,11 @@ function buildDom(){
       <div class="ex-spill" id="ex-spill" hidden></div>
       <button class="ex-btn" id="ex-bagbtn" type="button" title="Satchel (I)">🎒</button>
       <button class="ex-btn" id="ex-mapbtn" type="button" title="World map">🗺</button>
+      <button class="ex-btn" id="ex-zoom" type="button" title="Zoom in for a closer look (Z, mouse wheel or pinch)">🔍</button>
       <button class="ex-btn" id="ex-night" type="button" title="Time of day: auto / day / night"></button>
     </div>
     <canvas id="ex-mini" aria-hidden="true"></canvas>
-    <div class="ex-hint" id="ex-hint">WASD / arrows to walk · tap or click to walk there · E to inspect or enter · Q to inspect a building at its door · walk off a road to travel</div>
+    <div class="ex-hint" id="ex-hint">WASD / arrows to walk · tap or click to walk there · E to inspect or enter · Q to inspect a building at its door · Z, wheel or pinch to zoom · walk off a road to travel</div>
     <button class="ex-btn ex-act" id="ex-act" type="button" hidden>✋ Inspect</button>
     <button class="ex-btn ex-look" id="ex-look" type="button" hidden>✋ Inspect</button>
     <div class="ex-say" id="ex-say" hidden><img class="ex-say-face" alt="" hidden><div class="ex-say-name"></div><div class="ex-say-text"></div></div>
@@ -1098,7 +1099,7 @@ function buildDom(){
   document.getElementById('app').appendChild(d);
   const $=s=>d.querySelector(s);
   el={root:d, cv:$('#ex-canvas'), mini:$('#ex-mini'), say:$('#ex-say'), act:$('#ex-act'), look:$('#ex-look'), hint:$('#ex-hint'),
-      face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), loading:$('#ex-loading'), title:$('#ex-title'),
+      face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), zoom:$('#ex-zoom'), loading:$('#ex-loading'), title:$('#ex-title'),
       fade:$('#ex-fade'), toast:$('#ex-toast'), world:$('#ex-world'), worldCv:$('#ex-world-cv'), worldTitle:$('#ex-world-title'),
       hp:$('#ex-hp'), spill:$('#ex-spill'), bag:$('#ex-bag'), bagBody:$('#ex-bag-body'), bagTabs:$('#ex-bag-tabs'), bagWho:$('#ex-bag-who'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
   ctx=el.cv.getContext('2d');
@@ -1118,9 +1119,21 @@ function buildDom(){
   el.look.onclick=()=>lookAtDoor();
   el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy&&!roomLocked()) takeExit(nearExit); };
   el.say.onclick=hideSay;
-  el.cv.addEventListener('pointerdown',e=>{ el.cv.setPointerCapture(e.pointerId); setTarget(e); hideSay(); dragging=true; });
-  el.cv.addEventListener('pointermove',e=>{ if(dragging) setTarget(e); });
-  const up=()=>{ dragging=false; };
+  el.zoom.onclick=()=>stepZoom(); renderZoom();
+  // two fingers pinch the zoom instead of walking
+  const touches=new Map(); let pinch=null;
+  const spread=()=>{ const [a,b]=[...touches.values()]; return Math.hypot(a.x-b.x,a.y-b.y)||1; };
+  el.cv.addEventListener('pointerdown',e=>{
+    el.cv.setPointerCapture(e.pointerId); touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(touches.size===2){ pinch={d:spread(), z:zoomGoal}; dragging=false; target=null; return; }
+    if(touches.size>2) return;
+    setTarget(e); hideSay(); dragging=true; });
+  el.cv.addEventListener('pointermove',e=>{
+    if(touches.has(e.pointerId)) touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinch&&touches.size===2){ setZoom(pinch.z*spread()/pinch.d,true); return; }
+    if(dragging) setTarget(e); });
+  el.cv.addEventListener('wheel',e=>{ e.preventDefault(); setZoom(zoomGoal*Math.exp(-e.deltaY*0.0015)); },{passive:false});
+  const up=e=>{ touches.delete(e.pointerId); if(touches.size<2) pinch=null; dragging=false; };
   el.cv.addEventListener('pointerup',up); el.cv.addEventListener('pointercancel',up);
   window.addEventListener('keydown',onKey); window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
   window.addEventListener('resize',resize);
@@ -1146,6 +1159,7 @@ function onKey(e){
   else if(k==='e'||k===' '||k==='enter'){ if(!el.say.hidden) hideSay(); else if(near) inspect(); else if(nearDoor) enterDoor(nearDoor); e.preventDefault(); }
   else if(k==='q'){ if(!el.say.hidden) hideSay(); else lookAtDoor(); e.preventDefault(); }
   else if(k==='m'){ if(!busy&&MAP) openWorld('view'); }
+  else if(k==='z'){ stepZoom(); }
   else if(k==='i'){ if(!busy&&MAP) openBag(); }
   else if(k==='escape'){ if(!el.say.hidden) hideSay(); else close(); }
 }
@@ -1155,9 +1169,10 @@ function resize(){
   vw=window.innerWidth; vh=window.innerHeight;
   for(const c of [el.cv,dark]){ c.width=Math.round(vw*dpr); c.height=Math.round(vh*dpr); }
   el.cv.style.width=vw+'px'; el.cv.style.height=vh+'px';
-  zoom=Math.max(0.62,Math.min(1.35,Math.min(vw/620,vh/620)));
+  baseZoom=Math.max(0.62,Math.min(1.35,Math.min(vw/620,vh/620)));
   // a room fits the screen, walls and all
-  if(MAP&&MAP.interior) zoom=Math.max(0.55,Math.min(1.6,Math.min(vw/(WORLD_W+20),(vh-70)/(WORLD_H-T*0.6))));
+  if(MAP&&MAP.interior) baseZoom=Math.max(0.55,Math.min(1.6,Math.min(vw/(WORLD_W+20),(vh-70)/(WORLD_H-T*0.6))));
+  zoom=baseZoom*zoomMul;
   if(el.mini) el.mini.style.display=MAP&&MAP.interior?'none':'';
   sizeMini();
 }
@@ -1396,7 +1411,23 @@ function update(dt){
   // remember where you are
   saveT+=dt; if(saveT>2){ saveT=0; save(); }
 }
+// ── close-up zoom: on top of the fitted view (baseZoom, the most usable, and the default), so people
+// can be seen more clearly. 🔍 / Z steps through ZOOM_STEPS, the mouse wheel and a pinch zoom freely
+// between 1 and ZOOM_MAX; it eases there (zoomMul → zoomGoal). Remembered on this device.
+const ZOOM_STEPS=[1,1.5,2.1], ZOOM_MAX=2.4;
+let zoomMul=1, zoomGoal=1, zoomT=0;
+try{ zoomGoal=zoomMul=Math.max(1,Math.min(ZOOM_MAX,+localStorage.getItem('wd-explore-zoom')||1)); }catch(e){}
+function setZoom(z,now){
+  zoomGoal=Math.max(1,Math.min(ZOOM_MAX,z)); if(now) zoomMul=zoomGoal;
+  try{ localStorage.setItem('wd-explore-zoom',zoomGoal.toFixed(2)); }catch(e){}
+  renderZoom();
+}
+function stepZoom(){ setZoom(ZOOM_STEPS.find(z=>z>zoomGoal+0.05)||1); }
+function renderZoom(){ if(el&&el.zoom){ el.zoom.textContent=zoomGoal>1.05?'🔍 ×'+(Math.round(zoomGoal*10)/10):'🔍'; el.zoom.classList.toggle('on',zoomGoal>1.05); } }
 function updateCam(){
+  const t=performance.now(), dt=Math.min(0.1,(t-(zoomT||t))/1000); zoomT=t;
+  zoomMul+=(zoomGoal-zoomMul)*Math.min(1,dt*9); if(Math.abs(zoomGoal-zoomMul)<0.002) zoomMul=zoomGoal;
+  zoom=baseZoom*zoomMul;
   const cw=vw/zoom, ch=vh/zoom;
   cam.x=Math.max(0,Math.min(WORLD_W-cw,wiz.x-cw/2));
   cam.y=Math.max(0,Math.min(WORLD_H-ch,wiz.y-WIZ_H/2-ch/2));
