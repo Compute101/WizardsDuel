@@ -266,3 +266,78 @@ Prompt for ChatGPT (one figure at a time; attach `sprites/folk/source/old_eldrin
 > picture, no text, no shadow on the ground. Portrait image, the figure about 768 pixels tall.
 
 Change the bracketed part for each slot in the table.
+
+### Base figures, round 2 (more variety)
+
+Four figures per slot, so the Figure choice is a real choice; the middle-aged man first (the user
+plays one, and had only a bearded man in a hat and a bald man with a moustache). New figures vary
+the **head and face**, not the body: same pose, staff hand, robe cut and key colours as round 1.
+
+Use the round 1 prompt above, with two changes:
+
+- Attach two of round 1's figures as the style references instead of the old sprites:
+  `sprites/hero/source/mid_man_1.png` and `sprites/hero/source/old_man_2.png` (the hooded one).
+- Add this after the colour rules: *A hood, hat, scarf or shawl is part of the robe: purple only.
+  Jewellery, circlets, buckles and spectacle frames are gold. No grey metal, no blue gems, no
+  coloured headwear.*
+
+Name the files `<slot>_<n>.png`, carrying on from the numbers already used (`old_woman_1` is the
+witch, so the old woman's new ones are 3 and 4). Then run `python3 tools/cut_hero_figures.py` and check
+`--preview`.
+
+| File | Bracketed part |
+|---|---|
+| `mid_man_3.png` | MIDDLE-AGED MAN: hood up and shadowing the brow, short full beard, weathered face, a small scar across one cheek |
+| `mid_man_4.png` | MIDDLE-AGED MAN: no hat, long hair tied back, a forked beard, sharp features |
+| `mid_man_5.png` | MIDDLE-AGED MAN: wide-brimmed wizard hat, a neat goatee, lean face, high cheekbones |
+| `mid_man_6.png` | MIDDLE-AGED MAN: stocky and broad-shouldered, no hat, close-cropped hair, a thick full beard, a battle-mage look |
+| `young_man_3.png` | YOUNG MAN: no hat, messy curly hair, light stubble, cheerful face |
+| `young_man_4.png` | YOUNG MAN: wide-brimmed wizard hat, long straight hair to the shoulders, clean-shaven |
+| `young_woman_3.png` | YOUNG WOMAN: no hat, short cropped hair, freckles, determined face |
+| `young_woman_4.png` | YOUNG WOMAN: wide-brimmed wizard hat, hair in a high ponytail |
+| `mid_woman_3.png` | MIDDLE-AGED WOMAN: hood up, hair in a long braid over the shoulder, stern face |
+| `mid_woman_4.png` | MIDDLE-AGED WOMAN: pointed wizard hat, hair in two braids, laugh lines |
+| `old_man_3.png` | OLD MAN: bald, no hat, a very long beard to the belt, bushy eyebrows |
+| `old_man_4.png` | OLD MAN: wide-brimmed wizard hat, a big drooping moustache, no beard, upright and wiry |
+| `old_woman_3.png` | OLD WOMAN: no hat, hair in a bun, small round gold-framed spectacles, kindly face |
+| `old_woman_4.png` | OLD WOMAN: pointed wizard hat, long loose hair, tall and upright, sharp-eyed |
+
+**Delivered (round 2):** all fourteen are in: 14 male figures, 12 female (the old witch counts as old
+woman 1). **Equal for both sexes** (the user's rule): the next two figures are middle-aged women, which evens it at 14 each.
+Prompts for them:
+
+| File | Bracketed part |
+|---|---|
+| `mid_woman_5.png` | MIDDLE-AGED WOMAN: no hat, short practical hair swept back, a strong jaw, a battle-mage look, broad-shouldered |
+| `mid_woman_6.png` | MIDDLE-AGED WOMAN: wide-brimmed wizard hat, long hair tied in a low knot, a sharp knowing smile |
+
+Old man 4 and old woman 4's hat brims (gold-orange underneath) fooled the skin finder, so their face
+and neck boxes are set by hand (`FIX` in `tools/cut_hero_figures.py`).
+
+### Base figures, round 3: bandit wizards (eyepatch)
+
+Rough hedge-mages and gleaner bosses, so the figures can also serve as bandit and warband wizards.
+They come as pairs, one man and one woman, so the sexes stay even. Same round 1 prompt and the round 2 colour lines,
+plus: *A bandit wizard: the robe is worn and patched, with ragged hems and a frayed hood or hat, but
+still purple. The eyepatch and its strap are dark brown leather. No knives, swords or steel.*
+
+| File | Bracketed part |
+|---|---|
+| `mid_man_7.png` | MIDDLE-AGED MAN: a leather eyepatch over his right eye, hood down on his shoulders, shaved head, a short rough beard, a scar running out from under the patch, a sly sneer |
+| `mid_woman_7.png` | MIDDLE-AGED WOMAN: a leather eyepatch over her left eye, a frayed hood up, a long braid down the front, a cold stare, a thin scar on the chin |
+| `old_man_5.png` | OLD MAN: a leather eyepatch, a battered pointed hat with a torn brim, a long unkempt beard with a few small gold rings tied in it, a missing tooth in a crooked grin |
+| `old_woman_5.png` | OLD WOMAN: a leather eyepatch, wild tangled hair, a tattered shawl over the head and shoulders, gold hoop earrings, a hard and cunning face |
+
+**Delivered (round 3):** six. `mid_man_7` (bald, scarred), `mid_man_8` (grey hair, patched hood),
+`old_man_5` (torn hat, ringed beard), `mid_woman_7` (hooded, braid, robe whole), `mid_woman_8` (the
+same look, tattered and patched) and `old_woman_5` (wild hair, hoops, in rags). Then `mid_woman_5` (short swept-back hair, scar, hoops) and
+`mid_woman_6` (wide-brimmed hat with a buckled band, loose hair) evened the sexes at 17 each. The staff hand of
+`mid_woman_8` is boxed by hand (`FIX`): a brown robe patch passed for skin. Patches and eyepatches are
+brown leather and fall inside the skin boxes, so they take a darker shade of the chosen skin.
+
+All six eyepatched bandits (`mid_man_7`, `mid_man_8`, `old_man_5`, `mid_woman_7`, `mid_woman_8`, `old_woman_5`) are for NPCs only
+(`NPC_ONLY` in the cutter, `npc` in `figures.json`): the creator doesn't offer them, which leaves 14 figures of each
+sex there (the old witch included).
+
+Idea (not built): the base figures, recoloured, as Explore's NPC wizards (gleaner bosses, townsfolk),
+leaving out the figure and colours the player picked so no NPC looks like you.

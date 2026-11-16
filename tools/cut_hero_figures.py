@@ -29,6 +29,18 @@ HEIGHT = 768
 SLOTS = {'young_man': ('m', 'young'), 'young_woman': ('f', 'young'), 'mid_man': ('m', 'middle'),
          'mid_woman': ('f', 'middle'), 'old_man': ('m', 'old'), 'old_woman': ('f', 'old')}
 
+# the ragged bandits: for NPCs only, kept out of the creator (an even number of each sex, so the creator stays even too)
+NPC_ONLY = {'mid_man_7', 'mid_man_8', 'old_man_5', 'mid_woman_7', 'mid_woman_8', 'old_woman_5'}   # every eyepatched bandit
+
+# boxes set by hand where the pixels mislead (wide brims whose underside reads as skin, robe patches)
+FIX = {
+    'old_man_4':   {'face': [0.34, 0.075, 0.30], 'head': [0.40, 0.125, 0.58, 0.26], 'neck': [0.43, 0.24, 0.53, 0.30]},
+    'old_woman_4': {'face': [0.35, 0.07, 0.30],  'head': [0.43, 0.115, 0.56, 0.24], 'neck': [0.45, 0.22, 0.55, 0.29]},
+    'mid_woman_8': {'lh': [0.10, 0.315, 0.195, 0.385, 0.95]},
+    'mid_man_5':   {'paleHair': True},   # a white moustache, apart from the hair
+    'mid_man_6':   {'noArm': (1,), 'paleHair': True},   # a leather bracer at the wrist, then the sleeve: no forearm to find
+}
+
 def key_out(im):
     """Green to transparent; green spill on the figure's edge pulled back to its other channels."""
     im = im.convert('RGBA'); px = im.load(); W, H = im.size
@@ -198,6 +210,118 @@ def boxes(im):
             hair = bbox(pts, W, H, 0.004)
     return {'hair': hair, 'face': face, 'skin': sk, 'noTrim': [], 'trimLo': 27, '_mask': hairMask}
 
+def grow_hair(im, mask, reach=8):
+    """The hair mask carried on into near-white pixels touching it (moustache and beard tips the
+    silver test left out), up to `reach` px; teeth and eye whites don't touch the hair, so they stay out."""
+    W, H = im.size; px = im.load(); mp = mask.load()
+    pale = lambda x, y: px[x, y][3] and (lambda h, s_, v: s_ < 0.22 and v > 0.5)(*colorsys.rgb_to_hsv(*(c / 255 for c in px[x, y][:3])))
+    front = [(x, y) for y in range(H) for x in range(W) if mp[x, y]]
+    for _ in range(reach):
+        nxt = []
+        for x, y in front:
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (x + dx, y + dy)
+                if 0 <= n[0] < W and 0 <= n[1] < H and not mp[n] and pale(*n): mp[n] = 255; nxt.append(n)
+        front = nxt
+
+def pale_hair(im, mask, head):
+    """For figures whose moustache is near-white and apart from the rest of the hair (FIX paleHair): every
+    near-white clump in the lower part of the head box is hair. Not used generally: teeth look the same."""
+    W, H = im.size; px = im.load(); mp = mask.load(); pts = set()
+    y0 = int((head[1] + 0.45 * (head[3] - head[1])) * H)
+    for y in range(y0, min(H, int((head[3] + 0.03) * H))):
+        for x in range(max(0, int((head[0] - 0.03) * W)), min(W, int((head[2] + 0.03) * W))):
+            r, g, b, a = px[x, y]
+            if not a or mp[x, y]: continue
+            h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+            if s_ < 0.3 and v > 0.45: pts.add((x, y))
+    for c in clumps(pts, W, H):
+        if len(c) >= 6:
+            for p in c: mp[p] = 255
+    grow_hair(im, mask, 3)
+
+def skin_region(im, skin, no_arm=()):
+    """Where skin may be recoloured, as a mask: the skin boxes, a little wider (the ear at the back of the head,
+    the knuckles over the staff, the wrist below the staff hand), less the staff itself inside the hand boxes.
+    The staff's wood is the same hue as skin and its highlights as pale, so it's found by shape: strongly
+    saturated wood, with the narrow streaks of highlight between two bits of it on a row filled in (fingers
+    are wider than any streak)."""
+    W, H = im.size; px = im.load(); m = Image.new('L', (W, H), 0); mp = m.load()
+    grown = []
+    for k, b in enumerate(skin):
+        if k == 0:   b = [b[0] - 0.03, b[1] - 0.01, b[2] + 0.015, b[3]]           # the head: the ear, the brow
+        elif k < 3:  b = [b[0] - 0.015, b[1] - 0.015, b[2] + 0.015, b[3] + 0.015]  # a hand: knuckles
+        grown.append((k, [max(0, int(b[0] * W)), max(0, int(b[1] * H)), min(W - 1, int(b[2] * W)), min(H - 1, int(b[3] * H))]))
+    for k, (x0, y0, x1, y1) in grown:
+        for y in range(y0, y1 + 1):
+            row = [False] * W
+            if 0 < k < 3:
+                wood = []
+                for x in range(x0, x1 + 1):
+                    r, g, bb, a = px[x, y]
+                    if not a: continue
+                    h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, bb / 255); h *= 360
+                    if 12 <= h <= 34 and s_ > 0.88 and 0.25 < v < 0.9: wood.append(x)
+                for i, x in enumerate(wood):
+                    row[x] = True
+                    if i + 1 < len(wood) and wood[i + 1] - x <= 6:
+                        for xx in range(x, wood[i + 1]): row[xx] = True
+                for x in [x for x in range(x0, x1 + 1) if row[x]]:   # and a pixel either side
+                    if x > 0: row[x - 1] = True
+                    if x + 1 < W: row[x + 1] = True
+            for x in range(x0, x1 + 1):
+                if not row[x] and px[x, y][3]: mp[x, y] = 255
+    # the forearm below each hand. Its skin is as saturated as the staff's wood, so the staff is found by
+    # shape: its straight shaft further down (wood runs between the robe), a line fitted through their
+    # middles and carried up to the fist. Skin-hued pixels below the fist and off that line, joined to the hand, are skin.
+    for k in (1, 2):
+        if k >= len(skin): continue
+        b = skin[k]; X0, X1 = max(0, int((b[0] - 0.035) * W)), min(W - 1, int((b[2] + 0.035) * W))
+        Yh, Y1 = int(b[3] * H), min(H - 1, int((b[3] + 0.1) * H))
+        if k in no_arm: continue
+        wood = lambda x, y: px[x, y][3] and (lambda h, s_, v: 10 <= h * 360 <= 32 and s_ > 0.75 and v > 0.2)(*colorsys.rgb_to_hsv(*(c / 255 for c in px[x, y][:3])))
+        rows = []
+        for y in range(int((b[3] + 0.1) * H), min(H - 1, int((b[3] + 0.2) * H))):
+            runs, st = [], None
+            for x in range(X0, X1 + 2):
+                if x <= X1 and wood(x, y):
+                    if st is None: st = x
+                elif st is not None:
+                    if 6 <= x - st <= 0.06 * W: runs.append(((st + x - 1) / 2, x - 1 - st))
+                    st = None
+            if runs: rows.append((y, runs))
+        allc = sorted(c for _, rs in rows for c, _ in rs)
+        mids = []
+        if allc:
+            med = allc[len(allc) // 2]
+            for y, rs in rows:
+                c, w = min(rs, key=lambda r: abs(r[0] - med))
+                if abs(c - med) < 0.05 * W: mids.append((y, c, w))
+        staff = None
+        if len(mids) >= 8:
+            n = len(mids); my = sum(m[0] for m in mids) / n; mx = sum(m[1] for m in mids) / n
+            sl = sum((m[0] - my) * (m[1] - mx) for m in mids) / max(1e-6, sum((m[0] - my) ** 2 for m in mids))
+            hw = sorted(m[2] for m in mids)[n // 2] / 2 + 2
+            staff = lambda y: (mx + sl * (y - my) - hw, mx + sl * (y - my) + hw)
+        def skinny(x, y):
+            r, g, bb, a = px[x, y]
+            if not a: return False
+            if staff:
+                lo, hi = staff(y)
+                if lo <= x <= hi: return False
+            h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, bb / 255); h *= 360
+            return (h < 32 or h >= 340) and s_ > 0.2 and v > 0.12
+        seen = set(); q = deque((x, Yh - 1) for x in range(int(b[0] * W), int(b[2] * W)) if mp[x, Yh - 1] and skinny(x, Yh - 1))
+        seen.update(q)
+        while q:
+            x, y = q.popleft()
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n_ = (x + dx, y + dy)
+                if n_ in seen or not (X0 <= n_[0] <= X1 and Yh <= n_[1] <= Y1) or not skinny(*n_): continue
+                seen.add(n_); q.append(n_)
+        for (x, y) in seen: mp[x, y] = 255
+    return m
+
 def main():
     figs = []
     for f in sorted(os.listdir(SRC)):
@@ -208,9 +332,17 @@ def main():
         im.save(os.path.join(OUT, name + '.png'), optimize=True)
         sex, age = SLOTS[slot]
         bx = boxes(im); mask = bx.pop('_mask')
+        if name in FIX:   # a hat brim's gold-orange underside joined the head's skin clump: face and neck by hand
+            f = FIX[name]
+            if 'face' in f: bx['face'] = f['face']; bx['skin'] = [f['head']] + bx['skin'][1:3] + [f['neck']]
+            if 'lh' in f: bx['skin'][1] = f['lh']   # the staff hand (a robe patch can pass for skin)
         fig = dict(id=name, sex=sex, age=age, src='sprites/hero/' + name + '.png', **bx)
+        if name in NPC_ONLY: fig['npc'] = True
+        if mask: grow_hair(im, mask)
+        if mask and FIX.get(name, {}).get('paleHair'): pale_hair(im, mask, bx['skin'][0])
         if mask:
             mask.save(os.path.join(OUT, name + '_hair.png'), optimize=True); fig['hairMask'] = 'sprites/hero/' + name + '_hair.png'
+        skin_region(im, bx['skin'], FIX.get(name, {}).get('noArm', ())).save(os.path.join(OUT, name + '_skin.png'), optimize=True); fig['skinMask'] = 'sprites/hero/' + name + '_skin.png'
         figs.append(fig)
         print(name, im.size)
     with open(os.path.join(OUT, 'figures.json'), 'w') as fh:

@@ -45,7 +45,8 @@
   ],
   "noTrim": [],
   "trimLo": 27,
-  "hairMask": "sprites/hero/mid_man_1_hair.png"
+  "hairMask": "sprites/hero/mid_man_1_hair.png",
+  "skinMask": "sprites/hero/mid_man_1_skin.png"
  },
  {
   "id": "mid_man_2",
@@ -93,7 +94,304 @@
   ],
   "noTrim": [],
   "trimLo": 27,
-  "hairMask": "sprites/hero/mid_man_2_hair.png"
+  "hairMask": "sprites/hero/mid_man_2_hair.png",
+  "skinMask": "sprites/hero/mid_man_2_skin.png"
+ },
+ {
+  "id": "mid_man_3",
+  "sex": "m",
+  "age": "middle",
+  "src": "sprites/hero/mid_man_3.png",
+  "hair": [
+   0.388,
+   0.19,
+   0.556,
+   0.564
+  ],
+  "face": [
+   0.333,
+   0.113,
+   0.339
+  ],
+  "skin": [
+   [
+    0.406,
+    0.168,
+    0.6,
+    0.279
+   ],
+   [
+    0.092,
+    0.304,
+    0.183,
+    0.362,
+    0.95
+   ],
+   [
+    0.741,
+    0.303,
+    0.892,
+    0.403,
+    0.95
+   ],
+   [
+    0.357,
+    0.26,
+    0.608,
+    0.398
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_man_3_hair.png",
+  "skinMask": "sprites/hero/mid_man_3_skin.png"
+ },
+ {
+  "id": "mid_man_4",
+  "sex": "m",
+  "age": "middle",
+  "src": "sprites/hero/mid_man_4.png",
+  "hair": [
+   0.215,
+   0.118,
+   0.573,
+   0.335
+  ],
+  "face": [
+   0.339,
+   0.1,
+   0.303
+  ],
+  "skin": [
+   [
+    0.404,
+    0.144,
+    0.577,
+    0.251
+   ],
+   [
+    0.091,
+    0.302,
+    0.181,
+    0.361,
+    0.95
+   ],
+   [
+    0.775,
+    0.303,
+    0.851,
+    0.369,
+    0.95
+   ],
+   [
+    0.39,
+    0.232,
+    0.626,
+    0.371
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_man_4_hair.png",
+  "skinMask": "sprites/hero/mid_man_4_skin.png"
+ },
+ {
+  "id": "mid_man_5",
+  "sex": "m",
+  "age": "middle",
+  "src": "sprites/hero/mid_man_5.png",
+  "hair": [
+   0.345,
+   0.139,
+   0.578,
+   0.262
+  ],
+  "face": [
+   0.309,
+   0.074,
+   0.367
+  ],
+  "skin": [
+   [
+    0.388,
+    0.124,
+    0.598,
+    0.263
+   ],
+   [
+    0.094,
+    0.314,
+    0.185,
+    0.364,
+    0.95
+   ],
+   [
+    0.771,
+    0.324,
+    0.924,
+    0.387,
+    0.95
+   ],
+   [
+    0.368,
+    0.244,
+    0.592,
+    0.373
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_man_5_hair.png",
+  "skinMask": "sprites/hero/mid_man_5_skin.png"
+ },
+ {
+  "id": "mid_man_6",
+  "sex": "m",
+  "age": "middle",
+  "src": "sprites/hero/mid_man_6.png",
+  "hair": [
+   0.363,
+   0.12,
+   0.577,
+   0.436
+  ],
+  "face": [
+   0.326,
+   0.072,
+   0.35
+  ],
+  "skin": [
+   [
+    0.401,
+    0.135,
+    0.601,
+    0.238
+   ],
+   [
+    0.089,
+    0.286,
+    0.189,
+    0.377,
+    0.95
+   ],
+   [
+    0.776,
+    0.334,
+    0.909,
+    0.387,
+    0.95
+   ],
+   [
+    0.351,
+    0.219,
+    0.651,
+    0.358
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_man_6_hair.png",
+  "skinMask": "sprites/hero/mid_man_6_skin.png"
+ },
+ {
+  "id": "mid_man_7",
+  "sex": "m",
+  "age": "middle",
+  "src": "sprites/hero/mid_man_7.png",
+  "hair": [
+   0.294,
+   0.117,
+   0.55,
+   0.361
+  ],
+  "face": [
+   0.294,
+   0.012,
+   0.315
+  ],
+  "skin": [
+   [
+    0.362,
+    0.073,
+    0.542,
+    0.156
+   ],
+   [
+    0.098,
+    0.31,
+    0.184,
+    0.354,
+    0.95
+   ],
+   [
+    0.75,
+    0.323,
+    0.888,
+    0.391,
+    0.95
+   ],
+   [
+    0.314,
+    0.137,
+    0.592,
+    0.276
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "npc": true,
+  "hairMask": "sprites/hero/mid_man_7_hair.png",
+  "skinMask": "sprites/hero/mid_man_7_skin.png"
+ },
+ {
+  "id": "mid_man_8",
+  "sex": "m",
+  "age": "middle",
+  "src": "sprites/hero/mid_man_8.png",
+  "hair": [
+   0.357,
+   0.065,
+   0.551,
+   0.206
+  ],
+  "face": [
+   0.34,
+   0.06,
+   0.256
+  ],
+  "skin": [
+   [
+    0.395,
+    0.086,
+    0.541,
+    0.201
+   ],
+   [
+    0.108,
+    0.332,
+    0.19,
+    0.382,
+    0.95
+   ],
+   [
+    0.766,
+    0.332,
+    0.892,
+    0.383,
+    0.95
+   ],
+   [
+    0.373,
+    0.181,
+    0.587,
+    0.32
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "npc": true,
+  "hairMask": "sprites/hero/mid_man_8_hair.png",
+  "skinMask": "sprites/hero/mid_man_8_skin.png"
  },
  {
   "id": "mid_woman_1",
@@ -141,7 +439,8 @@
   ],
   "noTrim": [],
   "trimLo": 27,
-  "hairMask": "sprites/hero/mid_woman_1_hair.png"
+  "hairMask": "sprites/hero/mid_woman_1_hair.png",
+  "skinMask": "sprites/hero/mid_woman_1_skin.png"
  },
  {
   "id": "mid_woman_2",
@@ -189,7 +488,304 @@
   ],
   "noTrim": [],
   "trimLo": 27,
-  "hairMask": "sprites/hero/mid_woman_2_hair.png"
+  "hairMask": "sprites/hero/mid_woman_2_hair.png",
+  "skinMask": "sprites/hero/mid_woman_2_skin.png"
+ },
+ {
+  "id": "mid_woman_3",
+  "sex": "f",
+  "age": "middle",
+  "src": "sprites/hero/mid_woman_3.png",
+  "hair": [
+   0.349,
+   0.126,
+   0.573,
+   0.428
+  ],
+  "face": [
+   0.329,
+   0.07,
+   0.346
+  ],
+  "skin": [
+   [
+    0.403,
+    0.113,
+    0.601,
+    0.253
+   ],
+   [
+    0.104,
+    0.317,
+    0.164,
+    0.357,
+    0.95
+   ],
+   [
+    0.735,
+    0.307,
+    0.89,
+    0.4,
+    0.95
+   ],
+   [
+    0.355,
+    0.233,
+    0.619,
+    0.372
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_woman_3_hair.png",
+  "skinMask": "sprites/hero/mid_woman_3_skin.png"
+ },
+ {
+  "id": "mid_woman_4",
+  "sex": "f",
+  "age": "middle",
+  "src": "sprites/hero/mid_woman_4.png",
+  "hair": [
+   0.347,
+   0.129,
+   0.599,
+   0.408
+  ],
+  "face": [
+   0.325,
+   0.056,
+   0.357
+  ],
+  "skin": [
+   [
+    0.401,
+    0.09,
+    0.605,
+    0.254
+   ],
+   [
+    0.104,
+    0.306,
+    0.182,
+    0.352,
+    0.95
+   ],
+   [
+    0.729,
+    0.34,
+    0.896,
+    0.405,
+    0.95
+   ],
+   [
+    0.353,
+    0.235,
+    0.653,
+    0.367
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_woman_4_hair.png",
+  "skinMask": "sprites/hero/mid_woman_4_skin.png"
+ },
+ {
+  "id": "mid_woman_5",
+  "sex": "f",
+  "age": "middle",
+  "src": "sprites/hero/mid_woman_5.png",
+  "hair": [
+   0.323,
+   0.06,
+   0.564,
+   0.182
+  ],
+  "face": [
+   0.328,
+   0.048,
+   0.28
+  ],
+  "skin": [
+   [
+    0.388,
+    0.088,
+    0.548,
+    0.192
+   ],
+   [
+    0.092,
+    0.298,
+    0.187,
+    0.369,
+    0.95
+   ],
+   [
+    0.745,
+    0.304,
+    0.914,
+    0.391,
+    0.95
+   ],
+   [
+    0.339,
+    0.172,
+    0.59,
+    0.311
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_woman_5_hair.png",
+  "skinMask": "sprites/hero/mid_woman_5_skin.png"
+ },
+ {
+  "id": "mid_woman_6",
+  "sex": "f",
+  "age": "middle",
+  "src": "sprites/hero/mid_woman_6.png",
+  "hair": [
+   0.281,
+   0.103,
+   0.587,
+   0.25
+  ],
+  "face": [
+   0.293,
+   0.023,
+   0.385
+  ],
+  "skin": [
+   [
+    0.375,
+    0.068,
+    0.595,
+    0.229
+   ],
+   [
+    0.094,
+    0.294,
+    0.186,
+    0.371,
+    0.95
+   ],
+   [
+    0.744,
+    0.306,
+    0.918,
+    0.392,
+    0.95
+   ],
+   [
+    0.325,
+    0.21,
+    0.645,
+    0.349
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/mid_woman_6_hair.png",
+  "skinMask": "sprites/hero/mid_woman_6_skin.png"
+ },
+ {
+  "id": "mid_woman_7",
+  "sex": "f",
+  "age": "middle",
+  "src": "sprites/hero/mid_woman_7.png",
+  "hair": [
+   0.353,
+   0.082,
+   0.553,
+   0.481
+  ],
+  "face": [
+   0.306,
+   0.035,
+   0.35
+  ],
+  "skin": [
+   [
+    0.381,
+    0.07,
+    0.581,
+    0.228
+   ],
+   [
+    0.1,
+    0.3,
+    0.19,
+    0.391,
+    0.95
+   ],
+   [
+    0.746,
+    0.299,
+    0.916,
+    0.388,
+    0.95
+   ],
+   [
+    0.331,
+    0.209,
+    0.627,
+    0.342
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "npc": true,
+  "hairMask": "sprites/hero/mid_woman_7_hair.png",
+  "skinMask": "sprites/hero/mid_woman_7_skin.png"
+ },
+ {
+  "id": "mid_woman_8",
+  "sex": "f",
+  "age": "middle",
+  "src": "sprites/hero/mid_woman_8.png",
+  "hair": [
+   0.344,
+   0.094,
+   0.56,
+   0.475
+  ],
+  "face": [
+   0.325,
+   0.056,
+   0.332
+  ],
+  "skin": [
+   [
+    0.396,
+    0.097,
+    0.586,
+    0.232
+   ],
+   [
+    0.1,
+    0.315,
+    0.195,
+    0.385,
+    0.95
+   ],
+   [
+    0.768,
+    0.315,
+    0.89,
+    0.383,
+    0.95
+   ],
+   [
+    0.348,
+    0.213,
+    0.634,
+    0.346
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "npc": true,
+  "hairMask": "sprites/hero/mid_woman_8_hair.png",
+  "skinMask": "sprites/hero/mid_woman_8_skin.png"
  },
  {
   "id": "old_man_1",
@@ -237,7 +833,8 @@
   ],
   "noTrim": [],
   "trimLo": 27,
-  "hairMask": "sprites/hero/old_man_1_hair.png"
+  "hairMask": "sprites/hero/old_man_1_hair.png",
+  "skinMask": "sprites/hero/old_man_1_skin.png"
  },
  {
   "id": "old_man_2",
@@ -285,7 +882,156 @@
   ],
   "noTrim": [],
   "trimLo": 27,
-  "hairMask": "sprites/hero/old_man_2_hair.png"
+  "hairMask": "sprites/hero/old_man_2_hair.png",
+  "skinMask": "sprites/hero/old_man_2_skin.png"
+ },
+ {
+  "id": "old_man_3",
+  "sex": "m",
+  "age": "old",
+  "src": "sprites/hero/old_man_3.png",
+  "hair": [
+   0.363,
+   0.139,
+   0.579,
+   0.525
+  ],
+  "face": [
+   0.31,
+   0.049,
+   0.305
+  ],
+  "skin": [
+   [
+    0.375,
+    0.103,
+    0.549,
+    0.192
+   ],
+   [
+    0.102,
+    0.31,
+    0.182,
+    0.356,
+    0.95
+   ],
+   [
+    0.772,
+    0.307,
+    0.85,
+    0.37,
+    0.95
+   ],
+   [
+    0.327,
+    0.172,
+    0.597,
+    0.29
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/old_man_3_hair.png",
+  "skinMask": "sprites/hero/old_man_3_skin.png"
+ },
+ {
+  "id": "old_man_4",
+  "sex": "m",
+  "age": "old",
+  "src": "sprites/hero/old_man_4.png",
+  "hair": [
+   0.341,
+   0.129,
+   0.597,
+   0.551
+  ],
+  "face": [
+   0.34,
+   0.075,
+   0.3
+  ],
+  "skin": [
+   [
+    0.4,
+    0.125,
+    0.58,
+    0.26
+   ],
+   [
+    0.102,
+    0.311,
+    0.18,
+    0.356,
+    0.95
+   ],
+   [
+    0.735,
+    0.338,
+    0.888,
+    0.399,
+    0.95
+   ],
+   [
+    0.43,
+    0.24,
+    0.53,
+    0.3
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/old_man_4_hair.png",
+  "skinMask": "sprites/hero/old_man_4_skin.png"
+ },
+ {
+  "id": "old_man_5",
+  "sex": "m",
+  "age": "old",
+  "src": "sprites/hero/old_man_5.png",
+  "hair": [
+   0.309,
+   0.121,
+   0.621,
+   0.431
+  ],
+  "face": [
+   0.338,
+   0.072,
+   0.284
+  ],
+  "skin": [
+   [
+    0.399,
+    0.112,
+    0.561,
+    0.216
+   ],
+   [
+    0.1,
+    0.32,
+    0.188,
+    0.365,
+    0.95
+   ],
+   [
+    0.764,
+    0.315,
+    0.89,
+    0.386,
+    0.95
+   ],
+   [
+    0.385,
+    0.197,
+    0.607,
+    0.336
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "npc": true,
+  "hairMask": "sprites/hero/old_man_5_hair.png",
+  "skinMask": "sprites/hero/old_man_5_skin.png"
  },
  {
   "id": "old_woman_2",
@@ -333,7 +1079,156 @@
   ],
   "noTrim": [],
   "trimLo": 27,
-  "hairMask": "sprites/hero/old_woman_2_hair.png"
+  "hairMask": "sprites/hero/old_woman_2_hair.png",
+  "skinMask": "sprites/hero/old_woman_2_skin.png"
+ },
+ {
+  "id": "old_woman_3",
+  "sex": "f",
+  "age": "old",
+  "src": "sprites/hero/old_woman_3.png",
+  "hair": [
+   0.295,
+   0.087,
+   0.587,
+   0.25
+  ],
+  "face": [
+   0.323,
+   0.096,
+   0.318
+  ],
+  "skin": [
+   [
+    0.391,
+    0.137,
+    0.573,
+    0.262
+   ],
+   [
+    0.106,
+    0.311,
+    0.188,
+    0.37,
+    0.95
+   ],
+   [
+    0.729,
+    0.307,
+    0.89,
+    0.405,
+    0.95
+   ],
+   [
+    0.343,
+    0.243,
+    0.621,
+    0.381
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/old_woman_3_hair.png",
+  "skinMask": "sprites/hero/old_woman_3_skin.png"
+ },
+ {
+  "id": "old_woman_4",
+  "sex": "f",
+  "age": "old",
+  "src": "sprites/hero/old_woman_4.png",
+  "hair": [
+   0.192,
+   0.103,
+   0.657,
+   0.551
+  ],
+  "face": [
+   0.35,
+   0.07,
+   0.3
+  ],
+  "skin": [
+   [
+    0.43,
+    0.115,
+    0.56,
+    0.24
+   ],
+   [
+    0.1,
+    0.325,
+    0.182,
+    0.365,
+    0.95
+   ],
+   [
+    0.77,
+    0.314,
+    0.846,
+    0.37,
+    0.95
+   ],
+   [
+    0.45,
+    0.22,
+    0.55,
+    0.29
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/old_woman_4_hair.png",
+  "skinMask": "sprites/hero/old_woman_4_skin.png"
+ },
+ {
+  "id": "old_woman_5",
+  "sex": "f",
+  "age": "old",
+  "src": "sprites/hero/old_woman_5.png",
+  "hair": [
+   0.335,
+   0.073,
+   0.679,
+   0.335
+  ],
+  "face": [
+   0.276,
+   0.037,
+   0.389
+  ],
+  "skin": [
+   [
+    0.359,
+    0.096,
+    0.581,
+    0.232
+   ],
+   [
+    0.092,
+    0.294,
+    0.186,
+    0.392,
+    0.95
+   ],
+   [
+    0.744,
+    0.306,
+    0.918,
+    0.394,
+    0.95
+   ],
+   [
+    0.309,
+    0.213,
+    0.613,
+    0.345
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "npc": true,
+  "hairMask": "sprites/hero/old_woman_5_hair.png",
+  "skinMask": "sprites/hero/old_woman_5_skin.png"
  },
  {
   "id": "young_man_1",
@@ -381,7 +1276,8 @@
   ],
   "noTrim": [],
   "trimLo": 27,
-  "hairMask": "sprites/hero/young_man_1_hair.png"
+  "hairMask": "sprites/hero/young_man_1_hair.png",
+  "skinMask": "sprites/hero/young_man_1_skin.png"
  },
  {
   "id": "young_man_2",
@@ -429,7 +1325,106 @@
   ],
   "noTrim": [],
   "trimLo": 27,
-  "hairMask": "sprites/hero/young_man_2_hair.png"
+  "hairMask": "sprites/hero/young_man_2_hair.png",
+  "skinMask": "sprites/hero/young_man_2_skin.png"
+ },
+ {
+  "id": "young_man_3",
+  "sex": "m",
+  "age": "young",
+  "src": "sprites/hero/young_man_3.png",
+  "hair": [
+   0.342,
+   0.105,
+   0.579,
+   0.228
+  ],
+  "face": [
+   0.319,
+   0.109,
+   0.292
+  ],
+  "skin": [
+   [
+    0.382,
+    0.137,
+    0.549,
+    0.27
+   ],
+   [
+    0.095,
+    0.311,
+    0.187,
+    0.361,
+    0.95
+   ],
+   [
+    0.777,
+    0.303,
+    0.851,
+    0.369,
+    0.95
+   ],
+   [
+    0.396,
+    0.25,
+    0.531,
+    0.389
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/young_man_3_hair.png",
+  "skinMask": "sprites/hero/young_man_3_skin.png"
+ },
+ {
+  "id": "young_man_4",
+  "sex": "m",
+  "age": "young",
+  "src": "sprites/hero/young_man_4.png",
+  "hair": [
+   0.301,
+   0.129,
+   0.56,
+   0.432
+  ],
+  "face": [
+   0.328,
+   0.078,
+   0.325
+  ],
+  "skin": [
+   [
+    0.398,
+    0.118,
+    0.584,
+    0.25
+   ],
+   [
+    0.092,
+    0.325,
+    0.181,
+    0.379,
+    0.95
+   ],
+   [
+    0.735,
+    0.303,
+    0.851,
+    0.403,
+    0.95
+   ],
+   [
+    0.392,
+    0.231,
+    0.618,
+    0.369
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/young_man_4_hair.png",
+  "skinMask": "sprites/hero/young_man_4_skin.png"
  },
  {
   "id": "young_woman_1",
@@ -477,7 +1472,8 @@
   ],
   "noTrim": [],
   "trimLo": 27,
-  "hairMask": "sprites/hero/young_woman_1_hair.png"
+  "hairMask": "sprites/hero/young_woman_1_hair.png",
+  "skinMask": "sprites/hero/young_woman_1_skin.png"
  },
  {
   "id": "young_woman_2",
@@ -525,6 +1521,105 @@
   ],
   "noTrim": [],
   "trimLo": 27,
-  "hairMask": "sprites/hero/young_woman_2_hair.png"
+  "hairMask": "sprites/hero/young_woman_2_hair.png",
+  "skinMask": "sprites/hero/young_woman_2_skin.png"
+ },
+ {
+  "id": "young_woman_3",
+  "sex": "f",
+  "age": "young",
+  "src": "sprites/hero/young_woman_3.png",
+  "hair": [
+   0.331,
+   0.103,
+   0.568,
+   0.225
+  ],
+  "face": [
+   0.323,
+   0.11,
+   0.287
+  ],
+  "skin": [
+   [
+    0.384,
+    0.139,
+    0.548,
+    0.268
+   ],
+   [
+    0.098,
+    0.31,
+    0.183,
+    0.382,
+    0.95
+   ],
+   [
+    0.763,
+    0.338,
+    0.898,
+    0.384,
+    0.95
+   ],
+   [
+    0.37,
+    0.249,
+    0.566,
+    0.388
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/young_woman_3_hair.png",
+  "skinMask": "sprites/hero/young_woman_3_skin.png"
+ },
+ {
+  "id": "young_woman_4",
+  "sex": "f",
+  "age": "young",
+  "src": "sprites/hero/young_woman_4.png",
+  "hair": [
+   0.221,
+   0.074,
+   0.59,
+   0.302
+  ],
+  "face": [
+   0.335,
+   0.091,
+   0.311
+  ],
+  "skin": [
+   [
+    0.402,
+    0.13,
+    0.58,
+    0.254
+   ],
+   [
+    0.102,
+    0.31,
+    0.189,
+    0.369,
+    0.95
+   ],
+   [
+    0.731,
+    0.307,
+    0.894,
+    0.404,
+    0.95
+   ],
+   [
+    0.353,
+    0.235,
+    0.628,
+    0.371
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "hairMask": "sprites/hero/young_woman_4_hair.png",
+  "skinMask": "sprites/hero/young_woman_4_skin.png"
  }
 ]
