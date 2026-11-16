@@ -330,8 +330,8 @@ still purple. The eyepatch and its strap are dark brown leather. No knives, swor
 
 **Delivered (round 3):** six. `mid_man_7` (bald, scarred), `mid_man_8` (grey hair, patched hood),
 `old_man_5` (torn hat, ringed beard), `mid_woman_7` (hooded, braid, robe whole), `mid_woman_8` (the
-same look, tattered and patched) and `old_woman_5` (wild hair, hoops, in rags). That makes 17 male figures to 15 female, so
-`mid_woman_5` and `mid_woman_6` (round 2's prompts) are still owed to even it up. The staff hand of
+same look, tattered and patched) and `old_woman_5` (wild hair, hoops, in rags). Then `mid_woman_5` (short swept-back hair, scar, hoops) and
+`mid_woman_6` (wide-brimmed hat with a buckled band, loose hair) evened the sexes at 17 each. The staff hand of
 `mid_woman_8` is boxed by hand (`FIX`): a brown robe patch passed for skin. Patches and eyepatches are
 brown leather and fall inside the skin boxes, so they take a darker shade of the chosen skin.
 
