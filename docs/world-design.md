@@ -266,3 +266,38 @@ Prompt for ChatGPT (one figure at a time; attach `sprites/folk/source/old_eldrin
 > picture, no text, no shadow on the ground. Portrait image, the figure about 768 pixels tall.
 
 Change the bracketed part for each slot in the table.
+
+### Base figures, round 2 (more variety)
+
+Four figures per slot, so the Figure choice is a real choice; the middle-aged man first (the user
+plays one, and had only a bearded man in a hat and a bald man with a moustache). New figures vary
+the **head and face**, not the body: same pose, staff hand, robe cut and key colours as round 1.
+
+Use the round 1 prompt above, with two changes:
+
+- Attach two of round 1's figures as the style references instead of the old sprites:
+  `sprites/hero/source/mid_man_1.png` and `sprites/hero/source/old_man_2.png` (the hooded one).
+- Add this after the colour rules: *A hood, hat, scarf or shawl is part of the robe: purple only.
+  Jewellery, circlets, buckles and spectacle frames are gold. No grey metal, no blue gems, no
+  coloured headwear.*
+
+Name the files `<slot>_<n>.png`, carrying on from the numbers already used (`old_woman_1` is the
+witch, so the old woman's new ones are 3 and 4). Then run `python3 tools/cut_hero_figures.py` and check
+`--preview`.
+
+| File | Bracketed part |
+|---|---|
+| `mid_man_3.png` | MIDDLE-AGED MAN: hood up and shadowing the brow, short full beard, weathered face, a small scar across one cheek |
+| `mid_man_4.png` | MIDDLE-AGED MAN: no hat, long hair tied back, a forked beard, sharp features |
+| `mid_man_5.png` | MIDDLE-AGED MAN: wide-brimmed wizard hat, a neat goatee, lean face, high cheekbones |
+| `mid_man_6.png` | MIDDLE-AGED MAN: stocky and broad-shouldered, no hat, close-cropped hair, a thick full beard, a battle-mage look |
+| `young_man_3.png` | YOUNG MAN: no hat, messy curly hair, light stubble, cheerful face |
+| `young_man_4.png` | YOUNG MAN: wide-brimmed wizard hat, long straight hair to the shoulders, clean-shaven |
+| `young_woman_3.png` | YOUNG WOMAN: no hat, short cropped hair, freckles, determined face |
+| `young_woman_4.png` | YOUNG WOMAN: wide-brimmed wizard hat, hair in a high ponytail |
+| `mid_woman_3.png` | MIDDLE-AGED WOMAN: hood up, hair in a long braid over the shoulder, stern face |
+| `mid_woman_4.png` | MIDDLE-AGED WOMAN: pointed wizard hat, hair in two braids, laugh lines |
+| `old_man_3.png` | OLD MAN: bald, no hat, a very long beard to the belt, bushy eyebrows |
+| `old_man_4.png` | OLD MAN: wide-brimmed wizard hat, a big drooping moustache, no beard, upright and wiry |
+| `old_woman_3.png` | OLD WOMAN: no hat, hair in a bun, small round gold-framed spectacles, kindly face |
+| `old_woman_4.png` | OLD WOMAN: pointed wizard hat, long loose hair, tall and upright, sharp-eyed |
