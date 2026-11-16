@@ -1426,6 +1426,7 @@
     "name": "FIZZWICK",
     "title": "The Concoctor",
     "sprite": "sprites/fizzwick.png",
+    "spriteHeight": 0.62,
     "arena": "library",
     "col": "#99cc44",
     "aiStyle": "chaotic",
