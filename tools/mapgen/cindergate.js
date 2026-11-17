@@ -4,7 +4,7 @@
 // past it the streets still burn (the inner rings, later).
 'use strict';
 const {MapBuilder, T, P} = require('./builder');
-const {City} = require('./city');
+const {City, variedStyle} = require('./city');
 const {river, echoElement} = require('./sector');
 const {OWN_LORE, placeOwnLand, placeOwnProps} = require('./own');
 
@@ -30,7 +30,7 @@ module.exports = function cindergate(rects){
   const burnt=k=>rects[k+'_burnt']?k+'_burnt':k;
   // how far gone: worse toward the Wound (north)
   const ruin=(x,y)=>Math.max(0,Math.min(1,(1-y/H)*1.15-0.12));
-  const city=new City(m,{street:'c', square:'f', ruin, style:burnt});
+  const city=new City(m,{street:'c', square:'f', ruin, style:variedStyle(rects,'burnt',5177)});
   m.fill(0,0,m.cols-1,m.rows-1,'a');
 
   // ── streets: an old city's, grown rather than planned ──

@@ -8,7 +8,7 @@
 // Everything here is further gone than the outer ring, and the Echoes are veterans to champions.
 'use strict';
 const {MapBuilder, T, P} = require('./builder');
-const {City} = require('./city');
+const {City, variedStyle, HOUSE_RE} = require('./city');
 const {OWN_LORE} = require('./own');
 const sector = require('./sector');
 const {river, RING} = sector;
@@ -209,7 +209,7 @@ module.exports = function inner(rects,outerId){
   const G={open:'G', street:'R', square:'P', ...(D.ground||{})};
   const sty=D.burnt?(k=>rects[k+'_burnt']?k+'_burnt':k):(k=>rects[k+'_'+D.pal]?k+'_'+D.pal:k);
   const ruin=(x,y)=>Math.max(0,Math.min(1,0.4+0.62*(1-y/H)));
-  const city=new City(m,{street:G.street, square:G.square, ruin, style:sty});
+  const city=new City(m,{street:G.street, square:G.square, ruin, style:variedStyle(rects,D.burnt?'burnt':D.pal,D.seed+77)});
   m.fill(0,0,m.cols-1,m.rows-1,G.open);
   m.fill(0,0,m.cols-1,0,'X');                                                 // the Wound, glimpsed over the Rim
 
@@ -314,7 +314,7 @@ module.exports = function inner(rects,outerId){
     }
   }
   for(const d of D.decals||[]) if(!d[3]) placeDecal(m,city,d,false);
-  for(const o of m.objs) if(!o.decal) o.kind=sty(o.kind);
+  for(const o of m.objs) if(!o.decal&&!HOUSE_RE.test(o.kind)) o.kind=sty(o.kind);
   if(D.burnt) for(const o of m.objs) if(/^(slagHeap|rubble|blocks)/.test(o.kind)&&o.y>5*T&&r()<0.3) m.glows.push({x:o.x,y:o.y-20,r:100+r()*60,c:'255,100,30'});
 
   // ── Echoes: veterans by the barrier, champions by the Rim ──

@@ -7,7 +7,7 @@
 // through each and leads on to its neighbours (RING).
 'use strict';
 const {MapBuilder, T, P} = require('./builder');
-const {City} = require('./city');
+const {City, variedStyle, HOUSE_RE} = require('./city');
 const {OWN, OWN_LORE, placeOwnLand, placeOwnProps} = require('./own');
 
 // the ring, in wheel order: east from one leads to the next
@@ -95,7 +95,7 @@ module.exports = function sector(rects,id){
     wagon:['A Trader\'s Wagon', 'Frozen solid with its goods still on it: bolts of cloth, sacks of salt, a cage with a frozen songbird in it, mid-song.']};
   const sty=k=>rects[k+'_'+S.pal]?k+'_'+S.pal:k;
   const ruin=(x,y)=>Math.max(0,Math.min(1,(1-y/H)*1.15-0.12));
-  const city=new City(m,{street:'R', square:'P', ruin, style:sty});
+  const city=new City(m,{street:'R', square:'P', ruin, style:variedStyle(rects,S.pal,S.seed+77)});
   const r=m.r, rnd=(a,b)=>a+r()*(b-a);
 
   // ── streets: Wallside along the wall, the line street under the north edge, an avenue between
@@ -190,7 +190,7 @@ module.exports = function sector(rects,id){
   }
 
   // every piece with a recolour in the sector's palette uses it (yards, rubble, walls, lamps)
-  for(const o of m.objs) if(!o.decal) o.kind=sty(o.kind);
+  for(const o of m.objs) if(!o.decal&&!(HOUSE_RE.test(o.kind)&&!o.lore)) o.kind=sty(o.kind);
 
   // ── round the ring, and in through the arch to the inner district ──
   ringExits(m,id);
