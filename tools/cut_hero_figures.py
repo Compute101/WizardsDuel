@@ -372,6 +372,7 @@ def staff_region(im, hand, skin_mask):
         if y > yh: c = mx + sl * (y - my); return c - hw <= x <= c + hw
         return x <= xr
     m_ = Image.new('L', (W, H), 0); mp = m_.load()
+    m_.info['line'] = (my, mx, sl, hw)                 # for the topper anchor
     for y in range(yh + 1):
         for x in range(0, min(W, xr + 1)):
             if ok(x, y): mp[x, y] = 255
@@ -399,6 +400,48 @@ def staff_region(im, hand, skin_mask):
         prev = (l + r_) // 2
     return m_
 
+def head_region(im, hand, staff_mask):
+    """What a topper replaces, as a mask: above the staff hand and left of it, the staff's head (its
+    mask grown 3 px, wood and dark outline), the flame (blue), and the flame's white core and sparkles
+    inside the flame's box. Also the anchor: the shaft's line carried up through the fist, the staff's
+    top and the shaft's width, in fractions of the figure."""
+    W, H = im.size; px = im.load(); st = staff_mask.load()
+    yt = int(hand[1] * H); xr = int((hand[2] + 0.04) * W)
+    grow = set()
+    for y in range(yt + 1):
+        for x in range(xr + 1):
+            if st[x, y]:
+                for dy in range(-3, 4):
+                    for dx in range(-3, 4):
+                        grow.add((x + dx, y + dy))
+    hsv = lambda x, y: (lambda h, s_, v: (h * 360, s_, v))(*colorsys.rgb_to_hsv(*(c / 255 for c in px[x, y][:3])))
+    m = Image.new('L', (W, H), 0); mp = m.load(); blue = []
+    xb = max(xr, int(0.36 * W))                         # the flame's sparkles drift further right (the raised hand's magic is past 0.5)
+    for y in range(yt + 1):
+        for x in range(min(W, xb + 1)):
+            if not px[x, y][3]: continue
+            h, s_, v = hsv(x, y)
+            if 165 <= h < 255 and s_ > 0.25: mp[x, y] = 255; blue.append((x, y))
+            elif x > xr: continue
+            elif (x, y) in grow and (woodish(px[x, y]) or v < 0.42): mp[x, y] = 255
+    if blue:
+        bx0 = min(p[0] for p in blue) - 6; bx1 = max(p[0] for p in blue) + 6
+        by0 = min(p[1] for p in blue) - 6; by1 = max(p[1] for p in blue) + 6
+        for y in range(max(0, by0), min(yt + 1, by1 + 1)):
+            for x in range(max(0, bx0), min(xb + 1, bx1 + 1)):
+                if px[x, y][3] and hsv(x, y)[1] < 0.3 and hsv(x, y)[2] > 0.6 and not mp[x, y]:
+                    if any(0 <= x + dx < W and 0 <= y + dy < H and mp[x + dx, y + dy] for dx in (-2, 0, 2) for dy in (-2, 0, 2)): mp[x, y] = 255
+    # what's left of the head: small pieces cut off from the rest of the figure
+    left = {(x, y) for y in range(yt) for x in range(min(W, xb + 1)) if px[x, y][3] and not mp[x, y]}
+    for c in clumps(left, W, H):
+        if len(c) < 400 and all(p[1] < yt - 2 for p in c):
+            for p in c: mp[p] = 255
+    top = min((y for y in range(H) for x in range(min(W, xr + 1)) if st[x, y]), default=0)
+    my, mx, sl, hw = staff_mask.info['line']
+    anchor = {'line': [round(mx / W, 4), round(my / H, 4), round(sl * H / W, 4)], 'top': round(top / H, 4),
+              'width': round(2 * hw / W, 4), 'grip': round(hand[1] / H if hand[1] > 1 else hand[1], 4)}
+    return m, anchor
+
 def main():
     figs = []
     for f in sorted(os.listdir(SRC)):
@@ -422,14 +465,21 @@ def main():
         sm = skin_region(im, bx['skin'], FIX.get(name, {}).get('noArm', ()))
         sm.save(os.path.join(OUT, name + '_skin.png'), optimize=True); fig['skinMask'] = 'sprites/hero/' + name + '_skin.png'
         stm = staff_region(im, bx['skin'][1], sm)
-        if stm: stm.save(os.path.join(OUT, name + '_staff.png'), optimize=True); fig['staffMask'] = 'sprites/hero/' + name + '_staff.png'
+        if stm:
+            stm.save(os.path.join(OUT, name + '_staff.png'), optimize=True); fig['staffMask'] = 'sprites/hero/' + name + '_staff.png'
+            hm, anc = head_region(im, bx['skin'][1], stm)
+            hm.save(os.path.join(OUT, name + '_head.png'), optimize=True); fig['headMask'] = 'sprites/hero/' + name + '_head.png'; fig['topper'] = anc
         figs.append(fig)
         print(name, im.size)
     # the old witch (hand-boxed in js/explore_hero.js BASES): her staff mask only
     witch = Image.open(os.path.join(ROOT, 'sprites/folk/source/old_witch.png')).convert('RGBA')
     wskin = [[0.44, 0.20, 0.62, 0.345], [0.10, 0.33, 0.22, 0.41], [0.70, 0.30, 0.87, 0.42]]
     stm = staff_region(witch, wskin[1], skin_region(witch, wskin, (1, 2)))
-    if stm: stm.save(os.path.join(OUT, 'f_old_1_staff.png'), optimize=True)
+    if stm:
+        stm.save(os.path.join(OUT, 'f_old_1_staff.png'), optimize=True)
+        hm, anc = head_region(witch, wskin[1], stm)
+        hm.save(os.path.join(OUT, 'f_old_1_head.png'), optimize=True)
+        json.dump(anc, open(os.path.join(OUT, 'f_old_1_topper.json'), 'w'))   # read by BASES' witch entry in js/explore_hero.js
     with open(os.path.join(OUT, 'figures.json'), 'w') as fh:
         json.dump(figs, fh, indent=1)
     print('sprites/hero/figures.json:', len(figs), 'figures')

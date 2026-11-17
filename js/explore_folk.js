@@ -33,7 +33,8 @@ const MATRIC = {
   reward: {gold:30, potions:2},
   booksNeeded: 3,
 };
-const LAB_BREW = 2;                  // spill (any kind) the Laboratory takes to distil a potion
+const LAB_BREW = 2;
+const SHARD_SPILL = 6;               // spill Fizzwick fuses into the quintessence shard topper                  // spill (any kind) the Laboratory takes to distil a potion
 const SPILL_PRICE = 4;               // what the licensed dealer pays a piece
 const MARKET_POTION = 8;
 // where each element's Echoes come from (the bottled one in the Laboratory says so)
@@ -59,7 +60,62 @@ const FOLK = {
   // roster wizards you meet here, and again later somewhere else
   aurelia: {kind:'roster', fate:'metLater', title:'A Doctoral Student', cast:['aurelia']},
   ponder:  {kind:'roster', fate:'metLater', title:'A Sleeping Student', cast:['ponder']},
+  // Wrenford's townsfolk, painted from the hero figures (look: a creator look; js/explore.js nudges it off
+  // yours and sets _sprite / _face). Four men, four women. `lines`: what they say, in turn; `shop`, `heal`: extras.
+  corin:  {kind:'local', title:'A Student', name:'Corin', look:{name:'Corin', sex:'m', age:'young', fig:'young_man_3', robe:'Forest', trim:'Gold', hair:'Brown', skin:'Fair', eyes:'Green', elem:'earth', staff:'Ash', topper:'hoop'},
+    lines:['A student sits on the Library steps with a book on Dispel open on his knees, mouthing the glyphs. "Infinity, circled plus, nabla, theta. Infinity, circled plus…" He looks up. "Sorry. Exams. Do you know if the Keeper lets you take books out? I\'ve asked four times and I still don\'t know."',
+      '"Second year, Founders\'." Corin grins. "My mother wanted me to be a cooper. I said a cooper never made a barrel float. She said a wizard never made a barrel at all."',
+      '"Have you been east? Properly east, past Hollowmere?" He lowers his voice. "They say the crews out there have mages with them now. Real ones, with staves. Hedge-wizards who never matriculated anywhere."']},
+  isla:   {kind:'local', title:'A Student', name:'Isla', look:{name:'Isla', sex:'f', age:'young', fig:'young_woman_3', robe:'Crimson', trim:'Silver', hair:'Black', skin:'Brown', eyes:'Amber', elem:'fire', staff:'Mahogany', topper:'crescent'},
+    lines:['Two students are arguing under the Great Orrery. "Fire is the first element," says Isla, short-haired and certain. "Everything burns. Even water, if you\'re rude enough to it."',
+      '"Tamsin says I\'m reckless." Isla shrugs. "Tamsin once spent a week warding a sandwich."',
+      '"I\'m going to the Schools next term. The Master says I fight like a forest fire. I think it was a compliment."']},
+  tamsin: {kind:'local', title:'A Student', name:'Tamsin', look:{name:'Tamsin', sex:'f', age:'young', fig:'young_woman_4', robe:'Midnight', trim:'Bone', hair:'Blonde', skin:'Pale', eyes:'Blue', elem:'ice', staff:'Silverwood', topper:'crystal'},
+    lines:['"Ice," says the other, ponytailed and patient, "is fire\'s answer, not its servant. Opposites across the wheel. Strike a fire ward with frost and watch it come apart." She sighs. "Isla never listens to the second half of anything."',
+      '"It was a very good sandwich," Tamsin says, with dignity. "And nobody took it."',
+      '"If you\'re going east, ward first and ward often. And seal it. A sealed ward takes two dispels to break. The Master taught us that, and the Master was right."']},
+  rook:   {kind:'local', title:'A Duellist of the Schools', name:'Rook', look:{name:'Rook', sex:'m', age:'young', fig:'young_man_4', robe:'Black', trim:'Scarlet', hair:'Black', skin:'Tan', eyes:'Dark', elem:'lightning', staff:'Blackthorn', topper:'crook'},
+    lines:['A lean young man in a wide hat is practising guards on the edge of the court, slowly, over and over. "Guard beats Attack. Grapple beats Guard. Attack beats Grapple." He doesn\'t stop. "Say it a thousand times and your feet learn it."',
+      '"Rook. Third year. I\'ve lost to the Master forty-one times." A pause in the drill. "I\'m counting up, not down."',
+      '"Watch for archers out there. They shoot past a guard, and you can\'t grapple a man who\'s forty paces off."']},
+  agathe: {kind:'local', title:'The Herbwife', name:'Mother Agathe', heal:15, healCost:3, look:{name:'Agathe', sex:'f', age:'old', fig:'old_woman_3', robe:'Forest', trim:'Bone', hair:'White', skin:'Olive', eyes:'Brown', elem:'earth', staff:'Oak', topper:'crescent'},
+    lines:['An old woman in round spectacles keeps a stall of bundled herbs, the smell of mint and something stranger. "Feverfew for the head, comfrey for the bones, and this one for when you\'ve been arguing with an Echo." A wink. "No licence needed for weeds, dearie."',
+      '"I grew herbs for the Collegium kitchens for thirty years. Then one day there was no Collegium and no kitchen, and I still had the herbs." She ties a bundle. "So here I am."',
+      '"Mind you eat. Wizards forget. You\'ll cast a thing the size of a house and then fall over for want of a biscuit."']},
+  joss:   {kind:'local', title:'A Gleaner, Back from the East', name:'Joss Hale', look:{name:'Joss', sex:'m', age:'middle', fig:'mid_man_3', robe:'Ash', trim:'Copper', hair:'Brown', skin:'Natural', eyes:'Grey', elem:'water', staff:'Driftwood', topper:''},
+    lines:['A hooded man with a fresh scar sits on a crate at Carfax, a pack at his feet that smells of smoke. "Just in from Corvanthe. Don\'t ask what\'s in the pack. Don\'t ask what was in it this morning, either."',
+      '"The crews have changed." Joss rubs the scar. "Used to be soldiers and archers, gone sour. Now the worst of them have a mage at the front. Eyepatches, rags, stolen staves. Hedge-wizards. Brannoc in Spirewatch. Saltjaw Meg in the Drowned Quarter. A Proctor in the Collegium who never noticed the University ended."',
+      '"Beat one, if you can, and take their staff. Every gleaner in Cindergate would buy you a drink to see Brannoc\'s stick over your shoulder."']},
+  wrexley:{kind:'local', title:'Fellow of Lantern College', name:'Dr Wrexley', shop:'glyphs', look:{name:'Wrexley', sex:'f', age:'middle', fig:'mid_woman_6', robe:'Rose', trim:'Gold', hair:'Auburn', skin:'Fair', eyes:'Hazel', elem:'arcane', staff:'Mahogany', topper:'star'},
+    lines:['A woman in a wide-brimmed hat is sketching the gate of Lantern College, the paper covered in glyphs. "Dr Wrexley. I make staff heads: the twelve glyphs of the Arcana, cast in gold. A glyph on your staff is a promise you can see." A smile. "And they\'re very handsome."',
+      '"We\'re building the workshop here, for writing your own workings. Slowly. The Senior Tutor checks every nail."',
+      '"Omega for endings, Psi for the forked path, the circled cross for what\'s bound, the eight-pointed star for what bursts." She taps each sketch. "Choose the one you mean."']},
+  benedek:{kind:'local', title:'The Punt-Keeper', name:'Old Benedek', look:{name:'Benedek', sex:'m', age:'old', fig:'old_man_3', robe:'Ochre', trim:'Gold', hair:'White', skin:'Tan', eyes:'Blue', elem:'water', staff:'Oak', topper:''},
+    lines:['A bald old man with a beard to his belt leans on a punt-pole by the water. "Punts by the hour, a penny a time, and the river does the rest." He squints at you. "The Wren runs east, you know. Down to the Hollow, and the Hollow runs through Corvanthe. Everything in this town floats that way in the end."',
+      '"Fished the Hollow sixty years. Since the white day, the fish come up shining." He shakes his head. "I throw them back. Seems polite."',
+      '"Students fall in twice a term, regular. I keep a pole for it."']},
 };
+// what the townsfolk with `lines` say, in turn (quest 'folk' keeps each one's count)
+function townTalk(n, api){
+  const F=FOLK[n.role], st=api.quest('folk'), i=st[n.role]||0;
+  st[n.role]=(i+1)%F.lines.length; api.save();
+  const ch=[];
+  if(F.heal) ch.push({label:'Buy a herbal tonic (+'+F.heal+' HP, '+F.healCost+' gold)', disabled:api.gold()<F.healCost||api.hp()>=api.maxHp(), fn:()=>{ api.addGold(-F.healCost); api.heal(F.heal); api.save(); api.toast('Bitter, then warm. +'+F.heal+' HP'); }});
+  if(F.shop) ch.push({label:'Look at her staff heads', fn:()=>topperShop(n,api,F.shop)});
+  api.dialog(title(n,api),F.lines[i],ch);
+}
+// staff toppers for sale (js/explore.js earnTopper fits them): Dr Wrexley's glyphs, Widow Coyle's curiosities
+const SHOPS = {
+  glyphs:  {pitch:'"Each one cast here in Lantern, from a sketch of my own."', items:[['omega',25],['psi',25],['cross',25],['star',25]]},
+  curios:  {pitch:'"Curiosities, out of the Collegium, all with papers. Mostly with papers."', items:[['wren',30],['hourglass',40],['hand',40],['key',50]]},
+};
+function topperShop(n, api, id){
+  const S=SHOPS[id];
+  api.dialog(title(n,api), S.pitch+'\n\nYou have '+api.gold()+' gold.', S.items.map(([t,price])=>{
+    const have=api.hasTopper(t);
+    return {label:api.topperName(t)+(have?' (yours)':' ('+price+' gold)'), disabled:have||api.gold()<price, fn:()=>{ api.addGold(-price); api.save(); api.earnTopper(t,'Wrapped in brown paper and string'); }};
+  }).concat([{label:'Not today'}]));
+}
 
 // who plays a role, given the wizard you are
 function castOf(role, api){
@@ -79,6 +135,7 @@ function title(n, api){
 }
 function sprite(n, api){
   const F=FOLK[n.role]; if(!F) return Year()?Year().sprite(n,api):null;
+  if(F.look) return F._sprite||null;
   if(F.sprite) return F.sprite;
   if(F.fighter) return (api.fighters[F.fighter]||{}).sprite||null;
   const k=castOf(n.role,api), c=k&&api.chars[k];
@@ -88,6 +145,7 @@ function sprite(n, api){
 // the dons' are cropped from their sprites by tools/make_folk_sprites.py, FACES)
 function face(n, api){
   const F=FOLK[n.role]; if(!F) return Year()&&Year().face?Year().face(n,api):null;
+  if(F.look) return F._face||null;
   const k=F.face||F.fighter||(F.cast?castOf(n.role,api):n.role);
   return k?'portraits/small/'+k+'.jpg':null;
 }
@@ -123,6 +181,7 @@ function talk(n, api){
   const nm=r=>nameOf(r,api), F_=FOLK[n.role], home0=()=>mg(api)&&api.homeElem();
   if(!F_){ if(Year()) Year().talk(n,api); return; }
   if(F_&&F_.kind==='roster'){ const k=castOf(n.role,api), met=api.quest('met'); if(k&&!met[k]){ met[k]=true; api.save(); } }
+  if(F_&&F_.lines){ townTalk(n,api); return; }
   switch(n.role){
 
   case 'porter': {
@@ -185,6 +244,7 @@ function talk(n, api){
       say(0,D+' reads the card back, each mark on it, and nods. "The Master of the Schools says you fight like someone who means to come home. The Keeper says you read like someone who is listening. And the Laboratory says you are still alive, which from them is high praise."\n\n"Then by the authority of the University, '+me+', you are matriculated." For a moment the lamp on the bench lights itself, very softly, and goes out again. "There. You saw nothing."',[
         {label:'Take your gown', fn:()=>{ s.stage=2; api.addGold(MATRIC.reward.gold); api.addPotions(MATRIC.reward.potions); api.save();
           api.toast('Matriculated! +'+MATRIC.reward.gold+' gold and '+MATRIC.reward.potions+' potions.');
+          setTimeout(()=>api.earnTopper('lantern','The Senior Tutor adds something from a drawer: a little gold lantern, made to sit on a staff. "Every Finder carries one. You\'ll be finding things now"'),1800);
           say(0,'"The east road goes to Hollowmere, and past Hollowmere to Corvanthe. You\'ll go, I expect. They all go." A quiet moment. "Bring back what you can. Books, if you find them. Names, if you find those. And when you are ready to write workings of your own, come and find me: we are building a workshop for it, at Lantern College. It isn\'t ready. Neither are you."'); }}]);
       return;
     }
@@ -273,6 +333,7 @@ function talk(n, api){
       return;
     }
     if(home0()&&!knowsSet(api,api.glyphSets[home0()])){ givePrimer(); return; }
+    if(read>=7&&!api.hasTopper('orrery')){ say(0,'"All seven." '+K+' looks at you over the keys for a long moment. "Nobody reads all seven." A small gold orrery comes out of a coat pocket, three rings round a little glowing heart. "This sat on the Collegium librarian\'s staff. She would want a reader to have it."',[{label:'Take it', fn:()=>api.earnTopper('orrery','Its rings turn on their own, very slowly')}]); return; }
     const ahead=mg(api)?readAhead():[], beat=Year()&&Year().keeperBeat(api,K);
     if(beat){ say(0,'"'+me+'." '+K+' has been waiting for you on the steps, which he never does. "A word. Inside."',[beat]); return; }
     say(0,'"'+me+'." '+K+' unlocks a door for someone without looking. "Forty years I\'ve kept libraries, and I never kept one that was all lost property before." A sniff. "If you find books in Corvanthe, bring them here. If you find a Collegium seal on them, bring them here faster. Some of our colleagues\' last work is still lying in those streets."'+
@@ -302,12 +363,13 @@ function talk(n, api){
         say(0,ok?'The dummy smoulders. '+F+' makes a mark on a slate. "'+n+' of '+PRAC_CASTS+'. Again!"':'It fizzles, with a smell like a snuffed candle. '+F+' is unbothered. "That\'s what the dummy\'s for. Again!"',[practical(e,cat,onPass),{label:'Enough for now'}]);
       }};
     }
+    const shard=s.lab&&!api.hasTopper('shard')?[{label:'Fuse a quintessence shard for your staff ('+SHARD_SPILL+' spill)', disabled:api.spillTotal()<SHARD_SPILL, fn:()=>{ api.takeSpill(SHARD_SPILL); api.save(); api.earnTopper('shard','The spill runs together in the crucible into one long crystal, and Fizzwick binds it in gold wire'); }}]:[];
     // the bottled Echo is of your barred element, so your own is its opposite (×1.5): the lesson
     const home=home0(), eEl=home?api.barred():'fire', sector=SECTOR_OF[eEl], wasWho=WHO_WAS[eEl];
     const echoFight={label:'Face the bottled Echo', fn:()=>api.spar({
       foes:[{key:'echo_'+eEl+'_weak',level:0,name:'The Bottled Echo'}],
       text:{winTitle:'Back in the Bottle', win:'It flickers and shrinks and pours itself back into the bottle like a sulking cat. '+F+' corks it, delighted. "Passed! It always reforms. It leaves a little behind, though; here, keep that."', loseTitle:'Singed', lose:'The wards flare and the Echo is back in its bottle, sulking. '+F+' pats out your sleeve. "Everybody fails the first time. Except the ones who fail the second."'},
-      onWin:()=>{ if(!s.lab){ s.lab=true; api.addSpill(eEl,1); api.save(); api.toast('The Laboratory: passed. +1 spill'); } }})};
+      onWin:()=>{ if(!s.lab){ s.lab=true; api.addSpill(eEl,1); api.save(); api.toast('The Laboratory: passed. +1 spill'); setTimeout(()=>api.earnTopper('cage','Fizzwick hands over a little gold cage with a wisp inside. "A souvenir! It\'s quite safe. Mostly"'),1800); } }})};
     if(!s.lab){
       if(home&&!knowsSet(api,api.glyphSets[home])){
         say(0,F+' bounds up, then stops. "Oh. You can\'t write yet, can you? Not a single glyph." A sympathetic wince. "Can\'t cast what you can\'t write. Library first, there\'s a dear: the Keeper has a primer for your element. Then come back and I\'ll show you something marvellous."');
@@ -330,7 +392,7 @@ function talk(n, api){
     const later=(Year()?Year().labPracticals(api):[]).map(p=>{ const b=practical(p.elem,p.cat,()=>{ api.toast('You can cast: '+(p.cat==='protect'?'wards, and Seal Ward':'dispels, and Cleanse Self')+'.'); say(0,F+' claps. "'+(p.cat==='protect'?'A wall! Lovely. Now go and stand behind it.':'Unmade, neat as a seam. Lovely.')+'"'); }); b.label='Practical: '+p.name+' ('+b.label.replace(/^Cast at the dummy \(|\)$/g,'')+')'; return b; });
     const pracs=later.concat(ready.filter(e=>Y.lect[e]).map(e=>{ const b=practical(e,'damage',()=>{ api.toast('You can cast: '+up(e)+' strikes.'); say(0,F+' beams at the scorch marks. "'+up(e)+'! Passed. Take these, I\'ve no use for them." A twist of paper with something glittering in it.'); }); b.label='Practical: '+up(e)+' ('+b.label.replace(/^Cast at the dummy \(|\)$/g,'')+')'; return b; }));
     const readAheadNote=ready.length&&!pracs.length?'\n\n"Been reading ahead, have you? '+ready.map(up).join(', ')+'! Good. Hear the lecture first, then come to me. The Statutes, you know."':'';
-    say(0,'"'+me+'! Still in one piece, I see." '+F+' waves at the smoking chimney. "Bring me spill from Corvanthe, any kind, and I\'ll distil you a potion. Two pieces a bottle. The Statutes say I mustn\'t do anything more interesting with it, and I never do anything they say I mustn\'t." A pause. "Lately."'+(s.stage>=2?'\n\n"Oh! And the Laboratory wants fresh samples from Cindergate, properly collected, by somebody with a licence and an escort. Field work. I\'ve put my name down. When it\'s approved, I\'ll want a pair of hands that has passed the safety test."':'')+readAheadNote,pracs.concat([brew,{label:'Ask about spill', fn:()=>say(0,'"Quintessence. What\'s left when a working is unmade: pure element, settled out like frost. Every bit of it in Corvanthe was a person, once, more or less." A sip of tea. "We try not to think about it. We\'re very good at not thinking about things, here. It\'s the one thing we learned."',[brew])}]));
+    say(0,'"'+me+'! Still in one piece, I see." '+F+' waves at the smoking chimney. "Bring me spill from Corvanthe, any kind, and I\'ll distil you a potion. Two pieces a bottle. The Statutes say I mustn\'t do anything more interesting with it, and I never do anything they say I mustn\'t." A pause. "Lately."'+(s.stage>=2?'\n\n"Oh! And the Laboratory wants fresh samples from Cindergate, properly collected, by somebody with a licence and an escort. Field work. I\'ve put my name down. When it\'s approved, I\'ll want a pair of hands that has passed the safety test."':'')+readAheadNote,pracs.concat([brew],shard,[{label:'Ask about spill', fn:()=>say(0,'"Quintessence. What\'s left when a working is unmade: pure element, settled out like frost. Every bit of it in Corvanthe was a person, once, more or less." A sip of tea. "We try not to think about it. We\'re very good at not thinking about things, here. It\'s the one thing we learned."',[brew])}]));
     return;
   }
 
@@ -347,6 +409,7 @@ function talk(n, api){
     say(0,D+' keeps a stall hung with oilcloth and a licence in a gilt frame, and a ledger chained to the counter. "Quintessence bought, by licence of the University, at a fair price, '+SPILL_PRICE+' gold a piece, which is to say mine." A smile like a ledger. "And potions, for those who\'d rather not brew."',[
       {label:'Sell your spill ('+n+' × '+SPILL_PRICE+' = '+n*SPILL_PRICE+' gold)', disabled:n<1, fn:()=>{ const g=api.sellSpill(SPILL_PRICE); api.save(); api.toast('+'+g+' gold. The spill vanishes into a lead-lined box.'); }},
       {label:'Buy a potion ('+MARKET_POTION+' gold)', disabled:api.gold()<MARKET_POTION, fn:()=>{ api.addGold(-MARKET_POTION); api.addPotions(1); api.save(); api.toast('A potion, sealed with the University crest.'); }},
+      {label:'Look at her curiosities (staff heads)', fn:()=>topperShop(n,api,'curios')},
       {label:'Not today'}]);
     return;
   }
