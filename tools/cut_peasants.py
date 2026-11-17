@@ -3,8 +3,8 @@
 sprites on flat green (sprites/folk/source/peasant_man.png, peasant_woman.png), keyed out like the
 hero figures (tools/cut_hero_figures.py's key_out / drop_specks), cropped, 768 px tall, facing right,
 feet on the bottom edge. Each also gets a few recolours so a street of them isn't all twins
-(VARIANTS: the woman's skirt, the man's breeches, both moved by hue inside a box so skin, leather
-and wood stay put).
+(VARIANTS: the woman's skirt, the man's breeches (a hand-fitted shape, `breeches`), both moved by
+hue inside their region so skin, leather and wood stay put).
 
     python3 tools/cut_peasants.py                    # writes sprites/folk/peasant_<n>.png
     python3 tools/cut_peasants.py --preview out.png  # all of them side by side
@@ -19,16 +19,31 @@ SRC = os.path.join(ROOT, 'sprites/folk/source')
 OUT = os.path.join(ROOT, 'sprites/folk')
 HEIGHT = 768
 
-# name: (source, box (fractions of the cut-out), hue range° to move, [(hue°, sat×, val×), …] or None = as painted)
+def breeches(x, y):
+    """The man's breeches, in pixels of his 768-tall cut-out (352 wide): belt to boot cuffs, less the
+    pouch, the tankard and its chain, the cloth, the fist and the pitchfork's shaft (which crosses his back leg).
+    Fitted by hand; the hue test then keeps out the linen cloth and the patches."""
+    if not (331 <= y <= 598 and 40 <= x <= 300): return False
+    if 92 <= x <= 182 and y <= 410: return False                          # pouch
+    if ((x - 192) / 36) ** 2 + ((y - 378) / 42) ** 2 <= 1: return False   # tankard
+    if 186 <= x <= 218 and y <= 346: return False                         # its chain
+    if x >= 257 and y <= 452: return False                                # the linen cloth hanging at his hip
+    cx = 83 + (y - 330) * 20 / 240                                        # the shaft's middle, leaning right as it falls
+    return abs(x - cx) > 12
+
+def skirt(x, y):
+    return y >= 0.45 * 768 and y <= 0.86 * 768
+
+# name: (source, region test (x, y) on the cut-out, hue range° to move, (hue°, sat×, val×)), or None = as painted
 VARIANTS = {
     'man_1':   ('peasant_man',   None, None, None),
-    'man_2':   ('peasant_man',   (0.30, 0.56, 0.86, 0.79), (5, 40), (215, 0.55, 0.75)),   # slate-blue breeches
-    'man_3':   ('peasant_man',   (0.30, 0.56, 0.86, 0.79), (5, 40), (95, 0.45, 0.70)),    # moss-green breeches
-    'man_4':   ('peasant_man',   (0.30, 0.56, 0.86, 0.79), (5, 40), (30, 0.35, 0.55)),    # dark homespun
+    'man_2':   ('peasant_man',   breeches, (5, 40), (215, 0.55, 0.75)),   # slate-blue breeches
+    'man_3':   ('peasant_man',   breeches, (5, 40), (95, 0.45, 0.70)),    # moss-green breeches
+    'man_4':   ('peasant_man',   breeches, (5, 40), (30, 0.35, 0.55)),    # dark homespun
     'woman_1': ('peasant_woman', None, None, None),
-    'woman_2': ('peasant_woman', (0.0, 0.45, 1, 0.86), (280, 360), (215, 0.9, 0.95)),     # blue skirt
-    'woman_3': ('peasant_woman', (0.0, 0.45, 1, 0.86), (280, 360), (120, 0.6, 0.85)),     # green skirt
-    'woman_4': ('peasant_woman', (0.0, 0.45, 1, 0.86), (280, 360), (40, 0.9, 1.0)),       # ochre skirt
+    'woman_2': ('peasant_woman', skirt, (280, 360), (215, 0.9, 0.95)),    # blue skirt
+    'woman_3': ('peasant_woman', skirt, (280, 360), (120, 0.6, 0.85)),    # green skirt
+    'woman_4': ('peasant_woman', skirt, (280, 360), (40, 0.9, 1.0)),      # ochre skirt
 }
 
 def cut(name):
@@ -38,14 +53,13 @@ def cut(name):
     im.putalpha(im.getchannel('A').point(lambda v: 255 if v >= 128 else 0))
     return im
 
-def recolour(im, box, hues, to):
+def recolour(im, inside, hues, to):
     im = im.copy(); px = im.load(); W, H = im.size
-    x0, y0, x1, y1 = int(box[0] * W), int(box[1] * H), int(box[2] * W), int(box[3] * H)
     lo, hi = hues; th, ts, tv = to
-    for y in range(y0, y1):
-        for x in range(x0, x1):
+    for y in range(H):
+        for x in range(W):
             r, g, b, a = px[x, y]
-            if not a: continue
+            if not a or not inside(x, y): continue
             h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
             hd = h * 360
             if not (lo <= hd <= hi) or s < 0.3 or v < 0.08: continue
