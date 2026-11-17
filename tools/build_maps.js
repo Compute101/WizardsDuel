@@ -25,6 +25,8 @@ const GENERATORS={
   frostmarket: rects=>require('./mapgen/sector')(rects,'frostmarket'),
   gloamside: rects=>require('./mapgen/sector')(rects,'gloamside'),
   wrenford: require('./mapgen/wrenford'),
+  // the inner districts, between each sector's north barrier and the Wound
+  ...Object.fromEntries(Object.entries(require('./mapgen/inner').INNER_IDS).map(([outer,id])=>[id,rects=>require('./mapgen/inner')(rects,outer)])),
 
 };
 const only=process.argv[2];

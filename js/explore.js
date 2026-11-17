@@ -122,6 +122,10 @@ function setupMap(data){
       case 'e': return 'dirtGrass_ash';
       case 'c': return 'tr_cobble_11_ash';
       case 'f': return r()<.7?'flagCracked_ash':'flagMoss_ash';
+      // inner districts: snow (the Winter Fair), flooded streets you wade through (the Sunken Harbour), the Wound's edge
+      case 'S': return 'tr_snow_11';
+      case 'F': return 'tr_flood_11';
+      case 'X': return 'tr_wound_21';
       // interiors (js/explore_rooms.js): floors, and the dark beyond the walls
       case 'w': return 'floorWood'+(1+Math.floor(r()*4));
       case 'l': return 'floorFlag'+(1+Math.floor(r()*4));
@@ -208,7 +212,7 @@ function updateEchoes(dt){
 // (ExploreBands.clashOdds); a winning crew takes the spill and may lose a member, a losing one is broken.
 // Toll crews stop you and ask for gold or spill; hostile ones charge. bandState[id] (saved): beaten (time),
 // lost (fallen members), gold, spill, tollUntil, met.
-const ROAD_KINDS='RMcPfD';
+const ROAD_KINDS='RMcPfDF';
 const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
 let roadSet=null, roadList=[];
 function bandRec(b){
@@ -477,7 +481,8 @@ function renderSpill(){
 // ═══ DOORS AND ROOMS ═══════════════════════════════════════════════
 // Every house front, tavern, chapel and the like can be entered (js/explore_rooms.js builds the room
 // from its seed). Some are always the same place (FIXED_DOORS).
-const DOOR_BASES = ['house1','house2','house3','house4','house5','house6','tavern','chapel','hall','temple','townhouse','forge','tiltedHouse','sunkHouse','mausoleum','tower'];
+const DOOR_BASES = ['house1','house2','house3','house4','house5','house6','tavern','chapel','hall','temple','townhouse','forge','tiltedHouse','sunkHouse','mausoleum','tower',
+  'tomb','tombGrand','spireTower','foundry'];
 const FIXED_LABEL = {safehouse:'Enter the Gleaners\' Rest', inn:'Enter the Drowned Crow', library:'Enter the Collegium Library',
   wrenInn:'Enter the Wren\'s Nest', remnant:'Enter the Remnant Library', lab:'Enter the Warded Laboratory',
   wenna:'Knock at Wenna\'s Bakehouse', lamplighter:'Knock at the Lamplighter\'s House'};
@@ -500,9 +505,10 @@ function findDoors(){
   const el=Object.keys(els).sort((a,b)=>els[b]-els[a])[0]||'fire';
   for(const o of fronts){
     const base=P.baseKind(o.kind), f=fixed[o.id];
-    const depth=Math.max(0,Math.min(1,(1-o.y/WORLD_H)*1.15-0.12));
+    // how near the Wound: by height on the map, within the map's own range (an inner district's is 0.55–1)
+    const dr=MAP.depth||[0,1], depth=dr[0]+(dr[1]-dr[0])*Math.max(0,Math.min(1,(1-o.y/WORLD_H)*1.15-0.12));
     const ruined=/_(burnt|char)$/.test(o.kind)||['house5','house6','tiltedHouse','sunkHouse'].includes(base);
-    const spec={id:'room:'+MAP.id+'#'+o.id, base, outside:{map:MAP.id,x:o.x,y:o.y+6}, el, depth, city:CITY_MAPS.includes(MAP.id),
+    const spec={id:'room:'+MAP.id+'#'+o.id, base, outside:{map:MAP.id,x:o.x,y:o.y+6}, el, depth, city:CITY_MAPS.includes(MAP.id)||!!MAP.city,
       ruined, fixed:f||null, wizards:wizKeys.filter(k=>k!=='hero'), safe:!!MAP.safe};
     doors.push({x:o.x, y:o.y+14, spec, obj:o, label:f?FIXED_LABEL[f]:'Enter'});
   }
@@ -782,6 +788,9 @@ const EDGE_SET = {
   W:{set:'quay',   out:c=>c!=='W'},
   O:{set:'shore',  out:c=>c!=='O'},
   c:{set:'cobble', sfx:'_ash', out:c=>c==='a'||c==='e'},
+  S:{set:'snow',   out:c=>c!=='S'},
+  F:{set:'flood',  out:c=>c!=='F'&&c!=='W'},
+  X:{set:'wound',  out:c=>c!=='X'},
 };
 function edgeTile(E,x,y,r){
   const k=groundKind, at=(xx,yy)=>(k[yy]||[])[xx];
@@ -823,7 +832,7 @@ function wet(px,py){
     const dry=(xx,yy)=>(groundKind[yy]||[])[xx]!=='O';
     return !((dry(tx-1,ty)&&fx<R)||(dry(tx+1,ty)&&fx>T-R)||(dry(tx,ty-1)&&fy<R)||(dry(tx,ty+1)&&fy>T-R));
   }
-  if(t!=='W') return false;
+  if(t!=='W'&&t!=='X') return false;                 // X: a hole onto the Wound (inner districts), crossed by rope bridges
   for(const b of bridges) for(const w of b.fb) if(inside(px,py,w)) return false;
   for(const w of MAP.walk||[]) if(inside(px,py,w)) return false;
   return true;
@@ -839,7 +848,7 @@ const MINI_PAL = {
 function buildMinimap(){
   const S=4, c=document.createElement('canvas'); c.width=COLS*S; c.height=ROWS*S;
   const m=c.getContext('2d');
-  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70'};
+  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70',S:'#dfe6f0',F:'#2f6a78',X:'#7a2ab0'};
   Object.assign(col,MINI_PAL[MAP.palette]||{});
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ m.fillStyle=col[groundKind[y][x]]||col.G; m.fillRect(x*S,y*S,S,S); }
   const k=S/T;
@@ -1732,7 +1741,8 @@ function frame(now){
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 async function load(){
   if(built) return;
-  const names=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13'];
+  const names=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13',
+    'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23'];
   const [cj,wj,fj,...sheets]=await Promise.all([
     fetch('characters.json').then(r=>r.json()),
     fetch('maps/world.json').then(r=>r.json()).then(w=>w),

@@ -622,6 +622,10 @@
   "start": [
    90,
    2538
+  ],
+  "inner": [
+   1984,
+   354
   ]
  },
  "exits": [
@@ -645,6 +649,18 @@
    "to": {
     "map": "spirewatch",
     "spawn": "west"
+   }
+  },
+  {
+   "x": 1944,
+   "y": 250,
+   "w": 80,
+   "h": 40,
+   "dir": "N",
+   "label": "Corvanthe: The Drift",
+   "to": {
+    "map": "drift",
+    "spawn": "arch"
    }
   }
  ],

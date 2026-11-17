@@ -639,6 +639,10 @@
   "start": [
    90,
    2538
+  ],
+  "inner": [
+   1664,
+   354
   ]
  },
  "exits": [
@@ -662,6 +666,18 @@
    "to": {
     "map": "gloamside",
     "spawn": "west"
+   }
+  },
+  {
+   "x": 1624,
+   "y": 250,
+   "w": 80,
+   "h": 40,
+   "dir": "N",
+   "label": "Corvanthe: The Winter Fair",
+   "to": {
+    "map": "winter_fair",
+    "spawn": "arch"
    }
   }
  ],

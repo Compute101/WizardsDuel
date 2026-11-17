@@ -609,6 +609,10 @@
   "start": [
    90,
    2538
+  ],
+  "inner": [
+   1792,
+   354
   ]
  },
  "exits": [
@@ -632,6 +636,18 @@
    "to": {
     "map": "cindergate",
     "spawn": "west"
+   }
+  },
+  {
+   "x": 1752,
+   "y": 250,
+   "w": 80,
+   "h": 40,
+   "dir": "N",
+   "label": "Corvanthe: The Necropolis",
+   "to": {
+    "map": "necropolis",
+    "spawn": "arch"
    }
   }
  ],

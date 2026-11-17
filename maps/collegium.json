@@ -586,6 +586,10 @@
   "start": [
    90,
    2538
+  ],
+  "inner": [
+   1728,
+   354
   ]
  },
  "exits": [
@@ -609,6 +613,18 @@
    "to": {
     "map": "drowned_quarter",
     "spawn": "west"
+   }
+  },
+  {
+   "x": 1688,
+   "y": 250,
+   "w": 80,
+   "h": 40,
+   "dir": "N",
+   "label": "Corvanthe: The Old Schools",
+   "to": {
+    "map": "old_schools",
+    "spawn": "arch"
    }
   }
  ],

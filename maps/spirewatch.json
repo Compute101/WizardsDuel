@@ -645,6 +645,10 @@
   "start": [
    90,
    2538
+  ],
+  "inner": [
+   1792,
+   354
   ]
  },
  "exits": [
@@ -668,6 +672,18 @@
    "to": {
     "map": "collegium",
     "spawn": "west"
+   }
+  },
+  {
+   "x": 1752,
+   "y": 250,
+   "w": 80,
+   "h": 40,
+   "dir": "N",
+   "label": "Corvanthe: The Conductory",
+   "to": {
+    "map": "conductory",
+    "spawn": "arch"
    }
   }
  ],

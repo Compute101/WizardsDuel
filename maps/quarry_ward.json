@@ -635,6 +635,10 @@
   "start": [
    90,
    2538
+  ],
+  "inner": [
+   1920,
+   354
   ]
  },
  "exits": [
@@ -658,6 +662,18 @@
    "to": {
     "map": "frostmarket",
     "spawn": "west"
+   }
+  },
+  {
+   "x": 1880,
+   "y": 250,
+   "w": 80,
+   "h": 40,
+   "dir": "N",
+   "label": "Corvanthe: The Deep Cut",
+   "to": {
+    "map": "deep_cut",
+    "spawn": "arch"
    }
   }
  ],
