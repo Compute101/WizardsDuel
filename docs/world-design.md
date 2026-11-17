@@ -467,7 +467,7 @@ Fellow lost on the day: his wife.
 Guard, again), Mirror Meg (copies your last pick), Horace "the Clinch" Webb (Grapples when you Guarded
 last), Gentleman Jem, the champion (changes pattern below half HP).
 
-**Others:** Mrs Dorcas Pegg, landlady of the Wren's Nest; Old Bartholomew "Squop" Hale, undefeated at
+**Others:** Mrs Dorcas Pegg, landlady of the Wren's Nest; Old Bartholomew "Squop" Finch, undefeated at
 winks; Mr Ravel, the Senior Proctor (chases you over the rooftops, later grants the licence).
 
 ### Art brief: the cast of the Year

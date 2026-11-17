@@ -256,7 +256,7 @@ module.exports = function wrenford(rects){
     // townsfolk painted from the hero figures (ExploreFolk FOLK, look): four men, four women
     {role:'corin',   x:26.6*T, y:10.4*T},          // revising on the Library steps
     {role:'isla',    x:33.4*T, y:19.8*T},          // arguing under the Great Orrery…
-    {role:'tamsin',  x:34.8*T, y:19.8*T},          // …with Tamsin
+    {role:'marigold',x:34.8*T, y:19.8*T},          // …with Marigold
     {role:'rook',    x:19.2*T, y:35.8*T},          // drilling guards by the Schools' court
     {role:'agathe',  x:14.2*T, y:20.4*T},          // the herbwife, in the Covered Market
     {role:'joss',    x:24.2*T, y:25.5*T},          // a gleaner back from the east, at Carfax

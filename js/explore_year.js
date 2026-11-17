@@ -30,7 +30,7 @@ const PEOPLE = {
   brawl:    {title:'Town v Gown', sprite:'sprites/soldier.png'},
   gateward: {title:'A Failing Ward', sprite:'sprites/halberdier.png'},
   landlady: {title:'The Landlady of the Wren\'s Nest', name:'Mrs Dorcas Pegg', sprite:'sprites/hero/mid_woman_1.png'},
-  squop:    {title:'A Winks Player', name:'Old Bartholomew "Squop" Hale', sprite:'sprites/hero/old_man_1.png'},
+  squop:    {title:'A Winks Player', name:'Old Bartholomew "Squop" Finch', sprite:'sprites/hero/old_man_1.png'},
 };
 const knows = role => !!PEOPLE[role];
 
