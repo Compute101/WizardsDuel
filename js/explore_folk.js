@@ -63,7 +63,7 @@ const FOLK = {
       '"Tamsin says I\'m reckless." Isla shrugs. "Tamsin once spent a week warding a sandwich."',
       '"I\'m going to the Schools next term. The Master says I fight like a forest fire. I think it was a compliment."']},
   tamsin: {kind:'local', title:'A Student', name:'Tamsin', look:{name:'Tamsin', sex:'f', age:'young', fig:'young_woman_4', robe:'Midnight', trim:'Bone', hair:'Blonde', skin:'Pale', eyes:'Blue', elem:'ice', staff:'Silverwood', topper:'crystal'},
-    lines:['"Ice," says the other, ponytailed and patient, "is fire\'s answer, not its servant. Opposites across the wheel. Strike a fire ward with frost and watch it come apart." She sighs. "Isla never listens to the second half of anything."',
+    lines:['"Nothing is first," says the other, ponytailed and patient. "Every element has its answer across the wheel. Fire\'s is Water: strike a fire ward with a wave and watch it come apart. Mine is Lightning, which is why I ward against Rook." She sighs. "Isla never listens to the second half of anything."',
       '"It was a very good sandwich," Tamsin says, with dignity. "And nobody took it."',
       '"If you\'re going east, ward first and ward often. And seal it. A sealed ward takes two dispels to break. The Master taught us that, and the Master was right."']},
   rook:   {kind:'local', title:'A Duellist of the Schools', name:'Rook', look:{name:'Rook', sex:'m', age:'young', fig:'young_man_4', robe:'Black', trim:'Scarlet', hair:'Black', skin:'Tan', eyes:'Dark', elem:'lightning', staff:'Blackthorn', topper:'crook'},
