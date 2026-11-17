@@ -1095,5 +1095,22 @@
  ],
  "safe": 1,
  "arena": "library",
- "music": "audio/wrenford_theme.mp3"
+ "music": "audio/wrenford_theme.mp3",
+ "greet": [
+  "Morning!",
+  "Good day, scholar.",
+  "Mind the carts.",
+  "Fine weather for it.",
+  "Bless the Absent.",
+  "Penny for the bridge?",
+  "Lovely day.",
+  "Off to the market.",
+  "Afternoon.",
+  "You're new here.",
+  "Mind your step.",
+  "Turnips are dear this week.",
+  "Watch the punts by the Meadow.",
+  "Hope the dons treat you well.",
+  "Never seen so many students."
+ ]
 }
