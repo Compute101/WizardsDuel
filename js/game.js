@@ -3794,7 +3794,55 @@ const ELEM_PROJ={fire:'fire', ice:'ice', lightning:'lightning', arcane:'arcane',
 // Elements a character can't cast at all (characters.json "forbidden"): their sectors are locked
 // on every wheel. Never one of the character's own signature sectors.
 // A banned element can't be cast in any category (bans are magic only: every wizard can Attack, Guard and Grapple)
-function elemForbidden(who,elem,cat){ return (seatCfg(who).forbidden||[]).includes(elem); }
+function elemForbidden(who,elem,cat){ return (seatCfg(who).forbidden||[]).includes(elem)||elemUnlearnt(who,elem,cat); }
+// ── What a made wizard knows (Explore's University Year, docs/world-design.md) ──
+// A seat's cfg.known = {elems, cats, rings, glyphs, skin}; no `known` (every roster wizard, every
+// fighter) knows everything. An element's sector needs its category, the element and its four glyphs
+// (a dispel needs Dispel's own four too); rings above `rings` can't be picked; Ironskin needs `skin`.
+// Glyphs are indices into MG_SYMS. Banned elements stay banned whatever you know.
+const GLYPH_SETS={fire:[0,1,8,4], lightning:[3,2,9,7], ice:[10,11,6,5], arcane:[4,5,3,10],
+  earth:[1,2,3,8], dark:[6,9,2,4], air:[1,0,7,11], water:[2,5,4,11], dispel:[5,8,2,10]};
+function knownOf(who){ return seatCfg(who).known||null; }
+function knowsGlyphs(k,set){ return set.every(g=>(k.glyphs||[]).includes(g)); }
+function catUnlearnt(who,cat){ const k=knownOf(who); return !!k&&!(k.cats||[]).includes(cat); }
+function ringUnlearnt(who,tier){ const k=knownOf(who); return !!k&&tier>(k.rings||1); }
+function elemUnlearnt(who,elem,cat){
+  const k=knownOf(who); if(!k) return false;
+  if(cat&&!(k.cats||[]).includes(cat)) return true;
+  if(!(k.elems||[]).includes(elem)||!knowsGlyphs(k,GLYPH_SETS[elem]||[])) return true;
+  return cat==='dispel'&&!knowsGlyphs(k,GLYPH_SETS.dispel);
+}
+// Cleanse Self: Dispel's category and its glyphs, at a ring you know
+function cleanseUnlearnt(who,tier){ const k=knownOf(who); return !!k&&(catUnlearnt(who,'dispel')||!knowsGlyphs(k,GLYPH_SETS.dispel)||ringUnlearnt(who,tier)); }
+// the minigame keyboards blank glyphs the caster hasn't learnt (only hard mode shows non-spell glyphs at all)
+function mgKnows(ai){
+  const k=mgKnownOverride!==undefined?mgKnownOverride:gs&&gs.turnPlayer&&knownOf(gs.turnPlayer);
+  return !k||(k.glyphs||[]).includes(ai);
+}
+// ── A cast outside any battle (Explore's Laboratory practicals, later the exams) ──
+// practiseCast({cat, elem, tier, known, screen}, cb): the cast's minigame on the puzzle screen, then
+// cb(ok) and the `screen` (default the title screen, which Explore covers) instead of a battle.
+let mgStandalone=null, mgKnownOverride=undefined;
+function practiseCast(o,cb){
+  const el=o.cat==='dispel'&&!o.elem?{icon:'✦',col:'#e070ff',name:'Dispel'}:elemById(o.elem), tier=o.tier||1;
+  const spell={name:o.name||describeElemAction({cat:o.cat,elem:o.elem||'arcane',tier}).name, icon:el.icon,
+    element:o.elem, col:el.col, tier, glyphs:o.cat==='damage'?ELEM_GLYPHS[o.elem]:undefined};
+  mgKnownOverride=o.known||null;
+  mgStandalone=ok=>{ showScreen(o.screen||'title-screen'); cb&&cb(ok); };
+  const none=()=>{};
+  if(o.cat==='protect') launchBuffTileMatch(spell,o.theme||ELEM_WARD_THEME[o.elem],'p1',none);
+  else if(o.cat==='dispel') launchDispelPattern(spell,none);
+  else ELEM_MINIGAME[o.elem](spell,none);
+}
+window.practiseCast=practiseCast;
+// what the wheel says about a sector you haven't learnt
+function unlearntWhy(who,cat,elem){
+  const k=knownOf(who); if(!k) return '';
+  if(!(k.cats||[]).includes(cat)) return {damage:'Strikes',protect:'Wards',dispel:'Dispels'}[cat]+' not learnt yet';
+  if(!knowsGlyphs(k,GLYPH_SETS[elem]||[])) return 'Glyphs not learnt yet (the Library)';
+  if(!(k.elems||[]).includes(elem)) return 'Not learnt yet (a lecture and a practical)';
+  return 'Dispel\'s glyphs not learnt yet (the Library)';
+}
 function foesCantCast(who,elem){ return foesOf(who).every(w=>elemForbidden(w,elem)); }
 function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS.find(e=>e.id==='arcane'); }
 // ── ACTIONS: plain physical moves anyone can make, wizard or not (docs/rps-duel-design.md, "Plan of record:
@@ -3903,7 +3951,7 @@ function startEncounter(wizKey){
 let exploreFight=null;
 // allies: [{key, level, hp, name}] fighters on your side (rescued gleaners), seated while there's room
 // (4 seats in all); a foe with wizard:true is a roster wizard leading a rival party. text: {win, lose}.
-function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena}){
+function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena, fists}){
   survival=null; encounterPending=false;
   const seen={}, count=k=>foes.filter(f=>f.key===k).length;
   const fighterSeat=(f,team)=>{
@@ -3913,9 +3961,15 @@ function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena}){
     if(!f.name&&count(f.key)>1) cfg.name+=' '+['I','II','III','IV'][seen[f.key]-1];
     return {key:f.key,cfg,human:false,team,hp:f.hp};
   };
-  const foeSeats=foes.slice(0,3).map(f=>f.wizard?{key:f.key,human:false,team:'B'}:fighterSeat(f,'B'));
+  // a wizard foe can hold back (a University spar): `known` limits their wheel as it limits the hero's
+  // (the University Year's partner fights beside you the same way: a wizard ally, team A)
+  const wizSeat=(f,team)=>({key:f.key,human:false,team:team||'B',hp:f.hp,
+    cfg:f.known||f.name?Object.assign({},defOf(f.key),f.known?{known:f.known}:{},f.name?{name:f.name.toUpperCase()}:{}):undefined});
+  const foeSeats=foes.slice(0,3).map(f=>f.wizard?wizSeat(f,'B'):fighterSeat(f,'B'));
   const room=Math.max(0,3-foeSeats.length), allyList=(allies||[]).slice(0,room);
-  const seats=[{key:wizKey,human:true,team:'A',hp}].concat(allyList.map(a=>fighterSeat(a,'A')),foeSeats);
+  // fists:true (the Boxing Club, a Town v Gown brawl): the hero fights with the Actions alone
+  const me=fists?{key:wizKey,human:true,team:'A',hp,cfg:Object.assign({},defOf(wizKey),{known:{glyphs:[],elems:[],cats:[],rings:1,skin:false}})}:{key:wizKey,human:true,team:'A',hp};
+  const seats=[me].concat(allyList.map(a=>a.wizard?wizSeat(a,'A'):fighterSeat(a,'A')),foeSeats);
   exploreFight={onEnd, foes, low:Infinity, allies:allyList.length, text:text||{}, arena:arena||null};
   multiMode=true; trainingMode=false; twoPlayerMode=false;
   if(window.Profiles&&Profiles.setSeats) Profiles.setSeats({});
@@ -3971,6 +4025,8 @@ function fighterAIChoose(who){
   const tgt=aiPickTarget(who), opp=gs[tgt], last=(opp&&opp.lastPick)||{};
   const act=c=>({type:'el',cat:c,act:ACTIONS[c].id,target:tgt,ok:true});
   if(tgt==null) return act('protect');
+  const pat=seatCfg(who).pattern;
+  if(pat) return act(patternPick(who,pat,last));
   const smart=aiDifficulty==='normal', A=AI_FIGHTERS, tr=traitOf(who);
   let guard=A.guard, grapple=tr==='ranged'?0:A.grapple;
   if(last.act==='attack'&&last.target===who) guard+=A.guardRead;
@@ -3979,6 +4035,20 @@ function fighterAIChoose(who){
   if(!smart){ guard=A.guard; grapple=tr==='ranged'?0:A.grapple; }
   const r=_rng()*(A.attack+guard+grapple);
   return r<A.attack?act('damage'):r<A.attack+guard?act('protect'):act('dispel');
+}
+// ── Pattern fighters (Explore's Boxing Club, js/explore_year.js): a fighter with `pattern` plays it, so a
+// player who watches can learn to beat it. Picks are categories: damage = Attack, protect = Guard,
+// dispel = Grapple. {cycle:[...]} repeats; {mirror:true} copies your last pick (Attack to start);
+// {clinch:true} Grapples after you Guarded, else Attacks; {cycle, hurt:'counter'} plays the cycle above
+// half HP and below it picks whatever beats your last pick (Guard an Attack, Grapple a Guard, Attack a Grapple).
+const BEATS={damage:'protect', protect:'dispel', dispel:'damage'};
+function patternPick(who,pat,last){
+  const st=gs[who], lastCat=last.act?{attack:'damage',guard:'protect',grapple:'dispel'}[last.act]:last.cat;
+  if(pat.hurt==='counter'&&st.hp<st.maxHp/2&&lastCat&&BEATS[lastCat]) return BEATS[lastCat];
+  if(pat.mirror) return lastCat&&BEATS[lastCat]?lastCat:'damage';
+  if(pat.clinch) return last.act==='guard'?'dispel':'damage';
+  const c=pat.cycle||['damage']; st.patIdx=(st.patIdx||0)+1;
+  return c[(st.patIdx-1)%c.length];
 }
 // ── MINIONS AS BODIES (Phase 3) ──
 // A body is a summoned creature that stands on the field: a minion with soak HP (skeletons, graveguard,
@@ -4212,7 +4282,7 @@ function sigAtTier(sp,tier){
 function sigAt(who,cat,elem){ return sigSpells(who,cat).find(sp=>sp.el.elem===elem)||null; }
 function sigCost(who,sp,tier){ return hasFreeSpell(who)?0:Math.max(0,sigAtTier(sp,tier).cost+spellbindExtra(who,sp.el.cat)); }
 function sectorOk(who,cat,elem,tier){
-  if(elemForbidden(who,elem,cat)) return false;
+  if(elemForbidden(who,elem,cat)||ringUnlearnt(who,tier)) return false;
   const sp=sigAt(who,cat,elem);
   return sp?!sigBlocked(who,sp,tier):elemCost(who,cat,tier,elem)<=gs[who].mana;
 }
@@ -4232,7 +4302,7 @@ function elemCanPick(who,cat){
   if(catLocked(who,cat)) return false;
   if(ACTIONS[cat]) return true;   // the free Action in the wheel's centre
   if(cat==='protect'&&canSeal(who)) return true;   // Seal Ward
-  if(cat==='dispel'&&elemCost(who,cat,1)<=gs[who].mana) return true;   // Cleanse Self
+  if(cat==='dispel'&&!cleanseUnlearnt(who,1)&&elemCost(who,cat,1)<=gs[who].mana) return true;   // Cleanse Self
   return ELEMENTS.some(e=>sectorOk(who,cat,e.id,1));
 }
 // Phase Shift (3–4 seats): a bet that you're about to be targeted. Everything aimed at you this round misses,
@@ -4321,12 +4391,13 @@ function openElemWheel(cat){
   const selfBtn=document.getElementById('wheel-self');
   const sealing=cat==='protect'&&WARD_RULES.seals;
   selfBtn.style.display=sealing?'':'none';
-  selfBtn.textContent=sealing?'🔒 Seal Ward ('+sealCost(who)+' Mana)'+(sealTargetable(who)?'':' — no ward to seal'):'';
+  selfBtn.textContent=sealing?'🔒 Seal Ward ('+sealCost(who)+' Mana)'+(catUnlearnt(who,'protect')?' — not learnt yet':sealTargetable(who)?'':' — no ward to seal'):'';
   selfBtn.disabled=sealing&&!canSeal(who);
   // Ironskin (or this wizard's own skin spell): a magic buff that soaks blows
   const skinBtn=document.getElementById('wheel-skin'), sk=skinOf(who), skOn=skinOn(st);
   skinBtn.style.display=cat==='protect'?'':'none';
   skinBtn.textContent=sk.icon+' '+sk.name+' ('+sk.cost+' Mana, '+SKIN_UPKEEP+' a round) — soaks '+sk.soak+' from blows'+(skOn?' · now '+skOn.hp:'');
+  if(knownOf(who)&&!knownOf(who).skin) skinBtn.textContent=sk.icon+' '+sk.name+' — not learnt yet';
   skinBtn.disabled=cat==='protect'&&!canSkin(who);
   // Cleanse Self, one button per ring: 1 curse, 2 curses, all of them
   const cl=document.getElementById('wheel-cleanse');
@@ -4338,8 +4409,9 @@ function openElemWheel(cat){
       const tier=i+1, cost=elemCost(who,'dispel',tier), b=document.createElement('button');
       b.className='btn wheel-cleanse-btn'; b.dataset.tier=tier;
       b.innerHTML=lbl+'<span>'+cost+' Mana</span>';
-      b.disabled=cost>st.mana||catLocked(who,'dispel');
-      b.title=CLEANSE_NAMES[i];
+      b.disabled=cost>st.mana||catLocked(who,'dispel')||cleanseUnlearnt(who,tier);
+      if(cleanseUnlearnt(who,tier)) b.title=CLEANSE_NAMES[i]+' (not learnt yet)';
+      if(!b.title) b.title=CLEANSE_NAMES[i];
       cl.appendChild(b);
     });
   }
@@ -4390,18 +4462,18 @@ function buildWheelSvg(who,cat){
   let html='';
   ELEMENTS.forEach((el,i)=>{
     const a0=-Math.PI/2-step/2+i*step, a1=a0+step, am=(a0+a1)/2;
-    const sp=sigAt(who,cat,el.id), banned=elemForbidden(who,el.id,cat);
+    const sp=sigAt(who,cat,el.id), banned=(seatCfg(who).forbidden||[]).includes(el.id), unlearnt=!banned&&!sp&&elemUnlearnt(who,el.id,cat), why=unlearnt?unlearntWhy(who,cat,el.id):'';
     WHEEL_RINGS.forEach(([r0,r1],t)=>{
       const off=!sectorOk(who,cat,el.id,t+1);
       const d=`M${pt(r0,a0)} L${pt(r1,a0)} A${r1} ${r1} 0 0 1 ${pt(r1,a1)} L${pt(r0,a1)} A${r0} ${r0} 0 0 0 ${pt(r0,a0)} Z`;
       html+=`<path class="wseg${off?' off':''}${sp?' sig':''}" d="${d}" data-elem="${el.id}" data-tier="${t+1}" `+
         `style="fill:${off?'#2a2a33':el.col};fill-opacity:${off?0.5:[0.22,0.42,0.68][t]}">`+
-        `<title>${ELEM_TIER_NAMES[t]}${sp?sigName(sp):el.name} · ${sp?sigCost(who,sp,t+1):elemCost(who,cat,t+1)} Mana</title></path>`;
+        `<title>${ELEM_TIER_NAMES[t]}${sp?sigName(sp):el.name} · ${why||(ringUnlearnt(who,t+1)?'Ring not learnt yet':(sp?sigCost(who,sp,t+1):elemCost(who,cat,t+1))+' Mana')}</title></path>`;
     });
-    const label=banned?'⛔ '+el.name:sp?'★'+sigName(sp).split(' ')[0]:el.name;
-    html+=`<text class="wicon${banned?' wicon-banned':''}" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${sp?sigIcon(sp):el.icon}</text>`;
+    const label=banned?'⛔ '+el.name:unlearnt?'📖 '+el.name:sp?'★'+sigName(sp).split(' ')[0]:el.name;
+    html+=`<text class="wicon${banned||unlearnt?' wicon-banned':''}" x="${(145*Math.cos(am)).toFixed(1)}" y="${(145*Math.sin(am)).toFixed(1)}">${sp?sigIcon(sp):el.icon}</text>`;
     const fs=label.length>9?7:label.length>7?8:9;   // eight sectors are narrow: long names shrink to stay off the icons
-    html+=`<text class="wname${banned?' wname-banned':sp?' wname-sig':''}" style="font-size:${fs}px" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${label}</text>`;
+    html+=`<text class="wname${banned?' wname-banned':unlearnt?' wname-unlearnt':sp?' wname-sig':''}" style="font-size:${fs}px" x="${(103*Math.cos(am)).toFixed(1)}" y="${(103*Math.sin(am)).toFixed(1)}">${label}</text>`;
   });
   // The centre is the category's free Action (Attack / Guard / Grapple)
   const act=ACTIONS[cat], ph=physOf(who), stat=cat==='damage'?ph.atk+' dmg; a Guard blocks and counters it':cat==='protect'?'this round: block blows, counter an Attack':'beats a Guard; '+Math.max(1,Math.round(ph.atk*ACT_RULES.grappleOther))+' dmg otherwise';
@@ -4417,7 +4489,7 @@ function onWheelTap(e){
   closeElemWheel();
   castElemental(cat,seg.dataset.elem,+seg.dataset.tier,false);
 }
-function canSkin(who){ const st=gs[who]; return !catLocked(who,'protect')&&st.mana>=skinOf(who).cost; }
+function canSkin(who){ const st=gs[who], k=knownOf(who); return !(k&&!k.skin)&&!catLocked(who,'protect')&&st.mana>=skinOf(who).cost; }
 function castSkin(){
   const who=gs.turnPlayer, sk=skinOf(who);
   if(!canSkin(who)) return;
@@ -4442,7 +4514,7 @@ function castElemental(cat,elemId,tier,self){
   const sp=self?null:sigAt(who,cat,elemId);
   if(sp){ castSignature(sp.id,tier); return; }
   const seal=self&&cat==='protect';
-  if(seal?!canSeal(who):(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)||(!self&&elemForbidden(who,elemId,cat)))) return;
+  if(seal?!canSeal(who):(elemCost(who,cat,tier)>gs[who].mana||catLocked(who,cat)||(self?cleanseUnlearnt(who,tier):elemForbidden(who,elemId,cat)||ringUnlearnt(who,tier)))) return;
   const el=elemById(elemId);
   const spell={name:describeElemAction({cat,elem:elemId,tier,self}).name, icon:el.icon,
     element:elemId, col:el.col, tier, glyphs:cat==='damage'?ELEM_GLYPHS[elemId]:undefined};
@@ -5009,7 +5081,7 @@ function sealTargetable(who){
   return !st.wardSealed||(!!seatCfg(who).sealAll&&(st.wardInner||[]).some(l=>!l.sealed));
 }
 function isSeal(action){ return action.cat==='protect'&&!!action.self; }
-function canSeal(who){ return sealTargetable(who)&&!catLocked(who,'protect')&&!hasFreeSpell(who)&&gs[who].mana>=sealCost(who); }
+function canSeal(who){ return !catUnlearnt(who,'protect')&&sealTargetable(who)&&!catLocked(who,'protect')&&!hasFreeSpell(who)&&gs[who].mana>=sealCost(who); }
 // Draws the seal: a slowly turning ring of gold Arcana glyphs around a ward (scale: that layer's size)
 const SEAL_GLYPHS=['⊕','θ','Φ','∞','Ω','✸'];
 function drawWardSeal(x,y,sz,scale,fade,t){
@@ -6117,7 +6189,9 @@ function elemAIChooseCore(who){
   }
   else if(sectors.length) choice=sectors[Math.floor(_rng()*sectors.length)];   // anything beats waiting
   if(cat==='damage'&&boost&&boost.elem){ const s=sectors.find(x=>x.elem===boost.elem); if(s) choice=s; }
-  if(!choice) return cleanseOk?cleanse():{type:'el',cat:'pass',ok:true};
+  if(!choice&&cleanseOk) return cleanse();
+  // a wizard who hasn't learnt this wheel's magic (the hero's held-back sparring partners) uses its Action
+  if(!choice) return knownOf(who)&&ACTIONS[cat]?{type:'el',cat,act:ACTIONS[cat].id,target:tgt,ok:true}:{type:'el',cat:'pass',ok:true};
 
   let tier=3;
   while(tier>1&&!sectorOk(who,cat,choice.elem,tier)) tier--;
@@ -6599,6 +6673,7 @@ const mc=document.getElementById('mcanvas');
 const mx=mc.getContext('2d');
 
 function puzzleFinish(ok,cb){
+  if(mgStandalone){ const f=mgStandalone; mgStandalone=null; mgKnownOverride=undefined; f(ok); return; }
   battleRunning=true;
   lastFrameTime=0;
   showScreen('battle-screen');
@@ -7237,7 +7312,7 @@ function launchPatternEcho(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false,'forbidden',ai); // wrong glyph in hard = fail
+          if(diffName==='hard'&&mgKnows(ai)) finish(false,'forbidden',ai); // wrong glyph in hard = fail
           return;                              // easy/normal: silently ignore
         }
         if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
@@ -7351,7 +7426,8 @@ function launchPatternEcho(spell,cb){
         const isSpell=si!==-1;
 
         let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
-        if(isHard){
+        if(isHard&&!mgKnows(ai)){ bgCol='#0b0b0b'; bgDark='#040404'; strokeCol='#181818'; textCol='#000'; blur=0; textAlpha=0; }   // not learnt: a blank key
+        else if(isHard){
           // All glyphs show as neutral arcane — player must rely on memory
           bgCol='#2d1a3d'; bgDark='#100820';
           strokeCol='#44285888'; textCol='#7755aa';
@@ -7445,7 +7521,7 @@ function mgGlyphGame(spell,cb,opts){
     for(let ai=0;ai<12;ai++){
       const tp=tPos[ai];
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
-        if(!SPELL_IDX.includes(ai)){ if(diffName==='hard') finish(false,'forbidden',ai); return; }
+        if(!SPELL_IDX.includes(ai)){ if(diffName==='hard'&&mgKnows(ai)) finish(false,'forbidden',ai); return; }
         if(ai!==seq[playerSeq.length]){ finish(false,'wrong',ai); return; }
         playerSeq.push(ai);
         if(playerSeq.length===seq.length) finish(true);
@@ -7491,7 +7567,8 @@ function mgGlyphGame(spell,cb,opts){
       for(let ai=0;ai<12;ai++){
         const tp=tPos[ai], si=SPELL_IDX.indexOf(ai), isSpell=si!==-1;
         let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
-        if(isHard){ bgCol='#2d1a3d'; bgDark='#100820'; strokeCol='#44285888'; textCol='#7755aa'; blur=4; textAlpha=1; }
+        if(isHard&&!mgKnows(ai)){ bgCol='#0b0b0b'; bgDark='#040404'; strokeCol='#181818'; textCol='#000'; blur=0; textAlpha=0; }   // not learnt: a blank key
+        else if(isHard){ bgCol='#2d1a3d'; bgDark='#100820'; strokeCol='#44285888'; textCol='#7755aa'; blur=4; textAlpha=1; }
         else if(isSpell){ const k=opts.keyCols[si]; bgCol=k.col; bgDark=opts.keyDark; strokeCol=k.col+'88'; textCol=k.lit; blur=8; textAlpha=1; }
         else { bgCol='#0f0f0f'; bgDark='#050505'; strokeCol='#1e1e1e'; textCol='#2a2a2a'; blur=0; textAlpha=0.35; }
         mx.save(); mx.shadowColor=bgCol; mx.shadowBlur=blur;
@@ -7754,7 +7831,7 @@ function launchRockfallPattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false,'forbidden',ai); // wrong glyph in hard = fail
+          if(diffName==='hard'&&mgKnows(ai)) finish(false,'forbidden',ai); // wrong glyph in hard = fail
           return;                              // easy/normal: silently ignore
         }
         if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
@@ -7920,7 +7997,8 @@ function launchRockfallPattern(spell,cb){
         const isSpell=si!==-1;
 
         let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
-        if(isHard){
+        if(isHard&&!mgKnows(ai)){ bgCol='#0b0b0b'; bgDark='#040404'; strokeCol='#181818'; textCol='#000'; blur=0; textAlpha=0; }   // not learnt: a blank key
+        else if(isHard){
           // All glyphs show as neutral arcane — player must rely on memory
           bgCol='#2d1a3d'; bgDark='#100820';
           strokeCol='#44285888'; textCol='#7755aa';
@@ -8108,7 +8186,7 @@ function launchLightningPattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false,'forbidden',ai);
+          if(diffName==='hard'&&mgKnows(ai)) finish(false,'forbidden',ai);
           return;
         }
         if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
@@ -8265,7 +8343,8 @@ function launchLightningPattern(spell,cb){
         const isSpell=si!==-1;
 
         let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
-        if(isHard){
+        if(isHard&&!mgKnows(ai)){ bgCol='#0b0b0b'; bgDark='#040404'; strokeCol='#181818'; textCol='#000'; blur=0; textAlpha=0; }   // not learnt: a blank key
+        else if(isHard){
           bgCol='#0d1020'; bgDark='#05080f';
           strokeCol='#1a2a4088'; textCol='#3355aa';
           blur=4; textAlpha=1;
@@ -8416,7 +8495,7 @@ function launchShadowCirclePattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false,'forbidden',ai); // wrong glyph in hard = fail
+          if(diffName==='hard'&&mgKnows(ai)) finish(false,'forbidden',ai); // wrong glyph in hard = fail
           return;                              // easy/normal: silently ignore
         }
         if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
@@ -8597,7 +8676,8 @@ function launchShadowCirclePattern(spell,cb){
         const isSpell=si!==-1;
 
         let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
-        if(isHard){
+        if(isHard&&!mgKnows(ai)){ bgCol='#0b0b0b'; bgDark='#040404'; strokeCol='#181818'; textCol='#000'; blur=0; textAlpha=0; }   // not learnt: a blank key
+        else if(isHard){
           // All glyphs show as neutral arcane — player must rely on memory
           bgCol='#2d1a3d'; bgDark='#100820';
           strokeCol='#44285888'; textCol='#7755aa';
@@ -8763,7 +8843,7 @@ function launchIcePattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false,'forbidden',ai);
+          if(diffName==='hard'&&mgKnows(ai)) finish(false,'forbidden',ai);
           return;
         }
         if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
@@ -8896,7 +8976,8 @@ function launchIcePattern(spell,cb){
         const isSpell=si!==-1;
 
         let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
-        if(isHard){
+        if(isHard&&!mgKnows(ai)){ bgCol='#0b0b0b'; bgDark='#040404'; strokeCol='#181818'; textCol='#000'; blur=0; textAlpha=0; }   // not learnt: a blank key
+        else if(isHard){
           // All glyphs neutral icy — player must rely on memory
           bgCol='#0a1825'; bgDark='#030810';
           strokeCol='#1a3a5888'; textCol='#2a6888';
@@ -9060,7 +9141,7 @@ function launchArcanePattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false,'forbidden',ai);
+          if(diffName==='hard'&&mgKnows(ai)) finish(false,'forbidden',ai);
           return;
         }
         if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
@@ -9184,7 +9265,8 @@ function launchArcanePattern(spell,cb){
         const isSpell=si!==-1;
 
         let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
-        if(isHard){
+        if(isHard&&!mgKnows(ai)){ bgCol='#0b0b0b'; bgDark='#040404'; strokeCol='#181818'; textCol='#000'; blur=0; textAlpha=0; }   // not learnt: a blank key
+        else if(isHard){
           bgCol='#1a0035'; bgDark='#090015';
           strokeCol='#3a106588'; textCol='#8844cc';
           blur=4; textAlpha=1;
@@ -9373,7 +9455,7 @@ function launchDispelPattern(spell,cb){
       if(px>=tp.x&&px<tp.x+TS&&py>=tp.y&&py<tp.y+TS){
         const isSpell=SPELL_IDX.includes(ai);
         if(!isSpell){
-          if(diffName==='hard') finish(false,'forbidden',ai);
+          if(diffName==='hard'&&mgKnows(ai)) finish(false,'forbidden',ai);
           return;
         }
         if(ai!==seq[playerSeq.length]){finish(false,'wrong',ai);return;}
@@ -9537,7 +9619,8 @@ function launchDispelPattern(spell,cb){
         const isSpell=si!==-1;
 
         let bgCol,bgDark,strokeCol,textCol,blur,textAlpha;
-        if(isHard){
+        if(isHard&&!mgKnows(ai)){ bgCol='#0b0b0b'; bgDark='#040404'; strokeCol='#181818'; textCol='#000'; blur=0; textAlpha=0; }   // not learnt: a blank key
+        else if(isHard){
           bgCol='#1a0a2a'; bgDark='#0a0415';
           strokeCol='#40186888'; textCol='#9966cc';
           blur=4; textAlpha=1;

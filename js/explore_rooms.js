@@ -45,8 +45,13 @@ const TYPES = {
   library:  {name:'The Collegium Library', floor:'y', wall:'panel', back:[['bookcase2'],['bookLadder'],['bookcase2'],['bookcase']], floor_:[['lectern'],['readingDesk'],['bookPile'],['rug']], big:true, size:[15,10], shelves:true, open:true},
   wenna:    {name:'Wenna\'s Bakehouse', floor:'l', wall:'plaster', back:[['hearthPot'],['cupboard']], floor_:[['diningTable'],['pantry']]},
   // Wrenford (a safe town)
-  wrenInn:  {name:'The Wren\'s Nest',     floor:'w', wall:'plaster', back:[['hearthPot'],['cupboard'],['wineRack']], floor_:[['diningTable'],['roundTable'],['bed'],['rug']], big:true},
+  wrenInn:  {name:'The Wren\'s Nest',     floor:'w', wall:'plaster', back:[['hearthPot'],['cupboard'],['wineRack']], floor_:[['diningTable'],['roundTable'],['bed'],['rug']], big:true, npcs:['landlady','squop']},
   remnant:  {name:'The Remnant Library', floor:'y', wall:'panel', back:[['bookcase2'],['bookLadder'],['bookcase2'],['bookcase']], floor_:[['lectern'],['readingDesk'],['bookPile'],['rug']], big:true, size:[15,10], shelves:true, open:true},
+  // the University Year (js/explore_year.js): the lecture theatre and examination hall; the Undercroft
+  // under the Covered Market (a crypt for now: sewer art is still to come, docs/art-prompts.md)
+  lectures: {name:'The Examination Schools', floor:'y', wall:'panel', back:[['lectern'],['bookcase2'],['bookcase']], floor_:[['pew'],['pew2'],['pew'],['pew2']], rows:true, open:true, big:true, size:[15,9], npcs:['lecturer','examiner']},
+  undercroft:{name:'The Undercroft', floor:'l', wall:'stone', back:[['barricade'],['jarShelf'],['weaponRack']], floor_:[['pantry'],['workbench'],['bookPile']], big:true, open:true},
+  undercroft2:{name:'Beneath the Orrery', floor:'l', wall:'stone', back:[['altar'],['crystalDisplay']], floor_:[['bookPile'],['alembic']], big:true, open:true, npcs:['ashgrove','partnerLost']},
   lab:      {name:'The Warded Laboratory', floor:'l', wall:'stone', back:[['jarShelf'],['crystalDisplay'],['jarShelf']], floor_:[['cauldron'],['alembic'],['workbench'],['herbs'],['alembic']], big:true},
   lamplighter:{name:'The Lamplighter\'s House', floor:'w', wall:'stone', back:[['bookcase'],['cupboard']], floor_:[['roundTable'],['rockingChair'],['bookPile']]},
 };
@@ -108,6 +113,7 @@ function typeFor(spec,r){
 
 // the encounter: weights by how near the Wound (depth 0..1); outside the city nothing hostile
 function rollEvent(spec,r){
+  if(spec.ev) return spec.ev;                         // a story room says what's in it (the Undercroft's smugglers)
   if(spec.fixed) return {type:spec.fixed};
   if(spec.safe) return {type:'empty'};                // a safe town: people's houses, nothing to fight or take
   const d=spec.depth, W=spec.city?{empty:26,treasure:14,spill:14,echoes:16+d*12,party:9+d*9,wounded:8}:{empty:7,treasure:3};
@@ -271,6 +277,11 @@ function build(spec,rects){
   } else if(type==='safehouse'||type==='inn'||type==='wrenInn'){
     lore.rest=[type==='safehouse'?'The Keeper\'s Hearth':'The Fire', type==='wrenInn'?'A good fire, a bed upstairs and a landlady who has seen every kind of traveller come in off the east road. "Potions behind the bar, if you need one. Eight gold."':type==='inn'?'A good fire and a bed upstairs. The landlady asks no questions.':'Old Marda keeps the Rest for any gleaner who keeps the peace inside it. "No blades drawn under my roof, and no spill sold either. Sit. Eat."'];
     const k=objects.find(o=>o[0]==='safeHearth'||o[0]==='hearthPot'); if(k) k[3].lore='rest';
+  }
+  // a fixed room's own people (the lecturer and examiner, the landlady and the winks players)
+  for(const role of D.npcs||[]){
+    const p=spot(70,80,24)||centre;
+    npcs.push({role, x:p[0], y:p[1]}); boxes.push({x:p[0]-20,y:p[1]-60,w:40,h:60});
   }
   // lore books
   const books=[];

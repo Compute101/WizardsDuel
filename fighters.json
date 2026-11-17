@@ -443,5 +443,114 @@
     ],
     "desc": "An Echo of Corvanthe, remade in dark. Its blow is a dark strike (a ward stops it); it shrugs off dark and its opposite tears it apart.",
     "arena": "ruins"
+  },
+  "boxer_tolley": {
+    "fighter": true,
+    "explore": true,
+    "sprite": "sprites/soldier.png",
+    "face": "portraits/small/soldier.jpg",
+    "spells": [],
+    "arena": "library",
+    "placeholder": "sprites/folk/boxer_tolley.png",
+    "name": "TWO-STEP TOLLEY",
+    "title": "Boxer",
+    "col": "#d8b070",
+    "hp": 22,
+    "phys": {
+      "atk": 3
+    },
+    "pattern": {
+      "cycle": [
+        "damage",
+        "damage",
+        "protect"
+      ]
+    },
+    "taunts": [
+      "One, two…",
+      "Keep up, keep up!",
+      "Light on my feet."
+    ],
+    "desc": "A quick little man, light on his toes. Like most boxers, a creature of habit."
+  },
+  "boxer_meg": {
+    "fighter": true,
+    "explore": true,
+    "sprite": "sprites/soldier.png",
+    "face": "portraits/small/soldier.jpg",
+    "spells": [],
+    "arena": "library",
+    "placeholder": "sprites/folk/boxer_meg.png",
+    "name": "MIRROR MEG",
+    "title": "Boxer",
+    "col": "#c890b0",
+    "hp": 26,
+    "phys": {
+      "atk": 3
+    },
+    "pattern": {
+      "mirror": true
+    },
+    "taunts": [
+      "Whatever you've got.",
+      "Show me again.",
+      "I learn fast."
+    ],
+    "desc": "Lean and watchful. Somehow she always seems to know what you've just done."
+  },
+  "boxer_horace": {
+    "fighter": true,
+    "explore": true,
+    "sprite": "sprites/soldier.png",
+    "face": "portraits/small/soldier.jpg",
+    "spells": [],
+    "arena": "library",
+    "placeholder": "sprites/folk/boxer_horace.png",
+    "name": "HORACE “THE CLINCH” WEBB",
+    "title": "Boxer",
+    "col": "#b0a080",
+    "hp": 32,
+    "phys": {
+      "atk": 4
+    },
+    "pattern": {
+      "clinch": true
+    },
+    "taunts": [
+      "Come here.",
+      "Nowhere to hide.",
+      "Big hug for you."
+    ],
+    "desc": "A huge, patient grappler. He waits for his moment."
+  },
+  "boxer_jem": {
+    "fighter": true,
+    "explore": true,
+    "sprite": "sprites/soldier.png",
+    "face": "portraits/small/soldier.jpg",
+    "spells": [],
+    "arena": "library",
+    "placeholder": "sprites/folk/boxer_jem.png",
+    "name": "GENTLEMAN JEM",
+    "title": "Champion of the Fancy",
+    "col": "#e0d0a0",
+    "hp": 36,
+    "phys": {
+      "atk": 5
+    },
+    "pattern": {
+      "cycle": [
+        "damage",
+        "protect",
+        "dispel"
+      ],
+      "hurt": "counter"
+    },
+    "taunts": [
+      "En garde, as they say.",
+      "A pleasure.",
+      "Now we're boxing."
+    ],
+    "desc": "The Champion: elegant, orderly, never rattled. Until he is."
   }
 }

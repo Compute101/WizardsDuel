@@ -141,8 +141,8 @@ function text(hero){
   const P=t=>'<p>'+t+'</p>';
   return inkSvg('city')+'<h2>The Unweaving</h2>'+
     P('For seven hundred years <b>Corvanthe</b> was the greatest seat of learning in the world: a city of spires and lecture halls, held together by a Great Weave of magic older than its walls.')+
-    P('In its last year a curse lay on the city. Its Council found, in the oldest of its books, a Word that would unpick the curse, and voted seven to one to speak it. Only Magister Orrin voted no. “You do not know what it will unweave,” he said.')+
-    P('At the hour of lowest tide, beneath the Collegium, the Archmage spoke the Unweaving Word. <i>The Word did not know where to stop.</i>')+
+    P('Fifteen years ago, in its last year, a curse lay on the city. Its Council found, in the oldest of its books, a Word that would unpick the curse, and voted seven to one to speak it. Only Magister Orrin voted no. “You do not know what it will unweave,” he said.')+
+    P('On Midsummer\'s Eve, at the hour of lowest tide, beneath the Collegium, the Archmage spoke the Unweaving Word. <i>The Word did not know where to stop.</i>')+
     P('In one bright hour the Weave came apart. The heart of the city became <b>the Wound</b>. Its eight districts burned and froze, flooded and fell, each soaked through with a single element. And the people of Corvanthe, scholars and bakers, lamplighters and children, were remade as <b>Echoes</b>: shapes of living fire and stone and storm that still walk the streets they knew, and cannot die. Break one and it gathers itself again at the Wound, and walks home.')+
     inkSvg('scales')+'<h2>Quintessence</h2>'+
     P('What an Echo leaves behind when it breaks is <b>quintessence</b>: elemental matter in its rawest form. Cinderglass and rimeheart, stormglass and nightglass. On the street they call it <b>spill</b>.')+
@@ -152,7 +152,7 @@ function text(hero){
     P('So the University sent out its <b>Finders</b>: quiet men and women with an eye for the gift, who travel the market towns and listen for the stories nobody else believes.')+
     P('In your village the story was about you: <span class="xi-omen" style="--xc:'+el.col+'">'+omen+'</span>. A Finder heard it, came to see, and stayed watching a while longer than was polite. There was a gift in you, a small one, with the colour of <b class="xi-omen" style="--xc:'+el.col+'">'+esc(el.name)+'</b> in it.')+
     ages.map(P).join('')+
-    P('The Finder wrote you a letter of introduction to the University of <b>Wrenford</b>, founded by the scholars of Corvanthe who were away on the day of the Unweaving, and who swore that nothing like it would ever be done again.')+
+    P('The Finder wrote you a letter of introduction to the University of <b>Wrenford</b>, founded twelve years ago by the scholars of Corvanthe who were away on the day of the Unweaving, and who swore that nothing like it would ever be done again.')+
     inkSvg('wrenford')+'<h2>Wrenford</h2>'+
     P('Now, after many days on the road, you stand at the edge of Wrenford with the letter in your hand, <b>'+name+'</b>. Before anyone will let you near Corvanthe, you must <b>matriculate</b>: be enrolled, tested, and taught the first things every mage must know.')+
     '<div class="xi-goal"><b>Your first task</b>Report to the Senior Tutor, <b>Dr Penhallow</b>, in <b>Founders’ Quad</b>. The Head Porter by the Lodge will point the way. And keep off the grass.</div>'+

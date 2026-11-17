@@ -731,11 +731,11 @@
  ],
  "lore": {
   "high": [
-   "The High",
-   "Wrenford's great street, curving down from Carfax to Orrin Bridge. Gowns and market carts share it, and nobody casts a spell on it: Statute the Fourth."
+   "The Hythe",
+   "Wrenford's great street, curving down from Carrefax to Orrin Bridge. Gowns and market carts share it, and nobody casts a spell on it: Statute the Fourth."
   ],
   "carfax": [
-   "Carfax Tower",
+   "Carrefax Tower",
    "The town's tower at the crossroads, older than the University. The brass orrery on its roof was a gift from the scholars, and it turns the right way, which they are very proud of."
   ],
   "memorial": [
@@ -768,19 +768,19 @@
   ],
   "orrery": [
    "The Great Orrery",
-   "A brass model of the heavens, the size of a cottage, in the middle of Radcliffe Square. It was built to replace the one in the Collegium. This one is wound by a clerk each morning, with a key, by hand."
+   "A brass model of the heavens, the size of a cottage, in the middle of Radwell Square. It was built to replace the one in the Collegium. This one is wound by a clerk each morning, with a key, by hand."
   ],
   "square": [
-   "Radcliffe Square",
+   "Radwell Square",
    "The heart of the University, laid with the flags of a demolished cattle market. Scholars cross it with their gowns flapping and their heads down, the way people walk through a churchyard."
   ],
   "heads": [
    "The Founders",
-   "Stone busts of the University's founders along Broad Street. Every one of them is looking east, toward Corvanthe, though the sculptor swears he carved them looking south."
+   "Stone busts of the University's founders along Wide Street. Every one of them is looking east, toward Corvanthe, though the sculptor swears he carved them looking south."
   ],
   "proctors": [
    "The Proctors' Office",
-   "Where the Proctors keep the Statutes, and the Bulldogs keep the Proctors. The board by the door lists the week's fines. \"Unlicensed conjuring, Broad Street: five crowns. Levitating a bicycle: ten.\""
+   "Where the Proctors keep the Statutes, and the Bulldogs keep the Proctors. The board by the door lists the week's fines. \"Unlicensed conjuring, Wide Street: five crowns. Levitating a bicycle: ten.\""
   ],
   "statutes": [
    "The Statutes of Caution",
@@ -848,11 +848,11 @@
   ],
   "inn": [
    "The Wren's Nest",
-   "The coaching inn on Cornmarket, where every new arrival spends their first night. The landlady keeps a room free for anyone who comes in from the east road looking the way people look who come in from the east road."
+   "The coaching inn on Cornmart, where every new arrival spends their first night. The landlady keeps a room free for anyone who comes in from the east road looking the way people look who come in from the east road."
   ],
   "pub": [
    "The Bird and Bell",
-   "The scholars' tavern on St Giles. Arguments here have ended friendships, started colleges, and in one case set fire to the snug."
+   "The scholars' tavern on St Guilles. Arguments here have ended friendships, started colleges, and in one case set fire to the snug."
   ],
   "garden": [
    "The Physic Garden",
@@ -1008,6 +1008,11 @@
    "y": 2265.6
   },
   {
+   "role": "fancy",
+   "x": 780.8,
+   "y": 2316.8
+  },
+  {
    "role": "fizzwick",
    "x": 2880,
    "y": 537.6
@@ -1058,7 +1063,7 @@
    "y": 1267.2
   },
   {
-   "role": "tamsin",
+   "role": "marigold",
    "x": 2227.2,
    "y": 1267.2
   },

@@ -5,7 +5,7 @@ Baldur's Gate: countries, cities, towns and villages, with wizards stationed aro
 You meet them, they start stories, and some join your party. Battles use the existing duel
 screen. Nothing here is built yet beyond Hollowmere (see "Explore mode" in `CLAUDE.md`).
 
-Status: **vision and names agreed; steps 1, 3, 4 and 6 built; step 2 has all eight outer rings and all eight inner districts (the centre, the Wound, waits); interiors built; Wrenford, the University town and tutorial, built.**
+Status: **vision and names agreed; steps 1, 3, 4 and 6 built; step 2 has all eight outer rings and all eight inner districts (the centre, the Wound, waits); interiors built; Wrenford, the University town and tutorial, built; the University Year (learning magic): built end to end, awaiting a playthrough.**
 
 ## Decisions so far
 
@@ -168,8 +168,8 @@ edge, about 512 × 768 for the weak kind (taller for the strong kind), detailed 
 
 Far west of Corvanthe (as far as two English cities apart), on the river Wren: the new University,
 founded by the scholars of Corvanthe who weren't in the city on the day. As if Oxford had blown up
-and its survivors had founded the next university somewhere quiet; Oxford-coded throughout (the
-High, Carfax, Broad Street, quads behind gate towers, Bulldogs and Proctors, the Meadow and punts).
+and its survivors had founded the next university somewhere quiet; Oxford-coded throughout, with the names bent a little so they aren't the real ones (the
+Hythe, Carrefax, Wide Street, quads behind gate towers, Bulldogs and Proctors, the Meadow and punts).
 It is not ruined, and it is chastened: the Statutes of Caution (no working larger than its maker,
 none without a witness, none that can't be undone, none in the street, no Word not understood; "VI.
 Don't be clever" in pencil), a memorial to Magister Orrin (the one councillor who voted against the
@@ -179,6 +179,303 @@ It is the safe zone and the giant tutorial: a new game starts here, the dons (ro
 the basics through the Matriculation quest, and later it is where you make spells (a workshop at
 Lantern College, not built yet). Built: see "Wrenford" in `CLAUDE.md`. Next: more quests and
 colourful characters, the spell workshop, and a road map between Wrenford and Hollowmere.
+
+## The University Year: learning magic
+
+**Brief from the user:** at the start you can't do any magic; learning it is why you're at the University.
+A series of quests like university life (the Library to learn glyphs before you can pick them, sparring
+with a tutorial partner, lectures on the elements, practising in the Laboratory, a club with fighters
+whose patterns you learn, a pub game, a final exam where spells are called out, retakes without limit),
+and every one unlocks part of your wheel. The worry: it could feel like school. So there is a mystery
+running underneath, real fights, incidents that break into the timetable, the sewers, and the country
+round the town once you can defend yourself.
+
+### The rule that keeps it from being school
+
+**Nothing is taught that you don't use in a real fight within the next quarter of an hour.** Every
+lesson ends in a reason to use it: the boxing club ends in a brawl in the street, the Fire lecture ends
+in a bin fire in the Covered Market that turns out to be an Echo, the ward lecture comes the week the
+sewers open. And **the plot interrupts the timetable**, never the other way round: about every second
+lesson, something happens.
+
+Second rule: **you can skip it.** Every exam can be sat early, with as many retakes as you like, so a
+player can test out of one term's lessons. And on day one, like telling Gorion you're ready to leave
+Candlekeep, the Senior Tutor offers the whole Year:
+
+> "You've the look of someone who's done this before. If you like, you can sit Finals this afternoon."
+
+- **Sit Finals now:** the Finals exam and viva straight away (retakes without limit). Pass and you
+  graduate with the standard knowledge (home + 3 electives you pick on the spot, all glyphs, all three
+  wheels, every ring), your BA hood, and the starting kit only. The Proctors' licence comes with it, so
+  the country and the road east are open. Good for returning players and for playtesting.
+- **A debug grant** (Test menu / `Explore.knowAll()`) does the same with no exam, for testing only.
+- **What skipping costs:** the Year's quests are where the loot is. Every lesson, club rung, incident and
+  plot beat pays (table below), and a skipper misses all of it, plus the Boxing Club's prize and
+  the tutorial partner as an ally. The mystery doesn't vanish: a skipper hears rumours of the Echo in
+  the market, and All Absent's plot can still be played after graduating (the Undercroft grate stays
+  there), as a side story with its rewards. The Tutor's offer says so plainly ("you'll miss a good deal,
+  mind"), so nobody skips by accident.
+
+**What the Year pays** (rough targets, to be tuned; a full Year should leave you clearly better off than
+a skipper, about 250 gold, 12–15 potions and 20 spill all told):
+
+| Source | Pays |
+|---|---|
+| Each Library primer passed | 5 gold (the Keeper's "book prize") |
+| Each lecture's questions right | a potion |
+| Each Laboratory practical | 2 spill of that element (Fizzwick's leftovers) |
+| Each Boxing Club rung | 10 gold purse; the champion: a title and the club's prize (+1 Attack) |
+| Each spar won against your tutorial partner | 5 gold (a wager); they join you in Trinity |
+| Collections (each) | 30 gold, 2 potions; a First (no retakes) adds a trinket |
+| Incidents | 5–20 gold, spill from the Echo, sometimes a clue |
+| Plot beats | the smugglers' cache: spill of every kind, potions, gold |
+| Winks at the pub | stakes (small, rising with the rule set) |
+| Finals passed the long way | 50 gold, and the College's gift (a choice of a staff or a charm, once items exist) |
+
+### What you know (the hero's magic)
+
+A made wizard starts knowing **only the Actions** (Attack, Guard, Grapple): fists and a staff. The hero
+record gets `magic`, saved with it:
+
+| Field | Starts | Unlocked by |
+|---|---|---|
+| `glyphs` | none | the Library: each primer teaches 2–3 of the 12 |
+| `elems` | none | a lecture on that element **and** its 4 glyphs **and** a Laboratory practical |
+| `cats` | none | Damage (Michaelmas), Protection (Hilary), Dispel (Trinity); Seal Ward and Cleanse Self come with their category |
+| `rings` | 1 (inner) | middle ring: Collections (end of Michaelmas); outer ring: Finals |
+| `skin` | no | Hilary, with Protection: the Master of the Schools' practical on blows (wards stop magic; Ironskin stops fists and blades). Core, not optional |
+
+**In battle** (`js/game.js`): a seat's `cfg.known` (only the hero has one; the roster is unaffected).
+An unknown element's sector draws like a forbidden one but with a 📖 instead of ⛔, and its hover says
+where it's taught; an unknown category's whole wheel is locked; unknown rings don't take taps. The
+minigame keyboard blanks glyphs you haven't learnt (the hard-mode "nothing greyed out" still only shows
+the ones you know). Dispel needs ∞ ⊕ ∇ θ, glyphs from three other elements' sets, so it's naturally
+last.
+
+**Elements and the ban.** Your **home element** (picked at creation) is your first lecture, and its
+opposite is **barred** for good, as the engine's bans already work: Fire ↔ Water, Air ↔ Earth,
+Lightning ↔ Ice, Arcane ↔ Dark. So there's no compulsory element: a Dark student can never cast Arcane,
+and an Arcane student never Dark. A graduate knows **home + 3 electives**, chosen from the six elements
+that are neither home nor barred (the lecture list offers exactly those; the barred one's lecture hall
+door says why: "Not for you, I'm afraid. Your gift runs the other way."). The other three of the six come
+later, from teachers out in the world.
+
+**Glyphs are never barred.** A glyph isn't owned by one element (∇ is in five sets), and Dispel needs
+∞ ⊕ ∇ θ whatever your element, so every student can learn all 12. The ban stops the element's *sector*,
+not its runes.
+
+### The three terms
+
+Oxford-coded, like the rest of Wrenford: **Michaelmas, Hilary, Trinity.** Each term has the same shape,
+so players learn the rhythm: **lessons → a club rung → an incident → a plot beat → an exam.** Days move
+with the existing clock; lectures happen at set hours (the timetable in the satchel's Journal), but a
+missed lecture just comes round again the next day, so nothing is lost by exploring.
+
+**Michaelmas: "Fists, then fire."** You can't cast. Matriculation (built) becomes its first week.
+- Boxing Club (Actions only) and the first sparring partner.
+- Library: primers for your home element's 4 glyphs.
+- Lecture: your home element. Laboratory practical: cast it at a dummy 3 times. **Damage unlocked, inner ring, one element.**
+- Incident: the market fire (a weak Echo, in Wrenford, which should be impossible). Plot starts.
+- Collections (the term exam): middle ring.
+
+**Hilary: "Walls."** Protection, a second element, Seal Ward.
+- Lecture on wards (and on opposites: why the opposite element unravels a ward).
+- The Duelling Society opens (wizard spars, a ladder).
+- The **Proctors' licence**: once you can ward, you're allowed out of bounds — the countryside round Wrenford opens.
+- The Undercroft (sewers) opens through the plot.
+
+**Trinity: "Unmaking."** Dispel, Cleanse, the third element, Arcane; then Finals.
+- Finals: graduation, the outer ring, and the field trips to Corvanthe (Weizan and Fizzwick, already planned).
+
+### The activities
+
+- **The Library (glyphs).** The Remnant Library's primers each teach glyphs. Reading isn't enough:
+  Mr Quill tests you at the desk with a short flash-card round (a glyph is shown, pick its name or the
+  element it belongs to; or the reverse). Pass and the glyphs are yours. Uses the glyph glow colours and
+  the keyboard from the minigames, so it's practice for them. Lore books stay optional.
+- **Lectures (elements).** In the lecture theatre (a new room type: tiered benches, a lectern, a
+  demonstration bench). Short: the lecturer gives four or five lines with a live demonstration (the
+  element's strike VFX on a dummy), then asks two questions (its opposite; what its rider does). Right
+  answers give a small bonus (a potion, a better grade), wrong ones cost nothing. Each lecturer is a
+  character: the Fire lecturer singes the front row, the Ice one lectures in a fur hat, the Air one
+  never stops pacing. Lecturers can be the dons who are still to be invented.
+- **The Laboratory (practicals).** Fizzwick's Warded Laboratory, inside: cast the new element's
+  minigame at a target dummy until you've succeeded 3 times (retakes free, on the difficulty you play).
+  This is where people learn the minigames without a fight on. Later practicals: hold a ward against a
+  bottled Echo for 3 rounds; dispel a ward off a dummy.
+- **Your tutorial partner.** A fellow first-year (invented; a rival-friend, Ron to your Harry or Draco
+  to it, picked by your element), sparred at the end of each term's lessons. They learn as you do:
+  their wheel unlocks on the same schedule, so each spar shows what the new thing is for. They turn up
+  in the plot and fight beside you in it (the first ally you get).
+- **A club: the Boxing Club** (the Schools, evenings). Actions only, a ladder of named boxers, each with
+  a **pattern** you can learn to read: one always Guards after two Attacks, one Grapples whenever you
+  Guarded last, one mirrors your last pick, the champion changes pattern when hurt. These are fighters
+  (`fighters.json`) with a scripted `pattern` instead of `fighterAIChoose`'s reading; the ring is the
+  duel screen with only Actions. Beating the ladder: a title and **+1 Attack** for good (`phys.atk`), the one
+  thing only the club gives; clubs are optional, so nothing core is locked behind one. Later clubs (one is enough
+  to start): the **Duelling Society** (wizard spars, Hilary) and the **Boat Club** (a rowing timing
+  minigame on the Wren; optional, for the rhythm crowd).
+- **The pub game: Winks at the Wren's Nest.** The regulars play the Tabletop version of Wizard's Duel
+  with tiddlywinks for small stakes. It's `js/tabletop.js`, already written with its own AI, played
+  Beginner rules first; the regulars get tougher (Normal, then Advanced rules) as you win. Teaches the
+  rules of the table game by playing it, earns gold, and the pub is where you overhear plot clues.
+- **Exams.** In the Examination Schools (a big hall room). An examiner calls a spell ("Lesser ward,
+  Ice." "Greater strike, Fire." "Cleanse."), you cast it through its minigame against the clock, 6 to 10
+  calls, pass mark 70%. Fail and you may sit again at once, as often as you like; each retake reshuffles
+  the calls. Collections (Michaelmas, Hilary) are short; Finals cover everything and end with a viva:
+  a spar against an examiner. Gowns: Commoner, then Scholar, then a BA hood on graduation.
+
+### The mystery: All Absent
+
+The plot that runs under the timetable, tied to lore that already exists (All Absent College, the
+Statutes of Caution, the Orrin Memorial, Ponder's lost satchel).
+
+**What's really happening:** a Fellow of All Absent College, who lost everyone on the day of the
+Unweaving, has been smuggling spill into Wrenford to finish a Word that would **undo** the Unweaving
+and bring the Echoes back as people. Sympathetic, and wrong: the Word is the same kind of working that
+caused the disaster. The spill is cached in the Undercroft, and it's leaking: that's why Echoes keep
+turning up in a town that should have none.
+
+**The beats** (one per half-term or so, each with a fight):
+1. *Michaelmas.* The market fire is an Echo. The Bulldogs call it a prank. Ponder's satchel (built)
+   holds a receipt for spill bought in bulk, not by him. Someone breaks into the Laboratory's spill store.
+2. *Michaelmas end.* A night-time chase over the rooftops of Founders' Quad (walk the map at night with
+   the Bulldogs after you: being out after the bell is against the Statutes); you lose them at the Memorial.
+3. *Hilary.* The Library's slips show a forbidden book borrowed under a dead Fellow's name. Mr Quill helps.
+   The Undercroft is found under the Covered Market: the sewers open.
+4. *Hilary end.* Smugglers (a gleaner crew with Wrenford connections) in the Undercroft: a real fight.
+5. *Trinity.* Aurelia's Foresight shows Radwell Square on fire on the night of the Encaenia (the
+   graduation feast). The Proctors don't believe a student.
+6. *Trinity end.* The night before Finals: the Word is spoken in the Undercroft beneath the Orrery.
+   The final fight, with your tutorial partner beside you; stop it (or, later, an ending where you
+   don't quite). Then Finals, for real, the morning after.
+
+### Incidents (things that happen)
+
+Small events on the clock, a few a term, none of them required: a loose Echo in a quad (any element:
+fight it with what you know, Actions if that's all you have); a Town v Gown brawl outside the pub (Actions
+only, and a Bulldog fines you if you cast in the street — the Statutes again); a student's familiar
+escaped up the University Church; a ward on a college gate failing (hold it with your own ward, once you
+have one); a punt adrift in the flood. Each pays a little and some carry plot clues. They get stronger
+and more frequent as the plot builds. Engine: a timed `incidents` table per map, rolled by the clock like
+`rollEvent` rolls rooms.
+
+### Places to build
+
+- **The Undercroft** (Wrenford's sewers and the old culverts of the Wren): a dungeon below the town,
+  entered from a grate in the Covered Market (and later from All Absent's cellar). Interior maps built
+  with the rooms code, a new `sewer` type (water channels, walkways, grates, side vaults), rats and
+  leaking Echoes, the smugglers' cache. **Needs art:** a sewer tileset sheet (brick tunnel floors and
+  walls, water channel, iron grates, ladders, rat sprites).
+- **Out of bounds** (Hilary on): the countryside round Wrenford, opened by the Proctors' licence once
+  you can ward: Wrenford Meadow and the river path, a chalk down with an old barrow (a crypt room), a
+  wood with poachers (soldiers and archers), the road toward Hollowmere (already planned). Fights here
+  are bandits and strays, the step between town and Corvanthe.
+- **New rooms in town:** the lecture theatre, the Examination Schools hall, the boxing ring (the Schools'
+  court already exists outside), the Wren's Nest's winks table.
+
+### Pacing target
+
+About 45–60 minutes a term, 2½–3 hours to graduation, with a fight (real or sparring) at least every
+10 minutes and a plot beat every 20. If testing shows long stretches of lessons, cut lessons, not plot.
+
+### Build order for the Year
+
+1. *Done.* **`magic` on the hero and the battle locks** (sectors, categories, rings, glyphs on the keyboard),
+   the debug grant, and **Sit Finals now** (at first as a plain grant from the Tutor, the exam once step 4
+   exists), so playtesting can skip the Year from day one. Matriculation rewires to grant the first unlocks.
+2. *Done.* **Library flash-cards** and **Laboratory practicals** (glyphs and elements become learnable).
+3–8. *Done* (all in `js/explore_year.js` and `js/explore_pub.js`; see "As built" below): the Boxing Club,
+   the partner, lectures, exams, every plot beat, incidents, the Undercroft, the Proctors' licence, the
+   finale, Finals and the viva, and winks at the Wren's Nest. Next: the user's playthrough and bug list.
+
+### As built (where it differs from the plan above)
+
+- **Timetable:** lectures can be heard any time, not at set hours; a term just limits how many electives
+  you may have heard (one by Michaelmas, two by Hilary, three by Trinity). Your own element's lecture is
+  a bonus (a potion for answering well), since Matriculation already taught it.
+- **The terms' work** (what Professor Thorley wants before the exam, `termNeeds`): Michaelmas, an
+  elective and beat 2; Hilary, wards (On Wards, then Fizzwick's practical), Ironskin (the Master of the
+  Schools' practical), a second elective and beat 4; Trinity, dispels (Dispel's primer, On Unmaking, then
+  Fizzwick's practical), a third elective and the finale. Collections: 6 calls, 5 to pass; Finals: 10
+  calls, 7 to pass, then a viva against the Master holding back nothing you've been taught. Collections I
+  unlock the middle ring, Finals the outer ring. A pass at the first sitting (a First) pays 20 extra gold.
+- **Beat 2** is a night scene, not a rooftop chase (Wil / Nell offers to keep watch, which moves the clock
+  to 22:00, so it never waits on the clock): after dark a hooded figure in Founders' Quad runs, and
+  two Bulldogs take you for the culprit (a fists fight). Win or lose, you end up with the key stamped
+  UNDERCROFT (losing costs a 5 gold fine).
+- **Beat 3** gives the Undercroft door (a trapdoor by the Covered Market); **beat 4** is a smugglers' crew
+  in it (a room fight), paying spill of every kind and potions and finding the A.A. ledger.
+- **The finale** (beneath the Orrery, a trapdoor in Radwell Square, at 22:00 once Trinity's work is
+  done and Aurelia has spoken): you have two things to say to Wil / Nell from four; two good ones turn
+  them, and they fight beside you (a wizard ally, team A) against Ashgrove and Clemency's Echo, then join
+  your party. Otherwise they fight for Ashgrove, and leave Wrenford after.
+- **Incidents** (never two at once): a loose Echo in a quad, a Town v Gown brawl outside the Bird and
+  Bell (fists), a failing college gate ward (cast a ward). Each happens once on a trigger, so nobody misses
+  it (`FIRST`: your first elective, Collections I passed, learning to ward); after all three, more come
+  on the clock as extras, at least 6 game hours apart.
+- **Out of bounds:** a new wizard can't leave Wrenford until they can ward (the Proctors' licence).
+- **The pub:** Old Squop plays the tabletop duel (`js/tabletop.js`): you pick one of four wizard cards,
+  pick a spell each round and flick for it (a marker sweeps over a cup; tap in time); Beginner rules for
+  5 gold, Normal rules for 10 once you've beaten him twice.
+- **Rewards** come to about 350 gold, 15 potions and 20 spill over a full Year, against the starting
+  kit for someone who sits Finals on day one.
+
+Decided: a graduate knows home + 3 electives (never the barred opposite; glyphs are never barred);
+anyone can skip the Year on day one by sitting Finals, missing its rewards but not the plot; Ironskin is
+a core Hilary lesson, the Boxing Club gives +1 Attack.
+
+### When it happened
+
+**The Unweaving was 15 years ago,** on Midsummer's Eve; the intro scroll says so (`js/explore_intro.js`), and that Wrenford's University was founded twelve years ago. Long enough for the gleaner trade to
+be an industry and for Wrenford to have grown a University in an old river town's buildings; recent
+enough that its founders (the scholars who were away on the day) still teach there, the bell is still
+rung for the dead every night, and the grief is still raw, which is what the villain runs on. Mages
+live long (the intro says so), so the Fellows haven't aged much since.
+
+### The cast of the Year
+
+**Your tutorial partner: Wil Ashby** if you're playing a woman, **Nell Ashby** if a man (same
+story, same lines). About 19, from a gleaner family on the Corvanthe Road. Their older sister **Clemency
+Ashby** was a first-year at Corvanthe on the day, when Wil / Nell was four; she's an Echo now (Water,
+the Drowned Quarter) and the family turned to gleaning to look for her. Practical, cheerful, a
+scrapper who can't sit still in lectures. **Their home element is your barred one** (you're Fire,
+they're Water), so each can cast what the other never can, and in spars their strikes unravel your
+wards and yours theirs. Wil / Nell are the reason the plot matters: Ashgrove's promise to bring the
+Echoes back as people is aimed at them, they're tempted in Trinity, and the finale is talking them down
+as much as stopping him. Won back, they're your first companion. (If your barred element is Water,
+Clemency is still Water: she's their sister, not yours; only their own element changes.)
+
+**The villain: Dr Edwin Ashgrove, Sub-Warden of All Absent College.** Kindly; gives you tea and good
+advice in Michaelmas. The forbidden book was borrowed in the name of **Dr Margery Ashgrove**, a
+Fellow lost on the day: his wife.
+
+**Names:** nobody in the cast shares a name with the creator's name lists (`NAMES` in
+`js/explore_hero.js`), so your wizard is never mistaken for one of them; check new characters against it.
+
+**Lecturers** (each student meets their home element's and their three electives'):
+
+| Element | Lecturer | Quirk |
+|---|---|---|
+| Fire | Dr Ignatius Pyle | no eyebrows; the front row is always empty |
+| Water | Miss Perpetua Wells | everything's damp; teaches from the punt stage in summer |
+| Air | Professor Halcyon Drift | never stops pacing; his notes blow away mid-sentence |
+| Earth | Dr Agnes Barrow | an archaeologist; lectures among crates of rocks she won't let you touch |
+| Lightning | Dr Erasmus Fulmer | hair on end (*fulmen*, lightning) |
+| Ice | Professor Ingrid Rime | fur hat indoors; the inkwells freeze |
+| Arcane | Dr Oriel Nightingale | speaks almost entirely in footnotes |
+| Dark | Dr Lavinia Crowe | lectures with the lights off; the only Fellow who went into Corvanthe after the Unweaving and came back |
+
+**The Wrenford Fancy** (the Boxing Club), coached by the Head Porter: Two-Step Tolley (Attack, Attack,
+Guard, again), Mirror Meg (copies your last pick), Horace "the Clinch" Webb (Grapples when you Guarded
+last), Gentleman Jem, the champion (changes pattern below half HP).
+
+**Others:** Mrs Dorcas Pegg, landlady of the Wren's Nest; Old Bartholomew "Squop" Finch, undefeated at
+winks; Mr Ravel, the Senior Proctor (chases you over the rooftops, later grants the licence).
+
+### Art brief: the cast of the Year
+
+Moved to `docs/art-prompts.md`, with every other placeholder and a ready-to-paste prompt for each.
 
 ## Wrenford's people
 
@@ -196,7 +493,7 @@ feels the same each time you come back. Roster wizards here follow one of two th
 | Weizan, Master of the Schools | roster | **field trip**: stays, joins you on a University quest (a Schools party walking the Corvanthe Road) |
 | Fizzwick, Master of the Laboratory | roster | **field trip**: stays, joins you on a University quest (collecting samples in Cindergate) |
 | Aurelia, doctoral student | roster | **met at uni**: met again later, further east (her reading says so) |
-| Ponder, third-year student | roster | **met at uni**: met again later elsewhere |
+| Ponder, a student who keeps putting off Finals | roster | **met at uni**: met again later elsewhere |
 
 Still to do: their own art for the four invented dons (for now, recolours of Eldrin's old sprite and a female wizard in the same style: Dr Penhallow in a black gown and Widow Coyle in bottle green on the female figure, Mr Quill in russet and Canon Marrow in crimson on Eldrin's; `tools/make_folk_sprites.py`); the field
 trip quests (the party work, step 7, lets these two fight beside you); the later meetings, which can
