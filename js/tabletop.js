@@ -1178,7 +1178,7 @@ function survivalBalance(runs,ai){
 useRules('normal');
 
 const TT={RULES, PRESETS, RULE_SETS, useRules, rulesOf, AI_WARDS, AI_FIGHTERS, AI_ACTIONS, AI_MINIONS, AI_ENCOUNTER, WAVES, LEVELS, BREATHER,
-  get rulesName(){ return rulesName; }, ELEMENTS, opposite, load, newGame, newTable, playRound, aiChoose, simMatch, balance,
+  get rulesName(){ return rulesName; }, ELEMENTS, opposite, load, newGame, newTable, playRound, aiChoose, simMatch, balance, canPick, costOf,
   survival, survivalBalance, get chars(){ return CHARS; }, get fighters(){ return FIGHTERS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
 if(typeof module!=='undefined'&&module.exports) module.exports=TT;
 else root.TT=TT;

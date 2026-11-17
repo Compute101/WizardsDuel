@@ -244,6 +244,7 @@ module.exports = function wrenford(rects){
     {role:'porter',  x:26.2*T, y:40.6*T},          // at the Founders' gate
     {role:'tutor',   x:29.4*T, y:34.2*T},          // the Senior Tutor, in Founders' Quad
     {role:'weizan',  x:16*T,   y:35.4*T},          // on the Schools' court
+    {role:'fancy',   x:12.2*T, y:36.2*T},          // Gentleman Jem, at the Wrenford Fancy's ring in the Schools' yard (js/explore_year.js)
     {role:'fizzwick',x:45*T,   y:8.4*T},           // at the Laboratory door
     {role:'keeper',  x:31.6*T, y:10.4*T},          // the Keeper, on the Library steps
     {role:'chaplain',x:24.1*T, y:13.4*T},          // the Chaplain, at the Memorial

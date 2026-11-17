@@ -71,19 +71,20 @@ function nameOf(role, api){ const F=FOLK[role]; if(F&&F.name) return F.name; con
 function absent(n, api){ const F=FOLK[n.role]; return !!(F&&F.fate==='metLater'&&F.cast.includes(api.wizKey())); }
 // did you meet this roster wizard at the University? (for later meetings: "we met at uni")
 function metAtUni(key, api){ return !!api.quest('met')[key]; }
+const Year = () => window.ExploreYear||null;    // the University Year's own people (js/explore_year.js)
 function title(n, api){
-  const F=FOLK[n.role]; if(!F) return null;
+  const F=FOLK[n.role]; if(!F) return Year()?Year().title(n,api):null;
   const nm=nameOf(n.role,api);
   return nm?F.title+' ('+nm+')':F.title;
 }
 function sprite(n, api){
-  const F=FOLK[n.role]; if(!F) return null;
+  const F=FOLK[n.role]; if(!F) return Year()?Year().sprite(n,api):null;
   if(F.sprite) return F.sprite;
   if(F.fighter) return (api.fighters[F.fighter]||{}).sprite||null;
   const k=castOf(n.role,api), c=k&&api.chars[k];
   return c&&c.sprite&&!/mage-/.test(c.sprite)?c.sprite:null;
 }
-function knows(role){ return !!FOLK[role]; }
+function knows(role){ return !!FOLK[role]||!!(Year()&&Year().knows(role)); }
 
 // ── the Matriculation quest's state (saved by explore.js under quests.wren) ──
 function q(api){ return api.quest('wren'); }
@@ -105,6 +106,7 @@ function journal(api){
     out.push(left.length?'Matriculation: '+left.map(t=>t[1]+(t[0]==='library'?' ('+(s.library?'pass the Keeper\'s primer test':Math.min(libBooks(api),MATRIC.booksNeeded)+' of '+MATRIC.booksNeeded+' books')+')':t[0]==='lab'&&mg(api)&&!knowsElem(api,api.homeElem())?' (practical: '+Math.min(year(api).prac[api.homeElem()]||0,PRAC_CASTS)+' of '+PRAC_CASTS+' casts)':'')).join('; ')+'.':'Matriculation: everything done. Go back to the Senior Tutor.');
   } else out.push(s.finals?'Graduated from the University of Wrenford (sat Finals on the first day).':'Matriculated at the University of Wrenford.');
   if(s.satchel&&!s.satchelDone) out.push('Ponder\'s satchel: take it back to its owner, asleep on the Meadow.');
+  const yj=Year()&&s.stage>=2?Year().journal(api):''; if(yj) out.push(yj);
   return out.join('\n');
 }
 
@@ -112,6 +114,7 @@ function journal(api){
 function talk(n, api){
   const s=q(api), me=api.wizName(), say=(_,x,ch)=>api.dialog(title(n,api),x,ch||[]);
   const nm=r=>nameOf(r,api), F_=FOLK[n.role], home0=()=>mg(api)&&api.homeElem();
+  if(!F_){ if(Year()) Year().talk(n,api); return; }
   if(F_&&F_.kind==='roster'){ const k=castOf(n.role,api), met=api.quest('met'); if(k&&!met[k]){ met[k]=true; api.save(); } }
   switch(n.role){
 
@@ -178,6 +181,13 @@ function talk(n, api){
           say(0,'"The east road goes to Hollowmere, and past Hollowmere to Corvanthe. You\'ll go, I expect. They all go." A quiet moment. "Bring back what you can. Books, if you find them. Names, if you find those. And when you are ready to write workings of your own, come and find me: we are building a workshop for it, at Lantern College. It isn\'t ready. Neither are you."'); }}]);
       return;
     }
+    const yt=Year()&&mg(api)&&!mg(api).grad?Year()._Y(api).term:0;
+    if(yt>=1&&yt<=3){
+      const left=Year().termNeeds(api), names=['','Michaelmas','Hilary','Trinity'];
+      say(0,'"'+me+'." '+D+' marks a place in the book. "'+names[yt]+' term. '+(left.length?'Before '+(yt===3?'Finals':'Collections')+': '+left.join('; ')+'.':'You\'re ready for '+(yt===3?'Finals':'Collections')+'. Professor Thorley, in the Examination Schools.')+'" A pause. "Lectures are in the Schools, by the court. The Fancy box in the yard in the evenings, and they\'ll tell you it\'s good for the character." Back to the book. "Hurry is how we got here. But do get on."',
+        [sitFinals(),{label:'Thank you'}].filter(Boolean));
+      return;
+    }
     say(0,'"'+me+'." '+D+' marks a place in the book. "The workshop at Lantern College is not ready yet. When it is, you\'ll write your own workings there, and we\'ll see whether you\'ve listened." A pause. "Have you been east?"',[
       {label:'Ask about Corvanthe', fn:()=>say(0,'"It was the greatest university in the world, and it knew it. That was the trouble. Every one of us here could have been in the Collegium that day. Some of us were meant to be." The book opens again. "I was meant to be."')},
       {label:'Ask about the Statutes', fn:()=>say(0,'"Five rules, and a sixth in pencil. No working larger than its maker; none without a witness; none that cannot be undone; none in the street; no Word spoken that is not understood. The sixth says don\'t be clever. That one\'s mine."')}]);
@@ -207,6 +217,18 @@ function talk(n, api){
     }
     if(!s.schools){
       say(0,'"Now me." '+M+' steps into the circle.'+(holdBack?' "I\'ll fight you with what you have: a strike from the inner ring, and the Actions. Nothing else. Fair\'s fair."':'')+' "The wheel: Damage, Protection, Dispel, chosen in secret, and they meet. A ward stops a strike; a dispel tears a ward; a strike punishes a dispel. Each element has its opposite across the wheel: Fire and Water, Air and Earth, Lightning and Ice, the Arcane and the Dark. Strike a ward with its opposite and it comes apart in your hands."\n\n"Show me you were listening."',[duelMaster,sparHobbes,{label:'Not now'}]);
+      return;
+    }
+    if(Year()&&Year().skinDue(api)){
+      const Yr=year(api), did=Yr.prac.skin||0;
+      const skin={label:'Ironskin at the dummy ('+did+' of '+PRAC_CASTS+')', fn:async()=>{
+        const ok=await api.practise({cat:'protect', elem:'earth', theme:'stoneskin', tier:1, name:'Ironskin'});
+        const n=(Yr.prac.skin||0)+(ok?1:0); Yr.prac.skin=n;
+        if(n>=PRAC_CASTS){ api.learn({skin:true}); api.save(); api.toast('You can cast Ironskin.'); say(0,'"Good." '+M+' raps your sleeve with a knuckle: it rings like a pot. "A ward stops a spell. That stops a blade. Know which you\'re facing, and remember it costs you a little every round you keep it up."'); return; }
+        api.save(); say(0,(ok?'Your skin greys and hardens, and the training blade skids off it. "'+n+' of '+PRAC_CASTS+'."':'It flickers and is gone. "Again."'),[skin_(),{label:'Enough for now'}]);
+      }};
+      const skin_=()=>{ const d=Yr.prac.skin||0; return Object.assign({},skin,{label:'Ironskin at the dummy ('+d+' of '+PRAC_CASTS+')'}); };
+      say(0,'"Hilary term. Walls." '+M+' sets a straw dummy with a wooden sword in the circle. "Wards stop magic and nothing else. A man with a blade walks straight through your best ward. So: Ironskin. Your own skin, made hard as a breastplate. It soaks blows until it\'s worn through, and it costs you a little mana every round you keep it." A nod at the dummy. "Three good casts."',[skin,duelMaster,sparHobbes,{label:'Not now'}]);
       return;
     }
     say(0,'"'+me+'." '+M+' doesn\'t stop the drill. "The court is open whenever you want it. Use it. The Echoes in Corvanthe don\'t give second bouts."'+(s.stage>=2?'\n\n"And keep yourself sharp. When the Schools next take a party east, to walk the Corvanthe Road and see what we\'re training for, I\'ll want students who can hold a line. I\'ll be going. You might be."':''),[duelMaster,sparHobbes,{label:'Not now'}]);
@@ -244,7 +266,8 @@ function talk(n, api){
       return;
     }
     if(home0()&&!knowsSet(api,api.glyphSets[home0()])){ givePrimer(); return; }
-    const ahead=mg(api)?readAhead():[];
+    const ahead=mg(api)?readAhead():[], beat=Year()&&Year().keeperBeat(api,K);
+    if(beat){ say(0,'"'+me+'." '+K+' has been waiting for you on the steps, which he never does. "A word. Inside."',[beat]); return; }
     say(0,'"'+me+'." '+K+' unlocks a door for someone without looking. "Forty years I\'ve kept libraries, and I never kept one that was all lost property before." A sniff. "If you find books in Corvanthe, bring them here. If you find a Collegium seal on them, bring them here faster. Some of our colleagues\' last work is still lying in those streets."'+
       (ahead.length?'\n\n"Reading ahead? The primers are on the desk. A glyph learnt early is never wasted, though the Laboratory won\'t let you near an element until you\'ve heard its lecture."':''),
       ahead.length?ahead.concat({label:'Not now'}):[]);
@@ -297,7 +320,8 @@ function talk(n, api){
       return;
     }
     const ready=mg(api)?api.elems.filter(e=>e!==api.barred()&&!knowsElem(api,e)&&knowsSet(api,api.glyphSets[e])):[];
-    const pracs=ready.filter(e=>Y.lect[e]).map(e=>{ const b=practical(e,'damage',()=>{ api.toast('You can cast: '+up(e)+' strikes.'); say(0,F+' beams at the scorch marks. "'+up(e)+'! Passed. Take these, I\'ve no use for them." A twist of paper with something glittering in it.'); }); b.label='Practical: '+up(e)+' ('+b.label.replace(/^Cast at the dummy \(|\)$/g,'')+')'; return b; });
+    const later=(Year()?Year().labPracticals(api):[]).map(p=>{ const b=practical(p.elem,p.cat,()=>{ api.toast('You can cast: '+(p.cat==='protect'?'wards, and Seal Ward':'dispels, and Cleanse Self')+'.'); say(0,F+' claps. "'+(p.cat==='protect'?'A wall! Lovely. Now go and stand behind it.':'Unmade, neat as a seam. Lovely.')+'"'); }); b.label='Practical: '+p.name+' ('+b.label.replace(/^Cast at the dummy \(|\)$/g,'')+')'; return b; });
+    const pracs=later.concat(ready.filter(e=>Y.lect[e]).map(e=>{ const b=practical(e,'damage',()=>{ api.toast('You can cast: '+up(e)+' strikes.'); say(0,F+' beams at the scorch marks. "'+up(e)+'! Passed. Take these, I\'ve no use for them." A twist of paper with something glittering in it.'); }); b.label='Practical: '+up(e)+' ('+b.label.replace(/^Cast at the dummy \(|\)$/g,'')+')'; return b; }));
     const readAheadNote=ready.length&&!pracs.length?'\n\n"Been reading ahead, have you? '+ready.map(up).join(', ')+'! Good. Hear the lecture first, then come to me. The Statutes, you know."':'';
     say(0,'"'+me+'! Still in one piece, I see." '+F+' waves at the smoking chimney. "Bring me spill from Corvanthe, any kind, and I\'ll distil you a potion. Two pieces a bottle. The Statutes say I mustn\'t do anything more interesting with it, and I never do anything they say I mustn\'t." A pause. "Lately."'+(s.stage>=2?'\n\n"Oh! And the Laboratory wants fresh samples from Cindergate, properly collected, by somebody with a licence and an escort. Field work. I\'ve put my name down. When it\'s approved, I\'ll want a pair of hands that has passed the safety test."':'')+readAheadNote,pracs.concat([brew,{label:'Ask about spill', fn:()=>say(0,'"Quintessence. What\'s left when a working is unmade: pure element, settled out like frost. Every bit of it in Corvanthe was a person, once, more or less." A sip of tea. "We try not to think about it. We\'re very good at not thinking about things, here. It\'s the one thing we learned."',[brew])}]));
     return;
@@ -322,6 +346,7 @@ function talk(n, api){
 
   case 'aurelia': {
     const A=nm('aurelia');
+    if(Year()&&Year().aureliaBeat(api,A)) return;
     if(s.aureliaMet){
       say(0,A+' looks up from the cards spread on the bench before you can speak. "You\'re about to ask whether I\'ll still be here next term." A small smile. "No. I\'m going east, when the reading says so. And so are you." The top card is turned over: a tower, standing. "We\'ll meet again, further along. I\'ve seen it. You looked tired. I looked worse."');
       return;

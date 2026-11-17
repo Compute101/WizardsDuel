@@ -5,7 +5,7 @@ Baldur's Gate: countries, cities, towns and villages, with wizards stationed aro
 You meet them, they start stories, and some join your party. Battles use the existing duel
 screen. Nothing here is built yet beyond Hollowmere (see "Explore mode" in `CLAUDE.md`).
 
-Status: **vision and names agreed; steps 1, 3, 4 and 6 built; step 2 has all eight outer rings (inner rings next); interiors built; Wrenford, the University town and tutorial, built; the University Year (learning magic): steps 1–2 built.**
+Status: **vision and names agreed; steps 1, 3, 4 and 6 built; step 2 has all eight outer rings (inner rings next); interiors built; Wrenford, the University town and tutorial, built; the University Year (learning magic): built end to end, awaiting a playthrough.**
 
 ## Decisions so far
 
@@ -384,12 +384,38 @@ About 45–60 minutes a term, 2½–3 hours to graduation, with a fight (real or
    the debug grant, and **Sit Finals now** (at first as a plain grant from the Tutor, the exam once step 4
    exists), so playtesting can skip the Year from day one. Matriculation rewires to grant the first unlocks.
 2. *Done.* **Library flash-cards** and **Laboratory practicals** (glyphs and elements become learnable).
-3. **The Boxing Club** (pattern fighters) and the tutorial partner (a fighter-wizard who levels with you).
-4. **Lectures** (a lecture-theatre room, the lecturers) and **exams** (call-outs through the minigames).
-5. **Plot beats 1–2 and incidents**, so Michaelmas is playable end to end. Play it; check it's fun.
-6. Hilary: Protection, Undercroft (needs the sewer art), the Proctors' licence and out of bounds.
-7. Trinity: Dispel, the finale, Finals, graduation into the field trips.
-8. Winks at the Wren's Nest (can go in any time: the engine exists).
+3–8. *Done* (all in `js/explore_year.js` and `js/explore_pub.js`; see "As built" below): the Boxing Club,
+   the partner, lectures, exams, every plot beat, incidents, the Undercroft, the Proctors' licence, the
+   finale, Finals and the viva, and winks at the Wren's Nest. Next: the user's playthrough and bug list.
+
+### As built (where it differs from the plan above)
+
+- **Timetable:** lectures can be heard any time, not at set hours; a term just limits how many electives
+  you may have heard (one by Michaelmas, two by Hilary, three by Trinity). Your own element's lecture is
+  a bonus (a potion for answering well), since Matriculation already taught it.
+- **The terms' work** (what Professor Thorley wants before the exam, `termNeeds`): Michaelmas, an
+  elective and beat 2; Hilary, wards (On Wards, then Fizzwick's practical), Ironskin (the Master of the
+  Schools' practical), a second elective and beat 4; Trinity, dispels (Dispel's primer, On Unmaking, then
+  Fizzwick's practical), a third elective and the finale. Collections: 6 calls, 5 to pass; Finals: 10
+  calls, 7 to pass, then a viva against the Master holding back nothing you've been taught. Collections I
+  unlock the middle ring, Finals the outer ring. A pass at the first sitting (a First) pays 20 extra gold.
+- **Beat 2** is a night scene, not a rooftop chase: after dark a hooded figure in Founders' Quad runs, and
+  two Bulldogs take you for the culprit (a fists fight). Win or lose, you end up with the key stamped
+  UNDERCROFT (losing costs a 5 gold fine).
+- **Beat 3** gives the Undercroft door (a trapdoor by the Covered Market); **beat 4** is a smugglers' crew
+  in it (a room fight), paying spill of every kind and potions and finding the A.A. ledger.
+- **The finale** (beneath the Orrery, a trapdoor in Radcliffe Square, at 22:00 once Trinity's work is
+  done and Aurelia has spoken): you have two things to say to Wil / Nell from four; two good ones turn
+  them, and they fight beside you (a wizard ally, team A) against Ashgrove and Clemency's Echo, then join
+  your party. Otherwise they fight for Ashgrove, and leave Wrenford after.
+- **Incidents** (after beat 1, never two at once, at least 6 game hours apart): a loose Echo in a quad,
+  a Town v Gown brawl outside the Bird and Bell (fists), a failing college gate ward (cast a ward).
+- **Out of bounds:** a new wizard can't leave Wrenford until they can ward (the Proctors' licence).
+- **The pub:** Old Squop plays the tabletop duel (`js/tabletop.js`): you pick one of four wizard cards,
+  pick a spell each round and flick for it (a marker sweeps over a cup; tap in time); Beginner rules for
+  5 gold, Normal rules for 10 once you've beaten him twice.
+- **Rewards** come to about 350 gold, 15 potions and 20 spill over a full Year, against the starting
+  kit for someone who sits Finals on day one.
 
 Decided: a graduate knows home + 3 electives (never the barred opposite; glyphs are never barred);
 anyone can skip the Year on day one by sitting Finals, missing its rewards but not the plot; Ironskin is
@@ -445,41 +471,7 @@ winks; Mr Ravel, the Senior Proctor (chases you over the rooftops, later grants 
 
 ### Art brief: the cast of the Year
 
-Townsfolk sprites (`sprites/folk/<role>.png`, drawn by `drawNpc`), painted in their **final colours**
-(unlike the hero bases, nothing is recoloured). Same format as the battle stills: full body, three-quarter
-view facing right, feet on the bottom edge, about 768 px tall. Put the files in `sprites/folk/source/`
-named by role (`lect_fire.png`, `wil.png`, `ashgrove.png`, …); a cutter (green keyed out, cropped, sized,
-like `tools/cut_hero_figures.py`) is still to write. Faces for dialogue are cropped from the sprites.
-
-Prompt for ChatGPT (one figure at a time; attach `sprites/folk/source/old_eldrin.png` and
-`old_witch.png` as style references):
-
-> Pixel-art full-body sprite in exactly the same style, scale, pose conventions and level of detail as
-> the attached two wizards: three-quarter view facing right, feet flat at the bottom of the image. This
-> is [DESCRIPTION]. A human, ordinary proportions. Hard pixel edges, no glow halo around the figure.
-> Plain flat pure green (#00FF00) background, nothing else in the picture, no text, no shadow on the
-> ground. No green anywhere on the figure. Portrait image, the figure about 768 pixels tall.
-
-The descriptions (all wear a black academic gown over their own clothes unless said; keep green off
-the figures, so Earth's lecturer is in browns):
-
-| File | [DESCRIPTION] |
-|---|---|
-| `lect_fire.png` | Dr Ignatius Pyle, the Fire lecturer: a stout middle-aged man, bald, no eyebrows, soot smudges on his face, a scorched black gown with singed hem over a red waistcoat, holding a pair of long iron tongs with a small flame at their tip, cheerful |
-| `lect_water.png` | Miss Perpetua Wells, the Water lecturer: a tall thin woman in her forties, damp hair plastered flat in a bun, a sea-blue gown dripping at the hem, rolled-up sleeves, a punt pole over her shoulder, a small swirl of water above her other palm |
-| `lect_air.png` | Professor Halcyon Drift, the Air lecturer: a lanky old man mid-stride, long white hair and gown swept sideways by wind, loose papers flying from his hand, a pale grey-white waistcoat, a small whirl of wind at his fingertips |
-| `lect_earth.png` | Dr Agnes Barrow, the Earth lecturer: a sturdy middle-aged woman, sun-browned, short practical hair under a wide-brimmed brown field hat, a brown canvas coat with many pockets over her gown, a geologist's hammer in one hand and a rough stone in the other, dusty boots |
-| `lect_lightning.png` | Dr Erasmus Fulmer, the Lightning lecturer: a wiry young-looking man, wild hair standing straight up on end, round spectacles, a yellow-and-black waistcoat, small blue-white sparks crackling between his raised fingers, an eager grin |
-| `lect_ice.png` | Professor Ingrid Rime, the Ice lecturer: a tall stern woman in her fifties, a big white fur hat and fur-collared pale blue coat over her gown, frost on her shoulders, a slim staff tipped with an ice crystal, breath misting |
-| `lect_arcane.png` | Dr Oriel Nightingale, the Arcane lecturer: a slight elderly scholar of indeterminate age, neat silver hair, a deep violet gown embroidered with tiny stars, half-moon spectacles, an open book in one hand with glowing violet runes floating off its pages |
-| `lect_dark.png` | Dr Lavinia Crowe, the Dark lecturer: a gaunt woman in her sixties, white streak in black hair, a high-collared black gown, a faint scar over one eye, a hooded shuttered lantern held low giving almost no light, purple shadow curling at her feet, calm and unsettling |
-| `wil.png` | Wil Ashby, a tutorial partner: a wiry young man about 19, tousled brown hair, freckles, a student's short black commoner's gown thrown over a patched gleaner's leather jerkin and boots, a satchel, a knife at his belt, a cocky grin, fists half-raised |
-| `nell.png` | Nell Ashby, a tutorial partner: a wiry young woman about 19, cropped brown hair, freckles, a student's short black commoner's gown thrown over a patched gleaner's leather jerkin and boots, a satchel, a knife at her belt, a cocky grin, fists half-raised |
-| `ashgrove.png` | Dr Edwin Ashgrove, Sub-Warden of All Absent College: a kindly grey-haired man in his sixties, neat beard, a full black doctor's gown with a dove-grey hood, a mourning band on one sleeve, holding a teacup and saucer, gentle smile, tired eyes |
-| `proctor.png` | Mr Ravel, the Senior Proctor: a severe thin man, black gown with velvet bands, white bands at the throat, a tall black hat, a short black staff of office |
-| `landlady.png` | Mrs Dorcas Pegg, landlady of the Wren's Nest: a broad rosy-cheeked woman, apron over a brown dress, sleeves rolled, a tankard in each hand (no gown) |
-| `squop.png` | Old Bartholomew "Squop" Hale, pub regular: a little old man in a shabby tweed coat and flat cap, a small cup and a handful of coloured tiddlywinks counters (no gown) |
-| `boxer_tolley.png` … `boxer_jem.png` | the four boxers, bare-knuckle in shirtsleeves and braces, no gowns: Two-Step Tolley (light, quick, on his toes), Mirror Meg (a lean woman boxer, hair tied back, watchful), Horace Webb (a huge bald grappler, arms wide), Gentleman Jem (tall, moustached, elegant, fists up in a classic stance) |
+Moved to `docs/art-prompts.md`, with every other placeholder and a ready-to-paste prompt for each.
 
 ## Wrenford's people
 

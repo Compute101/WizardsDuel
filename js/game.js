@@ -3815,7 +3815,7 @@ function practiseCast(o,cb){
   mgKnownOverride=o.known||null;
   mgStandalone=ok=>{ showScreen(o.screen||'title-screen'); cb&&cb(ok); };
   const none=()=>{};
-  if(o.cat==='protect') launchBuffTileMatch(spell,ELEM_WARD_THEME[o.elem],'p1',none);
+  if(o.cat==='protect') launchBuffTileMatch(spell,o.theme||ELEM_WARD_THEME[o.elem],'p1',none);
   else if(o.cat==='dispel') launchDispelPattern(spell,none);
   else ELEM_MINIGAME[o.elem](spell,none);
 }
@@ -3936,7 +3936,7 @@ function startEncounter(wizKey){
 let exploreFight=null;
 // allies: [{key, level, hp, name}] fighters on your side (rescued gleaners), seated while there's room
 // (4 seats in all); a foe with wizard:true is a roster wizard leading a rival party. text: {win, lose}.
-function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena}){
+function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena, fists}){
   survival=null; encounterPending=false;
   const seen={}, count=k=>foes.filter(f=>f.key===k).length;
   const fighterSeat=(f,team)=>{
@@ -3947,10 +3947,14 @@ function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena}){
     return {key:f.key,cfg,human:false,team,hp:f.hp};
   };
   // a wizard foe can hold back (a University spar): `known` limits their wheel as it limits the hero's
-  const wizSeat=f=>({key:f.key,human:false,team:'B',hp:f.hp,cfg:f.known?Object.assign({},defOf(f.key),{known:f.known}):undefined});
-  const foeSeats=foes.slice(0,3).map(f=>f.wizard?wizSeat(f):fighterSeat(f,'B'));
+  // (the University Year's partner fights beside you the same way: a wizard ally, team A)
+  const wizSeat=(f,team)=>({key:f.key,human:false,team:team||'B',hp:f.hp,
+    cfg:f.known||f.name?Object.assign({},defOf(f.key),f.known?{known:f.known}:{},f.name?{name:f.name.toUpperCase()}:{}):undefined});
+  const foeSeats=foes.slice(0,3).map(f=>f.wizard?wizSeat(f,'B'):fighterSeat(f,'B'));
   const room=Math.max(0,3-foeSeats.length), allyList=(allies||[]).slice(0,room);
-  const seats=[{key:wizKey,human:true,team:'A',hp}].concat(allyList.map(a=>fighterSeat(a,'A')),foeSeats);
+  // fists:true (the Boxing Club, a Town v Gown brawl): the hero fights with the Actions alone
+  const me=fists?{key:wizKey,human:true,team:'A',hp,cfg:Object.assign({},defOf(wizKey),{known:{glyphs:[],elems:[],cats:[],rings:1,skin:false}})}:{key:wizKey,human:true,team:'A',hp};
+  const seats=[me].concat(allyList.map(a=>a.wizard?wizSeat(a,'A'):fighterSeat(a,'A')),foeSeats);
   exploreFight={onEnd, foes, low:Infinity, allies:allyList.length, text:text||{}, arena:arena||null};
   multiMode=true; trainingMode=false; twoPlayerMode=false;
   if(window.Profiles&&Profiles.setSeats) Profiles.setSeats({});
@@ -4006,6 +4010,8 @@ function fighterAIChoose(who){
   const tgt=aiPickTarget(who), opp=gs[tgt], last=(opp&&opp.lastPick)||{};
   const act=c=>({type:'el',cat:c,act:ACTIONS[c].id,target:tgt,ok:true});
   if(tgt==null) return act('protect');
+  const pat=seatCfg(who).pattern;
+  if(pat) return act(patternPick(who,pat,last));
   const smart=aiDifficulty==='normal', A=AI_FIGHTERS, tr=traitOf(who);
   let guard=A.guard, grapple=tr==='ranged'?0:A.grapple;
   if(last.act==='attack'&&last.target===who) guard+=A.guardRead;
@@ -4014,6 +4020,20 @@ function fighterAIChoose(who){
   if(!smart){ guard=A.guard; grapple=tr==='ranged'?0:A.grapple; }
   const r=_rng()*(A.attack+guard+grapple);
   return r<A.attack?act('damage'):r<A.attack+guard?act('protect'):act('dispel');
+}
+// ── Pattern fighters (Explore's Boxing Club, js/explore_year.js): a fighter with `pattern` plays it, so a
+// player who watches can learn to beat it. Picks are categories: damage = Attack, protect = Guard,
+// dispel = Grapple. {cycle:[...]} repeats; {mirror:true} copies your last pick (Attack to start);
+// {clinch:true} Grapples after you Guarded, else Attacks; {cycle, hurt:'counter'} plays the cycle above
+// half HP and below it picks whatever beats your last pick (Guard an Attack, Grapple a Guard, Attack a Grapple).
+const BEATS={damage:'protect', protect:'dispel', dispel:'damage'};
+function patternPick(who,pat,last){
+  const st=gs[who], lastCat=last.act?{attack:'damage',guard:'protect',grapple:'dispel'}[last.act]:last.cat;
+  if(pat.hurt==='counter'&&st.hp<st.maxHp/2&&lastCat&&BEATS[lastCat]) return BEATS[lastCat];
+  if(pat.mirror) return lastCat&&BEATS[lastCat]?lastCat:'damage';
+  if(pat.clinch) return last.act==='guard'?'dispel':'damage';
+  const c=pat.cycle||['damage']; st.patIdx=(st.patIdx||0)+1;
+  return c[(st.patIdx-1)%c.length];
 }
 // ── MINIONS AS BODIES (Phase 3) ──
 // A body is a summoned creature that stands on the field: a minion with soak HP (skeletons, graveguard,

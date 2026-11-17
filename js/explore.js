@@ -90,7 +90,7 @@ let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
 let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null, quests={};
 const POTION_HEAL=0.3, POTION_PRICE={shop:8, safehouse:10}, MAX_ALLIES=2;
-let found=new Set(), spill={}, cleared={}, actors=[], grace=0, crews=[], bandState={}, parley=null, clashes=[], visited=new Set(), saveOwner=null, saveKey=null, lastPlace='', hero=null, magic=null, creating=false, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
+let found=new Set(), spill={}, cleared={}, actors=[], grace=0, crews=[], bandState={}, parley=null, clashes=[], visited=new Set(), saveOwner=null, saveKey=null, lastPlace='', hero=null, magic=null, yearT=0, creating=false, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
 const imgCache={};
 function imgOf(src){ if(!imgCache[src]){ const i=new Image(); i.src=src; imgCache[src]=i; } return imgCache[src]; }
 
@@ -411,7 +411,7 @@ function fight(a){
     running=false; el.root.classList.remove('active'); fade(false); syncMusic();
     const key=wizKeys[wizIdx];
     if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
-    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:fighting.map(x=>({key:x.key,level:x.level,name:x.name,hp:x.hp})), text, arena:MAP.arena,
+    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:fighting.map(x=>({key:x.key,level:x.level,name:x.name,hp:x.hp,wizard:x.wizard,known:x.wizard&&Year?Year.allyKnown(x,folkApi):undefined})), text, arena:MAP.arena,
       onEnd:(won,low,allyHp)=>afterFight(a,won,low,key,fighting,allyHp)});
   });
 }
@@ -425,7 +425,8 @@ function afterFight(a,won,low,key,fighting,allyHp){
   // allies who fought: they keep their wounds; the fallen are gone
   (allyHp||[]).forEach((hp,i)=>{ const al=fighting[i]; if(!al) return; if(hp<=0){ allies=allies.filter(x=>x!==al); toast(al.name+' fell. You leave them where they lie.'); } else al.hp=hp; });
   if(a.e.band){ afterBandFight(a,won); }
-  if(won&&a.e.band){ grace=ECHO.grace; }
+  if(won&&a.e.incident){ actors=actors.filter(x=>x!==a); a.e.onWin&&a.e.onWin(); grace=ECHO.grace; }
+  else if(won&&a.e.band){ grace=ECHO.grace; }
   else if(won&&a.e.party){
     roomState().done=true; actors=actors.filter(x=>x!==a); gold+=(MAP.ev||{}).gold||0;
     toast('+'+((MAP.ev||{}).gold||0)+' gold from their packs'); grace=ECHO.grace;
@@ -444,6 +445,7 @@ function afterFight(a,won,low,key,fighting,allyHp){
     toast('You come to, singed and aching, with a quarter of your strength. Find somewhere to rest.');
     grace=ECHO.grace*2;
   }
+  if(Year) Year.afterFight(folkApi,{won, party:!!a.e.party, incident:a.e.incident||null, map:MAP.id, type:MAP.type});
   renderSpill(); save();
   last=performance.now(); requestAnimationFrame(frame);
 }
@@ -479,7 +481,7 @@ function renderSpill(){
 // from its seed). Some are always the same place (FIXED_DOORS).
 const DOOR_BASES = ['house1','house2','house3','house4','house5','house6','tavern','chapel','hall','temple','townhouse','forge','tiltedHouse','sunkHouse','mausoleum','tower'];
 const FIXED_LABEL = {safehouse:'Enter the Gleaners\' Rest', inn:'Enter the Drowned Crow', library:'Enter the Collegium Library',
-  wrenInn:'Enter the Wren\'s Nest', remnant:'Enter the Remnant Library', lab:'Enter the Warded Laboratory',
+  wrenInn:'Enter the Wren\'s Nest', remnant:'Enter the Remnant Library', lab:'Enter the Warded Laboratory', lectures:'Enter the Examination Schools',
   wenna:'Knock at Wenna\'s Bakehouse', lamplighter:'Knock at the Lamplighter\'s House'};
 const CITY_MAPS = ['cindergate','heights','spirewatch','collegium','drowned_quarter','quarry_ward','frostmarket','gloamside'];
 function findDoors(){
@@ -498,6 +500,15 @@ function findDoors(){
   if(MAP.id==='gloamside'){ const sp=MAP.spawns.west||[0,0], l=nearestTo(sp[0],sp[1],o=>/^house/.test(o.kind)); if(l) fixed[l.id]='lamplighter'; }
   const els={}; for(const e of MAP.echoes||[]) els[e.el]=(els[e.el]||0)+1;
   const el=Object.keys(els).sort((a,b)=>els[b]-els[a])[0]||'fire';
+  if(MAP.id==='wrenford') for(const o of fronts){ if(o.lore==='schools') fixed[o.id]='lectures'; }
+  objs=objs.filter(o=>!o.yearDoor); bridges=bridges.filter(o=>!o.yearDoor);
+  if(Year) for(const d of Year.doors(folkApi)){
+    const mark={kind:'trapdoor', x:d.x, y:d.y-6, id:'yd:'+d.id, decal:true, fb:[], scale:0.3, yearDoor:true};
+    if(rects.trapdoor){ objs.push(mark); bridges.push(mark); }
+    doors.push({x:d.x, y:d.y, label:d.label,
+    spec:{id:'room:'+MAP.id+'#'+d.id, base:'crypt', outside:{map:MAP.id,x:d.x,y:d.y-8}, el:d.el||'dark', depth:0, city:false, ruined:false,
+      fixed:d.type, ev:d.ev||null, label:d.name, wizards:[], safe:true}});
+  }
   for(const o of fronts){
     const base=P.baseKind(o.kind), f=fixed[o.id];
     const depth=Math.max(0,Math.min(1,(1-o.y/WORLD_H)*1.15-0.12));
@@ -542,6 +553,7 @@ const buyPotion=price=>({label:'Buy a potion ('+price+' gold)', disabled:gold<pr
 
 // ── townsfolk (js/explore_folk.js): what they need to act on the world ──
 const Folk = window.ExploreFolk||null;
+const Year = window.ExploreYear||null;    // the University Year's terms, lectures, exams, clubs and plot (js/explore_year.js)
 const folkApi = {
   get chars(){ return chars; }, get fighters(){ return fighters; },
   wizKey:()=>wizKeys[wizIdx], wizName:()=>{ const n=chars[wizKeys[wizIdx]].name; return n.charAt(0)+n.slice(1).toLowerCase(); },
@@ -560,17 +572,29 @@ const folkApi = {
   get elems(){ return ELEM_IDS; }, get glyphSets(){ return GLYPH_SETS; }, get glyphs(){ return GLYPHS; },
   learn:o=>{ if(wizKeys[wizIdx]==='hero') learn(o); }, graduate:els=>graduate(els),
   primer:id=>primerTest(id), practise:o=>practise(o),
+  // the Year's own needs (js/explore_year.js)
+  battle:o=>battle(o), mapId:()=>MAP&&MAP.id, interior:()=>!!(MAP&&MAP.interior), clock:()=>clock, night:()=>darkness()>0.5,
+  setClock:m=>{ clock=((m%1440)+1440)%1440; renderClock(); },
+  addNpc:n=>{ if(!npcs.some(x=>x.role===n.role&&!x.gone)) npcs.push(Object.assign({},n)); },
+  dropNpc:role=>{ npcs.forEach(n=>{ if(n.role===role) n.gone=true; }); },
+  spawnEcho:e=>spawnIncidentEcho(e),
+  dropEcho:id=>{ actors=actors.filter(a=>!(a.e.incident===id)); },
+  registerChar:(key,d)=>{ chars[key]=d; if(typeof CHAR_DEFS!=='undefined') CHAR_DEFS[key]=d; },
+  hero:()=>hero, heroDef:rec=>window.ExploreHero?window.ExploreHero.def(rec):Promise.resolve(null),
+  allies:()=>allies, addAlly:a=>{ if(!allies.some(x=>x.key===a.key)) allies.push(Object.assign({level:0,hp:null},a)); },
+  bodies:()=>wizKeys[wizIdx]==='hero', walkTo:(x,y)=>{ wiz.x=x; wiz.y=y; },
+  enterMap:(id,at)=>enterMap(id,at), fullMagic:()=>!!(magic&&magic.grad), refreshDoors:()=>{ if(MAP&&!MAP.interior) findDoors(); },
 };
 // a practice bout (the Schools, the Laboratory): fought at full strength, and you come back as you went
 // in (the University's healers see to that); nothing is lost on a defeat
-function spar({foes, text, onWin, onLose}){
+function spar({foes, text, onWin, onLose, fists, allies:al}){
   if(busy||typeof window.startExploreBattle!=='function') return;
   busy=true; keys.clear(); target=null; hideSay(); save();
   const key=wizKeys[wizIdx], before=hpOf(key);
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false); syncMusic();
     if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
-    window.startExploreBattle({wizKey:key, foes, hp:maxHp(key), allies:[], text, arena:MAP.arena||'library',
+    window.startExploreBattle({wizKey:key, foes, hp:maxHp(key), allies:al||[], text, fists, arena:MAP.arena||'library',
       onEnd:won=>{
         el.root.classList.add('active'); running=true; busy=false; resize(); syncMusic();
         clock=(clock+20)%1440; vit[key]=Math.max(before,1);
@@ -602,6 +626,35 @@ function practise(o){
       });
     });
   });
+}
+
+// a real fight from a story or an incident (not a spar): wounds carry, as in any fight on the map; a loss
+// leaves you at a quarter of your HP where you stand (Wrenford is safe), and the clock moves on
+function battle({foes, allies:al, text, onWin, onLose, fists}){
+  if(busy||typeof window.startExploreBattle!=='function') return;
+  busy=true; keys.clear(); target=null; hideSay(); save();
+  const key=wizKeys[wizIdx];
+  fade(true).then(()=>{
+    running=false; el.root.classList.remove('active'); fade(false); syncMusic();
+    if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
+    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:al||[], text, fists, arena:MAP.arena||'library',
+      onEnd:(won,low)=>{
+        el.root.classList.add('active'); running=true; busy=false; resize(); syncMusic();
+        clock=(clock+20)%1440; navGrid=null;
+        if(won) vit[key]=Math.max(1,Math.round(Math.min(isFinite(low)?low:hpOf(key),hpOf(key))));
+        else vit[key]=Math.max(1,Math.round(maxHp(key)*0.25));
+        if(won){ onWin&&onWin(); } else { onLose&&onLose(); }
+        renderHp(); renderSpill(); save(); grace=ECHO.grace;
+        last=performance.now(); requestAnimationFrame(frame);
+      }});
+  });
+}
+// an incident's Echo (the Year): roams near its spot and charges like any; onWin when it's beaten
+function spawnIncidentEcho(e){
+  if(actors.some(a=>a.e.incident===e.id)) return;
+  const strong=echoLeader(e).endsWith('_strong');
+  actors.push({e:Object.assign({r:60},e,{incident:e.id}), x:e.x, y:e.y, tx:e.x, ty:e.y, wait:1, face:-1, walk:0,
+    strong, img:imgOf('sprites/echoes/'+e.el+'_'+(strong?'strong':'weak')+'.png'), n:e.foes.length});
 }
 
 // things in rooms: returns true if it handled the inspect
@@ -705,7 +758,7 @@ function crystalSrc(elm){                      // the loot sheet's quintessence 
   c.getContext('2d').drawImage(atlases[q[4]],q[0],q[1],q[2],q[3],0,0,q[2],q[3]);
   return crystalCache[elm]=c.toDataURL();
 }
-function allyMax(a){ const f=fighters[a.key]; return f?f.hp:30; }
+function allyMax(a){ if(a.wizard&&chars[a.key]) return chars[a.key].hp; const f=fighters[a.key]; return f?f.hp:30; }
 function openBag(tab){ bagOpen=true; keys.clear(); target=null; hideSay(); if(tab) bagTab=tab; bagRead=null; bagConfirm=null; renderBag(); el.bag.hidden=false; }
 function closeBag(){ bagOpen=false; el.bag.hidden=true; bagConfirm=null; }
 function bar(hp,mx){ const f=Math.max(0,Math.min(1,hp/mx)); return `<span class="ex-bag-bar"><i style="width:${Math.round(f*100)}%;background:${f>0.5?'#5cc85c':f>0.25?'#e0b040':'#e05050'}"></i></span><small>${Math.round(hp)} / ${mx}</small>`; }
@@ -731,7 +784,7 @@ function renderBag(){
     h+=`<div class="ex-bag-note">Wounds carry from fight to fight. Rest at an inn or a gleaner camp, or drink a potion.</div>`;
     h+=`<div class="ex-bag-sec">Allies · ${allies.length} / ${MAX_ALLIES}</div>`;
     h+=allies.length?allies.map((a,i)=>{ const f=fighters[a.key]||{}, mx=allyMax(a);
-      return `<div class="ex-bag-row"><img class="ex-bag-face" src="portraits/small/${esc(a.key)}.jpg" alt=""><span class="ex-bag-name">${esc(a.name)}<small>${esc(f.title||f.name||a.key)}</small></span>${bar(a.hp==null?mx:a.hp,mx)}`+
+      return `<div class="ex-bag-row"><img class="ex-bag-face" src="${a.wizard?faceSrc(a.key):'portraits/small/'+esc(a.key)+'.jpg'}" alt=""><span class="ex-bag-name">${esc(a.name)}<small>${esc(f.title||f.name||a.key)}</small></span>${bar(a.hp==null?mx:a.hp,mx)}`+
         `<button class="ex-btn" data-act="dismiss" data-i="${i}" type="button">${bagConfirm==='dismiss'+i?'Sure?':'Send home'}</button></div>`; }).join('')
       :'<div class="ex-bag-empty">Nobody. Wounded gleaners in the ruins may join you.</div>';
   } else {
@@ -909,6 +962,7 @@ async function enterMap(id,at,instant){
     exitArmed=false;                          // arriving in an exit doesn't send you straight back
     const loc=locationOfMap(id); if(loc) found.add(loc.id);
     if(!id.startsWith('room:')) visited.add(id);
+    if(Year) Year.onMap(folkApi);
     save(); syncMusic();
   }catch(err){ console.error(err); toast('That way is blocked.'); }
   finally{ busy=false; fade(false); }
@@ -931,6 +985,7 @@ function applySave(s){
   for(const id of found){ const l=world&&world.locations.find(x=>x.id===id); if(l&&l.map) visited.add(l.map); }   // older saves knew only world-map places
 }
 function takeExit(x){
+  if(Year&&!MAP.interior){ const no=Year.blockExit(folkApi,x); if(no){ toast(no); return; } }
   if(x.to==='out'){ const o=roomSpec.outside; enterMap(o.map,[o.x,o.y+30]); return; }
   if(x.to==='world') openWorld('travel');
   else enterMap(x.to.map,x.to.spawn);
@@ -1198,6 +1253,8 @@ function applyMagic(){
   const d=chars&&chars.hero; if(!d||!hero) return;
   if(!magic) magic=freshMagic();
   d.known=magic; d.forbidden=[oppOf(hero.elem)];
+  if(d._atk0==null) d._atk0=(d.phys&&d.phys.atk)||4;
+  d.phys=Object.assign({},d.phys,{atk:d._atk0+(magic.atk||0)});   // the Boxing Club's champion hits harder
 }
 // add to what you know: {glyphs, elems, cats, rings, skin}
 function learn(o){
@@ -1205,6 +1262,8 @@ function learn(o){
   ['glyphs','elems','cats'].forEach(k=>{ (o[k]||[]).forEach(v=>{ if(!magic[k].includes(v)) magic[k].push(v); }); });
   if(o.rings) magic.rings=Math.max(magic.rings||1,o.rings);
   if(o.skin) magic.skin=true;
+  if(o.atk) magic.atk=(magic.atk||0)+o.atk;
+  if(o.grad) magic.grad=true;
   applyMagic(); save();
 }
 function graduate(electives){ magic=fullMagic(hero.elem,electives); applyMagic(); save(); }
@@ -1406,6 +1465,7 @@ function update(dt){
     if(moved>0.1) hideSay();
   }
   if(grace>0) grace-=dt;
+  if(Year&&(yearT+=dt)>2){ yearT=0; Year.tick(folkApi); if(busy) return; }
   updateEchoes(dt); if(busy) return;
   updateBands(dt); if(busy) return;
   // a way out? (you must step out of the one you arrived in first)
@@ -1831,6 +1891,8 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
 window.Explore={open, close, refreshTitle,
   _talk:n=>talkTo(n), _magic:()=>magic,
+  _setClock:m=>folkApi.setClock(m),
+  _fightActor:id=>{ const a=actors.find(x=>x.e.incident===id||x.e.id===id); if(a) fight(a); return !!a; }, _actorIds:()=>actors.map(a=>a.e.incident||a.e.id), _quests:()=>quests, _allies:()=>allies, _tick:()=>Year&&Year.tick(folkApi),
   knowAll:()=>{ if(!hero) return false; magic=fullMagic(hero.elem); applyMagic(); save(); return true; },   // testing: the whole Year at once
   enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
   _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
