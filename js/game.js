@@ -757,6 +757,20 @@ function drawSkinSheen(img,src,dx,dy,dw,dh,skin,t){
   _tintCx.globalAlpha=1; _tintCx.fillStyle=g; _tintCx.fillRect(0,0,dw,dh);
   bx.drawImage(_tintCv,dx,dy,dw,dh);
 }
+// a made wizard's staff light (Explore's hero, js/staff_glow.js): pulses in its element's colour and flares
+// while casting; where it was drawn is kept so spells leave from the staff (castFrom)
+function drawStaffGlow(who,img,animName,x,y,sz,flip,wMul,t){
+  const g=seatCfg(who).glow; if(!g||!window.StaffGlow||isSpriteSheet(img)||animName==='death') return;
+  const dh=sz*1.04, dw=dh*img.naturalWidth/img.naturalHeight*wMul;
+  const gx=flip?x+(g.x-0.5)*dw:x+(0.5-g.x)*dw, gy=y-dh+g.y*dh;              // stills are drawn mirrored unless flip
+  StaffGlow.draw(bx,gx,gy,Math.max(g.r*dh,dh*0.03),g.col,g.elem,t,animName==='cast'?1.8:1);
+  if(gs&&gs[who]) gs[who].staffAt={x:gx,y:gy,t:Date.now()};
+}
+// where a caster's spells leave from: their staff's light if it was drawn just now, else their middle
+function castFrom(who,x,y){
+  const s=gs&&gs[who]&&gs[who].staffAt;
+  return s&&Date.now()-s.t<500?[s.x,s.y]:[x,y];
+}
 function drawSprite(img,animName,frame,x,y,sz,flip,wMul=1,skin=null){
   bx.save();
   if(isSpriteSheet(img)){
@@ -1553,6 +1567,7 @@ function drawWiz(x,y,sz,col,flip,animName,shielded,wardActive,who,foresightActiv
     // Drawn a bit taller than sz: the auras around it (radius ~0.82×sz) still enclose it
     const sk=gs[who]&&skinOn(gs[who]);
     drawSprite(img,animName,animState[who].frame,x,y+lift+shake+bob,sz*SPRITE_SCALE,flip,seatSpriteWidth(who),sk?{col:sk.col,alpha:sk.alpha,shine:sk.shine}:null);
+    drawStaffGlow(who,img,animName,x,y+lift+shake+bob,sz*SPRITE_SCALE,flip,seatSpriteWidth(who),t);
   } else {
     if(flip){bx.scale(-1,1); x=-x;}
     const bob=animName==='idle'?Math.sin(t/500+x)*.015*sz:0;
@@ -2237,7 +2252,7 @@ function spawnFireball(who,tgt,dmg,cb,pal){
   if(simMode){ if(cb) cb(); return; }
   const P=FIRE_PALETTES[pal]||FIRE_PALETTES.fire;
   const dir=seatX(tgt)>=seatX(who)?1:-1;
-  const x1=seatX(who)+dir*wizSize(who)*.28, y1=wizMidY(who)-bH*.02;
+  const [x1,y1]=castFrom(who,seatX(who)+dir*wizSize(who)*.28,wizMidY(who)-bH*.02);
   anim(who,'cast',FIREBALL_CHARGE_MS+FIREBALL_FLIGHT_MS);
   gs.fireballs.push({x1,y1,x2:seatX(tgt),y2:wizMidY(tgt),R:fireballRadius(dmg),start:Date.now(),cb,done:false,lx:x1,ly:y1,P});
 }
@@ -4037,7 +4052,7 @@ function executeAtMinion(who,action,m,sp,cb){
   anim(who,'cast',600);
   const land=()=>{ hitMinion(who,owner,m,p.dmg,el); combatTimeout(cb,600); };
   if(action.act) lunge(who,.22,land);
-  else spawnProj(seatX(who),wizMidY(who),pos.x,pos.y,sp&&SPELL_VFX[sp.id]&&SPELL_VFX[sp.id].delivery&&SPELL_VFX[sp.id].delivery.proj||ELEM_PROJ[p.elem]||'arcane',el.col,land);
+  else spawnProj(...castFrom(who,seatX(who),wizMidY(who)),pos.x,pos.y,sp&&SPELL_VFX[sp.id]&&SPELL_VFX[sp.id].delivery&&SPELL_VFX[sp.id].delivery.proj||ELEM_PROJ[p.elem]||'arcane',el.col,land);
 }
 // Minion stance, as the stance chip shows it
 function stanceLabel(w){
@@ -4810,7 +4825,7 @@ function executeWheel(who,action,cb){
     return;
   }
   fanOut(who,tgts,ELEM_PROJ[action.elem],el.col);
-  spawnProj(x,y,tx,wizMidY(tx),action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,land);
+  spawnProj(...castFrom(who,x,y),tx,wizMidY(tx),action.cat==='dispel'?'dispel':ELEM_PROJ[action.elem],el.col,land);
 }
 
 function executeSignature(who,sp,action,cb){
@@ -4873,7 +4888,7 @@ function executeSignature(who,sp,action,cb){
       spawnDarkRitual(who,tgt,big,land);
       return;
     }
-    spawnProj(x,y,tx,wizMidY(tx),ELEM_PROJ[el.elem],e.col,land);
+    spawnProj(...castFrom(who,x,y),tx,wizMidY(tx),ELEM_PROJ[el.elem],e.col,land);
     return;
   }
   const ally=protectTarget(who,action), as=gs[ally], actx=ally===who?ctx:vfxCtx(ally,ally);
@@ -4907,7 +4922,7 @@ function executeSignature(who,sp,action,cb){
     return;
   }
   if(el.kind==='curse'){
-    spawnProj(x,y,tx,wizMidY(tx),ELEM_PROJ[el.elem||'arcane'],e.col,()=>{
+    spawnProj(...castFrom(who,x,y),tx,wizMidY(tx),ELEM_PROJ[el.elem||'arcane'],e.col,()=>{
       if(VANISH_STOPS_CURSES&&isVanished(tgt)){
         if(!simMode){ addFloat(tx,bH*.3,'👻 '+sigName(sp)+' finds nothing','#b8a0e8',13); VFX.vanished(tx); }
         combatTimeout(cb,700); return;
@@ -5275,7 +5290,7 @@ function elemStrikeVolley(who,tgts,o,cb){
     const wear={blocked:0,worn:0}, hit={hp:0,warded:false};
     let dealt=0, stopped=false;
     ts.deathlessSaved=false;
-    spawnArcaneVolley(x,y,seatX(t),wizMidY(t),n,i=>{
+    spawnArcaneVolley(...castFrom(who,x,y),seatX(t),wizMidY(t),n,i=>{
       if(r.miss||stopped) return;
       const chunk=Math.min(ARCANE_ORB_DMG,r.dmg-dealt); dealt+=chunk;
       if(chunk<=0) return;

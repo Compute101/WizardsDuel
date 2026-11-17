@@ -25,7 +25,7 @@
 // no noTrim boxes). The old witch (Wrenford's dons' base) is old woman figure 1, hand-boxed here.
 const BASES = [
   {id:'f_old_1', sex:'f', age:'old', src:'sprites/folk/source/old_witch.png',  hair:[0.18,0.18,0.60,0.42], face:[0.37,0.15,0.30],
-    skin:[[0.44,0.20,0.62,0.345],[0.10,0.33,0.22,0.41,0.88],[0.70,0.30,0.87,0.42,0.88]], noTrim:[[0,0,0.22,1],[0.28,0.43,0.66,0.62],[0,0.9,1,1]], staffMask:'sprites/hero/f_old_1_staff.png'},
+    skin:[[0.44,0.20,0.62,0.345],[0.10,0.33,0.22,0.41,0.88],[0.70,0.30,0.87,0.42,0.88]], noTrim:[[0,0,0.22,1],[0.28,0.43,0.66,0.62],[0,0.9,1,1]], staffMask:'sprites/hero/f_old_1_staff.png', headMask:'sprites/hero/f_old_1_head.png'},
 ];
 let basesReady=null;
 function loadBases(){
@@ -33,8 +33,29 @@ function loadBases(){
     const order=['young','middle','old'];
     list.sort((a,b)=>order.indexOf(a.age)-order.indexOf(b.age)||a.id.localeCompare(b.id));
     for(const f of list) if(!BASES.some(b=>b.id===f.id)) BASES.push(f);
+    return fetch('sprites/hero/f_old_1_topper.json').then(r=>r.json()).then(a=>{ BASES.find(b=>b.id==='f_old_1').topper=a; }).catch(()=>{});
+  }).then(()=>fetch('sprites/hero/toppers/toppers.json').then(r=>r.json()).then(t=>{ TOPPERS.length=1; TOPPERS.push(...t); }).catch(()=>{})).then(()=>{
+    const order=['young','middle','old'];
     BASES.sort((a,b)=>order.indexOf(a.age)-order.indexOf(b.age)||(a.id==='f_old_1'?-1:b.id==='f_old_1'?1:a.id.localeCompare(b.id)));
   }).catch(()=>{}));
+}
+// staff toppers (tools/cut_toppers.py from the user's sheets): they replace the painted staff head and flame
+// (the figure's headMask), drawn behind the figure along the staff's line (its topper anchor). The first is the painted head.
+const TOPPERS = [{id:'', name:'Painted'}];
+const TOPPER_H = 0.2;   // a topper's height, a fraction of the figure's
+// toppers anyone can choose; the rest are earned in Explore (the save's `toppers`, passed to open() as opts.toppers)
+const STARTER_TOPPERS = ['', 'crystal', 'hoop', 'crescent', 'crook'];
+// an NPC's look nudged off yours, so nobody in the world looks like you: another figure of the same sex and
+// age if they'd share yours, and the next robe colour if they'd share yours
+function avoidLook(look, hero){
+  if(!hero) return look;
+  const L=Object.assign({}, look);
+  if(L.fig===hero.fig){
+    const alts=BASES.filter(b=>b.id!==hero.fig&&b.sex===L.sex&&b.age===L.age);
+    if(alts.length) L.fig=alts[(L.name||'').length%alts.length].id;
+  }
+  if((L.robe||'Violet')===(hero.robe||'Violet')){ const i=ROBES.findIndex(r=>r.name===(L.robe||'Violet')); L.robe=ROBES[(i+3)%ROBES.length].name; }
+  return L;
 }
 const AGES = [['young','Young'],['middle','Middle-aged'],['old','Old']];
 // staff wood: hue°, saturation ×, value × (null keeps the oak); the wood's own shading is kept as offsets from its middle hue (20°)
@@ -179,6 +200,64 @@ function paint(img, base, look){
   x.putImageData(d,0,0);
   return c;
 }
+// a topper recoloured to the look: blue glow → the element, gold → the trim, wood → the staff (its neck, or all of it)
+function paintTopper(img, t, look){
+  const W=img.naturalWidth, H=img.naturalHeight, c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d'); x.drawImage(img,0,0);
+  const magic=(ELEMS.find(e=>e.id===look.elem)||ELEMS[4]).m, trim=(TRIMS.find(q=>q.name===look.trim)||TRIMS[0]).t, wood=(STAVES.find(w=>w.name===look.staff)||STAVES[0]).w;
+  if(!magic&&!trim&&!wood) return c;
+  const d=x.getImageData(0,0,W,H), p=d.data, neckY=H*0.8;
+  for(let i=0;i<p.length;i+=4){
+    if(!p[i+3]) continue;
+    const [h,s,v]=rgb2hsv(p[i]/255,p[i+1]/255,p[i+2]/255); let out=null;
+    if(magic&&h>=165&&h<255&&s>0.25) out=hsv2rgb(magic[0],Math.min(1,s*magic[1]),Math.min(1,v*magic[2]));
+    else if(wood&&(h<30||h>=345)&&s>0.35&&(t.wood==='all'||Math.floor(i/4/W)>neckY)){ const dh=(h>=300?h-360:h)-20; out=hsv2rgb((wood[0]+dh+360)%360,Math.min(1,s*wood[1]),Math.min(1,v*wood[2])); }
+    else if(trim&&h>=30&&h<=60&&s>0.35) out=hsv2rgb(trim[0],Math.min(1,s*trim[1]),Math.min(1,v*trim[2]));
+    if(out){ p[i]=out[0]*255; p[i+1]=out[1]*255; p[i+2]=out[2]*255; }
+  }
+  x.putImageData(d,0,0); return c;
+}
+// where an image's magic sits: the middle and spread of its blue (165–255°) pixels, optionally only
+// inside a mask; null if it has none
+function blueSpot(img, mask){
+  const W=img.naturalWidth||img.width, H=img.naturalHeight||img.height, c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d'); x.drawImage(img,0,0); const p=x.getImageData(0,0,W,H).data;
+  let n=0, sx=0, sy=0, sxx=0, syy=0;
+  for(let j=0;j<W*H;j++){
+    const i=j*4; if(p[i+3]<128||(mask&&!mask[j])) continue;
+    const [h,s,v]=rgb2hsv(p[i]/255,p[i+1]/255,p[i+2]/255);
+    if(h>=165&&h<255&&s>0.3&&v>0.45){ const px=j%W, py=(j-px)/W; n++; sx+=px; sy+=py; sxx+=px*px; syy+=py*py; }
+  }
+  if(n<12) return null;
+  const mx=sx/n, my=sy/n, sd=Math.sqrt(Math.max(1,(sxx/n-mx*mx)+(syy/n-my*my)));
+  return {x:mx, y:my, r:sd};
+}
+// puts a topper on a painted figure: the head and flame cleared, then the topper and a shaft down to the fist
+// drawn behind what's left (so the hand grips it), turned to the staff's lean
+async function fitTopper(cv, base, look){
+  const t=TOPPERS.find(q=>q.id&&q.id===look.topper), a=base.topper;
+  if(!t||!a||!base.headMask) return null;
+  const W=cv.width, H=cv.height, x=cv.getContext('2d');
+  const hm=await hairMaskOf(base,'headMask'); if(!hm) return null;
+  const d=x.getImageData(0,0,W,H), p=d.data;
+  for(let j=0;j<hm.length;j++) if(hm[j]) p[j*4+3]=0;
+  x.putImageData(d,0,0);
+  const img=await loadImg(t.src), tc=paintTopper(img,t,look), tw=tc.width, th=tc.height;
+  const sl=a.line[2]*W/H, ang=-Math.atan(sl), cos=Math.cos(ang);              // the staff's lean, dx per dy in pixels
+  const lineX=y=>(a.line[0]+a.line[2]*(y/H-a.line[1]))*W;
+  const ht=TOPPER_H*H, wd=tw*ht/th;                                           // every topper the same height on every figure
+  const topY=Math.max(2,a.top*H), gripY=a.grip*H+0.03*H;
+  let neckY=topY+ht*cos; if(neckY>gripY-6){ neckY=gripY-6; }
+  const px=lineX(neckY), shaft=(gripY-neckY)/cos;
+  x.save(); x.globalCompositeOperation='destination-over'; x.translate(px,neckY); x.rotate(ang);
+  if(shaft>0) x.drawImage(tc,0,th-6,tw,4,-t.neck[0]*wd,-1,wd,shaft+1);          // the shaft: the neck's foot stretched down to the fist
+  x.drawImage(tc,-t.neck[0]*wd,-ht,wd,ht);
+  x.restore();
+  // the topper's magic, carried to the figure: its blue in topper pixels → scaled, turned, placed
+  const b=blueSpot(img); if(!b) return null;
+  const k=wd/tw, lx=(b.x-t.neck[0]*tw)*k, ly=(b.y-th)*k, ca=Math.cos(ang), sa=Math.sin(ang);
+  return {x:(px+lx*ca-ly*sa)/W, y:(neckY+lx*sa+ly*ca)/H, r:Math.max(0.018,b.r*k/H)};
+}
 function faceOf(canvas, base){
   const W=canvas.width, [fx,fy,fs]=base.face, n=Math.round(fs*W), f=document.createElement('canvas'); f.width=f.height=256;
   const x=f.getContext('2d'); x.fillStyle='#18141e'; x.fillRect(0,0,256,256);
@@ -212,12 +291,19 @@ async function def(hero){
   base._skinMask=await hairMaskOf(base,'skinMask'); base._staffMask=await hairMaskOf(base,'staffMask');
   if(base._hairMask&&!base._hairRim) base._hairRim=hairRimOf(base,base._hairMask,img.naturalWidth,img.naturalHeight);
   const cv=paint(img,base,hero);
+  let spot=hero.topper?await fitTopper(cv,base,hero):null;
+  if(!spot&&base.headMask){                                                   // the painted flame
+    const hm=await hairMaskOf(base,'headMask'), b=hm&&blueSpot(img,hm);
+    if(b) spot={x:b.x/img.naturalWidth, y:b.y/img.naturalHeight, r:Math.max(0.018,b.r/img.naturalHeight)};
+  }
   const el=ELEMS.find(e=>e.id===hero.elem)||ELEMS[0], robe=ROBES.find(r=>r.name===hero.robe)||ROBES[0];
   return defCache[k]={
     name:hero.name.toUpperCase(), title:{young:'Novice',middle:'Journeyman',old:'Hedge-Mage'}[hero.age]+' of '+el.name,
     sprite:cv.toDataURL('image/png'), face:faceOf(cv,base), col:robe.sw==='#22202a'?'#9a90b0':robe.sw,
     hp:48, phys:{atk:4}, dmgMult:1, forbidden:[], spells:[], arena:'library', element:el.id, hero:true,
     taunts:['My turn.','I came a long way for this.','Watch closely.'],
+    // the staff's living light (js/staff_glow.js): where on the sprite, how big, the element; a lantern lights further at night
+    glow:spot&&{x:spot.x, y:spot.y, r:spot.r, col:el.col, elem:el.id, lamp:hero.topper==='lantern'||hero.topper==='crook'},
   };
 }
 
@@ -247,17 +333,28 @@ async function open(root, opts){
     const draw=async()=>{
       const n=++drawn, d=await def(st); if(n!==drawn) return;
       const img=await loadImg(d.sprite); if(n!==drawn) return;
-      const el=ELEMS.find(e=>e.id===st.elem);
+      shown={img, d, el:ELEMS.find(e=>e.id===st.elem)};
+      if(!anim) anim=requestAnimationFrame(frame);
+      $('.hc-who').textContent=(st.name||'?')+', '+d.title;
+    };
+    // the preview, redrawn every frame so the staff's light lives (js/staff_glow.js)
+    let shown=null, anim=0;
+    const frame=t=>{
+      anim=0; if(!box||!shown||!document.body.contains(cv)) return;
+      const {img,d,el}=shown;
       ctx.clearRect(0,0,300,420);
       const g=ctx.createRadialGradient(150,250,10,150,250,190); g.addColorStop(0,el.col+'44'); g.addColorStop(1,'#00000000');
       ctx.fillStyle=g; ctx.fillRect(0,0,300,420);
       ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(150,404,80,10,0,0,Math.PI*2); ctx.fill();
-      const hh=392, w=hh*img.width/img.height; ctx.drawImage(img,150-w/2,408-hh,w,hh);
-      $('.hc-who').textContent=(st.name||'?')+', '+d.title;
+      const hh=392, w=hh*img.width/img.height, x0=150-w/2, y0=408-hh; ctx.drawImage(img,x0,y0,w,hh);
+      if(d.glow&&window.StaffGlow) StaffGlow.draw(ctx,x0+d.glow.x*w,y0+d.glow.y*hh,Math.max(d.glow.r*hh,hh*0.03),d.glow.col,d.glow.elem,t,1);
+      anim=requestAnimationFrame(frame);
     };
     const pills=(key,items,cls)=>`<div class="hc-row"><span class="hc-lab">${cls}</span><div class="hc-pills">`+items.map(([v,l])=>`<button type="button" class="hc-pill${st[key]===v?' on':''}" data-k="${key}" data-v="${v}">${l}</button>`).join('')+`</div></div>`;
     const swatches=(key,items,lab)=>`<div class="hc-row"><span class="hc-lab">${lab}</span><div class="hc-sw">`+items.map(it=>`<button type="button" class="hc-swb${st[key]===it.name?' on':''}" data-k="${key}" data-v="${it.name}" title="${it.name}" style="background:${it.sw}"></button>`).join('')+`<span class="hc-swname">${st[key]}</span></div></div>`;
     // 🎲 Random: a whole new look (and, for a new wizard, sex, element and name; Change look keeps those)
+    // the toppers on offer: the starters, and any this wizard has earned (opts.toppers)
+    const topList=()=>TOPPERS.filter(q=>STARTER_TOPPERS.includes(q.id)||(opts.toppers||[]).includes(q.id)||q.id===st.topper);
     const randomize=()=>{
       if(!opts.edit){ st.sex=rnd(['m','f']); st.elem=rnd(ELEMS).id; st.name=rnd(NAMES[st.sex]); }
       st.age=rnd(AGES)[0]; st.fig=rnd(figuresFor(st.sex,st.age).list).id;
@@ -271,6 +368,7 @@ async function open(root, opts){
         (opts.edit?'':pills('sex',[['m','Man'],['f','Woman']],'I am'))+
         pills('age',AGES,'Age')+
         `<div class="hc-row"><span class="hc-lab">Figure</span><div class="hc-pills"><button type="button" class="hc-pill" data-fig="-1">‹</button><span class="hc-figno">${i+1} of ${F.list.length}</span><button type="button" class="hc-pill" data-fig="1">›</button></div></div>`+
+        (topList().length>1?`<div class="hc-row"><span class="hc-lab">Topper</span><div class="hc-pills"><button type="button" class="hc-pill" data-top="-1">‹</button><span class="hc-figno">${(TOPPERS.find(q=>q.id===(st.topper||''))||TOPPERS[0]).name}</span><button type="button" class="hc-pill" data-top="1">›</button></div></div>`:'')+
         swatches('robe',ROBES,'Robes')+swatches('trim',TRIMS,'Trim')+swatches('staff',STAVES,'Staff')+swatches('hair',HAIRS,'Hair')+swatches('skin',SKINS,'Skin')+swatches('eyes',EYES,'Eyes')+
         (opts.edit?'':`<div class="hc-row"><span class="hc-lab">Element</span><div class="hc-pills">`+ELEMS.map(e=>`<button type="button" class="hc-pill hc-el${st.elem===e.id?' on':''}" data-k="elem" data-v="${e.id}"><i style="background:${e.col}"></i>${e.name}</button>`).join('')+`</div></div>`+
         `<div class="hc-elnote">Your magic burns ${ELEMS.find(e=>e.id===st.elem).name.toLowerCase()}-coloured. Your first spells will be ${ELEMS.find(e=>e.id===st.elem).name}, and in time ${op.name}, its opposite, will come hardest to you.</div>`);
@@ -281,6 +379,7 @@ async function open(root, opts){
       const t=e.target.closest('button'); if(!t) return;
       if(t.classList.contains('hc-rand')){ randomize(); render(); return; }
       if(t.classList.contains('hc-dice')){ st.name=rnd(NAMES[st.sex].filter(n=>n!==st.name)); render(); return; }
+      if(t.dataset.top){ const T=topList(), i=Math.max(0,T.findIndex(q=>q.id===(st.topper||''))); st.topper=T[(i+(+t.dataset.top)+T.length)%T.length].id; render(); return; }
       if(t.dataset.fig){ const F=figuresFor(st.sex,st.age).list, i=F.findIndex(b=>b.id===st.fig); st.fig=F[(i+(+t.dataset.fig)+F.length)%F.length].id; render(); return; }
       if(t.dataset.k){
         const k=t.dataset.k; st[k]=t.dataset.v;
@@ -298,5 +397,5 @@ async function open(root, opts){
     render();
   });
 }
-window.ExploreHero={open, def, loadBases, BASES, ROBES, TRIMS, STAVES, HAIRS, SKINS, EYES, ELEMS, NAMES};
+window.ExploreHero={open, def, loadBases, avoidLook, STARTER_TOPPERS, BASES, ROBES, TRIMS, STAVES, TOPPERS, HAIRS, SKINS, EYES, ELEMS, NAMES};
 })();

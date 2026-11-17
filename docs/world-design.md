@@ -342,3 +342,62 @@ sex there (the old witch included).
 
 Idea (not built): the base figures, recoloured, as Explore's NPC wizards (gleaner bosses, townsfolk),
 leaving out the figure and colours the player picked so no NPC looks like you.
+
+### Staff toppers (built: all five sheets in, the creator's Topper row)
+
+Alternative heads for the hero's staff. The plan is that a topper replaces the painted head: the staff
+mask hides the original above the hand, and the topper is drawn at an anchor point and angle per
+figure, found from the masks. Toppers are recoloured like the figures: glow in blue → the element's
+colour, metal in gold → the Trim colour, wood in the staff's orange-brown → the Staff wood.
+
+One ChatGPT chat per sheet, four toppers a sheet. Attach `sprites/hero/source/mid_man_1.png` and
+`sprites/hero/source/old_woman_3.png` as style references. Save as `sprites/hero/toppers/source/sheet_<n>.png`.
+
+> Pixel-art sprite sheet of four wizard staff heads (toppers) in exactly the same style, pixel scale,
+> shading and outline as the staffs held by the attached wizards. Each topper stands upright, seen
+> from the front, about 130 pixels tall, with a short plain section of staff (a "neck") at its
+> bottom, about 14 pixels wide and 20 pixels long, ending in a straight horizontal cut so it can join
+> a staff. The four toppers sit in a row, well apart, none touching. They are: [LIST]. Colour rules,
+> very important: anything that glows (orbs, crystals, flames, eyes, sparks) is bright blue and only
+> blue; all metal (rings, claws, bands, cages, caps) is gold and only gold; wood is the same
+> orange-brown as the attached staffs. No other blue, no grey or silver metal, no gems of other
+> colours. Bone and feathers may be off-white or brown. Hard pixel edges, no glow halo spilling past
+> the topper. Plain flat pure green (#00FF00) background, nothing else in the picture, no text, no
+> shadows. Landscape image.
+
+| Sheet | [LIST] |
+|---|---|
+| 1 Classic | a raw blue crystal gripped by four gold claws; a blue glass orb floating inside an upright gold hoop; a gold crescent moon cupping a small blue orb; a wooden shepherd's crook with a small gold lantern hanging from it, blue flame inside |
+| 2 The world | a jagged blue quintessence shard bound to the wood with gold wire; a small gold orrery, three thin rings around a blue glowing core; a cage of bent gold bars with a blue wisp trapped inside; a gold lantern with a blue flame, like a Finder's |
+| 3 Glyphs | the glyph Ω cut in gold with a blue flame behind it; the glyph Ψ as a gold trident with blue sparks on its tines; the glyph ⊕ as a gold ring and cross with a blue orb at the centre; the glyph ✸ as an eight-pointed gold star with a blue core |
+| 4 Bandit | an off-white skull with blue light in its eye sockets; a broken sword stump lashed on with brown rope, a blue glow along the break; a pair of brown antlers with blue sparks between them; a bundle of brown feathers and small bones on leather thongs around a blue orb |
+| 5 Scholar | a gold hourglass with blue glowing sand; a gold hand with closed fingers holding a blue orb; a small brown wren perched on a gold ring around a blue spark; an ornate gold key-head with a blue light in its bow |
+
+Checks when a sheet comes back: every glow blue, every metal gold, no grey, flat green background,
+and each topper has its straight-cut neck at the bottom. Regenerate a sheet that breaks a rule.
+
+### Familiars (art brief, not built)
+
+A small companion that follows your wizard round Explore and sits at their feet in battle, like
+Nerissa's Fathom. Four to choose in the creator, later more as rewards. One ChatGPT chat per sheet;
+attach `sprites/fathom.png` and `sprites/hero/source/mid_man_1.png` as style references. Save as
+`sprites/familiars/source/sheet_<n>.png`.
+
+> Pixel-art sprite sheet of a small magical familiar in exactly the same style, pixel scale, shading and
+> outline as the attached shark familiar and wizard. The familiar is [FAMILIAR]. Draw it four times in a
+> row, well apart: sitting, walking (two frames, legs or wings in different positions) and a
+> "casting" pose with its eyes and markings glowing. Facing right, three-quarter view, feet (or lowest
+> point) at the same baseline in every pose. About 200 pixels tall. Colour rules, very important: any
+> glow, eyes and magical markings are bright blue and only blue (the game recolours them to the
+> wizard's element); no other blue anywhere. Natural fur, feather or skin colours otherwise. Hard pixel
+> edges, no glow halo past the outline. Plain flat pure green (#00FF00) background, nothing else, no
+> text, no shadow. Landscape image.
+
+| Sheet | [FAMILIAR] |
+|---|---|
+| 1 | a tawny owl with tufted ears and wise, glowing eyes, faint rune markings on its wing feathers |
+| 2 | a sleek black cat with a long tail, glowing eyes and a small rune-shaped mark on its forehead |
+| 3 | a warty toad, fat and pleased with itself, with glowing spots down its back and glowing eyes |
+| 4 | a raven with ragged feathers, glowing eyes and glowing runes along its beak |
+
+Checks: blue only where it glows, flat green, the same baseline and size in all four poses.
