@@ -5,7 +5,7 @@ Baldur's Gate: countries, cities, towns and villages, with wizards stationed aro
 You meet them, they start stories, and some join your party. Battles use the existing duel
 screen. Nothing here is built yet beyond Hollowmere (see "Explore mode" in `CLAUDE.md`).
 
-Status: **vision and names agreed; steps 1, 3, 4 and 6 built; step 2 has all eight outer rings (inner rings next); interiors built; Wrenford, the University town and tutorial, built.**
+Status: **vision and names agreed; steps 1, 3, 4 and 6 built; step 2 has all eight outer rings and all eight inner districts (the centre, the Wound, waits); interiors built; Wrenford, the University town and tutorial, built.**
 
 ## Decisions so far
 
@@ -112,7 +112,8 @@ in battle: you pick for each, or set one to AI.
    ring along Wallside in the wheel's order, each from recolours of the existing art plus its own
    weather. Next: the inner rings beyond each sector's north barrier, and sector-specific art
    (ice spires, floating rubble, rock spires, drowned streets) where recolours fall short. *Done:*
-   each sector now has its own pieces from four sheets (`tools/mapgen/own.js`).
+   each sector now has its own pieces from four sheets (`tools/mapgen/own.js`). *Done:* the eight inner
+   districts (`tools/mapgen/inner.js`), joined by the Inner Circuit, from sheets 14–23. Next: the Wound itself (its sheet is cut).
 3. **Elementals on the map:** roaming, battle on contact, loot, respawn. *Done for Cindergate* (see
    "Echoes" in `CLAUDE.md`); balancing the Echo numbers against created wizards waits for step 7.
 4. **Inventory and save game**, per profile. *Done:* one Explore save per profile (Guest too), the satchel (pack, companions, journal with lore to reread), Start over, and a Corvanthe section on the profile page. What quintessence buys is still deferred.

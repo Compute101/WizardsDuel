@@ -61,7 +61,7 @@ const INNER = {
   conductory: {outer:'spirewatch', seed:7301, pal:'storm', fx:'rain', storm:true, haze:'40,50,100,0.16', glow:'160,180,255', center:'coilBig', lamp:'stormLamp1',
     land:['spireTower','fallenSpire','spireTower','coilBig','bellTower'],
     props:[['coil1',3],['coil2',3],['rodTall',3],['rodSpire',3],['rodFork',3],['stormLamp2',3],['stormLamp3',3],['rainBarrel',3],['barrelPlain',3],['cartWrecked',2],['lightningRod',2]],
-    decals:[['glaze1',4,'street'],['glaze2',4,'street'],['glaze3',3,'street'],['glaze4',3,'street']], signs:['signSmith','signApothecary'],
+    decals:[['glaze2',5,'street'],['glaze3',3,'street'],['glaze4',3,'street']], signs:['signSmith','signApothecary'],
     lore:{
       line:['The Rim of the Wound', 'Every bolt that falls on Spirewatch comes from here. The edge is glass, fused and refused, and it sings when the lightning finds it.'],
       lastGate:['The Copper Gate', 'Sheathed in copper to draw the storm off the inner city. It glows blue-white, and the air in front of it tastes of pennies. Not yet.'],
@@ -417,11 +417,11 @@ function woundPit(m,city,bridged){
       if(!ok) continue;
       const box={x:tx*T,y:(ty-1)*T,w:w*T,h:4*T};
       if(m.boxes.some(b=>P.overlap(b,box,6))||m.objs.some(o=>o.decal&&Math.abs(o.x-(tx+w/2)*T)<6*T&&Math.abs(o.y-ty*T)<4*T)) continue;
-      m.fill(tx,ty-1,tx+w-1,ty+2,'X');
+      m.fill(tx,ty-1,tx+w-1,ty+1,'X');
       const span=w*T+90, sc=span/m.rects.ropeBridge[2], s=m.size('ropeBridge',sc);
       m.place('ropeBridge',(tx+w/2)*T,(ty+1)*T+s.h*0.42,{scale:sc,decal:1,lore:'pitBridge'});
       m.walk.push({x:tx*T-8,y:ty*T-4,w:w*T+16,h:2*T+8});
-      city.reserve(tx*T-T,(tx+w+1)*T,(ty-2)*T,(ty+3)*T);
+      city.reserve(tx*T-T,(tx+w+1)*T,(ty-2)*T,(ty+6)*T);   // nothing below it either: it would stand over the hole
       m.lore.pitBridge=['A Rope Bridge', 'The street floated away from under the houses here, and the gleaners strung a bridge across. Below it there is no ground at all: just violet light, a long way down.'];
       return;
     }

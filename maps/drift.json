@@ -24,7 +24,7 @@
   "GGGGGRGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGRRGGGGGGGGXXXGGGGGGG",
   "GGRRRRRGGRGGGGGGGGGRRRRRRRRRGGGGGGGGRRGRRRRRRRXXXRRRRRRR",
   "RRRRRRRRRRRRRGGGGGRRRRRRRRRRRRRRRRGGRRRRRRRRRRXXXRRRRRRR",
-  "RRRRGRRRRRRRRRGRRRRRRGGGGGGRRRRRRRRRRRRRRGGGGGXXXGGGGGGG",
+  "RRRRGRRRRRRRRRGRRRRRRGGGGGGRRRRRRRRRRRRRRGGGGGGGGGGGGGGG",
   "GGGGGGGGGRRRRRRRRRRGGGGGGGGGGGGGRRRRRRRRGGGGGGGGGGGGGGGG",
   "GGGGGGGGGGGGGRRRGGGGGGGGGGGGGGGGGGRRRRRGGGGGGGGGGGGGGGGG",
   "GGGGGGGGGGGGGRRGGGGGGGGGGGGGGGGGRRRRRRGGGGGGGGGGGGGGGGGG",
@@ -41,7 +41,7 @@
   "GGGGGGGGGGGGGGGRGGGGRRRRRGGGXXXGGGGGRRRRRRRRRGGGRRGGGGGG",
   "GGGGGGGGGGGGGGGRGGGGRRRRRRRRXXXRRRRRRRRRRRRRRRRGGRRGGGGG",
   "GGGGRRRRRRRGGGRRGGGGGRRRRRRRXXXRRRRRRGGGGGGRRRRRRRRRGGGG",
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRGGXXXGGGGGGGGGGGGGRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRGGGGGGGGGGGGGGGGGGRRRRRRRRRRRR",
   "RRRRRRGGGRRRRRRRRRRRRRRRRRGGGGGGGGGGGGGGGGGGRRRRGGRRRRRR",
   "GGGGGGGGGGGGRRGGGGGGGGGRRRRGGGGGGGGGGGGGGGGGGRRGGGGGRRRG",
   "GGGGGGGGGGGGRGGGGGGGGGGGRRRRGGGGGGGXXXGGGGGGGGGGGGGGGGGG",
@@ -201,43 +201,43 @@
   ["house5_gale",1097.8,1916],
   ["barrelsBroken_gale",1294.1,1910],
   ["house6_gale",3396.5,1916],
-  ["house3_gale",1860.5,2172],
-  ["house5_gale",1993.8,2300],
-  ["house3_gale",68.5,2428],
-  ["house4_gale",304.5,2428],
-  ["house2_gale",454.7,2428],
-  ["house4_gale",605,2428],
-  ["house5_gale",1655.6,2428],
-  ["house3_gale",2116.5,2428],
-  ["house4_gale",2804,2428],
-  ["house5_gale",2960.1,2428],
-  ["house3_gale",3113.7,2428],
-  ["house3_gale",3262,2428],
-  ["house5_gale",3415.7,2428],
-  ["backSlateRuin_gale",70.7,532],
-  ["ruinWall1_gale",201.4,526],
-  ["backPurpleRuin_gale",518.1,532],
-  ["backPurpleRuin_gale",669.5,532],
-  ["backSlateRuin_gale",821.6,532],
+  ["house4_gale",2055,2364],
+  ["house1_gale",68.2,2428],
+  ["house3_gale",216.2,2428],
+  ["house5_gale",369.9,2428],
+  ["house2_gale",696.6,2428],
+  ["house4_gale",1290.2,2428],
+  ["house5_gale",1634.3,2428],
+  ["house4_gale",2698.3,2428],
+  ["house5_gale",2854.4,2428],
+  ["house3_gale",3008,2428],
+  ["house3_gale",3156.4,2428],
+  ["house5_gale",3310,2428],
+  ["backPurpleRuin_gale",70.1,532],
+  ["backSlateRuin_gale",222.1,532],
+  ["backSlateRuin_gale",518.7,532],
+  ["backSlateRuin_gale",671.4,532],
+  ["backSlateRuin_gale",824.1,532],
   ["backPurpleRuin_gale",1734.1,532],
-  ["backPurpleRuin_gale",1948.3,532],
+  ["backPurpleRuin_gale",1885.5,532],
   ["backPurpleRuin_gale",2438.1,532],
   ["backPurpleRuin_gale",2589.5,532],
-  ["backPurpleRuin_gale",966.1,596],
-  ["rubble3_gale",1118.1,590],
-  ["backPurpleRuin_gale",1245,596],
-  ["backSlateRuin_gale",1397.1,596],
-  ["backSlateRuin_gale",1549.8,596],
-  ["crateBroken_gale",2758.7,590],
-  ["backPurpleRuin_gale",3288.4,596],
-  ["rubble5_gale",3502.5,590],
+  ["backSlateRuin_gale",966.7,596],
+  ["rubble9_gale",1097.4,590],
+  ["rubble3_gale",1182.1,590],
+  ["backPurpleRuin_gale",1309,596],
+  ["backSlateRuin_gale",1461,596],
+  ["crateBroken_gale",1719.9,590],
+  ["rubble5_gale",3308.9,590],
+  ["rubble5_gale",3414.3,590],
   ["backPurpleRuin_gale",1414.1,916],
-  ["barrelsBroken_gale",1650.2,910],
-  ["backPurpleRuin_gale",2694.1,916],
-  ["rubble9_gale",3270.1,910],
-  ["backSlateRuin_gale",3376.1,916],
-  ["crateBroken_gale",70.1,974],
-  ["backSlateRuin_gale",176.1,980],
+  ["backSlateRuin_gale",1566.1,916],
+  ["backSlateRuin_gale",2694.7,916],
+  ["rubble9_gale",2974.8,910],
+  ["backPurpleRuin_gale",3270.1,916],
+  ["backPurpleRuin_gale",3421.5,916],
+  ["backPurpleRuin_gale",70.1,980],
+  ["backSlateRuin_gale",222.1,980],
   ["backPurpleRuin_gale",390.1,980],
   ["backPurpleRuin_gale",541.5,980],
   ["blocks1_gale",1392.1,974],
@@ -261,6 +261,7 @@
   ["barrelsBroken_gale",2569.4,1934],
   ["backSlate_gale",2672.7,1940],
   ["blocks1_gale",1734.7,1998],
+  ["barrelsBroken_gale",1840.2,1998],
   ["backPurpleRuin_gale",2139.4,2004],
   ["backSlate_gale",2288.7,2004],
   ["backSlate_gale",451.9,2068],
@@ -275,7 +276,6 @@
   ["backSlate_gale",3500.9,2196],
   ["backSlateRuin_gale",1606.7,2324],
   ["sidePurpleRuin_gale",257.6,634],
-  ["sidePurpleRuin_gale",321.6,570],
   ["sideSlate_gale",712.7,2234],
   ["sidePurpleRuin_gale",769.6,1146],
   ["sideSlate_gale",776.7,2298],
@@ -285,21 +285,21 @@
   ["sidePurpleRuin_gale",1086.5,1018],
   ["sidePurpleRuin_gale",1086.5,1210],
   ["sidePurpleRuin_gale",1278.5,954],
-  ["sidePurple_gale",1351.8,2362],
   ["sideSlate_gale",1416.7,2298],
   ["sidePurpleRuin_gale",1473.6,2170],
-  ["sidePurpleRuin_gale",1665.6,1210],
+  ["sidePurple_gale",1671.8,1210],
   ["sidePurple_gale",1799.8,2618],
-  ["sideSlate_gale",2039.3,1274],
+  ["sidePurpleRuin_gale",2046.5,1274],
+  ["sidePurpleRuin_gale",2049.6,506],
   ["sidePurpleRuin_gale",2049.6,1530],
   ["sideSlate_gale",2103.3,2618],
-  ["sidePurple_gale",2119.8,1018],
+  ["sidePurpleRuin_gale",2113.6,570],
   ["sidePurpleRuin_gale",2238.5,826],
-  ["sidePurpleRuin_gale",2241.6,698],
-  ["sidePurpleRuin_gale",2753.6,2042],
+  ["sidePurple_gale",2759.8,2042],
   ["sidePurpleRuin_gale",2817.6,2106],
   ["sidePurpleRuin_gale",2942.5,1786],
-  ["sideSlate_gale",3063.3,1850],
+  ["sideSlate_gale",2952.7,1722],
+  ["sidePurpleRuin_gale",3073.6,1850],
   ["rubble1_gale",3279.6,1011.2],
   ["rubble5_gale",774.4,1395.4],
   ["sacks_gale",2875.2,1318.1],
@@ -323,7 +323,6 @@
   ["lowwall_gale",3473.5,2622.2],
   ["crateBroken_gale",3175.8,1310.1],
   ["logs_gale",2362.5,1236.9],
-  ["planks1_gale",1359.2,2405.7],
   ["brokenFence_gale",3094.7,2159.1],
   ["brokenFence_gale",2502.5,2337.8],
   ["ruinWall1_gale",2837.5,927.9],
@@ -336,12 +335,9 @@
   ["logs_gale",2408.4,1355.4],
   ["rubble3_gale",114.1,591],
   ["rubble9_gale",1267.9,1188.8],
-  ["rubble6_gale",2106.2,2294.9],
-  ["brokenFence_gale",164.6,2363.3],
   ["rubble3_gale",499.6,570],
   ["planks1_gale",1390,1038.2],
   ["logs_gale",3096.2,2580.3],
-  ["blocks1_gale",1698.4,608.5],
   ["ruinWall1_gale",1569.7,1073.9],
   ["crateBroken_gale",1126.3,729.9],
   ["brokenFence_gale",706.7,2621.5],
@@ -351,9 +347,12 @@
   ["sacks_gale",268.5,1168.1],
   ["rubble9_gale",145.3,1214],
   ["blocks1_gale",118.6,1169],
+  ["sacks_gale",3456.5,2376.7],
   ["planks1_gale",1583,999.8],
+  ["crateBroken_gale",1584.8,534.6],
   ["barrel3_gale",3441.6,2588.8],
   ["crate3_gale",2264.1,2377.6],
+  ["barrel3_gale",2166.4,2341.4],
   ["brokenFence_gale",1510.1,2417.5],
   ["rocks1_gale",379.8,1363],
   ["sacks_gale",1127.9,2215.2],
@@ -362,7 +361,6 @@
   ["brokenFence_gale",2303.1,2077.1],
   ["barrel3_gale",689.8,2580.6],
   ["crateBroken_gale",3488.5,376],
-  ["rubble9_gale",3239.4,863],
   ["logs_gale",3266.5,2615.9],
   ["rocks1_gale",827.8,666.7],
   ["barrelsBroken_gale",548.9,2061.8],
@@ -378,20 +376,23 @@
   ["rocks1_gale",468.6,1164.4],
   ["crate3_gale",2189.7,2267.3],
   ["rubble9_gale",3374.4,1137.8],
+  ["rubble5_gale",2175.9,718.2],
   ["brokenFence_gale",2988.8,1355],
   ["blocks1_gale",2802.6,2298.1],
   ["logs_gale",2404.4,2026.6],
   ["rubble5_gale",590.7,572],
+  ["brokenFence_gale",1653.3,1689.6],
   ["ruinWall1_gale",3357.3,1321.2],
   ["rocks1_gale",2421.1,1201.4],
+  ["barrel3_gale",1963.3,2250.8],
   ["crate3_gale",3368.5,2245],
   ["crateBroken_gale",76.8,1336.9],
+  ["ruinWall1_gale",1571.3,593.7],
   ["planks1_gale",2469,2183.9],
   ["crate3_gale",2739.9,1006.1],
   ["planks1_gale",3165.2,1692.9],
   ["sacks_gale",1211.6,2196.2],
   ["crateBroken_gale",2154.6,1305.3],
-  ["blocks1_gale",2940,939.2],
   ["rubble6_gale",203,1913.1],
   ["crateBroken_gale",2840.6,331.1],
   ["rubble9_gale",190.6,1150.5],
@@ -404,6 +405,7 @@
   ["ruinWall1_gale",254.1,1386.1],
   ["rubble5_gale",3506,336.4],
   ["planks1_gale",1685.5,2587.8],
+  ["barrel3_gale",510.2,2347.5],
   ["crateBroken_gale",3203.4,1386.7],
   ["barrel3_gale",2455.4,1706.2],
   ["barrel3_gale",953.3,2268.1],
@@ -411,7 +413,6 @@
   ["rubble6_gale",2594.4,2337.6],
   ["brokenFence_gale",2708,2231.2],
   ["blocks1_gale",3304.8,1231.9],
-  ["planks1_gale",1315.7,2419.6],
   ["crateBroken_gale",1820.4,597],
   ["planks1_gale",338.3,2202.3],
   ["rubble1_gale",3341.2,1087.8],
@@ -422,7 +423,6 @@
   ["rubble6_gale",2444.9,2615.5],
   ["brokenFence_gale",621.7,2586],
   ["planks1_gale",2456.8,1248.1],
-  ["logs_gale",1249.8,2362.3],
   ["barrelsBroken_gale",149.1,1093.9],
   ["crate3_gale",3167.9,2622.4],
   ["blocks1_gale",103.3,670.3],
@@ -430,110 +430,108 @@
   ["crate3_gale",3491.4,2261.6],
   ["rubble1_gale",1081.8,653],
   ["crateBroken_gale",511.6,752.1],
-  ["crate3_gale",2041.1,2038.2],
   ["crateBroken_gale",3496.4,534.7],
   ["crate3_gale",2131.4,2167.7],
   ["barrelsBroken_gale",644.1,1087.2],
   ["barrelsBroken_gale",200.7,1050.7],
   ["rubble3_gale",985.7,632.5],
-  ["blocks1_gale",3123.9,999.9],
   ["logs_gale",2530.6,2001.2],
+  ["fence_gale",3344.8,2621.4],
   ["brokenFence_gale",3198.6,2290.3],
   ["rocks1_gale",417.4,1211.4],
-  ["kite1",696.3,2299.4],
-  ["kite1",388.9,2174.1],
-  ["kite1",3009.9,961.4],
-  ["kite2",365.9,1123.1],
-  ["kite2",295.7,934.3],
-  ["vaneGriffin",3150,2225.1],
-  ["vaneGriffin",1840.1,512],
-  ["vaneBird",3245,1219.7],
-  ["vaneBird",2538.6,597.6],
-  ["vaneSmall",1859.5,1423.4],
-  ["vaneSmall",3281.5,2320.6],
-  ["vaneSmall",2680.4,566.6],
-  ["awningPurple",2065.8,566.8],
-  ["awningPurple",1046.9,2176.3],
-  ["awningCream",3091.5,1091.1],
-  ["awningCream",2539.8,2157.1],
-  ["awningRed",2979,1226.1],
-  ["awningRed",3180.4,1191.9],
-  ["bannerFrame",2821.2,2197.2,{"lore":"bannerFrame"}],
-  ["bannerFrame",1879.8,2027.3,{"lore":"bannerFrame"}],
-  ["bannerFrame",544.4,2164.7,{"lore":"bannerFrame"}],
-  ["sail1",380.7,2112],
-  ["sail1",2520.8,1489.1],
-  ["sail2",2972.6,1717.6],
-  ["sail2",575.2,2244.6],
-  ["windmillSails",431.2,1017.3,{"lore":"windmillSails"}],
-  ["urnBroken",1815.9,1025.2],
-  ["urnBroken",864,632.4],
-  ["urnBroken",2653.9,1447.9],
-  ["bench",2464.7,568.7],
-  ["bench",2885,1192.1],
-  ["bench",1409.4,1128.6],
-  ["cratesProduce",533.7,2218.5],
-  ["cratesProduce",1994.5,1433],
-  ["sacksGrain",3488.4,641.5],
-  ["sacksGrain",563.2,1010.6],
-  ["barrelsTrio",773.2,1253.7],
-  ["barrelsTrio",2820.6,1441.3],
-  ["cartLoaded",2943.9,539.3],
-  ["wagonCovered",2984.3,2254.1],
-  ["washLine1",347.4,2296.6],
-  ["washLine2",3363.8,1260.5],
-  ["well",1125.3,1802.2,{"lore":"well"}],
-  ["benchBack",2083.7,2102.5],
-  ["benchPlain",2665.5,1478.1],
-  ["noticeBoard",2371.5,2355.1,{"lore":"noticeBoard"}],
-  ["lanternPostBroken",1440.6,1167.5],
-  ["lanternPostBroken",2384.6,2067.8],
-  ["lanternSmashed",3015.7,2286.1],
-  ["lanternSmashed",2652.5,950],
-  ["handcartSacks",279.3,1313],
-  ["handcartGreens",1263.6,1225.3],
-  ["barrowStone",1243.9,1092.9],
-  ["chestOld",2878.5,1715.3],
-  ["basketApples",1372.2,1174.6],
-  ["crow1",2492.2,2122.6],
-  ["crow1",2465.2,1434.3],
-  ["crow2",285,1086.4],
-  ["crow2",2918.3,1426.5],
-  ["crowFlying",784,1777.8],
-  ["crowFlying",1238.5,2229.3],
-  ["crowPerch",611.6,1168.1,{"lore":"crowPerch"}],
-  ["crowPerch",3496.2,1046.7,{"lore":"crowPerch"}],
-  ["catGinger",3219.3,1076.2,{"lore":"catGinger"}],
-  ["catTabby",631.5,2084.8,{"lore":"catTabby"}],
-  ["catBlack",3348.8,987.1,{"lore":"catBlack"}],
-  ["catSleeping",2559.5,1512.3,{"lore":"catSleeping"}],
-  ["skyRock1",134,858,{"lore":"skyRock1"}],
-  ["skyRock1",2306.5,948,{"lore":"skyRock1"}],
-  ["skyRock1",926.2,971.6,{"lore":"skyRock1"}],
-  ["skyRock2",1756,2282.3],
-  ["skyRock2",522.2,1577.3],
-  ["skyRock2",3090.8,1783.9],
-  ["skyRock2",1343.8,1427.9],
-  ["skyRock3",754.5,1987.7],
-  ["skyRock3",2491.5,1014.1],
-  ["skyRock3",2083.6,1370.4],
-  ["skyRock3",1692.2,820.1],
-  ["skyRock4",2115.1,1142],
-  ["skyRock4",1468.9,881.2],
-  ["skyRock4",1225.8,699.9],
-  ["skyRock4",2984.2,1043.8],
-  ["skyRock4",1435.2,1398.8],
-  ["floatHouse1",1687.7,1598.2,{"lore":"floatHouse1"}],
-  ["floatHouse2",580.8,1770.5,{"lore":"floatHouse2"}],
-  ["floatHouse3",2201.9,1660.4,{"lore":"floatHouse3"}],
-  ["floatHouse3",520.4,450.8,{"lore":"floatHouse3"}],
-  ["floatIsle1",2793.3,1796],
-  ["floatIsle1",334.7,1962.3],
-  ["floatIsle3",971.5,870],
-  ["floatIsle3",1601.5,2137.9],
-  ["floatIsle3",2471.9,1823.8],
-  ["floatRoof",1821.6,2096.7],
-  ["floatRoof",363.9,743.8]
+  ["kite1",2985.4,1435.9],
+  ["kite1",266.4,2139.2],
+  ["kite1",88.7,615.2],
+  ["kite2",911.1,2219.6],
+  ["kite2",3159.6,549.4],
+  ["vaneGriffin",2366.1,2354.4],
+  ["vaneGriffin",576.3,2261.2],
+  ["vaneBird",175.4,1417.4],
+  ["vaneBird",3339.8,1163.5],
+  ["vaneSmall",2541.9,1378.5],
+  ["vaneSmall",734.9,1714.3],
+  ["vaneSmall",2758.8,2213.9],
+  ["awningPurple",367,1435.1],
+  ["awningPurple",438.2,2121.4],
+  ["awningCream",2164.5,2213.2],
+  ["awningCream",1724.3,1025.8],
+  ["awningRed",1362.2,1221.8],
+  ["awningRed",702.4,723.8],
+  ["bannerFrame",3054.4,2282,{"lore":"bannerFrame"}],
+  ["bannerFrame",3048.8,1219.7,{"lore":"bannerFrame"}],
+  ["bannerFrame",2351.9,1277.1,{"lore":"bannerFrame"}],
+  ["sail1",2531.7,2376.3],
+  ["sail1",1654.2,1059.1],
+  ["sail2",1162,1779],
+  ["sail2",3213.1,2250.4],
+  ["windmillSails",615.9,2298.7,{"lore":"windmillSails"}],
+  ["urnBroken",1225.2,1119.5],
+  ["urnBroken",3440.3,643.3],
+  ["urnBroken",595,2332.3],
+  ["bench",500.5,2173.8],
+  ["bench",1459.3,1131.7],
+  ["bench",1279.3,2312.4],
+  ["cratesProduce",596.9,1722.8],
+  ["cratesProduce",2994,2239.9],
+  ["sacksGrain",703.4,1199.9],
+  ["sacksGrain",2882.5,1226.6],
+  ["barrelsTrio",3293.1,1426.6],
+  ["barrelsTrio",2823.4,999.7],
+  ["cartLoaded",547.8,2227.5],
+  ["wagonCovered",1400.9,2215.5],
+  ["washLine1",2366.2,2045.8],
+  ["washLine2",2700.2,1079.4],
+  ["benchBack",2309.7,2417.4],
+  ["benchPlain",269.2,1294.3],
+  ["noticeBoard",2485,565.1,{"lore":"noticeBoard"}],
+  ["lanternPostBroken",549.1,1076.3],
+  ["lanternPostBroken",374.3,2082.2],
+  ["lanternSmashed",1418,1060.1],
+  ["lanternSmashed",2332.3,1318.3],
+  ["handcartSacks",615.2,1124.1],
+  ["handcartGreens",560.3,1199],
+  ["barrowStone",1106.9,545.9],
+  ["chestOld",192.2,2333.7],
+  ["basketApples",802.1,1735.4],
+  ["crow1",3037.9,1419.3],
+  ["crow1",263.1,2185.6],
+  ["crow2",2933.1,2282],
+  ["crow2",2830.9,1425.6],
+  ["crowFlying",1313.3,1254.5],
+  ["crowFlying",3261,1679.2],
+  ["crowPerch",2669,1380.1,{"lore":"crowPerch"}],
+  ["crowPerch",1672.8,982.4,{"lore":"crowPerch"}],
+  ["catGinger",1891.5,567,{"lore":"catGinger"}],
+  ["catTabby",2696.9,1481.2,{"lore":"catTabby"}],
+  ["catBlack",359.3,534.8,{"lore":"catBlack"}],
+  ["catSleeping",302.6,892.2,{"lore":"catSleeping"}],
+  ["skyRock1",2364.6,727.3,{"lore":"skyRock1"}],
+  ["skyRock1",2357.3,1610.8,{"lore":"skyRock1"}],
+  ["skyRock1",3074.9,994.3,{"lore":"skyRock1"}],
+  ["skyRock2",3403.3,793.9],
+  ["skyRock2",329.4,1679.8],
+  ["skyRock2",2540.5,1824.8],
+  ["skyRock2",3118.7,686.5],
+  ["skyRock3",1991.4,2075.9],
+  ["skyRock3",3179.7,1194.7],
+  ["skyRock3",259.3,2295.8],
+  ["skyRock3",1576.7,1535.2],
+  ["skyRock4",1726.2,465.4],
+  ["skyRock4",3428.8,1461.4],
+  ["skyRock4",3001.2,2037.5],
+  ["skyRock4",719.1,1577.4],
+  ["skyRock4",2853.1,1839.8],
+  ["floatHouse1",775.8,2022.6,{"lore":"floatHouse1"}],
+  ["floatHouse2",1412.9,2048.5,{"lore":"floatHouse2"}],
+  ["floatHouse3",418.9,851.2,{"lore":"floatHouse3"}],
+  ["floatHouse3",2881.9,575.9,{"lore":"floatHouse3"}],
+  ["floatIsle1",1651.7,778.1],
+  ["floatIsle1",2358.7,797.2],
+  ["floatIsle3",984.4,1203.7],
+  ["floatIsle3",3270.3,1867.2],
+  ["floatIsle3",1899.9,2067],
+  ["floatRoof",2232.6,461.6],
+  ["floatRoof",1014.3,896.3]
  ],
  "lore": {
   "forge": [
@@ -1168,15 +1166,19 @@
    "foes": [
     [
      "echo_air_strong",
-     1
+     3
     ],
     [
-     "echo_air_strong",
-     1
+     "echo_air_weak",
+     2
+    ],
+    [
+     "echo_air_weak",
+     2
     ]
    ],
-   "x": 2880,
-   "y": 1642,
+   "x": 3264,
+   "y": 490,
    "r": 150
   },
   {
@@ -1185,15 +1187,15 @@
    "foes": [
     [
      "echo_air_strong",
-     2
+     1
     ],
     [
-     "echo_air_weak",
-     2
+     "echo_air_strong",
+     1
     ]
    ],
-   "x": 1280,
-   "y": 1386,
+   "x": 2048,
+   "y": 1130,
    "r": 150
   },
   {
@@ -1201,20 +1203,16 @@
    "el": "air",
    "foes": [
     [
-     "echo_air_weak",
-     1
+     "echo_air_strong",
+     2
     ],
     [
      "echo_air_weak",
-     1
-    ],
-    [
-     "echo_air_weak",
-     1
+     2
     ]
    ],
-   "x": 2944,
-   "y": 2090,
+   "x": 1216,
+   "y": 1514,
    "r": 150
   },
   {
@@ -1223,32 +1221,32 @@
    "foes": [
     [
      "echo_air_strong",
-     3
+     1
     ],
     [
-     "echo_air_strong",
-     2
+     "echo_air_weak",
+     1
     ]
    ],
-   "x": 128,
-   "y": 810,
+   "x": 1024,
+   "y": 1962,
    "r": 150
   },
   {
    "id": "drif4",
-   "el": "fire",
+   "el": "air",
    "foes": [
     [
-     "echo_fire_strong",
-     1
+     "echo_air_strong",
+     2
     ],
     [
-     "echo_fire_strong",
-     1
+     "echo_air_weak",
+     2
     ]
    ],
-   "x": 256,
-   "y": 1578,
+   "x": 2880,
+   "y": 1642,
    "r": 150
   },
   {
@@ -1257,15 +1255,15 @@
    "foes": [
     [
      "echo_air_strong",
-     1
+     2
     ],
     [
-     "echo_air_strong",
-     1
+     "echo_air_weak",
+     2
     ]
    ],
-   "x": 1728,
-   "y": 1578,
+   "x": 2240,
+   "y": 1642,
    "r": 150
   },
   {
@@ -1274,15 +1272,15 @@
    "foes": [
     [
      "echo_air_strong",
-     3
+     1
     ],
     [
-     "echo_air_strong",
-     2
+     "echo_air_weak",
+     1
     ]
    ],
-   "x": 2368,
-   "y": 618,
+   "x": 1728,
+   "y": 1834,
    "r": 150
   },
   {
@@ -1298,8 +1296,8 @@
      2
     ]
    ],
-   "x": 3072,
-   "y": 490,
+   "x": 1536,
+   "y": 810,
    "r": 150
   },
   {
@@ -1307,20 +1305,16 @@
    "el": "air",
    "foes": [
     [
-     "echo_air_weak",
+     "echo_air_strong",
      1
     ],
     [
-     "echo_air_weak",
-     1
-    ],
-    [
-     "echo_air_weak",
+     "echo_air_strong",
      1
     ]
    ],
-   "x": 1664,
-   "y": 2154,
+   "x": 3456,
+   "y": 1578,
    "r": 150
   },
   {
@@ -1328,16 +1322,20 @@
    "el": "air",
    "foes": [
     [
-     "echo_air_strong",
-     3
+     "echo_air_weak",
+     1
     ],
     [
-     "echo_air_strong",
-     2
+     "echo_air_weak",
+     1
+    ],
+    [
+     "echo_air_weak",
+     1
     ]
    ],
-   "x": 3392,
-   "y": 810,
+   "x": 1472,
+   "y": 2346,
    "r": 150
   },
   {
@@ -1346,15 +1344,15 @@
    "foes": [
     [
      "echo_air_strong",
-     1
+     3
     ],
     [
-     "echo_air_weak",
-     1
+     "echo_air_strong",
+     2
     ]
    ],
-   "x": 832,
-   "y": 2026,
+   "x": 2240,
+   "y": 490,
    "r": 150
   },
   {
@@ -1363,23 +1361,6 @@
    "foes": [
     [
      "echo_air_strong",
-     1
-    ],
-    [
-     "echo_air_strong",
-     1
-    ]
-   ],
-   "x": 896,
-   "y": 1130,
-   "r": 150
-  },
-  {
-   "id": "drif12",
-   "el": "air",
-   "foes": [
-    [
-     "echo_air_strong",
      3
     ],
     [
@@ -1387,71 +1368,12 @@
      2
     ]
    ],
-   "x": 1920,
+   "x": 384,
    "y": 810,
    "r": 150
   },
   {
-   "id": "drif13",
-   "el": "air",
-   "foes": [
-    [
-     "echo_air_strong",
-     3
-    ],
-    [
-     "echo_air_weak",
-     2
-    ],
-    [
-     "echo_air_weak",
-     2
-    ]
-   ],
-   "x": 960,
-   "y": 490,
-   "r": 150
-  },
-  {
-   "id": "drif14",
-   "el": "air",
-   "foes": [
-    [
-     "echo_air_strong",
-     2
-    ],
-    [
-     "echo_air_weak",
-     2
-    ]
-   ],
-   "x": 3392,
-   "y": 1642,
-   "r": 150
-  },
-  {
-   "id": "drif15",
-   "el": "air",
-   "foes": [
-    [
-     "echo_air_weak",
-     1
-    ],
-    [
-     "echo_air_weak",
-     1
-    ],
-    [
-     "echo_air_weak",
-     1
-    ]
-   ],
-   "x": 2368,
-   "y": 1834,
-   "r": 150
-  },
-  {
-   "id": "drif16",
+   "id": "drif12",
    "el": "air",
    "foes": [
     [
@@ -1468,7 +1390,24 @@
    "r": 150
   },
   {
-   "id": "drif17",
+   "id": "drif13",
+   "el": "air",
+   "foes": [
+    [
+     "echo_air_strong",
+     2
+    ],
+    [
+     "echo_air_weak",
+     2
+    ]
+   ],
+   "x": 896,
+   "y": 1002,
+   "r": 150
+  },
+  {
+   "id": "drif14",
    "el": "air",
    "foes": [
     [
@@ -1480,8 +1419,59 @@
      2
     ]
    ],
-   "x": 1408,
-   "y": 490,
+   "x": 2560,
+   "y": 810,
+   "r": 150
+  },
+  {
+   "id": "drif15",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     2
+    ],
+    [
+     "echo_fire_weak",
+     2
+    ]
+   ],
+   "x": 128,
+   "y": 1642,
+   "r": 150
+  },
+  {
+   "id": "drif16",
+   "el": "air",
+   "foes": [
+    [
+     "echo_air_strong",
+     1
+    ],
+    [
+     "echo_air_weak",
+     1
+    ]
+   ],
+   "x": 2944,
+   "y": 2090,
+   "r": 150
+  },
+  {
+   "id": "drif17",
+   "el": "air",
+   "foes": [
+    [
+     "echo_air_strong",
+     1
+    ],
+    [
+     "echo_air_strong",
+     1
+    ]
+   ],
+   "x": 640,
+   "y": 1450,
    "r": 150
   }
  ],

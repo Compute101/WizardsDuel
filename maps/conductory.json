@@ -529,20 +529,17 @@
   ["catTabby",3136.2,1718.2,{"lore":"catTabby"}],
   ["catBlack",2844.4,1571.8,{"lore":"catBlack"}],
   ["catSleeping",2776.2,487.9,{"lore":"catSleeping"}],
-  ["glaze1",2192.6,449.3,{"decal":1}],
-  ["glaze1",3488.7,1710.4,{"decal":1}],
-  ["glaze1",830.3,995.8,{"decal":1}],
-  ["glaze1",2964,2173.9,{"decal":1}],
+  ["glaze2",2192.6,449.3,{"decal":1}],
+  ["glaze2",3488.7,1710.4,{"decal":1}],
+  ["glaze2",830.3,995.8,{"decal":1}],
+  ["glaze2",2964,2173.9,{"decal":1}],
   ["glaze2",215.3,957.8,{"decal":1}],
-  ["glaze2",3025.4,883.8,{"decal":1}],
-  ["glaze2",2619.9,2121.4,{"decal":1}],
-  ["glaze2",953.6,2101,{"decal":1}],
-  ["glaze3",3282.4,1011.1,{"decal":1}],
-  ["glaze3",1718.2,2173.1,{"decal":1}],
-  ["glaze3",1950.4,1205.2,{"decal":1}],
-  ["glaze4",3140.2,2123.8,{"decal":1}],
-  ["glaze4",2185.9,974.2,{"decal":1}],
-  ["glaze4",428.1,947.8,{"decal":1}]
+  ["glaze3",3025.4,883.8,{"decal":1}],
+  ["glaze3",2619.9,2121.4,{"decal":1}],
+  ["glaze3",953.6,2101,{"decal":1}],
+  ["glaze4",3282.4,1011.1,{"decal":1}],
+  ["glaze4",1085,1585.3,{"decal":1}],
+  ["glaze4",1718.2,2173.1,{"decal":1}]
  ],
  "lore": {
   "forge": [
@@ -1167,6 +1164,27 @@
    "foes": [
     [
      "echo_lightning_strong",
+     3
+    ],
+    [
+     "echo_lightning_weak",
+     2
+    ],
+    [
+     "echo_lightning_weak",
+     2
+    ]
+   ],
+   "x": 2432,
+   "y": 810,
+   "r": 150
+  },
+  {
+   "id": "cond1",
+   "el": "lightning",
+   "foes": [
+    [
+     "echo_lightning_strong",
      2
     ],
     [
@@ -1179,41 +1197,20 @@
    "r": 150
   },
   {
-   "id": "cond1",
-   "el": "lightning",
-   "foes": [
-    [
-     "echo_lightning_strong",
-     3
-    ],
-    [
-     "echo_lightning_strong",
-     2
-    ]
-   ],
-   "x": 1216,
-   "y": 490,
-   "r": 150
-  },
-  {
    "id": "cond2",
    "el": "lightning",
    "foes": [
     [
      "echo_lightning_strong",
-     3
+     1
     ],
     [
      "echo_lightning_weak",
-     2
-    ],
-    [
-     "echo_lightning_weak",
-     2
+     1
     ]
    ],
-   "x": 2176,
-   "y": 938,
+   "x": 2624,
+   "y": 2154,
    "r": 150
   },
   {
@@ -1221,7 +1218,11 @@
    "el": "lightning",
    "foes": [
     [
-     "echo_lightning_strong",
+     "echo_lightning_weak",
+     1
+    ],
+    [
+     "echo_lightning_weak",
      1
     ],
     [
@@ -1229,8 +1230,8 @@
      1
     ]
    ],
-   "x": 2368,
-   "y": 2218,
+   "x": 1600,
+   "y": 1834,
    "r": 150
   },
   {
@@ -1239,15 +1240,15 @@
    "foes": [
     [
      "echo_lightning_strong",
-     2
+     1
     ],
     [
-     "echo_lightning_weak",
-     2
+     "echo_lightning_strong",
+     1
     ]
    ],
-   "x": 960,
-   "y": 1450,
+   "x": 1792,
+   "y": 1002,
    "r": 150
   },
   {
@@ -1263,12 +1264,29 @@
      1
     ]
    ],
-   "x": 1088,
-   "y": 2090,
+   "x": 1984,
+   "y": 2154,
    "r": 150
   },
   {
    "id": "cond6",
+   "el": "arcane",
+   "foes": [
+    [
+     "echo_arcane_strong",
+     2
+    ],
+    [
+     "echo_arcane_weak",
+     2
+    ]
+   ],
+   "x": 3072,
+   "y": 1514,
+   "r": 150
+  },
+  {
+   "id": "cond7",
    "el": "lightning",
    "foes": [
     [
@@ -1276,50 +1294,29 @@
      3
     ],
     [
-     "echo_lightning_weak",
-     2
-    ],
-    [
-     "echo_lightning_weak",
+     "echo_lightning_strong",
      2
     ]
    ],
-   "x": 384,
+   "x": 3072,
    "y": 938,
    "r": 150
   },
   {
-   "id": "cond7",
-   "el": "arcane",
-   "foes": [
-    [
-     "echo_arcane_strong",
-     1
-    ],
-    [
-     "echo_arcane_strong",
-     1
-    ]
-   ],
-   "x": 3328,
-   "y": 1514,
-   "r": 150
-  },
-  {
    "id": "cond8",
-   "el": "air",
+   "el": "lightning",
    "foes": [
     [
-     "echo_air_strong",
+     "echo_lightning_strong",
      1
     ],
     [
-     "echo_air_weak",
+     "echo_lightning_strong",
      1
     ]
    ],
-   "x": 128,
-   "y": 2154,
+   "x": 448,
+   "y": 1514,
    "r": 150
   },
   {
@@ -1327,36 +1324,40 @@
    "el": "lightning",
    "foes": [
     [
-     "echo_lightning_strong",
-     3
+     "echo_lightning_weak",
+     1
     ],
     [
      "echo_lightning_weak",
-     2
+     1
     ],
     [
      "echo_lightning_weak",
-     2
+     1
     ]
    ],
-   "x": 2880,
-   "y": 810,
+   "x": 448,
+   "y": 2218,
    "r": 150
   },
   {
    "id": "cond10",
-   "el": "arcane",
+   "el": "lightning",
    "foes": [
     [
-     "echo_arcane_strong",
+     "echo_lightning_weak",
      1
     ],
     [
-     "echo_arcane_weak",
+     "echo_lightning_weak",
+     1
+    ],
+    [
+     "echo_lightning_weak",
      1
     ]
    ],
-   "x": 3008,
+   "x": 1216,
    "y": 2154,
    "r": 150
   },
@@ -1366,15 +1367,15 @@
    "foes": [
     [
      "echo_lightning_strong",
-     1
+     3
     ],
     [
      "echo_lightning_strong",
-     1
+     2
     ]
    ],
-   "x": 1920,
-   "y": 1642,
+   "x": 1024,
+   "y": 490,
    "r": 150
   },
   {
@@ -1383,15 +1384,15 @@
    "foes": [
     [
      "echo_lightning_strong",
-     3
+     2
     ],
     [
-     "echo_lightning_strong",
+     "echo_lightning_weak",
      2
     ]
    ],
-   "x": 3264,
-   "y": 490,
+   "x": 960,
+   "y": 1514,
    "r": 150
   },
   {
@@ -1407,8 +1408,8 @@
      2
     ]
    ],
-   "x": 448,
-   "y": 1514,
+   "x": 1344,
+   "y": 1066,
    "r": 150
   },
   {
@@ -1417,36 +1418,32 @@
    "foes": [
     [
      "echo_lightning_strong",
-     1
+     3
     ],
     [
      "echo_lightning_strong",
-     1
+     2
     ]
    ],
-   "x": 2688,
-   "y": 1450,
+   "x": 128,
+   "y": 938,
    "r": 150
   },
   {
    "id": "cond15",
-   "el": "lightning",
+   "el": "arcane",
    "foes": [
     [
-     "echo_lightning_weak",
+     "echo_arcane_strong",
      1
     ],
     [
-     "echo_lightning_weak",
-     1
-    ],
-    [
-     "echo_lightning_weak",
+     "echo_arcane_weak",
      1
     ]
    ],
-   "x": 640,
-   "y": 2026,
+   "x": 3200,
+   "y": 2090,
    "r": 150
   },
   {
@@ -1458,12 +1455,12 @@
      1
     ],
     [
-     "echo_lightning_weak",
+     "echo_lightning_strong",
      1
     ]
    ],
-   "x": 1600,
-   "y": 2154,
+   "x": 1856,
+   "y": 1450,
    "r": 150
   },
   {
@@ -1472,15 +1469,15 @@
    "foes": [
     [
      "echo_lightning_strong",
-     1
+     3
     ],
     [
      "echo_lightning_strong",
-     1
+     2
     ]
    ],
-   "x": 1728,
-   "y": 1002,
+   "x": 3264,
+   "y": 490,
    "r": 150
   }
  ],
