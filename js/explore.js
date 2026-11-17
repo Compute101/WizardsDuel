@@ -161,6 +161,7 @@ function setupMap(data){
   applyRoomState();
   spawnEchoes();
   spawnBands();
+  spawnStrollers();
   buildMinimap();
   if(el.title){ el.title.textContent=data.name; sizeMini(); }
 }
@@ -376,6 +377,94 @@ function drawCrew(c,t){
     const w=ctx.measureText(label).width+12;
     ctx.fillStyle='rgba(14,10,30,0.8)'; ctx.fillRect(c.x-w/2,c.y-WIZ_H-34,w,17);
     ctx.fillStyle=c.b.col; ctx.fillText(label,c.x,c.y-WIZ_H-21);
+  }
+}
+// ── Strollers: townsfolk who walk a safe town's streets by day (Wrenford), for bustle ──
+// Peasants (sprites/folk/peasant_*.png, cut by tools/cut_peasants.py) come out of house doors in the
+// morning, wander the streets (roadPath, like the warbands) with the odd stop to look about, and as
+// dusk falls make for the nearest door and go in; at dawn they come out again. They don't block you;
+// pass close and one may greet you (a speech bubble, GREET). Count by daylight: STROLL.n × (1 − darkness).
+const STROLL = {n:16, speed:[34,48], greetR:70, greetGap:9000};
+const STROLL_SPRITES = ['man_1','man_2','man_3','man_4','woman_1','woman_2','woman_3','woman_4'].map(k=>'sprites/folk/peasant_'+k+'.png');
+const GREET = ['Morning!','Good day, scholar.','Mind the carts.','Fine weather for it.','Bless the Absent.','Penny for the bridge?',
+  'Lovely day.','Off to the market.','Afternoon.','You\'re new here.','Mind your step.','Turnips are dear this week.',
+  'Watch the punts by the Meadow.','Hope the dons treat you well.','Never seen so many students.'];
+let strollers=[], strollT=0;
+function nearestRoad(x,y){ let best=null, bd=1e9; for(const r of roadList){ const d=Math.hypot((r%COLS)*T+T/2-x,Math.floor(r/COLS)*T+T/2-y); if(d<bd){ bd=d; best=r; } } return best; }
+function strollDoors(){ return doors.filter(d=>!d.spec||!d.spec.fixed); }
+function newStroller(atDoor){
+  const ds=strollDoors(); let x, y, door=null;
+  if(atDoor&&ds.length){ door=ds[Math.floor(Math.random()*ds.length)]; x=door.x; y=door.y; }
+  else { const r=roadList[Math.floor(Math.random()*roadList.length)]; x=(r%COLS)*T+T/2+(Math.random()-0.5)*30; y=Math.floor(r/COLS)*T+T/2+(Math.random()-0.5)*20; }
+  const s={x, y, img:imgOf(STROLL_SPRITES[Math.floor(Math.random()*STROLL_SPRITES.length)]), face:Math.random()<0.5?1:-1, walk:Math.random()*6,
+    moving:false, path:null, wait:Math.random()*2, speed:STROLL.speed[0]+Math.random()*(STROLL.speed[1]-STROLL.speed[0]),
+    h:WIZ_H*(0.92+Math.random()*0.1), home:null, fade:atDoor?0:1, greet:null, greetAt:0};
+  if(door){ const r=nearestRoad(door.x,door.y); s.path=r==null?null:[{x:(r%COLS)*T+T/2,y:Math.floor(r/COLS)*T+T/2}]; }
+  return s;
+}
+function spawnStrollers(){
+  strollers=[];
+  if(!MAP.safe||MAP.interior) return;
+  roadsOf(); if(!roadList.length) return;
+  const n=Math.round(STROLL.n*(1-darkness()));
+  for(let i=0;i<n;i++) strollers.push(newStroller(false));
+}
+function updateStrollers(dt){
+  if(!MAP.safe||MAP.interior||!roadList.length) return;
+  // how many should be out: fewer as the light goes; the extra ones head home, new ones come out of doors
+  strollT-=dt;
+  if(strollT<=0){
+    strollT=1.5+Math.random()*2;
+    const want=Math.round(STROLL.n*(1-darkness())), out=strollers.filter(s=>!s.home);
+    if(out.length>want){ const s=out[Math.floor(Math.random()*out.length)], ds=strollDoors();
+      if(ds.length){ const d=ds.sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y))[0]; s.home=d;
+        const from=roadIdx(s.x,s.y), to=nearestRoad(d.x,d.y); s.path=(roadSet.has(from)&&to!=null&&roadPath(from,to))||[]; s.path.push({x:d.x,y:d.y}); s.wait=0; }
+      else s.home={x:s.x,y:s.y}; }
+    else if(out.length<want) strollers.push(newStroller(true));
+  }
+  const now=performance.now();
+  for(const s of strollers){
+    s.fade=Math.min(1,s.fade+dt*1.5);
+    if(s.greet&&now-s.greetAt>2600) s.greet=null;
+    const dw=Math.hypot(wiz.x-s.x,(wiz.y-s.y)*1.3);
+    if(!s.greet&&dw<STROLL.greetR&&now-s.greetAt>STROLL.greetGap&&!strollers.some(o=>o.greet)&&!busy&&el.say.hidden&&Math.random()<dt*1.2){
+      s.greet=GREET[Math.floor(Math.random()*GREET.length)]; s.greetAt=now; if(!s.moving) s.face=wiz.x>s.x?1:-1; }
+    if(!s.path||!s.path.length){
+      if(s.home){ s.gone=true; continue; }                      // in through the door
+      s.moving=false; s.wait-=dt; if(s.wait>0) continue;
+      s.wait=Math.random()<0.35?2+Math.random()*5:0.3+Math.random();   // now and then a longer stop, to look about
+      const from=roadIdx(s.x,s.y);
+      const near=roadList.filter(r=>{ const d=Math.hypot((r%COLS)*T-s.x,Math.floor(r/COLS)*T-s.y); return d>T*4&&d<T*16; });
+      const to=near[Math.floor(Math.random()*near.length)];
+      s.path=roadSet.has(from)&&to!=null?roadPath(from,to):null;
+      if(!s.path){ const r=nearestRoad(s.x,s.y); s.path=r==null?[]:[{x:(r%COLS)*T+T/2,y:Math.floor(r/COLS)*T+T/2}]; }
+      continue;
+    }
+    const p=s.path[0], dx=p.x-s.x, dy=p.y-s.y, len=Math.hypot(dx,dy);
+    if(len<6){ s.path.shift(); continue; }
+    const step=Math.min(len,s.speed*dt); s.x+=dx/len*step; s.y+=dy/len*step;
+    s.moving=true; s.walk+=dt*5; if(Math.abs(dx)>3) s.face=dx>0?1:-1;
+    if(s.home&&s.path.length===1&&len<30) s.fade=Math.min(s.fade,len/30);   // stepping indoors
+  }
+  strollers=strollers.filter(s=>!s.gone);
+}
+function drawStroller(s,t){
+  const img=s.img; if(!img.complete||!img.naturalWidth) return;
+  const h=s.h, w=h*img.naturalWidth/img.naturalHeight, bob=s.moving?Math.abs(Math.sin(s.walk))*2.5:0;
+  ctx.save(); ctx.globalAlpha=s.fade;
+  ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(s.x,s.y-2,w*0.3,5,0,0,Math.PI*2); ctx.fill();
+  ctx.translate(s.x,s.y-bob); if(s.face<0) ctx.scale(-1,1);
+  if(s.moving) ctx.rotate(Math.sin(s.walk)*0.025);               // a little sway as they walk
+  ctx.drawImage(img,-w/2,-h,w,h);
+  ctx.restore();
+  if(s.greet){                                                  // a word as you pass
+    const a=Math.min(1,(2600-(performance.now()-s.greetAt))/400);
+    ctx.save(); ctx.globalAlpha=Math.max(0,a)*s.fade; ctx.font='9px Cinzel, serif'; ctx.textAlign='center';
+    const tw=ctx.measureText(s.greet).width+10, bx=s.x, by=s.y-h-10;
+    ctx.fillStyle='rgba(250,240,215,0.92)'; ctx.strokeStyle='rgba(60,40,20,0.8)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.rect(bx-tw/2,by-11,tw,15); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx-4,by+4); ctx.lineTo(bx+4,by+4); ctx.lineTo(bx,by+9); ctx.fill();
+    ctx.fillStyle='#3a2810'; ctx.fillText(s.greet,bx,by); ctx.restore();
   }
 }
 function drawClashes(t){                           // a crew and Echoes trading blows: sparks and steel
@@ -1448,6 +1537,7 @@ function update(dt){
   if(grace>0) grace-=dt;
   updateEchoes(dt); if(busy) return;
   updateBands(dt); if(busy) return;
+  updateStrollers(dt);
   // a way out? (you must step out of the one you arrived in first)
   const ex=exitAt(wiz.x,wiz.y);
   if(!ex) exitArmed=true;
@@ -1614,12 +1704,14 @@ function draw(t){
   for(const a of actors) if(a.x>cam.x-80&&a.x<cam.x+cw+80&&a.y>cam.y&&a.y<cam.y+ch+120) list.push({actor:a,y:a.y});
   for(const c of crews) if(c.x>cam.x-120&&c.x<cam.x+cw+120&&c.y>cam.y&&c.y<cam.y+ch+160) list.push({crew:c,y:c.y});
   for(const n of npcs) if(present(n)) list.push({npc:n,y:n.y});
+  for(const s of strollers) if(s.x>cam.x-80&&s.x<cam.x+cw+80&&s.y>cam.y&&s.y<cam.y+ch+120) list.push({stroll:s,y:s.y});
   list.sort((a,b)=>a.y-b.y);
   for(const o of list){
     if(o.wiz){ drawWizard(t); continue; }
     if(o.actor){ drawEcho(o.actor,t); continue; }
     if(o.crew){ drawCrew(o.crew,t); continue; }
     if(o.npc){ drawNpc(o.npc,t); continue; }
+    if(o.stroll){ drawStroller(o.stroll,t); continue; }
     const s=sizeOf(o.kind,o.scale);
     // a tall piece in front of the wizard turns see-through
     const hides=o.y>wiz.y && s.h>90 && overlap(wizBox,{x:o.x-s.w/2,y:o.y-s.h,w:s.w,h:s.h-12});
@@ -1949,7 +2041,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(sp) sp.addEventListener('click',playTheme);
   titleMusic();
 });
-window.Explore={open, close, refreshTitle, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
+window.Explore={open, close, refreshTitle, enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _strollers:()=>strollers, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
   _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _place:(x,y)=>{ wiz.x=x; wiz.y=y; target=null; }, _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
   // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
   _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;
