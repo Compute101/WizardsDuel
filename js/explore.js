@@ -383,12 +383,10 @@ function drawCrew(c,t){
 // Peasants (sprites/folk/peasant_*.png, cut by tools/cut_peasants.py) come out of house doors in the
 // morning, wander the streets (roadPath, like the warbands) with the odd stop to look about, and as
 // dusk falls make for the nearest door and go in; at dawn they come out again. They don't block you;
-// pass close and one may greet you (a speech bubble, GREET). Count by daylight: STROLL.n × (1 − darkness).
+// pass close and one may greet you (a speech bubble: the map's `greet` lines, else GREET). Count by daylight: STROLL.n × (1 − darkness).
 const STROLL = {n:16, speed:[34,48], greetR:70, greetGap:9000};
 const STROLL_SPRITES = ['man_1','man_2','man_3','man_4','woman_1','woman_2','woman_3','woman_4'].map(k=>'sprites/folk/peasant_'+k+'.png');
-const GREET = ['Morning!','Good day, scholar.','Mind the carts.','Fine weather for it.','Bless the Absent.','Penny for the bridge?',
-  'Lovely day.','Off to the market.','Afternoon.','You\'re new here.','Mind your step.','Turnips are dear this week.',
-  'Watch the punts by the Meadow.','Hope the dons treat you well.','Never seen so many students.'];
+const GREET = ['Morning!','Good day.','Afternoon.','Lovely day.','Mind your step.'];   // a map's own `greet` lines replace these
 let strollers=[], strollT=0;
 function nearestRoad(x,y){ let best=null, bd=1e9; for(const r of roadList){ const d=Math.hypot((r%COLS)*T+T/2-x,Math.floor(r/COLS)*T+T/2-y); if(d<bd){ bd=d; best=r; } } return best; }
 function strollDoors(){ return doors.filter(d=>!d.spec||!d.spec.fixed); }
@@ -428,7 +426,7 @@ function updateStrollers(dt){
     if(s.greet&&now-s.greetAt>2600) s.greet=null;
     const dw=Math.hypot(wiz.x-s.x,(wiz.y-s.y)*1.3);
     if(!s.greet&&dw<STROLL.greetR&&now-s.greetAt>STROLL.greetGap&&!strollers.some(o=>o.greet)&&!busy&&el.say.hidden&&Math.random()<dt*1.2){
-      s.greet=GREET[Math.floor(Math.random()*GREET.length)]; s.greetAt=now; if(!s.moving) s.face=wiz.x>s.x?1:-1; }
+      const L=MAP.greet&&MAP.greet.length?MAP.greet:GREET; s.greet=L[Math.floor(Math.random()*L.length)]; s.greetAt=now; if(!s.moving) s.face=wiz.x>s.x?1:-1; }
     if(!s.path||!s.path.length){
       if(s.home){ s.gone=true; continue; }                      // in through the door
       s.moving=false; s.wait-=dt; if(s.wait>0) continue;
