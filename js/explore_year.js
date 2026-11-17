@@ -539,6 +539,14 @@ function labPracticals(api){
 // the Master of the Schools' Ironskin practical (Hilary)
 function skinDue(api){ const m=mg(api); return learning(api)&&term(api)>=2&&!m.skin; }
 
-window.ExploreYear={knows, title, sprite, talk, onMap, tick, afterFight, doors, blockExit, allyKnown, journal, keeperBeat, aureliaBeat, labPracticals, skinDue,
+// a face for the dialog box: Wil / Nell and Ashgrove have the faces painted from their looks; the rest
+// wait for their art (docs/art-prompts.md)
+function face(n, api){
+  const k=n.role==='partner'||n.role==='partnerLost'?'partner':n.role==='ashgrove'?'ashgrove':null, c=k&&api.chars[k];
+  if(c&&c.face) return c.face;
+  if(n.role==='fancy') return 'portraits/small/soldier.jpg';
+  return null;
+}
+window.ExploreYear={knows, title, sprite, face, talk, onMap, tick, afterFight, doors, blockExit, allyKnown, journal, keeperBeat, aureliaBeat, labPracticals, skinDue,
   partnerName, partnerKnown, termNeeds, PEOPLE, LECT, REWARD, _Y:Y};
 })();

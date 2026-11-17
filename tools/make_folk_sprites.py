@@ -10,10 +10,12 @@ style, so the invented dons of Wrenford have stand-in art until they get their o
 
 Each recolour moves the purple robe and the blue magic (staff flame, orb, potion) to new colours;
 gold trim, wood, leather, skin and grey hair are left alone. Output: sprites/folk/<role>.png,
-768 px tall, facing right, feet on the bottom edge (like the character stills).
+768 px tall, facing right, feet on the bottom edge (like the character stills), and each one's
+dialog face, portraits/small/<role>.jpg (FACES).
 
     python3 tools/make_folk_sprites.py            # writes sprites/folk/<role>.png
     python3 tools/make_folk_sprites.py --preview out.png
+    python3 tools/make_folk_sprites.py --faces    # only the dialog faces (FACES), from the sprites
 """
 import colorsys, os, sys
 from collections import deque
@@ -127,7 +129,22 @@ def recolour(im, robe, magic):
             px[x, y] = (round(nr * 255), round(ng * 255), round(nb * 255), a)
     return im
 
+# the dialog face (portraits/small/<role>.jpg, shown when you talk to them): x, y, size in the
+# 768-tall sprite, by base figure (every recolour of a base has its face in the same place)
+FACES = {'old_witch': (178, 138, 140), 'old_eldrin': (192, 140, 145)}
+
+def write_face(role, im):
+    x, y, n = FACES[FOLK[role][0]]
+    face = Image.new('RGBA', (n, n), (24, 20, 30, 255))
+    face.alpha_composite(im.crop((x, y, x + n, y + n)))
+    face.convert('RGB').resize((256, 256), Image.LANCZOS).save(
+        os.path.join(ROOT, 'portraits', 'small', role + '.jpg'), quality=90)
+    print('portraits/small/%s.jpg' % role)
+
 def main():
+    if '--faces' in sys.argv:          # faces only, from the sprites already made
+        for role in FOLK: write_face(role, Image.open(os.path.join(ROOT, 'sprites/folk', role + '.png')).convert('RGBA'))
+        return
     bases = {}
     outs = {}
     for role, (b, robe, magic) in FOLK.items():
@@ -136,6 +153,7 @@ def main():
         out.save(os.path.join(ROOT, 'sprites/folk', role + '.png'), optimize=True)
         outs[role] = out
         print('sprites/folk/%s.png' % role)
+        write_face(role, out)
     if '--preview' in sys.argv:
         p = sys.argv[sys.argv.index('--preview') + 1]
         ims = list(bases.values()) + list(outs.values())

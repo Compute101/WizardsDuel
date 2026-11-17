@@ -85,7 +85,7 @@ function hpOf(key){ return vit[key]==null?maxHp(key):vit[key]; }
 let el={}, ctx=null, dark=null, dctx=null;
 const wiz={x:0,y:0,face:1,walk:0,moving:false};
 const keys=new Set();
-let target=null, stuckT=0, near=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, cam={x:0,y:0}, vw=0, vh=0;
+let target=null, stuckT=0, near=null, nearLook=null, nearExit=null, exitArmed=false, dpr=1, zoom=1, baseZoom=1, cam={x:0,y:0}, vw=0, vh=0;
 let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
 let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null, quests={};
@@ -122,6 +122,10 @@ function setupMap(data){
       case 'e': return 'dirtGrass_ash';
       case 'c': return 'tr_cobble_11_ash';
       case 'f': return r()<.7?'flagCracked_ash':'flagMoss_ash';
+      // inner districts: snow (the Winter Fair), flooded streets you wade through (the Sunken Harbour), the Wound's edge
+      case 'S': return 'tr_snow_11';
+      case 'F': return 'tr_flood_11';
+      case 'X': return 'tr_wound_21';
       // interiors (js/explore_rooms.js): floors, and the dark beyond the walls
       case 'w': return 'floorWood'+(1+Math.floor(r()*4));
       case 'l': return 'floorFlag'+(1+Math.floor(r()*4));
@@ -208,7 +212,7 @@ function updateEchoes(dt){
 // (ExploreBands.clashOdds); a winning crew takes the spill and may lose a member, a losing one is broken.
 // Toll crews stop you and ask for gold or spill; hostile ones charge. bandState[id] (saved): beaten (time),
 // lost (fallen members), gold, spill, tollUntil, met.
-const ROAD_KINDS='RMcPfD';
+const ROAD_KINDS='RMcPfDF';
 const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
 let roadSet=null, roadList=[];
 function bandRec(b){
@@ -324,7 +328,7 @@ function meetBand(c,st){
   keys.clear(); target=null; st.met=true;
   if(b.mood==='hostile'){ toast(b.leader+': '+b.shout); bandFight(c); return; }
   const toll=B.toll[b.level], spillHave=Object.values(spill).reduce((x,y)=>x+y,0), inSpill=Math.max(1,Math.ceil(toll/5));
-  parley=c;
+  parley=c; talkFocus={x:c.x, y:c.y}; sayFace=b.wizard?faceSrc(b.wizard):'portraits/small/'+b.members[0]+'.jpg';
   showDialog(b.leader+', of '+b.name, b.toll+'\n\nThe toll is '+toll+' gold.',[
     {label:'Pay '+toll+' gold', disabled:gold<toll, fn:()=>{ parley=null; st.robbed=false; gold-=toll; st.gold+=toll; st.tollUntil=Date.now()+B.tollMs; toast('They step aside. "Pleasure doing business."'); }},
     {label:'Pay in spill ('+inSpill+')', disabled:spillHave<inSpill, fn:()=>{ parley=null; payInSpill(inSpill,st); st.tollUntil=Date.now()+B.tollMs; toast('They weigh the crystals and wave you on.'); }},
@@ -479,7 +483,8 @@ function renderSpill(){
 // ═══ DOORS AND ROOMS ═══════════════════════════════════════════════
 // Every house front, tavern, chapel and the like can be entered (js/explore_rooms.js builds the room
 // from its seed). Some are always the same place (FIXED_DOORS).
-const DOOR_BASES = ['house1','house2','house3','house4','house5','house6','tavern','chapel','hall','temple','townhouse','forge','tiltedHouse','sunkHouse','mausoleum','tower'];
+const DOOR_BASES = ['house1','house2','house3','house4','house5','house6','tavern','chapel','hall','temple','townhouse','forge','tiltedHouse','sunkHouse','mausoleum','tower',
+  'tomb','tombGrand','spireTower','foundry'];
 const FIXED_LABEL = {safehouse:'Enter the Gleaners\' Rest', inn:'Enter the Drowned Crow', library:'Enter the Collegium Library',
   wrenInn:'Enter the Wren\'s Nest', remnant:'Enter the Remnant Library', lab:'Enter the Warded Laboratory', lectures:'Enter the Examination Schools',
   wenna:'Knock at Wenna\'s Bakehouse', lamplighter:'Knock at the Lamplighter\'s House'};
@@ -511,11 +516,12 @@ function findDoors(){
   }
   for(const o of fronts){
     const base=P.baseKind(o.kind), f=fixed[o.id];
-    const depth=Math.max(0,Math.min(1,(1-o.y/WORLD_H)*1.15-0.12));
+    // how near the Wound: by height on the map, within the map's own range (an inner district's is 0.55–1)
+    const dr=MAP.depth||[0,1], depth=dr[0]+(dr[1]-dr[0])*Math.max(0,Math.min(1,(1-o.y/WORLD_H)*1.15-0.12));
     const ruined=/_(burnt|char)$/.test(o.kind)||['house5','house6','tiltedHouse','sunkHouse'].includes(base);
-    const spec={id:'room:'+MAP.id+'#'+o.id, base, outside:{map:MAP.id,x:o.x,y:o.y+6}, el, depth, city:CITY_MAPS.includes(MAP.id),
+    const spec={id:'room:'+MAP.id+'#'+o.id, base, outside:{map:MAP.id,x:o.x,y:o.y+6}, el, depth, city:CITY_MAPS.includes(MAP.id)||!!MAP.city,
       ruined, fixed:f||null, wizards:wizKeys.filter(k=>k!=='hero'), safe:!!MAP.safe};
-    doors.push({x:o.x, y:o.y+14, spec, label:f?FIXED_LABEL[f]:'Enter'});
+    doors.push({x:o.x, y:o.y+14, spec, obj:o, label:f?FIXED_LABEL[f]:'Enter'});
   }
 }
 function enterDoor(dr){
@@ -533,7 +539,15 @@ function applyRoomState(){
 }
 
 // ── dialogs: the inspect box with buttons ──
+// sayFace: whose face the box shows (set by inspect() when you talk to someone, null for things)
+let sayFace=null;
+function setSayFace(src){
+  const f=el.say.querySelector('.ex-say-face');
+  if(src){ f.onerror=()=>{ f.hidden=true; el.say.classList.remove('has-face'); }; f.src=src; f.hidden=false; el.say.classList.add('has-face'); }
+  else { f.hidden=true; f.removeAttribute('src'); el.say.classList.remove('has-face'); }
+}
 function showDialog(title,text,choices){
+  setSayFace(sayFace);
   el.say.querySelector('.ex-say-name').textContent=title;
   el.say.querySelector('.ex-say-text').textContent=text;
   el.say.querySelectorAll('.ex-rest,.ex-choice').forEach(b=>b.remove());
@@ -696,6 +710,12 @@ function roomAct(o){
 
 // ── people in rooms ──
 const NPC_SPRITE = {wenna:'sprites/echoes/fire_weak.png', lamplighter:'sprites/echoes/air_weak.png'};   // stand-ins until their own art
+const NPC_FACE = {wenna:'echo_fire_weak', lamplighter:'echo_air_weak'};                          // ditto
+function npcFace(n){
+  if(Folk&&Folk.knows(n.role)) return Folk.face(n,folkApi);
+  const k=n.role==='wounded'?(MAP.ev||{}).key:NPC_FACE[n.role];
+  return k?'portraits/small/'+k+'.jpg':null;
+}
 function npcTitle(n){ const ev=MAP.ev||{};
   if(Folk&&Folk.knows(n.role)) return Folk.title(n,folkApi);
   return n.role==='wounded'?ev.name+', wounded':n.role==='wenna'?'Wenna the Baker':n.role==='lamplighter'?'The Lamplighter':'Someone'; }
@@ -753,7 +773,7 @@ const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const crystalCache={};
 function crystalSrc(elm){                      // the loot sheet's quintessence crystal, as a small image
   if(crystalCache[elm]) return crystalCache[elm];
-  const q=rects['q_'+elm]; if(!q) return '';
+  const q=rects['q_'+elm]; if(!q||!atlases[q[4]]) return '';
   const c=document.createElement('canvas'); c.width=q[2]; c.height=q[3];
   c.getContext('2d').drawImage(atlases[q[4]],q[0],q[1],q[2],q[3],0,0,q[2],q[3]);
   return crystalCache[elm]=c.toDataURL();
@@ -850,6 +870,9 @@ const EDGE_SET = {
   W:{set:'quay',   out:c=>c!=='W'},
   O:{set:'shore',  out:c=>c!=='O'},
   c:{set:'cobble', sfx:'_ash', out:c=>c==='a'||c==='e'},
+  S:{set:'snow',   out:c=>c!=='S'},
+  F:{set:'flood',  out:c=>c!=='F'&&c!=='W'},
+  X:{set:'wound',  out:c=>c!=='X'},
 };
 function edgeTile(E,x,y,r){
   const k=groundKind, at=(xx,yy)=>(k[yy]||[])[xx];
@@ -866,11 +889,12 @@ function edgeTile(E,x,y,r){
   }
   return {set:E.set, sfx:E.sfx||(PAL&&rects['tr_'+E.set+'_11'+PAL]?PAL:''), cells};
 }
-const quarterCache=new Map();
+const quarterCache=new Map(), BLANK_TILE=document.createElement('canvas');
 function quarterTile(g){
   const key=g.set+g.sfx+g.cells.join('');
   let c=quarterCache.get(key);
   if(!c){
+    if(g.cells.some(cc=>!atlases[rects['tr_'+g.set+'_'+cc+g.sfx][4]])) return BLANK_TILE;   // not loaded yet: don't cache it
     c=document.createElement('canvas'); c.width=c.height=120;
     const m=c.getContext('2d');
     g.cells.forEach((cc,i)=>{
@@ -891,7 +915,7 @@ function wet(px,py){
     const dry=(xx,yy)=>(groundKind[yy]||[])[xx]!=='O';
     return !((dry(tx-1,ty)&&fx<R)||(dry(tx+1,ty)&&fx>T-R)||(dry(tx,ty-1)&&fy<R)||(dry(tx,ty+1)&&fy>T-R));
   }
-  if(t!=='W') return false;
+  if(t!=='W'&&t!=='X') return false;                 // X: a hole onto the Wound (inner districts), crossed by rope bridges
   for(const b of bridges) for(const w of b.fb) if(inside(px,py,w)) return false;
   for(const w of MAP.walk||[]) if(inside(px,py,w)) return false;
   return true;
@@ -907,7 +931,7 @@ const MINI_PAL = {
 function buildMinimap(){
   const S=4, c=document.createElement('canvas'); c.width=COLS*S; c.height=ROWS*S;
   const m=c.getContext('2d');
-  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70'};
+  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70',S:'#dfe6f0',F:'#2f6a78',X:'#7a2ab0'};
   Object.assign(col,MINI_PAL[MAP.palette]||{});
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ m.fillStyle=col[groundKind[y][x]]||col.G; m.fillRect(x*S,y*S,S,S); }
   const k=S/T;
@@ -954,8 +978,9 @@ async function enterMap(id,at,instant){
     if(!instant) await fade(true);
     const data=await getMap(id);
     if(data.interior&&roomSpec&&roomSpec.outside) await getMap(roomSpec.outside.map).catch(()=>{});   // a room plays its town's theme
-    await loadPalette(data.palette);
+    await Promise.all([loadPalette(data.palette),atlasesFor(data)]);   // this map's sheets, before anything draws from them
     setupMap(data);
+    prefetchAround(data);
     resize();
     const p=Array.isArray(at)?at:(data.spawns[at]||data.spawns.start||Object.values(data.spawns)[0]);
     wiz.x=p[0]; wiz.y=p[1]; wiz.face=1;
@@ -1142,12 +1167,14 @@ function buildDom(){
       <div class="ex-spill" id="ex-spill" hidden></div>
       <button class="ex-btn" id="ex-bagbtn" type="button" title="Satchel (I)">🎒</button>
       <button class="ex-btn" id="ex-mapbtn" type="button" title="World map">🗺</button>
+      <button class="ex-btn" id="ex-zoom" type="button" title="Zoom in for a closer look (Z, mouse wheel or pinch)">🔍</button>
       <button class="ex-btn" id="ex-night" type="button" title="Time of day: auto / day / night"></button>
     </div>
     <canvas id="ex-mini" aria-hidden="true"></canvas>
-    <div class="ex-hint" id="ex-hint">WASD / arrows to walk · tap or click to walk there · E to inspect · walk off a road to travel</div>
+    <div class="ex-hint" id="ex-hint">WASD / arrows to walk · tap or click to walk there · E to inspect or enter · Q to inspect a building at its door · Z, wheel or pinch to zoom · walk off a road to travel</div>
     <button class="ex-btn ex-act" id="ex-act" type="button" hidden>✋ Inspect</button>
-    <div class="ex-say" id="ex-say" hidden><div class="ex-say-name"></div><div class="ex-say-text"></div></div>
+    <button class="ex-btn ex-look" id="ex-look" type="button" hidden>✋ Inspect</button>
+    <div class="ex-say" id="ex-say" hidden><img class="ex-say-face" alt="" hidden><div class="ex-say-name"></div><div class="ex-say-text"></div></div>
     <div class="ex-toast" id="ex-toast" hidden></div>
     <div class="ex-world" id="ex-world" hidden>
       <div class="ex-world-head"><span id="ex-world-title"></span><button class="ex-btn" id="ex-world-close" type="button">✕ Close</button></div>
@@ -1166,8 +1193,8 @@ function buildDom(){
     <div class="ex-loading" id="ex-loading">Loading…</div>`;
   document.getElementById('app').appendChild(d);
   const $=s=>d.querySelector(s);
-  el={root:d, cv:$('#ex-canvas'), mini:$('#ex-mini'), say:$('#ex-say'), act:$('#ex-act'), hint:$('#ex-hint'),
-      face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), loading:$('#ex-loading'), title:$('#ex-title'),
+  el={root:d, cv:$('#ex-canvas'), mini:$('#ex-mini'), say:$('#ex-say'), act:$('#ex-act'), look:$('#ex-look'), hint:$('#ex-hint'),
+      face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), zoom:$('#ex-zoom'), loading:$('#ex-loading'), title:$('#ex-title'),
       fade:$('#ex-fade'), toast:$('#ex-toast'), world:$('#ex-world'), worldCv:$('#ex-world-cv'), worldTitle:$('#ex-world-title'),
       hp:$('#ex-hp'), spill:$('#ex-spill'), bag:$('#ex-bag'), bagBody:$('#ex-bag-body'), bagTabs:$('#ex-bag-tabs'), bagWho:$('#ex-bag-who'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
   ctx=el.cv.getContext('2d');
@@ -1184,11 +1211,24 @@ function buildDom(){
   $('#ex-bagbtn').onclick=()=>{ if(!busy&&MAP) openBag(); };
   $('#ex-bag-close').onclick=closeBag;
   el.bag.addEventListener('click',e=>{ if(e.target===el.bag) closeBag(); else bagClick(e); });
-  el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy&&!roomLocked()) takeExit(nearExit); };
+  el.look.onclick=()=>{ lookAtDoor(); dropFocus(); };
+  el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy&&!roomLocked()) takeExit(nearExit); dropFocus(); };
   el.say.onclick=hideSay;
-  el.cv.addEventListener('pointerdown',e=>{ el.cv.setPointerCapture(e.pointerId); setTarget(e); hideSay(); dragging=true; });
-  el.cv.addEventListener('pointermove',e=>{ if(dragging) setTarget(e); });
-  const up=()=>{ dragging=false; };
+  el.zoom.onclick=()=>stepZoom(); renderZoom();
+  // two fingers pinch the zoom instead of walking
+  const touches=new Map(); let pinch=null;
+  const spread=()=>{ const [a,b]=[...touches.values()]; return Math.hypot(a.x-b.x,a.y-b.y)||1; };
+  el.cv.addEventListener('pointerdown',e=>{
+    el.cv.setPointerCapture(e.pointerId); touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(touches.size===2){ pinch={d:spread(), z:zoomGoal}; dragging=false; target=null; return; }
+    if(touches.size>2) return;
+    setTarget(e); hideSay(); dragging=true; });
+  el.cv.addEventListener('pointermove',e=>{
+    if(touches.has(e.pointerId)) touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinch&&touches.size===2){ setZoom(pinch.z*spread()/pinch.d,true); return; }
+    if(dragging) setTarget(e); });
+  el.cv.addEventListener('wheel',e=>{ e.preventDefault(); setZoom(zoomGoal*Math.exp(-e.deltaY*0.0015)); },{passive:false});
+  const up=e=>{ touches.delete(e.pointerId); if(touches.size<2) pinch=null; dragging=false; };
   el.cv.addEventListener('pointerup',up); el.cv.addEventListener('pointercancel',up);
   window.addEventListener('keydown',onKey); window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
   window.addEventListener('resize',resize);
@@ -1212,7 +1252,9 @@ function onKey(e){
   }
   if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)){ keys.add(k); target=null; hideSay(); e.preventDefault(); }
   else if(k==='e'||k===' '||k==='enter'){ if(!el.say.hidden) hideSay(); else if(near) inspect(); else if(nearDoor) enterDoor(nearDoor); e.preventDefault(); }
+  else if(k==='q'){ if(!el.say.hidden) hideSay(); else lookAtDoor(); e.preventDefault(); }
   else if(k==='m'){ if(!busy&&MAP) openWorld('view'); }
+  else if(k==='z'){ stepZoom(); }
   else if(k==='i'){ if(!busy&&MAP) openBag(); }
   else if(k==='escape'){ if(!el.say.hidden) hideSay(); else close(); }
 }
@@ -1222,9 +1264,10 @@ function resize(){
   vw=window.innerWidth; vh=window.innerHeight;
   for(const c of [el.cv,dark]){ c.width=Math.round(vw*dpr); c.height=Math.round(vh*dpr); }
   el.cv.style.width=vw+'px'; el.cv.style.height=vh+'px';
-  zoom=Math.max(0.62,Math.min(1.35,Math.min(vw/620,vh/620)));
+  baseZoom=Math.max(0.62,Math.min(1.35,Math.min(vw/620,vh/620)));
   // a room fits the screen, walls and all
-  if(MAP&&MAP.interior) zoom=Math.max(0.55,Math.min(1.6,Math.min(vw/(WORLD_W+20),(vh-70)/(WORLD_H-T*0.6))));
+  if(MAP&&MAP.interior) baseZoom=Math.max(0.55,Math.min(1.6,Math.min(vw/(WORLD_W+20),(vh-70)/(WORLD_H-T*0.6))));
+  zoom=baseZoom*zoomMul;
   if(el.mini) el.mini.style.display=MAP&&MAP.interior?'none':'';
   sizeMini();
 }
@@ -1290,19 +1333,32 @@ async function useHero(){
   el.root.querySelectorAll('#ex-prev,#ex-next').forEach(b=>b.hidden=true);
   setWizard(0);
 }
-// The character-creation theme loops while the creator is open, and fades out when it closes.
-// playTheme is also called straight from the New Game tap, so phones count it as user-started.
-const THEME_SRC='audio/creation_theme.mp3', THEME_VOL=0.7;
-let theme=null, themeFade=0;
+// The main theme plays on the title screen and carries on, unbroken, through the character
+// creator and the introduction scroll, fading out as the first map's own music comes in.
+// playTheme doesn't restart a theme that's already playing. It's also called straight from the
+// New Game tap, so phones count it as user-started; a browser that blocked it before any tap
+// gets another go at the next tap or key (themeBlocked).
+const THEME_SRC='audio/main_theme.mp3', THEME_VOL=0.7;
+let theme=null, themeFade=0, themeBlocked=false;
 function playTheme(){
   try{
     if(!theme){ theme=new Audio(THEME_SRC); theme.loop=true; theme.preload='auto'; }
     clearInterval(themeFade); theme.volume=THEME_VOL;
     if(!theme.paused) return;
     theme.currentTime=0;
-    const p=theme.play(); if(p&&p.catch) p.catch(()=>{});
+    const p=theme.play(); if(p&&p.catch) p.catch(()=>{ themeBlocked=true; });
   }catch(e){}
 }
+// the title screen's share: playing while it shows and Explore isn't open, else fading out
+// (the creator keeps it going itself)
+function titleMusic(){
+  const t=document.getElementById('title-screen');
+  if(t&&t.classList.contains('active')&&!running) playTheme();
+  else if(!creating) stopTheme();
+}
+['pointerdown','keydown'].forEach(t=>window.addEventListener(t,()=>{
+  if(themeBlocked){ themeBlocked=false; if(creating) playTheme(); else titleMusic(); }
+},true));
 function stopTheme(){
   if(!theme||theme.paused) return;
   clearInterval(themeFade);
@@ -1372,6 +1428,7 @@ function setWizard(i){
 function loreOf(o){ return o.npc?['…','']:(MAP.lore||{})[o.lore]; }
 function showSay(o){
   const L=loreOf(o); if(!L) return;
+  setSayFace(null);
   el.say.querySelector('.ex-say-name').textContent=L[0];
   el.say.querySelector('.ex-say-text').textContent=L[1];
   const R=(REST[MAP.id]||{})[o.lore], key=wizKeys[wizIdx];
@@ -1386,8 +1443,16 @@ function showSay(o){
   }
   el.say.hidden=false; el.hint.classList.add('fade');
 }
-function hideSay(){ if(el.say) el.say.hidden=true; }
-function inspect(){ if(!near) return; if(near.npc) talkTo(near.npc); else if(!(Folk&&Folk.inspect(near,folkApi))&&!roomAct(near)) showSay(near); }
+// at a door, the building (or the lamp or statue by it) can still be inspected: the second button, or Q
+function lookAtDoor(){ if(!nearLook||busy) return; near=nearLook; inspect(); }
+function hideSay(){ if(el.say) el.say.hidden=true; dropFocus(); }
+// a tapped button (✋ Inspect, a dialog choice) keeps focus after it hides, and Chrome then flashes
+// a highlight on later taps; hand focus back to the page
+function dropFocus(){ const a=document.activeElement; if(a&&a!==document.body&&el.root&&el.root.contains(a)&&a.blur) a.blur(); }
+function inspect(){ if(!near) return; sayFace=near.npc?npcFace(near.npc):null;
+  talkFocus=near.npc?{x:near.npc.x, y:near.npc.y, who:near.npc}:null;
+  if(near.npc&&Math.abs(near.npc.x-wiz.x)>4) wiz.face=near.npc.x>wiz.x?1:-1;     // turn to them
+  if(near.npc) talkTo(near.npc); else if(!(Folk&&Folk.inspect(near,folkApi))&&!roomAct(near)) showSay(near); }
 let toastTimer=0;
 function toast(msg){ el.toast.textContent=msg; el.toast.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.toast.hidden=true; },2200); }
 
@@ -1484,32 +1549,68 @@ function update(dt){
     }
   }
   for(const n of npcs){ if(!present(n)) continue; const d=Math.hypot(n.x-wiz.x,(n.y-wiz.y)*1.3); if(d<best+12){ best=d-12; near=Object.assign(n,{npc:n,lore:'npc'}); } }
+  // a door beats inspecting things: standing at it, the building itself (and the lamps and statues by
+  // it) are always in inspect range, which used to hide the door (Wrenford's Remnant Library); people still win
   nearDoor=null;
-  if(!near){ let bd=40; for(const dr of doors){ const d=Math.hypot(dr.x-wiz.x,(dr.y-wiz.y)*1.4); if(d<bd){ bd=d; nearDoor=dr; } } }
+  if(!near||!near.npc){ let bd=40; for(const dr of doors){ const d=Math.hypot(dr.x-wiz.x,(dr.y-wiz.y)*1.4); if(d<bd){ bd=d; nearDoor=dr; } } }
+  nearLook=null;
+  if(nearDoor&&near){ nearLook=near; near=null; }
   // the action button: inspect what's near, enter a door, or take the way out you're close to
   if(roomLocked()&&nearExit&&wiz.moving&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y-wiz.y)<50&&performance.now()>lockToastT){
     lockToastT=performance.now()+3000; toast(MAP.ev&&MAP.ev.type==='party'?'They\'ve got the door. No way out but through them.':'The Echoes won\'t let you leave. Deal with them first.');
   }
   const exitClose=!roomLocked()&&nearExit&&Math.hypot(nearExit.x+nearExit.w/2-wiz.x,nearExit.y+nearExit.h/2-wiz.y)<(MAP.interior?110:170);
   el.act.hidden=!(near||nearDoor||exitClose)||!el.say.hidden;
+  el.look.hidden=!nearLook||!el.say.hidden;
+  if(nearLook) el.look.textContent='✋ '+loreOf(nearLook)[0];
   if(near) el.act.textContent=(near.npc?'💬 ':'✋ ')+(near.npc?npcTitle(near.npc):loreOf(near)[0]);
   else if(nearDoor) el.act.textContent='🚪 '+(nearDoor.label||'Enter');
   else if(exitClose) el.act.textContent='⟶ '+(nearExit.to==='world'?(nearExit.label||'Travel')+' (world map)':nearExit.label);
   // remember where you are
   saveT+=dt; if(saveT>2){ saveT=0; save(); }
 }
+// ── close-up zoom: on top of the fitted view (baseZoom, the most usable, and the default), so people
+// can be seen more clearly. 🔍 / Z steps through ZOOM_STEPS, the mouse wheel and a pinch zoom freely
+// between 1 and ZOOM_MAX; it eases there (zoomMul → zoomGoal). Remembered on this device.
+const ZOOM_STEPS=[1,1.5,2.1], ZOOM_MAX=2.4;
+let zoomMul=1, zoomGoal=1, zoomT=0;
+try{ zoomGoal=zoomMul=Math.max(1,Math.min(ZOOM_MAX,+localStorage.getItem('wd-explore-zoom')||1)); }catch(e){}
+function setZoom(z,now){
+  zoomGoal=Math.max(1,Math.min(ZOOM_MAX,z)); if(now) zoomMul=zoomGoal;
+  try{ localStorage.setItem('wd-explore-zoom',zoomGoal.toFixed(2)); }catch(e){}
+  renderZoom();
+}
+function stepZoom(){ setZoom(ZOOM_STEPS.find(z=>z>zoomGoal+0.05)||1); }
+function renderZoom(){ if(el&&el.zoom){ el.zoom.textContent=zoomGoal>1.05?'🔍 ×'+(Math.round(zoomGoal*10)/10):'🔍'; el.zoom.classList.toggle('on',zoomGoal>1.05); } }
+// ── a close-up while you talk: the camera eases in on you and whoever you're talking to (talkFocus, set
+// by inspect() / meetBand), framed above the dialog box, and back out when the box closes. It never
+// changes your own zoom setting: it's TALK_ZOOM × the fitted view (at least TALK_ABS), or yours if that's closer.
+const TALK_ZOOM=2, TALK_ABS=1.7;   // ×2 on your view, and at least 1.7 drawn size (phones start at 0.62)
+let talkFocus=null, talkLast=null, talkBlend=0;
 function updateCam(){
+  const t=performance.now(), dt=Math.min(0.1,(t-(zoomT||t))/1000); zoomT=t;
+  if(talkFocus&&el.say.hidden) talkFocus=null;
+  if(talkFocus&&talkFocus.who&&talkFocus.who.gone) talkFocus=null;
+  talkBlend+=((talkFocus?1:0)-talkBlend)*Math.min(1,dt*6); if(talkBlend<0.002) talkBlend=0;
+  const goal=talkFocus?Math.max(zoomGoal,Math.min(3,Math.max(TALK_ZOOM,TALK_ABS/baseZoom))):zoomGoal;   // phones start further out
+  zoomMul+=(goal-zoomMul)*Math.min(1,dt*6); if(Math.abs(goal-zoomMul)<0.002) zoomMul=goal;
+  zoom=baseZoom*zoomMul;
   const cw=vw/zoom, ch=vh/zoom;
-  cam.x=Math.max(0,Math.min(WORLD_W-cw,wiz.x-cw/2));
-  cam.y=Math.max(0,Math.min(WORLD_H-ch,wiz.y-WIZ_H/2-ch/2));
+  if(talkFocus) talkLast=talkFocus;                     // keep easing away from them after the box closes
+  const b=talkLast?talkBlend:0, mx=talkLast?(wiz.x+talkLast.x)/2:wiz.x, my=talkLast?(wiz.y+talkLast.y)/2:wiz.y;
+  if(!b) talkLast=null;
+  const fx=wiz.x+(mx-wiz.x)*b, fy=wiz.y+(my-wiz.y)*b;
+  cam.x=Math.max(0,Math.min(WORLD_W-cw,fx-cw/2));
+  cam.y=Math.max(0,Math.min(WORLD_H-ch,fy-WIZ_H/2-ch*(0.5-0.14*b)));   // the pair sits above the box
   if(cw>WORLD_W) cam.x=(WORLD_W-cw)/2; if(ch>WORLD_H) cam.y=(WORLD_H-ch)/2;
 }
 
 function drawPiece(kind,x,y,alpha,sc){
-  sc=sc||PS;
+  sc=P.scaleOf(kind,sc);
   const q=rects[kind], w=q[2]*sc, h=q[3]*sc;
+  const A=atlases[q[4]]; if(!A) return;            // its sheet is still on the way
   if(alpha!==undefined) ctx.globalAlpha=alpha;
-  ctx.drawImage(atlases[q[4]],q[0],q[1],q[2],q[3],x-w/2,y-h,w,h);
+  ctx.drawImage(A,q[0],q[1],q[2],q[3],x-w/2,y-h,w,h);
   ctx.globalAlpha=1;
 }
 function drawWizard(t){
@@ -1562,7 +1663,7 @@ function draw(t){
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
     const g=ground[y][x]; if(!g) continue;
     if(typeof g==='object'){ ctx.drawImage(quarterTile(g),x*T,y*T,T+0.6,T+0.6); continue; }
-    const q=rects[g];
+    const q=rects[g]; if(!atlases[q[4]]) continue;
     ctx.drawImage(atlases[q[4]],q[0]+1,q[1]+1,q[2]-2,q[3]-2,x*T,y*T,T+0.6,T+0.6);
   }
   drawCurrent(t,x0,x1,y0,y1);
@@ -1655,7 +1756,7 @@ function lightsInView(cw,ch){
     const L=P.lightsOf(o.kind); if(!L||(o.decal&&P.BRIDGE[o.kind])) continue;
     const s=sizeOf(o.kind,o.scale);
     for(const [lx,ly,type] of L){
-      const sc=o.scale||PS, fr=lx<=1&&ly<=1, x=o.x-s.w/2+(fr?lx*s.w:lx*sc), y=o.y-s.h+(fr?ly*s.h:ly*sc);
+      const sc=P.scaleOf(o.kind,o.scale), fr=lx<=1&&ly<=1, x=o.x-s.w/2+(fr?lx*s.w:lx*sc), y=o.y-s.h+(fr?ly*s.h:ly*sc);
       // a burnt house's windows glow ember-orange: what's inside isn't a hearth
       if(near(x,y)) out.push({x,y,r:(type==='lamp'?150:105)*(MAP.interior?0.8:1),seed:o.id,c:type==='lamp'?undefined:o.kind.endsWith('_burnt')?'255,120,50':MAP.windowGlow&&PAL&&o.kind.endsWith(PAL)?MAP.windowGlow:undefined});
     }
@@ -1769,18 +1870,46 @@ function frame(now){
 
 // ═══ OPEN / CLOSE ══════════════════════════════════════════════════
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+// Atlases load when a map needs them, not all at start: the names (rects) come from every sheet's
+// small .json up front, but a sheet's image is fetched the first time a map uses one of its pieces
+// (atlasesFor, from enterMap), and the maps next door are fetched in the background (prefetchAround).
+// CORE sheets are the ground and the loot every map and the satchel use.
+const ATLAS_NAMES=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13',
+  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23'];
+const CORE_ATLASES=['ruins','ruins2','ruins3','ruins13'];
+const atlasLoading={};
+function loadAtlas(i){
+  if(!atlasLoading[i]) atlasLoading[i]=loadImage('sprites/ruins/'+ATLAS_NAMES[i]+'.png').then(img=>{ atlases[i]=img; quarterCache.clear(); return img; });
+  return atlasLoading[i];
+}
+// the sheets a map draws from: its pieces' and its ground's (the ground letters that aren't on a core sheet)
+const GROUND_PIECE={S:'tr_snow_11',F:'tr_flood_11',X:'tr_wound_21',w:'floorWood1',l:'floorFlag1',y:'floorTerra1',b:'floorBroken1'};
+function atlasesFor(data){
+  const need=new Set(CORE_ATLASES.map(n=>ATLAS_NAMES.indexOf(n)));
+  for(const o of data.objects||[]){ const q=rects[o[0]]; if(q&&q[4]<ATLAS_NAMES.length) need.add(q[4]); }
+  const letters=new Set((data.ground||[]).join(''));
+  for(const c of letters){ const q=rects[GROUND_PIECE[c]]; if(q) need.add(q[4]); }
+  return Promise.all([...need].map(loadAtlas));
+}
+// while you walk about, quietly fetch the maps your exits lead to and their sheets
+function prefetchAround(data){
+  if(!data||data.interior) return;
+  const ids=[...new Set((data.exits||[]).map(e=>e.to&&e.to.map).filter(Boolean))];
+  const go=()=>ids.forEach(id=>getMap(id).then(d=>{ atlasesFor(d); if(d.palette) loadPalette(d.palette); }).catch(()=>{}));
+  if(window.requestIdleCallback) requestIdleCallback(go,{timeout:4000}); else setTimeout(go,1500);
+}
 async function load(){
   if(built) return;
-  const names=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13'];
   const [cj,wj,fj,...sheets]=await Promise.all([
     fetch('characters.json').then(r=>r.json()),
     fetch('maps/world.json').then(r=>r.json()).then(w=>w),
     fetch('fighters.json').then(r=>r.json()),
-    ...names.map(n=>Promise.all([loadImage('sprites/ruins/'+n+'.png'), fetch('sprites/ruins/'+n+'.json').then(r=>r.json())])),
+    ...ATLAS_NAMES.map(n=>fetch('sprites/ruins/'+n+'.json').then(r=>r.json())),
   ]);
   // one name space across every sheet: [x, y, w, h, atlas index]
-  atlases=sheets.map(s=>s[0]); rects={};
-  sheets.forEach(([,rj],i)=>{ for(const k in rj) rects[k]=[...rj[k],i]; });
+  atlases=ATLAS_NAMES.map(()=>null); rects={};
+  sheets.forEach((rj,i)=>{ for(const k in rj) rects[k]=[...rj[k],i]; });
+  await Promise.all(CORE_ATLASES.map(n=>loadAtlas(ATLAS_NAMES.indexOf(n))));
   chars=cj; world=wj; fighters=fj;
   wizKeys=Object.keys(chars).filter(k=>chars[k].sprite);
   built=true;
@@ -1812,7 +1941,7 @@ async function open(opts){
   sizeMini();
   let saved=s&&s.wiz; if(!saved) try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}
   setWizard(Math.max(0,wizKeys.indexOf(saved||'eldrin'))); renderClock();
-  if(!hero&&window.ExploreHero) await createHero(false); else await useHero();
+  if(!hero&&window.ExploreHero) await createHero(false); else { stopTheme(); await useHero(); }
   last=performance.now(); requestAnimationFrame(frame);
   el.hint.classList.remove('fade');
   setTimeout(()=>{ if(el.hint) el.hint.classList.add('fade'); },7000);
@@ -1821,7 +1950,7 @@ function close(){
   save(); stopTheme();
   running=false; keys.clear(); target=null; hideSay(); closeWorld(); syncMusic();
   el.root.classList.remove('active');
-  refreshTitle();
+  refreshTitle(); titleMusic();
 }
 
 // ── title screen: New Game, Load Game (a list of this profile's wizards), the rest behind Test ──
@@ -1888,6 +2017,13 @@ window.addEventListener('DOMContentLoaded',()=>{
   });
   refreshTitle();
   document.addEventListener('wd-profile-changed',refreshTitle);
+  // the main theme follows the title screen as other screens come and go
+  const ts=document.getElementById('title-screen');
+  if(ts) new MutationObserver(titleMusic).observe(ts,{attributes:true,attributeFilter:['class']});
+  // the splash's Play tap leads to the title: start the theme inside that tap, so phones allow it
+  const sp=document.getElementById('btn-splash-play');
+  if(sp) sp.addEventListener('click',playTheme);
+  titleMusic();
 });
 window.Explore={open, close, refreshTitle,
   _talk:n=>talkTo(n), _magic:()=>magic,
@@ -1895,7 +2031,7 @@ window.Explore={open, close, refreshTitle,
   _fightActor:id=>{ const a=actors.find(x=>x.e.incident===id||x.e.id===id); if(a) fight(a); return !!a; }, _actorIds:()=>actors.map(a=>a.e.incident||a.e.id), _quests:()=>quests, _allies:()=>allies, _tick:()=>Year&&Year.tick(folkApi),
   knowAll:()=>{ if(!hero) return false; magic=fullMagic(hero.elem); applyMagic(); save(); return true; },   // testing: the whole Year at once
   enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
-  _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
+  _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _place:(x,y)=>{ wiz.x=x; wiz.y=y; target=null; }, _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
   // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
   _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;
     for(let h=0;h<q.length;h++){ const c=q[h], cx=c%nc; for(const n of [c-nc,c+nc,cx>0?c-1:-1,cx<nc-1?c+1:-1]) if(n>=0&&n<nc*nr&&!seen[n]&&g[n]){ seen[n]=1; q.push(n); } }

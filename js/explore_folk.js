@@ -47,8 +47,8 @@ const knowsElem = (api,e) => { const m=mg(api); return !m||m.elems.includes(e); 
 const FOLK = {
   // Wrenford's own: they stay
   porter:  {kind:'local', title:'The Head Porter', fighter:'soldier'},
-  bulldog: {kind:'local', title:'A Bulldog', sprite:'sprites/halberdier.png'},
-  bulldog2:{kind:'local', title:'A Bulldog', sprite:'sprites/halberdier.png'},
+  bulldog: {kind:'local', title:'A Bulldog', sprite:'sprites/halberdier.png', face:'halberdier'},
+  bulldog2:{kind:'local', title:'A Bulldog', sprite:'sprites/halberdier.png', face:'halberdier'},
   tutor:   {kind:'local', title:'The Senior Tutor', name:'Dr Penhallow', sprite:'sprites/folk/tutor.png'},
   keeper:  {kind:'local', title:'The Keeper of the Library', name:'Mr Quill', sprite:'sprites/folk/keeper.png'},
   chaplain:{kind:'local', title:'The University Chaplain', name:'Canon Marrow', sprite:'sprites/folk/chaplain.png'},
@@ -83,6 +83,13 @@ function sprite(n, api){
   if(F.fighter) return (api.fighters[F.fighter]||{}).sprite||null;
   const k=castOf(n.role,api), c=k&&api.chars[k];
   return c&&c.sprite&&!/mage-/.test(c.sprite)?c.sprite:null;
+}
+// their face in the dialog box: portraits/small/<key>.jpg (a fighter's or roster wizard's thumbnail;
+// the dons' are cropped from their sprites by tools/make_folk_sprites.py, FACES)
+function face(n, api){
+  const F=FOLK[n.role]; if(!F) return Year()&&Year().face?Year().face(n,api):null;
+  const k=F.face||F.fighter||(F.cast?castOf(n.role,api):n.role);
+  return k?'portraits/small/'+k+'.jpg':null;
 }
 function knows(role){ return !!FOLK[role]||!!(Year()&&Year().knows(role)); }
 
@@ -383,5 +390,5 @@ function inspect(o, api){
 // things already taken stay taken
 function hidden(o, api){ const s=q(api); return o.lore==='q:satchel'&&(s.satchel||s.satchelDone); }
 
-window.ExploreFolk={knows, title, sprite, talk, inspect, hidden, absent, metAtUni, journal, MATRIC, FOLK};
+window.ExploreFolk={knows, title, sprite, face, talk, inspect, hidden, absent, metAtUni, journal, MATRIC, FOLK};
 })();

@@ -25,7 +25,7 @@
 // no noTrim boxes). The old witch (Wrenford's dons' base) is old woman figure 1, hand-boxed here.
 const BASES = [
   {id:'f_old_1', sex:'f', age:'old', src:'sprites/folk/source/old_witch.png',  hair:[0.18,0.18,0.60,0.42], face:[0.37,0.15,0.30],
-    skin:[[0.44,0.20,0.62,0.345],[0.10,0.33,0.22,0.41,0.88],[0.70,0.30,0.87,0.42,0.88]], noTrim:[[0,0,0.22,1],[0.28,0.43,0.66,0.62],[0,0.9,1,1]]},
+    skin:[[0.44,0.20,0.62,0.345],[0.10,0.33,0.22,0.41,0.88],[0.70,0.30,0.87,0.42,0.88]], noTrim:[[0,0,0.22,1],[0.28,0.43,0.66,0.62],[0,0.9,1,1]], staffMask:'sprites/hero/f_old_1_staff.png'},
 ];
 let basesReady=null;
 function loadBases(){
@@ -37,6 +37,12 @@ function loadBases(){
   }).catch(()=>{}));
 }
 const AGES = [['young','Young'],['middle','Middle-aged'],['old','Old']];
+// staff wood: hue°, saturation ×, value × (null keeps the oak); the wood's own shading is kept as offsets from its middle hue (20°)
+const STAVES = [
+  {name:'Oak', w:null, sw:'#9a5a24'}, {name:'Ebony', w:[18,0.45,0.42], sw:'#3a2a22'}, {name:'Ash', w:[34,0.38,1.18], sw:'#d8c4a0'},
+  {name:'Mahogany', w:[6,0.95,0.72], sw:'#7a2a18'}, {name:'Silverwood', w:[215,0.12,1.12], sw:'#c8ccd4'}, {name:'Blackthorn', w:[275,0.3,0.4], sw:'#3a3040'},
+  {name:'Bloodwood', w:[352,0.95,0.78], sw:'#8a1a22'}, {name:'Driftwood', w:[30,0.18,0.95], sw:'#a8a090'},
+];
 // trim: hue°, saturation ×, value × (null keeps the gold)
 const TRIMS = [
   {name:'Gold', t:null, sw:'#e0a830'}, {name:'Silver', t:[220,0.12,1.08], sw:'#c8ccd8'}, {name:'Copper', t:[16,0.95,0.85], sw:'#c0602a'},
@@ -82,7 +88,8 @@ const NAMES = {
 };
 const AGE_HAIR = {young:'Brown', middle:'Black', old:'Silver'};   // a new look's starting hair
 
-const figuresFor = (sex,age) => { const own=BASES.filter(b=>b.sex===sex&&b.age===age); return own.length?{list:own,standIn:false}:{list:BASES.filter(b=>b.sex===sex),standIn:true}; };
+// the creator's figures for a sex and age; figures marked npc (the ragged bandits) are for NPCs only, though def() still paints them
+const figuresFor = (sex,age) => { const ok=BASES.filter(b=>!b.npc), own=ok.filter(b=>b.sex===sex&&b.age===age); return own.length?{list:own,standIn:false}:{list:ok.filter(b=>b.sex===sex),standIn:true}; };
 const rnd = a => a[Math.floor(Math.random()*a.length)];
 
 // ── recolouring ──
@@ -93,27 +100,30 @@ function rgb2hsv(r,g,b){ const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; 
   if(d){ h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4; h*=60; if(h<0) h+=360; }
   return [h, mx?d/mx:0, mx]; }
 const hex=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
-// the look on a canvas: robe (purple 255–320°), magic (blue 185–255°), hair (pale and unsaturated, inside the hair box)
+// the look on a canvas: robe (purple 255–320°), magic (cyan to blue 165–255°: the newer figures' flames have cyan highlights),
+// hair (pale and unsaturated, inside the hair box)
 function paint(img, base, look){
   const W=img.naturalWidth, H=img.naturalHeight, c=document.createElement('canvas'); c.width=W; c.height=H;
   const x=c.getContext('2d'); x.drawImage(img,0,0);
   const robe=(ROBES.find(r=>r.name===look.robe)||ROBES[0]).r, hair=(HAIRS.find(h=>h.name===look.hair)||HAIRS[0]).h;
   const magic=(ELEMS.find(e=>e.id===look.elem)||ELEMS[4]).m;
   const trim=(TRIMS.find(t=>t.name===look.trim)||TRIMS[0]).t, skin=(SKINS.find(k=>k.name===look.skin)||SKINS[0]).k;
-  const eye=(EYES.find(e=>e.name===look.eyes)||EYES[0]).e, hm=base._hairMask;
-  if(!robe&&!hair&&!magic&&!trim&&!skin&&!eye) return c;
+  const eye=(EYES.find(e=>e.name===look.eyes)||EYES[0]).e, hm=base._hairMask, hr=base._hairRim, sm=base._skinMask, stm=base._staffMask;
+  const wood=(STAVES.find(w=>w.name===look.staff)||STAVES[0]).w;
+  if(!robe&&!hair&&!magic&&!trim&&!skin&&!eye&&!wood) return c;
   const d=x.getImageData(0,0,W,H), p=d.data, hb=base.hair.map((f,i)=>Math.round(f*(i%2?H:W)));
   const hd=hair&&hex(hair[0]), hl=hair&&hex(hair[1]), kd=skin&&hex(skin[0]), kl=skin&&hex(skin[1]);
   const box=b=>[b[0]*W,b[1]*H,b[2]*W,b[3]*H,b[4]||1], inBox=(b,px,py)=>px>=b[0]&&px<=b[2]&&py>=b[1]&&py<=b[3], inAny=(bs,px,py)=>bs.some(b=>inBox(b,px,py));
-  const skinB=(base.skin||[]).map(box), noTrimB=(base.noTrim||[]).map(box), faceB=skinB[0];
+  const stB=base.staffBox&&box(base.staffBox), skinB=(base.skin||[]).map(box), noTrimB=(base.noTrim||[]).map(box), faceB=skinB[0];
   // the robe as it was (before any recolour), grown by a few pixels: gold touching it is trim
-  let nearRobe=null;
-  if(trim){
+  let nearRobe=null, inRobe=null;
+  {
     const R=4, m=new Uint8Array(W*H), g2=new Uint8Array(W*H);
     for(let i=0,j=0;i<p.length;i+=4,j++){ if(!p[i+3]) continue; const [h,s]=rgb2hsv(p[i]/255,p[i+1]/255,p[i+2]/255); if(h>=255&&h<=320&&s>0.22) m[j]=1; }
     for(let y=0;y<H;y++){ let run=-1e9; for(let x0=0;x0<W;x0++){ if(m[y*W+x0]) run=x0; if(x0-run<=R) g2[y*W+x0]=1; } run=1e9; for(let x0=W-1;x0>=0;x0--){ if(m[y*W+x0]) run=x0; if(run-x0<=R) g2[y*W+x0]=1; } }
     nearRobe=new Uint8Array(W*H);
     for(let x0=0;x0<W;x0++){ let run=-1e9; for(let y=0;y<H;y++){ if(g2[y*W+x0]) run=y; if(y-run<=R) nearRobe[y*W+x0]=1; } run=1e9; for(let y=H-1;y>=0;y--){ if(g2[y*W+x0]) run=y; if(run-y<=R) nearRobe[y*W+x0]=1; } }
+    inRobe=grow(m,W,H,14);                                         // a patch sewn on the robe lies well inside it
   }
   for(let i=0;i<p.length;i+=4){
     if(!p[i+3]) continue;
@@ -123,28 +133,40 @@ function paint(img, base, look){
       if(hair){ const t=Math.min(1,Math.max(0,(v-0.16)/0.84)); p[i]=hd[0]+(hl[0]-hd[0])*t; p[i+1]=hd[1]+(hl[1]-hd[1])*t; p[i+2]=hd[2]+(hl[2]-hd[2])*t; }
       continue;
     }
-    if(faceB&&h>=185&&h<255&&s>0.25){                              // blue in the face is eyes (or an earring's gem), not magic
+    if(hair&&hr&&hr[i/4]&&h>=320&&h<352&&s>0.25&&v<0.6){              // the dark mauve rim just round the hair: the hair's own shadow
+      const t=Math.min(1,Math.max(0,(v-0.16)/0.84)); p[i]=hd[0]+(hl[0]-hd[0])*t; p[i+1]=hd[1]+(hl[1]-hd[1])*t; p[i+2]=hd[2]+(hl[2]-hd[2])*t; continue;
+    }
+    if(faceB&&h>=165&&h<255&&s>0.25){                              // blue in the face is eyes (or an earring's gem), not magic
       const j=i/4, px=j%W, py=Math.floor(j/W);
       if(px>=faceB[0]&&px<=faceB[2]&&py>=faceB[1]&&py<=faceB[3]){
         if(eye){ out=hsv2rgb(eye[0],Math.min(1,s*eye[1]),Math.min(1,v*eye[2])); p[i]=out[0]*255; p[i+1]=out[1]*255; p[i+2]=out[2]*255; }
         continue;
       }
     }
-    if((skin||trim)&&(h<30||h>=345||(h<40&&s<0.7))&&s>0.15){   // skin sits below 30° (its pale highlights to 40°); gold trim and jewellery, above 30°, are strongly saturated
+    // skin sits below 30° (its pale highlights to 40°, the newer figures' bright ones to 46°); gold trim and jewellery, above 30°,
+    // are strongly saturated; the dark mauve of wrinkles and outlines is skin too
+    if((skin||trim)&&(h<30||h>=345||(h<40&&s<0.7)||(h<46&&s<0.82&&v>0.85)||(h<56&&s<0.5&&v>0.85)||(h>=320&&v<0.55))&&s>0.15){
       const j=i/4, px=j%W, py=Math.floor(j/W);
-      const sb=skinB.find(b=>inBox(b,px,py));
-      if(sb&&s<=sb[4]){                                            // skin: face and hands
+      const bx=skinB.find(b=>inBox(b,px,py));                       // inside a hand box its saturation cap keeps the staff's wood out
+      const sb=sm?(sm[j]&&(!bx||!base.capHands||s<=bx[4])):(bx&&s<=bx[4]);           // the figure's skin mask (boxes widened, the forearms, the staff left out), else its boxes
+      if(sb){                                            // skin: face and hands
         // all of the skin, outlines and flushed shadows too, but not the mauve-grey hair
         if(skin&&v>0.08&&(s>0.3||h>=12)){ const t=Math.pow(Math.min(1,(v-0.08)/0.92),1.15); p[i]=kd[0]+(kl[0]-kd[0])*t; p[i+1]=kd[1]+(kl[1]-kd[1])*t; p[i+2]=kd[2]+(kl[2]-kd[2])*t; }
         continue;
       }
     }
+    if(wood&&(stm?stm[i/4]:(stB&&h<=46&&s>0.3&&v>0.1&&inBox(stB,(i/4)%W,Math.floor(i/4/W))))){   // the staff's wood (its mask; the witch, a box)
+      const dh=(h>=300?h-360:h)-20; out=hsv2rgb((wood[0]+dh+360)%360,Math.min(1,s*wood[1]),Math.min(1,v*wood[2])); p[i]=out[0]*255; p[i+1]=out[1]*255; p[i+2]=out[2]*255; continue;
+    }
+    if((h<15||h>=350)&&s>0.45&&v>0.55&&inRobe[i/4]){                // a salmon-red robe patch: brown leather, whatever the robe
+      out=hsv2rgb(22,Math.min(1,s*0.8),v*0.62); p[i]=out[0]*255; p[i+1]=out[1]*255; p[i+2]=out[2]*255; continue;
+    }
     if(trim&&h>=(base.trimLo||8)&&h<=60&&s>0.35&&v>0.3){                         // trim: gold on the robe, not the staff, belt or boots
       const j=i/4, px=j%W, py=Math.floor(j/W);
       if(nearRobe[j]&&!inAny(noTrimB,px,py)){ out=hsv2rgb(trim[0],Math.min(1,s*trim[1]),Math.min(1,v*trim[2])); p[i]=out[0]*255; p[i+1]=out[1]*255; p[i+2]=out[2]*255; continue; }
     }
-    if(robe&&h>=255&&h<=320&&s>0.22) out=hsv2rgb(robe[0],Math.min(1,s*robe[1]),Math.min(1,v*robe[2]));
-    else if(magic&&h>=185&&h<255&&s>0.25) out=hsv2rgb(magic[0],Math.min(1,s*magic[1]),Math.min(1,v*magic[2]));
+    if(robe&&h>=255&&h<=340&&s>0.22) out=hsv2rgb(robe[0],Math.min(1,s*robe[1]),Math.min(1,v*robe[2]));
+    else if(magic&&h>=165&&h<255&&s>0.25) out=hsv2rgb(magic[0],Math.min(1,s*magic[1]),Math.min(1,v*magic[2]));
     else if(hair&&!hm&&v>0.16&&(s<0.16||(s<0.34&&(h>=190||h<12)))){   // no mask (the old witch): silver hair, with its blue- and mauve-grey shadows
       const px=(i/4)%W, py=Math.floor(i/4/W);
       if(px>=hb[0]&&px<=hb[2]&&py>=hb[1]&&py<=hb[3]){
@@ -167,19 +189,28 @@ const defCache = {};
 // the character entry for the duel engine and Explore. A new wizard is plain: the wheel's spells
 // and the free Actions, no signatures yet, nothing barred yet (step 7's magic comes next).
 const maskCache={};
-async function hairMaskOf(base){               // the figure's hair mask as one byte a pixel (non-zero = hair)
-  if(!base.hairMask) return null;
-  if(maskCache[base.id]) return maskCache[base.id];
-  const img=await loadImg(base.hairMask), c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
+async function hairMaskOf(base, key='hairMask'){   // the figure's hair (or skin) mask as one byte a pixel (non-zero = in it)
+  if(!base[key]) return null;
+  const ck=base.id+':'+key; if(maskCache[ck]) return maskCache[ck];
+  const img=await loadImg(base[key]), c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
   const x=c.getContext('2d'); x.drawImage(img,0,0); const d=x.getImageData(0,0,c.width,c.height).data, m=new Uint8Array(c.width*c.height);
   for(let i=0;i<m.length;i++) m[i]=d[i*4]>127?1:0;
-  return maskCache[base.id]=m;
+  return maskCache[ck]=m;
 }
+function grow(m, W, H, R){                      // a mask grown by R px (a square brush)
+  const g=new Uint8Array(W*H), out=new Uint8Array(W*H);
+  for(let y=0;y<H;y++){ let run=-1e9; for(let x=0;x<W;x++){ if(m[y*W+x]) run=x; if(x-run<=R) g[y*W+x]=1; } run=1e9; for(let x=W-1;x>=0;x--){ if(m[y*W+x]) run=x; if(run-x<=R) g[y*W+x]=1; } }
+  for(let x=0;x<W;x++){ let run=-1e9; for(let y=0;y<H;y++){ if(g[y*W+x]) run=y; if(y-run<=R) out[y*W+x]=1; } run=1e9; for(let y=H-1;y>=0;y--){ if(g[y*W+x]) run=y; if(run-y<=R) out[y*W+x]=1; } }
+  return out;
+}
+function hairRimOf(base, m, W, H){ return m&&grow(m,W,H,3); }   // the hair mask grown by 3 px: where the hair's dark mauve edge lies
 async function def(hero){
   await loadBases();
   const k=JSON.stringify(hero); if(defCache[k]) return defCache[k];
   const base=BASES.find(b=>b.id===hero.fig)||figuresFor(hero.sex,hero.age).list[0];   // a figure that's gone (Eldrin's old sprite) gives way to the slot's first
   const img=await loadImg(base.src); base._hairMask=await hairMaskOf(base);
+  base._skinMask=await hairMaskOf(base,'skinMask'); base._staffMask=await hairMaskOf(base,'staffMask');
+  if(base._hairMask&&!base._hairRim) base._hairRim=hairRimOf(base,base._hairMask,img.naturalWidth,img.naturalHeight);
   const cv=paint(img,base,hero);
   const el=ELEMS.find(e=>e.id===hero.elem)||ELEMS[0], robe=ROBES.find(r=>r.name===hero.robe)||ROBES[0];
   return defCache[k]={
@@ -198,9 +229,9 @@ async function open(root, opts){
   return new Promise(resolve=>{
     const h0=opts.hero;
     const sex=h0?h0.sex:rnd(['m','f']);
-    const st=h0?Object.assign({},h0):{sex, age:'young', fig:null, robe:'Violet', trim:'Gold', hair:'Brown', skin:'Natural', eyes:'Brown', elem:rnd(ELEMS).id, name:rnd(NAMES[sex])};
-    if(!st.fig||!BASES.some(b=>b.id===st.fig)) st.fig=figuresFor(st.sex,st.age).list[0].id;
-    st.trim=st.trim||'Gold'; st.skin=st.skin||'Natural'; st.eyes=st.eyes||'Blue';   // heroes made before trim, skin and eyes
+    const st=h0?Object.assign({},h0):{sex, age:'young', fig:null, robe:'Violet', trim:'Gold', staff:'Oak', hair:'Brown', skin:'Natural', eyes:'Brown', elem:rnd(ELEMS).id, name:rnd(NAMES[sex])};
+    if(!st.fig||!figuresFor(st.sex,st.age).list.some(b=>b.id===st.fig)) st.fig=figuresFor(st.sex,st.age).list[0].id;
+    st.trim=st.trim||'Gold'; st.staff=st.staff||'Oak'; st.skin=st.skin||'Natural'; st.eyes=st.eyes||'Blue';   // heroes made before trim, skin and eyes
     if(box) box.remove();
     box=document.createElement('div'); box.className='hc'; root.appendChild(box);
     box.innerHTML=`<div class="hc-box">
@@ -209,7 +240,7 @@ async function open(root, opts){
         <div class="hc-preview"><canvas class="hc-cv" width="300" height="420"></canvas><div class="hc-who"></div><div class="hc-note"></div></div>
         <div class="hc-opts"></div>
       </div>
-      <div class="hc-foot">${opts.edit?'<button class="ex-btn hc-cancel" type="button">Cancel</button>':''}<button class="ex-btn hc-go" type="button">${opts.edit?'Keep this look':'Begin'}</button></div>
+      <div class="hc-foot"><button class="ex-btn hc-rand" type="button" title="A random wizard">🎲 Random</button>${opts.edit?'<button class="ex-btn hc-cancel" type="button">Cancel</button>':''}<button class="ex-btn hc-go" type="button">${opts.edit?'Keep this look':'Begin'}</button></div>
     </div>`;
     const $=s=>box.querySelector(s), cv=$('.hc-cv'), ctx=cv.getContext('2d');
     let drawn=0;
@@ -226,6 +257,13 @@ async function open(root, opts){
     };
     const pills=(key,items,cls)=>`<div class="hc-row"><span class="hc-lab">${cls}</span><div class="hc-pills">`+items.map(([v,l])=>`<button type="button" class="hc-pill${st[key]===v?' on':''}" data-k="${key}" data-v="${v}">${l}</button>`).join('')+`</div></div>`;
     const swatches=(key,items,lab)=>`<div class="hc-row"><span class="hc-lab">${lab}</span><div class="hc-sw">`+items.map(it=>`<button type="button" class="hc-swb${st[key]===it.name?' on':''}" data-k="${key}" data-v="${it.name}" title="${it.name}" style="background:${it.sw}"></button>`).join('')+`<span class="hc-swname">${st[key]}</span></div></div>`;
+    // 🎲 Random: a whole new look (and, for a new wizard, sex, element and name; Change look keeps those)
+    const randomize=()=>{
+      if(!opts.edit){ st.sex=rnd(['m','f']); st.elem=rnd(ELEMS).id; st.name=rnd(NAMES[st.sex]); }
+      st.age=rnd(AGES)[0]; st.fig=rnd(figuresFor(st.sex,st.age).list).id;
+      st.robe=rnd(ROBES).name; st.trim=rnd(TRIMS).name; st.skin=rnd(SKINS).name; st.eyes=rnd(EYES).name;
+      st.hair=(st.age==='old'&&Math.random()<0.6)?rnd(['Silver','White']):rnd(HAIRS).name;   // the old mostly grey
+    };
     const render=()=>{
       const F=figuresFor(st.sex,st.age), i=Math.max(0,F.list.findIndex(b=>b.id===st.fig)), op=opposite(st.elem);
       $('.hc-opts').innerHTML=
@@ -233,7 +271,7 @@ async function open(root, opts){
         (opts.edit?'':pills('sex',[['m','Man'],['f','Woman']],'I am'))+
         pills('age',AGES,'Age')+
         `<div class="hc-row"><span class="hc-lab">Figure</span><div class="hc-pills"><button type="button" class="hc-pill" data-fig="-1">‹</button><span class="hc-figno">${i+1} of ${F.list.length}</span><button type="button" class="hc-pill" data-fig="1">›</button></div></div>`+
-        swatches('robe',ROBES,'Robes')+swatches('trim',TRIMS,'Trim')+swatches('hair',HAIRS,'Hair')+swatches('skin',SKINS,'Skin')+swatches('eyes',EYES,'Eyes')+
+        swatches('robe',ROBES,'Robes')+swatches('trim',TRIMS,'Trim')+swatches('staff',STAVES,'Staff')+swatches('hair',HAIRS,'Hair')+swatches('skin',SKINS,'Skin')+swatches('eyes',EYES,'Eyes')+
         (opts.edit?'':`<div class="hc-row"><span class="hc-lab">Element</span><div class="hc-pills">`+ELEMS.map(e=>`<button type="button" class="hc-pill hc-el${st.elem===e.id?' on':''}" data-k="elem" data-v="${e.id}"><i style="background:${e.col}"></i>${e.name}</button>`).join('')+`</div></div>`+
         `<div class="hc-elnote">Your magic burns ${ELEMS.find(e=>e.id===st.elem).name.toLowerCase()}-coloured. Your first spells will be ${ELEMS.find(e=>e.id===st.elem).name}, and in time ${op.name}, its opposite, will come hardest to you.</div>`);
       $('.hc-note').textContent=F.standIn?'Stand-in figure: the art for '+(st.age==='middle'?'a middle-aged':'a '+st.age)+' '+(st.sex==='m'?'man':'woman')+' is still to come.':'';
@@ -241,6 +279,7 @@ async function open(root, opts){
     };
     box.addEventListener('click',e=>{
       const t=e.target.closest('button'); if(!t) return;
+      if(t.classList.contains('hc-rand')){ randomize(); render(); return; }
       if(t.classList.contains('hc-dice')){ st.name=rnd(NAMES[st.sex].filter(n=>n!==st.name)); render(); return; }
       if(t.dataset.fig){ const F=figuresFor(st.sex,st.age).list, i=F.findIndex(b=>b.id===st.fig); st.fig=F[(i+(+t.dataset.fig)+F.length)%F.length].id; render(); return; }
       if(t.dataset.k){
@@ -259,5 +298,5 @@ async function open(root, opts){
     render();
   });
 }
-window.ExploreHero={open, def, loadBases, BASES, ROBES, TRIMS, HAIRS, SKINS, EYES, ELEMS, NAMES};
+window.ExploreHero={open, def, loadBases, BASES, ROBES, TRIMS, STAVES, HAIRS, SKINS, EYES, ELEMS, NAMES};
 })();

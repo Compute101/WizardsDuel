@@ -4,7 +4,7 @@
 // past it the streets still burn (the inner rings, later).
 'use strict';
 const {MapBuilder, T, P} = require('./builder');
-const {City} = require('./city');
+const {City, variedStyle} = require('./city');
 const {river, echoElement} = require('./sector');
 const {OWN_LORE, placeOwnLand, placeOwnProps} = require('./own');
 
@@ -26,11 +26,11 @@ const LORE = {
 module.exports = function cindergate(rects){
   const m=new MapBuilder(rects,{id:'cindergate', name:'Corvanthe: Cindergate', cols:56, rows:44, seed:5101});
   const {W, H} = m;
-  m.lore={...OWN_LORE, ...LORE}; m.fx='embers'; m.haze='70,30,10,0.16';
+  m.lore={...OWN_LORE, ...LORE}; m.fx='embers'; m.haze='70,30,10,0.16'; m.music='audio/corvanthe/cindergate.mp3';
   const burnt=k=>rects[k+'_burnt']?k+'_burnt':k;
   // how far gone: worse toward the Wound (north)
   const ruin=(x,y)=>Math.max(0,Math.min(1,(1-y/H)*1.15-0.12));
-  const city=new City(m,{street:'c', square:'f', ruin, style:burnt});
+  const city=new City(m,{street:'c', square:'f', ruin, style:variedStyle(rects,'burnt',5177)});
   m.fill(0,0,m.cols-1,m.rows-1,'a');
 
   // ── streets: an old city's, grown rather than planned ──
@@ -117,5 +117,6 @@ module.exports = function cindergate(rects){
   m.spawns={gate:[GX,40*T+20], start:[GX,40*T+20]};
   m.exits=[{x:GX-40,y:42*T+14,w:80,h:40,dir:'S',label:'The Corvanthe Road',to:{map:'corvanthe_road',spawn:'gate'}}];
   require('./sector').ringExits(m,'cindergate');   // Wallside, west and east, round the ring of sectors
+  require('./sector').innerExit(m,'cindergate',28*T);   // the Furnace Arch, in to the Crucible
   return m;
 };

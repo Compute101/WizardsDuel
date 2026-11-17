@@ -1,0 +1,1737 @@
+{
+ "id": "crucible",
+ "name": "Corvanthe: The Crucible",
+ "cols": 56,
+ "rows": 44,
+ "seed": 7101,
+ "flow": "S",
+ "fx": "embers",
+ "haze": "90,30,8,0.2",
+ "palette": null,
+ "windowGlow": "255,120,40",
+ "storm": 0,
+ "ground": [
+  "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXWWWWWWWXXXXXXX",
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaWWWaaaaaaaa",
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaWWWaaaaaaa",
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaWWWaaaaaaa",
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaWWWaaaaaaa",
+  "cccccccccccccccaaaaaaaccaaaaccccccccccccccccccWWWcaaaaaa",
+  "cccccccccccccccccccccccccccccccccccccccccccccWWWcccccccc",
+  "aaaaaaaaaaaaaaccccccccccccccccaaaaaaaaaaaccacWWWcccccccc",
+  "aaaaaaaaaaaaaaaaaaaacccaaaaaaaaaaaaaaaaaacaaWWWaaaaaaaaa",
+  "aaaaaacccaaaaacccaacccaaaaaaaaaaaaaaaaaaacaaWWWaaaaaaaaa",
+  "aaaaacccccccccccccccccccaaaaaaaaaaaaaaaacccWWWccaaaaaaaa",
+  "aaaacccccccccccccccccccccccaaaaaaaaaaaaccccWWWcccaaaaaaa",
+  "cccccccaacccccaaaacccacccccccccccccccacccccWWWccccccaccc",
+  "cccccccaaaccccaaaacccaaaaccccccccccccccccaaWWWcacccccccc",
+  "aaaaaacaaacccaaaaacccaaaaaaaaaaaaaaacccaaaaWWWcaaaccccaa",
+  "aaaaaacaaaaaaaaaaaccccaaaaaaaaaaaaaaaaaaaaaWWWcaaaaaaaaa",
+  "aaaaaaccaaaaaaaaaaaccccaaaaaaaaaaaaaaaaaaaaWWWccaaaaaaaa",
+  "aaaaaaccaaaaaaaaaaaaccccaaaaaaaaaaaaaaaaaaaWWWacaaaaaaaa",
+  "aaaaaacaaaaaaaaaaaaaacccccaaaaaaaaaaaaaaaaaWWWcaaaaaaaaa",
+  "aaaaacaaaaaaaaaaaaaaaaacccccaaaaaaaaaaaaaaaWWWcaaaaaaaaa",
+  "aaaaccaaaaaaaaaaaaaaaaaaccccccaaaaaaaaaaaaaWWWcaaaaaaaaa",
+  "aaaacaaaaaaaaaaaaaaaaaaaaaccccccaaaaaaaaaaaWWWcaaaaaaaaa",
+  "aaaacaaaaaaaaaaaaaccccaaaaaaccccfcaacccaaaWWWaaccccaaaaa",
+  "aaaacaaaaaaaaaaaccccccccccaaacffffffccccccWWWccccccccccc",
+  "ccccccaaacccccccccccacccccccccfffffffcccccWWWccccccccccc",
+  "ccccccccccccccccccaaaaaaccccccfffffffaaaaaWWWaaaaaccccca",
+  "aaaacccccccaaaccaaaaaaaaaaccaaaffffffaaaaaWWWaaaaccaaaaa",
+  "aaaaaaaccaaaaaaaaaaaaaaaaaaaaaaaafcccaaaaaWWWaaaacaaaaaa",
+  "aaaaacccccaaaaaaaaaaaaaaaaaaaaaaaaccccaaaaaWWWaacaaaaaaa",
+  "aaccccccccccaaaaaaaaaaaaaaaaaaaaaaacccaaaacWWWaacaaaaccc",
+  "cccccccaccccccaccccaacccccaaaaaaaaaaccccacacWWWcccaaaccc",
+  "cccaaaaaaaacccccccccccccccccacccccacccccccccWWWcccccccca",
+  "aaaaaaaaaaaacccccacccccacccccccccccccccccccccWWWccccccca",
+  "aaaaaaaaaaaacaaaaaaaaaaaaacccccacccccacacacccWWWaaaaacca",
+  "aaaaaaaaaaaaccaaaaaaaaaaaaaaaaacccccaacccaaaaWWWaaaaaaaa",
+  "aaaaaaaaaaaaaccaaaaaaaaaaaaaacccccaaccaacaaaaWWWaaaaaaaa",
+  "aaaaaaaaaaaaaacaaaaaaaaaaaaaccccaaaacaaacaaaaaWWWaaaaaaa",
+  "aaaaaccccccaaacaaaaaaaaaaaaccccaaaaccaaaccaaaaWWWaaaaaaa",
+  "ccccccccccccccccccccccccccccccccccccccccccccccWWWccccccc",
+  "ccccccaaaaccccccccccccccccccccccccccccccccccccWWWccccccc",
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaccaaaaaaaaaaaaaaaaWWWaaaaaaaa",
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaccaaaaaaaaaaaaaaaaWWWaaaaaaaa",
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaccaaaaaaaaaaaaaaaaWWWaaaaaaaa",
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaWWWaaaaaaaa"
+ ],
+ "objects": [
+  ["bridgeTopStoneBroken",2976,499.2,{"lore":"bridgeBroken","scale":0.4531,"decal":1}],
+  ["bridgeTopWoodBroken",2848,792.3,{"lore":"bridgeBroken","scale":0.4599,"decal":1}],
+  ["bridgeTopStone",2784,1587.2,{"lore":"bridge","scale":0.4531,"decal":1}],
+  ["bridgeTopWood",2944,2083.6,{"lore":"bridge","scale":0.5542,"decal":1}],
+  ["bridgeTopStone",3040,2547.2,{"lore":"bridge","scale":0.4531,"decal":1}],
+  ["postRing",2674,1408,{"lore":"river"}],
+  ["lavaWell",2144,1630,{"lore":"center"}],
+  ["lanternPostBroken",1944,1520,{"lore":"circuit"}],
+  ["lanternPostBroken",2344,1520],
+  ["lanternPostBroken",1944,1760],
+  ["lanternPostBroken",2344,1760],
+  ["gravel",2054,1500,{"lore":"square"}],
+  ["brokenArch",1472,276,{"lore":"lastGate"}],
+  ["rubble3",143.5,280],
+  ["slagHeap2",235.6,276],
+  ["rubble2",421.5,278,{"lore":"line"}],
+  ["rubble4",504.8,277],
+  ["slagHeap2",582.4,277],
+  ["ruinWall1",660,281],
+  ["rubble2",743.3,279],
+  ["rubble2",834.6,280,{"lore":"line"}],
+  ["ruinWall1",917.9,281],
+  ["ruinWall1",1058.1,278],
+  ["rubble2",1141.4,277,{"lore":"line"}],
+  ["ruinWall1",1224.7,276],
+  ["slagHeap2",1302.3,276],
+  ["rubble2",1610.7,280],
+  ["rubble4",1694,282],
+  ["ruinWall1",1769.2,282,{"lore":"line"}],
+  ["slagHeap2",1846.8,278],
+  ["blocks1",1912,281],
+  ["rubble2",1982.9,279],
+  ["rubble4",2066.2,279],
+  ["slagHeap2",2143.8,277],
+  ["ruinWall1",2221.4,277,{"lore":"line"}],
+  ["rubble2",2304.6,279],
+  ["rubble4",2387.9,278],
+  ["slagHeap2",2465.5,276],
+  ["rubble4",2612,278],
+  ["ruinWall1",2687.2,279],
+  ["ruinWall2",2756.2,281],
+  ["rubble2",3204.7,278,{"lore":"line"}],
+  ["ruinWall1",3288,278],
+  ["ruinWall2",3357,277],
+  ["ruinWall1",3426,279],
+  ["ruinWall2",3495,280],
+  ["ruinWall2",3557.8,279],
+  ["brokenArch",1792,2718,{"lore":"archIn"}],
+  ["ruinWall1",40.6,2719],
+  ["rubble4",115.8,2720],
+  ["rubble2",199.1,2722,{"lore":"wall"}],
+  ["rubble3",297,2722],
+  ["rubble4",475,2720],
+  ["ruinWall1",550.3,2722],
+  ["rubble4",702.4,2720],
+  ["rubble3",792.1,2722,{"lore":"wall"}],
+  ["ruinWall1",881.9,2721],
+  ["rubble4",957.2,2723],
+  ["wallLow1",1039.8,2718],
+  ["ruinWall1",1122.5,2719],
+  ["wallLow1",1205.1,2719,{"lore":"wall"}],
+  ["rubble4",1287.8,2722],
+  ["rubble4",1363,2719],
+  ["rubble4",1503.2,2721],
+  ["rubble3",1593,2718],
+  ["ruinWall2",1916.4,2719,{"lore":"wall"}],
+  ["rubble3",2077.9,2723],
+  ["rubble3",2182.2,2722],
+  ["rubble2",2280.1,2722],
+  ["rubble3",2377.9,2719],
+  ["rubble2",2475.8,2723,{"lore":"wall"}],
+  ["ruinWall2",2552.9,2723],
+  ["rubble2",2629.9,2719],
+  ["rubble2",2721.3,2721],
+  ["wallLow1",3204.1,2719],
+  ["rubble2",3294.8,2724,{"lore":"wall"}],
+  ["rubble3",3392.6,2721],
+  ["wallLow1",3489.9,2723],
+  ["ruinWall2",3566.3,2719],
+  ["lavaSpring",2006.1,668.8,{"lore":"lavaSpring"}],
+  ["lavaRun",2084,675.3,{"lore":"lavaRun","decal":1}],
+  ["lavaRun",2190,675.3,{"decal":1}],
+  ["lavaRun",2296,675.3,{"decal":1}],
+  ["lavaEnd",2387.2,677.1,{"decal":1}],
+  ["lavaSpring",2072.2,1279.1,{"lore":"lavaSpring"}],
+  ["lavaRun",2150.1,1285.5,{"lore":"lavaRun","decal":1}],
+  ["lavaRun",2256.1,1285.5,{"decal":1}],
+  ["lavaEnd",2347.3,1287.3,{"decal":1}],
+  ["lavaSpring",1096.5,1758.4,{"lore":"lavaSpring"}],
+  ["lavaRun",1174.4,1764.9,{"lore":"lavaRun","decal":1}],
+  ["lavaRun",1280.4,1764.9,{"decal":1}],
+  ["lavaEnd",1371.6,1766.7,{"decal":1}],
+  ["foundry",1696,700,{"lore":"foundry"}],
+  ["stallBurnt",320,1212,{"lore":"stallBurnt"}],
+  ["foundry",3264,764,{"lore":"foundry"}],
+  ["crucibleHoist",1088,1916,{"lore":"crucibleHoist"}],
+  ["chainHoist",2528,1916,{"lore":"chainHoist"}],
+  ["forge",160,1852,{"lore":"forge"}],
+  ["rubble1",196.5,310],
+  ["rubble3",408.9,310],
+  ["rubble1",1027.7,310],
+  ["rubble9",2018.3,310],
+  ["barrelsBroken",2250.9,310],
+  ["rubble3",1174.7,374],
+  ["rocks1",1609.8,374],
+  ["rubble9",1693,374],
+  ["barrelsBroken",3357,374],
+  ["rubble3",3439.3,374],
+  ["rubble5",452.5,566],
+  ["house6_burnt",623.3,572],
+  ["crateBroken",1116,566],
+  ["rubble5",671.1,630],
+  ["rubble9",775.7,630],
+  ["rubble3",1524.4,630],
+  ["rubble9",68.5,758],
+  ["house5_burnt",177.3,764],
+  ["rubble3",2344.9,758],
+  ["barrelsBroken",2427.1,758],
+  ["house5_burnt",3465.8,764],
+  ["house5_slate",1417.8,956],
+  ["house5_slate",521.8,1020],
+  ["rubble5",1481.8,1014],
+  ["house6_burnt",1583.2,1084],
+  ["rubble5",1668.5,1142],
+  ["house6_slate",1775.2,1212],
+  ["rubble9",2052.5,1334],
+  ["house6_burnt",1220.5,1404],
+  ["house4",1371.3,1404],
+  ["rubble3",3076.5,1398],
+  ["rubble1",3164,1398],
+  ["house5",3273.9,1404],
+  ["house5_burnt",1524.4,1468],
+  ["blocks1",1656.7,1462],
+  ["ruinWall1",2249.8,1462],
+  ["house3_slate",2564.5,1468],
+  ["rubble5",3396.5,1462],
+  ["house5_burnt",3505.3,1468],
+  ["house6_slate",68.5,1532],
+  ["crateBroken",195.5,1526],
+  ["rubble1",388.5,1526],
+  ["house5_char",649.8,1532],
+  ["house5_char",808.7,1532],
+  ["blocks1",941,1526],
+  ["rubble3",457.8,1590],
+  ["crateBroken",388.5,1782],
+  ["house4",711,1852],
+  ["house6_burnt",3460.5,1852],
+  ["house5_burnt",863.1,1916],
+  ["barrelsBroken",1417.8,1910],
+  ["house3_char",1522.4,1916],
+  ["house3_burnt",1670.7,1916],
+  ["house4_char",3207,1916],
+  ["house3_char",1305.8,1980],
+  ["crateBroken",1924.5,1974],
+  ["rubble9",3289.8,1974],
+  ["house3_burnt",964.5,2236],
+  ["house3_burnt",473.7,2364],
+  ["house3_burnt",622.1,2364],
+  ["house3_burnt",68.5,2428],
+  ["house4_burnt",219.3,2428],
+  ["house5_burnt",777.8,2428],
+  ["house4_burnt",1031,2428],
+  ["house5",1187.1,2428],
+  ["house4_slate",1343.2,2428],
+  ["blocks1",1472.7,2422],
+  ["house2_burnt",1575.6,2428],
+  ["house4_burnt",2204.2,2428],
+  ["house3",2436.5,2428],
+  ["house5_burnt",2761.8,2428],
+  ["house5_char",3295,2428],
+  ["house4",3451.1,2428],
+  ["backSlateRuin",70.7,532],
+  ["rubble5",222.8,526],
+  ["backSlateRuin",328.8,532],
+  ["backSlateRuin_burnt",481.5,532],
+  ["rocks1",719.5,526],
+  ["rocks1",825,526],
+  ["backPurpleRuin_burnt",1990.1,532],
+  ["backSlateRuin",2142.1,532],
+  ["backPurpleRuin_burnt",2294.2,532],
+  ["rocks1",2424.9,526],
+  ["backSlateRuin_burnt",2531.1,532],
+  ["blocks1",1733.5,590],
+  ["crateBroken",1818.2,590],
+  ["blocks1",1945.1,590],
+  ["backSlateRuin_burnt",3185.3,596],
+  ["backPurpleRuin_burnt",3337.4,596],
+  ["backSlateRuin_burnt",966.7,852],
+  ["rubble1",1521.3,910],
+  ["backPurple_burnt",69.8,980],
+  ["backPurpleRuin",281,980],
+  ["backSlateRuin_burnt",902.7,980],
+  ["backPurpleRuin_burnt",1670.1,980],
+  ["backSlateRuin_burnt",1822.1,980],
+  ["backSlateRuin_burnt",1974.8,980],
+  ["rubble9",2127.5,974],
+  ["barrelsBroken",2566.7,974],
+  ["backPurpleRuin_burnt",3142.1,980],
+  ["backSlateRuin_burnt",710.7,1044],
+  ["backSlateRuin",2456.1,1044],
+  ["crateBroken",3270.7,1038],
+  ["backPurpleRuin_burnt",3376.2,1044],
+  ["backSlateRuin_burnt",518.7,1236],
+  ["backSlateRuin_burnt",3078.7,1236],
+  ["blocks1",476,1294],
+  ["backSlateRuin_burnt",1414.7,1300],
+  ["backPurpleRuin",390.1,1428],
+  ["backPurpleRuin_burnt",1755.4,1492],
+  ["rocks1",2480.7,1678],
+  ["backSlate_burnt",2584,1684],
+  ["backSlateRuin_burnt",2993.3,1684],
+  ["backSlateRuin_burnt",858.4,1748],
+  ["backPurple_burnt",1605.8,1748],
+  ["backSlate_burnt",3416.7,1748],
+  ["backSlate_burnt",1753.2,1812],
+  ["backSlate_burnt",3267.9,1812],
+  ["backSlateRuin_burnt",347.5,2068],
+  ["backSlateRuin_burnt",500.2,2068],
+  ["backSlateRuin_burnt",154.8,2132],
+  ["backSlate_burnt",1113.2,2196],
+  ["backSlateRuin_burnt",1344.6,2196],
+  ["backSlate_burnt",1494.5,2196],
+  ["rubble9",1623.1,2190],
+  ["backPurple_burnt",3226.6,2196],
+  ["backPurple_burnt",1733.8,2260],
+  ["backSlate_burnt",2243.9,2324],
+  ["backSlate_burnt",2499.9,2324],
+  ["backSlateRuin_burnt",454.7,2580],
+  ["backPurple_burnt",606.4,2580],
+  ["sidePurpleRuin_burnt",193.6,1402],
+  ["sidePurpleRuin_burnt",321.6,634],
+  ["sidePurpleRuin_burnt",510.5,826],
+  ["sidePurpleRuin_burnt",574.5,1146],
+  ["sidePurpleRuin_burnt",577.6,890],
+  ["sidePurple_burnt",647.8,2042],
+  ["sideSlate_burnt",712.7,2106],
+  ["sidePurpleRuin_burnt",705.6,2234],
+  ["sidePurpleRuin_burnt",769.6,2298],
+  ["sidePurpleRuin_burnt",1150.5,634],
+  ["sidePurpleRuin",1089.6,826],
+  ["sidePurpleRuin_burnt",1089.6,954],
+  ["sidePurpleRuin",1153.6,1082],
+  ["sidePurpleRuin_burnt",1217.6,1146],
+  ["sidePurpleRuin",1281.6,1210],
+  ["sideSlate_burnt",1480.7,1658],
+  ["sideSlate_burnt",1672.7,2618],
+  ["sideSlate_burnt",1928.7,2234],
+  ["sidePurpleRuin_burnt",2046.5,2426],
+  ["sidePurpleRuin_burnt",2241.6,954],
+  ["sidePurpleRuin_burnt",2241.6,1978],
+  ["sideSlate",2359.3,2234],
+  ["sideSlate_burnt",2679.3,2234],
+  ["sidePurpleRuin_burnt",3070.5,1338],
+  ["sidePurpleRuin_burnt",3134.5,1082],
+  ["sideSlate_burnt",3080.7,1786],
+  ["sidePurpleRuin_burnt",3137.6,1658],
+  ["sidePurpleRuin_burnt",3518.5,954],
+  ["rubble9",975.7,1042.9],
+  ["rubble3",2616.2,1094.7],
+  ["ruinWall1",967.6,1372.7],
+  ["brokenFence",1306.3,1311.1],
+  ["blocks1",1834.5,1081.2],
+  ["rubble1",3418.1,1241.3],
+  ["logs",332.7,2128.6],
+  ["rubble1",968.1,1330.7],
+  ["barrel3",2123.1,1856.9],
+  ["logs",481.5,2207.5],
+  ["planks1",848,1401.1],
+  ["blocks1",2024.8,1032.6],
+  ["rubble3",118,1179],
+  ["crate3",3498.4,1258.8],
+  ["crate3",3336.9,1886.2],
+  ["rocks1",2704.9,1138.2],
+  ["crate3",141.1,2621.6],
+  ["logs",2588.8,2591.2],
+  ["rubble5",724,1358],
+  ["brokenFence",1883.9,1922.2],
+  ["crate1",1354.8,2594.5],
+  ["barrel3",2110.9,1966.1],
+  ["logs",645.7,1291.5],
+  ["crate3",1074.1,1311.3],
+  ["barrelsBroken",2567.9,1298],
+  ["planks1",91.1,2309.1],
+  ["brokenFence",2486.2,1321.2],
+  ["barrel3",2068.8,1921.4],
+  ["ruinWall1",1107.4,1446.2],
+  ["crate3",498.3,1401.6],
+  ["rubble3",2753.9,613.2],
+  ["planks1",975.5,1913.9],
+  ["ruinWall1",3209.7,1303.2],
+  ["sacks",2060.7,2604.9],
+  ["brokenFence",2280.8,997],
+  ["rubble9",1978.5,1158],
+  ["sacks",842.4,1158.5],
+  ["crateBroken",2601.8,1779.2],
+  ["crateBroken",1558.6,567.9],
+  ["rocks1",1010,1215.2],
+  ["rocks1",2210.5,999.4],
+  ["crate3",163.8,1112.2],
+  ["crateBroken",2621.5,965.5],
+  ["barrel3",1259.3,2259.2],
+  ["barrel3",932.8,1972.8],
+  ["blocks1",2567.9,568.5],
+  ["crate3",1231.8,1624.7],
+  ["blocks1",2099.9,1144.4],
+  ["rubble6",1352.1,2294.7],
+  ["planks1",377.3,2274.5],
+  ["logs",1101,2589.6],
+  ["barrelsBroken",326.6,1085.5],
+  ["crateBroken",2348.1,1133.2],
+  ["planks1",2071.7,1064.4],
+  ["rocks1",2494.6,1731.3],
+  ["rubble6",3389.5,2266.9],
+  ["barrel3",771.4,2591.9],
+  ["blocks1",2008.7,708.3],
+  ["crateBroken",2568.6,936.3],
+  ["blocks1",1216.2,537.8],
+  ["rocks1",903.4,1780.6],
+  ["rubble6",731.4,1279.5],
+  ["rubble3",143.3,634.2],
+  ["barrelsBroken",2132.6,916.1],
+  ["barrel3",928.5,1100.2],
+  ["barrelsBroken",1061.7,1132],
+  ["rocks1",536.9,1480.2],
+  ["brokenFence",1425.6,1785.4],
+  ["planks1",1663,2331.8],
+  ["planks1",2756.4,2259.4],
+  ["brokenFence",602.2,1773.1],
+  ["sacks",2803.1,2289.3],
+  ["rocks1",1580,345],
+  ["barrel3",110.1,1140.1],
+  ["brokenFence",1215.5,2334.6],
+  ["logs",306.1,1778.7],
+  ["sacks",1147.4,2235.6],
+  ["barrel3",1991.6,1946.2],
+  ["crateBroken",1971.2,750.2],
+  ["brokenFence",1819.6,1027.5],
+  ["blocks1",1994.6,1849.8],
+  ["rubble3",3492.3,1081.4],
+  ["planks1",2681.8,1825.3],
+  ["crateBroken",3341,1234.3],
+  ["crate3",3225.4,2260.8],
+  ["rubble6",1604.5,1788.9],
+  ["rubble1",1006.4,566.8],
+  ["rubble3",2494.5,635.3],
+  ["rubble5",1825.7,552.8],
+  ["rubble3",1817.9,1896.2],
+  ["crate3",3257.1,2587.3],
+  ["ruinWall1",1910.2,1838.9],
+  ["planks1",1775.4,1110.7],
+  ["blocks1",3034.5,1010.5],
+  ["barrel3",853.7,2171.8],
+  ["crateBroken",2597.7,1041.2],
+  ["crateBroken",3407.6,659.5],
+  ["planks1",3289.1,1705.5],
+  ["brokenFence",2873.5,2397.2],
+  ["barrelsBroken",3240.4,1220.8],
+  ["crateBroken",1777.1,755.2],
+  ["crate3",2024.9,2137.4],
+  ["planks1",2529.2,1177.9],
+  ["rubble5",200,1053.7],
+  ["blocks1",2583.5,1216.6],
+  ["rocks1",2620.8,1142.2],
+  ["planks1",1453.5,2589],
+  ["rubble3",614.4,1401.6],
+  ["slagHeap1",3330.2,1143.7,{"lore":"slagHeap1"}],
+  ["slagHeap1",1314.8,1811.5,{"lore":"slagHeap1"}],
+  ["slagHeap1",1496,2287.4,{"lore":"slagHeap1"}],
+  ["slagHeap2",1575.2,2231.1],
+  ["slagHeap2",2082.5,1818.7],
+  ["slagHeap2",313.2,2207.1],
+  ["slagHeap2",3164.6,2223.9],
+  ["slagHeap3",2552.5,1139.4],
+  ["slagHeap3",2677.5,870.3],
+  ["slagHeap3",1136.1,1205.4],
+  ["slagHeap3",626.6,1213.9],
+  ["slagHeap3",904.2,541.1],
+  ["slagHeap3",3109.5,2179.5],
+  ["anvilBlock",1962.6,1198.1],
+  ["anvilBlock",1590.5,1127.8],
+  ["anvilBlock",2132.7,705],
+  ["bellowsGreat",86.5,1248.9],
+  ["bellowsGreat",1436.2,2233.9],
+  ["oreCart",2186.3,1079.5],
+  ["oreCart",1808.3,1936.1],
+  ["oreCartHot",2436.5,1097.1],
+  ["oreCartHot",91.8,571.8],
+  ["oreCartHot",852.1,1343.7],
+  ["anvil",145,2264.3],
+  ["anvil",3259.7,1087.8],
+  ["slag",839.2,1281.1],
+  ["slag",1210.3,2300.4],
+  ["slag",698,2158.1],
+  ["cratesProduce",147.8,1321.5],
+  ["cratesProduce",115.8,2174.3],
+  ["sacksGrain",3335.8,1924.3],
+  ["sacksGrain",3166.9,2392.6],
+  ["barrelsTrio",2156.4,1031.7],
+  ["barrelsTrio",640.4,1246.1],
+  ["cartLoaded",1001.2,2321],
+  ["wagonCovered",1500.6,2332.5],
+  ["well",1203.1,1841.8,{"lore":"well"}],
+  ["benchBack",3153.5,1152.5],
+  ["benchPlain",72.7,661.4],
+  ["noticeBoard",1750,1981.4,{"lore":"noticeBoard"}],
+  ["lanternPostBroken",524.8,1964.4],
+  ["lanternPostBroken",2363.7,1164.8],
+  ["lanternSmashed",974.4,1240.7],
+  ["lanternSmashed",496.8,1501.4],
+  ["handcartSacks",2218.1,759.5],
+  ["barrowStone",3506.5,602.1],
+  ["chestOld",2407.8,1185.4],
+  ["crow1",3393,1067.3],
+  ["crow1",1298.1,2328.3],
+  ["crow2",1450.5,2369.2],
+  ["crow2",951.2,1459.9],
+  ["crowFlying",852.3,2335.1],
+  ["crowFlying",3289.1,620.5],
+  ["crowPerch",3334.2,1107.3,{"lore":"crowPerch"}],
+  ["crowPerch",3062.3,1850.3,{"lore":"crowPerch"}]
+ ],
+ "lore": {
+  "forge": [
+   "A Guild Forge",
+   "The furnace has not gone out since the Unweaving, and nobody feeds it. Something in there is still working the bellows."
+  ],
+  "townhouse": [
+   "A Merchant Prince's House",
+   "The finest house on the hill. The windows are lit, the table is laid for twelve, and the wind has blown every chair to face the Wound."
+  ],
+  "gazebo": [
+   "The Summer Gazebo",
+   "Half its dome blew away. The musicians' stands are still set out, the sheet music pinned down by stones."
+  ],
+  "weathervane": [
+   "The Great Weathervane",
+   "The golden cockerel turns and turns. It points at the Wound every time it passes."
+  ],
+  "floatRoom": [
+   "A Drifting Parlour",
+   "Somebody's drawing room, hanging in the air with the chandelier still lit. The carpet is still on the floor; the floor is not on anything."
+  ],
+  "bellTower": [
+   "The Great Belfry",
+   "Its bell is the only one in Spirewatch still hanging. It rings by itself when lightning strikes, so it never stops."
+  ],
+  "watchTower": [
+   "A Storm-Watch Tower",
+   "The watchmen lit their beacon to warn the city. The smoke is still rising from it, the same smoke, years later."
+  ],
+  "fallenBell": [
+   "The Fallen Bell",
+   "The great bell of Bell Square, cracked through. Lay your hand on it and you can feel it ringing."
+  ],
+  "hall": [
+   "A Lecture Hall",
+   "The students were taking their examinations. The papers are still on the desks, every one answered in the same handwriting."
+  ],
+  "portal": [
+   "The Unwritten Door",
+   "An archway onto purple light. The far side of it is the Collegium too, a few seconds earlier."
+  ],
+  "orrery": [
+   "The Great Orrery",
+   "The college's model of the heavens, bent and frozen mid-turn. One of its brass planets is not in our sky."
+  ],
+  "sunkHouse": [
+   "A Sunken House",
+   "Flooded to the sills, and the lamps still lit inside. Shapes move past the windows, under the water."
+  ],
+  "tiltedHouse": [
+   "A Heaved House",
+   "The ground stood up under it and tipped it on its side. Its hearth is still burning, at an angle."
+  ],
+  "quarryCrane": [
+   "The Quarry Crane",
+   "A stone block hangs from it, turning slowly. It was being lowered when the Unweaving came, and it has not finished."
+  ],
+  "temple": [
+   "The Temple of the Veiled Mother",
+   "The great temple of Gloamside. The rose window is lit from within, by no light anybody can find."
+  ],
+  "mausoleum": [
+   "A Family Mausoleum",
+   "The iron doors are locked from the inside."
+  ],
+  "catacomb": [
+   "The Catacomb Stair",
+   "Down into the dark under Gloamside. Torches are lit all the way down, as far as you can see, and further."
+  ],
+  "frostStall": [
+   "A Market Stall",
+   "Frozen mid-sale: a hand of ice still reaching for a coin on the counter."
+  ],
+  "frozenFountain": [
+   "The Frozen Fountain",
+   "The fountain froze in the moment the Unweaving struck. You can see the shape of the coin someone was throwing in, caught in the spray."
+  ],
+  "well": [
+   "A Street Well",
+   "The rope is new. The bucket comes up full every time, of water so cold it hurts, and it smells faintly of violets."
+  ],
+  "noticeBoard": [
+   "A Notice Board",
+   "Rents due, a lost dog, a cure for the ague, a lecture at the Collegium \"on a new and safe method of drawing quintessence.\" The date is the day of the Unweaving."
+  ],
+  "catGinger": [
+   "A Ginger Cat",
+   "It watches you with complete indifference. The cats came back to Corvanthe first, and they have never said what they know."
+  ],
+  "catTabby": [
+   "A Tabby Cat",
+   "It walks a careful circle round you, then sits down where you were standing as if it has won something."
+  ],
+  "catBlack": [
+   "A Black Cat",
+   "It is washing a paw that is, for a moment, translucent, then not."
+  ],
+  "catSleeping": [
+   "A Sleeping Cat",
+   "Asleep in the one patch of ordinary sunlight in the street. Echoes walk round it."
+  ],
+  "crowPerch": [
+   "A Crow",
+   "It says a word, quite clearly, in a dead man's voice. It is your name."
+  ],
+  "cartPotions": [
+   "A Hawker's Cart",
+   "Phials of every colour, all stoppered and all empty. Each one is labelled in the same hand: \"PROOF AGAINST THE UNWEAVING.\""
+  ],
+  "lavaWell": [
+   "The Molten Well",
+   "The foundries drew their water here to quench the steel. The well has filled up with fire from underneath, and the bucket still goes down and comes up, by itself."
+  ],
+  "foundry": [
+   "A Great Foundry",
+   "Bells, cannon and the city's iron gates were cast here. The furnace is still lit, and in the moulds on the floor the metal is still taking shape."
+  ],
+  "stallBurnt": [
+   "A Burnt Stall",
+   "A smith's stall, its awning dripping with molten iron that never cools enough to fall."
+  ],
+  "crucibleHoist": [
+   "The Crucible Hoist",
+   "The pot still hangs over the fire, and still glows. Whatever was poured last never set."
+  ],
+  "chainHoist": [
+   "A Chain Hoist",
+   "Its hook still swings, slowly, though nothing has touched it in years."
+  ],
+  "lavaSpring": [
+   "A Fire Spring",
+   "Molten rock wells up between the stones and runs off along the old quench channels, as if the foundries never stopped."
+  ],
+  "lavaRun": [
+   "A Quench Channel",
+   "Cut to carry water from the well to the foundries. It carries fire now."
+  ],
+  "slagHeap1": [
+   "A Slag Heap",
+   "Still hot enough to cook on. The gleaners do."
+  ],
+  "fallenDome": [
+   "The Fallen Observatory",
+   "Its dome came down with the great bell inside it. The bell still rings when the wind blows, which here is always."
+  ],
+  "kite3": [
+   "The Great Kite",
+   "A kite as big as a sail, lashed to a stone post with chains. It strains toward the Wound day and night, and the bells on it never stop."
+  ],
+  "skyRock1": [
+   "Drifting Stone",
+   "A piece of street, cobbles and all, hanging at head height. Its shadow is in the right place. Its stones are not."
+  ],
+  "floatHouse1": [
+   "A Drifting House",
+   "Somebody's house, turning slowly overhead with its lights on. It has drifted in from the Wound, and it is heading back."
+  ],
+  "floatHouse2": [
+   "A Drifting House",
+   "Upside down, roof first, with a garden still on the bottom of it. The flowers are in bloom."
+  ],
+  "floatHouse3": [
+   "A Drifting Cottage",
+   "The smallest house in the Heights, and the only one still with a family in it, by the shapes at the window."
+  ],
+  "bannerFrame": [
+   "A Guild Banner",
+   "The Kitemakers' Guild. Their motto, sewn in gold: \"We hold the sky by a thread.\""
+  ],
+  "windmillSails": [
+   "Windmill Sails",
+   "Torn from a mill out on the hill, they came to rest here, and still turn when no wind blows."
+  ],
+  "coilBig": [
+   "The Great Coil",
+   "The engineers built it to catch the storms and store them. It caught the Unweaving instead. The globe on top is full of something that moves."
+  ],
+  "spireTower": [
+   "A Signal Tower",
+   "The watchmen signalled the storms across the city from here. The fire on top went out the day of the Unweaving and lit again on its own, blue."
+  ],
+  "fallenSpire": [
+   "The Fallen Spire",
+   "The copper cap of the tallest belfry, lying in the street where it fell. It is still warm, and still struck, from time to time, by lightning."
+  ],
+  "coil1": [
+   "A Storm Coil",
+   "One of the engineers' coils. The globe on top crackles when you come near, and the hairs on your arms rise to meet it."
+  ],
+  "rainBarrel": [
+   "A Rain Barrel",
+   "The water in it is perfectly still in the storm, and the reflection in it is a clear blue sky."
+  ],
+  "armillary": [
+   "The Armillary",
+   "The university's model of the heavens, in brass, still turning. One ring has come loose and lies in the grass, and the rest turn round the gap where it was."
+  ],
+  "lectureBenches": [
+   "The Lecture Tiers",
+   "The tiered benches of the oldest lecture hall, standing in the open now. The notes on the desks are all of the same lecture, and all stop at the same word."
+  ],
+  "portalRuin": [
+   "The Broken Door",
+   "An archway onto purple light. On the other side it is the same street, but everything in it is a little to the left."
+  ],
+  "scholarHeadless": [
+   "The Statue of the Dean",
+   "His head came off in the Unweaving and was never found. His hand is still raised, mid-point, and he is pointing at you."
+  ],
+  "scrollRack": [
+   "A Scroll Rack",
+   "Every scroll in it is the same spell. Every copy has the same mistake, in the same place, underlined."
+  ],
+  "arcCrystal1": [
+   "A Spill Crystal",
+   "Raw quintessence, grown out of the paving like frost. It hums at a pitch you feel in your teeth."
+  ],
+  "flyingBooks": [
+   "Flying Books",
+   "Books from the libraries, flapping over the streets like birds, never landing. Now and then a page falls."
+  ],
+  "seaGod": [
+   "The Sea-Father",
+   "The harbour's patron, on his throne with his trident. The water round his feet is warm, and turns slowly, the wrong way."
+  ],
+  "seaMaiden": [
+   "The Harbour Maiden",
+   "She held a lantern out to sea for the ships coming home. The lantern is gone, and her hand is still out, waiting."
+  ],
+  "wreckMarket": [
+   "The Wreck Market",
+   "A ship came up the flooded street on the night of the Unweaving and ran aground here, and the fishwives set up shop in it. The awnings are still out."
+  ],
+  "drownedShrine": [
+   "The Shrine of the Drowned",
+   "The hooded mother of sailors, holding out a bowl. The water in it glows, and the drowned are said to drink from it."
+  ],
+  "rowboat": [
+   "A Rowboat",
+   "Moored, and bailed out, recently. Nobody has seen who keeps it."
+  ],
+  "netFrame1": [
+   "Drying Nets",
+   "Hung out to dry, and never dry. What is caught in the mesh is not fish."
+  ],
+  "lobsterPots1": [
+   "Lobster Pots",
+   "Still baited. Something has been taking the bait and leaving the pots shut."
+  ],
+  "giantHead": [
+   "The Fallen Face",
+   "Carved for the great gate and never raised. Since the Unweaving its eyes have opened, very slightly, and they follow the Wound."
+  ],
+  "mineHead": [
+   "The Pithead",
+   "The winding gear over the deepest shaft in the Ward. The bucket comes up every hour, full of stone that was not there before."
+  ],
+  "scaffold1": [
+   "Masons' Scaffold",
+   "Built round the face of the great statue, to raise it. The rope still hangs from the pulley, and twitches."
+  ],
+  "masonBench": [
+   "A Mason's Bench",
+   "The block on it is half dressed. The chisel marks on the unfinished half are fresh."
+  ],
+  "grindstone": [
+   "A Grindstone",
+   "It turns by itself, slowly, sharpening nothing."
+  ],
+  "railH": [
+   "The Ore Line",
+   "Rails for the quarry carts. They run on into the Wound, and the carts that went down them came back empty."
+  ],
+  "rift": [
+   "A Rift",
+   "The ground split here and never closed. Warm air breathes up out of it, in and out."
+  ],
+  "iceFountain": [
+   "The Fountain of the Water-Bearer",
+   "She pours, and the water freezes as it leaves the jar, and the ice grows a finger's length every winter. One day it will reach the basin."
+  ],
+  "furTent": [
+   "The Furrier's Tent",
+   "The finest furs in the north, and a chest of coin under the counter. The furrier is still inside, frozen in the act of counting it."
+  ],
+  "stallFish": [
+   "A Fish Stall",
+   "The fish are frozen so fresh their eyes are still bright. One of them is watching you."
+  ],
+  "stallMeat": [
+   "A Butcher's Stall",
+   "Hams hang frozen from the beam. The frost on them grows in feathers, very slowly, toward the Wound."
+  ],
+  "stallStripe": [
+   "A Bread Stall",
+   "Loaves under the ice, still steaming inside it."
+  ],
+  "sledFurs": [
+   "A Fur Sled",
+   "Loaded and lashed for the road home, and the road home is the one way the snow won't let it go."
+  ],
+  "iceCrystal1": [
+   "Rime Crystal",
+   "The ice has grown into spars of blue crystal taller than a man, and they ring faintly when the snow touches them."
+  ],
+  "graveAngel": [
+   "The Weeping Angel",
+   "She kneels with her hands together and her face hidden. Nobody has seen her face. Everybody who tries says the same thing: she was looking."
+  ],
+  "tombGrand": [
+   "The Great Tomb",
+   "The tomb of the city's founding families. The doors stand open a hand's breadth. They were shut this morning."
+  ],
+  "cryptGate": [
+   "The Crypt Mouth",
+   "The way down into the oldest catacombs. The bones by the door have been arranged, very neatly, by size."
+  ],
+  "cemeteryGate": [
+   "The Cemetery Gate",
+   "Two hooded keepers hold the braziers either side. The flames are violet and cold, and lean toward you as you pass."
+  ],
+  "tomb": [
+   "A Family Tomb",
+   "Someone has left fresh flowers on the step. Nobody living has been here in years."
+  ],
+  "brazier": [
+   "A Grave Brazier",
+   "Violet fire, burning on nothing. It gives no heat at all, and casts your shadow the wrong way."
+  ],
+  "gloomTree1": [
+   "The Old Yew",
+   "Dead, and hung with moss, and it still drops leaves. They are all the same leaf."
+  ],
+  "crowPost": [
+   "A Crow on a Post",
+   "It has been watching you since the gate. Crows here don't fly away. They wait."
+  ],
+  "shadowPool3": [
+   "A Pool of Shadow",
+   "The paving gave way to darkness, flat and still. Things move in it, under the surface, at a great depth."
+  ],
+  "line": [
+   "The Rim of the Wound",
+   "The street ends in a lip of fused stone, and past it the ground simply isn't. The light coming up from below is the colour of the inside of a furnace."
+  ],
+  "lastGate": [
+   "The Crucible Gate",
+   "The last gate before the Wound. Its iron has run like wax and set again into a shape like a closed hand. It will not open. Not yet."
+  ],
+  "archIn": [
+   "The Furnace Arch",
+   "Back out to Cindergate. From this side the arch is black with soot, and someone has chalked a tally of the days on it, and stopped."
+  ],
+  "square": [
+   "Founders' Pour",
+   "Where the great bells and cannon were cast, in pits in the ground. The pits are still full, and still molten, and something swims in one."
+  ],
+  "center": [
+   "The Molten Well",
+   "The foundries drew their water here to quench the steel. The well has filled up with fire from underneath, and the bucket still goes down and comes up, by itself."
+  ],
+  "circuit": [
+   "The Inner Circuit",
+   "The ring road round the inner city. Here it runs between foundries, and the cobbles are warm through your boots."
+  ],
+  "wall": [
+   "The Inner Barrier",
+   "The far side of the barrier you came through. From in here it looks less like rubble and more like a wall someone built, in a hurry, to keep something in."
+  ],
+  "crane": [
+   "The Quarry Crane",
+   "A stone block hangs from it, turning slowly. It was being lowered when the Unweaving came, and it has not finished."
+  ],
+  "gallows": [
+   "The Quarry Hoist",
+   "The rope is still running, slowly, up out of the ground."
+  ]
+ },
+ "spawns": {
+  "arch": [
+   1792,
+   2580
+  ],
+  "west": [
+   90,
+   2474
+  ],
+  "east": [
+   3494,
+   2474
+  ],
+  "start": [
+   1792,
+   2580
+  ]
+ },
+ "exits": [
+  {
+   "x": 1752,
+   "y": 2702,
+   "w": 80,
+   "h": 40,
+   "dir": "S",
+   "label": "Corvanthe: Cindergate",
+   "to": {
+    "map": "cindergate",
+    "spawn": "inner"
+   }
+  },
+  {
+   "x": 0,
+   "y": 2368,
+   "w": 48,
+   "h": 256,
+   "label": "The Inner Circuit to The Necropolis",
+   "to": {
+    "map": "necropolis",
+    "spawn": "east"
+   }
+  },
+  {
+   "x": 3536,
+   "y": 2368,
+   "w": 48,
+   "h": 256,
+   "label": "The Inner Circuit to The Drift",
+   "to": {
+    "map": "drift",
+    "spawn": "west"
+   }
+  }
+ ],
+ "blocks": [
+  {
+   "x": 0,
+   "y": 0,
+   "w": 3584,
+   "h": 280
+  },
+  {
+   "x": 0,
+   "y": 2728,
+   "w": 3584,
+   "h": 128
+  },
+  {
+   "x": 2018.0384383333962,
+   "y": 629.8959389452934,
+   "w": 400.27,
+   "h": 35.424
+  },
+  {
+   "x": 2084.140406505163,
+   "y": 1240.1603032474518,
+   "w": 294.27,
+   "h": 35.424
+  },
+  {
+   "x": 1108.4458502095308,
+   "y": 1719.497146976471,
+   "w": 294.27,
+   "h": 35.424
+  }
+ ],
+ "glows": [
+  {
+   "x": 3040,
+   "y": 192,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 2976,
+   "y": 417.44642549939454,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 2912,
+   "y": 573.0117716342211,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 2848,
+   "y": 788.6247197985649,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 2848,
+   "y": 1000.4245200175792,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 2848,
+   "y": 1216.0524410828948,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 2784,
+   "y": 1414.3459053598344,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 2784,
+   "y": 1683.638404391706,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 2848,
+   "y": 1904.9549227561802,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 2976,
+   "y": 2085.4184813685715,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 2976,
+   "y": 2248.717299129814,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 3040,
+   "y": 2411.672056194395,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 2976,
+   "y": 2643.833682395518,
+   "r": 140,
+   "c": "255,150,70"
+  },
+  {
+   "x": 60,
+   "y": 67.90621119141579,
+   "r": 249.43419854156673,
+   "c": "170,80,255"
+  },
+  {
+   "x": 319.3323371000588,
+   "y": 50.30197940170765,
+   "r": 304.43216539686546,
+   "c": "170,80,255"
+  },
+  {
+   "x": 546.4915490057319,
+   "y": 59.943712109327315,
+   "r": 308.7541446322575,
+   "c": "170,80,255"
+  },
+  {
+   "x": 822.7699442813173,
+   "y": 97.45332320928574,
+   "r": 225.19363513914868,
+   "c": "170,80,255"
+  },
+  {
+   "x": 1107.8161536785774,
+   "y": 38.50040700435638,
+   "r": 274.10225878702477,
+   "c": "170,80,255"
+  },
+  {
+   "x": 1338.261005829554,
+   "y": 39.52547221779823,
+   "r": 224.86659781541675,
+   "c": "170,80,255"
+  },
+  {
+   "x": 1529.9592240294442,
+   "y": 93.86664963662625,
+   "r": 304.788311435841,
+   "c": "170,80,255"
+  },
+  {
+   "x": 1744.9142321944237,
+   "y": 69.44727175831795,
+   "r": 261.1415502987802,
+   "c": "170,80,255"
+  },
+  {
+   "x": 2032.7773085422814,
+   "y": 62.024134212732314,
+   "r": 230.5800602119416,
+   "c": "170,80,255"
+  },
+  {
+   "x": 2301.1312468582764,
+   "y": 56.627930203080176,
+   "r": 230.09469902608544,
+   "c": "170,80,255"
+  },
+  {
+   "x": 2528.010531142354,
+   "y": 98.97650965452195,
+   "r": 274.28774925647303,
+   "c": "170,80,255"
+  },
+  {
+   "x": 2782.933684666641,
+   "y": 52.81940923035145,
+   "r": 294.68336176127195,
+   "c": "170,80,255"
+  },
+  {
+   "x": 2964.690370459575,
+   "y": 74.29505246281624,
+   "r": 237.58402749430388,
+   "c": "170,80,255"
+  },
+  {
+   "x": 3193.774493143428,
+   "y": 81.03111563026906,
+   "r": 281.14066060399637,
+   "c": "170,80,255"
+  },
+  {
+   "x": 3399.6330617717467,
+   "y": 53.95446442961693,
+   "r": 287.98664099769667,
+   "c": "170,80,255"
+  },
+  {
+   "x": 1472,
+   "y": 192,
+   "r": 320,
+   "c": "190,110,255"
+  },
+  {
+   "x": 80,
+   "y": 214.56044574081898,
+   "r": 213.8588544446975,
+   "c": "255,120,40"
+  },
+  {
+   "x": 381.48936986457556,
+   "y": 222.63689389824867,
+   "r": 208.1211718544364,
+   "c": "255,120,40"
+  },
+  {
+   "x": 741.7354486510158,
+   "y": 230.03073221445084,
+   "r": 210.02688358072191,
+   "c": "255,120,40"
+  },
+  {
+   "x": 1072.7059734612703,
+   "y": 219.63817481696606,
+   "r": 208.28614082653075,
+   "c": "255,120,40"
+  },
+  {
+   "x": 1428.2146177487448,
+   "y": 197.13866844773293,
+   "r": 170.99531578831375,
+   "c": "255,120,40"
+  },
+  {
+   "x": 1692.0854549715295,
+   "y": 199.25724332034588,
+   "r": 162.15799019206315,
+   "c": "255,120,40"
+  },
+  {
+   "x": 1974.7286151023582,
+   "y": 230.71575611829758,
+   "r": 164.28961419966072,
+   "c": "255,120,40"
+  },
+  {
+   "x": 2361.797105963342,
+   "y": 250.41979207098484,
+   "r": 182.66654425300658,
+   "c": "255,120,40"
+  },
+  {
+   "x": 2623.5349928494543,
+   "y": 250.08438229560852,
+   "r": 189.70930091571063,
+   "c": "255,120,40"
+  },
+  {
+   "x": 2885.3186450898647,
+   "y": 211.68491615355015,
+   "r": 179.68225248157978,
+   "c": "255,120,40"
+  },
+  {
+   "x": 3267.7003703964874,
+   "y": 234.02137863636017,
+   "r": 174.06460781116039,
+   "c": "255,120,40"
+  },
+  {
+   "x": 3537.107631005347,
+   "y": 205.70925897359848,
+   "r": 187.1911724191159,
+   "c": "255,120,40"
+  },
+  {
+   "x": 2189.263438333396,
+   "y": 647.6079389452934,
+   "r": 243.045,
+   "c": "255,120,40"
+  },
+  {
+   "x": 2201.365406505163,
+   "y": 1257.8723032474518,
+   "r": 189.045,
+   "c": "255,120,40"
+  },
+  {
+   "x": 1225.670850209531,
+   "y": 1737.209146976471,
+   "r": 189.045,
+   "c": "255,120,40"
+  },
+  {
+   "x": 2182.232,
+   "y": 2702,
+   "r": 131.8608141457662,
+   "c": "255,100,30"
+  },
+  {
+   "x": 2629.942000000001,
+   "y": 2699,
+   "r": 119.44357035681605,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1174.7219999999998,
+   "y": 354,
+   "r": 105.98201105836779,
+   "c": "255,100,30"
+  },
+  {
+   "x": 3439.258000000001,
+   "y": 354,
+   "r": 127.36423439811915,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1524.4466666666665,
+   "y": 610,
+   "r": 133.49385229405016,
+   "c": "255,100,30"
+  },
+  {
+   "x": 2344.934,
+   "y": 738,
+   "r": 126.01797367911786,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1668.5099999999998,
+   "y": 1122,
+   "r": 128.3869647188112,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1656.7366666666665,
+   "y": 1442,
+   "r": 131.80117061827332,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1733.5426666666663,
+   "y": 570,
+   "r": 133.87737167999148,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1945.097333333333,
+   "y": 570,
+   "r": 101.70378388371319,
+   "c": "255,100,30"
+  },
+  {
+   "x": 2127.5199999999995,
+   "y": 954,
+   "r": 131.1582755856216,
+   "c": "255,100,30"
+  },
+  {
+   "x": 2616.221391379833,
+   "y": 1074.7319971621037,
+   "r": 158.47477647010237,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1834.4836166799068,
+   "y": 1061.2164626419544,
+   "r": 152.80792248435318,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1978.5465085804462,
+   "y": 1138.0482875853777,
+   "r": 138.0568924313411,
+   "c": "255,100,30"
+  },
+  {
+   "x": 2008.6573176980019,
+   "y": 688.328585729003,
+   "r": 124.59578367415816,
+   "c": "255,100,30"
+  },
+  {
+   "x": 731.4115720391273,
+   "y": 1259.45212097466,
+   "r": 104.726069313474,
+   "c": "255,100,30"
+  },
+  {
+   "x": 143.32346352934837,
+   "y": 614.1906194090843,
+   "r": 117.42741850670427,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1006.4248146116734,
+   "y": 546.7849774360657,
+   "r": 128.79468496423215,
+   "c": "255,100,30"
+  },
+  {
+   "x": 2494.4706785976887,
+   "y": 615.3092101067305,
+   "r": 145.69069034885615,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1825.6772681474686,
+   "y": 532.785228446126,
+   "r": 122.3181290179491,
+   "c": "255,100,30"
+  },
+  {
+   "x": 3330.2481931746006,
+   "y": 1123.7386976331472,
+   "r": 152.79680421110243,
+   "c": "255,100,30"
+  },
+  {
+   "x": 1575.1687946915627,
+   "y": 2211.1419958770275,
+   "r": 143.47768577281386,
+   "c": "255,100,30"
+  },
+  {
+   "x": 2082.4687749147415,
+   "y": 1798.6721046864986,
+   "r": 107.82797303050756,
+   "c": "255,100,30"
+  },
+  {
+   "x": 313.1875013411045,
+   "y": 2187.139554336667,
+   "r": 125.73953293263912,
+   "c": "255,100,30"
+  },
+  {
+   "x": 2552.523480594158,
+   "y": 1119.413047194481,
+   "r": 109.96145997196436,
+   "c": "255,100,30"
+  },
+  {
+   "x": 2677.5386504232883,
+   "y": 850.3272344321012,
+   "r": 154.46116625797004,
+   "c": "255,100,30"
+  },
+  {
+   "x": 626.6298012137413,
+   "y": 1193.867292061448,
+   "r": 157.68639012239873,
+   "c": "255,100,30"
+  },
+  {
+   "x": 904.2416931390762,
+   "y": 521.0823530256748,
+   "r": 117.73416639305651,
+   "c": "255,100,30"
+  }
+ ],
+ "echoes": [
+  {
+   "id": "cruc0",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
+    ]
+   ],
+   "x": 960,
+   "y": 2026,
+   "r": 150
+  },
+  {
+   "id": "cruc1",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     3
+    ],
+    [
+     "echo_fire_weak",
+     2
+    ],
+    [
+     "echo_fire_weak",
+     2
+    ]
+   ],
+   "x": 448,
+   "y": 682,
+   "r": 150
+  },
+  {
+   "id": "cruc2",
+   "el": "air",
+   "foes": [
+    [
+     "echo_air_strong",
+     3
+    ],
+    [
+     "echo_air_weak",
+     2
+    ],
+    [
+     "echo_air_weak",
+     2
+    ]
+   ],
+   "x": 3456,
+   "y": 490,
+   "r": 150
+  },
+  {
+   "id": "cruc3",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     2
+    ],
+    [
+     "echo_fire_weak",
+     2
+    ]
+   ],
+   "x": 3200,
+   "y": 1450,
+   "r": 150
+  },
+  {
+   "id": "cruc4",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     3
+    ],
+    [
+     "echo_fire_strong",
+     2
+    ]
+   ],
+   "x": 2432,
+   "y": 874,
+   "r": 150
+  },
+  {
+   "id": "cruc5",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     2
+    ],
+    [
+     "echo_fire_weak",
+     2
+    ]
+   ],
+   "x": 1856,
+   "y": 1450,
+   "r": 150
+  },
+  {
+   "id": "cruc6",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
+    ]
+   ],
+   "x": 2496,
+   "y": 2026,
+   "r": 150
+  },
+  {
+   "id": "cruc7",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     3
+    ],
+    [
+     "echo_fire_weak",
+     2
+    ],
+    [
+     "echo_fire_weak",
+     2
+    ]
+   ],
+   "x": 1408,
+   "y": 682,
+   "r": 150
+  },
+  {
+   "id": "cruc8",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     1
+    ],
+    [
+     "echo_fire_strong",
+     1
+    ]
+   ],
+   "x": 896,
+   "y": 1578,
+   "r": 150
+  },
+  {
+   "id": "cruc9",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_weak",
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
+    ]
+   ],
+   "x": 1856,
+   "y": 2154,
+   "r": 150
+  },
+  {
+   "id": "cruc10",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
+    ]
+   ],
+   "x": 320,
+   "y": 1962,
+   "r": 150
+  },
+  {
+   "id": "cruc11",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
+    ]
+   ],
+   "x": 3328,
+   "y": 2026,
+   "r": 150
+  },
+  {
+   "id": "cruc12",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     2
+    ],
+    [
+     "echo_fire_weak",
+     2
+    ]
+   ],
+   "x": 2496,
+   "y": 1514,
+   "r": 150
+  },
+  {
+   "id": "cruc13",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     3
+    ],
+    [
+     "echo_fire_weak",
+     2
+    ],
+    [
+     "echo_fire_weak",
+     2
+    ]
+   ],
+   "x": 1856,
+   "y": 490,
+   "r": 150
+  },
+  {
+   "id": "cruc14",
+   "el": "dark",
+   "foes": [
+    [
+     "echo_dark_strong",
+     2
+    ],
+    [
+     "echo_dark_weak",
+     2
+    ]
+   ],
+   "x": 320,
+   "y": 1322,
+   "r": 150
+  },
+  {
+   "id": "cruc15",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     3
+    ],
+    [
+     "echo_fire_strong",
+     2
+    ]
+   ],
+   "x": 896,
+   "y": 682,
+   "r": 150
+  },
+  {
+   "id": "cruc16",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_strong",
+     3
+    ],
+    [
+     "echo_fire_strong",
+     2
+    ]
+   ],
+   "x": 3136,
+   "y": 874,
+   "r": 150
+  },
+  {
+   "id": "cruc17",
+   "el": "fire",
+   "foes": [
+    [
+     "echo_fire_weak",
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
+    ],
+    [
+     "echo_fire_weak",
+     1
+    ]
+   ],
+   "x": 1408,
+   "y": 1962,
+   "r": 150
+  }
+ ],
+ "walk": [
+  {
+   "x": 2680,
+   "y": 1466,
+   "w": 208,
+   "h": 140
+  },
+  {
+   "x": 2808,
+   "y": 1914,
+   "w": 272,
+   "h": 204
+  },
+  {
+   "x": 2936,
+   "y": 2426,
+   "w": 208,
+   "h": 140
+  }
+ ],
+ "music": "audio/corvanthe/cindergate.mp3",
+ "city": 1,
+ "depth": [
+  0.55,
+  1
+ ]
+}
