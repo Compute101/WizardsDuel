@@ -98,10 +98,10 @@ function typeFor(spec,r){
   const b=spec.base;
   if(b==='tavern') return 'tavern';
   if(b==='chapel'||b==='temple') return 'chapel';
-  if(b==='hall'||b==='tower') return 'study';
-  if(b==='forge') return 'forge';
+  if(b==='hall'||b==='tower'||b==='spireTower') return 'study';
+  if(b==='forge'||b==='foundry') return 'forge';
   if(b==='townhouse') return 'rich';
-  if(b==='mausoleum') return 'crypt';
+  if(b==='mausoleum'||b==='tomb'||b==='tombGrand') return 'crypt';
   const q=r();
   return q<0.5?'cottage':q<0.68?'workshop':q<0.8?'rich':q<0.9?'shop':'alchemist';
 }

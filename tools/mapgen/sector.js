@@ -7,7 +7,7 @@
 // through each and leads on to its neighbours (RING).
 'use strict';
 const {MapBuilder, T, P} = require('./builder');
-const {City} = require('./city');
+const {City, variedStyle, HOUSE_RE} = require('./city');
 const {OWN, OWN_LORE, placeOwnLand, placeOwnProps} = require('./own');
 
 // the ring, in wheel order: east from one leads to the next
@@ -95,7 +95,7 @@ module.exports = function sector(rects,id){
     wagon:['A Trader\'s Wagon', 'Frozen solid with its goods still on it: bolts of cloth, sacks of salt, a cage with a frozen songbird in it, mid-song.']};
   const sty=k=>rects[k+'_'+S.pal]?k+'_'+S.pal:k;
   const ruin=(x,y)=>Math.max(0,Math.min(1,(1-y/H)*1.15-0.12));
-  const city=new City(m,{street:'R', square:'P', ruin, style:sty});
+  const city=new City(m,{street:'R', square:'P', ruin, style:variedStyle(rects,S.pal,S.seed+77)});
   const r=m.r, rnd=(a,b)=>a+r()*(b-a);
 
   // ── streets: Wallside along the wall, the line street under the north edge, an avenue between
@@ -190,10 +190,11 @@ module.exports = function sector(rects,id){
   }
 
   // every piece with a recolour in the sector's palette uses it (yards, rubble, walls, lamps)
-  for(const o of m.objs) if(!o.decal) o.kind=sty(o.kind);
+  for(const o of m.objs) if(!o.decal&&!(HOUSE_RE.test(o.kind)&&!o.lore)) o.kind=sty(o.kind);
 
-  // ── round the ring ──
+  // ── round the ring, and in through the arch to the inner district ──
   ringExits(m,id);
+  innerExit(m,id,ARCH_X);
   return m;
 };
 
@@ -229,6 +230,12 @@ function river(m,city,c0,c1,flow){
   const ends=[3,4,5,41,42,43];
   return {gap:[Math.min(...ends.map(L))*T-20,(Math.max(...ends.map(R))+1)*T+20], mid:y=>(L(y)+R(y)+1)/2*T};
 }
+// the arch in the north barrier leads on to the sector's inner district (tools/mapgen/inner.js)
+function innerExit(m,id,archX){
+  const {INNER_IDS, NAMES}=require('./inner');
+  m.spawns.inner=[archX,5*T+34];
+  m.exits.push({x:archX-40,y:4*T-6,w:80,h:40,dir:'N',label:'Corvanthe: '+NAMES[INNER_IDS[id]],to:{map:INNER_IDS[id],spawn:'arch'}});
+}
 // an Echo's element: its sector's, except near the Wallside ends, where some have wandered over
 // from the neighbouring sector (so a stranger in the street always came from next door)
 function echoElement(id,x,W,r){
@@ -246,4 +253,4 @@ function ringExits(m,id){
   m.exits.push({x:0,y:38*T,w:48,h:4*T,label:'Wallside to '+RING_NAMES[west],to:{map:west,spawn:'east'}});
   m.exits.push({x:m.W-48,y:38*T,w:48,h:4*T,label:'Wallside to '+RING_NAMES[east],to:{map:east,spawn:'west'}});
 }
-module.exports.river=river; module.exports.echoElement=echoElement; module.exports.SECTORS=SECTORS; module.exports.RING=RING; module.exports.ringExits=ringExits;
+module.exports.river=river; module.exports.echoElement=echoElement; module.exports.SECTORS=SECTORS; module.exports.RING=RING; module.exports.ringExits=ringExits; module.exports.innerExit=innerExit;

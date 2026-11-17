@@ -4,7 +4,7 @@
 'use strict';
 const P = require('../../js/explore_pieces.js');
 const {T} = P;
-const GRASSY=['G','d','a','e'];   // ground scatter may stand on: grass, worn grass, ash, ash dirt
+const GRASSY=['G','d','a','e','S'];   // ground scatter may stand on: grass, worn grass, ash, ash dirt, snow
 
 class MapBuilder {
   constructor(rects, {id, name, cols, rows, seed}){
@@ -17,7 +17,7 @@ class MapBuilder {
   }
   // ── ground kinds: G grass, d worn grass, D dirt lane, R road, M mossy road, P plaza flags,
   //    W river water, O pond water, K plank docks; burnt (Cindergate): a ash, e ash dirt,
-  //    c ash cobble street, f ash flagstones ──
+  //    c ash cobble street, f ash flagstones; inner districts: S snow, F flooded street (walkable), X the Wound's edge ──
   fill(x0,y0,x1,y1,c){ for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) if(this.k[y]&&this.k[y][x]!==undefined) this.k[y][x]=c; }
   at(x,y){ return (this.k[y]||[])[x]; }
   tileAt(px,py){ return this.at(Math.floor(px/T),Math.floor(py/T)); }
@@ -101,6 +101,8 @@ class MapBuilder {
        npcs:   [{role, x, y}]   people standing about; what they say is js/explore_folk.js
        safe:   1 = a safe town: rooms hold no fights or loot (Wrenford)
        arena:  the battle backdrop for fights here ('library'; default the ruined streets)
+       city:   1 = a Corvanthe district not in CITY_MAPS (the inner districts): its rooms hold the city's encounters
+       depth:  [lo, hi] how near the Wound the map's south and north edges are, for rooms' encounters (default [0, 1])
        music:  a theme that loops while you're on the map or in its rooms ('audio/wrenford_theme.mp3') } */
   toJSON(){
     const round=v=>Math.round(v*10)/10;
@@ -112,7 +114,7 @@ class MapBuilder {
         return Object.keys(e).length?[o.kind,round(o.x),round(o.y),e]:[o.kind,round(o.x),round(o.y)];
       }),
       lore:this.lore, spawns:this.spawns, exits:this.exits, blocks:this.blocks, glows:this.glows, echoes:this.echoes, walk:this.walk,
-      ...(this.npcs?{npcs:this.npcs.map(n=>Object.assign({},n,{x:round(n.x),y:round(n.y)}))}:{}), ...(this.safe?{safe:1}:{}), ...(this.arena?{arena:this.arena}:{}), ...(this.music?{music:this.music}:{}),
+      ...(this.npcs?{npcs:this.npcs.map(n=>Object.assign({},n,{x:round(n.x),y:round(n.y)}))}:{}), ...(this.safe?{safe:1}:{}), ...(this.arena?{arena:this.arena}:{}), ...(this.music?{music:this.music}:{}), ...(this.city?{city:1}:{}), ...(this.depth?{depth:this.depth}:{}),
     };
   }
 }

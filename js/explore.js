@@ -122,6 +122,10 @@ function setupMap(data){
       case 'e': return 'dirtGrass_ash';
       case 'c': return 'tr_cobble_11_ash';
       case 'f': return r()<.7?'flagCracked_ash':'flagMoss_ash';
+      // inner districts: snow (the Winter Fair), flooded streets you wade through (the Sunken Harbour), the Wound's edge
+      case 'S': return 'tr_snow_11';
+      case 'F': return 'tr_flood_11';
+      case 'X': return 'tr_wound_21';
       // interiors (js/explore_rooms.js): floors, and the dark beyond the walls
       case 'w': return 'floorWood'+(1+Math.floor(r()*4));
       case 'l': return 'floorFlag'+(1+Math.floor(r()*4));
@@ -208,7 +212,7 @@ function updateEchoes(dt){
 // (ExploreBands.clashOdds); a winning crew takes the spill and may lose a member, a losing one is broken.
 // Toll crews stop you and ask for gold or spill; hostile ones charge. bandState[id] (saved): beaten (time),
 // lost (fallen members), gold, spill, tollUntil, met.
-const ROAD_KINDS='RMcPfD';
+const ROAD_KINDS='RMcPfDF';
 const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
 let roadSet=null, roadList=[];
 function bandRec(b){
@@ -477,7 +481,8 @@ function renderSpill(){
 // ═══ DOORS AND ROOMS ═══════════════════════════════════════════════
 // Every house front, tavern, chapel and the like can be entered (js/explore_rooms.js builds the room
 // from its seed). Some are always the same place (FIXED_DOORS).
-const DOOR_BASES = ['house1','house2','house3','house4','house5','house6','tavern','chapel','hall','temple','townhouse','forge','tiltedHouse','sunkHouse','mausoleum','tower'];
+const DOOR_BASES = ['house1','house2','house3','house4','house5','house6','tavern','chapel','hall','temple','townhouse','forge','tiltedHouse','sunkHouse','mausoleum','tower',
+  'tomb','tombGrand','spireTower','foundry'];
 const FIXED_LABEL = {safehouse:'Enter the Gleaners\' Rest', inn:'Enter the Drowned Crow', library:'Enter the Collegium Library',
   wrenInn:'Enter the Wren\'s Nest', remnant:'Enter the Remnant Library', lab:'Enter the Warded Laboratory',
   wenna:'Knock at Wenna\'s Bakehouse', lamplighter:'Knock at the Lamplighter\'s House'};
@@ -500,9 +505,10 @@ function findDoors(){
   const el=Object.keys(els).sort((a,b)=>els[b]-els[a])[0]||'fire';
   for(const o of fronts){
     const base=P.baseKind(o.kind), f=fixed[o.id];
-    const depth=Math.max(0,Math.min(1,(1-o.y/WORLD_H)*1.15-0.12));
+    // how near the Wound: by height on the map, within the map's own range (an inner district's is 0.55–1)
+    const dr=MAP.depth||[0,1], depth=dr[0]+(dr[1]-dr[0])*Math.max(0,Math.min(1,(1-o.y/WORLD_H)*1.15-0.12));
     const ruined=/_(burnt|char)$/.test(o.kind)||['house5','house6','tiltedHouse','sunkHouse'].includes(base);
-    const spec={id:'room:'+MAP.id+'#'+o.id, base, outside:{map:MAP.id,x:o.x,y:o.y+6}, el, depth, city:CITY_MAPS.includes(MAP.id),
+    const spec={id:'room:'+MAP.id+'#'+o.id, base, outside:{map:MAP.id,x:o.x,y:o.y+6}, el, depth, city:CITY_MAPS.includes(MAP.id)||!!MAP.city,
       ruined, fixed:f||null, wizards:wizKeys.filter(k=>k!=='hero'), safe:!!MAP.safe};
     doors.push({x:o.x, y:o.y+14, spec, obj:o, label:f?FIXED_LABEL[f]:'Enter'});
   }
@@ -686,7 +692,7 @@ const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const crystalCache={};
 function crystalSrc(elm){                      // the loot sheet's quintessence crystal, as a small image
   if(crystalCache[elm]) return crystalCache[elm];
-  const q=rects['q_'+elm]; if(!q) return '';
+  const q=rects['q_'+elm]; if(!q||!atlases[q[4]]) return '';
   const c=document.createElement('canvas'); c.width=q[2]; c.height=q[3];
   c.getContext('2d').drawImage(atlases[q[4]],q[0],q[1],q[2],q[3],0,0,q[2],q[3]);
   return crystalCache[elm]=c.toDataURL();
@@ -782,6 +788,9 @@ const EDGE_SET = {
   W:{set:'quay',   out:c=>c!=='W'},
   O:{set:'shore',  out:c=>c!=='O'},
   c:{set:'cobble', sfx:'_ash', out:c=>c==='a'||c==='e'},
+  S:{set:'snow',   out:c=>c!=='S'},
+  F:{set:'flood',  out:c=>c!=='F'&&c!=='W'},
+  X:{set:'wound',  out:c=>c!=='X'},
 };
 function edgeTile(E,x,y,r){
   const k=groundKind, at=(xx,yy)=>(k[yy]||[])[xx];
@@ -798,11 +807,12 @@ function edgeTile(E,x,y,r){
   }
   return {set:E.set, sfx:E.sfx||(PAL&&rects['tr_'+E.set+'_11'+PAL]?PAL:''), cells};
 }
-const quarterCache=new Map();
+const quarterCache=new Map(), BLANK_TILE=document.createElement('canvas');
 function quarterTile(g){
   const key=g.set+g.sfx+g.cells.join('');
   let c=quarterCache.get(key);
   if(!c){
+    if(g.cells.some(cc=>!atlases[rects['tr_'+g.set+'_'+cc+g.sfx][4]])) return BLANK_TILE;   // not loaded yet: don't cache it
     c=document.createElement('canvas'); c.width=c.height=120;
     const m=c.getContext('2d');
     g.cells.forEach((cc,i)=>{
@@ -823,7 +833,7 @@ function wet(px,py){
     const dry=(xx,yy)=>(groundKind[yy]||[])[xx]!=='O';
     return !((dry(tx-1,ty)&&fx<R)||(dry(tx+1,ty)&&fx>T-R)||(dry(tx,ty-1)&&fy<R)||(dry(tx,ty+1)&&fy>T-R));
   }
-  if(t!=='W') return false;
+  if(t!=='W'&&t!=='X') return false;                 // X: a hole onto the Wound (inner districts), crossed by rope bridges
   for(const b of bridges) for(const w of b.fb) if(inside(px,py,w)) return false;
   for(const w of MAP.walk||[]) if(inside(px,py,w)) return false;
   return true;
@@ -839,7 +849,7 @@ const MINI_PAL = {
 function buildMinimap(){
   const S=4, c=document.createElement('canvas'); c.width=COLS*S; c.height=ROWS*S;
   const m=c.getContext('2d');
-  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70'};
+  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70',S:'#dfe6f0',F:'#2f6a78',X:'#7a2ab0'};
   Object.assign(col,MINI_PAL[MAP.palette]||{});
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ m.fillStyle=col[groundKind[y][x]]||col.G; m.fillRect(x*S,y*S,S,S); }
   const k=S/T;
@@ -886,8 +896,9 @@ async function enterMap(id,at,instant){
     if(!instant) await fade(true);
     const data=await getMap(id);
     if(data.interior&&roomSpec&&roomSpec.outside) await getMap(roomSpec.outside.map).catch(()=>{});   // a room plays its town's theme
-    await loadPalette(data.palette);
+    await Promise.all([loadPalette(data.palette),atlasesFor(data)]);   // this map's sheets, before anything draws from them
     setupMap(data);
+    prefetchAround(data);
     resize();
     const p=Array.isArray(at)?at:(data.spawns[at]||data.spawns.start||Object.values(data.spawns)[0]);
     wiz.x=p[0]; wiz.y=p[1]; wiz.face=1;
@@ -1467,10 +1478,11 @@ function updateCam(){
 }
 
 function drawPiece(kind,x,y,alpha,sc){
-  sc=sc||PS;
+  sc=P.scaleOf(kind,sc);
   const q=rects[kind], w=q[2]*sc, h=q[3]*sc;
+  const A=atlases[q[4]]; if(!A) return;            // its sheet is still on the way
   if(alpha!==undefined) ctx.globalAlpha=alpha;
-  ctx.drawImage(atlases[q[4]],q[0],q[1],q[2],q[3],x-w/2,y-h,w,h);
+  ctx.drawImage(A,q[0],q[1],q[2],q[3],x-w/2,y-h,w,h);
   ctx.globalAlpha=1;
 }
 function drawWizard(t){
@@ -1523,7 +1535,7 @@ function draw(t){
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
     const g=ground[y][x]; if(!g) continue;
     if(typeof g==='object'){ ctx.drawImage(quarterTile(g),x*T,y*T,T+0.6,T+0.6); continue; }
-    const q=rects[g];
+    const q=rects[g]; if(!atlases[q[4]]) continue;
     ctx.drawImage(atlases[q[4]],q[0]+1,q[1]+1,q[2]-2,q[3]-2,x*T,y*T,T+0.6,T+0.6);
   }
   drawCurrent(t,x0,x1,y0,y1);
@@ -1616,7 +1628,7 @@ function lightsInView(cw,ch){
     const L=P.lightsOf(o.kind); if(!L||(o.decal&&P.BRIDGE[o.kind])) continue;
     const s=sizeOf(o.kind,o.scale);
     for(const [lx,ly,type] of L){
-      const sc=o.scale||PS, fr=lx<=1&&ly<=1, x=o.x-s.w/2+(fr?lx*s.w:lx*sc), y=o.y-s.h+(fr?ly*s.h:ly*sc);
+      const sc=P.scaleOf(o.kind,o.scale), fr=lx<=1&&ly<=1, x=o.x-s.w/2+(fr?lx*s.w:lx*sc), y=o.y-s.h+(fr?ly*s.h:ly*sc);
       // a burnt house's windows glow ember-orange: what's inside isn't a hearth
       if(near(x,y)) out.push({x,y,r:(type==='lamp'?150:105)*(MAP.interior?0.8:1),seed:o.id,c:type==='lamp'?undefined:o.kind.endsWith('_burnt')?'255,120,50':MAP.windowGlow&&PAL&&o.kind.endsWith(PAL)?MAP.windowGlow:undefined});
     }
@@ -1730,18 +1742,46 @@ function frame(now){
 
 // ═══ OPEN / CLOSE ══════════════════════════════════════════════════
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+// Atlases load when a map needs them, not all at start: the names (rects) come from every sheet's
+// small .json up front, but a sheet's image is fetched the first time a map uses one of its pieces
+// (atlasesFor, from enterMap), and the maps next door are fetched in the background (prefetchAround).
+// CORE sheets are the ground and the loot every map and the satchel use.
+const ATLAS_NAMES=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13',
+  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23'];
+const CORE_ATLASES=['ruins','ruins2','ruins3','ruins13'];
+const atlasLoading={};
+function loadAtlas(i){
+  if(!atlasLoading[i]) atlasLoading[i]=loadImage('sprites/ruins/'+ATLAS_NAMES[i]+'.png').then(img=>{ atlases[i]=img; quarterCache.clear(); return img; });
+  return atlasLoading[i];
+}
+// the sheets a map draws from: its pieces' and its ground's (the ground letters that aren't on a core sheet)
+const GROUND_PIECE={S:'tr_snow_11',F:'tr_flood_11',X:'tr_wound_21',w:'floorWood1',l:'floorFlag1',y:'floorTerra1',b:'floorBroken1'};
+function atlasesFor(data){
+  const need=new Set(CORE_ATLASES.map(n=>ATLAS_NAMES.indexOf(n)));
+  for(const o of data.objects||[]){ const q=rects[o[0]]; if(q&&q[4]<ATLAS_NAMES.length) need.add(q[4]); }
+  const letters=new Set((data.ground||[]).join(''));
+  for(const c of letters){ const q=rects[GROUND_PIECE[c]]; if(q) need.add(q[4]); }
+  return Promise.all([...need].map(loadAtlas));
+}
+// while you walk about, quietly fetch the maps your exits lead to and their sheets
+function prefetchAround(data){
+  if(!data||data.interior) return;
+  const ids=[...new Set((data.exits||[]).map(e=>e.to&&e.to.map).filter(Boolean))];
+  const go=()=>ids.forEach(id=>getMap(id).then(d=>{ atlasesFor(d); if(d.palette) loadPalette(d.palette); }).catch(()=>{}));
+  if(window.requestIdleCallback) requestIdleCallback(go,{timeout:4000}); else setTimeout(go,1500);
+}
 async function load(){
   if(built) return;
-  const names=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13'];
   const [cj,wj,fj,...sheets]=await Promise.all([
     fetch('characters.json').then(r=>r.json()),
     fetch('maps/world.json').then(r=>r.json()).then(w=>w),
     fetch('fighters.json').then(r=>r.json()),
-    ...names.map(n=>Promise.all([loadImage('sprites/ruins/'+n+'.png'), fetch('sprites/ruins/'+n+'.json').then(r=>r.json())])),
+    ...ATLAS_NAMES.map(n=>fetch('sprites/ruins/'+n+'.json').then(r=>r.json())),
   ]);
   // one name space across every sheet: [x, y, w, h, atlas index]
-  atlases=sheets.map(s=>s[0]); rects={};
-  sheets.forEach(([,rj],i)=>{ for(const k in rj) rects[k]=[...rj[k],i]; });
+  atlases=ATLAS_NAMES.map(()=>null); rects={};
+  sheets.forEach((rj,i)=>{ for(const k in rj) rects[k]=[...rj[k],i]; });
+  await Promise.all(CORE_ATLASES.map(n=>loadAtlas(ATLAS_NAMES.indexOf(n))));
   chars=cj; world=wj; fighters=fj;
   wizKeys=Object.keys(chars).filter(k=>chars[k].sprite);
   built=true;

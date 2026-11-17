@@ -134,5 +134,23 @@ class City {
     }
   }
 }
+// More colour in a district's houses: a palette tints every house the same, so the full-colour pieces
+// stood out. About half keep the district's tint, a fifth their own colours, the rest one of the house
+// recolours that suit the district (STYLES in tools/cut_ruins_tileset.py). Its own random stream, so the
+// streets and plots come out the same as without it. Anything that isn't a house just takes the tint.
+const HOUSE_RE=/^(house[1-6]|back(Terra|Slate|Purple)|side(Terra|Slate|Purple)|tavern|chapel)/;
+const HOUSE_LOOKS={gale:['sand','slate','moss'], storm:['slate','dusk'], aether:['dusk','slate','sand'], drowned:['moss','slate'],
+  quarry:['sand','slate','char'], frost:['slate','sand'], gloom:['dusk','char','slate'], burnt:['char','slate','char']};
+function variedStyle(rects,pal,seed){
+  const r=P.rng(seed), looks=HOUSE_LOOKS[pal]||['slate'];
+  return k=>{
+    const tinted=rects[k+'_'+pal]?k+'_'+pal:k;
+    if(!HOUSE_RE.test(k)||/_/.test(k)) return tinted;
+    const q=r();
+    if(q<0.5) return tinted;
+    if(q<0.7) return k;
+    const alt=k+'_'+P.pick(r,looks); return rects[alt]?alt:tinted;
+  };
+}
 const FRONTS_=FRONTS, BACKS_=BACKS, SIDES_=SIDES, YARD_=YARD;
-module.exports={City, FRONTS, BACKS, SIDES, YARD};
+module.exports={City, FRONTS, BACKS, SIDES, YARD, variedStyle, HOUSE_RE};

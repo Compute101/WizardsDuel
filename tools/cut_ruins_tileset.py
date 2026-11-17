@@ -10,6 +10,7 @@ sprites/ruins/tileset4_source.png → ruins4 (house backs and sides, tavern, cha
 sprites/ruins/tileset5_source.png → ruins5 (bridges seen from above).
 sprites/ruins/tileset6..9_source.png → ruins6..9 (each sector's own pieces, two sectors a sheet).
 sprites/ruins/tileset10..13_source.png → ruins10..13 (interiors: floors and walls, furniture, special rooms, loot).
+sprites/ruins/tileset14..23_source.png → ruins14..23 (inner districts: town props, the Wound, then one sheet a district).
 
 The source is a loose sheet on a flat dark background, not a grid, so each
 piece has a hand-checked rect (RECTS below). The background is removed by a
@@ -207,6 +208,103 @@ RECTS13 = {k: _pad(v) for k, v in {
     'letter': (1054, 568, 180, 114), 'journal': (1293, 537, 174, 196), 'potionRed': (133, 775, 140, 188), 'potionBlue': (374, 779, 139, 184),
     'potionGreen': (610, 780, 136, 183), 'pouch': (866, 789, 177, 174), 'key': (1141, 798, 218, 141)}.items()}
 
+# ── sheets 14–23: Corvanthe's inner districts (14 town props for every district, 15 the Wound,
+#    then one sheet per district). Rects from the sheets' blobs, padded; where pieces crowd each
+#    other the sheet is cut 'strict' (every scrap touching the crop's edge goes, bar the piece itself),
+#    and ERASE blanks a neighbour sitting inside a crop. Each 3x3 ground set (snow, flooded street,
+#    the Wound) is cut like sheet 3's: tr_<set>_<row><col>, scaled to TR.
+def _grid(name, xs, ys, inset=5):
+    return {'tr_%s_%d%d' % (name, r, c): (x0 + inset, y0 + inset, x1 - x0 - 2 * inset, y1 - y0 - 2 * inset)
+            for r, (y0, y1) in enumerate(ys) for c, (x0, x1) in enumerate(xs)}
+RECTS14 = {k: _pad(v) for k, v in {   # town props: signs, carts, washing, wells, cats and crows
+    'signTavern': (29, 13, 206, 239), 'signApothecary': (287, 13, 205, 235), 'signSmith': (547, 13, 203, 237),
+    'signBaker': (794, 13, 208, 239), 'signBooks': (1054, 13, 203, 253), 'signTemple': (1307, 13, 207, 247),
+    'cratesProduce': (16, 269, 324, 164), 'sacksGrain': (360, 290, 186, 142), 'sacksPurple': (566, 291, 176, 125),
+    'barrelsTrio': (760, 282, 191, 136), 'cartLoaded': (971, 278, 274, 155), 'wagonCovered': (1259, 271, 257, 166),
+    'washLine1': (16, 455, 302, 200), 'washLine2': (334, 461, 318, 198), 'well': (676, 428, 239, 265),
+    'benchBack': (956, 461, 224, 119), 'noticeBoard': (1239, 446, 278, 231), 'benchPlain': (964, 597, 211, 78),
+    'lanternPost': (23, 668, 129, 171), 'lanternPostBroken': (190, 673, 110, 164), 'lanternSmashed': (320, 757, 140, 65),
+    'catGinger': (494, 723, 75, 89), 'catTabby': (610, 713, 103, 95), 'catBlack': (751, 727, 80, 84),
+    'catSleeping': (874, 750, 95, 53), 'crow1': (1016, 736, 89, 71), 'crow2': (1130, 728, 93, 77),
+    'crowFlying': (1259, 707, 123, 108), 'crowPerch': (1401, 703, 115, 132),
+    'handcartSacks': (14, 846, 236, 162), 'handcartGreens': (267, 850, 258, 155), 'barrowStone': (531, 865, 223, 130),
+    'cartPotions': (755, 851, 153, 150), 'crateBooks': (931, 854, 115, 134), 'tableBooks': (1062, 859, 151, 132),
+    'chestOld': (1233, 887, 135, 101), 'basketApples': (1392, 874, 116, 118)}.items()}
+RECTS15 = _grid('wound', [(27, 168), (180, 321), (333, 473)], [(20, 165), (177, 321), (333, 476)], 6)
+RECTS15.update({k: _pad(v) for k, v in {   # the Wound: its ground, drifting rock and houses, a crystal per element
+    'floatIsle1': (503, 28, 250, 240), 'floatIsle2': (770, 88, 180, 185), 'floatIsle3': (958, 95, 118, 195),
+    'floatIsle4': (705, 212, 90, 85), 'floatHouse1': (500, 325, 320, 388), 'floatHouse2': (832, 333, 255, 372),
+    'floatHouse3': (1088, 450, 212, 276), 'floatStairway': (1110, 15, 415, 680),
+    'crystalFire': (24, 731, 163, 234), 'crystalWater': (212, 744, 163, 216), 'crystalIce': (396, 735, 160, 232),
+    'crystalLightning': (580, 735, 167, 223), 'crystalEarth': (771, 745, 164, 214), 'crystalAir': (964, 745, 165, 215),
+    'crystalArcane': (1154, 743, 161, 221), 'crystalDark': (1347, 724, 171, 236)}.items()})
+RECTS16 = {k: _pad(v) for k, v in {   # Gloamside's inner district: the necropolis
+    'cemeteryGate': (23, 15, 414, 265), 'cemeteryFence': (458, 87, 179, 186), 'cemeteryWicket': (666, 58, 155, 215),
+    'tomb': (880, 13, 287, 279), 'tombGrand': (1203, 9, 310, 297),
+    'grave1': (29, 358, 109, 118), 'graveCross': (158, 315, 93, 163), 'grave2': (272, 342, 115, 135), 'grave3': (409, 342, 101, 137),
+    'graveAngel': (525, 318, 114, 161), 'graveObelisk': (655, 312, 84, 167), 'graveCross2': (758, 331, 81, 148),
+    'graveArch': (852, 324, 133, 159), 'brazier': (1040, 299, 81, 251),
+    'gloomLamp1': (1155, 333, 86, 221), 'gloomLamp2': (1272, 351, 90, 203), 'gloomLamp3': (1374, 309, 144, 247),
+    'gloomTree1': (12, 490, 345, 268), 'gloomTree2': (363, 524, 199, 207), 'gloomStump': (563, 547, 198, 199),
+    'crowPost': (792, 524, 154, 234), 'crowArch': (977, 579, 188, 177), 'crowRubble': (1192, 617, 182, 139),
+    'cryptGate': (12, 733, 580, 282), 'shadowPool1': (592, 826, 161, 114), 'shadowPool2': (767, 824, 205, 134),
+    'shadowPool3': (962, 800, 265, 180), 'shadowPool4': (1240, 800, 282, 180)}.items()}
+RECTS17 = _grid('snow', [(432, 560), (575, 704), (718, 846)], [(326, 456), (471, 602), (617, 750)])
+RECTS17.update({k: _pad(v) for k, v in {   # Frostmarket's inner district: the winter fair
+    'stallStripe': (33, 10, 332, 279), 'stallFish': (379, 9, 311, 287), 'stallMeat': (706, 10, 315, 290),
+    'frostLamp1': (1041, 10, 121, 292), 'frostLamp2': (1173, 10, 164, 294), 'frostLamp3': (1343, 56, 165, 247),
+    'iceFountain': (12, 307, 405, 493), 'iceCrystal1': (883, 309, 221, 184), 'iceCrystal2': (1120, 352, 137, 129),
+    'iceCrystal3': (1283, 386, 107, 91), 'iceCrystal4': (1414, 417, 75, 59), 'sledFurs': (893, 497, 289, 151),
+    'sled': (1215, 525, 226, 93), 'iceBarrel1': (47, 810, 226, 188), 'iceBarrel2': (291, 851, 130, 139),
+    'iceBarrel3': (464, 848, 112, 138), 'furTent': (650, 618, 880, 392)}.items()})
+RECTS18 = {k: _pad(v) for k, v in {   # the Quarry Ward's inner district: the deep cut
+    'boulder1': (14, 11, 274, 174), 'boulder2': (308, 49, 190, 128), 'boulder3': (520, 80, 161, 93),
+    'boulder4': (705, 102, 92, 71), 'boulder5': (818, 132, 62, 38),
+    'railH': (920, 60, 184, 99), 'railCurve': (1129, 14, 174, 158), 'railCross': (1337, 13, 184, 177),
+    'mineHead': (12, 195, 523, 391), 'masonBench': (519, 210, 313, 197), 'grindstone': (873, 219, 336, 185),
+    'stonePallet': (1217, 223, 308, 183), 'crackSmall': (566, 447, 193, 163), 'crackWide': (777, 425, 295, 210),
+    'rift': (1070, 420, 455, 216), 'scaffold1': (17, 604, 399, 379), 'scaffold2': (452, 670, 362, 300),
+    'giantHead': (846, 654, 677, 339)}.items()}
+RECTS19 = _grid('flood', [(1104, 1225), (1243, 1366), (1384, 1508)], [(202, 327), (344, 468), (485, 610)], 4)
+RECTS19.update({k: _pad(v) for k, v in {   # the Drowned Quarter's inner district: the sunken harbour
+    'rowboat': (22, 19, 314, 186), 'rowboatSunk': (346, 14, 281, 190), 'rowboatWreck': (633, 12, 325, 170),
+    'pile1': (998, 10, 142, 177), 'pilesRope': (1161, 16, 224, 165), 'pile2': (1406, 44, 111, 137),
+    'netFrame1': (20, 228, 322, 262), 'netFrame2': (352, 235, 229, 260), 'seaGod': (584, 197, 250, 354),
+    'seaMaiden': (847, 210, 230, 345), 'lobsterPots1': (462, 554, 216, 153), 'lobsterPots2': (698, 576, 209, 133),
+    'lobsterPot': (928, 577, 141, 115), 'drownedShrine': (12, 478, 622, 522), 'wreckMarket': (651, 663, 862, 340)}.items()})
+RECTS20 = {k: _pad(v) for k, v in {   # the Collegium's inner district: the old schools
+    'flyingBooks': (28, 12, 342, 318), 'armillary': (180, 35, 612, 435),
+    'runeCircleL': (798, 20, 332, 268), 'runeCircleM': (1144, 68, 204, 173), 'runeCircleS': (1366, 100, 133, 117),
+    'lectureBenches': (820, 298, 573, 278), 'portalRuin': (11, 482, 493, 496), 'scholarHeadless': (515, 486, 269, 485),
+    'scrollRack': (813, 575, 318, 215), 'scrollBin': (1208, 577, 214, 203),
+    'arcCrystal1': (830, 790, 240, 200), 'arcCrystal2': (1105, 828, 146, 150), 'arcCrystal3': (1296, 876, 106, 96)}.items()}
+RECTS21 = {k: _pad(v) for k, v in {   # the Heights' inner district: the drift
+    'windmillSails': (15, 10, 372, 392), 'sail1': (341, 60, 178, 173), 'sail2': (364, 242, 146, 141),
+    'ropeBridge': (541, 33, 570, 173), 'ropeBridgeBroken': (564, 234, 431, 164),
+    'kite1': (1027, 224, 125, 207), 'kite2': (1152, 162, 146, 272), 'kite3': (1165, 10, 350, 425),
+    'vaneGriffin': (48, 374, 227, 309), 'vaneBird': (314, 445, 153, 238), 'vaneSmall': (508, 527, 103, 156),
+    'skyRock1': (672, 430, 290, 268), 'skyRock2': (1010, 477, 162, 205), 'skyRock3': (1216, 510, 122, 170),
+    'skyRock4': (1391, 534, 90, 143), 'fallenDome': (18, 723, 556, 264),
+    'awningPurple': (591, 727, 294, 236), 'awningCream': (921, 745, 217, 206), 'awningRed': (1174, 746, 179, 199),
+    'bannerFrame': (1385, 732, 123, 207)}.items()}
+RECTS22 = {k: _pad(v) for k, v in {   # Spirewatch's inner district: the conductory
+    'rodTall': (77, 21, 124, 289), 'rodSpire': (257, 50, 102, 262), 'rodFork': (400, 78, 87, 220),
+    'glaze1': (542, 81, 187, 177), 'glaze2': (775, 80, 187, 177), 'glaze3': (1006, 79, 187, 178), 'glaze4': (1238, 78, 186, 178),
+    'spireTower': (1172, 255, 300, 445), 'fallenSpire': (48, 340, 465, 258),
+    'coil1': (554, 351, 147, 251), 'coilBig': (724, 296, 224, 322), 'coil2': (963, 354, 152, 246),
+    'stormLamp1': (62, 622, 89, 336), 'stormLamp2': (208, 633, 99, 324), 'stormLamp3': (346, 698, 166, 261),
+    'rainBarrel': (587, 669, 202, 284), 'barrelPlain': (819, 803, 108, 137), 'cartWrecked': (974, 719, 506, 249)}.items()}
+RECTS23 = {k: _pad(v) for k, v in {   # Cindergate's inner district: the crucible
+    'slagHeap1': (30, 19, 329, 174), 'slagHeap2': (392, 60, 214, 116), 'slagHeap3': (643, 104, 127, 64),
+    'lavaRun': (811, 54, 239, 123), 'lavaBend': (1094, 30, 179, 167), 'lavaEnd': (1315, 48, 173, 131),
+    'foundry': (18, 191, 555, 320), 'anvilBlock': (601, 289, 210, 196), 'bellowsGreat': (830, 234, 308, 245),
+    'chainHoist': (1212, 234, 302, 248), 'oreCart': (24, 572, 219, 195), 'oreCartHot': (266, 578, 199, 189),
+    'crucibleHoist': (506, 523, 275, 251), 'stallBurnt': (822, 520, 360, 255), 'lavaWell': (1216, 518, 277, 286),
+    'lavaSpring': (31, 828, 266, 156), 'bannerAnvil': (378, 799, 154, 204), 'bannerHammers': (586, 799, 138, 204),
+    'bannerFlame': (780, 799, 137, 204), 'bannerAshen': (971, 799, 137, 204)}.items()}
+# a neighbour inside a crop, blanked before the crop is cleaned (sheet coords)
+ERASE = {'armillary': [(150, 0, 372, 325)]}
+
 SHEETS = {
     '1': dict(src='tileset_source.png', bg=(16, 18, 23), rects=RECTS, ground=GROUND_NAMES, out='ruins', key='1'),
     '2': dict(src='tileset2_source.png', bg=(9, 12, 18), rects=RECTS2, ground=GROUND2_NAMES, out='ruins2', key='2'),
@@ -220,6 +318,10 @@ SHEETS = {
     '11': dict(src='tileset11_source.png', bg=(13, 15, 21), rects=RECTS11, ground=set(), out='ruins11', key='11', clean=True),
     '12': dict(src='tileset12_source.png', bg=(12, 15, 22), rects=RECTS12, ground=set(), out='ruins12', key='12', clean=True),
     '13': dict(src='tileset13_source.png', bg=(13, 15, 21), rects=RECTS13, ground=set(), out='ruins13', key='13', clean=True),
+    **{str(n): dict(src='tileset%d_source.png' % n, bg=(13, 15, 22), rects=R, ground={k for k in R if k.startswith('tr_')},
+                    out='ruins%d' % n, key=str(n), clean='strict', square=TR)
+       for n, R in [(14, RECTS14), (15, RECTS15), (16, RECTS16), (17, RECTS17), (18, RECTS18), (19, RECTS19),
+                    (20, RECTS20), (21, RECTS21), (22, RECTS22), (23, RECTS23)]},
     '3': dict(src='tileset3_source.png', bg=(13, 16, 21), rects=RECTS3, ground=set(RECTS3), out='ruins3', key='3', square=TR),
 }
 
@@ -316,9 +418,10 @@ def sector_atlases(base):
         pack(crops, 'sector_' + pal)
 
 
-def drop_edge_scraps(c):
+def drop_edge_scraps(c, share=0.15):
     """Clear small blobs that touch the crop's edge: scraps of the neighbouring pieces. A piece's
-    own loose bits (floating stones, its shadow) sit inside the padding and are kept."""
+    own loose bits (floating stones, its shadow) sit inside the padding and are kept. share=1
+    ('strict' sheets) clears every blob touching the edge but the piece's own, the biggest."""
     a = np.array(c)
     solid = a[..., 3] > 0
     lab, n = ndimage.label(solid)
@@ -326,7 +429,7 @@ def drop_edge_scraps(c):
     sizes = ndimage.sum(solid, lab, range(1, n + 1))
     edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {0}
     for i in edge:
-        if sizes[i - 1] < 0.15 * sizes.max(): a[lab == i, 3] = 0
+        if sizes[i - 1] < share * sizes.max() and sizes[i - 1] != sizes.max(): a[lab == i, 3] = 0
     return Image.fromarray(a, 'RGBA')
 
 
@@ -355,8 +458,10 @@ def cut(sh, write=True):
     crops = {}
     for k, (x, y, w, h) in sh['rects'].items():
         c = sheet.crop((x, y, x + w, y + h))
+        for ex0, ey0, ex1, ey1 in ERASE.get(k, []):
+            a = np.array(c); a[max(0, ey0 - y):max(0, ey1 - y), max(0, ex0 - x):max(0, ex1 - x), 3] = 0; c = Image.fromarray(a, 'RGBA')
         if sh.get('clean'):
-            c = drop_edge_scraps(c)
+            c = drop_edge_scraps(c, 1.0 if sh['clean'] == 'strict' else 0.15)
         if k not in sh['ground']:
             c = c.crop(c.getbbox())
         elif sh.get('square'):             # transition cells: every cell the same square size
