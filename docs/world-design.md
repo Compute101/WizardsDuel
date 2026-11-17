@@ -168,8 +168,8 @@ edge, about 512 × 768 for the weak kind (taller for the strong kind), detailed 
 
 Far west of Corvanthe (as far as two English cities apart), on the river Wren: the new University,
 founded by the scholars of Corvanthe who weren't in the city on the day. As if Oxford had blown up
-and its survivors had founded the next university somewhere quiet; Oxford-coded throughout (the
-High, Carfax, Broad Street, quads behind gate towers, Bulldogs and Proctors, the Meadow and punts).
+and its survivors had founded the next university somewhere quiet; Oxford-coded throughout, with the names bent a little so they aren't the real ones (the
+Hythe, Carrefax, Wide Street, quads behind gate towers, Bulldogs and Proctors, the Meadow and punts).
 It is not ruined, and it is chastened: the Statutes of Caution (no working larger than its maker,
 none without a witness, none that can't be undone, none in the street, no Word not understood; "VI.
 Don't be clever" in pencil), a memorial to Magister Orrin (the one councillor who voted against the
@@ -344,7 +344,7 @@ turning up in a town that should have none.
 3. *Hilary.* The Library's slips show a forbidden book borrowed under a dead Fellow's name. Mr Quill helps.
    The Undercroft is found under the Covered Market: the sewers open.
 4. *Hilary end.* Smugglers (a gleaner crew with Wrenford connections) in the Undercroft: a real fight.
-5. *Trinity.* Aurelia's Foresight shows Radcliffe Square on fire on the night of the Encaenia (the
+5. *Trinity.* Aurelia's Foresight shows Radwell Square on fire on the night of the Encaenia (the
    graduation feast). The Proctors don't believe a student.
 6. *Trinity end.* The night before Finals: the Word is spoken in the Undercroft beneath the Orrery.
    The final fight, with your tutorial partner beside you; stop it (or, later, an ending where you
@@ -400,17 +400,20 @@ About 45–60 minutes a term, 2½–3 hours to graduation, with a fight (real or
   Fizzwick's practical), a third elective and the finale. Collections: 6 calls, 5 to pass; Finals: 10
   calls, 7 to pass, then a viva against the Master holding back nothing you've been taught. Collections I
   unlock the middle ring, Finals the outer ring. A pass at the first sitting (a First) pays 20 extra gold.
-- **Beat 2** is a night scene, not a rooftop chase: after dark a hooded figure in Founders' Quad runs, and
+- **Beat 2** is a night scene, not a rooftop chase (Wil / Nell offers to keep watch, which moves the clock
+  to 22:00, so it never waits on the clock): after dark a hooded figure in Founders' Quad runs, and
   two Bulldogs take you for the culprit (a fists fight). Win or lose, you end up with the key stamped
   UNDERCROFT (losing costs a 5 gold fine).
 - **Beat 3** gives the Undercroft door (a trapdoor by the Covered Market); **beat 4** is a smugglers' crew
   in it (a room fight), paying spill of every kind and potions and finding the A.A. ledger.
-- **The finale** (beneath the Orrery, a trapdoor in Radcliffe Square, at 22:00 once Trinity's work is
+- **The finale** (beneath the Orrery, a trapdoor in Radwell Square, at 22:00 once Trinity's work is
   done and Aurelia has spoken): you have two things to say to Wil / Nell from four; two good ones turn
   them, and they fight beside you (a wizard ally, team A) against Ashgrove and Clemency's Echo, then join
   your party. Otherwise they fight for Ashgrove, and leave Wrenford after.
-- **Incidents** (after beat 1, never two at once, at least 6 game hours apart): a loose Echo in a quad,
-  a Town v Gown brawl outside the Bird and Bell (fists), a failing college gate ward (cast a ward).
+- **Incidents** (never two at once): a loose Echo in a quad, a Town v Gown brawl outside the Bird and
+  Bell (fists), a failing college gate ward (cast a ward). Each happens once on a trigger, so nobody misses
+  it (`FIRST`: your first elective, Collections I passed, learning to ward); after all three, more come
+  on the clock as extras, at least 6 game hours apart.
 - **Out of bounds:** a new wizard can't leave Wrenford until they can ward (the Proctors' licence).
 - **The pub:** Old Squop plays the tabletop duel (`js/tabletop.js`): you pick one of four wizard cards,
   pick a spell each round and flick for it (a marker sweeps over a cup; tap in time); Beginner rules for
@@ -424,7 +427,7 @@ a core Hilary lesson, the Boxing Club gives +1 Attack.
 
 ### When it happened
 
-The intro never fixed a date. **The Unweaving was 15 years ago.** Long enough for the gleaner trade to
+**The Unweaving was 15 years ago,** on Midsummer's Eve; the intro scroll says so (`js/explore_intro.js`), and that Wrenford's University was founded twelve years ago. Long enough for the gleaner trade to
 be an industry and for Wrenford to have grown a University in an old river town's buildings; recent
 enough that its founders (the scholars who were away on the day) still teach there, the bell is still
 rung for the dead every night, and the grief is still raw, which is what the villain runs on. Mages
@@ -490,7 +493,7 @@ feels the same each time you come back. Roster wizards here follow one of two th
 | Weizan, Master of the Schools | roster | **field trip**: stays, joins you on a University quest (a Schools party walking the Corvanthe Road) |
 | Fizzwick, Master of the Laboratory | roster | **field trip**: stays, joins you on a University quest (collecting samples in Cindergate) |
 | Aurelia, doctoral student | roster | **met at uni**: met again later, further east (her reading says so) |
-| Ponder, third-year student | roster | **met at uni**: met again later elsewhere |
+| Ponder, a student who keeps putting off Finals | roster | **met at uni**: met again later elsewhere |
 
 Still to do: their own art for the four invented dons (for now, recolours of Eldrin's old sprite and a female wizard in the same style: Dr Penhallow in a black gown and Widow Coyle in bottle green on the female figure, Mr Quill in russet and Canon Marrow in crimson on Eldrin's; `tools/make_folk_sprites.py`); the field
 trip quests (the party work, step 7, lets these two fight beside you); the later meetings, which can

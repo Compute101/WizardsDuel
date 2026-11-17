@@ -86,12 +86,12 @@ function termNeeds(api){
   const t=term(api), m=mg(api), y=Y(api), left=[];
   if(!m) return left;
   if(electives(api).length<Math.min(t,3)) left.push('learn '+(t===1?'an elective element':t===2?'a second elective element':'a third elective element')+' (its primer, its lecture and Fizzwick\'s practical)');
-  if(t===1&&!y.plot.b2) left.push(y.plot.b1?'find out what the hooded figure was doing in Founders\' Quad (after dark)':'see to the trouble in the Covered Market');
+  if(t===1&&!y.plot.b2) left.push(y.plot.b1?'keep watch in Founders\' Quad after dark (ask '+partnerName(api)+')':'see to the trouble in the Covered Market');
   if(t>=2&&!m.cats.includes('protect')) left.push('learn to ward (the lecture On Wards, then Fizzwick\'s practical)');
   if(t>=2&&!m.skin) left.push('learn Ironskin (the Master of the Schools)');
   if(t===2&&!y.plot.b4) left.push(y.plot.b3?'go down into the Undercroft, under the Covered Market':'see what Mr Quill wants (the Library)');
   if(t>=3&&!m.cats.includes('dispel')) left.push('learn to dispel (Dispel\'s primer, the lecture On Unmaking, then Fizzwick\'s practical)');
-  if(t===3&&!y.plot.b6) left.push(y.plot.b5?(y.plot.b6go?'find '+partnerName(api)+': beneath the Orrery, in Radcliffe Square':'finish the term\'s work; then come back to the Examination Schools'):'hear what Aurelia has seen (Radcliffe Square)');
+  if(t===3&&!y.plot.b6) left.push(y.plot.b5?(y.plot.b6go?'find '+partnerName(api)+': beneath the Orrery, in Radwell Square':'finish the term\'s work; then come back to the Examination Schools'):'hear what Aurelia has seen (Radwell Square)');
   return left;
 }
 
@@ -207,10 +207,11 @@ function talk(n, api){
 
   case 'fancy': {
     const rungs=['boxer_tolley','boxer_meg','boxer_horace','boxer_jem'];
-    const tips=['"Tolley? Two and a breather," says the Head Porter, who coaches the club, leaning on the ropes. "Two jabs, then he covers up. Count them. When he covers, grab him."',
-      '"Meg does whatever you just did," the Porter says. "Think about that. What beats what you did last?"',
-      '"Horace waits for you to cover up, then he\'s on you like a bear. So don\'t cover up, or cover up and hit him while he grabs at nothing."',
-      '"Jem? Attack, Guard, Grapple, Attack, Guard, Grapple, a proper gentleman. Hurt him and he starts reading you instead. Then do what you did on the others: think a move ahead of him."'];
+    // the coach hints, he doesn't tell: you learn a boxer's pattern by watching it (the patterns: fighters.json)
+    const tips=['"Tolley?" says the Head Porter, who coaches the club, leaning on the ropes. "Count his punches. Then watch what he does after."',
+      '"Meg\'s a funny one," the Porter says. "Ever feel you\'re boxing a looking-glass?"',
+      '"Horace is patient. He\'s waiting for you to do something, and then he\'s on you. Notice what."',
+      '"Jem\'s a gentleman: everything in its proper order. Hurt him, mind, and he stops being one."'];
     const r=y.box;
     if(!(W(api).stage>=1)){ say(null,'A chalked ring in the Schools\' yard, ropes slung between posts. A tall, moustached man in shirtsleeves bows. "Gentleman Jem, Captain of the Wrenford Fancy. Members of the University only, I\'m afraid. Matriculate, and come and be hit."'); return true; }
     if(r>=rungs.length){ say(null,'Gentleman Jem bows. "The Champion! Come back any time and keep us honest." He touches his brow. "Nobody here forgets a bout like that."',[
@@ -339,8 +340,11 @@ function talkPartner(n, api){
   if(sparDue) ch.push(spar('Spar for the term ('+REWARD.partner+' gold wager)'));
   else if(t>=1&&!y.plot.b6) ch.push(spar('A friendly spar'));
   else if(y.plot.b6) ch.push(spar('A friendly spar'));
+  if(y.plot.b1&&!y.plot.b2) ch.unshift({label:'Keep watch in Founders\' Quad tonight', fn:()=>{
+    api.setClock(22*60); plotNpcs(api);
+    api.dialog(title(n,api),'"Somebody brought that Echo here, and Bulldogs don\'t walk the Quad after the bell." '+P+' settles on the chapel steps with you as the light goes. Hours later, by the chapel wall, something moves.',[]); }});
   ch.push({label:'Not now'});
-  api.dialog(title(n,api), line+(sparDue?'\n\n"Spar? This term\'s bout. Five gold on it."':''), ch);
+  api.dialog(title(n,api), line+(y.plot.b1&&!y.plot.b2?'\n\n"Want to keep watch tonight? Whoever let it loose has to come back for the rest."':'')+(sparDue?'\n\n"Spar? This term\'s bout. Five gold on it."':''), ch);
   return true;
 }
 
@@ -372,24 +376,32 @@ function talkFinale(n, api){
     if(i>=2){ const turned=score>=2;
       api.dialog('Beneath the Orrery', turned?P+' looks from you to the circle, and steps out of it. "No," '+P+' says, to Ashgrove. "No. Not like this." Ashgrove sighs, like a tutor with a slow pupil, and raises his hands, and the cellar fills with Echo-light.':P+' shakes their head. "You don\'t understand. You didn\'t lose anybody." They turn back to the circle, and Ashgrove raises his hands.',[{label:'Fight', fn:()=>fight(turned)}]);
       return; }
-    api.dialog('Beneath the Orrery', i===0?'A cellar under Radcliffe Square, hung with chalked glyphs, crates of spill split open around a circle. In it stands Dr Ashgrove, kindly as ever, a book open on his arm; and beside him, '+P+'.\n\n"Ah, '+me+'." Ashgrove smiles. "You\'ve come to see. Fifteen years I have kept her work. Margery\'s. And it is finished: a Word that does not unweave, but reweaves. Every Echo, a person again." '+P+' says nothing.\n\nWhat do you say to '+P+'?':P+' hesitates. Ashgrove turns a page.\n\nAnd?',
+    api.dialog('Beneath the Orrery', i===0?'A cellar under Radwell Square, hung with chalked glyphs, crates of spill split open around a circle. In it stands Dr Ashgrove, kindly as ever, a book open on his arm; and beside him, '+P+'.\n\n"Ah, '+me+'." Ashgrove smiles. "You\'ve come to see. Fifteen years I have kept her work. Margery\'s. And it is finished: a Word that does not unweave, but reweaves. Every Echo, a person again." '+P+' says nothing.\n\nWhat do you say to '+P+'?':P+' hesitates. Ashgrove turns a page.\n\nAnd?',
       order.map(([t,good])=>({label:t, fn:()=>ask(i+1,score+good,order.filter(x=>x[0]!==t))})));
   };
   ask(0,0,shuffle(lines));
   return true;
 }
 
-// ── incidents: small things that happen in the streets, a few a term ──
-// at least `gap` game minutes apart (a game day is 16 real minutes), then `chance` per check (every 2 s)
+// ── incidents: small things that happen in the streets ──
+// Each kind happens once on a trigger, so nobody misses it (FIRST: what has to be true first); after all
+// three, more come now and then on the clock as extras: at least `gap` game minutes apart (a game day is
+// 16 real minutes), then `chance` per check (every 2 s).
 const INCIDENT = {gap:360, chance:0.02};
+const FIRST = {
+  echo:     api=>electives(api).length>=1,                 // once you've learnt your first elective
+  brawl:    api=>!!Y(api).exams.coll1,                     // once Collections I are passed
+  gateward: api=>knowsCat(api,'protect'),                  // once you can ward
+};
 const SPOTS = {
-  echo:[[29.6,33.4,'Founders\' Quad'],[30.4,20.6,'Radcliffe Square'],[40,43,'the Meadow'],[22,27,'Carfax']],
+  echo:[[29.6,33.4,'Founders\' Quad'],[30.4,20.6,'Radwell Square'],[40,43,'the Meadow'],[22,27,'Carrefax']],
   brawl:[[19.2,6.6,'outside the Bird and Bell']],
   gateward:[[39.5,40.4,'All Absent\'s gate'],[7,16,'Lantern College\'s gate']],
 };
-function startIncident(api){
+function startIncident(api, kind){
   const y=Y(api), m=mg(api), types=['echo','brawl'].concat(!m||m.cats.includes('protect')?['gateward']:[]);
-  const type=pick(types), [x,yy,where]=pick(SPOTS[type]);
+  const type=kind||pick(types), [x,yy,where]=pick(SPOTS[type]);
+  (y.inc.seen=y.inc.seen||{})[type]=true;
   const inc={type, x:x*T, y:yy*T, where, id:'inc'+Date.now(), el:pick(api.elems)};
   y.inc.active=inc; api.save();
   showIncident(api);
@@ -450,6 +462,7 @@ function onMap(api){
 }
 function tick(api){
   if(!api.hero()||api.mapId()!=='wrenford') return;
+  ensureChars(api);                                   // a new game's first map loads before the wizard is made
   const y=Y(api), w=W(api), m=mg(api);
   if(!y.term&&w.stage>=2){ y.term=w.finals||!learning(api)?4:1; api.save(); if(y.term===1) api.toast('Michaelmas term begins. Lectures in the Examination Schools (by the Schools\' court).'); }
   const t=term(api);
@@ -457,7 +470,7 @@ function tick(api){
   // beat 1 starts a while after Matriculation
   if(t>=1&&!y.plot.b1go){ y.plot.b1go=true; api.save(); api.toast('Smoke over the Covered Market! Something is burning in the stalls.'); plotNpcs(api); }
   if(t>=2&&!y.plot.b3go){ y.plot.b3go=true; api.save(); api.toast('A note in your pigeonhole: "Come to the Library. Q."'); }
-  if(t>=3&&!y.plot.b5go){ y.plot.b5go=true; api.save(); api.toast('Aurelia is looking for you, in Radcliffe Square.'); }
+  if(t>=3&&!y.plot.b5go){ y.plot.b5go=true; api.save(); api.toast('Aurelia is looking for you, in Radwell Square.'); }
   // the finale opens once Trinity's work is done and Aurelia has spoken
   if(t>=3&&y.plot.b5&&!y.plot.b6go&&m.cats.includes('dispel')&&electives(api).length>=3){
     y.plot.b6go=true; api.save(); api.setClock(22*60); api.refreshDoors();
@@ -471,7 +484,11 @@ function tick(api){
   const now=api.clock()+(y.inc.day||0)*1440;
   if(y.inc.lastClock!=null&&api.clock()<y.inc.lastClock) y.inc.day=(y.inc.day||0)+1;
   y.inc.lastClock=api.clock();
-  if(t>=1&&y.plot.b1&&!y.inc.active&&!api.interior()&&now-(y.inc.last||0)>INCIDENT.gap&&Math.random()<INCIDENT.chance) startIncident(api);
+  if(t>=1&&y.plot.b1&&!y.inc.active&&!api.interior()){
+    const due=Object.keys(FIRST).find(k=>!(y.inc.seen||{})[k]&&FIRST[k](api));
+    if(due) startIncident(api,due);
+    else if(Object.keys(FIRST).every(k=>(y.inc.seen||{})[k])&&now-(y.inc.last||0)>INCIDENT.gap&&Math.random()<INCIDENT.chance) startIncident(api);
+  }
 }
 function blockExit(api, x){
   if(api.mapId()!=='wrenford'||x.to!=='world'||!learning(api)) return null;
@@ -490,7 +507,7 @@ function journal(api){
   if(t>=1&&t<=3&&!y.spars[t]) out.push('Spar with '+partnerName(api)+' for the term, in Founders\' Quad.');
   if(y.inc.active) out.push('Trouble at '+y.inc.active.where+'.');
   if(y.plot.b3go&&!y.plot.b3) out.push('Mr Quill left a note: come to the Library.');
-  if(y.plot.b5go&&!y.plot.b5) out.push('Aurelia is looking for you in Radcliffe Square.');
+  if(y.plot.b5go&&!y.plot.b5) out.push('Aurelia is looking for you in Radwell Square.');
   return out.join('\n');
 }
 
@@ -504,7 +521,7 @@ function viva(api, tries){
         y.exams.finals=true; y.term=4; api.learn({rings:3, grad:true});
         api.addGold(REWARD.finals.gold+(tries===1?REWARD.first:0)); api.addPotions(REWARD.finals.potions); api.save();
         api.toast('Graduated! The outer ring is yours. +'+(REWARD.finals.gold+(tries===1?REWARD.first:0))+' gold, +'+REWARD.finals.potions+' potions');
-        setTimeout(()=>api.dialog('Encaenia','The whole University in Radcliffe Square, under a sky with no fire in it. Your name is read out, in Latin, badly. Dr Penhallow presents you with your hood, and says, quietly: "Bring back what you can. Books, if you find them. Names, if you find those."\n\nThe east road is open. The Master of the Schools and Fizzwick are putting together a party for Corvanthe.',[]),800);
+        setTimeout(()=>api.dialog('Encaenia','The whole University in Radwell Square, under a sky with no fire in it. Your name is read out, in Latin, badly. Dr Penhallow presents you with your hood, and says, quietly: "Bring back what you can. Books, if you find them. Names, if you find those."\n\nThe east road is open. The Master of the Schools and Fizzwick are putting together a party for Corvanthe.',[]),800);
       }})},
     {label:'Later'}]);
 }
@@ -523,7 +540,7 @@ function aureliaBeat(api, A){
   const y=Y(api);
   if(!learning(api)||term(api)<3||y.plot.b5) return null;
   y.plot.b5=true; api.save();
-  api.dialog('A Doctoral Student ('+A+')',A+' is waiting for you, cards already laid out in a cross. "I\'ve read it four times. Radcliffe Square on fire, on the night of Encaenia. A circle of chalk under the Orrery. And your friend, the freckled one, standing in it." The top card is turned: a tower, falling. "The Proctors laughed at me. You won\'t, will you?"\n\n"When it starts, it starts beneath the Orrery. Go before Finals. Take a coat."',[]);
+  api.dialog('A Doctoral Student ('+A+')',A+' is waiting for you, cards already laid out in a cross. "I\'ve read it four times. Radwell Square on fire, on the night of Encaenia. A circle of chalk under the Orrery. And your friend, the freckled one, standing in it." The top card is turned: a tower, falling. "The Proctors laughed at me. You won\'t, will you?"\n\n"When it starts, it starts beneath the Orrery. Go before Finals. Take a coat."',[]);
   api.toast('Aurelia\'s vision: beneath the Orrery, the night before Finals.');
   return true;
 }

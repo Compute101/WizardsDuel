@@ -18,7 +18,7 @@ OUT = os.path.join(ROOT, 'sprites/hero/toppers')
 SHEETS = {
     'classic': [('crystal', 'Gripped Crystal', 'neck'), ('hoop', 'Orb in a Hoop', 'neck'), ('crescent', 'Crescent Moon', 'neck'), ('crook', "Shepherd's Crook", 'all')],
     'world':   [('shard', 'Quintessence Shard', 'all'), ('orrery', 'Orrery', 'neck'), ('cage', 'Caged Wisp', 'neck'), ('lantern', "Finder's Lantern", 'neck')],
-    'glyphs':  [('omega', 'Omega', 'neck'), ('psi', 'Psi', 'neck'), ('cross', 'Circled Cross', 'neck'), ('star', 'Octagram', 'neck')],
+    'glyphs':  [('omega', 'The Arch', 'neck'), ('psi', 'The Fork', 'neck'), ('cross', 'The Seal', 'neck'), ('star', 'The Star', 'neck')],
     'bandit':  [('skull', 'Skull', 'neck'), ('blade', 'Broken Blade', 'neck'), ('antlers', 'Antlers', 'neck'), ('feathers', 'Feathers and Bones', 'neck')],
     'scholar': [('hourglass', 'Hourglass', 'neck'), ('hand', 'Golden Hand', 'neck'), ('wren', 'Wren', 'neck'), ('key', 'Key', 'neck')],
 }

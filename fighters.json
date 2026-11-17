@@ -467,11 +467,11 @@
       ]
     },
     "taunts": [
-      "Two and a breather, that's me.",
+      "One, two…",
       "Keep up, keep up!",
       "Light on my feet."
     ],
-    "desc": "A quick little man on his toes. Two jabs, then he covers up, every time."
+    "desc": "A quick little man, light on his toes. Like most boxers, a creature of habit."
   },
   "boxer_meg": {
     "fighter": true,
@@ -496,7 +496,7 @@
       "Show me again.",
       "I learn fast."
     ],
-    "desc": "Lean and watchful. Whatever you did last, she does next."
+    "desc": "Lean and watchful. Somehow she always seems to know what you've just done."
   },
   "boxer_horace": {
     "fighter": true,
@@ -521,7 +521,7 @@
       "Nowhere to hide.",
       "Big hug for you."
     ],
-    "desc": "A huge bald grappler. Covers up, and he's on you; otherwise he swings."
+    "desc": "A huge, patient grappler. He waits for his moment."
   },
   "boxer_jem": {
     "fighter": true,
@@ -551,6 +551,6 @@
       "A pleasure.",
       "Now we're boxing."
     ],
-    "desc": "Tall, moustached, elegant. Attack, Guard, Grapple in turn; hurt, he starts reading you."
+    "desc": "The Champion: elegant, orderly, never rattled. Until he is."
   }
 }

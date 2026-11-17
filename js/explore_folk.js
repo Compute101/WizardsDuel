@@ -26,9 +26,9 @@ const up = s => s.charAt(0).toUpperCase()+s.slice(1);
 // the Matriculation quest: the Senior Tutor sends you to the Schools, the Library and the Laboratory
 const MATRIC = {
   tasks: [   // in the order they're best done: glyphs, then a first working, then a bout that uses it
-    ['library', 'Read three books in the Remnant Library (Broad Street), and take your element\'s primer'],
+    ['library', 'Read three books in the Remnant Library (Wide Street), and take your element\'s primer'],
     ['lab',     'Learn your first working and pass the Laboratory\'s safety test (the Warded Laboratory, in the Parks)'],
-    ['schools', 'Pass a bout at the Schools (the Master of the Schools, the duelling court off Pembroke Street)'],
+    ['schools', 'Pass a bout at the Schools (the Master of the Schools, the duelling court off Penbrook Street)'],
   ],
   reward: {gold:30, potions:2},
   booksNeeded: 3,
@@ -63,7 +63,7 @@ const FOLK = {
   // Wrenford's townsfolk, painted from the hero figures (look: a creator look; js/explore.js nudges it off
   // yours and sets _sprite / _face). Four men, four women. `lines`: what they say, in turn; `shop`, `heal`: extras.
   corin:  {kind:'local', title:'A Student', name:'Corin', look:{name:'Corin', sex:'m', age:'young', fig:'young_man_3', robe:'Forest', trim:'Gold', hair:'Brown', skin:'Fair', eyes:'Green', elem:'earth', staff:'Ash', topper:'hoop'},
-    lines:['A student sits on the Library steps with a book on Dispel open on his knees, mouthing the glyphs. "Infinity, circled plus, nabla, theta. Infinity, circled plus…" He looks up. "Sorry. Exams. Do you know if the Keeper lets you take books out? I\'ve asked four times and I still don\'t know."',
+    lines:['A student sits on the Library steps with a book on Dispel open on his knees, mouthing the glyphs. "The Knot, the Wheel, the Well, the Eye. The Knot, the Wheel…" He looks up. "Sorry. Exams. Do you know if the Keeper lets you take books out? I\'ve asked four times and I still don\'t know."',
       '"Second year, Founders\'." Corin grins. "My mother wanted me to be a cooper. I said a cooper never made a barrel float. She said a wizard never made a barrel at all."',
       '"Have you been east? Properly east, past Hollowmere?" He lowers his voice. "They say the crews out there have mages with them now. Real ones, with staves. Hedge-wizards who never matriculated anywhere."']},
   isla:   {kind:'local', title:'A Student', name:'Isla', look:{name:'Isla', sex:'f', age:'young', fig:'young_woman_3', robe:'Crimson', trim:'Silver', hair:'Black', skin:'Brown', eyes:'Amber', elem:'fire', staff:'Mahogany', topper:'crescent'},
@@ -76,20 +76,20 @@ const FOLK = {
       '"If you\'re going east, ward first and ward often. And seal it. A sealed ward takes two dispels to break. The Master taught us that, and the Master was right."']},
   rook:   {kind:'local', title:'A Duellist of the Schools', name:'Rook', look:{name:'Rook', sex:'m', age:'young', fig:'young_man_4', robe:'Black', trim:'Scarlet', hair:'Black', skin:'Tan', eyes:'Dark', elem:'lightning', staff:'Blackthorn', topper:'crook'},
     lines:['A lean young man in a wide hat is practising guards on the edge of the court, slowly, over and over. "Guard beats Attack. Grapple beats Guard. Attack beats Grapple." He doesn\'t stop. "Say it a thousand times and your feet learn it."',
-      '"Rook. Third year. I\'ve lost to the Master forty-one times." A pause in the drill. "I\'m counting up, not down."',
+      '"Rook. I failed my viva last summer, so I\'m sitting the Year again. I\'ve lost to the Master forty-one times." A pause in the drill. "I\'m counting up, not down."',
       '"Watch for archers out there. They shoot past a guard, and you can\'t grapple a man who\'s forty paces off."']},
   agathe: {kind:'local', title:'The Herbwife', name:'Mother Agathe', heal:15, healCost:3, look:{name:'Agathe', sex:'f', age:'old', fig:'old_woman_3', robe:'Forest', trim:'Bone', hair:'White', skin:'Olive', eyes:'Brown', elem:'earth', staff:'Oak', topper:'crescent'},
     lines:['An old woman in round spectacles keeps a stall of bundled herbs, the smell of mint and something stranger. "Feverfew for the head, comfrey for the bones, and this one for when you\'ve been arguing with an Echo." A wink. "No licence needed for weeds, dearie."',
       '"I grew herbs for the Collegium kitchens for thirty years. Then one day there was no Collegium and no kitchen, and I still had the herbs." She ties a bundle. "So here I am."',
       '"Mind you eat. Wizards forget. You\'ll cast a thing the size of a house and then fall over for want of a biscuit."']},
   joss:   {kind:'local', title:'A Gleaner, Back from the East', name:'Joss Hale', look:{name:'Joss', sex:'m', age:'middle', fig:'mid_man_3', robe:'Ash', trim:'Copper', hair:'Brown', skin:'Natural', eyes:'Grey', elem:'water', staff:'Driftwood', topper:''},
-    lines:['A hooded man with a fresh scar sits on a crate at Carfax, a pack at his feet that smells of smoke. "Just in from Corvanthe. Don\'t ask what\'s in the pack. Don\'t ask what was in it this morning, either."',
+    lines:['A hooded man with a fresh scar sits on a crate at Carrefax, a pack at his feet that smells of smoke. "Just in from Corvanthe. Don\'t ask what\'s in the pack. Don\'t ask what was in it this morning, either."',
       '"The crews have changed." Joss rubs the scar. "Used to be soldiers and archers, gone sour. Now the worst of them have a mage at the front. Eyepatches, rags, stolen staves. Hedge-wizards. Brannoc in Spirewatch. Saltjaw Meg in the Drowned Quarter. A Proctor in the Collegium who never noticed the University ended."',
       '"Beat one, if you can, and take their staff. Every gleaner in Cindergate would buy you a drink to see Brannoc\'s stick over your shoulder."']},
   wrexley:{kind:'local', title:'Fellow of Lantern College', name:'Dr Wrexley', shop:'glyphs', look:{name:'Wrexley', sex:'f', age:'middle', fig:'mid_woman_6', robe:'Rose', trim:'Gold', hair:'Auburn', skin:'Fair', eyes:'Hazel', elem:'arcane', staff:'Mahogany', topper:'star'},
     lines:['A woman in a wide-brimmed hat is sketching the gate of Lantern College, the paper covered in glyphs. "Dr Wrexley. I make staff heads: the twelve glyphs of the Arcana, cast in gold. A glyph on your staff is a promise you can see." A smile. "And they\'re very handsome."',
       '"We\'re building the workshop here, for writing your own workings. Slowly. The Senior Tutor checks every nail."',
-      '"Omega for endings, Psi for the forked path, the circled cross for what\'s bound, the eight-pointed star for what bursts." She taps each sketch. "Choose the one you mean."']},
+      '"The Arch for endings, the Fork for the forked path, the Seal for what\'s bound, the Star for what bursts." She taps each sketch. "Choose the one you mean."']},
   benedek:{kind:'local', title:'The Punt-Keeper', name:'Old Benedek', look:{name:'Benedek', sex:'m', age:'old', fig:'old_man_3', robe:'Ochre', trim:'Gold', hair:'White', skin:'Tan', eyes:'Blue', elem:'water', staff:'Oak', topper:''},
     lines:['A bald old man with a beard to his belt leans on a punt-pole by the water. "Punts by the hour, a penny a time, and the river does the rest." He squints at you. "The Wren runs east, you know. Down to the Hollow, and the Hollow runs through Corvanthe. Everything in this town floats that way in the end."',
       '"Fished the Hollow sixty years. Since the white day, the fish come up shining." He shakes his head. "I throw them back. Seems polite."',
@@ -186,10 +186,10 @@ function talk(n, api){
 
   case 'porter': {
     const where=[
-      {label:'Where is the Library?', fn:()=>say(0,'"The Remnant? Up Cornmarket to Broad Street, the big domed place with the stone heads outside. Wipe your feet. The Keeper notices."',dirs())},
-      {label:'Where are the Schools?', fn:()=>say(0,'"West along Merton Street, then up St Aldates and left at Pembroke Street. The duelling court\'s in front of the examination halls. You\'ll hear it."',dirs())},
-      {label:'Where is the Laboratory?', fn:()=>say(0,'"In the Parks, top of Parks Road, past the Library. As far from the colleges as the Statutes allow. If the smoke\'s white, come back tomorrow."',dirs())},
-      {label:'Where can I sleep?', fn:()=>say(0,'"The Wren\'s Nest, on George Street off Cornmarket. Tell them the Lodge sent you. It won\'t make any difference, but they like to hear it."',dirs())},
+      {label:'Where is the Library?', fn:()=>say(0,'"The Remnant? Up Cornmart to Wide Street, the big domed place with the stone heads outside. Wipe your feet. The Keeper notices."',dirs())},
+      {label:'Where are the Schools?', fn:()=>say(0,'"West along Merrow Street, then up St Aldric\'s and left at Penbrook Street. The duelling court\'s in front of the examination halls. You\'ll hear it."',dirs())},
+      {label:'Where is the Laboratory?', fn:()=>say(0,'"In the Parks, top of the Parkway, past the Library. As far from the colleges as the Statutes allow. If the smoke\'s white, come back tomorrow."',dirs())},
+      {label:'Where can I sleep?', fn:()=>say(0,'"The Wren\'s Nest, on Gorse Street off Cornmart. Tell them the Lodge sent you. It won\'t make any difference, but they like to hear it."',dirs())},
     ];
     function dirs(){ return where; }
     if(!s.stage) say(0,'A broad old man in a bowler hat, with a soldier\'s back and a sword he plainly still knows how to use. "Morning. New, are you? Everyone new comes in from the east road looking like that." He nods at the arch. "You\'ll want to matriculate. The Senior Tutor, '+nm('tutor')+', in Founders\' Quad, through there. Keep off the grass."',where);
@@ -203,7 +203,7 @@ function talk(n, api){
     say(0,'One of the Proctors\' constables, in a bowler and a dark coat, with a halberd that has never been used on a student, quite. "Afternoon. Statute the Fourth: no working in the street. That includes lights, that includes warming your hands, that includes \'only a little one\'." He looks at you hard. "We had a little one, once. It took a city."');
     return;
   case 'bulldog2':
-    say(0,'"Welcome to Wrenford." The Bulldog at the bridge looks you up and down. "Wands, staves and familiars are permitted. Spells in the street are not. Quintessence is to be sold only to licensed dealers, Covered Market, off the High. Enjoy your stay."');
+    say(0,'"Welcome to Wrenford." The Bulldog at the bridge looks you up and down. "Wands, staves and familiars are permitted. Spells in the street are not. Quintessence is to be sold only to licensed dealers, Covered Market, off the Hythe. Enjoy your stay."');
     return;
 
   case 'tutor': {
@@ -279,7 +279,7 @@ function talk(n, api){
       return;
     }
     if(!s.schools&&m&&!m.cats.length){
-      say(0,'"Good. Now go and learn to cast something." '+M+' nods toward Parks Road. "The Laboratory. I\'m not duelling a wizard with no spells: that\'s not a bout, it\'s an assault. Come back when you can strike."',[sparHobbes,{label:'Not now'}]);
+      say(0,'"Good. Now go and learn to cast something." '+M+' nods toward the Parkway. "The Laboratory. I\'m not duelling a wizard with no spells: that\'s not a bout, it\'s an assault. Come back when you can strike."',[sparHobbes,{label:'Not now'}]);
       return;
     }
     if(!s.schools){
@@ -422,7 +422,7 @@ function talk(n, api){
       return;
     }
     s.aureliaMet=true; api.save();
-    say(0,'A scholar in a doctoral gown sits on a bench in Radcliffe Square, laying out cards in rows under the Great Orrery and frowning at them. "Sit, if you like. Doctoral student: Foresight, which is the study of what hasn\'t happened yet, which the Statutes are very nervous about." '+A+' taps a card. "This one is you. It isn\'t supposed to be in this reading at all. It turns up in a much later one."',[
+    say(0,'A scholar in a doctoral gown sits on a bench in Radwell Square, laying out cards in rows under the Great Orrery and frowning at them. "Sit, if you like. Doctoral student: Foresight, which is the study of what hasn\'t happened yet, which the Statutes are very nervous about." '+A+' taps a card. "This one is you. It isn\'t supposed to be in this reading at all. It turns up in a much later one."',[
       {label:'Ask about Foresight', fn:()=>{ say(0,'"Everyone in Corvanthe who could see the future saw the Unweaving coming. Every one. And they all thought someone else would stop it." The cards are swept up. "So here we read the future the way you\'d read a weather glass. Carefully, and then you take a coat." A pause. "Take a coat, '+me+'."'); }},
       {label:'Leave the cards be'}]);
     return;
@@ -436,7 +436,7 @@ function talk(n, api){
         {label:'Take it', fn:()=>{ s.satchelDone=true; s.satchel=false; api.addPotions(1); api.addGold(10); api.save(); api.toast('+1 potion, +10 gold'); }}]);
       return;
     }
-    say(0,'A student is asleep under the tree, gown for a pillow. As you come near the student wakes with a start, and for a moment you can see the grass through the sleeper. "I\'m not here. I mean, I am. Sorry. Third year, Lantern." '+P_+' rubs at both eyes. "I\'ve lost my satchel. All my notes. I was in the Parks, practising, and I vanished, and when I came back it hadn\'t. Somewhere near the Laboratory. If you see it…"',[{label:'I\'ll keep an eye out', fn:()=>{ s.satchelAsked=true; api.save(); }}]);
+    say(0,'A student is asleep under the tree, gown for a pillow. As you come near the student wakes with a start, and for a moment you can see the grass through the sleeper. "I\'m not here. I mean, I am. Sorry. Lantern. I keep putting off Finals." '+P_+' rubs at both eyes. "I\'ve lost my satchel. All my notes. I was in the Parks, practising, and I vanished, and when I came back it hadn\'t. Somewhere near the Laboratory. If you see it…"',[{label:'I\'ll keep an eye out', fn:()=>{ s.satchelAsked=true; api.save(); }}]);
     return;
   }
   }

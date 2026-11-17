@@ -97,7 +97,7 @@
  },
  {
   "id": "omega",
-  "name": "Omega",
+  "name": "The Arch",
   "src": "sprites/hero/toppers/omega.png",
   "w": 367,
   "h": 668,
@@ -109,7 +109,7 @@
  },
  {
   "id": "psi",
-  "name": "Psi",
+  "name": "The Fork",
   "src": "sprites/hero/toppers/psi.png",
   "w": 395,
   "h": 668,
@@ -121,7 +121,7 @@
  },
  {
   "id": "cross",
-  "name": "Circled Cross",
+  "name": "The Seal",
   "src": "sprites/hero/toppers/cross.png",
   "w": 416,
   "h": 641,
@@ -133,7 +133,7 @@
  },
  {
   "id": "star",
-  "name": "Octagram",
+  "name": "The Star",
   "src": "sprites/hero/toppers/star.png",
   "w": 453,
   "h": 658,
