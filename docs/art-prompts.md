@@ -112,6 +112,20 @@ scale as the earlier sheets (a floor tile about 100 px). Attach `sprites/ruins/t
 
 Written to match the pipelines already in the repo, so the cutting tools work on the results with little or no code change. Attach 1–2 of the existing sheets or sprites as style references every time, which matters more than any wording.
 
+### Status (what's in the game)
+
+**Done:**
+- **Corvanthe tilesets (section 2):** sheets 14–23 (`tileset14..23_source.png`). Sheet 14 holds town props for every district (signs, carts, washing lines, wells, notice boards, cats, crows), sheet 15 the Wound (ground edge set, drifting rocks and houses, a big crystal per element), and the rest are one sheet per district. They build the eight inner districts (`tools/mapgen/inner.js`), joined by the Inner Circuit. The Wound's centre map isn't built yet; its sheet is already cut.
+- **Staff toppers** (they replace section 3's staves sheet): 20 toppers from five sheets (`sprites/hero/toppers/`, `tools/cut_toppers.py`), the creator's Topper row and staff wood (`STAVES`), with a living glow on the staff (`js/staff_glow.js`). The prompts are in `docs/world-design.md`, "Staff toppers".
+- **More hero figures (section 3):** 33 base figures. Bandit mages, rogues and eight Wrenford townsfolk (students, a herbwife, a gleaner, a don, a punt-keeper) are painted from them, so section 4's Wrenford townsfolk are largely covered.
+
+**Still to do:**
+- Wenna and the Lamplighter, who still use Echo faces (`NPC_FACE` in `js/explore.js`), plus Old Marda and the wounded gleaners (section 1, items 1–4).
+- Arena backdrops: only `library` and `ruins` exist (section 1, item 6).
+- Fantasy races as hero figures, and orcs, goblins, golems and other creatures as fighters (section 4).
+- The hats sheet and the creator's parchment panel (section 3).
+- **Familiars:** owl, cat, toad and raven. The brief and prompts are in `docs/world-design.md`, "Familiars"; they aren't built yet.
+
 ### House rules (paste into every prompt)
 
 - **Tilesets** (`tools/cut_ruins_tileset.py`): "Top-down 3/4 view pixel-art game assets, same scale as the attached sheets (a ground tile is about 100 px, a cottage about 220 × 265 px). Loose separate pieces on a flat #101217 background, 16 px gaps between pieces, no labels, no grid lines, no text, no shadows touching other pieces."
