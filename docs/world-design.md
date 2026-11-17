@@ -374,3 +374,29 @@ One ChatGPT chat per sheet, four toppers a sheet. Attach `sprites/hero/source/mi
 
 Checks when a sheet comes back: every glow blue, every metal gold, no grey, flat green background,
 and each topper has its straight-cut neck at the bottom. Regenerate a sheet that breaks a rule.
+
+### Familiars (art brief, not built)
+
+A small companion that follows your wizard round Explore and sits at their feet in battle, like
+Nerissa's Fathom. Four to choose in the creator, later more as rewards. One ChatGPT chat per sheet;
+attach `sprites/fathom.png` and `sprites/hero/source/mid_man_1.png` as style references. Save as
+`sprites/familiars/source/sheet_<n>.png`.
+
+> Pixel-art sprite sheet of a small magical familiar in exactly the same style, pixel scale, shading and
+> outline as the attached shark familiar and wizard. The familiar is [FAMILIAR]. Draw it four times in a
+> row, well apart: sitting, walking (two frames, legs or wings in different positions) and a
+> "casting" pose with its eyes and markings glowing. Facing right, three-quarter view, feet (or lowest
+> point) at the same baseline in every pose. About 200 pixels tall. Colour rules, very important: any
+> glow, eyes and magical markings are bright blue and only blue (the game recolours them to the
+> wizard's element); no other blue anywhere. Natural fur, feather or skin colours otherwise. Hard pixel
+> edges, no glow halo past the outline. Plain flat pure green (#00FF00) background, nothing else, no
+> text, no shadow. Landscape image.
+
+| Sheet | [FAMILIAR] |
+|---|---|
+| 1 | a tawny owl with tufted ears and wise, glowing eyes, faint rune markings on its wing feathers |
+| 2 | a sleek black cat with a long tail, glowing eyes and a small rune-shaped mark on its forehead |
+| 3 | a warty toad, fat and pleased with itself, with glowing spots down its back and glowing eyes |
+| 4 | a raven with ragged feathers, glowing eyes and glowing runes along its beak |
+
+Checks: blue only where it glows, flat green, the same baseline and size in all four poses.

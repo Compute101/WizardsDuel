@@ -43,6 +43,20 @@ function loadBases(){
 // (the figure's headMask), drawn behind the figure along the staff's line (its topper anchor). The first is the painted head.
 const TOPPERS = [{id:'', name:'Painted'}];
 const TOPPER_H = 0.2;   // a topper's height, a fraction of the figure's
+// toppers anyone can choose; the rest are earned in Explore (the save's `toppers`, passed to open() as opts.toppers)
+const STARTER_TOPPERS = ['', 'crystal', 'hoop', 'crescent', 'crook'];
+// an NPC's look nudged off yours, so nobody in the world looks like you: another figure of the same sex and
+// age if they'd share yours, and the next robe colour if they'd share yours
+function avoidLook(look, hero){
+  if(!hero) return look;
+  const L=Object.assign({}, look);
+  if(L.fig===hero.fig){
+    const alts=BASES.filter(b=>b.id!==hero.fig&&b.sex===L.sex&&b.age===L.age);
+    if(alts.length) L.fig=alts[(L.name||'').length%alts.length].id;
+  }
+  if((L.robe||'Violet')===(hero.robe||'Violet')){ const i=ROBES.findIndex(r=>r.name===(L.robe||'Violet')); L.robe=ROBES[(i+3)%ROBES.length].name; }
+  return L;
+}
 const AGES = [['young','Young'],['middle','Middle-aged'],['old','Old']];
 // staff wood: hue°, saturation ×, value × (null keeps the oak); the wood's own shading is kept as offsets from its middle hue (20°)
 const STAVES = [
@@ -339,6 +353,8 @@ async function open(root, opts){
     const pills=(key,items,cls)=>`<div class="hc-row"><span class="hc-lab">${cls}</span><div class="hc-pills">`+items.map(([v,l])=>`<button type="button" class="hc-pill${st[key]===v?' on':''}" data-k="${key}" data-v="${v}">${l}</button>`).join('')+`</div></div>`;
     const swatches=(key,items,lab)=>`<div class="hc-row"><span class="hc-lab">${lab}</span><div class="hc-sw">`+items.map(it=>`<button type="button" class="hc-swb${st[key]===it.name?' on':''}" data-k="${key}" data-v="${it.name}" title="${it.name}" style="background:${it.sw}"></button>`).join('')+`<span class="hc-swname">${st[key]}</span></div></div>`;
     // 🎲 Random: a whole new look (and, for a new wizard, sex, element and name; Change look keeps those)
+    // the toppers on offer: the starters, and any this wizard has earned (opts.toppers)
+    const topList=()=>TOPPERS.filter(q=>STARTER_TOPPERS.includes(q.id)||(opts.toppers||[]).includes(q.id)||q.id===st.topper);
     const randomize=()=>{
       if(!opts.edit){ st.sex=rnd(['m','f']); st.elem=rnd(ELEMS).id; st.name=rnd(NAMES[st.sex]); }
       st.age=rnd(AGES)[0]; st.fig=rnd(figuresFor(st.sex,st.age).list).id;
@@ -352,7 +368,7 @@ async function open(root, opts){
         (opts.edit?'':pills('sex',[['m','Man'],['f','Woman']],'I am'))+
         pills('age',AGES,'Age')+
         `<div class="hc-row"><span class="hc-lab">Figure</span><div class="hc-pills"><button type="button" class="hc-pill" data-fig="-1">‹</button><span class="hc-figno">${i+1} of ${F.list.length}</span><button type="button" class="hc-pill" data-fig="1">›</button></div></div>`+
-        (TOPPERS.length>1?`<div class="hc-row"><span class="hc-lab">Topper</span><div class="hc-pills"><button type="button" class="hc-pill" data-top="-1">‹</button><span class="hc-figno">${(TOPPERS.find(q=>q.id===(st.topper||''))||TOPPERS[0]).name}</span><button type="button" class="hc-pill" data-top="1">›</button></div></div>`:'')+
+        (topList().length>1?`<div class="hc-row"><span class="hc-lab">Topper</span><div class="hc-pills"><button type="button" class="hc-pill" data-top="-1">‹</button><span class="hc-figno">${(TOPPERS.find(q=>q.id===(st.topper||''))||TOPPERS[0]).name}</span><button type="button" class="hc-pill" data-top="1">›</button></div></div>`:'')+
         swatches('robe',ROBES,'Robes')+swatches('trim',TRIMS,'Trim')+swatches('staff',STAVES,'Staff')+swatches('hair',HAIRS,'Hair')+swatches('skin',SKINS,'Skin')+swatches('eyes',EYES,'Eyes')+
         (opts.edit?'':`<div class="hc-row"><span class="hc-lab">Element</span><div class="hc-pills">`+ELEMS.map(e=>`<button type="button" class="hc-pill hc-el${st.elem===e.id?' on':''}" data-k="elem" data-v="${e.id}"><i style="background:${e.col}"></i>${e.name}</button>`).join('')+`</div></div>`+
         `<div class="hc-elnote">Your magic burns ${ELEMS.find(e=>e.id===st.elem).name.toLowerCase()}-coloured. Your first spells will be ${ELEMS.find(e=>e.id===st.elem).name}, and in time ${op.name}, its opposite, will come hardest to you.</div>`);
@@ -363,7 +379,7 @@ async function open(root, opts){
       const t=e.target.closest('button'); if(!t) return;
       if(t.classList.contains('hc-rand')){ randomize(); render(); return; }
       if(t.classList.contains('hc-dice')){ st.name=rnd(NAMES[st.sex].filter(n=>n!==st.name)); render(); return; }
-      if(t.dataset.top){ const i=Math.max(0,TOPPERS.findIndex(q=>q.id===(st.topper||''))); st.topper=TOPPERS[(i+(+t.dataset.top)+TOPPERS.length)%TOPPERS.length].id; render(); return; }
+      if(t.dataset.top){ const T=topList(), i=Math.max(0,T.findIndex(q=>q.id===(st.topper||''))); st.topper=T[(i+(+t.dataset.top)+T.length)%T.length].id; render(); return; }
       if(t.dataset.fig){ const F=figuresFor(st.sex,st.age).list, i=F.findIndex(b=>b.id===st.fig); st.fig=F[(i+(+t.dataset.fig)+F.length)%F.length].id; render(); return; }
       if(t.dataset.k){
         const k=t.dataset.k; st[k]=t.dataset.v;
@@ -381,5 +397,5 @@ async function open(root, opts){
     render();
   });
 }
-window.ExploreHero={open, def, loadBases, BASES, ROBES, TRIMS, STAVES, TOPPERS, HAIRS, SKINS, EYES, ELEMS, NAMES};
+window.ExploreHero={open, def, loadBases, avoidLook, STARTER_TOPPERS, BASES, ROBES, TRIMS, STAVES, TOPPERS, HAIRS, SKINS, EYES, ELEMS, NAMES};
 })();

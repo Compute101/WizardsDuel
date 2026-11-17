@@ -252,6 +252,15 @@ module.exports = function wrenford(rects){
     {role:'ponder',  x:44*T,   y:43.4*T},          // asleep on the Meadow
     {role:'bulldog', x:proc.cx-40, y:proc.base+44},// outside the Proctors'
     {role:'bulldog2',x:47.2*T, y:26.3*T},          // at the end of Orrin Bridge, greeting arrivals
+    // townsfolk painted from the hero figures (ExploreFolk FOLK, look): four men, four women
+    {role:'corin',   x:26.6*T, y:10.4*T},          // revising on the Library steps
+    {role:'isla',    x:33.4*T, y:19.8*T},          // arguing under the Great Orrery…
+    {role:'tamsin',  x:34.8*T, y:19.8*T},          // …with Tamsin
+    {role:'rook',    x:19.2*T, y:35.8*T},          // drilling guards by the Schools' court
+    {role:'agathe',  x:14.2*T, y:20.4*T},          // the herbwife, in the Covered Market
+    {role:'joss',    x:24.2*T, y:25.5*T},          // a gleaner back from the east, at Carfax
+    {role:'wrexley', x:8.8*T,  y:15.7*T},          // sketching the gate of Lantern College
+    {role:'benedek', x:(rx0(33)-0.7)*T, y:34.6*T}, // the punt-keeper, by the punt stage
   ];
   m.place('pouch',44*T,4.6*T,{lore:'q:satchel',scale:0.22});   // Ponder's satchel, lost in the Parks
   m.lore['q:satchel']=LORE.satchel;

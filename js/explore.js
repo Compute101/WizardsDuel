@@ -345,6 +345,7 @@ function afterBandFight(a,won){
     for(const k in st.spill) if(st.spill[k]>0){ spill[k]=(spill[k]||0)+st.spill[k]; got.push(st.spill[k]+' '+SPILL[k][0]); }
     toast('+'+st.gold+' gold'+(got.length?', '+got.join(', '):'')+' from '+b.name);
     st.beaten=Date.now(); crews=crews.filter(x=>x!==a.e.crew);
+    if(b.bandit) setTimeout(()=>earnTopper(b.bandit.topper,b.bandit.name+' drops a staff as the crew breaks. The head comes off in your hand'),900);
   } else {
     const g=Math.floor(gold*B.robGold); gold-=g; st.gold+=g;
     for(const k in spill){ const n=Math.floor(spill[k]*B.robSpill); spill[k]-=n; st.spill[k]=(st.spill[k]||0)+n; }
@@ -508,7 +509,7 @@ function findDoors(){
   }
 }
 function enterDoor(dr){
-  roomSpec=Object.assign({},dr.spec,{wizards:wizKeys.filter(k=>k!==wizKeys[wizIdx]&&k!=='hero')});
+  roomSpec=Object.assign({},dr.spec,{wizards:Object.keys(chars).filter(k=>k.startsWith('rogue_'))});   // a rival crew in a room is led by a bandit mage
   enterMap(roomSpec.id,'door').then(()=>{ grace=1.5; });
 }
 function roomState(){ return rooms[MAP.id]||(rooms[MAP.id]={}); }
@@ -563,6 +564,9 @@ const folkApi = {
   sellSpill:price=>{ const n=Object.values(spill).reduce((a,v)=>a+v,0); spill={}; gold+=n*price; return n*price; },
   removeObj:o=>removeObj(o),
   spar:o=>spar(o),
+  earnTopper:(id,how)=>earnTopper(id,how), hasTopper:id=>toppers.includes(id)||!!(window.ExploreHero&&ExploreHero.STARTER_TOPPERS.includes(id)),
+  topperName:id=>{ const t=window.ExploreHero&&ExploreHero.TOPPERS.find(q=>q.id===id); return t?t.name:id; },
+  heal:n=>{ heal(wizKeys[wizIdx],n); renderHp(); },
 };
 // a practice bout (the Schools, the Laboratory): fought at full strength, and you come back as you went
 // in (the University's healers see to that); nothing is lost on a defeat
@@ -901,7 +905,7 @@ async function enterMap(id,at,instant){
 function save(){
   if(!MAP||!saveKey||!hero) return;                // nothing is kept until the wizard has been made
   if(!MAP.interior&&MAP.name) lastPlace=MAP.name;    // a room is listed under the town it's in
-  try{ localStorage.setItem(saveKey,JSON.stringify({v:2, t:Date.now(), place:lastPlace, map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,hero,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
+  try{ localStorage.setItem(saveKey,JSON.stringify({v:2, t:Date.now(), place:lastPlace, map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,hero,toppers,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
 }
 function loadSave(key){
   try{ return key?JSON.parse(localStorage.getItem(key)||'null'):null; }catch(e){ return null; }
@@ -911,7 +915,7 @@ function applySave(s){
   s=s||{};
   found=new Set(s.found||[]); visited=new Set(s.visited||[]); spill=s.spill||{}; cleared=s.cleared||{};
   clock=s.clock!=null?s.clock:9*60; lightMode=s.lightMode||'auto'; vit=s.vit||{};
-  gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; quests=s.quests||{}; hero=s.hero||null; roomSpec=s.roomSpec||null; bandState=s.bands||{}; lastPlace=s.place||'';
+  gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; quests=s.quests||{}; hero=s.hero||null; roomSpec=s.roomSpec||null; bandState=s.bands||{}; lastPlace=s.place||''; toppers=s.toppers||[];
   if(s.map&&!s.map.startsWith('room:')) visited.add(s.map);
   for(const id of found){ const l=world&&world.locations.find(x=>x.id===id); if(l&&l.map) visited.add(l.map); }   // older saves knew only world-map places
 }
@@ -1194,6 +1198,45 @@ async function useHero(){
   if(wizKeys[0]!=='hero') wizKeys.unshift('hero');
   el.root.querySelectorAll('#ex-prev,#ex-next').forEach(b=>b.hidden=true);
   setWizard(0);
+  if(npcLookFor!==lookKey()){ await prepNpcs(); if(MAP&&!MAP.interior) spawnBands(); }
+}
+// ── people painted from the hero figures (js/explore_hero.js), always nudged off your own look ──
+// The hostile crews' bandit mages ('bandit_<id>', ExploreBands BANDS' `bandit`), the lone bandit mages who
+// lead crews in rooms ('rogue_<n>', ROGUES) and Wrenford's townsfolk with a `look` (ExploreFolk FOLK).
+// Each becomes a character entry in chars and the duel engine's CHAR_DEFS; folk keep their sprite and face.
+let toppers=[];             // the staff toppers this wizard has earned (saved); the starters are always there
+// a topper won (from a bandit mage, a quest, a shop): it's yours to fit now, or later with Change look
+function earnTopper(id, how){
+  const H=window.ExploreHero, t=H&&H.TOPPERS.find(q=>q.id===id); if(!t) return false;
+  if(toppers.includes(id)||H.STARTER_TOPPERS.includes(id)) return false;
+  toppers.push(id); save();
+  if(!hero){ toast('A staff topper: '+t.name+'.'); return true; }
+  showDialog('A Staff Topper: '+t.name, (how?how+'. ':'')+'It would fit your staff. (You can change it any time with Change look, in the satchel.)',[
+    {label:'Fit it now', fn:async()=>{ hero.topper=id; await useHero(); save(); toast('Your staff wears the '+t.name+' now.'); }},
+    {label:'Keep it for later', fn:()=>toast('The '+t.name+' goes in your satchel.')}]);
+  return true;
+}
+let npcLookFor=null;
+const lookKey=()=>JSON.stringify(hero?[hero.fig,hero.robe]:null);
+async function prepNpcs(){
+  const H=window.ExploreHero; if(!H) return;
+  npcLookFor=lookKey();
+  const reg=async(key,look,o)=>{
+    const d=await H.def(H.avoidLook(look,hero)), el_=H.ELEMS.find(e=>e.id===look.elem)||H.ELEMS[0];
+    const c=Object.assign({},d,{name:look.name.toUpperCase(), title:o.title||('Bandit Mage of '+el_.name), hp:o.hp||48, phys:{atk:o.atk||4}, hero:false, bandit:true, arena:'ruins'});
+    chars[key]=c; if(typeof CHAR_DEFS!=='undefined') CHAR_DEFS[key]=c;
+    return c;
+  };
+  const B=window.ExploreBands;
+  if(B){
+    for(const b of B.BANDS) if(b.bandit){ await reg('bandit_'+b.id,b.bandit,{hp:b.level>=3?60:54}); b.wizard='bandit_'+b.id; }
+    for(let i=0;i<(B.ROGUES||[]).length;i++) await reg('rogue_'+i,B.ROGUES[i],{hp:46, title:'Leading a Rival Crew'});
+  }
+  const F=Folk&&Folk.FOLK;
+  if(F) for(const role in F) if(F[role].look){
+    const d=await H.def(H.avoidLook(F[role].look,hero));
+    F[role]._sprite=d.sprite; F[role]._face=d.face; F[role]._glow=d.glow;
+  }
 }
 // The main theme plays on the title screen and carries on, unbroken, through the character
 // creator and the introduction scroll, fading out as the first map's own music comes in.
@@ -1271,7 +1314,7 @@ async function createHero(edit){
   syncMusic(); playTheme();
   let h;
   try{
-    h=await window.ExploreHero.open(el.root,{hero:edit?hero:null, edit:!!edit});
+    h=await window.ExploreHero.open(el.root,{hero:edit?hero:null, edit:!!edit, toppers:edit?toppers:[]});
     if(h){ hero=h; await useHero(); save(); }          // saved before the intro, so closing during it loses nothing
     // a new wizard gets the introduction scroll, with the theme playing on under it
     if(h&&!edit&&window.ExploreIntro) await window.ExploreIntro.play(el.root,h);
@@ -1770,6 +1813,7 @@ async function open(opts){
     saveOwner=who.id; saveKey=key;
     var s=loadSave(key);
     applySave(s); renderSpill();
+    await prepNpcs();
     if(!MAP){
       if(s&&s.map) await enterMap(s.map,[s.x,s.y],true);
       else await enterMap(START.map,START.spawn,true);
