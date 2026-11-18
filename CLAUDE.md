@@ -358,6 +358,9 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 
 ---
 
+## Cache-busting
+Every script and the stylesheet in `index.html` carry a `?v=` number. **Bump a file's number whenever you change the file** (and on a merge, bump every file either side touched): a browser that cached the old copy under the same number runs it against newer code, which broke New Game after the University Year merge ("Couldn't load the map", a stale `explore_pieces.js` without `scaleOf`). Explore's JSON data (maps, atlases, figures, toppers, characters, fighters) is fetched with `NC` / `{cache:'no-cache'}` so it revalidates. The map loader's error now shows the underlying message.
+
 ## Placeholder art
 When new content uses stand-in art (another character's sprite, a recolour, a borrowed tileset), add a row to `docs/art-prompts.md`: what stands in now, the file the real art goes to, the code that points at it, and a ready-to-paste prompt.
 

@@ -29,12 +29,12 @@ const BASES = [
 ];
 let basesReady=null;
 function loadBases(){
-  return basesReady||(basesReady=fetch('sprites/hero/figures.json').then(r=>r.json()).then(list=>{
+  return basesReady||(basesReady=fetch('sprites/hero/figures.json',{cache:'no-cache'}).then(r=>r.json()).then(list=>{
     const order=['young','middle','old'];
     list.sort((a,b)=>order.indexOf(a.age)-order.indexOf(b.age)||a.id.localeCompare(b.id));
     for(const f of list) if(!BASES.some(b=>b.id===f.id)) BASES.push(f);
-    return fetch('sprites/hero/f_old_1_topper.json').then(r=>r.json()).then(a=>{ BASES.find(b=>b.id==='f_old_1').topper=a; }).catch(()=>{});
-  }).then(()=>fetch('sprites/hero/toppers/toppers.json').then(r=>r.json()).then(t=>{ TOPPERS.length=1; TOPPERS.push(...t); }).catch(()=>{})).then(()=>{
+    return fetch('sprites/hero/f_old_1_topper.json',{cache:'no-cache'}).then(r=>r.json()).then(a=>{ BASES.find(b=>b.id==='f_old_1').topper=a; }).catch(()=>{});
+  }).then(()=>fetch('sprites/hero/toppers/toppers.json',{cache:'no-cache'}).then(r=>r.json()).then(t=>{ TOPPERS.length=1; TOPPERS.push(...t); }).catch(()=>{})).then(()=>{
     const order=['young','middle','old'];
     BASES.sort((a,b)=>order.indexOf(a.age)-order.indexOf(b.age)||(a.id==='f_old_1'?-1:b.id==='f_old_1'?1:a.id.localeCompare(b.id)));
   }).catch(()=>{}));

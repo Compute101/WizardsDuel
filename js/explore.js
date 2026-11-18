@@ -1045,7 +1045,7 @@ function buildMinimap(){
 const palettesLoaded={};
 async function loadPalette(pal){
   if(!pal||palettesLoaded[pal]) return;
-  const [img,rj]=await Promise.all([loadImage('sprites/ruins/sector_'+pal+'.png'), fetch('sprites/ruins/sector_'+pal+'.json').then(r=>r.json())]);
+  const [img,rj]=await Promise.all([loadImage('sprites/ruins/sector_'+pal+'.png'), fetch('sprites/ruins/sector_'+pal+'.json',NC).then(r=>r.json())]);
   const i=atlases.length; atlases.push(img);
   for(const k in rj) rects[k]=[...rj[k],i];
   palettesLoaded[pal]=true;
@@ -1057,7 +1057,7 @@ async function getMap(id){
     if(!spec) throw new Error('no room '+id);
     return window.ExploreRooms.build(spec,rects);
   }
-  if(!mapCache[id]) mapCache[id]=await fetch('maps/'+id+'.json').then(r=>{ if(!r.ok) throw new Error('map '+id); return r.json(); });
+  if(!mapCache[id]) mapCache[id]=await fetch('maps/'+id+'.json',NC).then(r=>{ if(!r.ok) throw new Error('map '+id); return r.json(); });
   return mapCache[id];
 }
 function fade(on){ el.fade.classList.toggle('on',on); return new Promise(res=>setTimeout(res,on?FADE_MS:0)); }
@@ -2014,6 +2014,8 @@ function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.
 // Atlases load when a map needs them, not all at start: the names (rects) come from every sheet's
 // small .json up front, but a sheet's image is fetched the first time a map uses one of its pieces
 // (atlasesFor, from enterMap), and the maps next door are fetched in the background (prefetchAround).
+// data files have no ?v= of their own: revalidate them, so a cached old copy never meets newer code
+const NC={cache:'no-cache'};
 // CORE sheets are the ground and the loot every map and the satchel use.
 const ATLAS_NAMES=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13',
   'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23'];
@@ -2042,10 +2044,10 @@ function prefetchAround(data){
 async function load(){
   if(built) return;
   const [cj,wj,fj,...sheets]=await Promise.all([
-    fetch('characters.json').then(r=>r.json()),
-    fetch('maps/world.json').then(r=>r.json()).then(w=>w),
-    fetch('fighters.json').then(r=>r.json()),
-    ...ATLAS_NAMES.map(n=>fetch('sprites/ruins/'+n+'.json').then(r=>r.json())),
+    fetch('characters.json',NC).then(r=>r.json()),
+    fetch('maps/world.json',NC).then(r=>r.json()).then(w=>w),
+    fetch('fighters.json',NC).then(r=>r.json()),
+    ...ATLAS_NAMES.map(n=>fetch('sprites/ruins/'+n+'.json',NC).then(r=>r.json())),
   ]);
   // one name space across every sheet: [x, y, w, h, atlas index]
   atlases=ATLAS_NAMES.map(()=>null); rects={};
@@ -2078,7 +2080,7 @@ async function open(opts){
       if(!MAP) await enterMap(START.map,START.spawn,true);
     }
   }
-  catch(err){ el.loading.textContent='Couldn\'t load the map.'; console.error(err); return; }
+  catch(err){ el.loading.textContent='Couldn\'t load the map. ('+((err&&err.message)||err)+') Try reloading the page.'; console.error(err); return; }
   el.loading.hidden=true;
   sizeMini();
   let saved=s&&s.wiz; if(!saved) try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}
