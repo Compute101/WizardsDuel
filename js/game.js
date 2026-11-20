@@ -3500,6 +3500,14 @@ function commitPick(who,action){
 }
 
 function describeAction(who,action){ return describeElemAction(action,who); }
+// The reveal card's banner: what kind of pick it is, in its own colour, so a ward and a strike of the
+// same element (same element icon) can't be mistaken at a glance
+function rvCatBanner(act){
+  if(!act) return '';
+  const k=act.act?'action':act.skin?'protect':isSeal(act)?'protect':act.self&&act.cat==='dispel'?'dispel':act.cat;
+  const label={damage:'Damage',protect:'Protection',dispel:'Dispel',action:'Action',meditate:'Meditate'}[k];
+  return label?`<span class="rv-cat rv-cat-${k}">${label}</span>`:'';
+}
 
 const REVEAL_TO_FIGHT_MS=1200;   // pause on the battlefield between the reveal closing and the first action
 
@@ -3518,7 +3526,7 @@ function showReveal(){
       act.ally&&act.ally!==who?`<span class="rv-aim">→ ${seatCfg(act.ally).name}</span>`:'';
     return `<div class="rv-card" style="--rv-col:${cfg.col}"><div class="rv-inner">`+
       `<div class="rv-face rv-back"><img class="rv-portrait" src="${faceSrc(seatKey(who))}" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
-      `<div class="rv-face rv-front"><span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}${taunt?`<span class="rv-taunt">⚔ “${taunt}”</span>`:''}<span class="rv-name">${label}</span></div>`+
+      `<div class="rv-face rv-front">${rvCatBanner(act)}<span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}${taunt?`<span class="rv-taunt">⚔ “${taunt}”</span>`:''}<span class="rv-name">${label}</span></div>`+
       `</div></div>`;
   }).join('');
   overlay.classList.toggle('rv-quick',!passPhone());
