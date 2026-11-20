@@ -261,7 +261,7 @@ module.exports = function wrenford(rects){
     {role:'corin',   x:26.6*T, y:10.4*T},          // revising on the Library steps
     {role:'isla',    x:33.4*T, y:19.8*T},          // arguing under the Great Orrery…
     {role:'marigold',x:34.8*T, y:19.8*T},          // …with Marigold
-    {role:'rook',    x:19.2*T, y:35.8*T},          // drilling guards by the Schools' court
+    {role:'rook',    x:20.1*T, y:37.4*T},          // drilling guards by the Schools' court (in front of the east circle, not behind it)
     {role:'agathe',  x:14.2*T, y:20.4*T},          // the herbwife, in the Covered Market
     {role:'joss',    x:24.2*T, y:25.5*T},          // a gleaner back from the east, at Carrefax
     {role:'wrexley', x:8.8*T,  y:15.7*T},          // sketching the gate of Lantern College
