@@ -251,6 +251,24 @@ The Echoes are the citizens. Each inner district could have a boss at its heart.
 
 Fire: molten slag and forge chains · Air: a whirlwind of roof tiles and torn sails · Lightning: copper rods and a storm cloud for a head · Arcane: floating book pages and orbiting rune rings · Water: harbour water with a sunken ship's figurehead for a face · Earth: cut quarry blocks and mine rails · Ice: icicles and a frozen market awning as a cloak · Dark: grave soil and tattered shrouds with violet eyes.
 
+#### 5e½. Loading screens (`backgrounds/loading_<name>.jpg`)
+
+At the moment Explore shows a plain "Loading…" (`#ex-loading` in `js/explore.js`) while a map's sheets load, and the game has only the splash (`backgrounds/splash.jpg` / `splash_portrait.jpg`). A few loading paintings, one picked at random (or one per region), with a progress bar and a tip drawn on top by the code. Make each in **two shapes**, landscape 16:9 (1920×1080) and portrait 9:16 (1080×1920) for phones, saved as `loading_<name>.jpg` and `loading_<name>_portrait.jpg`. Attach `backgrounds/splash.jpg` as the style reference.
+
+> A painterly dark-fantasy loading-screen illustration in the same style, palette and lighting as the attached image. [SUBJECT]. Leave the bottom fifth calm and dark (a progress bar and a line of text go there) and the top fifth fairly plain (a title may go there). No text, no logo, no UI, no border. Rich, atmospheric, a single clear focal point.
+
+| Name | [SUBJECT] |
+|---|---|
+| `duel` | two wizards facing each other across a ruined hall at the moment of casting, one with fire, one with ice, their spells meeting in the centre in a burst of light, glowing glyphs hanging in the air between them |
+| `wrenford` | a university town at dawn seen across a river: honey-stone towers and spires, a stone bridge, punts on the water, mist, a wren on a branch in the foreground |
+| `corvanthe` | a great ruined city at night seen from the road, its wall broken, houses floating up from a glowing purple-white rift at its heart, small figures of gleaners with lanterns on the road |
+| `gleaners` | a band of gleaners in patched leathers prising a glowing crystal from rubble in a burnt street, an Echo made of fire watching from a doorway |
+| `wound` | standing on the rim of the Wound looking in: a vast glowing chasm, inside-out houses and stairs drifting in the air, crystals in eight colours, a huge barred gate on the far side |
+| `library` | a gothic library at night, a lone young wizard reading by a floating light, books drifting off the shelves, glyphs glowing on the open page |
+| `tabletop` | a pub table seen from above at a slant: tiddlywinks, spell cards, a tankard, a candle, two players' hands mid-flick (warm, cosy, lighter in mood) |
+
+The code could show a short tip under the bar (rules, lore, controls): ask Claude to add a `TIPS` list when the art arrives.
+
 #### 5f. Smaller items
 
 - **Clemency's Echo** (the finale, which uses the weak Water Echo now): fighter rules plus the weak Water Echo as a reference: "a young woman student in a short academic gown, made of translucent water, hair drifting as if underwater, sorrowful, reaching out."
