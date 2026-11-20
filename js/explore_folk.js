@@ -270,8 +270,11 @@ function talk(n, api){
       onWin:()=>{ if(!s.spar1){ s.spar1=true; api.save(); api.toast('The Master nods. Now a bout with the Master.'); } }})};
     // the Master holds back with a new student: the inner ring only, a strike and a ward, both in the
     // student's barred element, so the ward is the opposite of what the student strikes with (the lesson)
-    const m=mg(api), bar=api.barred(), barName=bar?bar[0].toUpperCase()+bar.slice(1):'',
-      holdBack=m&&!m.grad?{elems:bar?[bar]:api.elems.slice(), cats:['damage','protect'], rings:1, glyphs:api.glyphs.map((_,i)=>i), skin:false}:null;
+    // (his own bans win: Weizan can't cast Dark, so against an Arcane student he takes the next element he can)
+    const m=mg(api), bar=api.barred(), banned=((api.chars[mk]||{}).forbidden)||[],
+      wardEl=[bar,api.homeElem(),'fire','air','lightning','arcane','water','earth','ice','dark'].find(e=>e&&!banned.includes(e)),
+      wardName=wardEl?wardEl[0].toUpperCase()+wardEl.slice(1):'', onBar=wardEl===bar,
+      holdBack=m&&!m.grad?{elems:[wardEl], cats:['damage','protect'], rings:1, glyphs:api.glyphs.map((_,i)=>i), skin:false}:null;
     const duelMaster={label:s.schools?'Duel the Master again':'Duel the Master', fn:()=>api.spar({
       foes:[holdBack?{key:mk,wizard:true,known:holdBack,hp:36}:{key:mk,wizard:true}],
       text:{winTitle:'Bout to You', win:M+' lowers '+'the guard'+'. "Good. You struck the ward with its opposite, you guarded when I meant to strike, and you didn\'t do anything clever. Pass."', loseTitle:'Not Yet', lose:'"Again, when you\'re ready," says '+M+'. "There\'s no shame on this court. The shame is out there, if you go before you\'re ready."'},
@@ -285,7 +288,7 @@ function talk(n, api){
       return;
     }
     if(!s.schools){
-      say(0,'"Now me." '+M+' steps into the circle.'+(holdBack?' "I\'ll hold back to the inner ring: a strike, a ward and the Actions, nothing else. Fair\'s fair. And my ward will be '+barName+', the one element you can\'t cast. Think about what that means."':'')+' "The wheel: Damage, Protection, Dispel, chosen in secret, and they meet. A ward stops a strike; a dispel tears a ward; a strike punishes a dispel. Each element has its opposite across the wheel: Fire and Water, Air and Earth, Lightning and Ice, the Arcane and the Dark. Strike a ward with its opposite and it comes apart in your hands."\n\n"Show me you were listening."',[duelMaster,sparHobbes,{label:'Not now'}]);
+      say(0,'"Now me." '+M+' steps into the circle.'+(holdBack?' "I\'ll hold back to the inner ring: a strike, a ward and the Actions, nothing else. Fair\'s fair. '+(onBar?'And my ward will be '+wardName+', the one element you can\'t cast. Think about what that means."':'Your barred element is barred to me too, so my ward will be '+wardName+', your own. It shrugs off your strikes. But a ward stops magic and nothing else. Think about that."'):'')+' "The wheel: Damage, Protection, Dispel, chosen in secret, and they meet. A ward stops a strike; a dispel tears a ward; a strike punishes a dispel. Each element has its opposite across the wheel: Fire and Water, Air and Earth, Lightning and Ice, the Arcane and the Dark. Strike a ward with its opposite and it comes apart in your hands."\n\n"Show me you were listening."',[duelMaster,sparHobbes,{label:'Not now'}]);
       return;
     }
     if(Year()&&Year().skinDue(api)){
