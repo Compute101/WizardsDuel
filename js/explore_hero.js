@@ -115,7 +115,10 @@ const rnd = a => a[Math.floor(Math.random()*a.length)];
 
 // ── recolouring ──
 const imgCache = {};
-function loadImg(src){ return imgCache[src]||(imgCache[src]=new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; })); }
+// through LoadBar when it's there, so the figures' bytes move Explore's loading bar (estimates: a mask, a topper, a figure)
+function loadImg(src){ return imgCache[src]||(imgCache[src]=window.LoadBar&&!/^(data|blob):/.test(src)
+  ? LoadBar.image(src,/_(hair|skin|staff|head)\.png$/.test(src)?3000:/toppers\//.test(src)?220000:550000)
+  : new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; })); }
 function hsv2rgb(h,s,v){ const f=n=>{ const k=(n+h/60)%6; return v-v*s*Math.max(0,Math.min(k,4-k,1)); }; return [f(5),f(3),f(1)]; }
 function rgb2hsv(r,g,b){ const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; let h=0;
   if(d){ h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4; h*=60; if(h<0) h+=360; }
