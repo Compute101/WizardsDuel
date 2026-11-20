@@ -3807,7 +3807,7 @@ const ELEMENTS=[
 function opposedElem(id){ const i=ELEMENTS.findIndex(e=>e.id===id); return i<0?null:ELEMENTS[(i+ELEMENTS.length/2)%ELEMENTS.length].id; }
 const ELEM_CATS={
   //       cost / power per tier (inner, middle, outer ring); stage = resolution order
-  protect:{name:'Protection', verb:'Ward',   icon:'🛡', cost:[5,8,12], power:[25,45,70], stage:1, unit:'ward HP'},
+  protect:{name:'Protection', verb:'Ward',   icon:'🛡️', cost:[5,8,12], power:[25,45,70], stage:1, unit:'ward HP'},
   dispel: {name:'Dispel',     verb:'Dispel', icon:'✦',  cost:[1,2,4],  power:[10,20,35], stage:2, unit:'vs ward'},
   damage: {name:'Damage',     verb:'Strike', icon:'⚔️', cost:[3,5,8],  power:[8,15,26],  stage:3, unit:'dmg'},
 };
@@ -3888,10 +3888,10 @@ function elemById(id){ return ELEMENTS.find(e=>e.id===id)||ELEMENTS.find(e=>e.id
 //   otherwise an Attack hits for atk, a Grapple for grappleOther × atk, and a Guard does nothing
 // A Guard also blocks any physical strike aimed at you that round (no counter for those).
 // Lasting physical protection is a spell: Ironskin (SKIN_DEFAULT; a character's `skin` overrides it).
-const ACTIONS={damage:{id:'attack',name:'Attack',icon:'⚔️'}, protect:{id:'guard',name:'Guard',icon:'🛡'}, dispel:{id:'grapple',name:'Grapple',icon:'🤼'}};
+const ACTIONS={damage:{id:'attack',name:'Attack',icon:'⚔️'}, protect:{id:'guard',name:'Guard',icon:'🛡️'}, dispel:{id:'grapple',name:'Grapple',icon:'🤼'}};
 const ACT_RULES={counterMult:1, attackVsGrapple:1.5, grappleOther:0.5};
 const PHYS_DEFAULT={atk:4};
-const SKIN_DEFAULT={id:'ironskin', name:'Ironskin', icon:'🛡', cost:2, soak:20, col:'#b8c4d4', alpha:.4};   // alpha: how strongly the sheen tints the sprite
+const SKIN_DEFAULT={id:'ironskin', name:'Ironskin', icon:'🛡️', cost:2, soak:20, col:'#b8c4d4', alpha:.4};   // alpha: how strongly the sheen tints the sprite
 function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}); }
 // ── FIGHTERS (Phase 4): non-wizards who fight with the Actions alone ──────────────
 // A fighter (fighters.json, `fighter:true`) has no mana to speak of, no wheel and no spells: every round
@@ -3901,7 +3901,7 @@ function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}
 //   ranged (Archer): his Attack is a bow shot: it slips past a Guard (no block, no counter), and he keeps
 //     his distance, so a Grapple at him fails.
 //   reach (Halberdier, Explore only): a long-hafted axe holds you off, so a Grapple at him fails.
-const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'}, reach:{name:'Long Reach',icon:'🪓'},
+const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡️',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'}, reach:{name:'Long Reach',icon:'🪓'},
   echo:{name:'Echo',icon:'✦'}};
 // Echoes (Explore: Corvanthe's citizens remade in one element, fighters.json `echo`): their blow is a
 // strike in that element (magic: a ward stops it, a Guard doesn't), they shrug off their own element
