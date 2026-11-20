@@ -3808,12 +3808,12 @@ function opposedElem(id){ const i=ELEMENTS.findIndex(e=>e.id===id); return i<0?n
 const ELEM_CATS={
   //       cost / power per tier (inner, middle, outer ring); stage = resolution order
   protect:{name:'Protection', verb:'Ward',   icon:'🛡️', cost:[5,8,12], power:[25,45,70], stage:1, unit:'ward HP'},
-  dispel: {name:'Dispel',     verb:'Dispel', icon:'✦',  cost:[1,2,4],  power:[10,20,35], stage:2, unit:'vs ward'},
+  dispel: {name:'Dispel',     verb:'Dispel', icon:'✨',  cost:[1,2,4],  power:[10,20,35], stage:2, unit:'vs ward'},
   damage: {name:'Damage',     verb:'Strike', icon:'⚔️', cost:[3,5,8],  power:[8,15,26],  stage:3, unit:'dmg'},
 };
 const ELEM_TIER_NAMES=['Lesser ','','Greater '];
 const CLEANSE_NAMES=['Lesser Cleanse','Cleanse','Greater Cleanse'];   // clears 1 / 2 / every curse
-const ELEM_STAGE_BANNERS={1:'🛡 Protection',2:'✦ Dispel',3:'⚔️ Damage'};
+const ELEM_STAGE_BANNERS={1:'🛡️ Protection',2:'✨ Dispel',3:'⚔️ Damage'};
 
 // Casting minigame per element
 const ELEM_MINIGAME={fire:launchPatternEcho, ice:launchIcePattern, lightning:launchLightningPattern,
@@ -3858,7 +3858,7 @@ function mgKnows(ai){
 // cb(ok) and the `screen` (default the title screen, which Explore covers) instead of a battle.
 let mgStandalone=null, mgKnownOverride=undefined;
 function practiseCast(o,cb){
-  const el=o.cat==='dispel'&&!o.elem?{icon:'✦',col:'#e070ff',name:'Dispel'}:elemById(o.elem), tier=o.tier||1;
+  const el=o.cat==='dispel'&&!o.elem?{icon:'✨',col:'#e070ff',name:'Dispel'}:elemById(o.elem), tier=o.tier||1;
   const spell={name:o.name||describeElemAction({cat:o.cat,elem:o.elem||'arcane',tier}).name, icon:el.icon,
     element:o.elem, col:el.col, tier, glyphs:o.cat==='damage'?ELEM_GLYPHS[o.elem]:undefined};
   mgKnownOverride=o.known||null;
@@ -4406,7 +4406,7 @@ function describeElemAction(action,who){
     const sp=sigById(who,action.sig);
     return {icon:cat.icon+(sp?sigIcon(sp):'★'),name:ELEM_TIER_NAMES[(action.tier||2)-1]+(sp?sigName(sp):action.sig)};
   }
-  if(action.self) return isSeal(action)?{icon:'🔒',name:'Seal Ward'}:{icon:'✦',name:CLEANSE_NAMES[(action.tier||1)-1]};
+  if(action.self) return isSeal(action)?{icon:'🔒',name:'Seal Ward'}:{icon:'✨',name:CLEANSE_NAMES[(action.tier||1)-1]};
   const el=elemById(action.elem);
   return {icon:cat.icon+el.icon,name:ELEM_TIER_NAMES[action.tier-1]+el.name+' '+cat.verb};
 }
@@ -10077,7 +10077,7 @@ const TUTORIAL_CONVOS={
     {key:'sylvara',text:"Watch your rival's mana bar! If they can't afford a big ward, they won't cast one. Reading their mana is half the game."},
   ],
   triangle:[
-    {key:'eldrin', text:"There are three kinds of spell: ⚔️ Damage, 🛡 Protection and ✦ Dispel. They work like rock, paper, scissors."},
+    {key:'eldrin', text:"There are three kinds of spell: ⚔️ Damage, 🛡️ Protection and ✨ Dispel. They work like rock, paper, scissors."},
     {key:'eldrin', text:"Protection beats Damage: a ward soaks up strikes, and it's raised before any damage lands — even in the same round. Strike into a ward and you've wasted your mana."},
     {key:'ponder', text:"Dispel beats Protection: dispels are cheap and tear through wards. Your rival spends a lot of mana on a ward, you break it for a little."},
     {key:'sylvara',text:"And Damage beats Dispel: if you dispel and your rival simply strikes, you've spent your round on nothing and taken the hit. Damage is also the surest way to win."},
