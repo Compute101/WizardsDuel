@@ -2541,14 +2541,18 @@ function tickIceShards(){
 // Air: a cyclone spins up around the target, tightens, and the damage lands at its peak; then it blows apart.
 // Water: a wall of water rises beside the target, curls over and crashes down on them in a splash.
 // Both scale with the damage (elemFxScale). gs.elemFx holds them; a Drenched wizard also drips water here.
-const CYCLONE_FORM_MS=900, CYCLONE_FADE_MS=450, WAVE_RISE_MS=650, WAVE_CURL_MS=300, WAVE_FADE_MS=500;
+const CYCLONE_FORM_MS=1000, CYCLONE_GUST_MS=380, CYCLONE_FADE_MS=450, WAVE_RISE_MS=650, WAVE_CURL_MS=300, WAVE_FADE_MS=500;
 function elemFxScale(dmg){ return .75+Math.min(.6,Math.max(1,dmg)/45); }
 function spawnCyclone(who,tgt,dmg,cb){
   if(simMode){ if(cb) cb(); return; }
   gs.elemFx=gs.elemFx||[];
   const sz=wizSize(tgt), s=elemFxScale(dmg);
   anim(who,'cast',CYCLONE_FORM_MS);
+  const from=castFrom(who,seatX(who),wizMidY(who));   // the gust leaves the caster's staff first, so it reads as a strike, not a ward
   gs.elemFx.push({type:'cyclone',x:seatX(tgt),feet:wizFeetY(),h:sz*1.05*s,w:sz*.42*s,s,start:Date.now(),cb,fired:false,
+    fx:from[0], fy:from[1], ty:wizMidY(tgt),
+    gusts:Array.from({length:7},()=>({d:Math.random()*.35, off:(Math.random()-.5)*sz*.35, len:.18+Math.random()*.2, wob:Math.random()*6.28})),
+    dust:Array.from({length:Math.round(12+s*8)},()=>({a:Math.random()*6.28, r:.5+Math.random()*.8, u:Math.random()*.35, sz:1.5+Math.random()*2.5})),
     spin:Math.random()<.5?-1:1,
     streaks:Array.from({length:Math.round(10+s*6)},(_,i)=>({u:Math.random(),a:Math.random()*6.28,len:.6+Math.random()*1.1})),
     motes:Array.from({length:Math.round(14+s*8)},()=>({u:Math.random(),a:Math.random()*6.28,r:.3+Math.random()*.9}))});
@@ -2567,24 +2571,46 @@ function tickElemFx(){
     const age=now-f.start;
     bx.save();
     if(f.type==='cyclone'){
-      const form=Math.min(1,age/CYCLONE_FORM_MS), fade=f.fired?Math.max(0,1-(age-CYCLONE_FORM_MS)/CYCLONE_FADE_MS):1;
+      // 1. the gust: wind streaks shoot from the caster to the target
+      const gt=Math.min(1,age/CYCLONE_GUST_MS);
+      if(gt<1&&f.fx!=null){
+        bx.lineCap='round';
+        f.gusts.forEach(g=>{
+          const t=Math.min(1,Math.max(0,(gt-g.d)/(1-g.d))); if(t<=0) return;
+          const hx=f.fx+(f.x-f.fx)*t, tx=f.fx+(f.x-f.fx)*Math.max(0,t-g.len);
+          const yAt=x=>{ const u=(x-f.fx)/((f.x-f.fx)||1); return f.fy+(f.ty-f.fy)*u+g.off*Math.sin(u*3.14)+Math.sin(u*9+g.wob)*4; };
+          bx.globalAlpha=.85*(1-t*.3); bx.strokeStyle='#e8fffa'; bx.lineWidth=2+f.s;
+          bx.beginPath(); for(let j=0;j<=8;j++){ const x=tx+(hx-tx)*j/8; j?bx.lineTo(x,yAt(x)):bx.moveTo(x,yAt(x)); } bx.stroke();
+        });
+      }
+      // 2. the funnel winds up round the target (after the gust lands), 3. it bursts as the damage lands
+      const form=Math.max(0,Math.min(1,(age-CYCLONE_GUST_MS*.7)/(CYCLONE_FORM_MS-CYCLONE_GUST_MS*.7))), fade=f.fired?Math.max(0,1-(age-CYCLONE_FORM_MS)/CYCLONE_FADE_MS):1;
       const burst=f.fired?(age-CYCLONE_FORM_MS)/CYCLONE_FADE_MS:0;
       const spinA=spinAngle(now,Math.max(180,520-form*300))*f.spin;
+      // dust and grit kicked up at the target's feet
+      f.dust.forEach(d=>{
+        const a=d.a+spinA*1.3, rw=f.w*d.r*(1+burst*2.2), yy=f.feet-d.u*f.h*form;
+        bx.globalAlpha=.75*fade*form; bx.fillStyle='#8a7d6a';
+        bx.beginPath(); bx.arc(f.x+Math.cos(a)*rw,yy+Math.sin(a)*rw*.22,d.sz*(.6+f.s*.4),0,6.28); bx.fill();
+      });
       // funnel: wide at the top, tight at the feet; it tightens as it forms
       f.streaks.forEach(k=>{
         const yy=f.feet-k.u*f.h, rw=f.w*(.35+k.u*.9)*(1.3-form*.3)*(1+burst*1.6);
         const a0=k.a+spinA*(1+k.u*.4);
-        bx.globalAlpha=.55*fade*(.4+.6*form); bx.strokeStyle=k.u>.5?'#e8fffa':'#9fe8dc'; bx.lineWidth=1.2+f.s*.8;
+        bx.globalAlpha=.8*fade*form; bx.strokeStyle=k.u>.5?'#f4fffd':'#7fd6c8'; bx.lineWidth=1.8+f.s*1.1;
         bx.beginPath();
         for(let j=0;j<=10;j++){ const a=a0+j/10*k.len; const px=f.x+Math.cos(a)*rw, py=yy+Math.sin(a)*rw*.22; j?bx.lineTo(px,py):bx.moveTo(px,py); }
         bx.stroke();
       });
       f.motes.forEach(m=>{
         const a=m.a+spinA*1.6, yy=f.feet-m.u*f.h*.9, rw=f.w*m.r*(1+burst*2);
-        bx.globalAlpha=.7*fade; bx.fillStyle='#c8f4ec';
+        bx.globalAlpha=.7*fade*form; bx.fillStyle='#c8f4ec';
         bx.beginPath(); bx.arc(f.x+Math.cos(a)*rw,yy+Math.sin(a)*rw*.22,1.4+f.s,0,6.28); bx.fill();
       });
-      if(!f.fired&&age>=CYCLONE_FORM_MS){ f.fired=true; spawnParts(f.x,f.feet-f.h*.45,'#e8fffa',Math.round(10+f.s*8)); if(f.cb) f.cb(); }
+      // the blow: a horizontal shock ring at the peak
+      if(f.fired&&burst<1){ bx.globalAlpha=.8*(1-burst); bx.strokeStyle='#ffffff'; bx.lineWidth=3*(1-burst)+1;
+        bx.beginPath(); bx.ellipse(f.x,f.feet-f.h*.45,f.w*(.6+burst*2.4),f.w*(.6+burst*2.4)*.3,0,0,6.28); bx.stroke(); }
+      if(!f.fired&&age>=CYCLONE_FORM_MS){ f.fired=true; spawnParts(f.x,f.feet-f.h*.45,'#e8fffa',Math.round(14+f.s*10)); if(f.s>1.1) quake(6,250); if(f.cb) f.cb(); }
     } else if(f.type==='wave'){
       // height rises, then the crest curls over the target, then it all collapses in spray
       const rise=Math.min(1,age/WAVE_RISE_MS), curl=Math.max(0,Math.min(1,(age-WAVE_RISE_MS)/WAVE_CURL_MS));
