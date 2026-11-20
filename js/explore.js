@@ -1045,7 +1045,7 @@ function buildMinimap(){
 const palettesLoaded={};
 async function loadPalette(pal){
   if(!pal||palettesLoaded[pal]) return;
-  const [img,rj]=await Promise.all([loadImage('sprites/ruins/sector_'+pal+'.png'), fetch('sprites/ruins/sector_'+pal+'.json',NC).then(r=>r.json())]);
+  const [img,rj]=await Promise.all([LoadBar.image('sprites/ruins/sector_'+pal+'.png',PALETTE_EST), LoadBar.json('sprites/ruins/sector_'+pal+'.json',NC)]);
   const i=atlases.length; atlases.push(img);
   for(const k in rj) rects[k]=[...rj[k],i];
   palettesLoaded[pal]=true;
@@ -1057,7 +1057,7 @@ async function getMap(id){
     if(!spec) throw new Error('no room '+id);
     return window.ExploreRooms.build(spec,rects);
   }
-  if(!mapCache[id]) mapCache[id]=await fetch('maps/'+id+'.json',NC).then(r=>{ if(!r.ok) throw new Error('map '+id); return r.json(); });
+  if(!mapCache[id]) mapCache[id]=await LoadBar.json('maps/'+id+'.json',NC,MAP_EST).catch(()=>{ throw new Error('map '+id); });
   return mapCache[id];
 }
 function fade(on){ el.fade.classList.toggle('on',on); return new Promise(res=>setTimeout(res,on?FADE_MS:0)); }
@@ -1099,22 +1099,31 @@ const TIPS = [
   'A sealed ward takes two dispels: one for the seal, one for the ward.',
 ];
 let loadingShownAt=0;
-function showLoading(id, name){
+// The bar is LoadBar's (js/load_bar.js): it moves with the bytes really downloaded and the figures
+// really painted, stage by stage (plan: estimated bytes per stage, in the order they run). The
+// estimates below only set how much of the bar each stage gets.
+const ATLAS_EST=520000, PALETTE_EST=950000, MAP_EST=33000, DATA_EST=82000, CORE_EST=2480000;
+const NPC_FIG_EST=500000, NPC_PAINT=120000;   // a painted townsfolk: its share of the figures, toppers and masks (measured); painting it
+function sheetsEst(data){                         // what a map still has to fetch: its sheets and palette not yet loaded
+  const need=new Set(CORE_ATLASES.map(n=>ATLAS_NAMES.indexOf(n)));
+  for(const o of data.objects||[]){ const q=rects[o[0]]; if(q&&q[4]<ATLAS_NAMES.length) need.add(q[4]); }
+  for(const c of new Set((data.ground||[]).join(''))){ const q=rects[GROUND_PIECE[c]]; if(q) need.add(q[4]); }
+  let n=0; for(const i of need) if(!atlases[i]) n++;
+  return n*ATLAS_EST+(data.palette&&!palettesLoaded[data.palette]?PALETTE_EST:0)+20000;
+}
+function showLoading(id, name, plan){
   el.lPic.src='backgrounds/loading_'+loadingPicFor(id)+'.jpg';
   el.lName.textContent=name||MAP_NAMES[id]||'';
   el.lTip.textContent=TIPS[Math.random()*TIPS.length|0];
-  el.lFill.style.transition='none'; el.lFill.style.width='0%';
-  void el.lFill.offsetWidth;
-  el.lFill.style.transition=''; el.lFill.style.width='88%';   // eases toward the end while we wait
+  LoadBar.begin(el.lFill, plan||[MAP_EST, 4*ATLAS_EST]);
   el.loading.classList.remove('out'); el.loading.hidden=false;
   loadingShownAt=performance.now();
 }
 async function hideLoading(){
   if(el.loading.hidden) return;
   const wait=LOADING_MIN_MS-(performance.now()-loadingShownAt);
+  await LoadBar.finish(180);
   if(wait>0) await new Promise(r=>setTimeout(r,wait));
-  el.lFill.style.width='100%';
-  await new Promise(r=>setTimeout(r,180));
   el.loading.classList.add('out');
   await new Promise(r=>setTimeout(r,300));
   el.loading.hidden=true; el.loading.classList.remove('out');
@@ -1134,9 +1143,11 @@ async function enterMap(id,at,instant){
     if(!instant) await fade(true);
     if(!room&&el.loading.hidden){
       if(!mapCache[id]) showLoading(id);
-      else slow=setTimeout(()=>showLoading(id),LOADING_SLOW_MS);
+      else slow=setTimeout(()=>{ showLoading(id,null,[1,sheetsEst(mapCache[id])]); LoadBar.next(); },LOADING_SLOW_MS);
     }
+    else if(instant) LoadBar.next();                // opening Explore: its plan's map stage
     const data=await getMap(id);
+    if((!room||instant)&&!el.loading.hidden) LoadBar.next(sheetsEst(data));
     if(!room&&!el.loading.hidden&&data.name) el.lName.textContent=data.name;
     if(data.interior&&roomSpec&&roomSpec.outside) await getMap(roomSpec.outside.map).catch(()=>{});   // a room plays its town's theme
     await Promise.all([loadPalette(data.palette),atlasesFor(data)]);   // this map's sheets, before anything draws from them
@@ -1524,16 +1535,26 @@ async function prepNpcs(){
     chars[key]=c; if(typeof CHAR_DEFS!=='undefined') CHAR_DEFS[key]=c;
     return c;
   };
+  // four at a time, so the figures download side by side and the painting (CPU work) is spread
+  // among the downloads instead of piling up after them; each one painted moves the loading bar
+  const jobs=[], counted=fn=>jobs.push({fn, done:LoadBar.step(NPC_PAINT)});
   const B=window.ExploreBands;
   if(B){
-    for(const b of B.BANDS) if(b.bandit){ await reg('bandit_'+b.id,b.bandit,{hp:b.level>=3?60:54}); b.wizard='bandit_'+b.id; }
-    for(let i=0;i<(B.ROGUES||[]).length;i++) await reg('rogue_'+i,B.ROGUES[i],{hp:46, title:'Leading a Rival Crew'});
+    for(const b of B.BANDS) if(b.bandit){ b.wizard='bandit_'+b.id; counted(()=>reg('bandit_'+b.id,b.bandit,{hp:b.level>=3?60:54})); }
+    (B.ROGUES||[]).forEach((r,i)=>counted(()=>reg('rogue_'+i,r,{hp:46, title:'Leading a Rival Crew'})));
   }
   const F=Folk&&Folk.FOLK;
-  if(F) for(const role in F) if(F[role].look){
+  if(F) for(const role in F) if(F[role].look) counted(async()=>{
     const d=await H.def(H.avoidLook(F[role].look,hero));
     F[role]._sprite=d.sprite; F[role]._face=d.face; F[role]._glow=d.glow;
-  }
+  });
+  let k=0;
+  const worker=async()=>{ while(k<jobs.length){ const j=jobs[k++]; await j.fn(); j.done(); } };
+  await Promise.all([worker(),worker(),worker(),worker()]);
+}
+function npcCount(){                              // how many prepNpcs paints
+  const B=window.ExploreBands, F=window.ExploreFolk&&ExploreFolk.FOLK;
+  return (B?B.BANDS.filter(b=>b.bandit).length+(B.ROGUES||[]).length:0)+(F?Object.values(F).filter(f=>f.look).length:0);
 }
 // The main theme plays on the title screen and carries on, unbroken, through the character
 // creator and the introduction scroll, fading out as the first map's own music comes in.
@@ -2094,7 +2115,7 @@ const ATLAS_NAMES=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7'
 const CORE_ATLASES=['ruins','ruins2','ruins3','ruins13'];
 const atlasLoading={};
 function loadAtlas(i){
-  if(!atlasLoading[i]) atlasLoading[i]=loadImage('sprites/ruins/'+ATLAS_NAMES[i]+'.png').then(img=>{ atlases[i]=img; quarterCache.clear(); return img; });
+  if(!atlasLoading[i]) atlasLoading[i]=LoadBar.image('sprites/ruins/'+ATLAS_NAMES[i]+'.png',ATLAS_EST).then(img=>{ atlases[i]=img; quarterCache.clear(); return img; });
   return atlasLoading[i];
 }
 // the sheets a map draws from: its pieces' and its ground's (the ground letters that aren't on a core sheet)
@@ -2116,11 +2137,12 @@ function prefetchAround(data){
 async function load(){
   if(built) return;
   const [cj,wj,fj,...sheets]=await Promise.all([
-    fetch('characters.json',NC).then(r=>r.json()),
-    fetch('maps/world.json',NC).then(r=>r.json()).then(w=>w),
-    fetch('fighters.json',NC).then(r=>r.json()),
-    ...ATLAS_NAMES.map(n=>fetch('sprites/ruins/'+n+'.json',NC).then(r=>r.json())),
+    LoadBar.json('characters.json',NC,30000),
+    LoadBar.json('maps/world.json',NC,8000),
+    LoadBar.json('fighters.json',NC,8000),
+    ...ATLAS_NAMES.map(n=>LoadBar.json('sprites/ruins/'+n+'.json',NC,1500)),
   ]);
+  LoadBar.next();                                   // on to the core sheets
   // one name space across every sheet: [x, y, w, h, atlas index]
   atlases=ATLAS_NAMES.map(()=>null); rects={};
   sheets.forEach((rj,i)=>{ for(const k in rj) rects[k]=[...rj[k],i]; });
@@ -2137,10 +2159,14 @@ async function open(opts){
   el.root.classList.add('active');
   { const who=profileNow(), k=opts.fresh?null:(opts.slot||(who.id===saveOwner&&saveKey)||((slotsOf(who.id)[0]||{}).key));
     const sv=k&&!opts.fresh?loadSave(k):null, warm=MAP&&k===saveKey&&who.id===saveOwner, m=sv&&sv.map?(sv.map.startsWith('room:')&&sv.roomSpec&&sv.roomSpec.outside?sv.roomSpec.outside.map:sv.map):null;
-    if(!warm) showLoading(m&&!m.startsWith('room:')?m:(opts.fresh?'wrenford':null), sv?sv.place:(opts.fresh?'Wrenford':'')); }
+    if(!warm){
+      const n=window.ExploreHero?npcCount():0, plan=[n*((built?0:NPC_FIG_EST)+NPC_PAINT)+1, MAP_EST, 4*ATLAS_EST];   // townsfolk, map, its sheets
+      if(!built) plan.unshift(DATA_EST, CORE_EST);
+      showLoading(m&&!m.startsWith('room:')?m:(opts.fresh?'wrenford':null), sv?sv.place:(opts.fresh?'Wrenford':''), plan);
+    } }
   running=true; resize();
   try{
-    await load();
+    if(!built){ await load(); LoadBar.next(); }      // on to the townsfolk
     const who=profileNow();
     let key=opts.fresh?newSlotKey(who.id):opts.slot;
     if(!key) key=(who.id===saveOwner&&saveKey)||((slotsOf(who.id)[0]||{}).key)||newSlotKey(who.id);
@@ -2155,7 +2181,7 @@ async function open(opts){
       if(!MAP) await enterMap(START.map,START.spawn,true);
     }
   }
-  catch(err){ el.lTip.textContent='Couldn\'t load the map. ('+((err&&err.message)||err)+') Try reloading the page.'; el.lFill.style.width='0%'; console.error(err); return; }
+  catch(err){ el.lTip.textContent='Couldn\'t load the map. ('+((err&&err.message)||err)+') Try reloading the page.'; LoadBar.stop(); el.lFill.style.width='0%'; console.error(err); return; }
   await hideLoading();
   sizeMini();
   let saved=s&&s.wiz; if(!saved) try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}

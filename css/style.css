@@ -1772,7 +1772,7 @@ canvas:focus, button:focus:not(:focus-visible) { outline:none; }
   color:#f0d890; text-shadow:0 2px 12px #000, 0 0 24px rgba(10,14,40,0.9); padding:0 16px; }
 #explore-screen .exl-foot { position:absolute; left:50%; bottom:max(6%, env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(460px, calc(100% - 32px)); text-align:center; }
 #explore-screen .exl-bar { height:6px; border:1px solid rgba(201,168,76,0.7); border-radius:4px; background:rgba(6,8,22,0.8); overflow:hidden; box-shadow:0 0 10px rgba(0,0,0,0.8); }
-#explore-screen .exl-bar i { display:block; height:100%; width:0; background:linear-gradient(90deg, #8a6a20, #f0d070); box-shadow:0 0 8px #f0c050; transition:width 2.4s cubic-bezier(.2,.7,.3,1); }
+#explore-screen .exl-bar i { display:block; height:100%; width:0; background:linear-gradient(90deg, #8a6a20, #f0d070); box-shadow:0 0 8px #f0c050; }   /* moved by js/load_bar.js */
 #explore-screen .exl-tip { margin-top:12px; font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:14px; line-height:1.45; color:#e6dcc4; text-shadow:0 1px 6px #000; min-height:2.9em; }
 #explore-screen [hidden] { display:none !important; }
 @media (max-width:560px){
