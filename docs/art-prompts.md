@@ -192,6 +192,74 @@ Make each one with the hero rules (purple / gold / silver / blue), one male and 
 - **Corvanthe creatures**: "a spill-mutated stray dog with glowing crystal growths", "a giant crow pecking at crystals", "a lurking sewer eel-thing rising from a grate", "a wandering animated suit of armour (an Echo of a dead guard)", "a will-o'-wisp in each element colour", "a spill-drunk troll sleeping under a bridge", "a ghostly drowned harbourmaster (Drowned Quarter)", "a forge-imp made of embers (Cindergate)".
 - **Townsfolk for Wrenford** (fighter rules, a calm pose): "a university porter in a bowler hat", "a student in a gown with an armful of books", "a market trader", "a punt-poler", "a college cook", "a street urchin", "a city watchman with a lantern".
 
+
+### 5. More prompts (round 2)
+
+Nothing in this section is in the game yet. Use the house rules above, plus the extra notes on each item.
+
+#### 5a. Arena backdrops for Explore fights (`backgrounds/<name>.jpg`)
+
+Every Explore fight now happens in `ruins` (Corvanthe) or `library` (Wrenford). If each place had its own backdrop, fights would feel like they happen where you are. Attach `backgrounds/ruins.jpg` as the style reference and use this base prompt:
+
+> Painterly dark-fantasy battle backdrop in the same style, palette and lighting as the attached image. Wide 16:9, 1920×1080. A flat, open floor across the bottom third where two duelling wizards will stand at the left and right. No people, no creatures, no text. Moody, slightly dim, the most detail in the middle distance, a calm clear area in the centre for spell effects. Setting: [SETTING]
+
+| Name | [SETTING] |
+|---|---|
+| `wren_schools` | an Oxford-style college duelling court: a sanded square ringed by honey-coloured stone cloisters, a gothic window behind, chalked circles on the sand, a few spectator benches, late afternoon sun |
+| `wren_quad` | a moonlit college quadrangle: a neat lawn, gothic stone walls with lit leaded windows, a gate tower with a clock, mist on the grass |
+| `wren_undercroft` | a brick sewer culvert under a university town: a channel of dark water, an iron ladder, smugglers' crates with glowing crystals, a chalk ritual circle on the floor, lanterns |
+| `wren_orrery` | a vast vaulted chamber under a great brass orrery: planets on arms overhead, crystal lamps, a cracked mosaic floor with a summoning circle, violet light |
+| `hollowmere` | a half-ruined riverside market town at dusk: timbered houses, a stone bridge, a gallows and broken cranes in the distance, crows |
+| `road` | a lonely old road under a stormy sky: broken milestones, a burnt-out cart, far off on the horizon the great wall of a ruined city with a purple glow above it |
+| `cindergate` | a burnt forge street: glowing cracks of lava in the cobbles, charred timber houses, falling embers, an orange sky |
+| `heights` | a ruined cliff-top street with houses and stairs floating overhead, torn awnings, pale wind-swept sky |
+| `spirewatch` | a ruined street of copper spires in a thunderstorm, rain, lightning rods crackling, glazed cobbles shining |
+| `collegium` | a ruined academic plaza: floating books, a broken orrery, blue rune circles on the paving, a headless scholar statue |
+| `drowned` | a flooded harbour street, knee-deep water, half-sunk boats, barnacled statues, green-blue gloom |
+| `quarry` | a dusty quarry district: cut stone, mine-cart rails, a pit-head winch, a giant toppled stone face |
+| `frost` | a frozen market square: icicle-hung stalls, snowdrifts, a frozen fountain, pale blue light |
+| `gloam` | a graveyard district: mausoleums, black iron gates, violet-flame lamps, drifting shade |
+| `wound` | the edge of the Wound: a glowing purple-white rift, floating rubble and inside-out houses, crystal spill in all eight element colours, a huge barred gate (the Last Gate) far behind |
+
+#### 5b. Wrenford's own tileset (one sheet, tileset house rules)
+
+Wrenford is built from Hollowmere's houses at the moment. A sheet of its own would make it look like a university town. Attach `tileset4_source.png` and `tileset16_source.png` as references.
+
+> …pieces for a prosperous Oxford-style university town, honey-coloured limestone, slate and lead roofs, nothing ruined: a college gate tower with an arched gateway and a clock (front view), a stretch of college wall with a small door, a cloister walk segment, a domed round library (like a rotunda), a gothic chapel front with a tall window, a quad lawn tile with a 3×3 stone-kerb edge set, a stone bust on a plinth, a sundial, a wrought-iron lamp post, a bench, a bookseller's stall, a covered-market arcade front, glasshouse frames for a physic garden, raised herb beds, a punt moored at a wooden landing stage, a boathouse, a notice board covered in lecture lists, a pile of books on a handcart.
+
+#### 5c. The introduction scroll's drawings (replacing the SVG line art)
+
+`js/explore_intro.js` draws its five illustrations as SVG code (`INK`) "until drawn art arrives". These would replace them. Make them one at a time, landscape 3:2, and save as `sprites/intro/<name>.png`.
+
+> A sepia ink illustration on aged parchment, in the style of a 17th-century woodcut or an old natural-history engraving: fine hatched lines, a little ink wash, no colour except brown ink, a soft vignette into the parchment at the edges. No text, no border. Subject: [SUBJECT]
+
+- `wound`: a great walled city seen from a hill, a jagged rift glowing through its centre, houses lifting into the air above it
+- `scales`: a merchant's balance with a small glowing crystal far outweighing a heap of gold coins
+- `finder`: a hooded scholar with a lantern at a cottage door at night, a child peering out
+- `wrenford`: a university town's gate tower and a stone bridge over a river, a small wren on the parapet in the foreground
+- `council`: seven robed mages around a round table, the one standing at the head with an open book, light bursting from its pages
+
+#### 5d. The world map (`maps/world.json` is drawn on a plain parchment)
+
+> A hand-drawn fantasy map on aged parchment, 1000×700 (landscape), sepia ink with faint watercolour washes, no text or labels at all (the game adds them). West: a small university town on a river with a bridge. Centre: a market town where the river bends, rolling farmland and woods. East: a great walled city, round, with a dark star-shaped scar at its centre. A river runs from the north, through the city, down past the market town. Hills and a forest to the north, marsh to the south. A compass rose in a corner, sea monsters and decorative flourishes in the margins.
+
+#### 5e. Greater Elementals (bosses, fighter rules, black background)
+
+The Echoes are the citizens. Each inner district could have a boss at its heart. Make all eight in one style and attach two Echo sprites (`sprites/echoes/fire_strong.png`, `water_strong.png`) as references. They should be about one and a half times the height of the strong Echoes.
+
+> …a towering Greater Elemental, the [ELEMENT] heart of a ruined district, shaped from [MATERIAL], with the faint outline of the citizen it once was, a glowing core in the chest.
+
+Fire: molten slag and forge chains · Air: a whirlwind of roof tiles and torn sails · Lightning: copper rods and a storm cloud for a head · Arcane: floating book pages and orbiting rune rings · Water: harbour water with a sunken ship's figurehead for a face · Earth: cut quarry blocks and mine rails · Ice: icicles and a frozen market awning as a cloak · Dark: grave soil and tattered shrouds with violet eyes.
+
+#### 5f. Smaller items
+
+- **Clemency's Echo** (the finale, which uses the weak Water Echo now): fighter rules plus the weak Water Echo as a reference: "a young woman student in a short academic gown, made of translucent water, hair drifting as if underwater, sorrowful, reaching out."
+- **Rank badges** for the profile page (one sheet, green background, 8 round pixel-art medallions in a row, from plain to grand): Novice (candle), Apprentice (scroll), Initiate (crystal ball), Adept (four-point star), Magus (crescent moon), Sorcerer (flame), Archmage (lightning bolt), Grand Archmage (crown over a staff). They would replace the emoji in `RANKS` in `js/profiles.js`.
+- **Tabletop card frame and card back**: "a blank fantasy trading-card frame, portrait 5:7, ornate gold-and-leather border, a parchment text box in the lower half, an empty art window in the upper half, a small round gem socket top-left for the mana cost; and a matching card back with the 12-glyph Arcana circle in gold on deep purple." Use them in the Tabletop tutorial and for printing cards.
+- **A winks table** (`js/explore_pub.js`, drawn in CSS now): "top-down pixel art of a green baize pub table on a dark wooden floor, a small brass cup in the middle, a scatter of red, blue, green and yellow tiddlywinks, a tankard ring stain on the edge."
+- **Element icons** (one sheet, black background, 8 round pixel-art icons with a thin gold rim: flame, swirl of wind, lightning bolt, violet star rune, wave, rock, snowflake, crescent moon with a skull). They could replace the emoji on the wheel and in the satchel.
+- **Spell minigame backdrops** (one each, 9:16 portrait, very dark so the glyphs show up): a forge's fire pit (Inferno), a storm sky (Lightning), a frozen lake from above (Ice), a starfield nebula (Arcane), a cracked quaking stone floor (Rockfall), a purple moon circle (Shadow), a pale windy sky (Gale), a dark rippling pool (Tide), an unravelling violet veil (Dispel). The code draws these now, so they're optional polish.
+
 ---
 
 When you're back with usage: drop new tilesets in `sprites/ruins/` as `tileset<N>_source.png`, hero figures in `sprites/hero/source/`, and fighters / NPCs in `sprites/fighters/source/`, then ask Claude to cut them and wire them in.
