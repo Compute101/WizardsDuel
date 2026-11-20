@@ -1061,13 +1061,83 @@ async function getMap(id){
   return mapCache[id];
 }
 function fade(on){ el.fade.classList.toggle('on',on); return new Promise(res=>setTimeout(res,on?FADE_MS:0)); }
+// ── loading screens: a painting (backgrounds/loading_<name>.jpg, 600×800, ~125 KB each, so they show at
+// once), the place's name, a bar and a tip. Shown when Explore opens and whenever a map isn't cached yet
+// or takes a moment to load; a revisit that loads at once is just the fade. The paintings are fetched
+// in the background as soon as this script loads.
+const LOADING_PICS = ['duel','wrenford','corvanthe','gleaners','wound','library','tabletop'];
+const LOADING_MIN_MS = 900, LOADING_SLOW_MS = 150;
+const INNER_MAPS = ['crucible','drift','conductory','old_schools','sunken_harbour','deep_cut','winter_fair','necropolis'];
+function loadingPicFor(id){
+  if(!id) return LOADING_PICS[Math.random()*LOADING_PICS.length|0];
+  if(id==='wrenford') return Math.random()<0.75?'wrenford':'library';
+  if(id==='old_schools') return 'library';
+  if(id==='hollowmere'||id==='corvanthe_road') return 'corvanthe';
+  if(INNER_MAPS.includes(id)) return 'wound';
+  return Math.random()<0.6?'gleaners':'corvanthe';    // the outer sectors
+}
+const TIPS = [
+  'Damage beats Protection, Protection beats Dispel, Dispel beats Damage. Pick in secret, then both spells play out together.',
+  'Each spell has its own glyphs. Watch the white glyphs rise, then tap them back in order before the timer runs out.',
+  'The ring you cast from sets the strength: the inner ring is two glyphs, the outer ring four.',
+  'A ward lasts until it runs out, but it wears a little every round.',
+  'A strike in a ward\'s opposite element unravels it faster: Fire and Water, Air and Earth, Lightning and Ice, Arcane and Dark.',
+  'Attack, Guard and Grapple cost no mana. A Guard blocks an Attack and hits back; a Grapple goes straight through a Guard.',
+  'Wards stop magic, not blows. Against swords and arrows, Ironskin or a Guard serves you better.',
+  'Meditate to skip your spell for +3 mana, but not two rounds running.',
+  'A Seal keeps your ward from wearing, and a dispel must break the seal before it can touch the ward.',
+  'Your wounds carry from fight to fight. Rest at an inn or a gleaners\' camp to recover.',
+  'Potions restore a good part of your HP. Drink them from the satchel (🎒 or I).',
+  'Walk into the gold chevrons, or press the action button near them, to take a road out.',
+  'Destroyed Echoes leave spill, the quintessence of their element. Widow Coyle buys it in Wrenford.',
+  'An Echo shrugs off its own element and is torn apart by its opposite.',
+  'Toll crews will let you pass for gold. Hostile crews won\'t ask.',
+  'Close in with 🔍, Z, the mouse wheel or a pinch to see people up close.',
+  'Echoes sometimes stray across from the sector next door. Look at the colour before you charge in.',
+  'Everything is magic, Earth included. Only blows, from fists, blades and arrows, get past a ward.',
+  'The deeper you go toward the Wound, the stronger the Echoes and the richer the spill.',
+  'A sealed ward takes two dispels: one for the seal, one for the ward.',
+];
+let loadingShownAt=0;
+function showLoading(id, name){
+  el.lPic.src='backgrounds/loading_'+loadingPicFor(id)+'.jpg';
+  el.lName.textContent=name||MAP_NAMES[id]||'';
+  el.lTip.textContent=TIPS[Math.random()*TIPS.length|0];
+  el.lFill.style.transition='none'; el.lFill.style.width='0%';
+  void el.lFill.offsetWidth;
+  el.lFill.style.transition=''; el.lFill.style.width='88%';   // eases toward the end while we wait
+  el.loading.classList.remove('out'); el.loading.hidden=false;
+  loadingShownAt=performance.now();
+}
+async function hideLoading(){
+  if(el.loading.hidden) return;
+  const wait=LOADING_MIN_MS-(performance.now()-loadingShownAt);
+  if(wait>0) await new Promise(r=>setTimeout(r,wait));
+  el.lFill.style.width='100%';
+  await new Promise(r=>setTimeout(r,180));
+  el.loading.classList.add('out');
+  await new Promise(r=>setTimeout(r,300));
+  el.loading.hidden=true; el.loading.classList.remove('out');
+}
+(function preloadLoading(){
+  const go=()=>LOADING_PICS.forEach(n=>{ const i=new Image(); i.src='backgrounds/loading_'+n+'.jpg'; });
+  if(window.requestIdleCallback) requestIdleCallback(go,{timeout:3000}); else setTimeout(go,1000);
+})();
 // go to a map; at = a spawn name or [x, y]
 async function enterMap(id,at,instant){
   if(busy) return; busy=true;
   keys.clear(); target=null; hideSay();
+  // a map that isn't cached (or is slow) gets a loading painting over the fade; rooms are built at once
+  let slow=null;
+  const room=id.startsWith('room:');
   try{
     if(!instant) await fade(true);
+    if(!room&&el.loading.hidden){
+      if(!mapCache[id]) showLoading(id);
+      else slow=setTimeout(()=>showLoading(id),LOADING_SLOW_MS);
+    }
     const data=await getMap(id);
+    if(!room&&!el.loading.hidden&&data.name) el.lName.textContent=data.name;
     if(data.interior&&roomSpec&&roomSpec.outside) await getMap(roomSpec.outside.map).catch(()=>{});   // a room plays its town's theme
     await Promise.all([loadPalette(data.palette),atlasesFor(data)]);   // this map's sheets, before anything draws from them
     setupMap(data);
@@ -1081,7 +1151,7 @@ async function enterMap(id,at,instant){
     if(Year) Year.onMap(folkApi);
     save(); syncMusic();
   }catch(err){ console.error(err); toast('That way is blocked.'); }
-  finally{ busy=false; fade(false); }
+  finally{ clearTimeout(slow); if(!instant) await hideLoading(); busy=false; fade(false); }
 }
 function save(){
   if(!MAP||!saveKey||!hero) return;                // nothing is kept until the wizard has been made
@@ -1281,11 +1351,13 @@ function buildDom(){
       </div>
     </div>
     <div class="ex-fade" id="ex-fade"></div>
-    <div class="ex-loading" id="ex-loading">Loading…</div>`;
+    <div class="ex-loading" id="ex-loading"><img class="exl-pic" id="exl-pic" alt="">
+      <div class="exl-name" id="exl-name"></div>
+      <div class="exl-foot"><div class="exl-bar"><i id="exl-fill"></i></div><div class="exl-tip" id="exl-tip"></div></div></div>`;
   document.getElementById('app').appendChild(d);
   const $=s=>d.querySelector(s);
   el={root:d, cv:$('#ex-canvas'), mini:$('#ex-mini'), say:$('#ex-say'), act:$('#ex-act'), look:$('#ex-look'), hint:$('#ex-hint'),
-      face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), zoom:$('#ex-zoom'), loading:$('#ex-loading'), title:$('#ex-title'),
+      face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), zoom:$('#ex-zoom'), loading:$('#ex-loading'), lPic:$('#exl-pic'), lName:$('#exl-name'), lFill:$('#exl-fill'), lTip:$('#exl-tip'), title:$('#ex-title'),
       fade:$('#ex-fade'), toast:$('#ex-toast'), world:$('#ex-world'), worldCv:$('#ex-world-cv'), worldTitle:$('#ex-world-title'),
       hp:$('#ex-hp'), spill:$('#ex-spill'), bag:$('#ex-bag'), bagBody:$('#ex-bag-body'), bagTabs:$('#ex-bag-tabs'), bagWho:$('#ex-bag-who'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
   ctx=el.cv.getContext('2d');
@@ -2062,7 +2134,10 @@ async function load(){
 async function open(opts){
   opts=opts||{};
   if(!el.root) buildDom();
-  el.root.classList.add('active'); el.loading.hidden=false;
+  el.root.classList.add('active');
+  { const who=profileNow(), k=opts.fresh?null:(opts.slot||(who.id===saveOwner&&saveKey)||((slotsOf(who.id)[0]||{}).key));
+    const sv=k&&!opts.fresh?loadSave(k):null, warm=MAP&&k===saveKey&&who.id===saveOwner, m=sv&&sv.map?(sv.map.startsWith('room:')&&sv.roomSpec&&sv.roomSpec.outside?sv.roomSpec.outside.map:sv.map):null;
+    if(!warm) showLoading(m&&!m.startsWith('room:')?m:(opts.fresh?'wrenford':null), sv?sv.place:(opts.fresh?'Wrenford':'')); }
   running=true; resize();
   try{
     await load();
@@ -2080,8 +2155,8 @@ async function open(opts){
       if(!MAP) await enterMap(START.map,START.spawn,true);
     }
   }
-  catch(err){ el.loading.textContent='Couldn\'t load the map. ('+((err&&err.message)||err)+') Try reloading the page.'; console.error(err); return; }
-  el.loading.hidden=true;
+  catch(err){ el.lTip.textContent='Couldn\'t load the map. ('+((err&&err.message)||err)+') Try reloading the page.'; el.lFill.style.width='0%'; console.error(err); return; }
+  await hideLoading();
   sizeMini();
   let saved=s&&s.wiz; if(!saved) try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}
   setWizard(Math.max(0,wizKeys.indexOf(saved||'eldrin'))); renderClock();

@@ -253,7 +253,9 @@ Fire: molten slag and forge chains · Air: a whirlwind of roof tiles and torn sa
 
 #### 5e½. Loading screens (`backgrounds/loading_<name>.jpg`)
 
-At the moment Explore shows a plain "Loading…" (`#ex-loading` in `js/explore.js`) while a map's sheets load, and the game has only the splash (`backgrounds/splash.jpg` / `splash_portrait.jpg`). A few loading paintings, one picked at random (or one per region), with a progress bar and a tip drawn on top by the code. Make each in **two shapes**, landscape 16:9 (1920×1080) and portrait 9:16 (1080×1920) for phones, saved as `loading_<name>.jpg` and `loading_<name>_portrait.jpg`. Attach `backgrounds/splash.jpg` as the style reference.
+**Done:** all seven arrived (one 3:4 portrait shape each, 1086×1448) and are in as `backgrounds/loading_<name>.jpg`, shrunk to 600×800 (about 125 KB each, so they show at once). Explore shows one (`showLoading` / `hideLoading`, `loadingPicFor`, `TIPS` in `js/explore.js`) when it opens and when a map isn't cached yet or is slow. The original brief follows.
+
+Before, Explore showed a plain "Loading…" (`#ex-loading` in `js/explore.js`) while a map's sheets loaded, and the game has only the splash (`backgrounds/splash.jpg` / `splash_portrait.jpg`). A few loading paintings, one picked at random (or one per region), with a progress bar and a tip drawn on top by the code. Make each in **two shapes**, landscape 16:9 (1920×1080) and portrait 9:16 (1080×1920) for phones, saved as `loading_<name>.jpg` and `loading_<name>_portrait.jpg`. Attach `backgrounds/splash.jpg` as the style reference.
 
 > A painterly dark-fantasy loading-screen illustration in the same style, palette and lighting as the attached image. [SUBJECT]. Leave the bottom fifth calm and dark (a progress bar and a line of text go there) and the top fifth fairly plain (a title may go there). No text, no logo, no UI, no border. Rich, atmospheric, a single clear focal point.
 
@@ -267,7 +269,7 @@ At the moment Explore shows a plain "Loading…" (`#ex-loading` in `js/explore.j
 | `library` | a gothic library at night, a lone young wizard reading by a floating light, books drifting off the shelves, glyphs glowing on the open page |
 | `tabletop` | a pub table seen from above at a slant: tiddlywinks, spell cards, a tankard, a candle, two players' hands mid-flick (warm, cosy, lighter in mood) |
 
-The code could show a short tip under the bar (rules, lore, controls): ask Claude to add a `TIPS` list when the art arrives.
+The tip under the bar comes from `TIPS` in `js/explore.js` (rules, lore, controls).
 
 #### 5f. Smaller items
 
