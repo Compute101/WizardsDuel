@@ -6590,6 +6590,13 @@ function recordMulti(team,winners){
 
 function endGame(won){
   if(gameEnded) return;
+  // an Explore fight with two seats (a spar, a lone Echo) ends here, not in eliminateSeats: hand it to
+  // the Explore result screen, which sets exploreFight.won for "Back to the Map" (and records nothing)
+  if(exploreFight){
+    if(won==='draw'){ gs.p1anim='death'; gs.p2anim='death'; } else gs[won?'p2anim':'p1anim']='death';
+    showMultiEnd(won==='draw'?null:seatTeam(won?'p1':'p2'));
+    return;
+  }
   gameEnded=true;
   recordDuel(won);
   const isDraw=won==='draw';
