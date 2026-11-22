@@ -23,8 +23,10 @@ CUTS = {                       # source -> output still
     'archer.png': 'archer.png',
     'halberdier.png': 'halberdier.png',  # Thessaly's hired bodyguards
     'halberdier_fat.png': 'halberdier_fat.png',  # a fat Bulldog (Wrenford's town guards)
+    'knight.png': 'knight.png',          # a knight in plate (not used in the game yet)
 }
 DARK = 22        # max channel at or below this is black (background or outline)
+DARK_FOR = {'knight.png': 4}   # the knight's cloak shadow is near-black (10-15) on a pure black background
 SPECK = 600      # coloured bits smaller than this are the halo, not the figure
 CLOSE = 9        # closing size: black lines up to about this wide stay in the figure
 HOLE = 25        # an enclosed black patch that survives a min-filter this wide is daylight
@@ -34,6 +36,7 @@ FACES = {        # HUD face (portraits/small/<key>.jpg): x, y, size in the 768-t
     'archer': (205, 82, 135),
     'halberdier': (200, 72, 140),
     'halberdier_fat': (205, 80, 140),
+    'knight': (250, 40, 150),
 }
 PAD = 6
 
@@ -59,7 +62,7 @@ def cut(src, dst):
     w, h = im.size
     r, g, b, a = im.split()
     mx = ImageChops.lighter(ImageChops.lighter(r, g), b)
-    fg = ImageChops.multiply(mx.point(lambda v: 255 if v > DARK else 0),
+    fg = ImageChops.multiply(mx.point(lambda v, d=DARK_FOR.get(src, DARK): 255 if v > d else 0),
                              a.point(lambda v: 255 if v >= 40 else 0))
     drop_specks(fg, w, h)
     fg = fg.filter(ImageFilter.MaxFilter(CLOSE)).filter(ImageFilter.MinFilter(CLOSE))
