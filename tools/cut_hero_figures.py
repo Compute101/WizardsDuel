@@ -27,9 +27,11 @@ SRC = os.path.join(ROOT, 'sprites/hero/source')
 OUT = os.path.join(ROOT, 'sprites/hero')
 HEIGHT = 768
 SLOTS = {'young_man': ('m', 'young'), 'young_woman': ('f', 'young'), 'mid_man': ('m', 'middle'),
-         'mid_woman': ('f', 'middle'), 'old_man': ('m', 'old'), 'old_woman': ('f', 'old'),
-         # elves (folk 'elf' in figures.json): ageless to look at, so one set serves every age in the creator
-         'elf_man': ('m', 'young', 'elf'), 'elf_woman': ('f', 'young', 'elf')}
+         'mid_woman': ('f', 'middle'), 'old_man': ('m', 'old'), 'old_woman': ('f', 'old')}
+# dwarves: the same slots with a dwarf_ prefix (race 'dwarf' in figures.json; humans carry no race)
+SLOTS.update({'dwarf_' + k: v for k, v in list(SLOTS.items())})
+# elves (race 'elf'): ageless to look at, so one set (cut as young) serves every age in the creator
+SLOTS.update({'elf_man': ('m', 'young'), 'elf_woman': ('f', 'young')})
 
 # the ragged bandits: for NPCs only, kept out of the creator (an even number of each sex, so the creator stays even too)
 NPC_ONLY = {'mid_man_7', 'mid_man_8', 'old_man_5', 'mid_woman_7', 'mid_woman_8', 'old_woman_5'}   # every eyepatched bandit
@@ -455,15 +457,16 @@ def main():
         if ext != '.png' or slot not in SLOTS: continue
         im = cut(os.path.join(SRC, f))
         im.save(os.path.join(OUT, name + '.png'), optimize=True)
-        sex, age = SLOTS[slot][:2]
+        sex, age = SLOTS[slot]
         bx = boxes(im); mask = bx.pop('_mask')
         if name in FIX:   # a hat brim's gold-orange underside joined the head's skin clump: face and neck by hand
             f = FIX[name]
             if 'face' in f: bx['face'] = f['face']; bx['skin'] = [f['head']] + bx['skin'][1:3] + [f['neck']]
             if 'lh' in f: bx['skin'][1] = f['lh']   # the staff hand (a robe patch can pass for skin)
         fig = dict(id=name, sex=sex, age=age, src='sprites/hero/' + name + '.png', **bx)
-        if len(SLOTS[slot]) > 2: fig['folk'] = SLOTS[slot][2]
         if name in NPC_ONLY: fig['npc'] = True
+        if slot.startswith('dwarf_'): fig['race'] = 'dwarf'
+        if slot.startswith('elf_'): fig['race'] = 'elf'
         if mask: grow_hair(im, mask)
         if mask and FIX.get(name, {}).get('paleHair'): pale_hair(im, mask, bx['skin'][0])
         if mask:
