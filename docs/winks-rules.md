@@ -6,7 +6,7 @@ These are the **Normal rules**, for two players. Rules for more players come lat
 
 <!-- dev:start (left out if the app shows this rulebook) -->
 - **Design and history:** `docs/winks-design.md`. **Engine and simulator:** the `winks` rule set in `js/tabletop.js`; wizards' numbers in `tabletop.json` (a `"rules":{"winks":{...}}` entry overrides the Normal one).
-- **Balance check:** `node tools/winks_sim.js 200 daddy` (or `b`, `pooled`). The simulator flicks with real recorded games. Last run (eight wizards): 44.9–53.5% with Daddy's games, 46.7–52.9% with B's, about 10 rounds, about half the games decided on HP after round 12.
+- **Balance check:** `node tools/winks_sim.js 200 daddy` (or `b`, `pooled`). The simulator flicks with real recorded games. Last run (eight wizards, 400 games a matchup): 48.3–51.7% with Daddy's games (tuned to them), 39.9–55.0% with B's (Mary low), about 10 rounds, about half the games decided on HP after round 12.
 - Keep this rulebook to the Markdown the app's rules screen renders: headings, lists, tables, bold.
 <!-- dev:end -->
 
@@ -33,7 +33,7 @@ Eight wizards to start, four men and four women. Each has HP, an **Attack** (how
 | **Eldrin** the Stalwart | 11 | 1 | none | Big wards, punishes strikers |
 | **Malachar** the Relentless | 11 | 1 | Arcane | Double strikes, drains life |
 | **Cinder** the Volatile | 11 | 1 | Ice, Water | Cheap fireballs, burning curses |
-| **Skadi** the Permafrost | 11 | 1 | Lightning | Armour, freezing strikes, slow drain |
+| **Skadi** the Permafrost | 10 | 1 | Lightning | Armour, freezing strikes, slow drain |
 | **Gnash** the Feral | 10 | **2** | Arcane, Ice | Brawler: blows that ignore wards |
 | **Valdris** the Undying | 11 | 1 | Fire | Skeletons that shield him and bite |
 | **Mary** the Devoted | 11 | 1 | Dark, Lightning | Healing, cleansing, holy smiting |
@@ -212,13 +212,13 @@ HP 11 · Attack 1 · Barred: Ice, Water
 
 ### SKADI — The Permafrost
 
-HP 11 · Attack 1 · Barred: Lightning
+HP 10 · Attack 1 · Barred: Lightning
 
 | Ability | Needs | Difficulty | Effect |
 |---|---|---|---|
 | **1 Ice Lance** | Ice | 2 | An Ice strike of 5. If it reaches HP, the foe can't pick Damage next round. |
 | **2 Frost Armor** | Ice | 2 | Buff, until dispelled: every hit on you deals 1 less (at least 1), and strikers take 1. |
-| **3 Blizzard** | Ice | 2 | Curse, until cleansed: at every round end the foe takes 1 and loses 1 mana. |
+| **3 Blizzard** | Ice | 1 | Curse, until cleansed: at every round end the foe takes 1 and loses 1 mana. |
 
 ### GNASH — The Feral
 
@@ -226,7 +226,7 @@ HP 10 · Attack 2 · Barred: Arcane, Ice
 
 | Ability | Needs | Difficulty | Effect |
 |---|---|---|---|
-| **1 War Paint** | Earth | 2 | Buff, until dispelled: every hit on you deals 1 less (at least 1). |
+| **1 War Paint** | Earth | 1 | Buff, until dispelled: every hit on you deals 1 less (at least 1). |
 | **2 Savage Charge** | Earth | 2 | A blow of 5 (wards don't stop it). The foe loses 2 mana. |
 | **3 Frenzy** | Fire | 1 | Buff, until dispelled: your strikes deal +2, but each costs you 1 HP. |
 
@@ -256,7 +256,7 @@ HP 11 · Attack 1 · Barred: Fire, Dark
 
 | Ability | Needs | Difficulty | Effect |
 |---|---|---|---|
-| **1 Regen** | Earth | 2 | Buff, until dispelled: heal 1 at every round end. |
+| **1 Regen** | Earth | 1 | Buff, until dispelled: heal 1 at every round end. |
 | **2 Entangle** | Earth | 1 | Curse: roll a die; on 4+ the foe can't pick Damage next round. |
 | **3 Vine Whip** | Earth | 2 | A blow of 3 (wards don't stop it). Curse, until cleansed: vines deal 1 blow to the foe at every round end. |
 

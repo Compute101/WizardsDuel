@@ -26,6 +26,7 @@
   "sylvara": {
     "skin": {"name": "Barkskin", "cost": 1, "soak": 3},
     "hp": 11,
+    "rules": {"winks": {"difficulty": {"heal": 1}}},
     "spells": [
       {"id": "heal", "name": "Regen", "cat": "protect", "elem": "earth", "ring": 2, "cost": 3, "kind": "buff", "effect": {"type": "regen", "heal": 1},
        "text": "Until dispelled: heal 1 at every round end."},
@@ -48,7 +49,7 @@
   },
   "gnash": {
     "hp": 11,
-    "rules": {"winks": {"hp": 10}},
+    "rules": {"winks": {"difficulty": {"warpaint": 1}, "hp": 10}},
     "spells": [
       {"id": "warpaint", "name": "War Paint", "cat": "protect", "elem": "earth", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "resist", "n": 1},
        "text": "Until dispelled: every hit on you deals 1 less (min 1)."},
@@ -72,7 +73,7 @@
   },
   "skadi": {
     "hp": 11,
-    "rules": {"winks": {"hp": 10}},
+    "rules": {"winks": {"difficulty": {"blizzard": 1}, "hp": 10}},
     "spells": [
       {"id": "icelance", "name": "Ice Lance", "cat": "damage", "elem": "ice", "ring": 2, "cost": 5, "kind": "strike", "dmg": 5, "chill": true,
        "text": "Ice strike of 5. If it reaches HP, the foe can't pick Damage next round."},

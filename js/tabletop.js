@@ -157,7 +157,9 @@ function applyCharRules(){
     const o=c.alt[rulesName]||{};
     c.hp=Math.min(RULES.maxHp,o.hp!=null?o.hp:c.baseHp);
     // "rules":{"winks":{"spells":{"radiant":{...a card}}}} swaps a card for that rule set only
-    c.spells=(c.baseSpells||c.spells).map(sp=>o.spells&&o.spells[sp.id]?o.spells[sp.id]:sp);
+    c.spells=(c.baseSpells||c.spells).map(sp=>o.spells&&o.spells[sp.id]?o.spells[sp.id]:sp)
+      // "difficulty":{"blizzard":1} sets a Winks ability's difficulty
+      .map(sp=>o.difficulty&&o.difficulty[sp.id]!=null?Object.assign({},sp,{difficulty:o.difficulty[sp.id]}):sp);
   });
   // Fighters (no HP cap: they keep their own counters): "rules":{"advanced":{"hp":n,"atk":n}} in fighters.json's "tabletop"
   Object.values(FIGHTERS).forEach(c=>{ const o=c.alt[rulesName]||{}; c.hp=o.hp!=null?o.hp:c.baseHp; c.atk=o.atk!=null?o.atk:c.baseAtk; });
