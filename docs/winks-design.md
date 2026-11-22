@@ -86,7 +86,7 @@ The ability cards are generic (just a number); your wizard sheet says what 1, 2 
 | Command card | Pick | The element card |
 |---|---|---|
 | **Strike / Ward / Dispel** | that spell in the card's suit's element | is used up (a ward's sits under its pile as the marker, discarded when the pile is gone) |
-| **Ability 1 / 2 / 3** | that ability from your sheet | must be **the ability's element**, and is used up. If that element isn't in play this game, any element card will do |
+| **Ability 1 / 2 / 3** | that ability from your sheet | must be **the ability's element**, and is used up. If that element isn't in play, the ability can't be cast this game |
 | **Attack / Guard / Grapple / Meditate / Cleanse** | that | is a decoy, back to your hand |
 
 - Always laying two cards keeps the pick secret. With no element card left, lay a face-down card from the pile as the decoy.
@@ -94,7 +94,7 @@ The ability cards are generic (just a number); your wizard sheet says what 1, 2 
 
 ### Abilities are as well as, never instead of
 
-An ability doesn't take over any element: your plain spells in its element are still there (Cinder keeps a plain Fire strike as well as Fireball). It **does need a card of its element**, like any spell, so pick your abilities' elements at setup and hold on to them; an ability whose element nobody picked takes any card, so it's never lost. Its element also counts for opposites against a ward. This is the user's rule: an ability replacing its own element's plain spell made a wizard worse at their own magic (Daveron's Dark).
+An ability doesn't take over any element: your plain spells in its element are still there (Cinder keeps a plain Fire strike as well as Fireball). It **does need a card of its element**, like any spell, so pick your abilities' elements at setup and hold on to them. **No fallback:** an ability whose element nobody picked can't be cast that game. Which elements you pick is your choice (Eldrin's abilities are Arcane, Lightning and Ice, so with two picks he chooses which two he wants, or hopes his foe picks the third). Its element also counts for opposites against a ward. This is the user's rule: an ability replacing its own element's plain spell made a wizard worse at their own magic (Daveron's Dark).
 
 ### Meditate
 
