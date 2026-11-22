@@ -13,7 +13,8 @@ Status: **proposal**. Open questions are at the end; nothing here is built yet.
 | Big Jigs tiddlywinks set | 5 colours × 6 winks, a squidger each, a pot | **Casting only.** Each player owns one colour: their 6 winks are their spell. Up to 5 players. |
 | Standard deck of cards | 1 (up to 4 players), 2 (5+) | **Secret picks.** Each player takes one suit (13 cards). |
 | Coin | 1–2 | 50/50 effects (Undertow, Blink), first player, seal markers. |
-| Six-sided dice | up to 20 per player | **Every number**: HP, mana, ward piles, minion HP, chance rolls. |
+| Tokens | 25 each of red, blue, green, yellow | **Counters in a duel:** red HP, blue mana, green ward, yellow skin and minion HP. |
+| Six-sided dice | up to 20 per player | Chance rolls, and **counters when tokens run out** (3+ players, or a big pile). |
 
 Winks are no longer counters: with 6 a player there aren't enough, and it keeps the table clear for flicking.
 
@@ -82,16 +83,18 @@ Elements by rank, in wheel order so **opposites are 4 apart**: A Fire, 2 Air, 3 
 
 Target (3+ players): point the pair at the player you're aiming at.
 
-## Numbers with dice
+## Counters: tokens, then dice
 
-- **HP:** dice in front of you, totalled (12 HP = two dice showing 6 and 6). Turn them down as you're hurt.
-- **Mana:** dice, totalled, kept apart from HP (a different colour if you have them).
-- **Ward:** a die (or two) on your ward card showing its winks' worth; a second pile is a second group. An element's ward sits on that element's card, so you can see which it is.
-- **Minions:** one die per body, showing its HP (a skeleton is a 1).
-- **Buffs and curses:** the signature card face up in front of whoever it's on; a coin on it for "until used" effects; a die on it for anything that counts down (Vanish).
-- **Chance:** roll a d6 where the old rules had a percentage; a coin for 50/50.
+In a duel, tokens are the counters (you can see a pile at a glance, and paying mana is handing tokens back):
 
-Twenty dice cover a duel easily: about 2 HP, 2–3 mana, 2–4 ward, up to 4 minions, plus spares.
+- **HP: red.** 25 covers two wizards while HP stays at 12 or less each (the current tabletop HPs are 8–12).
+- **Mana: blue.** Cap **12 each** in a duel so 25 covers both.
+- **Ward: green.** Each pile sits on that element's card (the A–8 you cast it with), so its element shows. The 25 are shared; cap 12 per wizard across all piles.
+- **Yellow:** Ironskin, and each minion's HP (one small stack per body; a skeleton is 1 token).
+- **Buffs and curses:** the signature card face up in front of whoever it's on; a coin on it for "until used" effects, a die for anything that counts down (Vanish).
+- **Chance:** a d6 where the old rules had a percentage; a coin for 50/50.
+
+**3–5 players or when a colour runs out:** use dice instead, totalled (12 HP = two dice showing 6 and 6). Twenty a player covers everything; mixing tokens and dice is fine (a die stands for that many tokens).
 
 ## Round flow
 
