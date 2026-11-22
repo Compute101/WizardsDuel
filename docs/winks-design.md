@@ -86,7 +86,7 @@ The ability cards are generic (just a number); your wizard sheet says what 1, 2 
 | Command card | Pick | The element card |
 |---|---|---|
 | **Strike / Ward / Dispel** | that spell in the card's suit's element | is used up (a ward's sits under its pile as the marker, discarded when the pile is gone) |
-| **Ability 1 / 2 / 3** | that ability from your sheet | is a decoy, back to your hand |
+| **Ability 1 / 2 / 3** | that ability from your sheet | must be **the ability's element**, and is used up. If that element isn't in play this game, any element card will do |
 | **Attack / Guard / Grapple / Meditate / Cleanse** | that | is a decoy, back to your hand |
 
 - Always laying two cards keeps the pick secret. With no element card left, lay a face-down card from the pile as the decoy.
@@ -94,13 +94,15 @@ The ability cards are generic (just a number); your wizard sheet says what 1, 2 
 
 ### Abilities are as well as, never instead of
 
-An ability doesn't take over any element: you can always cast it, whichever four elements are in play, and your plain spells in its element are still there (Cinder keeps a plain Fire strike as well as Fireball). An ability still has its element, for opposites against a ward. This is the user's rule: an ability replacing its own element's plain spell made a wizard worse at their own magic (Daveron's Dark).
+An ability doesn't take over any element: your plain spells in its element are still there (Cinder keeps a plain Fire strike as well as Fireball). It **does need a card of its element**, like any spell, so pick your abilities' elements at setup and hold on to them; an ability whose element nobody picked takes any card, so it's never lost. Its element also counts for opposites against a ward. This is the user's rule: an ability replacing its own element's plain spell made a wizard worse at their own magic (Daveron's Dark).
 
 ### Meditate
 
 Skip your spell: **draw 2 element cards and gain 3 mana**. Not two rounds running.
 
-- **Trade:** while you Meditate, discard **2 cards of the same element** to draw 1 more. Trade as many pairs as you like, before or after the 2 draws. It's how you turn doubles you don't want (or cards you're barred from) into the element you're after.
+- **One trade per Meditate**, either:
+  - **with the pile:** discard **2 cards of the same element** to draw 1 more; or
+  - **with another player:** offer them a swap, one card for one, and haggle openly ("my Fire for your Ice"). They can say no. In a duel it happens when both of you hold cards the other wants (a card you're barred from is worth something to your foe); with 3–5 players it's table talk.
 - Hand limit **7**: discard down at round end. Meditate is the only way to draw.
 
 Target (3+ players, later): point the cards at the player you're aiming at.
@@ -157,5 +159,4 @@ Aim: **about 12 rounds, 10–15 minutes** — the length of the user's 12-round 
 2. **Recoup size:** 2 back (of 3), or the whole cost back?
 3. **Card exceptions:** do any signature cards need their own cost (summons, big heals), or is difficulty enough?
 4. **Mana vs cards:** with a flat cost of 3 and income of 4, mana barely limits you, so cards do. Lower income (3), or a cost of 4? The simulator will show which keeps games near 12 rounds.
-5. **Trades:** one trade per Meditate, or as many as you like (above)? Unlimited trades make a hand easy to fix.
-6. **Card draw:** is Meditate's 2 cards right, or should round end also draw 1?
+5. **Card draw:** is Meditate's 2 cards right, or should round end also draw 1?
