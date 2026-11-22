@@ -79,6 +79,7 @@ const RULES={
   // 1 more every `every` rounds after that.
   suddenDeath:{round:15, dmg:1, every:3},
   maxRounds:40,                // the simulator calls it a timeout after this
+  roundLimit:null,             // Winks: the game ends after this round, the most HP winning (level: a draw)
   // How the flick works:
   //  'pot'     pot `winks` winks to cast, paying retryCost after each miss (the rules above).
   //  'chances' (Beginner and Normal) up to `chances` flicks; the first pot casts the spell, no pot and it
@@ -118,7 +119,8 @@ const PRESETS={
   // Winks (docs/winks-design.md): its own game, Normal rules first. 12 mana and ward at most (25 tokens
   // a colour cover two wizards), one ward pile, no seals, no Ironskin card.
   // Abilities: difficulty 1 / 2 / 3 from the card's old level (2 / 3 / 4 left ability-heavy wizards at 35%).
-  winks:{max:12, flickMode:'six', flatCost:3, recoup:2, difficulty:[1,2,3], pot:0.31, squops:0,
+  // At most 12 rounds (roundLimit): a knockout wins, else the most HP after round 12 (level is a draw).
+  winks:{max:12, roundLimit:12, maxRounds:12, suddenDeath:null, flickMode:'six', flatCost:3, recoup:2, difficulty:[1,2,3], pot:0.31, squops:0,
     wards:{boost:true, layers:1, seals:false, dispelStrips:false},
     cards:{elems:4, perElem:9, hand:7, medDraw:2, trade:true}},
 };
@@ -729,10 +731,13 @@ const squopChance=w=>gs.squop&&gs.squop[w]!=null?gs.squop[w]:RULES.squop;
 // wink at the seat's pot chance.
 function sixPots(w,given){
   if(given&&given.potted!=null) return given.potted;
-  const bag=gs.scores&&gs.scores[w];
-  if(bag&&bag.length){
-    gs.bags=gs.bags||{};
-    if(!gs.bags[w]||!gs.bags[w].length) gs.bags[w]=shuffle(bag.slice());
+  // gs.scores[w]: a list of that player's real games (12 rounds each). One game is drawn for the whole
+  // match and only its rounds are shuffled, so a good (or bad) run stays a good run.
+  const src=gs.scores&&gs.scores[w];
+  if(src&&src.length){
+    gs.bags=gs.bags||{}; gs.played=gs.played||{};
+    if(!gs.played[w]) gs.played[w]=Array.isArray(src[0])?src[Math.floor(rng()*src.length)]:src;
+    if(!gs.bags[w]||!gs.bags[w].length) gs.bags[w]=shuffle(gs.played[w].slice());
     return gs.bags[w].pop();
   }
   let n=0; for(let i=0;i<RULES.six;i++) if(rng()<potChance(w)) n++;
@@ -886,6 +891,12 @@ function endRound(){
     st.lostLast=Math.max(0,st.hpAtStart-st.hp);
   });
   gs.round++;
+  if(RULES.roundLimit&&gs.round>RULES.roundLimit&&!gs.over){
+    const hp={}; active().forEach(w=>{ const t=gs[w].team; hp[t]=(hp[t]||0)+gs[w].hp; });
+    const best=Math.max(...Object.values(hp)), top=Object.keys(hp).filter(t=>hp[t]===best);
+    gs.over=top.length===1?top[0]:'draw';
+    gs.onPoints=true;
+  }
 }
 // A seat at 0 HP is out; the game is over when one side (or none) is left. gs.over: the winning team
 // ('p1' / 'p2' in a duel, 'A' / 'B' in an encounter) or 'draw'.
@@ -1208,12 +1219,13 @@ function aiCall(w){
   return mostUsedCat(ts);
 }
 
-// Winks: real rounds (winks potted out of 6), from the user's trial games. 'daddy' is solo practice and
-// two matches; 'b' is the other player in those matches.
+// Winks: the user's real games, 12 rounds each (winks potted out of 6 per round). Kept game by game:
+// a simulated match plays one of them, its rounds shuffled (sixPots). 'daddy': four solo practice games
+// and two matches against 'b' (B won them 5–4 and 12–0 on rounds).
 const WINK_SCORES={
-  daddy:[1,0,1,2,0,1,2,1,2,2,2,3, 0,1,2,3,2,1,3,1,5,2,1,1, 3,3,1,1,3,3,4,2,4,1,1,2, 2,0,2,1,3,1,2,0,3,1,4,2,
-         1,1,4,0,3,1,4,3,1,3,4,3, 1,1,1,1,2,3,1,3,2,2,3,0],
-  b:[1,3,3,2,3,1,2,4,4,4,3,2, 3,2,3,4,4,4,3,4,4,6,4,2],
+  daddy:[[1,0,1,2,0,1,2,1,2,2,2,3], [0,1,2,3,2,1,3,1,5,2,1,1], [3,3,1,1,3,3,4,2,4,1,1,2], [2,0,2,1,3,1,2,0,3,1,4,2],
+         [1,1,4,0,3,1,4,3,1,3,4,3], [1,1,1,1,2,3,1,3,2,2,3,0]],
+  b:[[1,3,3,2,3,1,2,4,4,4,3,2], [3,2,3,4,4,4,3,4,4,6,4,2]],
 };
 
 // ── Simulator ──────────────────────────────────────────────
@@ -1228,9 +1240,9 @@ function simMatch(k1,k2,ai,opts){
     ['p1','p2'].forEach(w=>{ const k=a[w].act||(a[w].skin?'skin':null)||a[w].sig||(a[w].self?(a[w].cat==='protect'?'seal':'cleanse'):a[w].cat); picks[w][k]=(picks[w][k]||0)+1; });
     playRound(a);
   }
-  return {winner:gs.over||'timeout', rounds:gs.over?gs.round:gs.round-1, hp:{p1:gs.p1.hp,p2:gs.p2.hp}, picks,
+  return {winner:gs.over||'timeout', rounds:gs.over&&!gs.onPoints?gs.round:gs.round-1, hp:{p1:gs.p1.hp,p2:gs.p2.hp}, picks,
     wards:{p1:{...gs.p1.wardStats}, p2:{...gs.p2.wardStats}}, elems:gs.elems?gs.elems.slice():null,
-    six:{p1:gs.p1.sixLog||null, p2:gs.p2.sixLog||null}};
+    six:{p1:gs.p1.sixLog||null, p2:gs.p2.sixLog||null}, onPoints:!!gs.onPoints};
 }
 // Every ordered pair, `games` per matchup (half on each side). Returns [{key,name,winRate,rounds}], strongest first.
 // keys: the wizards to include (default all); opts as simMatch (both sides get the same scores unless set per side)

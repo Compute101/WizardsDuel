@@ -139,7 +139,7 @@ In a duel, tokens are the counters (you can see a pile at a glance, and paying m
 5. **Resolve:** Protection, then Dispel, then Damage, then Meditate.
 6. **Round end:** ticks, ward wear, income (+4 mana), skin upkeep.
 
-Aim: **about 12 rounds, 10–15 minutes** — the length of the user's 12-round flicking trial.
+**At most 12 rounds** (10–15 minutes, the length of the user's 12-round flicking trials). A knockout wins at once; otherwise, after round 12, **the most HP wins**, and level HP is a draw. No sudden death.
 
 ## What carries over, what goes
 
@@ -151,24 +151,23 @@ Aim: **about 12 rounds, 10–15 minutes** — the length of the user's 12-round 
 
 The Winks rules are a rule set in the tabletop engine: `TT.useRules('winks')` in `js/tabletop.js` (flick mode `six`, `flatCost`, `recoup`, `difficulty`, and `cards` for the draft, the shared pile, hands, Meditate's draw and trade). Run `node tools/winks_sim.js [games] [daddy|b|pooled|rate:0.4]`.
 
-**The AI flicks with the user's real scores**, a round at a time from a shuffled bag (`WINK_SCORES`; `simMatch(…, {scores:{p1, p2}})`):
+**The AI flicks with the user's real scores** (`WINK_SCORES`, kept game by game; `simMatch(…, {scores:{p1, p2}})`). Each simulated match draws **one** of that player's real 12-round games and plays its rounds in shuffled order. Rounds are never mixed between games (the user's rule): a good run stays a good run.
 
 | Player | Rounds | 0 | 1 | 2 | 3 | 4 | 5 | 6 | Average | Pot rate |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Daddy (practice and both matches) | 72 | 7 | 25 | 17 | 16 | 6 | 1 | 0 | 1.9 | 31% |
 | B (both matches) | 24 | 0 | 2 | 5 | 7 | 9 | 0 | 1 | 3.1 | 52% |
 
-**Results** (the starting six, 200 games a matchup, both sides with the same scores):
+**Results** (the starting six, 200 games a matchup, both sides drawing from the same player's games, 12-round limit):
 
-| Scores | Win rates | Rounds |
-|---|---|---|
-| Daddy | 44.9–55.0% (Gnash top, Skadi bottom) | 12.1 (median 13) |
-| B | 47.4–55.0% | 10.3 |
-| Both pooled | 46.4–52.9% | about 11.5 |
+| Scores | Win rates | Rounds | Knockouts | On HP after 12 | Draws |
+|---|---|---|---|---|---|
+| Daddy | 45.8–54.3% (Gnash top, Skadi bottom) | 10.2 (median 12) | 49% | 52% | 9% |
+| B | 47.6–54.4% (Eldrin top) | 9.1 | 63% | 37% | 5% |
 
-- **Game length** is on target: about 12 rounds at Daddy's flicking, 10 at B's.
+- **Game length:** about half of Daddy-level games reach round 12 and go to HP; B-level games end in a knockout more often.
 - **Picks** (Daddy's scores): Damage 22%, Protection 21%, Meditate 18%, Dispel 13%, abilities about 16% in all, Attack 5%, Guard 2%.
-- **Skill matters a lot:** with Daddy's scores against B's, Daddy wins **13%**. That's what the handicap line is for: B flicks from further back until it's near 50%.
+- **Skill matters a lot** (and B is the better flicker): with Daddy's games against B's, Daddy wins **18%**. That's what the handicap line is for: B flicks from further back until it's near 50%.
 - **Changes the simulator needed:** Meditate is allowed at full mana (it's how you draw; with income 4 and cost 3 mana was always full, hands ran dry and the AI just Attacked); Valdris HP 7 → **11** (his skeletons need Dark cards now), Skadi 11 → **10** (`"rules":{"winks":{"hp":n}}` in `tabletop.json`).
 - **Not modelled yet:** trading with the other player (the AI only trades with the pile), the ward's card sitting under its pile (the sim discards it at once), and the decoy card.
 
