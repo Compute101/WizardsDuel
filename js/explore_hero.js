@@ -51,7 +51,7 @@ function avoidLook(look, hero){
   if(!hero) return look;
   const L=Object.assign({}, look);
   if(L.fig===hero.fig){
-    const alts=BASES.filter(b=>b.id!==hero.fig&&b.sex===L.sex&&b.age===L.age&&raceOf(b)===(L.race||raceOf(BASES.find(x=>x.id===L.fig))));
+    const alts=BASES.filter(b=>b.id!==hero.fig&&b.sex===L.sex&&(b.race==='elf'||b.age===L.age)&&raceOf(b)===(L.race||raceOf(BASES.find(x=>x.id===L.fig))));
     if(alts.length) L.fig=alts[(L.name||'').length%alts.length].id;
   }
   if((L.robe||'Violet')===(hero.robe||'Violet')){ const i=ROBES.findIndex(r=>r.name===(L.robe||'Violet')); L.robe=ROBES[(i+3)%ROBES.length].name; }
@@ -61,7 +61,8 @@ const AGES = [['young','Young'],['middle','Middle-aged'],['old','Old']];
 // races: dwarves are figures cut from sprites/hero/source/dwarf_*.png (race 'dwarf' in figures.json); humans carry no race.
 // size: the battle sprite's spriteHeight / spriteWidth: as short as Durin (0.72), but not widened like him (1.2),
 // since the dwarf figures are already drawn stocky, so a dwarf stands short in battle and in Explore
-const RACES = [['human','Human'],['dwarf','Dwarf']];
+// elves (race 'elf') are ageless to look at: their figures serve every age (figuresFor)
+const RACES = [['human','Human'],['dwarf','Dwarf'],['elf','Elf']];
 const RACE_SIZE = {dwarf:{h:0.72, w:1}};
 const raceOf = b => (b&&b.race)||'human';
 // staff wood: hue°, saturation ×, value × (null keeps the oak); the wood's own shading is kept as offsets from its middle hue (20°)
@@ -123,7 +124,7 @@ const AGE_HAIR = {young:'Brown', middle:'Black', old:'Silver'};   // a new look'
 
 // the creator's figures for a sex and age; figures marked npc (the ragged bandits) are for NPCs only, though def() still paints them
 // (and race: a hero made before races is human)
-const figuresFor = (sex,age,race) => { const ok=BASES.filter(b=>!b.npc&&raceOf(b)===(race||'human')), own=ok.filter(b=>b.sex===sex&&b.age===age); return own.length?{list:own,standIn:false}:{list:ok.filter(b=>b.sex===sex),standIn:true}; };
+const figuresFor = (sex,age,race) => { const ok=BASES.filter(b=>!b.npc&&raceOf(b)===(race||'human')), own=ok.filter(b=>b.sex===sex&&(b.race==='elf'||b.age===age)); return own.length?{list:own,standIn:false}:{list:ok.filter(b=>b.sex===sex),standIn:true}; };
 const rnd = a => a[Math.floor(Math.random()*a.length)];
 
 // ── recolouring ──
@@ -373,7 +374,7 @@ async function open(root, opts){
     // the toppers on offer: the starters, and any this wizard has earned (opts.toppers)
     const topList=()=>TOPPERS.filter(q=>STARTER_TOPPERS.includes(q.id)||(opts.toppers||[]).includes(q.id)||q.id===st.topper);
     const randomize=()=>{
-      if(!opts.edit){ st.sex=rnd(['m','f']); st.race=Math.random()<0.3?'dwarf':'human'; st.elem=rnd(ELEMS).id; st.name=rnd(namesFor(st.sex,st.race)); }
+      if(!opts.edit){ st.sex=rnd(['m','f']); st.race=rnd(['human','human','human','human','dwarf','elf']); st.elem=rnd(ELEMS).id; st.name=rnd(namesFor(st.sex,st.race)); }
       st.age=rnd(AGES)[0]; st.fig=rnd(figuresFor(st.sex,st.age,st.race).list).id;
       st.robe=rnd(ROBES).name; st.trim=rnd(TRIMS).name; st.skin=rnd(SKINS).name; st.eyes=rnd(EYES).name;
       st.hair=(st.age==='old'&&Math.random()<0.6)?rnd(['Silver','White']):rnd(HAIRS).name;   // the old mostly grey
@@ -389,7 +390,7 @@ async function open(root, opts){
         swatches('robe',ROBES,'Robes')+swatches('trim',TRIMS,'Trim')+swatches('staff',STAVES,'Staff')+swatches('hair',HAIRS,'Hair')+swatches('skin',SKINS,'Skin')+swatches('eyes',EYES,'Eyes')+
         (opts.edit?'':`<div class="hc-row"><span class="hc-lab">Element</span><div class="hc-pills">`+ELEMS.map(e=>`<button type="button" class="hc-pill hc-el${st.elem===e.id?' on':''}" data-k="elem" data-v="${e.id}"><i style="background:${e.col}"></i>${e.name}</button>`).join('')+`</div></div>`+
         `<div class="hc-elnote">Your magic burns ${ELEMS.find(e=>e.id===st.elem).name.toLowerCase()}-coloured. Your first spells will be ${ELEMS.find(e=>e.id===st.elem).name}, and in time ${op.name}, its opposite, will come hardest to you.</div>`);
-      $('.hc-note').textContent=F.standIn?'Stand-in figure: the art for '+(st.age==='middle'?'a middle-aged':'a '+st.age)+' '+(st.race==='dwarf'?'dwarf ':'')+(st.sex==='m'?'man':'woman')+' is still to come.':'';
+      $('.hc-note').textContent=F.standIn?'Stand-in figure: the art for '+(st.age==='middle'?'a middle-aged':'a '+st.age)+' '+(st.race!=='human'?st.race+' ':'')+(st.sex==='m'?'man':'woman')+' is still to come.':'';
       draw();
     };
     box.addEventListener('click',e=>{
@@ -400,7 +401,8 @@ async function open(root, opts){
       if(t.dataset.fig){ const F=figuresFor(st.sex,st.age,st.race).list, i=F.findIndex(b=>b.id===st.fig); st.fig=F[(i+(+t.dataset.fig)+F.length)%F.length].id; render(); return; }
       if(t.dataset.k){
         const k=t.dataset.k; st[k]=t.dataset.v;
-        if(k==='sex'||k==='age'||k==='race'){ st.fig=figuresFor(st.sex,st.age,st.race).list[0].id; if(!opts.edit||k==='age') st.hair=AGE_HAIR[st.age]; if(k==='sex'||k==='race') st.name=rnd(namesFor(st.sex,st.race)); }
+        if(k==='sex'||k==='age'||k==='race'){ const L=figuresFor(st.sex,st.age,st.race).list; if(k!=='age'||!L.some(f=>f.id===st.fig)) st.fig=L[0].id;   // an elf keeps her figure through an age change
+          if(!opts.edit||k==='age') st.hair=AGE_HAIR[st.age]; if(k==='sex'||k==='race') st.name=rnd(namesFor(st.sex,st.race)); }
         render(); return;
       }
       if(t.classList.contains('hc-cancel')){ box.remove(); box=null; resolve(null); return; }

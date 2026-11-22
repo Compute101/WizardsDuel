@@ -620,6 +620,850 @@
   }
  },
  {
+  "id": "elf_man_1",
+  "sex": "m",
+  "age": "young",
+  "src": "sprites/hero/elf_man_1.png",
+  "hair": [
+   0.186,
+   0.052,
+   0.571,
+   0.533
+  ],
+  "face": [
+   0.24,
+   0.02,
+   0.43
+  ],
+  "skin": [
+   [
+    0.335,
+    0.08,
+    0.59,
+    0.24
+   ],
+   [
+    0.104,
+    0.314,
+    0.19,
+    0.37,
+    0.95
+   ],
+   [
+    0.728,
+    0.298,
+    0.883,
+    0.388,
+    0.95
+   ],
+   [
+    0.287,
+    0.215,
+    0.634,
+    0.354
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_man_1_hair.png",
+  "skinMask": "sprites/hero/elf_man_1_skin.png",
+  "staffMask": "sprites/hero/elf_man_1_staff.png",
+  "headMask": "sprites/hero/elf_man_1_head.png",
+  "topper": {
+   "line": [
+    0.1667,
+    0.3698,
+    0.2743
+   ],
+   "top": 0.0742,
+   "width": 0.0179,
+   "grip": 0.314
+  }
+ },
+ {
+  "id": "elf_man_2",
+  "sex": "m",
+  "age": "young",
+  "src": "sprites/hero/elf_man_2.png",
+  "hair": [
+   0.187,
+   0.053,
+   0.59,
+   0.495
+  ],
+  "face": [
+   0.242,
+   0.016,
+   0.436
+  ],
+  "skin": [
+   [
+    0.335,
+    0.081,
+    0.584,
+    0.235
+   ],
+   [
+    0.104,
+    0.314,
+    0.187,
+    0.367,
+    0.95
+   ],
+   [
+    0.731,
+    0.299,
+    0.908,
+    0.391,
+    0.95
+   ],
+   [
+    0.287,
+    0.215,
+    0.634,
+    0.354
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_man_2_hair.png",
+  "skinMask": "sprites/hero/elf_man_2_skin.png",
+  "staffMask": "sprites/hero/elf_man_2_staff.png",
+  "headMask": "sprites/hero/elf_man_2_head.png",
+  "topper": {
+   "line": [
+    0.1673,
+    0.3659,
+    0.2754
+   ],
+   "top": 0.0742,
+   "width": 0.0179,
+   "grip": 0.314
+  }
+ },
+ {
+  "id": "elf_man_3",
+  "sex": "m",
+  "age": "young",
+  "src": "sprites/hero/elf_man_3.png",
+  "hair": [
+   0.208,
+   0.085,
+   0.581,
+   0.501
+  ],
+  "face": [
+   0.237,
+   0.016,
+   0.437
+  ],
+  "skin": [
+   [
+    0.331,
+    0.082,
+    0.581,
+    0.235
+   ],
+   [
+    0.214,
+    0.198,
+    0.351,
+    0.283,
+    0.95
+   ],
+   [
+    0.733,
+    0.298,
+    0.884,
+    0.391,
+    0.95
+   ],
+   [
+    0.281,
+    0.215,
+    0.631,
+    0.354
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_man_3_hair.png",
+  "skinMask": "sprites/hero/elf_man_3_skin.png"
+ },
+ {
+  "id": "elf_man_4",
+  "sex": "m",
+  "age": "young",
+  "src": "sprites/hero/elf_man_4.png",
+  "hair": [
+   0.257,
+   0.083,
+   0.573,
+   0.497
+  ],
+  "face": [
+   0.245,
+   0.021,
+   0.42
+  ],
+  "skin": [
+   [
+    0.335,
+    0.079,
+    0.575,
+    0.237
+   ],
+   [
+    0.249,
+    0.423,
+    0.351,
+    0.513,
+    0.95
+   ],
+   [
+    0.725,
+    0.303,
+    0.884,
+    0.39,
+    0.95
+   ],
+   [
+    0.285,
+    0.218,
+    0.625,
+    0.356
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_man_4_hair.png",
+  "skinMask": "sprites/hero/elf_man_4_skin.png",
+  "staffMask": "sprites/hero/elf_man_4_staff.png",
+  "headMask": "sprites/hero/elf_man_4_head.png",
+  "topper": {
+   "line": [
+    0.2495,
+    0.5117,
+    0.1073
+   ],
+   "top": 0.0755,
+   "width": 0.02,
+   "grip": 0.423
+  }
+ },
+ {
+  "id": "elf_man_5",
+  "sex": "m",
+  "age": "young",
+  "src": "sprites/hero/elf_man_5.png",
+  "hair": [
+   0.25,
+   0.113,
+   0.58,
+   0.533
+  ],
+  "face": [
+   0.221,
+   0.03,
+   0.451
+  ],
+  "skin": [
+   [
+    0.318,
+    0.109,
+    0.576,
+    0.244
+   ],
+   [
+    0.268,
+    0.436,
+    0.344,
+    0.507,
+    0.95
+   ],
+   [
+    0.738,
+    0.302,
+    0.912,
+    0.396,
+    0.95
+   ],
+   [
+    0.27,
+    0.224,
+    0.602,
+    0.363
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_man_5_hair.png",
+  "skinMask": "sprites/hero/elf_man_5_skin.png",
+  "staffMask": "sprites/hero/elf_man_5_staff.png",
+  "headMask": "sprites/hero/elf_man_5_head.png",
+  "topper": {
+   "line": [
+    0.268,
+    0.5065,
+    0.0461
+   ],
+   "top": 0.0742,
+   "width": 0.022,
+   "grip": 0.436
+  }
+ },
+ {
+  "id": "elf_man_6",
+  "sex": "m",
+  "age": "young",
+  "src": "sprites/hero/elf_man_6.png",
+  "hair": [
+   0.196,
+   0.114,
+   0.575,
+   0.507
+  ],
+  "face": [
+   0.295,
+   0.058,
+   0.364
+  ],
+  "skin": [
+   [
+    0.373,
+    0.113,
+    0.581,
+    0.24
+   ],
+   [
+    0.21,
+    0.181,
+    0.351,
+    0.284,
+    0.95
+   ],
+   [
+    0.742,
+    0.302,
+    0.91,
+    0.391,
+    0.95
+   ],
+   [
+    0.323,
+    0.22,
+    0.627,
+    0.359
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_man_6_hair.png",
+  "skinMask": "sprites/hero/elf_man_6_skin.png"
+ },
+ {
+  "id": "elf_man_7",
+  "sex": "m",
+  "age": "young",
+  "src": "sprites/hero/elf_man_7.png",
+  "hair": [
+   0.188,
+   0.055,
+   0.572,
+   0.533
+  ],
+  "face": [
+   0.24,
+   0.02,
+   0.43
+  ],
+  "skin": [
+   [
+    0.335,
+    0.08,
+    0.59,
+    0.24
+   ],
+   [
+    0.104,
+    0.314,
+    0.19,
+    0.37,
+    0.95
+   ],
+   [
+    0.75,
+    0.306,
+    0.898,
+    0.395,
+    0.95
+   ],
+   [
+    0.287,
+    0.215,
+    0.634,
+    0.354
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_man_7_hair.png",
+  "skinMask": "sprites/hero/elf_man_7_skin.png",
+  "staffMask": "sprites/hero/elf_man_7_staff.png",
+  "headMask": "sprites/hero/elf_man_7_head.png",
+  "topper": {
+   "line": [
+    0.164,
+    0.3698,
+    0.2611
+   ],
+   "top": 0.0768,
+   "width": 0.022,
+   "grip": 0.314
+  }
+ },
+ {
+  "id": "elf_woman_1",
+  "sex": "f",
+  "age": "young",
+  "src": "sprites/hero/elf_woman_1.png",
+  "hair": [
+   0.264,
+   0.083,
+   0.718,
+   0.516
+  ],
+  "face": [
+   0.245,
+   0.024,
+   0.425
+  ],
+  "skin": [
+   [
+    0.336,
+    0.087,
+    0.579,
+    0.24
+   ],
+   [
+    0.105,
+    0.314,
+    0.189,
+    0.377,
+    0.95
+   ],
+   [
+    0.728,
+    0.3,
+    0.885,
+    0.39,
+    0.95
+   ],
+   [
+    0.286,
+    0.22,
+    0.628,
+    0.359
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_woman_1_hair.png",
+  "skinMask": "sprites/hero/elf_woman_1_skin.png",
+  "staffMask": "sprites/hero/elf_woman_1_staff.png",
+  "headMask": "sprites/hero/elf_woman_1_head.png",
+  "topper": {
+   "line": [
+    0.159,
+    0.3763,
+    0.2748
+   ],
+   "top": 0.0742,
+   "width": 0.0179,
+   "grip": 0.314
+  }
+ },
+ {
+  "id": "elf_woman_2",
+  "sex": "f",
+  "age": "young",
+  "src": "sprites/hero/elf_woman_2.png",
+  "hair": [
+   0.267,
+   0.088,
+   0.594,
+   0.529
+  ],
+  "face": [
+   0.252,
+   0.04,
+   0.465
+  ],
+  "skin": [
+   [
+    0.368,
+    0.083,
+    0.6,
+    0.3
+   ],
+   [
+    0.104,
+    0.312,
+    0.189,
+    0.374,
+    0.95
+   ],
+   [
+    0.731,
+    0.302,
+    0.887,
+    0.391,
+    0.95
+   ],
+   [
+    0.319,
+    0.28,
+    0.649,
+    0.419
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_woman_2_hair.png",
+  "skinMask": "sprites/hero/elf_woman_2_skin.png",
+  "staffMask": "sprites/hero/elf_woman_2_staff.png",
+  "headMask": "sprites/hero/elf_woman_2_head.png",
+  "topper": {
+   "line": [
+    0.1693,
+    0.3737,
+    0.2754
+   ],
+   "top": 0.0742,
+   "width": 0.0179,
+   "grip": 0.312
+  }
+ },
+ {
+  "id": "elf_woman_3",
+  "sex": "f",
+  "age": "young",
+  "src": "sprites/hero/elf_woman_3.png",
+  "hair": [
+   0.181,
+   0.085,
+   0.594,
+   0.501
+  ],
+  "face": [
+   0.321,
+   0.051,
+   0.332
+  ],
+  "skin": [
+   [
+    0.394,
+    0.082,
+    0.58,
+    0.237
+   ],
+   [
+    0.175,
+    0.243,
+    0.351,
+    0.378,
+    0.95
+   ],
+   [
+    0.731,
+    0.3,
+    0.885,
+    0.388,
+    0.95
+   ],
+   [
+    0.345,
+    0.218,
+    0.614,
+    0.356
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_woman_3_hair.png",
+  "skinMask": "sprites/hero/elf_woman_3_skin.png",
+  "staffMask": "sprites/hero/elf_woman_3_staff.png",
+  "headMask": "sprites/hero/elf_woman_3_head.png",
+  "topper": {
+   "line": [
+    0.1733,
+    0.3776,
+    0.2601
+   ],
+   "top": 0.0742,
+   "width": 0.0179,
+   "grip": 0.243
+  }
+ },
+ {
+  "id": "elf_woman_4",
+  "sex": "f",
+  "age": "young",
+  "src": "sprites/hero/elf_woman_4.png",
+  "hair": [
+   0.187,
+   0.053,
+   0.586,
+   0.504
+  ],
+  "face": [
+   0.26,
+   0.036,
+   0.397
+  ],
+  "skin": [
+   [
+    0.345,
+    0.09,
+    0.572,
+    0.242
+   ],
+   [
+    0.104,
+    0.314,
+    0.189,
+    0.386,
+    0.95
+   ],
+   [
+    0.731,
+    0.302,
+    0.894,
+    0.395,
+    0.95
+   ],
+   [
+    0.297,
+    0.223,
+    0.598,
+    0.362
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_woman_4_hair.png",
+  "skinMask": "sprites/hero/elf_woman_4_skin.png",
+  "staffMask": "sprites/hero/elf_woman_4_staff.png",
+  "headMask": "sprites/hero/elf_woman_4_head.png",
+  "topper": {
+   "line": [
+    0.1594,
+    0.3854,
+    0.2754
+   ],
+   "top": 0.0742,
+   "width": 0.0199,
+   "grip": 0.314
+  }
+ },
+ {
+  "id": "elf_woman_5",
+  "sex": "f",
+  "age": "young",
+  "src": "sprites/hero/elf_woman_5.png",
+  "hair": [
+   0.277,
+   0.113,
+   0.751,
+   0.53
+  ],
+  "face": [
+   0.269,
+   0.051,
+   0.431
+  ],
+  "skin": [
+   [
+    0.376,
+    0.091,
+    0.592,
+    0.292
+   ],
+   [
+    0.251,
+    0.437,
+    0.337,
+    0.511,
+    0.95
+   ],
+   [
+    0.733,
+    0.311,
+    0.887,
+    0.392,
+    0.95
+   ],
+   [
+    0.327,
+    0.273,
+    0.641,
+    0.411
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_woman_5_hair.png",
+  "skinMask": "sprites/hero/elf_woman_5_skin.png",
+  "staffMask": "sprites/hero/elf_woman_5_staff.png",
+  "headMask": "sprites/hero/elf_woman_5_head.png",
+  "topper": {
+   "line": [
+    0.251,
+    0.5104,
+    0.0918
+   ],
+   "top": 0.0755,
+   "width": 0.0199,
+   "grip": 0.437
+  }
+ },
+ {
+  "id": "elf_woman_6",
+  "sex": "f",
+  "age": "young",
+  "src": "sprites/hero/elf_woman_6.png",
+  "hair": [
+   0.194,
+   0.114,
+   0.587,
+   0.531
+  ],
+  "face": [
+   0.25,
+   0.06,
+   0.434
+  ],
+  "skin": [
+   [
+    0.343,
+    0.109,
+    0.591,
+    0.294
+   ],
+   [
+    0.204,
+    0.211,
+    0.351,
+    0.357,
+    0.95
+   ],
+   [
+    0.738,
+    0.302,
+    0.88,
+    0.39,
+    0.95
+   ],
+   [
+    0.293,
+    0.275,
+    0.641,
+    0.414
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_woman_6_hair.png",
+  "skinMask": "sprites/hero/elf_woman_6_skin.png",
+  "staffMask": "sprites/hero/elf_woman_6_staff.png",
+  "headMask": "sprites/hero/elf_woman_6_head.png",
+  "topper": {
+   "line": [
+    0.2036,
+    0.3568,
+    0.1073
+   ],
+   "top": 0.0599,
+   "width": 0.022,
+   "grip": 0.211
+  }
+ },
+ {
+  "id": "elf_woman_7",
+  "sex": "f",
+  "age": "young",
+  "src": "sprites/hero/elf_woman_7.png",
+  "hair": [
+   0.212,
+   0.122,
+   0.591,
+   0.557
+  ],
+  "face": [
+   0.24,
+   0.02,
+   0.43
+  ],
+  "skin": [
+   [
+    0.335,
+    0.08,
+    0.59,
+    0.24
+   ],
+   [
+    0.104,
+    0.314,
+    0.19,
+    0.37,
+    0.95
+   ],
+   [
+    0.731,
+    0.314,
+    0.852,
+    0.394,
+    0.95
+   ],
+   [
+    0.287,
+    0.215,
+    0.634,
+    0.354
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "elf",
+  "hairMask": "sprites/hero/elf_woman_7_hair.png",
+  "skinMask": "sprites/hero/elf_woman_7_skin.png",
+  "staffMask": "sprites/hero/elf_woman_7_staff.png",
+  "headMask": "sprites/hero/elf_woman_7_head.png",
+  "topper": {
+   "line": [
+    0.1663,
+    0.3698,
+    0.2616
+   ],
+   "top": 0.0781,
+   "width": 0.02,
+   "grip": 0.314
+  }
+ },
+ {
   "id": "mid_man_1",
   "sex": "m",
   "age": "middle",

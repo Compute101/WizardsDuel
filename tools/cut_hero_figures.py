@@ -30,6 +30,8 @@ SLOTS = {'young_man': ('m', 'young'), 'young_woman': ('f', 'young'), 'mid_man': 
          'mid_woman': ('f', 'middle'), 'old_man': ('m', 'old'), 'old_woman': ('f', 'old')}
 # dwarves: the same slots with a dwarf_ prefix (race 'dwarf' in figures.json; humans carry no race)
 SLOTS.update({'dwarf_' + k: v for k, v in list(SLOTS.items())})
+# elves (race 'elf'): ageless to look at, so one set (cut as young) serves every age in the creator
+SLOTS.update({'elf_man': ('m', 'young'), 'elf_woman': ('f', 'young')})
 
 # the ragged bandits: for NPCs only, kept out of the creator (an even number of each sex, so the creator stays even too)
 NPC_ONLY = {'mid_man_7', 'mid_man_8', 'old_man_5', 'mid_woman_7', 'mid_woman_8', 'old_woman_5'}   # every eyepatched bandit
@@ -41,6 +43,9 @@ FIX = {
     'mid_woman_8': {'lh': [0.10, 0.315, 0.195, 0.385, 0.95]},
     'mid_man_5':   {'paleHair': True},   # a white moustache, apart from the hair
     'mid_man_6':   {'noArm': (1,), 'paleHair': True},   # a leather bracer at the wrist, then the sleeve: no forearm to find
+    # elves whose long hair swept back past the staff hand passed for the head and hand: the other elves' boxes (same pose)
+    **{n: {'face': [0.24, 0.02, 0.43], 'head': [0.335, 0.08, 0.59, 0.24], 'neck': [0.287, 0.215, 0.634, 0.354],
+           'lh': [0.104, 0.314, 0.19, 0.37, 0.95]} for n in ('elf_woman_7', 'elf_man_1', 'elf_man_7')},
 }
 
 def key_out(im):
@@ -461,6 +466,7 @@ def main():
         fig = dict(id=name, sex=sex, age=age, src='sprites/hero/' + name + '.png', **bx)
         if name in NPC_ONLY: fig['npc'] = True
         if slot.startswith('dwarf_'): fig['race'] = 'dwarf'
+        if slot.startswith('elf_'): fig['race'] = 'elf'
         if mask: grow_hair(im, mask)
         if mask and FIX.get(name, {}).get('paleHair'): pale_hair(im, mask, bx['skin'][0])
         if mask:
