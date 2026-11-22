@@ -45,6 +45,7 @@ FIX = {
     'mid_man_6':   {'noArm': (1,), 'paleHair': True},   # a leather bracer at the wrist, then the sleeve: no forearm to find
     # elf man 2's sideburn: a pale strand in front of the ear, cut off from the hair by its outline, as pale as his cheek
     'elf_man_2':   {'hairBox': [[0.442, 0.141, 0.492, 0.198]]},
+    'elf_man_6':   {'hairBox': [[0.469, 0.167, 0.495, 0.212]]},   # the curl down his cheek
 }
 # every elf is drawn in one pose, and their long hair, satchels and hats fooled the head and hand finder on half
 # of them (the hand box on hair or the satchel): all take these boxes, checked by hand on elf man 2
@@ -259,6 +260,29 @@ def cap_neck(im, skin):
                 if n in blue: blue.discard(n); q.append(n)
         if len(comp) > len(best): best = comp
     if len(best) >= 40: skin[3] = nb[:3] + [round(min(nb[3], min(p[1] for p in best) / H), 3)] + nb[4:]
+
+def unhair_jewels(im, mask, head, reach=6):
+    """Pale pixels close to blue inside the head are the whites of the eyes (round the iris) or an earring's silver
+    (round its gem), not hair: taken back out of the hair mask."""
+    W, H = im.size; px = im.load(); mp = mask.load()
+    x0, y0 = max(0, int((head[0] - 0.06) * W)), max(0, int((head[1] - 0.02) * H))
+    x1, y1 = min(W - 1, int((head[2] + 0.03) * W)), min(H - 1, int((head[3] + 0.06) * H))
+    blue = []
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            r, g, b, a = px[x, y]
+            if a:
+                h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                if 0.5 <= h < 0.72 and s_ > 0.55 and v > 0.35 and not mp[x, y]: blue.append((x, y))   # an iris or gem, not the hair's blue shadow
+    near = set()
+    for bx, by in blue:
+        for dy in range(-reach, reach + 1):
+            for dx in range(-reach, reach + 1):
+                if dx * dx + dy * dy <= reach * reach: near.add((bx + dx, by + dy))
+    for x, y in near:
+        if 0 <= x < W and 0 <= y < H and mp[x, y]:
+            r, g, b, a = px[x, y]; h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+            if s_ < 0.35 and v > 0.5: mp[x, y] = 0
 
 def hair_box(im, mask, boxes):
     """FIX hairBox: inside these boxes, pale greyish-pink pixels are hair (a strand the hair mask can't reach and
@@ -512,6 +536,7 @@ def main():
         if mask: grow_hair(im, mask)
         if mask and FIX.get(name, {}).get('paleHair'): pale_hair(im, mask, bx['skin'][0])
         if mask and FIX.get(name, {}).get('hairBox'): hair_box(im, mask, FIX[name]['hairBox'])
+        if mask: unhair_jewels(im, mask, bx['skin'][0])
         if mask:
             mask.save(os.path.join(OUT, name + '_hair.png'), optimize=True); fig['hairMask'] = 'sprites/hero/' + name + '_hair.png'
         sm = skin_region(im, bx['skin'], (1,) if slot.startswith(NO_ARM_SLOTS) else FIX.get(name, {}).get('noArm', ()))
