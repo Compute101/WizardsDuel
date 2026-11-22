@@ -11,8 +11,8 @@ Status: **proposal**. Open questions are at the end; nothing here is built yet.
 | Bit | How many | What it does |
 |---|---|---|
 | Big Jigs tiddlywinks set | 5 colours × 6 winks, a squidger each, a pot | **Casting only.** Each player owns one colour: their 6 winks are their spell. Up to 5 players. |
-| Standard deck of cards | 1 per duel | **Element cards:** A–8 only; red suits for one player, black for the other. |
-| Hand-made cards | 8 command cards a player, 1 sheet a wizard | Strike, Ward, Dispel, Attack, Guard, Grapple, Meditate, Cleanse. |
+| Standard deck of cards | 1 per duel | **Element cards:** each suit is one of the four elements in play; 2–10 make a shared pile, the Aces mark the suits. |
+| Hand-made cards | 11 command cards a player, 1 sheet a wizard | Strike, Ward, Dispel, Attack, Guard, Grapple, Meditate, Cleanse, Ability 1–3. |
 | Coin | 1–2 | 50/50 effects (Undertow, Blink), first player, seal markers. |
 | Tokens | 25 each of red, blue, green, yellow | **Counters in a duel:** red HP, blue mana, green ward, yellow skin and minion HP. |
 | Six-sided dice | up to 20 per player | Chance rolls, and **counters when tokens run out** (3+ players, or a big pile). |
@@ -66,45 +66,35 @@ Chance of each result with 6 winks, by how often a player pots a single flick:
 
 The table only plays well if most flicks land in the 1–4 range, which needs a pot rate of roughly **30–55%** from the handicap line. The first counter-winks trial was 12% (7 in 57); at that rate half of all casts fizzle and Greater never happens. **The handicap line is the dial:** move closer until a typical round pots 2–3.
 
-## Cards: hand-made command cards and a hand of elements
+## Cards: command cards and a shared hand of elements
 
-### Command cards (hand-made, 8 a player, kept all game)
+### Command cards (hand-made, 11 a player, kept all game)
 
-**Strike · Ward · Dispel · Attack · Guard · Grapple · Meditate · Cleanse**
+**Strike · Ward · Dispel · Attack · Guard · Grapple · Meditate · Cleanse · Ability 1 · Ability 2 · Ability 3**
 
-Seal Ward waits until layered wards come back; it would be a ninth card.
+The ability cards are generic (just a number); your wizard sheet says what 1, 2 and 3 are. Seal Ward waits until layered wards come back; it would be a twelfth card.
 
-### Element cards (one standard deck per duel)
+### Setup: four elements, one per suit
 
-- Only **A–8** are used; the rank is the element: A Fire, 2 Air, 3 Lightning, 4 Arcane, 5 Water, 6 Earth, 7 Ice, 8 Dark (wheel order, so **opposites are 4 apart**: A ↔ 5, 2 ↔ 6, 3 ↔ 7, 4 ↔ 8).
-- **One deck does a duel:** one player takes the red suits, the other the black. That's 16 cards each, two of every element; take out your wizard's barred rank.
-- **Draw 7** to start. When your pile runs out, shuffle your discards into a new one.
+- **Pick the elements in turn** (a duel: A, B, B, A), two each, and mark one **Ace** per suit with its element (a sticky note, or a token on it). Lay the four Aces face up as the reminder. The other four elements aren't in play this game.
+- You can't pick an element you're barred from; you can pick one your foe is barred from.
+- Opposites (+2 against a ward) count when both of a pair are picked: Fire ↔ Water, Air ↔ Earth, Lightning ↔ Ice, Arcane ↔ Dark.
+- **The element pile** is the rest of one deck, 2–10 (36 cards, 9 of each element; the courts stay in the box), shuffled and **shared**. Each player draws **7**. When it runs out, shuffle the discards. The rank doesn't matter.
 
 ### Picking: one command card and one element card, face down
 
 | Command card | Pick | The element card |
 |---|---|---|
-| **Strike / Ward / Dispel** | that spell in the element card's element | is used up (a ward's sits under its pile as the marker, discarded when the pile is gone) |
+| **Strike / Ward / Dispel** | that spell in the card's suit's element | is used up (a ward's sits under its pile as the marker, discarded when the pile is gone) |
+| **Ability 1 / 2 / 3** | that ability from your sheet | is a decoy, back to your hand |
 | **Attack / Guard / Grapple / Meditate / Cleanse** | that | is a decoy, back to your hand |
 
-Always laying two cards keeps the pick secret. (With no element card left, lay a face-down card from your pile as the decoy.)
+- Always laying two cards keeps the pick secret. With no element card left, lay a face-down card from the pile as the decoy.
+- A card of an element you're barred from is only good as a decoy (or discard it when you Meditate).
 
-### Abilities need no cards of their own
+### Abilities are as well as, never instead of
 
-**Each ability is a category and an element:** Cinder's Fireball is Strike + Fire, Flame Shield is Ward + Fire, Candle is Dispel + Fire. Lay that pair and you cast the ability instead of the plain spell, as on the app's wheel, where a signature takes over its sector. Every wizard has at most one ability per category and element, so a pair is never ambiguous. The wizard sheet lists each ability under its pair, e.g. "**Strike + A: Fireball** (difficulty 3)".
-
-The starting six by pair:
-
-| Wizard | Abilities |
-|---|---|
-| Eldrin | Ward + Arcane: Shield · Ward + Lightning: Counter · Ward + Ice: Ward |
-| Malachar | Ward + Fire: Empower · Ward + Dark: Blood Pact · Strike + Dark: Drain |
-| Cinder | Strike + Fire: Fireball · Ward + Fire: Flame Shield · Dispel + Fire: Candle |
-| Skadi | Strike + Ice: Ice Lance · Ward + Ice: Frost Armor · Dispel + Ice: Blizzard |
-| Gnash | Ward + Earth: War Paint · Strike + Earth: Savage Charge · Ward + Fire: Frenzy |
-| Valdris | Ward + Dark: Raise Dead · Strike + Dark: Necrotic Drain · Dispel + Dark: Soul Tithe |
-
-So your hand matters for abilities too: Cinder hoards Aces.
+An ability doesn't take over any element: you can always cast it, whichever four elements are in play, and your plain spells in its element are still there (Cinder keeps a plain Fire strike as well as Fireball). An ability still has its element, for opposites against a ward. This is the user's rule: an ability replacing its own element's plain spell made a wizard worse at their own magic (Daveron's Dark).
 
 ### Meditate
 
@@ -114,13 +104,13 @@ Target (3+ players, later): point the cards at the player you're aiming at.
 
 ## Hand-made cards: as few as possible
 
-The standard deck does the picking, so the only cards to make are:
+The standard deck gives the elements, so the only cards to make are:
 
-- **One wizard sheet per wizard** (a postcard or an index card), not three ability cards: name, HP, Attack, barred elements, its three abilities (each with difficulty, cost if it differs, and what it does; listed under the command card and element that cast them), and the rank-to-element list as a reminder. Ward piles sit on their element card, so the sheet needs no element wheel. Buffs and curses are marked on the ability boxes, so no status cards are needed.
-- **8 command cards per player** (Strike, Ward, Dispel, Attack, Guard, Grapple, Meditate, Cleanse).
-- **One reference card per player** (optional): the six-wink result table and the rank-to-element list.
+- **One wizard sheet per wizard** (a postcard or an index card), not three ability cards: name, HP, Attack, barred elements, its three abilities (each with difficulty, cost if it differs, and what it does; numbered 1–3 for the Ability cards). Ward piles sit on their element card, so the sheet needs no element wheel. Buffs and curses are marked on the ability boxes, so no status cards are needed.
+- **11 command cards per player** (Strike, Ward, Dispel, Attack, Guard, Grapple, Meditate, Cleanse, Ability 1–3).
+- **One reference card per player** (optional): the six-wink result table and the round order.
 
-**Start with 6 wizards** (agreed) (6 sheets and 16 command cards), not all 23. Pick a spread that shows the system off with simple abilities: for example Eldrin (wards), Malachar (curses and drain), Cinder (big strikes), Skadi (ice and armour), Gnash (blows) and Valdris (skeletons). The simulator balances those 6 against each other first; more sheets come once Normal plays well.
+**Start with 6 wizards** (agreed) (6 sheets and 22 command cards), not all 23. Pick a spread that shows the system off with simple abilities: for example Eldrin (wards), Malachar (curses and drain), Cinder (big strikes), Skadi (ice and armour), Gnash (blows) and Valdris (skeletons). The simulator balances those 6 against each other first; more sheets come once Normal plays well.
 
 ## Counters: tokens, then dice
 
