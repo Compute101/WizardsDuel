@@ -2,7 +2,7 @@
 
 The tiddlywinks game becomes its own thing, playable at a real table with a box of bits most homes have. The app's standard game is untouched. This replaces the counter-winks tabletop design (`docs/tabletop-rules.md`), which needed about 100 winks in four colours.
 
-Status: **proposal, with a first simulation** (see **First simulation**). Open questions are at the end.
+Status: **proposal, with a first simulation** (see **First simulation**). The player-facing rulebook is `docs/winks-rules.md`; keep the two in step. Open questions are at the end.
 
 ---
 
