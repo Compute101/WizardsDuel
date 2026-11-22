@@ -37,24 +37,16 @@ You pick the category and element in secret. **How well you flick decides how st
 
 Easy to remember: **odd is the level, even is the level below with mana back.** (Every 2 pots climbs a level; the in-between pot pays you.)
 
-Strengths stay as now: cost 2 / 4 / 6 mana, damage = cost, wards and dispels = double the cost.
+Strengths stay as now: Lesser / Normal / Greater strike 2 / 4 / 6, wards and dispels double that.
 
-**Proposed payment (pay after you flick):** pay the cost of the level you reached. **Recoup = that spell costs 2 less** (a recouped Lesser is free). If you can't pay for the level you reached, it drops to the best level you can pay for. A fizzle costs nothing but your turn.
+**Payment: one flat cost.** Every spell costs the same mana to cast, paid before you flick, whatever level you reach: the level is earned by skill, not bought. **Recoup** gives some of it back. A fizzle loses the cost.
 
-| Potted | Level | You pay |
-|---|---|---|
-| 1 | Lesser | 2 |
-| 2 | Lesser | 0 |
-| 3 | Normal | 4 |
-| 4 | Normal | 2 |
-| 5 | Greater | 6 |
-| 6 | Greater | 4 |
-
-Why after: there is no level to declare and nothing to refund, so a turn is *pick → reveal → flick → pay → resolve*. Mana still matters: it's what lets a good flick become a big spell.
+- Starting numbers for the simulator: **cost 3**, **recoup 2**, income 4 a round. Tuned against the user's baseline scores.
+- Mana's job becomes "can I cast this round, or must I Meditate / use an Action", rather than "how big".
 
 ### Ability spells (signature cards)
 
-No levels. Each card has a **difficulty**: pot at least that many winks and it goes off, at the card's one fixed strength and cost. Fewer and it fizzles. Extra pots do nothing (keeps it one number to remember).
+No levels. Each card has a **difficulty**: pot at least that many winks and it goes off, at the card's one fixed strength. It costs the same flat cost as any spell (decided: the difficulty is the balancing lever, not the price; a few cards may need a cost of their own). Fewer and it fizzles. Extra pots do nothing (decided: one number to remember).
 
 A first mapping from today's cards (69 cards: 15 Lesser, 50 Normal, 4 Greater): **Lesser → difficulty 2, Normal → 3, Greater → 4**, then tuned per card by the simulator. A card's difficulty is printed on it in place of its level.
 
@@ -105,8 +97,8 @@ Twenty dice cover a duel easily: about 2 HP, 2–3 mana, 2–4 ward, up to 4 min
 
 1. **Pick:** two cards face down (and your minion stance, if you have bodies).
 2. **Reveal** together.
-3. **Flick:** everyone casting a spell flicks their 6 winks, in turn (the player with the least HP first). Actions and Meditate don't flick.
-4. **Pay** for the level reached (abilities: their cost).
+3. **Pay** the flat cost.
+4. **Flick:** everyone casting a spell flicks their 6 winks, in turn (the player with the least HP first). Actions and Meditate don't flick.
 5. **Resolve:** Protection, then Dispel, then Damage, then Meditate, as now.
 6. **Round end:** ticks, ward wear, income (+4 mana), skin upkeep.
 
@@ -116,17 +108,16 @@ Aim: **about 12 rounds, 10–15 minutes** — the length of the user's 12-round 
 
 - **Carries over:** costs and strengths, eight elements and opposites (+2), Actions and blows, Ironskin, minions as bodies and stances, wards lasting until worn down, buffs until dispelled, curses until cleansed, the wizards and their cards (with a difficulty instead of a level).
 - **Goes:** wink counters, choosing a level, "flick 10 minus the cost", retries, missed winks left on the table, and squops (a squop can't become mana when winks aren't mana).
-- **Keep learning in layers:** Beginner (core rules) → Normal (elements count, layers and seals, Cleanse by level, stances). The flick is the same in both; skill is evened out by the handicap line, not by a separate Advanced flick.
+- **One rule set to start: Normal.** This is a rewrite, so the other modes (Beginner, Survival, the app's tutorial) are redone later, once Normal plays well.
 
 ## Building it
 
-- Add a `six` flick mode to `js/tabletop.js` (casts resolve level from potted winks with the payment above; signature `difficulty`), so the existing simulator and `tools/balance.html` can balance it at several pot rates, keeping every wizard within ±8% of 50% and games near 12 rounds.
+- Add a `six` flick mode to `js/tabletop.js` (flat cost paid up front, level and recoup from potted winks, signature `difficulty`), Normal rules only, so the existing simulator and `tools/balance.html` can balance it at several pot rates, keeping every wizard within ±8% of 50% and games near 12 rounds.
 - Add `difficulty` to each card in `tabletop.json`.
 - Write `docs/winks-rules.md` as the new rulebook (the app's 🎲 Tabletop screen renders it), and retire the old one.
 
 ## Open questions
 
-1. **Payment:** pay after for the level reached (above), or declare a level, pay up front and get the difference plus recoup back?
-2. **Calibration:** how many of the 6 did you typically pot per round in the 12-round trial? That sets the pot rate the simulator balances for.
-3. **Ability overflow:** extra pots do nothing (above), or potting all 6 also recoups?
-4. **Rule sets:** one Winks game with a Normal-rules layer (above), or keep Beginner / Normal / Advanced?
+1. **Calibration:** the user is supplying baseline scores (winks potted per round). They set the pot rate the simulator balances for, then the flat cost and recoup.
+2. **Recoup size:** 2 back (of 3), or the whole cost back?
+3. **Card exceptions:** do any signature cards need their own cost (summons, big heals), or is difficulty enough?
