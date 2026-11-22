@@ -803,6 +803,7 @@ function roomAct(o){
 const NPC_SPRITE = {wenna:'sprites/echoes/fire_weak.png', lamplighter:'sprites/echoes/air_weak.png'};   // stand-ins until their own art
 const NPC_FACE = {wenna:'echo_fire_weak', lamplighter:'echo_air_weak'};                          // ditto
 function npcFace(n){
+  if(fatBulldog(n)) return FAT_BULLDOG.face;
   if(Folk&&Folk.knows(n.role)) return Folk.face(n,folkApi);
   const k=n.role==='wounded'?(MAP.ev||{}).key:NPC_FACE[n.role];
   return k?'portraits/small/'+k+'.jpg':null;
@@ -841,9 +842,12 @@ function talkTo(n){
 }
 // someone standing about: not gone, and not the wizard you're playing (ExploreFolk.absent)
 function present(n){ return !n.gone&&!(Folk&&Folk.absent(n,folkApi)); }
+// fat Bulldogs (by request): about half of Wrenford's Bulldogs, picked once per Bulldog, are the fat one
+const FAT_BULLDOG={sprite:'sprites/halberdier_fat.png', face:'portraits/small/halberdier_fat.jpg'};
+function fatBulldog(n){ if(n._fat===undefined) n._fat=/^bulldog/.test(n.role)&&Math.random()<0.5; return n._fat; }
 function drawNpc(n,t){
   let src=NPC_SPRITE[n.role];
-  if(!src&&Folk&&Folk.knows(n.role)) src=Folk.sprite(n,folkApi);
+  if(!src&&Folk&&Folk.knows(n.role)) src=fatBulldog(n)?FAT_BULLDOG.sprite:Folk.sprite(n,folkApi);
   if(n.role==='wounded'){ const f=fighters[(MAP.ev||{}).key]; src=f&&f.sprite; }
   if(!src) return;
   const img=imgOf(src); if(!img.complete||!img.naturalWidth) return;

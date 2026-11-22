@@ -243,6 +243,7 @@ How many waves can your wizard last? Ten waves of soldiers and archers come at y
 
 - **Fighters** cast nothing. Every round each one picks an Action (Attack, Guard or Grapple) and aims it at you. Your spells, Attacks and Grapples are each aimed at one fighter (say which when you reveal). Your minions strike whoever you last aimed at.
   - **Soldier** (*Shield Wall*): while he Guards, his shield also halves a spell aimed at him (round down). A Guard already stops blows, so hit someone else, or Grapple him.
+  - **Knight** (*Shield Wall*, in the last two waves): a soldier in plate, with more HP. His shield halves a spell while he Guards, like a soldier's.
   - **Archer** (*At Range*): his Attack is a bow shot. It slips past a Guard (no block, no counter), and he keeps his distance: a Grapple at him fails.
 - Fighters have no mana, wards, flicks or Meditate, and don't take sudden death. A fighter at 0 HP is out. A wave is cleared when every fighter in it is out.
 - **Catch your breath** between waves: heal **half** your HP (round up), gain **4 mana**, and remove all your curses. Everything else carries on: your HP, wards, skins, buffs and minions. Start the next wave at round 1.
@@ -260,8 +261,8 @@ How many waves can your wizard last? Ten waves of soldiers and archers come at y
 | **6. Vanguard** | 2 Veteran Soldiers, Veteran Archer | Soldier 2 HP, Attack 1; Archer 1 HP, Attack 1 | Soldier 2 HP, Attack 1; Archer 1 HP, Attack 1 | Soldier 6 HP, Attack 1; Archer 4 HP, Attack 1 |
 | **7. Warband** | Elite Soldier, 2 Elite Archers | Soldier 3 HP, Attack 1; Archer 2 HP, Attack 1 | Soldier 3 HP, Attack 1; Archer 2 HP, Attack 1 | Soldier 9 HP, Attack 1; Archer 6 HP, Attack 1 |
 | **8. Iron Wall** | 3 Elite Soldiers | Soldier 3 HP, Attack 1 | Soldier 3 HP, Attack 1 | Soldier 9 HP, Attack 1 |
-| **9. Rain of Arrows** | 3 Champion Archers | Archer 3 HP, Attack 1 | Archer 3 HP, Attack 1 | Archer 10 HP, Attack 1 |
-| **10. Champion's Guard** | 2 Champion Soldiers, Champion Archer | Soldier 5 HP, Attack 1; Archer 3 HP, Attack 1 | Soldier 5 HP, Attack 1; Archer 3 HP, Attack 1 | Soldier 15 HP, Attack 1; Archer 10 HP, Attack 1 |
+| **9. Rain of Arrows** | Champion Knight, 2 Champion Archers | Knight 8 HP, Attack 1; Archer 3 HP, Attack 1 | Knight 8 HP, Attack 1; Archer 3 HP, Attack 1 | Knight 20 HP, Attack 1; Archer 10 HP, Attack 1 |
+| **10. Champion's Guard** | Champion Knight, Champion Soldier, Champion Archer | Knight 8 HP, Attack 1; Soldier 5 HP, Attack 1; Archer 3 HP, Attack 1 | Knight 8 HP, Attack 1; Soldier 5 HP, Attack 1; Archer 3 HP, Attack 1 | Knight 20 HP, Attack 1; Soldier 15 HP, Attack 1; Archer 10 HP, Attack 1 |
 <!-- encounters:end -->
 
 ---

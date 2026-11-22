@@ -76,6 +76,34 @@
     "desc": "Hits hard with a long-hafted axe. Long Reach: he holds you off at the end of his polearm, so a Grapple at him fails.",
     "arena": "ruins"
   },
+  "knight": {
+    "name": "KNIGHT",
+    "title": "Knight of the Order",
+    "fighter": true,
+    "trait": "shieldwall",
+    "sprite": "sprites/knight.png",
+    "col": "#d8c890",
+    "hp": 44,
+    "phys": {
+      "atk": 6
+    },
+    "spells": [],
+    "taunts": [
+      "For the Order!",
+      "Plate and faith, wizard.",
+      "Yield, and live."
+    ],
+    "desc": "Plate armour and a long sword: more HP and a harder blow than a soldier. Shield Wall: while he Guards, his shield also halves a spell aimed at him.",
+    "tabletop": {
+      "hp": 3,
+      "atk": 1,
+      "rules": {
+        "advanced": {
+          "hp": 8
+        }
+      }
+    }
+  },
   "echo_fire_weak": {
     "name": "EMBER APPRENTICE",
     "title": "A forge apprentice of living flame",

@@ -61,6 +61,24 @@ The Bulldogs use the halberdier (`sprites/halberdier.png`), which fits; Clemency
 uses the weak Water Echo (`sprites/echoes/water_weak.png`), which also fits, though a girl-shaped one
 in a student's gown would be better (ask with the Echo brief in `docs/world-design.md`).
 
+**Fat Bulldogs** (requested by the user's son): ~~done~~, the art arrived. About half the Bulldogs,
+picked at random, are the fat halberdier (`sprites/halberdier_fat.png`, cut by `tools/cut_fighters.py`
+from `sprites/fighters/source/halberdier_fat.png`, HUD face `portraits/small/halberdier_fat.jpg`):
+`fatBulldog` / `FAT_BULLDOG` in `js/explore.js` on the map, and in `startExploreBattle` in `js/game.js`
+(a halberdier named "Bulldog …"; a soldier Bulldog such as Hobbes is stretched at most 1.3× instead).
+The prompt that made it, for more variants. Attach `sprites/fighters/source/halberdier.png` as the reference:
+
+> Pixel-art full-body sprite in exactly the same style, scale, pose, colours and level of detail as
+> the attached halberdier, the same man's uniform: the same round steel kettle helmet, mail coif and
+> sleeves, cream tabard with blue trim, brown leather belt, pouch, gauntlets and boots, holding the
+> same halberd the same way. But this guard is **very fat**: a huge round belly pushing the tabard
+> out and straining the belt, wide hips, thick legs, broad sloping shoulders, chubby red cheeks and a
+> double chin under the coif. His head, helmet and halberd stay the **normal size**; only his body is
+> fat. A cheerful, well-fed town watchman, comic but not grotesque. Three-quarter view facing right,
+> mid-stride like the reference, feet flat at the bottom of the image. Hard pixel edges, the same
+> black outline as the reference. Plain flat pure black background, nothing else in the picture, no
+> text, no shadow on the ground. Portrait image, the figure about 768 pixels tall.
+
 ---
 
 ## 2. Places (tilesets)
