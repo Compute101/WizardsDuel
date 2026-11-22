@@ -12,7 +12,7 @@
 (function(){
 'use strict';
 
-const SIX=['eldrin','mal','cinder','skadi','gnash','valdris'];
+const SIX=['eldrin','mal','gnash','valdris','cinder','skadi','mary','sylvara'];   // four men, four women
 const EL={
   fire:{name:'Fire', icon:'🔥', col:'#ff6622'},   air:{name:'Air', icon:'💨', col:'#9fe8dc'},
   lightning:{name:'Lightning', icon:'⚡', col:'#f5d400'}, arcane:{name:'Arcane', icon:'🌀', col:'#b77cff'},
@@ -54,9 +54,15 @@ const TEXT={
   warpaint:'Buff: every hit on you deals 1 less (at least 1).',
   charge:'A blow of 5 (wards don\'t stop it). The foe loses 2 mana.',
   frenzy:'Buff: your strikes deal +2, but each costs you 1 HP.',
-  raisedead:'Raise 3 skeletons (5 at most). Guarding, each soaks a point of damage; attacking, each bites for 1.',
+  raisedead:'Raise 3 skeletons (5 at most). Guarding, each soaks a point of damage; attacking, each bites for 1. Aim at them to sweep them: one dies per point.',
   necroticdrain:'A Dark strike of 4. Heal half the HP damage it deals.',
   soultithe:'Curse: the foe loses 1 mana for each of your skeletons they kill.',
+  divineheal:'Heal 6.',
+  purge:'Remove all your curses and heal 3.',
+  radiant:'An Arcane strike of 3. The foe loses 2 mana.',
+  heal:'Buff: heal 1 at every round end.',
+  entangle:'Curse: roll a die; on 4+ the foe can\'t pick Damage next round.',
+  vinewhip:'A blow of 3 (wards don\'t stop it). Curse: vines deal 1 blow to the foe at every round end.',
 };
 // How the AI player flicks: one of the user's real 12-round games (rounds shuffled), or a steady rate
 const FOE_SKILL={
@@ -245,9 +251,40 @@ function draftStep(){
 
 // ── A round ────────────────────────────────────────────────
 function startRound(){
-  G.phase='pick'; G.sel={cmd:null, card:null}; G.played={}; G.flickRes={}; G.result=null;
+  G.phase='pick'; G.sel={cmd:null, card:null}; G.played={}; G.flickRes={}; G.result=null; G.aimBodies=false; G.asked=false;
   resetWinks();
+  TT.swapRound();   // Squop may offer a swap (no Meditate needed)
   render();
+  offerStep();
+}
+// An offer from Squop, asked before you pick
+function offerStep(){
+  const s=S(), offer=(s.offers||[]).find(o=>o.to===G.human);
+  s.offers=[];
+  if(!offer) return;
+  panel(`<h2>${esc(G.foeName)} offers a swap</h2>
+    <div class="wk-note">“My ${cardChip(offer.give)} for your ${cardChip(offer.want)}?”</div>
+    <div class="wk-row"><button class="wk-btn" id="wk-yes">Swap</button><button class="wk-btn" id="wk-no">No thanks</button></div>`);
+  $('wk-yes').onclick=()=>{ TT.answerOffer(offer,true,G.human); G.sel.card=null; addLog(`You swap your ${EL[offer.want].name} for ${G.foeName}'s ${EL[offer.give].name}.`); hidePanel(); render(); };
+  $('wk-no').onclick=()=>{ TT.answerOffer(offer,false,G.human); addLog(`You turn down ${G.foeName}'s swap.`); hidePanel(); render(); };
+}
+// Your swap offer: any time you're picking, once a round
+function swapPanel(msg){
+  const me=st(G.human), give=[...new Set(me.hand)];
+  const p=panel(`<h2>Offer ${esc(G.foeName)} a swap</h2>${msg?`<div class="wk-note">${msg}</div>`:''}
+    <div class="wk-note">One card for one, once a round. ${esc(G.foeName)} can say no.</div>
+    <div class="wk-row">Give <select id="wk-give">${give.map(e=>`<option value="${e}">${EL[e].name}</option>`).join('')}</select>
+      for <select id="wk-want">${S().elems.map(e=>`<option value="${e}">${EL[e].name}</option>`).join('')}</select>
+      <button class="wk-btn" id="wk-ask" ${give.length?'':'disabled'}>Ask</button><button class="wk-btn" id="wk-cancel">Cancel</button></div>`);
+  $('wk-cancel').onclick=hidePanel;
+  $('wk-ask').onclick=()=>{
+    const g=$('wk-give').value, w=$('wk-want').value;
+    if(g===w){ swapPanel('Ask for a different element than the one you give.'); return; }
+    G.asked=true; G.sel.card=null;
+    if(TT.askSwap(G.human,G.ai,g,w)) addLog(`${G.foeName} swaps their ${EL[w].name} for your ${EL[g].name}.`);
+    else addLog(`${G.foeName} says no to your ${EL[g].name} for their ${EL[w].name}.`);
+    hidePanel(); render();
+  };
 }
 // The human's selection as an engine pick (or a reason it can't be played)
 function humanPick(){
@@ -279,7 +316,16 @@ function check(pick){
     return {err:'You can\'t pick that now.'};
   }
   if(minionsOf(G.human).length) pick.stance=G.stance;
+  if(G.aimBodies&&canAimBodies(pick)) pick.minion='all';
   return {pick};
+}
+// A strike, Attack or Grapple can be aimed at the foe's skeletons: it sweeps them, one per point
+function canAimBodies(pick){
+  if(!pick||!minionsOf(G.ai).length) return false;
+  if(pick.act) return pick.act!=='guard';
+  if(pick.cat!=='damage') return false;
+  const sp=pick.sig&&TT.sigById(st(G.human),pick.sig);
+  return !sp||sp.kind==='strike';
 }
 function layDown(){
   const r=humanPick();
@@ -312,7 +358,7 @@ function cardOfPick(w,a){
 }
 function reveal(){
   G.played.p1.up=true; G.played.p2.up=true; G.phase='revealed';
-  const say=w=>`${who(w)}: ${pickName(w,G.picks[w])}`;
+  const say=w=>`${who(w)}: ${pickName(w,G.picks[w])}${G.picks[w].minion?' at the skeletons':''}`;
   addLog(say('p1')+' · '+say('p2'));
   render();
   // Who flicks: anyone casting a spell they can pay for, the one with less HP first
@@ -352,7 +398,7 @@ function resetWinks(){
 function nextFlicker(){
   if(!G) return;
   const w=G.flickers.shift();
-  if(!w){ resolve(); return; }
+  if(!w){ if(!chooseCleanse()) resolve(); return; }
   if(w===G.ai) aiFlick(); else humanFlick();
 }
 function aiPots(){
@@ -496,6 +542,28 @@ function drawFx(){
   }
 }
 
+// Cleanse: you choose which curses go, when the winks you potted don't clear them all
+function chooseCleanse(){
+  const a=G.picks[G.human], n=G.flickRes[G.human];
+  if(!a||!a.self||a.cat!=='dispel'||!n) return false;
+  const cs=st(G.human).effects.filter(e=>e.kind==='curse'), count=[1,2,99][Math.min(3,Math.ceil(n/2))-1];
+  if(cs.length<=count) return false;
+  const chosen=[];
+  const draw=()=>{
+    panel(`<h2>Cleanse: remove ${count} curse${count>1?'s':''}</h2><div class="wk-note">You potted ${n}. Choose which go.</div>
+      <div class="wk-row">${cs.map(e=>`<button class="wk-chip ${chosen.includes(e.id)?'on':''}" data-c="${e.id}">${esc(e.name||e.id)}</button>`).join('')}</div>
+      <div class="wk-row"><button class="wk-btn big" id="wk-cl" ${chosen.length===count?'':'disabled'}>Cleanse these</button></div>`);
+    $('wk-panel').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
+      const id=b.dataset.c, i=chosen.indexOf(id);
+      if(i>=0) chosen.splice(i,1); else if(chosen.length<count) chosen.push(id);
+      draw();
+    });
+    $('wk-cl').onclick=()=>{ a.cleanse=chosen.slice(); hidePanel(); resolve(); };
+  };
+  draw();
+  return true;
+}
+
 // ── Resolve ────────────────────────────────────────────────
 function snapshot(w){ const s=st(w); return {hp:s.hp, mana:s.mana, ward:s.ward?s.ward.hp:0, sk:minionsOf(w).length, eff:s.effects.map(e=>e.name)}; }
 function resolve(){
@@ -539,7 +607,7 @@ function resolve(){
 function afterRound(){
   const s=S();
   if(s.over){ s.offers=[]; overPanel(); return; }
-  const offer=(s.offers||[]).find(o=>o.to===G.human);
+  const offer=null;
   if(offer){
     s.offers=s.offers.filter(o=>o!==offer);
     const p=panel(`<h2>${esc(G.foeName)} offers a swap</h2>
@@ -558,26 +626,15 @@ function afterRound(){
   startRound();
 }
 const cardChip=e=>{ const su=suitOf(e); return `<span class="wk-cchip" style="--ec:${EL[e].col}"><span class="${su&&su.red?'red':''}">${su?su.s:''}</span>${EL[e].icon} ${EL[e].name}</span>`; };
-function tradePanel(msg){
+function tradePanel(){
   const me=st(G.human), cnt={};
   me.hand.forEach(e=>cnt[e]=(cnt[e]||0)+1);
   const pairs=Object.keys(cnt).filter(e=>cnt[e]>=2);
-  const give=[...new Set(me.hand)];
-  const p=panel(`<h2>Meditate: one trade</h2>${msg?`<div class="wk-note">${msg}</div>`:''}
-    <div class="wk-sub">With the pile: two of an element for one draw</div>
+  const p=panel(`<h2>Meditate: trade with the pile</h2>
+    <div class="wk-note">Discard two cards of the same element to draw one more (once). Swaps with ${esc(G.foeName)} don't need a Meditate: offer one while you pick.</div>
     <div class="wk-row">${pairs.length?pairs.map(e=>`<button class="wk-btn" data-pair="${e}">Trade two ${cardChip(e)}</button>`).join(''):'<span class="wk-note">No pairs in your hand.</span>'}</div>
-    <div class="wk-sub">With ${esc(G.foeName)}: offer a swap (a no doesn't use up your trade)</div>
-    <div class="wk-row">Give <select id="wk-give">${give.map(e=>`<option value="${e}">${EL[e].name}</option>`).join('')}</select>
-      for <select id="wk-want">${S().elems.map(e=>`<option value="${e}">${EL[e].name}</option>`).join('')}</select>
-      <button class="wk-btn" id="wk-ask" ${give.length?'':'disabled'}>Ask</button></div>
     <div class="wk-row"><button class="wk-btn" id="wk-skip">No trade</button></div>`);
   p.querySelectorAll('[data-pair]').forEach(b=>b.onclick=()=>{ TT.pileTrade(G.human,b.dataset.pair); addLog(`You trade two ${EL[b.dataset.pair].name} for a draw.`); hidePanel(); render(); afterRound(); });
-  $('wk-ask').onclick=()=>{
-    const g=$('wk-give').value, w=$('wk-want').value;
-    if(g===w){ tradePanel('Ask for a different element than the one you give.'); return; }
-    if(TT.askSwap(G.human,G.ai,g,w)){ addLog(`${G.foeName} swaps their ${EL[w].name} for your ${EL[g].name}.`); hidePanel(); render(); afterRound(); }
-    else { addLog(`${G.foeName} says no to your ${EL[g].name} for their ${EL[w].name}.`); render(); tradePanel(`${esc(G.foeName)} says no. You can still trade with the pile.`); }
-  };
   $('wk-skip').onclick=()=>{ hidePanel(); afterRound(); };
 }
 function overPanel(){
@@ -719,9 +776,14 @@ function actions(){
   h.classList.remove('bad');
   if(G.phase==='pick'){
     const r=humanPick();
-    h.textContent=r.err||`Lay down: ${pickName(G.human,r.pick)}${isSpell(r.pick)?' (3 mana, then flick)':''}.`;
-    a.innerHTML=`<button type="button" class="wk-btn big" id="wk-lay" ${r.err?'disabled':''}>Lay face down</button>`;
+    h.textContent=r.err||`Lay down: ${pickName(G.human,r.pick)}${r.pick.minion?' at the skeletons':''}${isSpell(r.pick)?' (3 mana, then flick)':''}.`;
+    const aimable=r.pick&&canAimBodies(Object.assign({},r.pick,{minion:undefined}));
+    a.innerHTML=`<button type="button" class="wk-btn" id="wk-swap" ${G.asked||!st(G.human).hand.length?'disabled':''}>🤝 Offer a swap</button>`
+      +(aimable?`<button type="button" class="wk-btn" id="wk-aim">Aim: ${G.aimBodies?'💀 the skeletons':'🧙 '+esc(st(G.ai).c.name)}</button>`:'')
+      +`<button type="button" class="wk-btn big" id="wk-lay" ${r.err?'disabled':''}>Lay face down</button>`;
     $('wk-lay').onclick=layDown;
+    $('wk-swap').onclick=()=>swapPanel();
+    if(aimable) $('wk-aim').onclick=()=>{ G.aimBodies=!G.aimBodies; render(); };
   } else if(G.phase==='discard'){
     h.textContent=`Hand limit: tap ${st(G.human).hand.length-7} element card${st(G.human).hand.length-7>1?'s':''} to discard.`;
     a.innerHTML='';

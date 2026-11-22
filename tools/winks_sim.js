@@ -3,7 +3,7 @@
 const TT=require('../js/tabletop.js');
 TT.load(require('../characters.json'),require('../tabletop.json'),require('../fighters.json'));
 TT.useRules('winks');
-const SIX=['eldrin','mal','cinder','skadi','gnash','valdris'];
+const SIX=['eldrin','mal','gnash','valdris','cinder','skadi','mary','sylvara'];   // four men, four women
 const games=+process.argv[2]||100, src=process.argv[3]||'daddy';   // 'daddy', 'b', 'pooled' or 'rate:0.4'
 let sc=null;
 if(src.startsWith('rate:')) TT.RULES.pot=+src.slice(5);

@@ -48,6 +48,7 @@
   },
   "gnash": {
     "hp": 11,
+    "rules": {"winks": {"hp": 10}},
     "spells": [
       {"id": "warpaint", "name": "War Paint", "cat": "protect", "elem": "earth", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "resist", "n": 1},
        "text": "Until dispelled: every hit on you deals 1 less (min 1)."},

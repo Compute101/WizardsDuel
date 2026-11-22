@@ -115,7 +115,7 @@ The standard deck gives the elements, so the only cards to make are:
 - **11 command cards per player** (Strike, Ward, Dispel, Attack, Guard, Grapple, Meditate, Cleanse, Ability 1–3).
 - **One reference card per player** (optional): the six-wink result table and the round order.
 
-**Start with 6 wizards** (agreed) (6 sheets and 22 command cards), not all 23. Pick a spread that shows the system off with simple abilities: for example Eldrin (wards), Malachar (curses and drain), Cinder (big strikes), Skadi (ice and armour), Gnash (blows) and Valdris (skeletons). The simulator balances those 6 against each other first; more sheets come once Normal plays well.
+**Start with 8 wizards, four men and four women** (agreed; Mary and Sylvara joined the first six, as the user has their models) (6 sheets and 22 command cards), not all 23. Pick a spread that shows the system off with simple abilities: for example Eldrin (wards), Malachar (curses and drain), Cinder (big strikes), Skadi (ice and armour), Gnash (blows) and Valdris (skeletons). The simulator balances those 6 against each other first; more sheets come once Normal plays well.
 
 ## Counters: tokens, then dice
 

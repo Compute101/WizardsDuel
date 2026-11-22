@@ -122,7 +122,8 @@ const PRESETS={
   // At most 12 rounds (roundLimit): a knockout wins, else the most HP after round 12 (level is a draw).
   winks:{max:12, roundLimit:12, maxRounds:12, suddenDeath:null, flickMode:'six', flatCost:3, recoup:2, difficulty:[1,2,3], pot:0.31, squops:0,
     wards:{boost:true, layers:1, seals:false, dispelStrips:false},
-    cards:{elems:4, perElem:9, hand:7, medDraw:2, trade:true, swap:true, wardCard:true}},
+    cards:{elems:4, perElem:9, hand:7, medDraw:2, trade:true, swap:true, swapAnyTime:true, wardCard:true},
+    minions:{stances:true, brace:1, target:true, sweep:true}},
 };
 const RULE_SETS=['beginner','normal','advanced'];   // Winks ('winks') is its own game, not a step in this order   // the order players learn them in
 const DEFAULTS=JSON.parse(JSON.stringify(RULES));
@@ -339,6 +340,8 @@ function trySwap(w){
   const give=st.hand.slice().sort((a,b)=>cardWorth(st,a,true)-cardWorth(st,b,true))[0];
   const want=gs.elems.filter(e=>e!==give).sort((a,b)=>cardWorth(st,b)-cardWorth(st,a))[0];
   if(!want||cardWorth(st,want)<=cardWorth(st,give,true)+0.25) return false;
+  if(st.lastAsk===give+'>'+want) return false;
+  st.lastAsk=give+'>'+want;
   for(const f of foes(w).concat(active().filter(x=>x!==w&&gs[x].team===st.team))){
     const ft=gs[f];
     if(isFighter(f)||!ft.hand||!ft.hand.includes(want)) continue;
@@ -360,8 +363,16 @@ function meditateCards(w){
   const st=gs[w], C=RULES.cards;
   drawCards(w,C.medDraw);
   if(!C.trade||st.human) return;
-  if(trySwap(w)) return;
+  if(!C.swapAnyTime&&trySwap(w)) return;
   aiPileTrade(w);
+}
+// Winks (cards.swapAnyTime): a swap with another player needs no Meditate; each AI may offer one at the
+// start of every round (an offer to a human waits in gs.offers)
+const AI_SWAP_ASK=0.35;
+function swapRound(){
+  if(!RULES.cards||!RULES.cards.swap||!RULES.cards.swapAnyTime) return;
+  // Not every round (AI_SWAP_ASK), and never the same ask twice running
+  active().filter(w=>!gs[w].human&&!isFighter(w)&&gs[w].hand&&rng()<AI_SWAP_ASK).forEach(trySwap);
 }
 function aiPileTrade(w){
   const st=gs[w];
@@ -530,7 +541,20 @@ function titheFor(who,n){
 // A strike, Attack or Grapple aimed at one body (minions.target): it hits that body alone, no ward,
 // no riders. False when the body is gone (the hit goes to its master instead).
 function hitBody(who,t,uid,d){
-  const ts=gs[t], m=uid!=null&&ts.effects.find(e=>e.uid===uid&&e.type==='minion'&&e.soak);
+  const ts=gs[t];
+  // Winks (minions.sweep): aiming at the bodies sweeps them, oldest first, one HP per point of damage;
+  // anything left over is lost
+  if(RULES.minions.sweep){
+    const list=bodies(ts);
+    if(!list.length) return false;
+    for(const m of list){
+      if(d<=0) break;
+      const take=Math.min(d,m.hp); m.hp-=take; d-=take;
+      if(m.hp<=0){ removeEffects(t,[m]); titheFor(t,1); }
+    }
+    return true;
+  }
+  const m=uid!=null&&ts.effects.find(e=>e.uid===uid&&e.type==='minion'&&e.soak);
   if(!m) return false;
   m.hp-=d;
   if(m.hp<=0){ removeEffects(t,[m]); titheFor(t,1); }
@@ -634,7 +658,9 @@ const vanishOf=st=>st.effects.find(e=>e.type==='vanish');
 function doDispel(who,a){
   const st=gs[who], t=tgtOf(who,a), ts=gs[t], sp=a.sig&&sigById(st,a.sig);
   if(a.self){   // Cleanse: the worst curses first (a player picks which)
-    const list=curses(st).sort((x,y)=>curseHarm(y)-curseHarm(x)).slice(0,RULES.cleanseCount[a.ring-1]);
+    // a.cleanse (a player's choice): the curses (ids) to remove first
+    const pref=a.cleanse||[], rank=e=>pref.includes(e.id)?100-pref.indexOf(e.id):curseHarm(e)-1000;
+    const list=curses(st).sort((x,y)=>rank(y)-rank(x)).slice(0,RULES.cleanseCount[a.ring-1]);
     removeEffects(who,list); return;
   }
   if(sp){
@@ -1090,6 +1116,7 @@ function aiAimAtBody(w,a,smart){
   const sp=a.sig&&sigById(gs[w],a.sig);
   const d=a.act==='attack'?gs[w].c.atk:sp?(sp.dmg||0):RULES.cats.damage.power[(a.ring||1)-1];
   const prey=bodies(ts).filter(m=>m.dmg&&m.hp<=d).sort((x,y)=>y.dmg-x.dmg)[0];
+  if(RULES.minions.sweep){ const biting=bodies(ts).filter(m=>m.dmg); if(biting.length>=2||(biting.length&&biting.length>=Math.min(d,ts.hp))) a.minion='all'; return; }
   if(prey) a.minion=prey.uid;
 }
 // Fighters: mostly Attack; Guard a foe who Attacked me; a soldier Guards when he was aimed at; Grapple a
@@ -1330,6 +1357,7 @@ function simMatch(k1,k2,ai,opts){
   if(opts&&opts.scores){ gs.scores={p1:opts.scores.p1, p2:opts.scores.p2}; }
   const picks={p1:{},p2:{}};
   while(!gs.over&&gs.round<=RULES.maxRounds){
+    swapRound();
     const a={p1:aiChoose('p1',ai), p2:aiChoose('p2',ai)};
     ['p1','p2'].forEach(w=>{ const k=a[w].act||(a[w].skin?'skin':null)||a[w].sig||(a[w].self?(a[w].cat==='protect'?'seal':'cleanse'):a[w].cat); picks[w][k]=(picks[w][k]||0)+1; });
     playRound(a);
@@ -1434,7 +1462,7 @@ useRules('normal');
 
 const TT={RULES, PRESETS, RULE_SETS, useRules, rulesOf, AI_WARDS, AI_FIGHTERS, AI_ACTIONS, AI_MINIONS, AI_ENCOUNTER, WAVES, LEVELS, BREATHER,
   get rulesName(){ return rulesName; }, ELEMENTS, opposite, load, newGame, newTable, playRound, aiChoose, simMatch, balance, canPick, costOf,
-  survival, survivalBalance, WINK_SCORES, draftOpen, draftPick, dealWith, pileTrade, askSwap, answerOffer, discardCard,
+  survival, survivalBalance, WINK_SCORES, draftOpen, draftPick, dealWith, pileTrade, askSwap, answerOffer, discardCard, swapRound,
   difficultyOf:sp=>difficultyOf(sp), sigById:(st,id)=>sigById(st,id), get chars(){ return CHARS; }, get fighters(){ return FIGHTERS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
 if(typeof module!=='undefined'&&module.exports) module.exports=TT;
 else root.TT=TT;

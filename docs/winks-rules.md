@@ -6,7 +6,7 @@ These are the **Normal rules**, for two players. Rules for more players come lat
 
 <!-- dev:start (left out if the app shows this rulebook) -->
 - **Design and history:** `docs/winks-design.md`. **Engine and simulator:** the `winks` rule set in `js/tabletop.js`; wizards' numbers in `tabletop.json` (a `"rules":{"winks":{...}}` entry overrides the Normal one).
-- **Balance check:** `node tools/winks_sim.js 200 daddy` (or `b`, `pooled`). The simulator flicks with real recorded games. Last run: every wizard 45.9–53.3%, about 10 rounds, half the games decided on HP after round 12.
+- **Balance check:** `node tools/winks_sim.js 200 daddy` (or `b`, `pooled`). The simulator flicks with real recorded games. Last run (eight wizards): 44.9–53.5% with Daddy's games, 46.7–52.9% with B's, about 10 rounds, about half the games decided on HP after round 12.
 - Keep this rulebook to the Markdown the app's rules screen renders: headings, lists, tables, bold.
 <!-- dev:end -->
 
@@ -26,16 +26,18 @@ These are the **Normal rules**, for two players. Rules for more players come lat
 
 ## The wizards
 
-Six wizards to start. Each has HP, an **Attack** (how hard they hit with their hands), **barred** elements they can never cast, and three **abilities**. Copy each one onto its wizard sheet.
+Eight wizards to start, four men and four women. Each has HP, an **Attack** (how hard they hit with their hands), **barred** elements they can never cast, and three **abilities**. Copy each one onto its wizard sheet.
 
 | Wizard | HP | Attack | Barred | Plays like |
 |---|---|---|---|---|
 | **Eldrin** the Stalwart | 11 | 1 | none | Big wards, punishes strikers |
 | **Malachar** the Relentless | 11 | 1 | Arcane | Double strikes, drains life |
 | **Cinder** the Volatile | 11 | 1 | Ice, Water | Cheap fireballs, burning curses |
-| **Skadi** the Permafrost | 10 | 1 | Lightning | Armour, freezing strikes, slow drain |
-| **Gnash** the Feral | 11 | **2** | Arcane, Ice | Brawler: blows that ignore wards |
+| **Skadi** the Permafrost | 11 | 1 | Lightning | Armour, freezing strikes, slow drain |
+| **Gnash** the Feral | 10 | **2** | Arcane, Ice | Brawler: blows that ignore wards |
 | **Valdris** the Undying | 11 | 1 | Fire | Skeletons that shield him and bite |
+| **Mary** the Devoted | 11 | 1 | Dark, Lightning | Healing, cleansing, mana-burning light |
+| **Sylvara** the Verdant | 11 | 1 | Fire, Dark | Regrowth, entangling, whipping vines |
 
 Their abilities are listed at the end (**Wizard sheets**).
 
@@ -134,12 +136,13 @@ Every wizard can fight with their hands. Most are poor at it.
   - They go round in a circle: **Attack beats Grapple, Grapple beats Guard, Guard beats Attack.**
 - **Blows** are Attacks, skeletons' bites and abilities that say "a blow" (Savage Charge). **A ward never stops a blow. A Guard stops blows, never magic.**
 
+## Swaps
+
+**You can offer your foe a swap any time you're picking**, once a round: one element card for one, out loud ("my Fire for your Ice"). They can say no. You don't need to Meditate for it.
+
 ## Meditate
 
-Skip your spell to **gain 3 mana and draw 2 element cards**. You can't Meditate two rounds running. Then you may make **one trade**:
-
-- **With the pile:** discard **two cards of the same element** to draw one more; or
-- **With your foe:** offer a swap, one card for one, out loud ("my Fire for your Ice"). They can say no. A no doesn't use up your trade, so you can still trade with the pile.
+Skip your spell to **gain 3 mana and draw 2 element cards**. You can't Meditate two rounds running. Then you may make **one trade with the pile**: discard **two cards of the same element** to draw one more.
 
 Meditate is the only way to draw cards, so watch your hand.
 
@@ -149,7 +152,7 @@ Meditate is the only way to draw cards, so watch your hand.
 - **Stance:** each round, when you pick, say whether your skeletons **guard** or **attack**. It's free.
   - **Guard:** they stand in front of you. Every point of damage, magic or blow, kills one skeleton before anything reaches your ward or you.
   - **Attack:** each skeleton bites the foe for 1 (a blow) at round end. They shield no one.
-- **Aim at a skeleton:** a strike, Attack or Grapple can be aimed at one skeleton instead of the wizard. It kills that one, nothing more.
+- **Aim at the skeletons:** a strike, Attack or Grapple can be aimed at the skeletons instead of the wizard. It **sweeps** them: one skeleton dies for each point of damage, and anything left over is lost. Worth it when they're attacking and there are several; a waste on one.
 - Dispels can't touch skeletons; only damage can.
 
 ## Round end
@@ -209,7 +212,7 @@ HP 11 · Attack 1 · Barred: Ice, Water
 
 ### SKADI — The Permafrost
 
-HP 10 · Attack 1 · Barred: Lightning
+HP 11 · Attack 1 · Barred: Lightning
 
 | Ability | Needs | Difficulty | Effect |
 |---|---|---|---|
@@ -219,7 +222,7 @@ HP 10 · Attack 1 · Barred: Lightning
 
 ### GNASH — The Feral
 
-HP 11 · Attack 2 · Barred: Arcane, Ice
+HP 10 · Attack 2 · Barred: Arcane, Ice
 
 | Ability | Needs | Difficulty | Effect |
 |---|---|---|---|
@@ -237,6 +240,26 @@ HP 11 · Attack 1 · Barred: Fire
 | **2 Necrotic Drain** | Dark | 2 | A Dark strike of 4. Heal half the HP damage it deals (round down). |
 | **3 Soul Tithe** | Dark | 1 | Curse, until cleansed: the foe loses 1 mana for each of your skeletons they kill. |
 
+### MARY — The Devoted
+
+HP 11 · Attack 1 · Barred: Dark, Lightning
+
+| Ability | Needs | Difficulty | Effect |
+|---|---|---|---|
+| **1 Heal** | Arcane | 2 | Heal 6. |
+| **2 Purge** | Arcane | 1 | Remove all your curses and heal 3. |
+| **3 Radiant** | Arcane | 2 | An Arcane strike of 3. The foe loses 2 mana. |
+
+### SYLVARA — The Verdant
+
+HP 11 · Attack 1 · Barred: Fire, Dark
+
+| Ability | Needs | Difficulty | Effect |
+|---|---|---|---|
+| **1 Regen** | Earth | 2 | Buff, until dispelled: heal 1 at every round end. |
+| **2 Entangle** | Earth | 1 | Curse: roll a die; on 4+ the foe can't pick Damage next round. |
+| **3 Vine Whip** | Earth | 2 | A blow of 3 (wards don't stop it). Curse, until cleansed: vines deal 1 blow to the foe at every round end. |
+
 ---
 
 ## Quick reference
@@ -251,7 +274,7 @@ HP 11 · Attack 1 · Barred: Fire
 
 **Wards:** magic hits them first, blows go past · opposite element +2 · same element tops up · new element replaces · −1 every round end.
 
-**Meditate:** +3 mana, draw 2, one trade · not two rounds running.
+**Meditate:** +3 mana, draw 2, one pile trade (a pair for a draw) · not two rounds running. **Swaps** with your foe: any round, one offer each.
 
 **Round end:** ticks and bites → wards wear → +4 mana (max 12) → hand down to 7.
 
