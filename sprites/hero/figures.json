@@ -755,22 +755,22 @@
    0.501
   ],
   "face": [
-   0.237,
-   0.016,
-   0.437
+   0.24,
+   0.02,
+   0.43
   ],
   "skin": [
    [
-    0.331,
-    0.082,
-    0.581,
-    0.235
+    0.335,
+    0.08,
+    0.59,
+    0.24
    ],
    [
-    0.214,
-    0.198,
-    0.351,
-    0.283,
+    0.104,
+    0.314,
+    0.19,
+    0.37,
     0.95
    ],
    [
@@ -781,9 +781,9 @@
     0.95
    ],
    [
-    0.281,
+    0.287,
     0.215,
-    0.631,
+    0.634,
     0.354
    ]
   ],
@@ -791,7 +791,19 @@
   "trimLo": 27,
   "race": "elf",
   "hairMask": "sprites/hero/elf_man_3_hair.png",
-  "skinMask": "sprites/hero/elf_man_3_skin.png"
+  "skinMask": "sprites/hero/elf_man_3_skin.png",
+  "staffMask": "sprites/hero/elf_man_3_staff.png",
+  "headMask": "sprites/hero/elf_man_3_head.png",
+  "topper": {
+   "line": [
+    0.1617,
+    0.3698,
+    0.2606
+   ],
+   "top": 0.0742,
+   "width": 0.02,
+   "grip": 0.314
+  }
  },
  {
   "id": "elf_man_4",
@@ -929,22 +941,22 @@
    0.507
   ],
   "face": [
-   0.295,
-   0.058,
-   0.364
+   0.24,
+   0.02,
+   0.43
   ],
   "skin": [
    [
-    0.373,
-    0.113,
-    0.581,
+    0.335,
+    0.08,
+    0.59,
     0.24
    ],
    [
-    0.21,
-    0.181,
-    0.351,
-    0.284,
+    0.104,
+    0.314,
+    0.19,
+    0.37,
     0.95
    ],
    [
@@ -955,17 +967,29 @@
     0.95
    ],
    [
-    0.323,
-    0.22,
-    0.627,
-    0.359
+    0.287,
+    0.215,
+    0.634,
+    0.354
    ]
   ],
   "noTrim": [],
   "trimLo": 27,
   "race": "elf",
   "hairMask": "sprites/hero/elf_man_6_hair.png",
-  "skinMask": "sprites/hero/elf_man_6_skin.png"
+  "skinMask": "sprites/hero/elf_man_6_skin.png",
+  "staffMask": "sprites/hero/elf_man_6_staff.png",
+  "headMask": "sprites/hero/elf_man_6_head.png",
+  "topper": {
+   "line": [
+    0.1637,
+    0.3698,
+    0.2759
+   ],
+   "top": 0.0755,
+   "width": 0.02,
+   "grip": 0.314
+  }
  },
  {
   "id": "elf_man_7",

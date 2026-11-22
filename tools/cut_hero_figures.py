@@ -45,7 +45,7 @@ FIX = {
     'mid_man_6':   {'noArm': (1,), 'paleHair': True},   # a leather bracer at the wrist, then the sleeve: no forearm to find
     # elves whose long hair swept back past the staff hand passed for the head and hand: the other elves' boxes (same pose)
     **{n: {'face': [0.24, 0.02, 0.43], 'head': [0.335, 0.08, 0.59, 0.24], 'neck': [0.287, 0.215, 0.634, 0.354],
-           'lh': [0.104, 0.314, 0.19, 0.37, 0.95]} for n in ('elf_woman_7', 'elf_man_1', 'elf_man_7')},
+           'lh': [0.104, 0.314, 0.19, 0.37, 0.95]} for n in ('elf_woman_7', 'elf_man_1', 'elf_man_3', 'elf_man_6', 'elf_man_7')},
 }
 
 def key_out(im):
