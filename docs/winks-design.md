@@ -90,7 +90,7 @@ The ability cards are generic (just a number); your wizard sheet says what 1, 2 
 | **Attack / Guard / Grapple / Meditate / Cleanse** | that | is a decoy, back to your hand |
 
 - Always laying two cards keeps the pick secret. With no element card left, lay a face-down card from the pile as the decoy.
-- A card of an element you're barred from is only good as a decoy (or discard it when you Meditate).
+- A card of an element you're barred from is only good as a decoy (or trade a pair of them when you Meditate).
 
 ### Abilities are as well as, never instead of
 
@@ -98,7 +98,10 @@ An ability doesn't take over any element: you can always cast it, whichever four
 
 ### Meditate
 
-Skip your spell: **draw 2 element cards and gain 3 mana**. Not two rounds running. Hand limit **7**: discard down at round end. It's the only way to draw.
+Skip your spell: **draw 2 element cards and gain 3 mana**. Not two rounds running.
+
+- **Trade:** while you Meditate, discard **2 cards of the same element** to draw 1 more. Trade as many pairs as you like, before or after the 2 draws. It's how you turn doubles you don't want (or cards you're barred from) into the element you're after.
+- Hand limit **7**: discard down at round end. Meditate is the only way to draw.
 
 Target (3+ players, later): point the cards at the player you're aiming at.
 
@@ -154,4 +157,5 @@ Aim: **about 12 rounds, 10–15 minutes** — the length of the user's 12-round 
 2. **Recoup size:** 2 back (of 3), or the whole cost back?
 3. **Card exceptions:** do any signature cards need their own cost (summons, big heals), or is difficulty enough?
 4. **Mana vs cards:** with a flat cost of 3 and income of 4, mana barely limits you, so cards do. Lower income (3), or a cost of 4? The simulator will show which keeps games near 12 rounds.
-5. **Card draw:** is Meditate's 2 cards right, or should round end also draw 1?
+5. **Trades:** one trade per Meditate, or as many as you like (above)? Unlimited trades make a hand easy to fix.
+6. **Card draw:** is Meditate's 2 cards right, or should round end also draw 1?
