@@ -46,7 +46,7 @@ FIX = {
     # elf man 2's sideburn: a pale strand in front of the ear, cut off from the hair by its outline, as pale as his cheek
     'elf_man_2':   {'hairBox': [[0.442, 0.141, 0.492, 0.198]]},
     # painted with warm beige hair, not silver: the silver finder catches only a few strands (warm_hair grows them)
-    'elf_man_7':   {'warmHair': {'sat': 0.62, 'face': [[0.524, 0.134, 0.544, 0.163], [0.472, 0.154, 0.6, 0.26]]}},   # his strands are deeper than hers; his face is as pale as them
+    'elf_man_7':   {'warmHair': {'sat': 0.62, 'face': [[0.524, 0.134, 0.544, 0.163], [0.492, 0.154, 0.6, 0.26], [0.472, 0.19, 0.6, 0.26]]}},   # his strands are deeper than hers; his face is as pale as them
     'elf_woman_7': {'warmHair': True},
     'elf_man_6':   {'hairBox': [[0.469, 0.167, 0.495, 0.212]]},   # the curl down his cheek
 }
