@@ -15,7 +15,10 @@
 'use strict';
 const P = window.ExplorePieces;
 const {T} = P;
-const RS = 0.5;                       // interior prop scale (the sheets' floor tile is ~124 px → 62)
+const RS = 0.5;                       // interior walls (the sheets' floor tile is ~124 px → 62)
+// Furniture is drawn smaller than the walls: at RS a wardrobe stood twice the wizard's height (WIZ_H 62)
+// and a bed was three wizards long. At FS a wardrobe is about 1.3× the wizard and a bed about one tall.
+const FS = 0.32;
 // Small things are drawn as big as furniture on their sheets (a letter ~180 px, nearly a floor tile),
 // so they get their own scale, judged against the 124 px floor tile and a bed about two tiles long.
 const ITEM_SCALE = {
@@ -23,9 +26,9 @@ const ITEM_SCALE = {
   potionRed:0.2, potionBlue:0.2, potionGreen:0.2, pouch:0.2, coinsS:0.22, coinsM:0.22,
   coinsL:0.25, coinSack:0.25, ironBox:0.26, chest:0.3, chestOpen:0.3,
   q_fire:0.3, q_water:0.3, q_ice:0.3, q_lightning:0.3, q_earth:0.3, q_air:0.3, q_arcane:0.3, q_dark:0.3,
-  crockery:0.26, bookPile:0.3, cauldron:0.38, lectern:0.4, alembic:0.36, herbs:0.4, washtub:0.4,
+  crockery:0.2, bookPile:0.22, cauldron:0.26, lectern:0.27, alembic:0.25, herbs:0.27, washtub:0.27,
 };
-const scaleOf = k => ITEM_SCALE[k] || RS;
+const scaleOf = k => ITEM_SCALE[k] || FS;
 
 // furniture by room type: back = against the back wall, floor = about the room
 const TYPES = {
@@ -237,7 +240,7 @@ function build(spec,rects){
     }
     yMin=last+12;
     for(const choices of D.floor_){ const k=pick(choices), s=sz(k), p=spot(s.w,s.h,12,200);
-      if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:RS,decal:1}]); else put(k,p[0],p[1]); } }
+      if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:FS,decal:1}]); else put(k,p[0],p[1]); } }
     yMin=0;                                         // books may lie anywhere, aisles included
   } else if(D.rows){                                       // chapel pews in two columns of rows
     for(let y=Y0+2.4*T;y<Y1-T*0.6;y+=T*1.15){ put(pick(['pew','pew2']),DX-T*2.1,y); put(pick(['pew','pew2']),DX+T*2.1,y); }
@@ -245,7 +248,7 @@ function build(spec,rects){
     for(const choices of D.floor_){
       let k=pick(choices); if(ruined&&BROKEN[k]&&r()<0.7) k=BROKEN[k];
       const s=sz(k), p=spot(s.w,s.h,12);
-      if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:RS,decal:1}]); else put(k,p[0],p[1]); }
+      if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:FS,decal:1}]); else put(k,p[0],p[1]); }
     }
     if(vx||hy) for(const choices of (D.more||MORE).slice(0,(vx&&hy)?4:2)){   // the extra rooms want furnishing too
       let k=pick(choices); if(ruined&&BROKEN[k]&&r()<0.7) k=BROKEN[k];
@@ -301,5 +304,5 @@ function build(spec,rects){
     interior:true, type, ev, npcs, flow:'S'};
 }
 
-window.ExploreRooms={build, BOOKS, TYPES, RS, ITEM_SCALE, hash};
+window.ExploreRooms={build, BOOKS, TYPES, RS, FS, ITEM_SCALE, hash};
 })();
