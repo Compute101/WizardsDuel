@@ -46,6 +46,11 @@ canvas:focus, button:focus:not(:focus-visible) { outline:none; }
   background: radial-gradient(ellipse at 50% 35%, #2a1060 0%, #0d0820 70%);
   padding-top: 64px;
   padding-bottom: 40px;
+  /* the page itself never scrolls (body overflow hidden), so the title screen scrolls when the
+     Test menu makes it taller than the window; 'safe' keeps the top reachable */
+  height: 100vh; height: 100dvh;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  justify-content: safe center;
 }
 .title-grid {
   position: absolute; inset: 0; pointer-events: none;
@@ -901,6 +906,9 @@ canvas:focus, button:focus:not(:focus-visible) { outline:none; }
   background: rgba(0,0,0,0.2);
 }
 .title-test[hidden] { display: none; }
+/* Two columns of smaller buttons, so the menu fits on a phone */
+.title-test { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.title-test .btn { width: 100%; min-width: 0; margin: 0; padding: 9px 8px; font-size: 12px; }
 
 /* Load Game: the profile's saved wizards (js/explore.js openLoad) */
 #load-overlay {

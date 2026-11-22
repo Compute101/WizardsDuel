@@ -79,6 +79,7 @@ const RULES={
   // 1 more every `every` rounds after that.
   suddenDeath:{round:15, dmg:1, every:3},
   maxRounds:40,                // the simulator calls it a timeout after this
+  roundLimit:null,             // Winks: the game ends after this round, the most HP winning (level: a draw)
   // How the flick works:
   //  'pot'     pot `winks` winks to cast, paying retryCost after each miss (the rules above).
   //  'chances' (Beginner and Normal) up to `chances` flicks; the first pot casts the spell, no pot and it
@@ -86,6 +87,17 @@ const RULES={
   //            for n minus the spell's cost, so cheaper spells get more flicks.
   flickMode:'pot',
   chances:5,
+  //  'six'     (Winks) flick all six winks every cast. A plain spell's level comes from the winks potted
+  //            (0 fizzles, 1-2 Lesser, 3-4 Normal, 5-6 Greater; an even count recoups mana); an ability
+  //            goes off if you pot at least its difficulty. Every spell costs flatCost (abilities too).
+  flatCost:null,
+  recoup:0,
+  difficulty:[1,2,3],          // Winks: an ability's difficulty from its card's old level, unless it sets its own
+  six:6,                       // Winks: winks flicked per cast
+  // Winks: element cards. Four elements in play (drafted, one per suit), a shared pile of perElem
+  // cards each, a hand of `hand`. An element spell or ability spends a card of its element. Meditate
+  // draws medDraw and makes one trade (2 cards of an element for 1 draw). null: no cards.
+  cards:null,
 };
 // Named rule sets, from fewest rules to most. The RULES block above is the Advanced rules; the others
 // override some of it. useRules(name) switches (the simulator, balance tools and real play all read
@@ -104,8 +116,16 @@ const PRESETS={
     cleanseCost:[2,2,2], cleanseCount:[Infinity,Infinity,Infinity]},
   normal:{flickMode:'chances', chances:{budget:10}, pot:0.12, squops:0},
   advanced:{},
+  // Winks (docs/winks-design.md): its own game, Normal rules first. 12 mana and ward at most (25 tokens
+  // a colour cover two wizards), one ward pile, no seals, no Ironskin card.
+  // Abilities: difficulty 1 / 2 / 3 from the card's old level (2 / 3 / 4 left ability-heavy wizards at 35%).
+  // At most 12 rounds (roundLimit): a knockout wins, else the most HP after round 12 (level is a draw).
+  winks:{max:12, roundLimit:12, maxRounds:12, suddenDeath:null, flickMode:'six', flatCost:3, recoup:2, difficulty:[1,2,3], pot:0.31, squops:0,
+    wards:{boost:true, layers:1, seals:false, dispelStrips:false},
+    cards:{elems:4, perElem:9, hand:7, medDraw:2, trade:true, swap:true, swapAnyTime:true, wardCard:true},
+    minions:{stances:true, brace:1, target:true, sweep:true}},
 };
-const RULE_SETS=['beginner','normal','advanced'];   // the order players learn them in
+const RULE_SETS=['beginner','normal','advanced'];   // Winks ('winks') is its own game, not a step in this order   // the order players learn them in
 const DEFAULTS=JSON.parse(JSON.stringify(RULES));
 function useRules(name){
   if(name==='standard') name='advanced';   // the old name for these rules
@@ -133,7 +153,14 @@ function rulesOf(name){
 // A character's "hp" in tabletop.json is for the Normal rules (Beginner uses it too); it can change
 // it under a named rule set: "rules":{"advanced":{"hp":17}}. Only HP for now.
 function applyCharRules(){
-  Object.values(CHARS).forEach(c=>{ const o=c.alt[rulesName]||{}; c.hp=Math.min(RULES.maxHp,o.hp!=null?o.hp:c.baseHp); });
+  Object.values(CHARS).forEach(c=>{
+    const o=c.alt[rulesName]||{};
+    c.hp=Math.min(RULES.maxHp,o.hp!=null?o.hp:c.baseHp);
+    // "rules":{"winks":{"spells":{"radiant":{...a card}}}} swaps a card for that rule set only
+    c.spells=(c.baseSpells||c.spells).map(sp=>o.spells&&o.spells[sp.id]?o.spells[sp.id]:sp)
+      // "difficulty":{"blizzard":1} sets a Winks ability's difficulty
+      .map(sp=>o.difficulty&&o.difficulty[sp.id]!=null?Object.assign({},sp,{difficulty:o.difficulty[sp.id]}):sp);
+  });
   // Fighters (no HP cap: they keep their own counters): "rules":{"advanced":{"hp":n,"atk":n}} in fighters.json's "tabletop"
   Object.values(FIGHTERS).forEach(c=>{ const o=c.alt[rulesName]||{}; c.hp=o.hp!=null?o.hp:c.baseHp; c.atk=o.atk!=null?o.atk:c.baseAtk; });
 }
@@ -160,7 +187,7 @@ function load(chars,tt,fighters){
       hp:Math.min(RULES.maxHp,t.hp), baseHp:Math.min(RULES.maxHp,t.hp), alt:t.rules||{},
       atk:tableAtk(c,t), skin:t.skin||null,
       deathless:t.deathless||0, forbidden:(t.forbidden||c.forbidden||[]).map(e=>e==='physical'?'earth':e).filter(e=>ELEMENTS.includes(e)),
-      spells:t.spells||[]};
+      spells:t.spells||[], baseSpells:t.spells||[]};
   });
   // Non-wizard fighters (fighters.json, "tabletop" numbers): Actions only, one trait each
   FIGHTERS={};
@@ -186,13 +213,191 @@ const clamp=v=>Math.max(0,Math.min(RULES.max,v));
 // ── State ──────────────────────────────────────────────────
 let gs=null;
 // A table of seats p1, p2, … : list [{key, c?, team?}]. With no team every seat is its own side.
-function newTable(list){
+// opts.noDeal (Winks): don't draft and deal yet; the table screen drafts with players (draftOpen,
+// draftPick) and then calls dealWith(elems)
+function newTable(list,opts){
   const seat=(c,k,w)=>({w, key:k, c, hp:c.hp, mana:c.fighter?0:RULES.startMana, ward:null, wardInner:[],
     wardStats:{raised:0, boosted:0, layered:0, sealed:0, sealsBroken:0}, effects:[],
     medRound:-9, potted:0, catCounts:{}, lostLast:0, hpAtStart:0, used:{}, meditated:false, stance:'guard'});
   gs={round:1, seats:[], table:0, over:null, log:[], acts:{}};
   list.forEach((x,i)=>{ const w='p'+(i+1); gs[w]=seat(x.c||CHARS[x.key],x.key,w); gs[w].team=x.team||w; gs.seats.push(w); });
+  if(RULES.cards&&!(opts&&opts.noDeal)) dealCards();
   return gs;
+}
+// ── Winks with a human at the table (js/winks_table.js) ────
+// A human seat (st.human) makes its own Meditate trade and its own hand-limit discards; an AI that
+// wants a swap from a human leaves an offer in gs.offers for the table to ask about.
+function draftOpen(w){ return ELEMENTS.filter(e=>!gs.elems.includes(e)&&(isFighter(w)||!gs[w].c.forbidden.includes(e))); }
+function draftPick(w){ const can=draftOpen(w); return can.reduce((a,b)=>draftValue(w,b)>draftValue(w,a)?b:a,can[0]); }
+function dealWith(elems){
+  const C=RULES.cards, W=gs.seats.filter(w=>!isFighter(w));
+  gs.elems=elems.slice();
+  gs.pile=shuffle([].concat(...gs.elems.map(e=>Array(C.perElem).fill(e))));
+  gs.discard=[]; gs.offers=[];
+  W.forEach(w=>{ gs[w].hand=[]; gs[w].wardCards=[]; drawCards(w,C.hand); });
+}
+// The pile trade: two cards of e for one draw
+function pileTrade(w,e){
+  const h=gs[w].hand;
+  if(h.filter(x=>x===e).length<2) return false;
+  spendCard(w,e); spendCard(w,e); drawCards(w,1);
+  gs[w].trades=(gs[w].trades||0)+1;
+  return true;
+}
+// A human asks AI seat f: my `give` for your `want`. The AI answers as trySwap's foes do.
+function askSwap(w,f,give,want){
+  const st=gs[w], ft=gs[f];
+  if(!st.hand.includes(give)||!ft.hand||!ft.hand.includes(want)) return false;
+  const deny=0.3*cardWorth(st,want);
+  if(!(cardWorth(ft,give)>cardWorth(ft,want,true)+deny)) return false;
+  takeCard(f,want); ft.hand.push(give); takeCard(w,give); st.hand.push(want);
+  st.swaps=(st.swaps||0)+1;
+  return true;
+}
+// The human answers an AI's offer {from, give, want}; a no leaves the AI its pile trade
+function answerOffer(o,yes,to){
+  const st=gs[o.from], ht=gs[to];
+  if(yes&&st.hand.includes(o.give)&&ht.hand.includes(o.want)){
+    takeCard(to,o.want); st.hand.push(o.want); takeCard(o.from,o.give); ht.hand.push(o.give);
+    st.swaps=(st.swaps||0)+1;
+    return true;
+  }
+  aiPileTrade(o.from);
+  return false;
+}
+function discardCard(w,e){ spendCard(w,e); }
+// ── Winks: element cards ───────────────────────────────────
+const shuffle=a=>{ for(let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+// The draft: in turn (a duel: A, B, B, A), each wizard picks an element for a suit. The AI wants its
+// abilities' elements and some it can cast, and avoids the ones its foes' abilities need.
+function draftValue(w,e){
+  const st=gs[w], mine=st.c.spells.filter(sp=>sp.elem===e).length;
+  const theirs=foes(w).reduce((n,f)=>n+gs[f].c.spells.filter(sp=>sp.elem===e).length,0);
+  const opp=gs.elems.includes(opposite(e))?0.3:0;
+  return 3*mine-1.5*theirs+opp+rng()*1.5;
+}
+function draftElems(order){
+  gs.elems=gs.elems||[];
+  for(const w of order){
+    if(gs.elems.length>=RULES.cards.elems) break;
+    const can=ELEMENTS.filter(e=>!gs.elems.includes(e)&&(isFighter(w)||!gs[w].c.forbidden.includes(e)));
+    const pick=(gs.given&&gs.given.shift())||can.reduce((a,b)=>draftValue(w,b)>draftValue(w,a)?b:a,can[0]);
+    gs.elems.push(pick);
+  }
+}
+function dealCards(){
+  const C=RULES.cards, W=gs.seats.filter(w=>!isFighter(w));
+  gs.elems=[];
+  if(W.length){
+    const first=rng()<0.5?W:W.slice().reverse();
+    const order=[];   // snake: A B B A ...
+    for(let r=0;order.length<C.elems;r++) order.push(...(r%2?first.slice().reverse():first));
+    draftElems(order.slice(0,C.elems));
+  }
+  gs.pile=shuffle([].concat(...gs.elems.map(e=>Array(C.perElem).fill(e))));
+  gs.discard=[];
+  W.forEach(w=>{ gs[w].hand=[]; gs[w].wardCards=[]; drawCards(w,C.hand); });
+}
+function drawCards(w,n){
+  for(let i=0;i<n;i++){
+    if(!gs.pile.length){ if(!gs.discard.length) return; gs.pile=shuffle(gs.discard); gs.discard=[]; }
+    gs[w].hand.push(gs.pile.pop());
+  }
+}
+const holds=(st,e)=>!RULES.cards||(!!st.hand&&st.hand.includes(e));
+function takeCard(w,e){ const h=gs[w].hand, i=h?h.indexOf(e):-1; if(i>=0) h.splice(i,1); }
+// Ward cards whose pile is gone (broken, worn away, replaced) go to the discards
+function syncWardCards(w){
+  const st=gs[w];
+  if(!st.wardCards||!st.wardCards.length) return;
+  const up=st.ward?[st.ward.elem].concat(st.wardInner.map(l=>l.elem)):[];
+  st.wardCards=st.wardCards.filter(e=>up.includes(e)||(gs.discard.push(e),false));
+}
+function spendCard(w,e){
+  const h=gs[w].hand, i=h?h.indexOf(e):-1;
+  if(i>=0){ h.splice(i,1); gs.discard.push(e); }
+}
+// The element a pick spends: a plain spell's element, or an ability's
+function cardOf(st,a){
+  if(!RULES.cards||a.act||a.self||a.skin||a.cat==='meditate'||a.cat==='pass') return null;
+  const sp=a.sig&&sigById(st,a.sig);
+  return sp?sp.elem:a.elem;
+}
+// What the AI throws away first: elements it's barred from, then its biggest pile of one element
+function worstCard(st){
+  const h=st.hand, n=e=>h.filter(x=>x===e).length;
+  const bad=h.find(e=>st.c.forbidden.includes(e));
+  if(bad) return bad;
+  const want=e=>st.c.spells.some(sp=>sp.elem===e)?1:0;
+  return h.slice().sort((a,b)=>(n(b)-want(b)*1.5)-(n(a)-want(a)*1.5))[0];
+}
+// How much a seat wants one more card of e (its last card of e, when it gives one away): nothing for
+// an element it's barred from, more for its abilities' elements, less for each one it already holds
+function cardWorth(st,e,giving){
+  if(st.c.forbidden.includes(e)) return 0;
+  const base=1+1.5*st.c.spells.filter(sp=>sp.elem===e).length;
+  const n=st.hand.filter(x=>x===e).length;
+  return base/Math.max(1,giving?n:n+1);
+}
+// A swap with another player, haggled in the open: I offer my least useful card for the one I want
+// most; they say yes only if it's worth more to them than what they give. A no isn't a trade.
+function trySwap(w){
+  const st=gs[w], C=RULES.cards;
+  if(!C.swap||!st.hand.length) return false;
+  const give=st.hand.slice().sort((a,b)=>cardWorth(st,a,true)-cardWorth(st,b,true))[0];
+  const want=gs.elems.filter(e=>e!==give).sort((a,b)=>cardWorth(st,b)-cardWorth(st,a))[0];
+  if(!want||cardWorth(st,want)<=cardWorth(st,give,true)+0.25) return false;
+  if(st.lastAsk===give+'>'+want) return false;
+  st.lastAsk=give+'>'+want;
+  for(const f of foes(w).concat(active().filter(x=>x!==w&&gs[x].team===st.team))){
+    const ft=gs[f];
+    if(isFighter(f)||!ft.hand||!ft.hand.includes(want)) continue;
+    gs.swapAsks=(gs.swapAsks||0)+1;
+    if(ft.human){ (gs.offers=gs.offers||[]).push({from:w, to:f, give, want}); return true; }
+    // A foe also counts what it hands me: helping my abilities is worth less to it than its own gain
+    const deny=f===foe(w)?0.3*cardWorth(st,want):0;
+    if(cardWorth(ft,give)>cardWorth(ft,want,true)+deny){
+      takeCard(f,want); ft.hand.push(give); takeCard(w,give); st.hand.push(want);
+      st.swaps=(st.swaps||0)+1;
+      return true;
+    }
+  }
+  return false;
+}
+// Meditate: draw, then one trade: a swap with another player, or with the pile (a pair of an
+// element for one more draw)
+function meditateCards(w){
+  const st=gs[w], C=RULES.cards;
+  drawCards(w,C.medDraw);
+  if(!C.trade||st.human) return;
+  if(!C.swapAnyTime&&trySwap(w)) return;
+  aiPileTrade(w);
+}
+// Winks (cards.swapAnyTime): a swap with another player needs no Meditate; each AI may offer one at the
+// start of every round (an offer to a human waits in gs.offers)
+const AI_SWAP_ASK=0.35;
+let AI_SMITE=0.9;   // how often the AI Attacks (when it picks Damage) while Smite is up
+function swapRound(){
+  if(!RULES.cards||!RULES.cards.swap||!RULES.cards.swapAnyTime) return;
+  // Not every round (AI_SWAP_ASK), and never the same ask twice running
+  active().filter(w=>!gs[w].human&&!isFighter(w)&&gs[w].hand&&rng()<AI_SWAP_ASK).forEach(trySwap);
+}
+function aiPileTrade(w){
+  const st=gs[w];
+  const h=st.hand, cnt={}; h.forEach(e=>cnt[e]=(cnt[e]||0)+1);
+  const pairs=Object.keys(cnt).filter(e=>cnt[e]>=2);
+  if(!pairs.length) return;
+  const bad=pairs.find(e=>st.c.forbidden.includes(e));
+  const extra=pairs.find(e=>cnt[e]>=3);
+  const e=bad||extra||(rng()<0.3?pairs[0]:null);
+  if(!e) return;
+  spendCard(w,e); spendCard(w,e); drawCards(w,1);
+  st.trades=(st.trades||0)+1;
+}
+function handLimit(w){
+  const st=gs[w];
+  if(st.human) return;   // the table asks the player which to discard
+  while(st.hand&&st.hand.length>RULES.cards.hand) spendCard(w,worstCard(st));
 }
 function newGame(k1,k2){ return newTable([{key:k1},{key:k2}]); }
 const active=()=>gs.seats.filter(w=>!gs[w].out);
@@ -225,13 +430,14 @@ function aimsAtFoe(st,a){
   return !sp||sp.kind==='curse'||!!(sp.action&&sp.action.type==='siphon');
 }
 function locked(st,cat){ return fx(st,'lock').some(e=>e.cat===cat&&e.from<gs.round); }
-function canMeditate(st){ return st.medRound!==gs.round-1&&st.mana<RULES.max; }
+function canMeditate(st){ return st.medRound!==gs.round-1&&(st.mana<RULES.max||!!RULES.cards); }   // Winks: it draws cards, so full mana is no bar
 function incomeDrain(st){ return fx(st,'incomeDrain').reduce((a,e)=>a+e.n,0); }
 function mostUsedCat(st){ return ['damage','protect','dispel'].reduce((a,c)=>(st.catCounts[c]||0)>(st.catCounts[a]||0)?c:a,'damage'); }
 function costOf(st,a){
   if(a.cat==='meditate'||a.cat==='pass'||a.act) return 0;
   if(a.skin) return skinOf(st).cost;
   const sp=a.sig&&sigById(st,a.sig);
+  if(RULES.flatCost!=null) return (sp&&sp.winksCost!=null?sp.winksCost:RULES.flatCost)+fx(st,'spellbind').filter(e=>e.cat===a.cat).reduce((s,e)=>s+e.extra,0);
   let c=sp?sp.cost:isSeal(a)?sealCost(st):a.self?RULES.cleanseCost[a.ring-1]:RULES.cats[a.cat].cost[a.ring-1];
   if(!sp) c=Math.max(1,c);
   c+=fx(st,'spellbind').filter(e=>e.cat===a.cat).reduce((s,e)=>s+e.extra,0);
@@ -343,7 +549,20 @@ function titheFor(who,n){
 // A strike, Attack or Grapple aimed at one body (minions.target): it hits that body alone, no ward,
 // no riders. False when the body is gone (the hit goes to its master instead).
 function hitBody(who,t,uid,d){
-  const ts=gs[t], m=uid!=null&&ts.effects.find(e=>e.uid===uid&&e.type==='minion'&&e.soak);
+  const ts=gs[t];
+  // Winks (minions.sweep): aiming at the bodies sweeps them, oldest first, one HP per point of damage;
+  // anything left over is lost
+  if(RULES.minions.sweep){
+    const list=bodies(ts);
+    if(!list.length) return false;
+    for(const m of list){
+      if(d<=0) break;
+      const take=Math.min(d,m.hp); m.hp-=take; d-=take;
+      if(m.hp<=0){ removeEffects(t,[m]); titheFor(t,1); }
+    }
+    return true;
+  }
+  const m=uid!=null&&ts.effects.find(e=>e.uid===uid&&e.type==='minion'&&e.soak);
   if(!m) return false;
   m.hp-=d;
   if(m.hp<=0){ removeEffects(t,[m]); titheFor(t,1); }
@@ -447,7 +666,9 @@ const vanishOf=st=>st.effects.find(e=>e.type==='vanish');
 function doDispel(who,a){
   const st=gs[who], t=tgtOf(who,a), ts=gs[t], sp=a.sig&&sigById(st,a.sig);
   if(a.self){   // Cleanse: the worst curses first (a player picks which)
-    const list=curses(st).sort((x,y)=>curseHarm(y)-curseHarm(x)).slice(0,RULES.cleanseCount[a.ring-1]);
+    // a.cleanse (a player's choice): the curses (ids) to remove first
+    const pref=a.cleanse||[], rank=e=>pref.includes(e.id)?100-pref.indexOf(e.id):curseHarm(e)-1000;
+    const list=curses(st).sort((x,y)=>rank(y)-rank(x)).slice(0,RULES.cleanseCount[a.ring-1]);
     removeEffects(who,list); return;
   }
   if(sp){
@@ -556,6 +777,17 @@ function doAction(who,a){
     if(d>0) incoming(t,d,0,false,0,null,'physical');
     return;
   }
+  // Smite (Mary, Winks): her Attacks are Arcane magic and hit harder. A Guard can't stop magic; a ward can.
+  const sm=fx(st,'smite')[0];
+  if(sm){
+    // charges: one used per Attack (yellow tokens on the card); none means until dispelled
+    if(sm.charges!=null&&--sm.charges<=0) removeEffects(who,[sm]);
+    const d=atk+sm.bonus+(ta&&ta.act==='grapple'&&atMe?1:0);
+    if(a.minion!=null&&RULES.minions.target&&hitBody(who,t,a.minion,d)) return;
+    if(strikeMisses(t)) return;
+    incoming(t,hitAdjust(ts,d,'magic'),wardAdj(ts,sm.elem),false,0,sm.elem);
+    return;
+  }
   // Attack (an archer's is a bow shot: it slips past a Guard)
   if(a.minion!=null&&RULES.minions.target&&hitBody(who,t,a.minion,atk)) return;
   if(guarding(t)&&st.c.trait!=='ranged'){ gs.src=t; incoming(who,ts.c.atk,0,false,0,null,'physical'); return; }   // blocked and countered
@@ -604,7 +836,8 @@ function playRound(picks,flicks,squops){
     });
     if(checkOver()) return outcome;
   }
-  W.forEach(w=>{ if(picks[w].cat==='meditate'&&outcome[w]==='cast'&&!gs[w].out) gainMana(w,Math.max(0,RULES.meditate-incomeDrain(gs[w]))); });
+  if(RULES.cards) W.forEach(syncWardCards);
+  W.forEach(w=>{ if(picks[w].cat==='meditate'&&outcome[w]==='cast'&&!gs[w].out){ gainMana(w,Math.max(0,RULES.meditate-incomeDrain(gs[w]))); if(RULES.cards) meditateCards(w); } });
   squopPhase(squops);
   endRound();
   return outcome;
@@ -629,6 +862,25 @@ const potChance=w=>gs.pot&&gs.pot[w]!=null?gs.pot[w]:RULES.pot;
 const squopChance=w=>gs.squop&&gs.squop[w]!=null?gs.squop[w]:RULES.squop;
 // The flick: pot RULES.winks[ring] winks; after each miss, pay retryCost to go again or give up.
 // Returns true when the spell is cast. Missed winks are left on the table (gs.table).
+// Winks: how many of the six winks went in. Real play gives {potted:n}; the simulator draws from the
+// seat's real scores (gs.scores[w], a list of rounds, shuffled and dealt like a bag) or rolls each
+// wink at the seat's pot chance.
+function sixPots(w,given){
+  if(given&&given.potted!=null) return given.potted;
+  // gs.scores[w]: a list of that player's real games (12 rounds each). One game is drawn for the whole
+  // match and only its rounds are shuffled, so a good (or bad) run stays a good run.
+  const src=gs.scores&&gs.scores[w];
+  if(src&&src.length){
+    gs.bags=gs.bags||{}; gs.played=gs.played||{};
+    if(!gs.played[w]) gs.played[w]=Array.isArray(src[0])?src[Math.floor(rng()*src.length)]:src;
+    if(!gs.bags[w]||!gs.bags[w].length) gs.bags[w]=shuffle(gs.played[w].slice());
+    return gs.bags[w].pop();
+  }
+  let n=0; for(let i=0;i<RULES.six;i++) if(rng()<potChance(w)) n++;
+  return n;
+}
+const sixLevel=n=>Math.ceil(n/2);   // 1-2 Lesser, 3-4 Normal, 5-6 Greater
+const difficultyOf=sp=>sp.difficulty!=null?sp.difficulty:RULES.difficulty[(sp.ring||2)-1];
 function flickCast(w,ring,given,paid){
   const st=gs[w], need=RULES.winks[ring-1];
   if(RULES.flickMode==='chances'){
@@ -684,7 +936,23 @@ function pay(w,a,flick){
   if(sp&&sp.action&&sp.action.type==='bloodpact'){ loseHp(w,sp.action.hp); gainMana(w,sp.action.hp); }
   if(cost>st.mana) return 'nomana';
   st.mana-=cost;
-  if(!flickCast(w,ringOf(st,a),flick,cost)) return 'fizzle';
+  if(RULES.flickMode==='six'){
+    const card=cardOf(st,a);
+    if(card) takeCard(w,card);
+    const n=sixPots(w,flick);
+    st.potted+=n; st.flicks=(st.flicks||0)+RULES.six;
+    st.sixLog=st.sixLog||[0,0,0,0,0,0,0]; st.sixLog[Math.min(6,n)]++;
+    const fizzle=sp?n<difficultyOf(sp):n<=0;
+    // A cast ward's card goes under its pile, marking its element, until the pile is gone
+    const isWard=a.cat==='protect'&&!a.self&&!a.skin&&(!sp||sp.kind==='ward'||!!sp.ward);
+    if(card){ if(!fizzle&&isWard&&RULES.cards.wardCard) st.wardCards.push(card); else gs.discard.push(card); }
+    if(fizzle) return 'fizzle';
+    if(!sp){
+      a.ring=Math.min(3,sixLevel(n));
+      if(n%2===0&&RULES.recoup) gainMana(w,RULES.recoup);
+    }
+  }
+  else if(!flickCast(w,ringOf(st,a),flick,cost)) return 'fizzle';
   if(a.cat==='protect'&&!isSeal(a)) fx(st,'candle').forEach(e=>loseHp(w,e.dmg));   // a seal isn't a new ward
   return 'cast';
 }
@@ -758,9 +1026,16 @@ function endRound(){
     // Skin upkeep: pay it or the skin fades (worth it against blows, not against a wizard who casts)
     const sk=skinOn(st), up=RULES.skin.upkeep||0;
     if(sk&&up){ if(st.mana>=up) st.mana-=up; else removeEffects(w,[sk]); }
+    if(RULES.cards&&st.hand){ syncWardCards(w); handLimit(w); }
     st.lostLast=Math.max(0,st.hpAtStart-st.hp);
   });
   gs.round++;
+  if(RULES.roundLimit&&gs.round>RULES.roundLimit&&!gs.over){
+    const hp={}; active().forEach(w=>{ const t=gs[w].team; hp[t]=(hp[t]||0)+gs[w].hp; });
+    const best=Math.max(...Object.values(hp)), top=Object.keys(hp).filter(t=>hp[t]===best);
+    gs.over=top.length===1?top[0]:'draw';
+    gs.onPoints=true;
+  }
 }
 // A seat at 0 HP is out; the game is over when one side (or none) is left. gs.over: the winning team
 // ('p1' / 'p2' in a duel, 'A' / 'B' in an encounter) or 'draw'.
@@ -782,6 +1057,11 @@ function canPick(st,a){
   if(st.c.fighter) return false;
   if(isSeal(a)) return canSeal(st)&&sealCost(st)<=st.mana;
   if(a.elem&&!a.sig&&st.c.forbidden.includes(a.elem)) return false;
+  if(RULES.cards){
+    if(a.skin) return false;   // no Ironskin card in Winks
+    const e=cardOf(st,a);
+    if(e&&!holds(st,e)) return false;
+  }
   const sp=a.sig&&sigById(st,a.sig);
   if(sp&&sp.effect&&sp.effect.type==='gate'&&st.lastGate===gs.round-1) return false;   // not two rounds running
   if(sp&&sp.requires==='skeleton'&&!minions(st,'skeleton').length) return false;   // Danse Macabre needs a dancer
@@ -855,6 +1135,7 @@ function aiAimAtBody(w,a,smart){
   const sp=a.sig&&sigById(gs[w],a.sig);
   const d=a.act==='attack'?gs[w].c.atk:sp?(sp.dmg||0):RULES.cats.damage.power[(a.ring||1)-1];
   const prey=bodies(ts).filter(m=>m.dmg&&m.hp<=d).sort((x,y)=>y.dmg-x.dmg)[0];
+  if(RULES.minions.sweep){ const biting=bodies(ts).filter(m=>m.dmg); if(biting.length>=2||(biting.length&&biting.length>=Math.min(d,ts.hp))) a.minion='all'; return; }
   if(prey) a.minion=prey.uid;
 }
 // Fighters: mostly Attack; Guard a foe who Attacked me; a soldier Guards when he was aimed at; Grapple a
@@ -883,8 +1164,9 @@ function aiPhys(w,cat,smart){
   const broke=!ts.c.fighter&&ts.mana<costOf(ts,{cat:'damage',ring:1});
   if(cat==='damage'){
     if(vanishOf(st)||vanishOf(ts)) return null;
-    if(!canPick(st,{cat,elem:ELEMENTS.find(e=>!st.c.forbidden.includes(e)),ring:1})) return act('attack');
+    if(!ELEMENTS.some(e=>!st.c.forbidden.includes(e)&&canPick(st,{cat,elem:e,ring:1}))) return act('attack');
     let p=A.attackBase;
+    if(fx(st,'smite').length) return rng()<(smart?AI_SMITE:0.45)?act('attack'):null;   // Smite: Attacks are her strikes now
     if(ts.ward&&!skinOn(ts)) p+=A.attackOpen;
     if(skinOn(ts)) p*=0.5;
     if(last.act==='guard') p*=0.3;
@@ -938,6 +1220,13 @@ function aiChooseCore(w,level){
       .sort((x,y)=>gs[y].c.atk-gs[x].c.atk)[0];
     if(prey) return {cat:'damage', act:'attack', target:prey};
   }
+  // Winks: Meditate when the hand has run dry
+  if(RULES.cards&&canMeditate(st)){
+    const usable=st.hand.filter(e=>!st.c.forbidden.includes(e)).length;
+    if(rng()<(usable===0?0.85:usable===1?0.4:usable===2?0.12:0)) return {cat:'meditate'};
+  }
+  // Smite up: swing (unless the foe has Vanished or Damage is locked)
+  if(fx(st,'smite').length&&!locked(st,'damage')&&!vanishOf(ts)&&rng()<AI_SMITE) return {cat:'damage', act:'attack'};
   // Meditate when short of mana
   if(canMeditate(st)&&st.mana<costOf(st,{cat:'damage',ring:2})){
     let p=st.mana<costOf(st,{cat:'damage',ring:1})?0.5:0.25;
@@ -1038,7 +1327,8 @@ function aiInCat(w,cat,smart){
     return a;
   }
   if(idleDispel) return null;
-  const elems=ELEMENTS.filter(e=>!st.c.forbidden.includes(e));
+  const elems=ELEMENTS.filter(e=>!st.c.forbidden.includes(e)&&holds(st,e));
+  if(!elems.length) return null;
   let elem=elems[Math.floor(rng()*elems.length)];
   if(smart&&ts.ward&&(cat==='dispel'||cat==='damage')&&elems.includes(opposite(ts.ward.elem))&&rng()<0.8) elem=opposite(ts.ward.elem);
   if(cat==='protect'&&smart){
@@ -1072,27 +1362,42 @@ function aiCall(w){
   return mostUsedCat(ts);
 }
 
+// Winks: the user's real games, 12 rounds each (winks potted out of 6 per round). Kept game by game:
+// a simulated match plays one of them, its rounds shuffled (sixPots). 'daddy': four solo practice games
+// and two matches against 'b' (B won them 5–4 and 12–0 on rounds).
+const WINK_SCORES={
+  daddy:[[1,0,1,2,0,1,2,1,2,2,2,3], [0,1,2,3,2,1,3,1,5,2,1,1], [3,3,1,1,3,3,4,2,4,1,1,2], [2,0,2,1,3,1,2,0,3,1,4,2],
+         [1,1,4,0,3,1,4,3,1,3,4,3], [1,1,1,1,2,3,1,3,2,2,3,0]],
+  b:[[1,3,3,2,3,1,2,4,4,4,3,2], [3,2,3,4,4,4,3,4,4,6,4,2]],
+};
+
 // ── Simulator ──────────────────────────────────────────────
 // Same result shape as the standard game's simMatch, so tools/balance.html can show either.
-function simMatch(k1,k2,ai){
+// opts.scores: {p1:[winks potted per round, ...], p2:[...]} for Winks (real players' rounds, shuffled)
+function simMatch(k1,k2,ai,opts){
   newGame(k1,k2);
+  if(opts&&opts.scores){ gs.scores={p1:opts.scores.p1, p2:opts.scores.p2}; }
   const picks={p1:{},p2:{}};
   while(!gs.over&&gs.round<=RULES.maxRounds){
+    swapRound();
     const a={p1:aiChoose('p1',ai), p2:aiChoose('p2',ai)};
     ['p1','p2'].forEach(w=>{ const k=a[w].act||(a[w].skin?'skin':null)||a[w].sig||(a[w].self?(a[w].cat==='protect'?'seal':'cleanse'):a[w].cat); picks[w][k]=(picks[w][k]||0)+1; });
     playRound(a);
   }
-  return {winner:gs.over||'timeout', rounds:gs.over?gs.round:gs.round-1, hp:{p1:gs.p1.hp,p2:gs.p2.hp}, picks,
-    wards:{p1:{...gs.p1.wardStats}, p2:{...gs.p2.wardStats}}};
+  return {winner:gs.over||'timeout', rounds:gs.over&&!gs.onPoints?gs.round:gs.round-1, hp:{p1:gs.p1.hp,p2:gs.p2.hp}, picks,
+    wards:{p1:{...gs.p1.wardStats}, p2:{...gs.p2.wardStats}}, elems:gs.elems?gs.elems.slice():null,
+    six:{p1:gs.p1.sixLog||null, p2:gs.p2.sixLog||null}, onPoints:!!gs.onPoints,
+    cards:RULES.cards?{swaps:(gs.p1.swaps||0)+(gs.p2.swaps||0), asks:gs.swapAsks||0, trades:(gs.p1.trades||0)+(gs.p2.trades||0)}:null};
 }
 // Every ordered pair, `games` per matchup (half on each side). Returns [{key,name,winRate,rounds}], strongest first.
-function balance(games,ai){
-  const keys=Object.keys(CHARS), s={};
+// keys: the wizards to include (default all); opts as simMatch (both sides get the same scores unless set per side)
+function balance(games,ai,keys,opts){
+  keys=keys||Object.keys(CHARS); const s={};
   keys.forEach(k=>s[k]={w:0,n:0,rounds:0});
   keys.forEach(a=>keys.forEach(b=>{
     if(a===b) return;
     for(let g=0;g<games/2;g++){
-      const r=simMatch(a,b,ai||'normal');
+      const r=simMatch(a,b,ai||'normal',opts);
       s[a].n++; s[b].n++; s[a].rounds+=r.rounds; s[b].rounds+=r.rounds;
       if(r.winner==='p1') s[a].w++; else if(r.winner==='p2') s[b].w++; else { s[a].w+=0.5; s[b].w+=0.5; }
     }
@@ -1179,7 +1484,8 @@ useRules('normal');
 
 const TT={RULES, PRESETS, RULE_SETS, useRules, rulesOf, AI_WARDS, AI_FIGHTERS, AI_ACTIONS, AI_MINIONS, AI_ENCOUNTER, WAVES, LEVELS, BREATHER,
   get rulesName(){ return rulesName; }, ELEMENTS, opposite, load, newGame, newTable, playRound, aiChoose, simMatch, balance, canPick, costOf,
-  survival, survivalBalance, get chars(){ return CHARS; }, get fighters(){ return FIGHTERS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
+  survival, survivalBalance, WINK_SCORES, setSmiteAI(p){ AI_SMITE=p; }, draftOpen, draftPick, dealWith, pileTrade, askSwap, answerOffer, discardCard, swapRound,
+  difficultyOf:sp=>difficultyOf(sp), sigById:(st,id)=>sigById(st,id), get chars(){ return CHARS; }, get fighters(){ return FIGHTERS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
 if(typeof module!=='undefined'&&module.exports) module.exports=TT;
 else root.TT=TT;
 })(typeof window!=='undefined'?window:this);

@@ -26,6 +26,7 @@
   "sylvara": {
     "skin": {"name": "Barkskin", "cost": 1, "soak": 3},
     "hp": 11,
+    "rules": {"winks": {"difficulty": {"heal": 1}}},
     "spells": [
       {"id": "heal", "name": "Regen", "cat": "protect", "elem": "earth", "ring": 2, "cost": 3, "kind": "buff", "effect": {"type": "regen", "heal": 1},
        "text": "Until dispelled: heal 1 at every round end."},
@@ -48,6 +49,7 @@
   },
   "gnash": {
     "hp": 11,
+    "rules": {"winks": {"difficulty": {"warpaint": 1}, "hp": 10}},
     "spells": [
       {"id": "warpaint", "name": "War Paint", "cat": "protect", "elem": "earth", "ring": 2, "cost": 2, "kind": "buff", "effect": {"type": "resist", "n": 1},
        "text": "Until dispelled: every hit on you deals 1 less (min 1)."},
@@ -71,6 +73,7 @@
   },
   "skadi": {
     "hp": 11,
+    "rules": {"winks": {"difficulty": {"blizzard": 1}, "hp": 10}},
     "spells": [
       {"id": "icelance", "name": "Ice Lance", "cat": "damage", "elem": "ice", "ring": 2, "cost": 5, "kind": "strike", "dmg": 5, "chill": true,
        "text": "Ice strike of 5. If it reaches HP, the foe can't pick Damage next round."},
@@ -93,6 +96,7 @@
   },
   "mary": {
     "hp": 11,
+    "rules": {"winks": {"spells": {"radiant": {"id": "smite", "name": "Smite", "cat": "protect", "elem": "arcane", "ring": 2, "kind": "buff", "effect": {"type": "smite", "bonus": 2, "charges": 3, "elem": "arcane"}, "text": "Your next 3 Attacks are Arcane magic and deal +2 (3 for Mary): a ward stops them, a Guard doesn't. Put 3 yellow tokens on this card and take one off for each Attack."}}}},
     "spells": [
       {"id": "divineheal", "name": "Heal", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 5, "kind": "instant", "action": {"type": "heal", "n": 6},
        "text": "Heal 6."},
@@ -162,7 +166,7 @@
   },
   "valdris": {
     "hp": 7,
-    "rules": {"beginner": {"hp": 6}, "normal": {"hp": 8}, "advanced": {"hp": 9}},
+    "rules": {"beginner": {"hp": 6}, "normal": {"hp": 8}, "advanced": {"hp": 9}, "winks": {"hp": 11}},
     "spells": [
       {"id": "raisedead", "name": "Raise Dead", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "skeleton", "kind": "minion", "soak": true, "dmg": 1, "max": 5, "raise": 3},
        "text": "Raise 3 skeletons (max 5 on the table). Each has 1 HP. Guarding, they stand in front of you: every point of damage kills one before anything reaches you or your ward. Attacking, each bites the foe for 1 (a blow) at every round end. Dispels can't touch them."},
