@@ -98,6 +98,49 @@ const suitOf=e=>{ const i=S().elems.indexOf(e); return i<0?null:SUITS[i]; };
 const spells=w=>st(w).c.spells;
 const charOf=k=>CHARS[k]||{};
 
+// ── Tavern music ───────────────────────────────────────────
+// audio/tavern_theme.mp3 (tools/music/tavern.py): two jigs, a seamless 77 s loop, quiet and cheery.
+// A Web Audio loop for a gapless join, an <audio> loop if that's missing; fades in and out. The ♪
+// button turns it off (opts.music). It starts from the tap that opened the table, so phones allow it.
+const TAVERN_SRC='audio/tavern_theme.mp3?v=1', TAVERN_VOL=0.55;
+const Tavern=(()=>{
+  let ctx=null, gain=null, buf=null, src=null, el=null, want=false, loading=null;
+  const load=()=>loading||(loading=fetch(TAVERN_SRC).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>ctx.decodeAudioData(b,ok,no))).then(b=>buf=b));
+  function play(){
+    want=true;
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC) throw 0;
+      if(!ctx){ ctx=new AC(); gain=ctx.createGain(); gain.gain.value=0; gain.connect(ctx.destination); }
+      if(ctx.state==='suspended') ctx.resume();
+      load().then(()=>{
+        if(!want) return;
+        if(!src){ src=ctx.createBufferSource(); src.buffer=buf; src.loop=true; src.connect(gain); src.start(); }
+        const t=ctx.currentTime; gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(gain.gain.value,t);
+        gain.gain.linearRampToValueAtTime(TAVERN_VOL,t+1.5);
+      }).catch(fallback);
+    }catch(e){ fallback(); }
+  }
+  function fallback(){
+    if(!want) return;
+    if(!el){ el=new Audio(TAVERN_SRC); el.loop=true; }
+    el.volume=TAVERN_VOL; const p=el.play(); if(p&&p.catch) p.catch(()=>{});
+  }
+  function stop(){
+    want=false;
+    if(el) el.pause();
+    if(ctx&&gain&&src){
+      const t=ctx.currentTime, s=src; src=null;
+      gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(gain.gain.value,t); gain.gain.linearRampToValueAtTime(0,t+0.8);
+      setTimeout(()=>{ try{ s.stop(); }catch(e){} },900);
+    }
+  }
+  // a start the browser blocked gets another go at the next tap
+  window.addEventListener('pointerdown',()=>{ if(want&&ctx&&ctx.state==='suspended') ctx.resume(); },true);
+  return {play, stop};
+})();
+function musicBtn(){ const b=$('wk-music'); if(b){ b.textContent=opts.music===false?'\u266A\uFE0E off':'\u266A\uFE0E'; b.style.opacity=opts.music===false?0.55:1; } }
+
 // ── Screen ─────────────────────────────────────────────────
 function build(){
   const d=document.createElement('div');
@@ -106,6 +149,7 @@ function build(){
     <div class="wk-top">
       <div class="wk-title">🃏 Winks <span id="wk-round"></span></div>
       <div class="wk-top-btns">
+        <button class="wk-btn" id="wk-music" type="button" title="Tavern music on / off">\u266A\uFE0E</button>
         <button class="wk-btn" id="wk-help" type="button">? Rules</button>
         <button class="wk-btn" id="wk-new" type="button">↺ New</button>
         <button class="wk-btn" id="wk-close" type="button">✕</button>
@@ -131,6 +175,7 @@ function build(){
     <div class="wk-panel" id="wk-panel" hidden></div>`;
   document.body.appendChild(d);
   $('wk-close').onclick=close;
+  $('wk-music').onclick=()=>{ opts.music=opts.music===false; saveOpts(); musicBtn(); if(opts.music===false) Tavern.stop(); else Tavern.play(); };
   $('wk-new').onclick=()=>setupPanel();
   $('wk-help').onclick=helpPanel;
   window.addEventListener('resize',()=>{ if(isOpen()) fit(); });
@@ -145,6 +190,8 @@ const isOpen=()=>{ const d=$('wk-screen'); return !!d&&d.classList.contains('act
 function open(){
   const d=$('wk-screen')||build();
   d.classList.add('active');
+  if(window.Explore&&Explore.titleMusic) Explore.titleMusic();   // the title theme makes way
+  musicBtn(); if(opts.music!==false) Tavern.play();
   $('wk-hint').textContent='Shuffling the deck…';
   load().then(()=>{ TT.useRules('winks'); if(G&&!S().over&&G.phase!=='setup'){ render(); fit(); } else setupPanel(); })
     .catch(e=>{ $('wk-hint').textContent='Couldn\'t load the wizards: '+e.message; console.error(e); });
@@ -152,6 +199,8 @@ function open(){
 function close(){
   const d=$('wk-screen'); if(d) d.classList.remove('active');
   stopFx();
+  Tavern.stop();
+  if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
   if(window.TT) TT.useRules('normal');   // the Tabletop screen and the pub expect Normal
 }
 

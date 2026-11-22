@@ -1590,7 +1590,8 @@ function playTheme(){
 // (the creator keeps it going itself)
 function titleMusic(){
   const t=document.getElementById('title-screen');
-  if(t&&t.classList.contains('active')&&!running) playTheme();
+  const wk=document.getElementById('wk-screen');   // the Winks Table plays its own tavern music
+  if(t&&t.classList.contains('active')&&!running&&!(wk&&wk.classList.contains('active'))) playTheme();
   else if(!creating) stopTheme();
 }
 ['pointerdown','keydown'].forEach(t=>window.addEventListener(t,()=>{
@@ -2284,7 +2285,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(sp) sp.addEventListener('click',playTheme);
   titleMusic();
 });
-window.Explore={open, close, refreshTitle,
+window.Explore={open, close, refreshTitle, titleMusic:()=>titleMusic(),
   _talk:n=>talkTo(n), _magic:()=>magic,
   _setClock:m=>folkApi.setClock(m),
   _fightActor:id=>{ const a=actors.find(x=>x.e.incident===id||x.e.id===id); if(a) fight(a); return !!a; }, _actorIds:()=>actors.map(a=>a.e.incident||a.e.id), _quests:()=>quests, _allies:()=>allies, _tick:()=>Year&&Year.tick(folkApi),
