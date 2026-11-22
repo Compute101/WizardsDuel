@@ -205,15 +205,59 @@ const clamp=v=>Math.max(0,Math.min(RULES.max,v));
 // ── State ──────────────────────────────────────────────────
 let gs=null;
 // A table of seats p1, p2, … : list [{key, c?, team?}]. With no team every seat is its own side.
-function newTable(list){
+// opts.noDeal (Winks): don't draft and deal yet; the table screen drafts with players (draftOpen,
+// draftPick) and then calls dealWith(elems)
+function newTable(list,opts){
   const seat=(c,k,w)=>({w, key:k, c, hp:c.hp, mana:c.fighter?0:RULES.startMana, ward:null, wardInner:[],
     wardStats:{raised:0, boosted:0, layered:0, sealed:0, sealsBroken:0}, effects:[],
     medRound:-9, potted:0, catCounts:{}, lostLast:0, hpAtStart:0, used:{}, meditated:false, stance:'guard'});
   gs={round:1, seats:[], table:0, over:null, log:[], acts:{}};
   list.forEach((x,i)=>{ const w='p'+(i+1); gs[w]=seat(x.c||CHARS[x.key],x.key,w); gs[w].team=x.team||w; gs.seats.push(w); });
-  if(RULES.cards) dealCards();
+  if(RULES.cards&&!(opts&&opts.noDeal)) dealCards();
   return gs;
 }
+// ── Winks with a human at the table (js/winks_table.js) ────
+// A human seat (st.human) makes its own Meditate trade and its own hand-limit discards; an AI that
+// wants a swap from a human leaves an offer in gs.offers for the table to ask about.
+function draftOpen(w){ return ELEMENTS.filter(e=>!gs.elems.includes(e)&&(isFighter(w)||!gs[w].c.forbidden.includes(e))); }
+function draftPick(w){ const can=draftOpen(w); return can.reduce((a,b)=>draftValue(w,b)>draftValue(w,a)?b:a,can[0]); }
+function dealWith(elems){
+  const C=RULES.cards, W=gs.seats.filter(w=>!isFighter(w));
+  gs.elems=elems.slice();
+  gs.pile=shuffle([].concat(...gs.elems.map(e=>Array(C.perElem).fill(e))));
+  gs.discard=[]; gs.offers=[];
+  W.forEach(w=>{ gs[w].hand=[]; gs[w].wardCards=[]; drawCards(w,C.hand); });
+}
+// The pile trade: two cards of e for one draw
+function pileTrade(w,e){
+  const h=gs[w].hand;
+  if(h.filter(x=>x===e).length<2) return false;
+  spendCard(w,e); spendCard(w,e); drawCards(w,1);
+  gs[w].trades=(gs[w].trades||0)+1;
+  return true;
+}
+// A human asks AI seat f: my `give` for your `want`. The AI answers as trySwap's foes do.
+function askSwap(w,f,give,want){
+  const st=gs[w], ft=gs[f];
+  if(!st.hand.includes(give)||!ft.hand||!ft.hand.includes(want)) return false;
+  const deny=0.3*cardWorth(st,want);
+  if(!(cardWorth(ft,give)>cardWorth(ft,want,true)+deny)) return false;
+  takeCard(f,want); ft.hand.push(give); takeCard(w,give); st.hand.push(want);
+  st.swaps=(st.swaps||0)+1;
+  return true;
+}
+// The human answers an AI's offer {from, give, want}; a no leaves the AI its pile trade
+function answerOffer(o,yes,to){
+  const st=gs[o.from], ht=gs[to];
+  if(yes&&st.hand.includes(o.give)&&ht.hand.includes(o.want)){
+    takeCard(to,o.want); st.hand.push(o.want); takeCard(o.from,o.give); ht.hand.push(o.give);
+    st.swaps=(st.swaps||0)+1;
+    return true;
+  }
+  aiPileTrade(o.from);
+  return false;
+}
+function discardCard(w,e){ spendCard(w,e); }
 // ── Winks: element cards ───────────────────────────────────
 const shuffle=a=>{ for(let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 // The draft: in turn (a duel: A, B, B, A), each wizard picks an element for a suit. The AI wants its
@@ -299,6 +343,7 @@ function trySwap(w){
     const ft=gs[f];
     if(isFighter(f)||!ft.hand||!ft.hand.includes(want)) continue;
     gs.swapAsks=(gs.swapAsks||0)+1;
+    if(ft.human){ (gs.offers=gs.offers||[]).push({from:w, to:f, give, want}); return true; }
     // A foe also counts what it hands me: helping my abilities is worth less to it than its own gain
     const deny=f===foe(w)?0.3*cardWorth(st,want):0;
     if(cardWorth(ft,give)>cardWorth(ft,want,true)+deny){
@@ -314,8 +359,12 @@ function trySwap(w){
 function meditateCards(w){
   const st=gs[w], C=RULES.cards;
   drawCards(w,C.medDraw);
-  if(!C.trade) return;
+  if(!C.trade||st.human) return;
   if(trySwap(w)) return;
+  aiPileTrade(w);
+}
+function aiPileTrade(w){
+  const st=gs[w];
   const h=st.hand, cnt={}; h.forEach(e=>cnt[e]=(cnt[e]||0)+1);
   const pairs=Object.keys(cnt).filter(e=>cnt[e]>=2);
   if(!pairs.length) return;
@@ -328,6 +377,7 @@ function meditateCards(w){
 }
 function handLimit(w){
   const st=gs[w];
+  if(st.human) return;   // the table asks the player which to discard
   while(st.hand&&st.hand.length>RULES.cards.hand) spendCard(w,worstCard(st));
 }
 function newGame(k1,k2){ return newTable([{key:k1},{key:k2}]); }
@@ -1384,7 +1434,8 @@ useRules('normal');
 
 const TT={RULES, PRESETS, RULE_SETS, useRules, rulesOf, AI_WARDS, AI_FIGHTERS, AI_ACTIONS, AI_MINIONS, AI_ENCOUNTER, WAVES, LEVELS, BREATHER,
   get rulesName(){ return rulesName; }, ELEMENTS, opposite, load, newGame, newTable, playRound, aiChoose, simMatch, balance, canPick, costOf,
-  survival, survivalBalance, WINK_SCORES, get chars(){ return CHARS; }, get fighters(){ return FIGHTERS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
+  survival, survivalBalance, WINK_SCORES, draftOpen, draftPick, dealWith, pileTrade, askSwap, answerOffer, discardCard,
+  difficultyOf:sp=>difficultyOf(sp), sigById:(st,id)=>sigById(st,id), get chars(){ return CHARS; }, get fighters(){ return FIGHTERS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
 if(typeof module!=='undefined'&&module.exports) module.exports=TT;
 else root.TT=TT;
 })(typeof window!=='undefined'?window:this);
