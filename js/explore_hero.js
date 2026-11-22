@@ -59,10 +59,10 @@ function avoidLook(look, hero){
 }
 const AGES = [['young','Young'],['middle','Middle-aged'],['old','Old']];
 // races: dwarves are figures cut from sprites/hero/source/dwarf_*.png (race 'dwarf' in figures.json); humans carry no race.
-// size: the battle sprite's spriteHeight / spriteWidth, the same as Durin's (0.72 tall, 1.2 wide), so a dwarf
-// stands short and stocky in battle and in Explore
+// size: the battle sprite's spriteHeight / spriteWidth: as short as Durin (0.72), but not widened like him (1.2),
+// since the dwarf figures are already drawn stocky, so a dwarf stands short in battle and in Explore
 const RACES = [['human','Human'],['dwarf','Dwarf']];
-const RACE_SIZE = {dwarf:{h:0.72, w:1.2}};
+const RACE_SIZE = {dwarf:{h:0.72, w:1}};
 const raceOf = b => (b&&b.race)||'human';
 // staff wood: hue°, saturation ×, value × (null keeps the oak); the wood's own shading is kept as offsets from its middle hue (20°)
 const STAVES = [
