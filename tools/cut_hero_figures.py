@@ -43,10 +43,16 @@ FIX = {
     'mid_woman_8': {'lh': [0.10, 0.315, 0.195, 0.385, 0.95]},
     'mid_man_5':   {'paleHair': True},   # a white moustache, apart from the hair
     'mid_man_6':   {'noArm': (1,), 'paleHair': True},   # a leather bracer at the wrist, then the sleeve: no forearm to find
-    # elves whose long hair swept back past the staff hand passed for the head and hand: the other elves' boxes (same pose)
-    **{n: {'face': [0.24, 0.02, 0.43], 'head': [0.335, 0.08, 0.59, 0.24], 'neck': [0.287, 0.215, 0.634, 0.354],
-           'lh': [0.104, 0.314, 0.19, 0.37, 0.95]} for n in ('elf_woman_7', 'elf_man_1', 'elf_man_7')},
+    # elf man 2's sideburn: a pale strand in front of the ear, cut off from the hair by its outline, as pale as his cheek
+    'elf_man_2':   {'hairBox': [[0.442, 0.141, 0.492, 0.198]]},
+    'elf_man_6':   {'hairBox': [[0.469, 0.167, 0.495, 0.212]]},   # the curl down his cheek
 }
+# every elf is drawn in one pose, and their long hair, satchels and hats fooled the head and hand finder on half
+# of them (the hand box on hair or the satchel): all take these boxes, checked by hand on elf man 2
+ELF_BOXES = {'face': [0.24, 0.02, 0.43], 'head': [0.335, 0.08, 0.59, 0.24], 'neck': [0.287, 0.215, 0.634, 0.354],
+             'lh': [0.104, 0.314, 0.19, 0.37, 0.95]}
+# elves and dwarves hold the staff with the wrist up in the sleeve: below the fist is the staff, not a forearm
+NO_ARM_SLOTS = ('elf_', 'dwarf_')
 
 def key_out(im):
     """Green to transparent; green spill on the figure's edge pulled back to its other channels."""
@@ -230,6 +236,65 @@ def grow_hair(im, mask, reach=8):
                 n = (x + dx, y + dy)
                 if 0 <= n[0] < W and 0 <= n[1] < H and not mp[n] and pale(*n): mp[n] = 255; nxt.append(n)
         front = nxt
+
+def cap_neck(im, skin):
+    """The neck box ends at the brooch that fastens the cloak: the biggest blue blob below the head box (an earring's
+    gem is small). Below it is robe and gold trim, which the skin test would otherwise take for skin."""
+    if len(skin) < 4: return
+    W, H = im.size; px = im.load(); nb = skin[3]
+    x0, x1, y0, y1 = int(nb[0] * W), int(nb[2] * W), int(skin[0][3] * H), int(nb[3] * H)
+    blue = set()
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            r, g, b, a = px[x, y]
+            if a:
+                h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                if 0.46 <= h < 0.71 and s_ > 0.4 and v > 0.35: blue.add((x, y))
+    best = []
+    while blue:
+        q = deque([blue.pop()]); comp = []
+        while q:
+            p = q.popleft(); comp.append(p)
+            for d in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (p[0] + d[0], p[1] + d[1])
+                if n in blue: blue.discard(n); q.append(n)
+        if len(comp) > len(best): best = comp
+    if len(best) >= 40: skin[3] = nb[:3] + [round(min(nb[3], min(p[1] for p in best) / H), 3)] + nb[4:]
+
+def unhair_jewels(im, mask, head, reach=6):
+    """Pale pixels close to blue inside the head are the whites of the eyes (round the iris) or an earring's silver
+    (round its gem), not hair: taken back out of the hair mask."""
+    W, H = im.size; px = im.load(); mp = mask.load()
+    x0, y0 = max(0, int((head[0] - 0.06) * W)), max(0, int((head[1] - 0.02) * H))
+    x1, y1 = min(W - 1, int((head[2] + 0.03) * W)), min(H - 1, int((head[3] + 0.06) * H))
+    blue = []
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            r, g, b, a = px[x, y]
+            if a:
+                h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                if 0.5 <= h < 0.72 and s_ > 0.55 and v > 0.35 and not mp[x, y]: blue.append((x, y))   # an iris or gem, not the hair's blue shadow
+    near = set()
+    for bx, by in blue:
+        for dy in range(-reach, reach + 1):
+            for dx in range(-reach, reach + 1):
+                if dx * dx + dy * dy <= reach * reach: near.add((bx + dx, by + dy))
+    for x, y in near:
+        if 0 <= x < W and 0 <= y < H and mp[x, y]:
+            r, g, b, a = px[x, y]; h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+            if s_ < 0.35 and v > 0.5: mp[x, y] = 0
+
+def hair_box(im, mask, boxes):
+    """FIX hairBox: inside these boxes, pale greyish-pink pixels are hair (a strand the hair mask can't reach and
+    the colours can't tell from a highlight on the skin beside it)."""
+    W, H = im.size; px = im.load(); mp = mask.load()
+    for b in boxes:
+        for y in range(int(b[1] * H), int(b[3] * H) + 1):
+            for x in range(int(b[0] * W), int(b[2] * W) + 1):
+                r, g, bb, a = px[x, y]
+                if not a: continue
+                h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, bb / 255); h *= 360
+                if (s_ < 0.1 and v > 0.55) or ((h < 25 or h >= 300) and s_ < 0.42 and v > 0.42): mp[x, y] = 255
 
 def pale_hair(im, mask, head):
     """For figures whose moustache is near-white and apart from the rest of the hair (FIX paleHair): every
@@ -459,19 +524,22 @@ def main():
         im.save(os.path.join(OUT, name + '.png'), optimize=True)
         sex, age = SLOTS[slot]
         bx = boxes(im); mask = bx.pop('_mask')
-        if name in FIX:   # a hat brim's gold-orange underside joined the head's skin clump: face and neck by hand
-            f = FIX[name]
+        f = dict(ELF_BOXES, **FIX.get(name, {})) if slot.startswith('elf_') else FIX.get(name)
+        if f:   # a hat brim's gold-orange underside joined the head's skin clump: face and neck by hand
             if 'face' in f: bx['face'] = f['face']; bx['skin'] = [f['head']] + bx['skin'][1:3] + [f['neck']]
             if 'lh' in f: bx['skin'][1] = f['lh']   # the staff hand (a robe patch can pass for skin)
+        cap_neck(im, bx['skin'])
         fig = dict(id=name, sex=sex, age=age, src='sprites/hero/' + name + '.png', **bx)
         if name in NPC_ONLY: fig['npc'] = True
         if slot.startswith('dwarf_'): fig['race'] = 'dwarf'
         if slot.startswith('elf_'): fig['race'] = 'elf'
         if mask: grow_hair(im, mask)
         if mask and FIX.get(name, {}).get('paleHair'): pale_hair(im, mask, bx['skin'][0])
+        if mask and FIX.get(name, {}).get('hairBox'): hair_box(im, mask, FIX[name]['hairBox'])
+        if mask: unhair_jewels(im, mask, bx['skin'][0])
         if mask:
             mask.save(os.path.join(OUT, name + '_hair.png'), optimize=True); fig['hairMask'] = 'sprites/hero/' + name + '_hair.png'
-        sm = skin_region(im, bx['skin'], FIX.get(name, {}).get('noArm', ()))
+        sm = skin_region(im, bx['skin'], (1,) if slot.startswith(NO_ARM_SLOTS) else FIX.get(name, {}).get('noArm', ()))
         sm.save(os.path.join(OUT, name + '_skin.png'), optimize=True); fig['skinMask'] = 'sprites/hero/' + name + '_skin.png'
         stm = staff_region(im, bx['skin'][1], sm)
         if stm:
