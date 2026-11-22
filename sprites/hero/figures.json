@@ -1,5 +1,625 @@
 [
  {
+  "id": "dwarf_mid_man_1",
+  "sex": "m",
+  "age": "middle",
+  "src": "sprites/hero/dwarf_mid_man_1.png",
+  "hair": [
+   0.207,
+   0.189,
+   0.647,
+   0.626
+  ],
+  "face": [
+   0.201,
+   0.09,
+   0.599
+  ],
+  "skin": [
+   [
+    0.329,
+    0.191,
+    0.671,
+    0.388
+   ],
+   [
+    0.091,
+    0.358,
+    0.219,
+    0.452,
+    0.95
+   ],
+   [
+    0.766,
+    0.319,
+    0.899,
+    0.417,
+    0.95
+   ],
+   [
+    0.28,
+    0.369,
+    0.673,
+    0.507
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "dwarf",
+  "hairMask": "sprites/hero/dwarf_mid_man_1_hair.png",
+  "skinMask": "sprites/hero/dwarf_mid_man_1_skin.png",
+  "staffMask": "sprites/hero/dwarf_mid_man_1_staff.png",
+  "headMask": "sprites/hero/dwarf_mid_man_1_head.png",
+  "topper": {
+   "line": [
+    0.1813,
+    0.4518,
+    0.2844
+   ],
+   "top": 0.0833,
+   "width": 0.0214,
+   "grip": 0.358
+  }
+ },
+ {
+  "id": "dwarf_mid_man_2",
+  "sex": "m",
+  "age": "middle",
+  "src": "sprites/hero/dwarf_mid_man_2.png",
+  "hair": [
+   0.276,
+   0.174,
+   0.667,
+   0.619
+  ],
+  "face": [
+   0.361,
+   0.161,
+   0.303
+  ],
+  "skin": [
+   [
+    0.426,
+    0.2,
+    0.599,
+    0.324
+   ],
+   [
+    0.095,
+    0.359,
+    0.195,
+    0.452,
+    0.95
+   ],
+   [
+    0.774,
+    0.316,
+    0.858,
+    0.386,
+    0.95
+   ],
+   [
+    0.377,
+    0.305,
+    0.648,
+    0.444
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "dwarf",
+  "hairMask": "sprites/hero/dwarf_mid_man_2_hair.png",
+  "skinMask": "sprites/hero/dwarf_mid_man_2_skin.png",
+  "staffMask": "sprites/hero/dwarf_mid_man_2_staff.png",
+  "headMask": "sprites/hero/dwarf_mid_man_2_head.png",
+  "topper": {
+   "line": [
+    0.1634,
+    0.4518,
+    0.2689
+   ],
+   "top": 0.0846,
+   "width": 0.0214,
+   "grip": 0.359
+  }
+ },
+ {
+  "id": "dwarf_mid_woman_1",
+  "sex": "f",
+  "age": "middle",
+  "src": "sprites/hero/dwarf_mid_woman_1.png",
+  "hair": [
+   0.27,
+   0.172,
+   0.757,
+   0.626
+  ],
+  "face": [
+   0.344,
+   0.141,
+   0.349
+  ],
+  "skin": [
+   [
+    0.424,
+    0.174,
+    0.613,
+    0.341
+   ],
+   [
+    0.093,
+    0.358,
+    0.197,
+    0.452,
+    0.95
+   ],
+   [
+    0.772,
+    0.323,
+    0.839,
+    0.384,
+    0.95
+   ],
+   [
+    0.385,
+    0.322,
+    0.66,
+    0.461
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "dwarf",
+  "hairMask": "sprites/hero/dwarf_mid_woman_1_hair.png",
+  "skinMask": "sprites/hero/dwarf_mid_woman_1_skin.png",
+  "staffMask": "sprites/hero/dwarf_mid_woman_1_staff.png",
+  "headMask": "sprites/hero/dwarf_mid_woman_1_head.png",
+  "topper": {
+   "line": [
+    0.179,
+    0.4518,
+    0.2839
+   ],
+   "top": 0.0833,
+   "width": 0.0195,
+   "grip": 0.358
+  }
+ },
+ {
+  "id": "dwarf_mid_woman_2",
+  "sex": "f",
+  "age": "middle",
+  "src": "sprites/hero/dwarf_mid_woman_2.png",
+  "hair": [
+   0.276,
+   0.164,
+   0.753,
+   0.626
+  ],
+  "face": [
+   0.349,
+   0.155,
+   0.341
+  ],
+  "skin": [
+   [
+    0.422,
+    0.191,
+    0.617,
+    0.348
+   ],
+   [
+    0.099,
+    0.36,
+    0.197,
+    0.45,
+    0.95
+   ],
+   [
+    0.772,
+    0.323,
+    0.895,
+    0.404,
+    0.95
+   ],
+   [
+    0.373,
+    0.329,
+    0.666,
+    0.467
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "dwarf",
+  "hairMask": "sprites/hero/dwarf_mid_woman_2_hair.png",
+  "skinMask": "sprites/hero/dwarf_mid_woman_2_skin.png",
+  "staffMask": "sprites/hero/dwarf_mid_woman_2_staff.png",
+  "headMask": "sprites/hero/dwarf_mid_woman_2_head.png",
+  "topper": {
+   "line": [
+    0.1654,
+    0.4492,
+    0.2689
+   ],
+   "top": 0.0846,
+   "width": 0.0233,
+   "grip": 0.36
+  }
+ },
+ {
+  "id": "dwarf_old_man_1",
+  "sex": "m",
+  "age": "old",
+  "src": "sprites/hero/dwarf_old_man_1.png",
+  "hair": [
+   0.191,
+   0.185,
+   0.753,
+   0.602
+  ],
+  "face": [
+   0.243,
+   0.095,
+   0.464
+  ],
+  "skin": [
+   [
+    0.342,
+    0.179,
+    0.607,
+    0.321
+   ],
+   [
+    0.093,
+    0.356,
+    0.199,
+    0.451,
+    0.95
+   ],
+   [
+    0.774,
+    0.317,
+    0.897,
+    0.414,
+    0.95
+   ],
+   [
+    0.294,
+    0.301,
+    0.656,
+    0.441
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "dwarf",
+  "hairMask": "sprites/hero/dwarf_old_man_1_hair.png",
+  "skinMask": "sprites/hero/dwarf_old_man_1_skin.png",
+  "staffMask": "sprites/hero/dwarf_old_man_1_staff.png",
+  "headMask": "sprites/hero/dwarf_old_man_1_head.png",
+  "topper": {
+   "line": [
+    0.1751,
+    0.4505,
+    0.2988
+   ],
+   "top": 0.0846,
+   "width": 0.0195,
+   "grip": 0.356
+  }
+ },
+ {
+  "id": "dwarf_old_woman_1",
+  "sex": "f",
+  "age": "old",
+  "src": "sprites/hero/dwarf_old_woman_1.png",
+  "hair": [
+   0.269,
+   0.19,
+   0.676,
+   0.626
+  ],
+  "face": [
+   0.333,
+   0.144,
+   0.349
+  ],
+  "skin": [
+   [
+    0.422,
+    0.177,
+    0.592,
+    0.343
+   ],
+   [
+    0.095,
+    0.362,
+    0.2,
+    0.452,
+    0.95
+   ],
+   [
+    0.775,
+    0.349,
+    0.879,
+    0.403,
+    0.95
+   ],
+   [
+    0.373,
+    0.323,
+    0.641,
+    0.462
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "dwarf",
+  "hairMask": "sprites/hero/dwarf_old_woman_1_hair.png",
+  "skinMask": "sprites/hero/dwarf_old_woman_1_skin.png",
+  "staffMask": "sprites/hero/dwarf_old_woman_1_staff.png",
+  "headMask": "sprites/hero/dwarf_old_woman_1_head.png",
+  "topper": {
+   "line": [
+    0.1641,
+    0.4518,
+    0.285
+   ],
+   "top": 0.0833,
+   "width": 0.0195,
+   "grip": 0.362
+  }
+ },
+ {
+  "id": "dwarf_young_man_1",
+  "sex": "m",
+  "age": "young",
+  "src": "sprites/hero/dwarf_young_man_1.png",
+  "hair": [
+   0.273,
+   0.191,
+   0.754,
+   0.616
+  ],
+  "face": [
+   0.333,
+   0.144,
+   0.336
+  ],
+  "skin": [
+   [
+    0.405,
+    0.19,
+    0.597,
+    0.322
+   ],
+   [
+    0.093,
+    0.359,
+    0.201,
+    0.451,
+    0.95
+   ],
+   [
+    0.774,
+    0.34,
+    0.897,
+    0.404,
+    0.95
+   ],
+   [
+    0.376,
+    0.302,
+    0.645,
+    0.441
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "dwarf",
+  "hairMask": "sprites/hero/dwarf_young_man_1_hair.png",
+  "skinMask": "sprites/hero/dwarf_young_man_1_skin.png",
+  "staffMask": "sprites/hero/dwarf_young_man_1_staff.png",
+  "headMask": "sprites/hero/dwarf_young_man_1_head.png",
+  "topper": {
+   "line": [
+    0.1793,
+    0.4505,
+    0.2844
+   ],
+   "top": 0.0833,
+   "width": 0.0214,
+   "grip": 0.359
+  }
+ },
+ {
+  "id": "dwarf_young_man_2",
+  "sex": "m",
+  "age": "young",
+  "src": "sprites/hero/dwarf_young_man_2.png",
+  "hair": [
+   0.263,
+   0.182,
+   0.755,
+   0.609
+  ],
+  "face": [
+   0.231,
+   0.111,
+   0.469
+  ],
+  "skin": [
+   [
+    0.331,
+    0.212,
+    0.599,
+    0.323
+   ],
+   [
+    0.095,
+    0.359,
+    0.197,
+    0.452,
+    0.95
+   ],
+   [
+    0.772,
+    0.317,
+    0.858,
+    0.386,
+    0.95
+   ],
+   [
+    0.299,
+    0.304,
+    0.648,
+    0.442
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "dwarf",
+  "hairMask": "sprites/hero/dwarf_young_man_2_hair.png",
+  "skinMask": "sprites/hero/dwarf_young_man_2_skin.png",
+  "staffMask": "sprites/hero/dwarf_young_man_2_staff.png",
+  "headMask": "sprites/hero/dwarf_young_man_2_head.png",
+  "topper": {
+   "line": [
+    0.1654,
+    0.4518,
+    0.2839
+   ],
+   "top": 0.0833,
+   "width": 0.0195,
+   "grip": 0.359
+  }
+ },
+ {
+  "id": "dwarf_young_woman_1",
+  "sex": "f",
+  "age": "young",
+  "src": "sprites/hero/dwarf_young_woman_1.png",
+  "hair": [
+   0.274,
+   0.194,
+   0.755,
+   0.626
+  ],
+  "face": [
+   0.346,
+   0.149,
+   0.339
+  ],
+  "skin": [
+   [
+    0.42,
+    0.181,
+    0.611,
+    0.343
+   ],
+   [
+    0.093,
+    0.359,
+    0.195,
+    0.452,
+    0.95
+   ],
+   [
+    0.772,
+    0.319,
+    0.86,
+    0.386,
+    0.95
+   ],
+   [
+    0.371,
+    0.323,
+    0.66,
+    0.462
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "dwarf",
+  "hairMask": "sprites/hero/dwarf_young_woman_1_hair.png",
+  "skinMask": "sprites/hero/dwarf_young_woman_1_skin.png",
+  "staffMask": "sprites/hero/dwarf_young_woman_1_staff.png",
+  "headMask": "sprites/hero/dwarf_young_woman_1_head.png",
+  "topper": {
+   "line": [
+    0.1809,
+    0.4518,
+    0.2689
+   ],
+   "top": 0.0833,
+   "width": 0.0195,
+   "grip": 0.359
+  }
+ },
+ {
+  "id": "dwarf_young_woman_2",
+  "sex": "f",
+  "age": "young",
+  "src": "sprites/hero/dwarf_young_woman_2.png",
+  "hair": [
+   0.273,
+   0.191,
+   0.753,
+   0.626
+  ],
+  "face": [
+   0.354,
+   0.152,
+   0.323
+  ],
+  "skin": [
+   [
+    0.436,
+    0.183,
+    0.595,
+    0.337
+   ],
+   [
+    0.099,
+    0.36,
+    0.195,
+    0.451,
+    0.95
+   ],
+   [
+    0.772,
+    0.319,
+    0.891,
+    0.405,
+    0.95
+   ],
+   [
+    0.394,
+    0.318,
+    0.644,
+    0.457
+   ]
+  ],
+  "noTrim": [],
+  "trimLo": 27,
+  "race": "dwarf",
+  "hairMask": "sprites/hero/dwarf_young_woman_2_hair.png",
+  "skinMask": "sprites/hero/dwarf_young_woman_2_skin.png",
+  "staffMask": "sprites/hero/dwarf_young_woman_2_staff.png",
+  "headMask": "sprites/hero/dwarf_young_woman_2_head.png",
+  "topper": {
+   "line": [
+    0.1657,
+    0.4505,
+    0.2695
+   ],
+   "top": 0.0846,
+   "width": 0.0214,
+   "grip": 0.36
+  }
+ },
+ {
   "id": "mid_man_1",
   "sex": "m",
   "age": "middle",

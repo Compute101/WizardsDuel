@@ -28,6 +28,8 @@ OUT = os.path.join(ROOT, 'sprites/hero')
 HEIGHT = 768
 SLOTS = {'young_man': ('m', 'young'), 'young_woman': ('f', 'young'), 'mid_man': ('m', 'middle'),
          'mid_woman': ('f', 'middle'), 'old_man': ('m', 'old'), 'old_woman': ('f', 'old')}
+# dwarves: the same slots with a dwarf_ prefix (race 'dwarf' in figures.json; humans carry no race)
+SLOTS.update({'dwarf_' + k: v for k, v in list(SLOTS.items())})
 
 # the ragged bandits: for NPCs only, kept out of the creator (an even number of each sex, so the creator stays even too)
 NPC_ONLY = {'mid_man_7', 'mid_man_8', 'old_man_5', 'mid_woman_7', 'mid_woman_8', 'old_woman_5'}   # every eyepatched bandit
@@ -458,6 +460,7 @@ def main():
             if 'lh' in f: bx['skin'][1] = f['lh']   # the staff hand (a robe patch can pass for skin)
         fig = dict(id=name, sex=sex, age=age, src='sprites/hero/' + name + '.png', **bx)
         if name in NPC_ONLY: fig['npc'] = True
+        if slot.startswith('dwarf_'): fig['race'] = 'dwarf'
         if mask: grow_hair(im, mask)
         if mask and FIX.get(name, {}).get('paleHair'): pale_hair(im, mask, bx['skin'][0])
         if mask:
