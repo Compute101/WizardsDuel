@@ -71,6 +71,7 @@
   },
   "skadi": {
     "hp": 11,
+    "rules": {"winks": {"hp": 10}},
     "spells": [
       {"id": "icelance", "name": "Ice Lance", "cat": "damage", "elem": "ice", "ring": 2, "cost": 5, "kind": "strike", "dmg": 5, "chill": true,
        "text": "Ice strike of 5. If it reaches HP, the foe can't pick Damage next round."},
@@ -162,7 +163,7 @@
   },
   "valdris": {
     "hp": 7,
-    "rules": {"beginner": {"hp": 6}, "normal": {"hp": 8}, "advanced": {"hp": 9}},
+    "rules": {"beginner": {"hp": 6}, "normal": {"hp": 8}, "advanced": {"hp": 9}, "winks": {"hp": 11}},
     "spells": [
       {"id": "raisedead", "name": "Raise Dead", "cat": "protect", "elem": "dark", "ring": 2, "cost": 4, "kind": "buff", "effect": {"type": "minion", "minion": "skeleton", "kind": "minion", "soak": true, "dmg": 1, "max": 5, "raise": 3},
        "text": "Raise 3 skeletons (max 5 on the table). Each has 1 HP. Guarding, they stand in front of you: every point of damage kills one before anything reaches you or your ward. Attacking, each bites the foe for 1 (a blow) at every round end. Dispels can't touch them."},

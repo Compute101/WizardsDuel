@@ -2,7 +2,7 @@
 
 The tiddlywinks game becomes its own thing, playable at a real table with a box of bits most homes have. The app's standard game is untouched. This replaces the counter-winks tabletop design (`docs/tabletop-rules.md`), which needed about 100 winks in four colours.
 
-Status: **proposal**. Open questions are at the end; nothing here is built yet.
+Status: **proposal, with a first simulation** (see **First simulation**). Open questions are at the end.
 
 ---
 
@@ -43,14 +43,14 @@ Strengths stay as now: Lesser / Normal / Greater strike 2 / 4 / 6, wards and dis
 
 **Payment: one flat cost.** Every spell costs the same mana to cast, paid before you flick, whatever level you reach: the level is earned by skill, not bought. **Recoup** gives some of it back. A fizzle loses the cost.
 
-- Starting numbers for the simulator: **cost 3**, **recoup 2**, income 4 a round. Tuned against the user's baseline scores.
+- **Cost 3**, **recoup 2**, income 4 a round, Meditate +3 (simulated, see **First simulation**).
 - Mana's job becomes "can I cast this round, or must I Meditate / use an Action", rather than "how big".
 
 ### Ability spells (signature cards)
 
 No levels. Each card has a **difficulty**: pot at least that many winks and it goes off, at the card's one fixed strength. It costs the same flat cost as any spell (decided: the difficulty is the balancing lever, not the price; a few cards may need a cost of their own). Fewer and it fizzles. Extra pots do nothing (decided: one number to remember).
 
-A first mapping from today's cards (69 cards: 15 Lesser, 50 Normal, 4 Greater): **Lesser → difficulty 2, Normal → 3, Greater → 4**, then tuned per card by the simulator. A card's difficulty is printed on it in place of its level.
+From today's cards (69 cards: 15 Lesser, 50 Normal, 4 Greater): **Lesser → difficulty 1, Normal → 2, Greater → 3** (2 / 3 / 4 was tried: at the user's pot rate a difficulty-3 ability went off about 1 time in 3, and Valdris, all abilities, won 35%). A card can set its own `difficulty`. A card's difficulty is printed on it in place of its level.
 
 ### What the flick odds mean
 
@@ -147,15 +147,34 @@ Aim: **about 12 rounds, 10–15 minutes** — the length of the user's 12-round 
 - **Goes:** wink counters, choosing a level, "flick 10 minus the cost", retries, missed winks left on the table, and squops (a squop can't become mana when winks aren't mana).
 - **One rule set to start: Normal.** This is a rewrite, so the other modes (Beginner, Survival, the app's tutorial) are redone later, once Normal plays well.
 
-## Building it
+## First simulation (built)
 
-- Add a `six` flick mode to `js/tabletop.js` (flat cost paid up front, level and recoup from potted winks, signature `difficulty`), Normal rules only, with the element hand (7 cards, Meditate draws 2), so the existing simulator and `tools/balance.html` can balance it at several pot rates, keeping every wizard within ±8% of 50% and games near 12 rounds.
-- Add `difficulty` to each card in `tabletop.json`.
-- Write `docs/winks-rules.md` as the new rulebook (the app's 🎲 Tabletop screen renders it), and retire the old one.
+The Winks rules are a rule set in the tabletop engine: `TT.useRules('winks')` in `js/tabletop.js` (flick mode `six`, `flatCost`, `recoup`, `difficulty`, and `cards` for the draft, the shared pile, hands, Meditate's draw and trade). Run `node tools/winks_sim.js [games] [daddy|b|pooled|rate:0.4]`.
+
+**The AI flicks with the user's real scores**, a round at a time from a shuffled bag (`WINK_SCORES`; `simMatch(…, {scores:{p1, p2}})`):
+
+| Player | Rounds | 0 | 1 | 2 | 3 | 4 | 5 | 6 | Average | Pot rate |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Daddy (practice and both matches) | 72 | 7 | 25 | 17 | 16 | 6 | 1 | 0 | 1.9 | 31% |
+| B (both matches) | 24 | 0 | 2 | 5 | 7 | 9 | 0 | 1 | 3.1 | 52% |
+
+**Results** (the starting six, 200 games a matchup, both sides with the same scores):
+
+| Scores | Win rates | Rounds |
+|---|---|---|
+| Daddy | 44.9–55.0% (Gnash top, Skadi bottom) | 12.1 (median 13) |
+| B | 47.4–55.0% | 10.3 |
+| Both pooled | 46.4–52.9% | about 11.5 |
+
+- **Game length** is on target: about 12 rounds at Daddy's flicking, 10 at B's.
+- **Picks** (Daddy's scores): Damage 22%, Protection 21%, Meditate 18%, Dispel 13%, abilities about 16% in all, Attack 5%, Guard 2%.
+- **Skill matters a lot:** with Daddy's scores against B's, Daddy wins **13%**. That's what the handicap line is for: B flicks from further back until it's near 50%.
+- **Changes the simulator needed:** Meditate is allowed at full mana (it's how you draw; with income 4 and cost 3 mana was always full, hands ran dry and the AI just Attacked); Valdris HP 7 → **11** (his skeletons need Dark cards now), Skadi 11 → **10** (`"rules":{"winks":{"hp":n}}` in `tabletop.json`).
+- **Not modelled yet:** trading with the other player (the AI only trades with the pile), the ward's card sitting under its pile (the sim discards it at once), and the decoy card.
 
 ## Open questions
 
-1. **Calibration:** the user is supplying baseline scores (winks potted per round). They set the pot rate the simulator balances for, then the flat cost and recoup.
+1. **Handicap:** how far back should a stronger flicker stand? Measuring a few rounds from two distances would let the simulator suggest a line.
 2. **Recoup size:** 2 back (of 3), or the whole cost back?
 3. **Card exceptions:** do any signature cards need their own cost (summons, big heals), or is difficulty enough?
 4. **Mana vs cards:** with a flat cost of 3 and income of 4, mana barely limits you, so cards do. Lower income (3), or a cost of 4? The simulator will show which keeps games near 12 rounds.
