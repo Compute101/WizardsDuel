@@ -4058,7 +4058,7 @@ function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena, fists
     const cfg=fighterCfg(f.key,f.level||0);
     if(f.name) cfg.name=f.name.toUpperCase();
     // fat Bulldogs (by request): about half the University's Bulldogs come out wider in battle too
-    if(/^bulldog /i.test(f.name||'')&&Math.random()<0.5) cfg.spriteWidth=1.25+Math.random()*0.25;
+    if(/^bulldog /i.test(f.name||'')&&Math.random()<0.5) cfg.spriteWidth=1.2+Math.random()*0.1;
     seen[f.key]=(seen[f.key]||0)+1;
     if(!f.name&&count(f.key)>1) cfg.name+=' '+['I','II','III','IV'][seen[f.key]-1];
     return {key:f.key,cfg,human:false,team,hp:f.hp};

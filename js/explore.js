@@ -850,7 +850,7 @@ function drawNpc(n,t){
   // an old 192×320 mage spritesheet (stand-ins for townsfolk without art): its first frame, 48×64, facing left
   const sheet=img.naturalWidth===192&&img.naturalHeight===320, sw=sheet?48:img.naturalWidth, sh=sheet?64:img.naturalHeight;
   // fat Bulldogs (by request): about half of them are drawn wider, picked once per Bulldog
-  if(n._fat===undefined) n._fat=/^bulldog/.test(n.role)&&Math.random()<0.5?1.25+Math.random()*0.25:1;
+  if(n._fat===undefined) n._fat=/^bulldog/.test(n.role)&&Math.random()<0.5?1.2+Math.random()*0.1:1;
   const h=WIZ_H*(n.role==='wounded'?0.8:1.05), w=h*sw/sh*n._fat;
   ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(n.x,n.y-2,w*0.3,5,0,0,Math.PI*2); ctx.fill();
   ctx.save(); ctx.translate(n.x,n.y);
