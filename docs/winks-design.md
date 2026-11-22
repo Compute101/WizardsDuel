@@ -11,7 +11,8 @@ Status: **proposal**. Open questions are at the end; nothing here is built yet.
 | Bit | How many | What it does |
 |---|---|---|
 | Big Jigs tiddlywinks set | 5 colours × 6 winks, a squidger each, a pot | **Casting only.** Each player owns one colour: their 6 winks are their spell. Up to 5 players. |
-| Standard deck of cards | 1 (up to 4 players), 2 (5+) | **Secret picks.** Each player takes one suit (13 cards). |
+| Standard deck of cards | 1 per duel | **Element cards:** A–8 only; red suits for one player, black for the other. |
+| Hand-made cards | 8 command cards a player, 1 sheet a wizard | Strike, Ward, Dispel, Attack, Guard, Grapple, Meditate, Cleanse. |
 | Coin | 1–2 | 50/50 effects (Undertow, Blink), first player, seal markers. |
 | Tokens | 25 each of red, blue, green, yellow | **Counters in a duel:** red HP, blue mana, green ward, yellow skin and minion HP. |
 | Six-sided dice | up to 20 per player | Chance rolls, and **counters when tokens run out** (3+ players, or a big pile). |
