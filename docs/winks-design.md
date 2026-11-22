@@ -67,30 +67,47 @@ The table only plays well if most flicks land in the 1–4 range, which needs a 
 
 ## Secret picks with cards
 
-Each player takes **one suit, all 13 cards**, and picks by laying **two cards face down**: a *what* card and a *which* card.
+**One card per pick.** Each player has their own deck (two decks for a duel).
 
-| What | Which | Pick |
+### Setup: the suits become four elements
+
+- Each game uses **four elements**, one per suit; the other four aren't in play that game.
+- **Pick them in turn** (a duel: A, B, B, A), so each player takes two. Pick your wizard's strengths, or take one your foe's best ability relies on. You can't pick one of your own barred elements, but you can pick one your foe is barred from.
+- Each player lays their **four Aces face up** in front of them, each marked with its element (a sticky note, or a token of the right colour on it). They're the reminder of which suit is which, and **your ward piles sit on the Ace of their element**.
+- Opposites still count (+2 against a ward) when both of a pair are in play.
+
+### Picking: the court card says what, the suit says which element
+
+| Card | Pick | Remember it as |
 |---|---|---|
-| **J** Damage | **A–8** element | a strike in that element |
-| **Q** Protection | **A–8** element | a ward in that element |
-| **K** Dispel | **A–8** element | a dispel in that element |
-| **10** Ability | **A / 2 / 3** | your 1st / 2nd / 3rd signature card |
-| **9** Body | **A / 2 / 3 / 4** | Attack / Guard / Grapple / Meditate |
-| **Q** | **9** | Seal Ward (yourself) |
-| **K** | **9** | Cleanse (yourself) |
+| **Jack** | **Damage** in that suit's element | the knave attacks |
+| **Queen** | **Protection** (a ward) | the queen shields |
+| **King** | **Dispel** | the king's word undoes |
 
-Elements by rank, in wheel order so **opposites are 4 apart**: A Fire, 2 Air, 3 Lightning, 4 Arcane, 5 Water, 6 Earth, 7 Ice, 8 Dark (A ↔ 5, 2 ↔ 6, 3 ↔ 7, 4 ↔ 8). Barred elements: set those cards aside at setup.
+So the J♥ is a strike in whatever element hearts is this game. That's the only part to memorise: everything else is printed on the reference card and the wizard sheet, with the card to play beside it:
 
-Target (3+ players): point the pair at the player you're aiming at.
+| Card (any suit) | Pick |
+|---|---|
+| 2 / 3 / 4 | your 1st / 2nd / 3rd ability (the sheet numbers them 2, 3, 4) |
+| 5 | Attack |
+| 6 | Guard |
+| 7 | Grapple |
+| 8 | Meditate |
+| 9 | Seal Ward (your outer pile) |
+| 10 | Cleanse |
+
+Each player keeps **the 12 court cards and one each of 2–10**: 21 cards in hand, the rest of the deck stays boxed.
+
+Target (3+ players, later): point the card at the player you're aiming at.
 
 ## Hand-made cards: as few as possible
 
 The standard deck does the picking, so the only cards to make are:
 
-- **One wizard sheet per wizard** (a postcard or an index card), not three ability cards: name, HP, Attack, barred elements, its three abilities (each with difficulty, cost if it differs, and what it does; numbered 1–3 to match the A / 2 / 3 pick), and an **eight-space element wheel** in the A–8 order, where ward piles sit. Buffs and curses are marked on the ability boxes, so no status cards are needed.
+- **One wizard sheet per wizard** (a postcard or an index card), not three ability cards: name, HP, Attack, barred elements, its three abilities (each with difficulty, cost if it differs, and what it does; labelled 2, 3 and 4, the card that picks them), and the Actions' cards (5–10) as a reminder. Ward piles sit on the Aces, so the sheet needs no element wheel. Buffs and curses are marked on the ability boxes, so no status cards are needed.
 - **One reference card per player** (optional): the six-wink result table and the two-card pick table.
 
-**Start with 6 wizards** (6 sheets, plus 2 reference cards), not all 23. Pick a spread that shows the system off with simple abilities: for example Eldrin (wards), Malachar (curses and drain), Cinder (big strikes), Skadi (ice and armour), Gnash (blows) and Valdris (skeletons). The simulator balances those 6 against each other first; more sheets come once Normal plays well.
+**Start with 6 wizards** (agreed) (6 sheets, plus 2 reference cards), not all 23. Pick a spread that shows the system off with simple abilities: for example Eldrin (wards), Malachar (curses and drain), Cinder (big strikes), Skadi (ice and armour), Gnash (blows) and Valdris (skeletons). The simulator balances those 6 against each other first; more sheets come once Normal plays well.
 
 ## Counters: tokens, then dice
 
@@ -98,7 +115,7 @@ In a duel, tokens are the counters (you can see a pile at a glance, and paying m
 
 - **HP: red.** 25 covers two wizards while HP stays at 12 or less each (the current tabletop HPs are 8–12).
 - **Mana: blue.** Cap **12 each** in a duel so 25 covers both.
-- **Ward: green.** Each pile sits on its element's space on your wizard sheet's wheel (see below), so its element shows. (Not on the A–8 card: that card has to go back in your hand for the next pick.) The 25 are shared; cap 12 per wizard across all piles.
+- **Ward: green.** Each pile sits on the face-up Ace of its element, so its element shows. The 25 are shared; cap 12 per wizard across all piles.
 - **Yellow:** Ironskin, and each minion's HP (one small stack per body; a skeleton is 1 token).
 - **Buffs and curses:** a yellow token on that ability's box on the caster's sheet means it's in play (a buff on the caster, a curse on the foe). A coin on the box for "until used" effects, a die for anything that counts down (Vanish).
 - **Chance:** a d6 where the old rules had a percentage; a coin for 50/50.
@@ -124,7 +141,7 @@ Aim: **about 12 rounds, 10–15 minutes** — the length of the user's 12-round 
 
 ## Building it
 
-- Add a `six` flick mode to `js/tabletop.js` (flat cost paid up front, level and recoup from potted winks, signature `difficulty`), Normal rules only, so the existing simulator and `tools/balance.html` can balance it at several pot rates, keeping every wizard within ±8% of 50% and games near 12 rounds.
+- Add a `six` flick mode to `js/tabletop.js` (flat cost paid up front, level and recoup from potted winks, signature `difficulty`), Normal rules only, with the four-element draft (an AI drafter), so the existing simulator and `tools/balance.html` can balance it at several pot rates, keeping every wizard within ±8% of 50% and games near 12 rounds.
 - Add `difficulty` to each card in `tabletop.json`.
 - Write `docs/winks-rules.md` as the new rulebook (the app's 🎲 Tabletop screen renders it), and retire the old one.
 
@@ -132,5 +149,5 @@ Aim: **about 12 rounds, 10–15 minutes** — the length of the user's 12-round 
 
 1. **Calibration:** the user is supplying baseline scores (winks potted per round). They set the pot rate the simulator balances for, then the flat cost and recoup.
 2. **Recoup size:** 2 back (of 3), or the whole cost back?
-3. **Starting six:** happy with Eldrin, Malachar, Cinder, Skadi, Gnash and Valdris, or would you rather choose?
-4. **Card exceptions:** do any signature cards need their own cost (summons, big heals), or is difficulty enough?
+3. **Card exceptions:** do any signature cards need their own cost (summons, big heals), or is difficulty enough?
+4. **Element pick:** drafted in turn (above), or dealt at random for quicker setup? Abilities keep their own element and work whichever four are in play.
