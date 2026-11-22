@@ -3998,8 +3998,8 @@ const SURVIVAL_WAVES=[
   {name:'Vanguard',         members:['soldier','soldier','archer'],   level:1},
   {name:'Warband',          members:['soldier','archer','archer'],    level:2},
   {name:'Iron Wall',        members:['soldier','soldier','soldier'],  level:2},
-  {name:'Rain of Arrows',   members:['archer','archer','archer'],     level:3},
-  {name:"Champion's Guard", members:['soldier','soldier','archer'],   level:3},
+  {name:'Rain of Arrows',   members:['knight','archer','archer'],     level:3},
+  {name:"Champion's Guard", members:['knight','soldier','archer'],    level:3},
 ];
 const SURVIVAL_BREATHER={heal:0.25, mana:4, cleanse:true};
 // A fighter's cfg at a level: HP and Attack raised, name prefixed (Veteran Soldier)

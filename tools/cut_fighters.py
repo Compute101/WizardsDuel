@@ -29,6 +29,7 @@ DARK = 22        # max channel at or below this is black (background or outline)
 DARK_FOR = {'knight.png': 4}   # the knight's cloak shadow is near-black (10-15) on a pure black background
 SPECK = 600      # coloured bits smaller than this are the halo, not the figure
 CLOSE = 9        # closing size: black lines up to about this wide stay in the figure
+NO_HOLES = {'knight.png'}   # nothing to see through: his cloak is behind every gap, so they stay black
 HOLE = 25        # an enclosed black patch that survives a min-filter this wide is daylight
 HEIGHT = 768
 FACES = {        # HUD face (portraits/small/<key>.jpg): x, y, size in the 768-tall still
@@ -71,7 +72,8 @@ def cut(src, dst):
     bp = bg.load()
     starts = [(x, 0) for x in range(w)] + [(x, h - 1) for x in range(w)] + \
              [(0, y) for y in range(h)] + [(w - 1, y) for y in range(h)]
-    starts += [(x, y) for y in range(0, h, 4) for x in range(0, w, 4) if seeds[x, y] == 255]
+    if src not in NO_HOLES:
+        starts += [(x, y) for y in range(0, h, 4) for x in range(0, w, 4) if seeds[x, y] == 255]
     for s in starts:
         if bp[s] == 255:
             ImageDraw.floodfill(bg, s, 128)

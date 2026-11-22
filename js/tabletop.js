@@ -1123,8 +1123,8 @@ const WAVES=[
   {name:'Vanguard',         members:['soldier','soldier','archer'],   level:1},
   {name:'Warband',          members:['soldier','archer','archer'],    level:2},
   {name:'Iron Wall',        members:['soldier','soldier','soldier'],  level:2},
-  {name:'Rain of Arrows',   members:['archer','archer','archer'],     level:3},
-  {name:"Champion's Guard", members:['soldier','soldier','archer'],   level:3},
+  {name:'Rain of Arrows',   members:['knight','archer','archer'],     level:3},
+  {name:"Champion's Guard", members:['knight','soldier','archer'],    level:3},
 ];
 const BREATHER={heal:0.5, mana:4};   // a quarter of max HP was too little: 10-HP wizards wore out by wave 4
 // A fighter at a level, in the current rule set
