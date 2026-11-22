@@ -1156,6 +1156,7 @@ async function enterMap(id,at,instant){
     resize();
     const p=Array.isArray(at)?at:(data.spawns[at]||data.spawns.start||Object.values(data.spawns)[0]);
     wiz.x=p[0]; wiz.y=p[1]; wiz.face=1;
+    unstick();                                // never set down inside a wall (a stall's crates by the Undercroft's trapdoor)
     exitArmed=false;                          // arriving in an exit doesn't send you straight back
     const loc=locationOfMap(id); if(loc) found.add(loc.id);
     if(!id.startsWith('room:')) visited.add(id);
@@ -1163,6 +1164,15 @@ async function enterMap(id,at,instant){
     save(); syncMusic();
   }catch(err){ console.error(err); toast('That way is blocked.'); }
   finally{ clearTimeout(slow); if(!instant) await hideLoading(); busy=false; fade(false); }
+}
+// if you're standing somewhere you can't move from (a footprint, water), step to the nearest open spot
+function unstick(){
+  if(!blocked(wiz.x,wiz.y)) return;
+  for(let r=8;r<=6*T;r+=8){
+    const n=Math.max(8,Math.round(r/4));
+    for(let i=0;i<n;i++){ const a=i/n*Math.PI*2, x=wiz.x+Math.cos(a)*r, y=wiz.y+Math.sin(a)*r;
+      if(!blocked(x,y)){ wiz.x=x; wiz.y=y; return; } }
+  }
 }
 function save(){
   if(!MAP||!saveKey||!hero) return;                // nothing is kept until the wizard has been made
