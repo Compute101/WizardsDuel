@@ -46,7 +46,7 @@ FIX = {
     # elf man 2's sideburn: a pale strand in front of the ear, cut off from the hair by its outline, as pale as his cheek
     'elf_man_2':   {'hairBox': [[0.442, 0.141, 0.492, 0.198]]},
     # painted with warm beige hair, not silver: the silver finder catches only a few strands (warm_hair grows them)
-    'elf_man_7':   {'warmHair': True},
+    'elf_man_7':   {'warmHair': {'sat': 0.62, 'face': [[0.524, 0.134, 0.544, 0.163], [0.472, 0.154, 0.6, 0.26]]}},   # his strands are deeper than hers; his face is as pale as them
     'elf_woman_7': {'warmHair': True},
     'elf_man_6':   {'hairBox': [[0.469, 0.167, 0.495, 0.212]]},   # the curl down his cheek
 }
@@ -287,18 +287,23 @@ def unhair_jewels(im, mask, head, reach=6):
             r, g, b, a = px[x, y]; h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
             if s_ < 0.35 and v > 0.5: mp[x, y] = 0
 
-def warm_hair(im, mask, box, dark_steps=3):
+def warm_hair(im, mask, box, opts=True, dark_steps=3):
     """FIX warmHair: hair painted warm beige. Grown out from the strands the silver finder caught, inside the hair box,
     through beige pixels (lighter ones paler than the skin's deep orange: saturation under 0.47, more allowed in shadow),
     stepping over up to `dark_steps` px of the dark outlines between strands without taking them."""
     W, H = im.size; px = im.load(); mp = mask.load()
     x0, y0, x1, y1 = int(box[0] * W), int(box[1] * H), int(box[2] * W), int(box[3] * H)
+    o = opts if isinstance(opts, dict) else {}
+    sat = o.get('sat', 0.47)                                          # face boxes the hair may not grow into
+    face = [(int(b[0] * W), int(b[1] * H), int(b[2] * W), int(b[3] * H)) for b in o.get('face', [])]
     def kind(x, y):
+        if any(f[0] <= x <= f[2] and f[1] <= y <= f[3] for f in face): return None
         r, g, b, a = px[x, y]
         if not a: return None
         h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255); h *= 360
         if v < 0.33: return 'dark'
-        if (h < 45 or h >= 340) and s_ < 0.47 + max(0.0, 0.8 - v) * 0.6: return 'hair'
+        if s_ < 0.12 and v > 0.6: return 'hair'                       # the strands' near-white highlights
+        if (h < 45 or h >= 340) and s_ < sat + max(0.0, 0.8 - v) * 0.6: return 'hair'
         return None
     seen = {}
     q = deque((x, y, 0) for y in range(y0, y1) for x in range(x0, x1) if mp[x, y])
@@ -562,7 +567,7 @@ def main():
         if mask: grow_hair(im, mask)
         if mask and FIX.get(name, {}).get('paleHair'): pale_hair(im, mask, bx['skin'][0])
         if mask and FIX.get(name, {}).get('hairBox'): hair_box(im, mask, FIX[name]['hairBox'])
-        if mask and FIX.get(name, {}).get('warmHair'): warm_hair(im, mask, bx['hair'])
+        if mask and FIX.get(name, {}).get('warmHair'): warm_hair(im, mask, bx['hair'], FIX[name]['warmHair'])
         if mask: unhair_jewels(im, mask, bx['skin'][0])
         if mask:
             mask.save(os.path.join(OUT, name + '_hair.png'), optimize=True); fig['hairMask'] = 'sprites/hero/' + name + '_hair.png'
