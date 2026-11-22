@@ -803,6 +803,7 @@ function roomAct(o){
 const NPC_SPRITE = {wenna:'sprites/echoes/fire_weak.png', lamplighter:'sprites/echoes/air_weak.png'};   // stand-ins until their own art
 const NPC_FACE = {wenna:'echo_fire_weak', lamplighter:'echo_air_weak'};                          // ditto
 function npcFace(n){
+  if(fatBulldog(n)) return FAT_BULLDOG.face;
   if(Folk&&Folk.knows(n.role)) return Folk.face(n,folkApi);
   const k=n.role==='wounded'?(MAP.ev||{}).key:NPC_FACE[n.role];
   return k?'portraits/small/'+k+'.jpg':null;
@@ -841,17 +842,18 @@ function talkTo(n){
 }
 // someone standing about: not gone, and not the wizard you're playing (ExploreFolk.absent)
 function present(n){ return !n.gone&&!(Folk&&Folk.absent(n,folkApi)); }
+// fat Bulldogs (by request): about half of Wrenford's Bulldogs, picked once per Bulldog, are the fat one
+const FAT_BULLDOG={sprite:'sprites/halberdier_fat.png', face:'portraits/small/halberdier_fat.jpg'};
+function fatBulldog(n){ if(n._fat===undefined) n._fat=/^bulldog/.test(n.role)&&Math.random()<0.5; return n._fat; }
 function drawNpc(n,t){
   let src=NPC_SPRITE[n.role];
-  if(!src&&Folk&&Folk.knows(n.role)) src=Folk.sprite(n,folkApi);
+  if(!src&&Folk&&Folk.knows(n.role)) src=fatBulldog(n)?FAT_BULLDOG.sprite:Folk.sprite(n,folkApi);
   if(n.role==='wounded'){ const f=fighters[(MAP.ev||{}).key]; src=f&&f.sprite; }
   if(!src) return;
   const img=imgOf(src); if(!img.complete||!img.naturalWidth) return;
   // an old 192×320 mage spritesheet (stand-ins for townsfolk without art): its first frame, 48×64, facing left
   const sheet=img.naturalWidth===192&&img.naturalHeight===320, sw=sheet?48:img.naturalWidth, sh=sheet?64:img.naturalHeight;
-  // fat Bulldogs (by request): about half of them are drawn wider, picked once per Bulldog
-  if(n._fat===undefined) n._fat=/^bulldog/.test(n.role)&&Math.random()<0.5?1.2+Math.random()*0.1:1;
-  const h=WIZ_H*(n.role==='wounded'?0.8:1.05), w=h*sw/sh*n._fat;
+  const h=WIZ_H*(n.role==='wounded'?0.8:1.05), w=h*sw/sh;
   ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(n.x,n.y-2,w*0.3,5,0,0,Math.PI*2); ctx.fill();
   ctx.save(); ctx.translate(n.x,n.y);
   if(n.role==='wounded'){ ctx.filter='saturate(0.5) brightness(0.85)'; ctx.scale(-1,0.8); }   // slumped, facing in

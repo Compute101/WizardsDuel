@@ -61,14 +61,12 @@ The Bulldogs use the halberdier (`sprites/halberdier.png`), which fits; Clemency
 uses the weak Water Echo (`sprites/echoes/water_weak.png`), which also fits, though a girl-shaped one
 in a student's gown would be better (ask with the Echo brief in `docs/world-design.md`).
 
-**Fat Bulldogs** (requested by the user's son): about half the Bulldogs are drawn fat, but for now
-that's the halberdier stretched sideways (1.2–1.3×, `n._fat` in `drawNpc` in `js/explore.js`, and
-`cfg.spriteWidth` for fighters named "Bulldog …" in `startExploreBattle` in `js/game.js`). Stretching
-more than that squashes his head and flattens the halberd. A real fat one has a big belly and a
-normal-sized head. Generate it on **black**, not green, as the source for the fighters' cutter
-(`sprites/fighters/source/halberdier_fat.png` → `python3 tools/cut_fighters.py`, after adding it to
-`CUTS` → `sprites/halberdier_fat.png`). When it arrives, use the sprite instead of the stretch.
-Attach `sprites/fighters/source/halberdier.png` as the reference:
+**Fat Bulldogs** (requested by the user's son): ~~done~~, the art arrived. About half the Bulldogs,
+picked at random, are the fat halberdier (`sprites/halberdier_fat.png`, cut by `tools/cut_fighters.py`
+from `sprites/fighters/source/halberdier_fat.png`, HUD face `portraits/small/halberdier_fat.jpg`):
+`fatBulldog` / `FAT_BULLDOG` in `js/explore.js` on the map, and in `startExploreBattle` in `js/game.js`
+(a halberdier named "Bulldog …"; a soldier Bulldog such as Hobbes is stretched at most 1.3× instead).
+The prompt that made it, for more variants. Attach `sprites/fighters/source/halberdier.png` as the reference:
 
 > Pixel-art full-body sprite in exactly the same style, scale, pose, colours and level of detail as
 > the attached halberdier, the same man's uniform: the same round steel kettle helmet, mail coif and

@@ -21,6 +21,8 @@ let FIGHTER_DEFS={};
 function defOf(key){ return CHAR_DEFS[key]||FIGHTER_DEFS[key]; }
 // a small face for the HUD: portraits/small/<key>.jpg, or a made wizard's own (Explore's hero carries `face`)
 function faceSrc(key){ const d=defOf(key); return d&&d.face||'portraits/small/'+key+'.jpg'; }
+// a seat's face: its own cfg.face (a fat Bulldog) before its character's
+function seatFace(w){ const c=seatCfg(w); return c&&c.face||faceSrc(seatKey(w)); }
 let p1Key='eldrin', p2Key='mal';
 let p1Cfg, p2Cfg;
 
@@ -2135,7 +2137,7 @@ function buildMultiHUD(){
   document.getElementById('mhud').innerHTML=(wv?`<div class="mh-wave">Wave ${survival.wave+1} / ${SURVIVAL_WAVES.length} · ${wv.name}</div>`:'')+PLAYERS.map(w=>{
     const cfg=seatCfg(w), team=!survival&&seatSetup&&seatSetup.find(st=>st.who===w).team;
     return `<div class="mh-card${cfg.fighter?' fighter':''}" id="mh-${w}" style="--mh-col:${cfg.col}">`+
-      `<img class="mh-img" src="${faceSrc(seatKey(w))}" alt=""><span class="mh-name">${cfg.name}</span>`+
+      `<img class="mh-img" src="${seatFace(w)}" alt=""><span class="mh-name">${cfg.name}</span>`+
       (team?`<span class="mh-team">Team ${team}</span>`:'')+
       `<div class="mh-bar mh-hp"><div class="mh-fill"></div></div><div class="mh-bar mh-mana"><div class="mh-fill"></div></div>`+
       `<div class="mh-nums"><span class="mh-hpn"></span><span class="mh-mn"></span><span class="mh-ward"></span></div></div>`;
@@ -3591,7 +3593,7 @@ function showReveal(){
     const aim=foesOf(who).length>1&&needsTarget(who,act)?`<span class="rv-aim">→ ${hitsAllFoes(who,act)?'All foes':seatCfg(act.target).name}</span>`:
       act.ally&&act.ally!==who?`<span class="rv-aim">→ ${seatCfg(act.ally).name}</span>`:'';
     return `<div class="rv-card" style="--rv-col:${cfg.col}"><div class="rv-inner">`+
-      `<div class="rv-face rv-back"><img class="rv-portrait" src="${faceSrc(seatKey(who))}" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
+      `<div class="rv-face rv-back"><img class="rv-portrait" src="${seatFace(who)}" alt=""><span class="rv-q">?</span><span class="rv-name">${label}</span></div>`+
       `<div class="rv-face rv-front">${rvCatBanner(act)}<span class="rv-ico">${d.icon}</span><span class="rv-spell">${d.name}</span>${aim}${taunt?`<span class="rv-taunt">⚔ “${taunt}”</span>`:''}<span class="rv-name">${label}</span></div>`+
       `</div></div>`;
   }).join('');
@@ -4057,8 +4059,12 @@ function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena, fists
   const fighterSeat=(f,team)=>{
     const cfg=fighterCfg(f.key,f.level||0);
     if(f.name) cfg.name=f.name.toUpperCase();
-    // fat Bulldogs (by request): about half the University's Bulldogs come out wider in battle too
-    if(/^bulldog /i.test(f.name||'')&&Math.random()<0.5) cfg.spriteWidth=1.2+Math.random()*0.1;
+    // fat Bulldogs (by request): about half the University's Bulldogs are fat in battle too. A halberdier
+    // Bulldog gets the fat halberdier's own sprite and face; any other kind is stretched a little (1.3x at most)
+    if(/^bulldog /i.test(f.name||'')&&Math.random()<0.5){
+      if(f.key==='halberdier') Object.assign(cfg,{sprite:'sprites/halberdier_fat.png',face:'portraits/small/halberdier_fat.jpg'});
+      else cfg.spriteWidth=1.2+Math.random()*0.1;
+    }
     seen[f.key]=(seen[f.key]||0)+1;
     if(!f.name&&count(f.key)>1) cfg.name+=' '+['I','II','III','IV'][seen[f.key]-1];
     return {key:f.key,cfg,human:false,team,hp:f.hp};
@@ -4673,7 +4679,7 @@ function showTargetPicker(who,foes,cb,title='Choose a target',withMinions=false)
     const ward=hasWard(st)?`<span class="tg-ward">🛡 ${el.icon} ${wardLabel(st)}</span>`:'';
     const ban=(cfg.forbidden||[]).map(id=>elemById(id).icon).join('');
     return `<button class="tg-foe" data-who="${w}" style="--tg-col:${cfg.col}">`+
-      `<img src="${faceSrc(seatKey(w))}" alt=""><span class="tg-name">${cfg.name}${w===who?' (you)':''}</span>`+
+      `<img src="${seatFace(w)}" alt=""><span class="tg-name">${cfg.name}${w===who?' (you)':''}</span>`+
       `<span class="tg-hp">❤ ${st.hp} / ${st.maxHp}</span>${ward}`+
       (ban?`<span class="tg-ban">⛔ ${ban}</span>`:'')+`</button>`+
       (withMinions?bodiesOf(st).map(m=>`<button class="tg-foe tg-minion" data-who="${w}" data-uid="${m.uid}" style="--tg-col:${cfg.col}">`+

@@ -22,6 +22,7 @@ CUTS = {                       # source -> output still
     'soldier.png': 'soldier.png',        # sword and shield (Shield Wall)
     'archer.png': 'archer.png',
     'halberdier.png': 'halberdier.png',  # Thessaly's hired bodyguards
+    'halberdier_fat.png': 'halberdier_fat.png',  # a fat Bulldog (Wrenford's town guards)
 }
 DARK = 22        # max channel at or below this is black (background or outline)
 SPECK = 600      # coloured bits smaller than this are the halo, not the figure
@@ -32,6 +33,7 @@ FACES = {        # HUD face (portraits/small/<key>.jpg): x, y, size in the 768-t
     'soldier': (248, 50, 135),
     'archer': (205, 82, 135),
     'halberdier': (200, 72, 140),
+    'halberdier_fat': (205, 80, 140),
 }
 PAD = 6
 
