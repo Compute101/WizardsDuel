@@ -189,7 +189,7 @@ function paint(img, base, look){
       const sb=sm?(sm[j]&&(!bx||!base.capHands||s<=bx[4])):(bx&&s<=bx[4]);           // the figure's skin mask (boxes widened, the forearms, the staff left out), else its boxes
       if(sb){                                            // skin: face and hands
         // all of the skin, outlines and flushed shadows too, but not the mauve-grey hair
-        if(skin&&v>0.08&&(s>0.3||h>=12)){ const t=Math.pow(Math.min(1,(v-0.08)/0.92),1.15); p[i]=kd[0]+(kl[0]-kd[0])*t; p[i+1]=kd[1]+(kl[1]-kd[1])*t; p[i+2]=kd[2]+(kl[2]-kd[2])*t; }
+        if(skin&&v>0.08&&(s>0.3||h>=12)){ const L=0.299*r+0.587*g+0.114*b, t=Math.max(0,(L-0.04)/0.7);   /* perceived lightness, not HSV value: bright skin is shaded by how deep its orange is; past the ramp's light end a highlight brightens the skin's own colour (toward white went ashy on dark skin) */ if(t<=1){ const u=Math.pow(t,1.15); p[i]=kd[0]+(kl[0]-kd[0])*u; p[i+1]=kd[1]+(kl[1]-kd[1])*u; p[i+2]=kd[2]+(kl[2]-kd[2])*u; } else { const u=Math.min(1,(t-1)/0.25)*0.32; p[i]=Math.min(255,kl[0]*(1+u)); p[i+1]=Math.min(255,kl[1]*(1+u)); p[i+2]=Math.min(255,kl[2]*(1+u)); } }
         continue;
       }
     }
