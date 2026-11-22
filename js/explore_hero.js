@@ -59,9 +59,10 @@ function avoidLook(look, hero){
 }
 const AGES = [['young','Young'],['middle','Middle-aged'],['old','Old']];
 // races: dwarves are figures cut from sprites/hero/source/dwarf_*.png (race 'dwarf' in figures.json); humans carry no race.
-// height: the battle sprite's spriteHeight (Durin the dwarf is 0.72), so a dwarf stands short in battle and in Explore
+// size: the battle sprite's spriteHeight / spriteWidth, the same as Durin's (0.72 tall, 1.2 wide), so a dwarf
+// stands short and stocky in battle and in Explore
 const RACES = [['human','Human'],['dwarf','Dwarf']];
-const RACE_HEIGHT = {dwarf:0.76};
+const RACE_SIZE = {dwarf:{h:0.72, w:1.2}};
 const raceOf = b => (b&&b.race)||'human';
 // staff wood: hue°, saturation ×, value × (null keeps the oak); the wood's own shading is kept as offsets from its middle hue (20°)
 const STAVES = [
@@ -315,7 +316,7 @@ async function def(hero){
   return defCache[k]={
     name:hero.name.toUpperCase(), title:{young:'Novice',middle:'Journeyman',old:'Hedge-Mage'}[hero.age]+' of '+el.name,
     sprite:cv.toDataURL('image/png'), face:faceOf(cv,base), col:robe.sw==='#22202a'?'#9a90b0':robe.sw,
-    hp:48, phys:{atk:4}, dmgMult:1, race:raceOf(base), spriteHeight:RACE_HEIGHT[raceOf(base)]||undefined, forbidden:[], spells:[], arena:'library', element:el.id, hero:true,
+    hp:48, phys:{atk:4}, dmgMult:1, race:raceOf(base), spriteHeight:(RACE_SIZE[raceOf(base)]||{}).h, spriteWidth:(RACE_SIZE[raceOf(base)]||{}).w, forbidden:[], spells:[], arena:'library', element:el.id, hero:true,
     taunts:['My turn.','I came a long way for this.','Watch closely.'],
     // the staff's living light (js/staff_glow.js): where on the sprite, how big, the element; a lantern lights further at night
     glow:spot&&{x:spot.x, y:spot.y, r:spot.r, col:el.col, elem:el.id, lamp:hero.topper==='lantern'||hero.topper==='crook'},
