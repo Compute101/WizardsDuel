@@ -83,15 +83,24 @@ Elements by rank, in wheel order so **opposites are 4 apart**: A Fire, 2 Air, 3 
 
 Target (3+ players): point the pair at the player you're aiming at.
 
+## Hand-made cards: as few as possible
+
+The standard deck does the picking, so the only cards to make are:
+
+- **One wizard sheet per wizard** (a postcard or an index card), not three ability cards: name, HP, Attack, barred elements, its three abilities (each with difficulty, cost if it differs, and what it does; numbered 1–3 to match the A / 2 / 3 pick), and an **eight-space element wheel** in the A–8 order, where ward piles sit. Buffs and curses are marked on the ability boxes, so no status cards are needed.
+- **One reference card per player** (optional): the six-wink result table and the two-card pick table.
+
+**Start with 6 wizards** (6 sheets, plus 2 reference cards), not all 23. Pick a spread that shows the system off with simple abilities: for example Eldrin (wards), Malachar (curses and drain), Cinder (big strikes), Skadi (ice and armour), Gnash (blows) and Valdris (skeletons). The simulator balances those 6 against each other first; more sheets come once Normal plays well.
+
 ## Counters: tokens, then dice
 
 In a duel, tokens are the counters (you can see a pile at a glance, and paying mana is handing tokens back):
 
 - **HP: red.** 25 covers two wizards while HP stays at 12 or less each (the current tabletop HPs are 8–12).
 - **Mana: blue.** Cap **12 each** in a duel so 25 covers both.
-- **Ward: green.** Each pile sits on that element's card (the A–8 you cast it with), so its element shows. The 25 are shared; cap 12 per wizard across all piles.
+- **Ward: green.** Each pile sits on its element's space on your wizard sheet's wheel (see below), so its element shows. (Not on the A–8 card: that card has to go back in your hand for the next pick.) The 25 are shared; cap 12 per wizard across all piles.
 - **Yellow:** Ironskin, and each minion's HP (one small stack per body; a skeleton is 1 token).
-- **Buffs and curses:** the signature card face up in front of whoever it's on; a coin on it for "until used" effects, a die for anything that counts down (Vanish).
+- **Buffs and curses:** a yellow token on that ability's box on the caster's sheet means it's in play (a buff on the caster, a curse on the foe). A coin on the box for "until used" effects, a die for anything that counts down (Vanish).
 - **Chance:** a d6 where the old rules had a percentage; a coin for 50/50.
 
 **3–5 players or when a colour runs out:** use dice instead, totalled (12 HP = two dice showing 6 and 6). Twenty a player covers everything; mixing tokens and dice is fine (a die stands for that many tokens).
@@ -123,4 +132,5 @@ Aim: **about 12 rounds, 10–15 minutes** — the length of the user's 12-round 
 
 1. **Calibration:** the user is supplying baseline scores (winks potted per round). They set the pot rate the simulator balances for, then the flat cost and recoup.
 2. **Recoup size:** 2 back (of 3), or the whole cost back?
-3. **Card exceptions:** do any signature cards need their own cost (summons, big heals), or is difficulty enough?
+3. **Starting six:** happy with Eldrin, Malachar, Cinder, Skadi, Gnash and Valdris, or would you rather choose?
+4. **Card exceptions:** do any signature cards need their own cost (summons, big heals), or is difficulty enough?
