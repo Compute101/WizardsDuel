@@ -130,7 +130,73 @@ function showScreen(id){
   document.getElementById(id).classList.add('active');
   const pzExit=document.getElementById('btn-pz-exit');
   if(pzExit) pzExit.style.display=(id==='puzzle-screen'&&trainingMode)?'':'none';
+  syncBattleMusic();
 }
+
+// ── BATTLE MUSIC ───────────────────────────────────────────
+// audio/battle_theme.mp3 (tools/music/battle_theme.py) loops while a fight is on screen: the battle or a casting
+// minigame in any mode, Explore's fights and spars included (Explore silences its map theme while it's away).
+// It fades out on the result overlay, back at the menus and for a practical at a dummy (mgStandalone), and starts
+// from the top for each new fight. Played through Web Audio so the loop has no gap (an <audio> loop of an MP3
+// pauses at the join); an <audio> element is the fallback. GAME_OPTIONS.music (Options → Battle music) turns it off.
+const BATTLE_MUSIC_SRC='audio/battle_theme.mp3?v=1', BATTLE_MUSIC_VOL=0.5;
+const battleMusic={ctx:null, buf:null, loading:null, src:null, gain:null, el:null, on:false, blocked:false};
+function battleMusicWanted(){
+  try{ if(GAME_OPTIONS.music===false||mgStandalone) return false; }catch(e){ return false; }   // not declared yet during load
+  const active=id=>{ const e=document.getElementById(id); return !!(e&&e.classList.contains('active')); };
+  return (active('battle-screen')||active('puzzle-screen'))&&!active('overlay');
+}
+function battleMusicStart(){
+  const m=battleMusic;
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(AC&&window.fetch){
+      if(!m.ctx){ m.ctx=new AC(); m.gain=m.ctx.createGain(); m.gain.connect(m.ctx.destination); }
+      if(m.ctx.state==='suspended') m.ctx.resume().catch(()=>{});
+      if(m.ctx.state==='suspended') m.blocked=true;           // no tap yet: try again on the next one
+      if(!m.buf){
+        if(!m.loading) m.loading=fetch(BATTLE_MUSIC_SRC).then(r=>r.arrayBuffer())
+          .then(d=>new Promise((ok,no)=>m.ctx.decodeAudioData(d,ok,no)))
+          .then(b=>{ m.buf=b; if(m.on&&!m.src) battleMusicStart(); })
+          .catch(()=>{ m.ctx=null; m.loading=null; if(m.on) battleMusicStart(); });   // fall back to <audio>
+        return;
+      }
+      if(m.src) return;
+      const s=m.ctx.createBufferSource(); s.buffer=m.buf; s.loop=true; s.connect(m.gain);
+      const t=m.ctx.currentTime; m.gain.gain.cancelScheduledValues(t);
+      m.gain.gain.setValueAtTime(0,t); m.gain.gain.linearRampToValueAtTime(BATTLE_MUSIC_VOL,t+1.2);
+      s.start(); m.src=s; return;
+    }
+    if(!m.el){ m.el=new Audio(BATTLE_MUSIC_SRC); m.el.loop=true; m.el.preload='auto'; }
+    if(!m.el.paused) return;
+    m.el.currentTime=0; m.el.volume=BATTLE_MUSIC_VOL;
+    const p=m.el.play(); if(p&&p.catch) p.catch(()=>{ m.blocked=true; });
+  }catch(e){}
+}
+function battleMusicStop(){
+  const m=battleMusic;
+  try{
+    if(m.src&&m.ctx){
+      const s=m.src, t=m.ctx.currentTime; m.src=null;
+      m.gain.gain.cancelScheduledValues(t); m.gain.gain.setValueAtTime(m.gain.gain.value,t);
+      m.gain.gain.linearRampToValueAtTime(0,t+0.8); s.stop(t+0.85);
+    }
+    if(m.el&&!m.el.paused){
+      const a=m.el, fade=setInterval(()=>{ a.volume=Math.max(0,a.volume-0.04); if(a.volume<=0){ clearInterval(fade); a.pause(); } },40);
+    }
+  }catch(e){}
+}
+function syncBattleMusic(){
+  const want=battleMusicWanted();
+  if(want===battleMusic.on) return;
+  battleMusic.on=want;
+  if(want) battleMusicStart(); else battleMusicStop();
+}
+// the result overlay and Explore's screens change without showScreen, so check twice a second too
+setInterval(syncBattleMusic,500);
+['pointerdown','keydown'].forEach(t=>window.addEventListener(t,()=>{
+  if(battleMusic.blocked&&battleMusic.on){ battleMusic.blocked=false; battleMusicStart(); }
+},true));
 
 // ── ARCADE LADDER ──────────────────────────────────────────
 function buildBracket(){
@@ -5663,7 +5729,7 @@ function elemTickEffects(who){
 // ── OPTIONS (⚙ on the title screen; kept in this browser) ──
 // longDuels: 'draw' ends a duel that reaches roundLimit as a draw; 'sudden' starts sudden death instead
 // diff / ai: ritual difficulty (diffName) and opponent AI (aiDifficulty)
-const GAME_OPTIONS={longDuels:'draw', roundLimit:50, diff:'normal', ai:'normal'};
+const GAME_OPTIONS={longDuels:'draw', roundLimit:50, diff:'normal', ai:'normal', music:true};   // music: battle music on/off
 try{ Object.assign(GAME_OPTIONS,JSON.parse(localStorage.getItem('wd-options')||'{}')); }catch(e){}
 diffName=GAME_OPTIONS.diff; aiDifficulty=GAME_OPTIONS.ai;
 function saveOptions(){ try{ localStorage.setItem('wd-options',JSON.stringify(GAME_OPTIONS)); }catch(e){} }
@@ -10470,6 +10536,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   const renderOptions=()=>{
     optOv.querySelectorAll('[data-long]').forEach(b=>b.classList.toggle('on',b.dataset.long===GAME_OPTIONS.longDuels));
     optOv.querySelectorAll('[data-limit]').forEach(b=>b.classList.toggle('on',+b.dataset.limit===GAME_OPTIONS.roundLimit));
+    optOv.querySelectorAll('[data-music]').forEach(b=>b.classList.toggle('on',(b.dataset.music==='on')===(GAME_OPTIONS.music!==false)));
     document.getElementById('op-limit-group').style.display=GAME_OPTIONS.longDuels==='draw'?'':'none';
     document.getElementById('op-long-help').textContent=GAME_OPTIONS.longDuels==='draw'
       ?'A duel still going after round '+GAME_OPTIONS.roundLimit+' ends in a draw.'
@@ -10482,6 +10549,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     if(!b) return;
     if(b.dataset.long) GAME_OPTIONS.longDuels=b.dataset.long;
     else if(b.dataset.limit) GAME_OPTIONS.roundLimit=+b.dataset.limit;
+    else if(b.dataset.music) GAME_OPTIONS.music=b.dataset.music==='on';
     else return;
     saveOptions(); renderOptions();
   });
