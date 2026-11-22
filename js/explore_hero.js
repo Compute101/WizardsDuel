@@ -51,7 +51,7 @@ function avoidLook(look, hero){
   if(!hero) return look;
   const L=Object.assign({}, look);
   if(L.fig===hero.fig){
-    const alts=BASES.filter(b=>b.id!==hero.fig&&b.sex===L.sex&&b.age===L.age);
+    const me=BASES.find(b=>b.id===L.fig), alts=BASES.filter(b=>b.id!==hero.fig&&b.sex===L.sex&&folkOf(b)===(me?folkOf(me):'human')&&(b.folk==='elf'||b.age===L.age));
     if(alts.length) L.fig=alts[(L.name||'').length%alts.length].id;
   }
   if((L.robe||'Violet')===(hero.robe||'Violet')){ const i=ROBES.findIndex(r=>r.name===(L.robe||'Violet')); L.robe=ROBES[(i+3)%ROBES.length].name; }
@@ -110,7 +110,14 @@ const NAMES = {
 const AGE_HAIR = {young:'Brown', middle:'Black', old:'Silver'};   // a new look's starting hair
 
 // the creator's figures for a sex and age; figures marked npc (the ragged bandits) are for NPCs only, though def() still paints them
-const figuresFor = (sex,age) => { const ok=BASES.filter(b=>!b.npc), own=ok.filter(b=>b.sex===sex&&b.age===age); return own.length?{list:own,standIn:false}:{list:ok.filter(b=>b.sex===sex),standIn:true}; };
+// folk: 'human' (figures with no folk) or 'elf'; elves are ageless to look at, so their figures serve every age
+const folkOf = b => b.folk||'human';
+const FOLKS = [['human','Human'],['elf','Elf']];
+const figuresFor = (sex,age,folk) => {
+  folk=folk||'human';
+  const ok=BASES.filter(b=>!b.npc&&folkOf(b)===folk), own=ok.filter(b=>b.sex===sex&&(folk==='elf'||b.age===age));
+  return own.length?{list:own,standIn:false}:{list:BASES.filter(b=>!b.npc&&b.sex===sex&&!b.folk),standIn:true};
+};
 const rnd = a => a[Math.floor(Math.random()*a.length)];
 
 // ── recolouring ──
@@ -289,7 +296,7 @@ function hairRimOf(base, m, W, H){ return m&&grow(m,W,H,3); }   // the hair mask
 async function def(hero){
   await loadBases();
   const k=JSON.stringify(hero); if(defCache[k]) return defCache[k];
-  const base=BASES.find(b=>b.id===hero.fig)||figuresFor(hero.sex,hero.age).list[0];   // a figure that's gone (Eldrin's old sprite) gives way to the slot's first
+  const base=BASES.find(b=>b.id===hero.fig)||figuresFor(hero.sex,hero.age,hero.folk).list[0];   // a figure that's gone (Eldrin's old sprite) gives way to the slot's first
   const img=await loadImg(base.src); base._hairMask=await hairMaskOf(base);
   base._skinMask=await hairMaskOf(base,'skinMask'); base._staffMask=await hairMaskOf(base,'staffMask');
   if(base._hairMask&&!base._hairRim) base._hairRim=hairRimOf(base,base._hairMask,img.naturalWidth,img.naturalHeight);
@@ -319,7 +326,8 @@ async function open(root, opts){
     const h0=opts.hero;
     const sex=h0?h0.sex:rnd(['m','f']);
     const st=h0?Object.assign({},h0):{sex, age:'young', fig:null, robe:'Violet', trim:'Gold', staff:'Oak', hair:'Brown', skin:'Natural', eyes:'Brown', elem:rnd(ELEMS).id, name:rnd(NAMES[sex])};
-    if(!st.fig||!figuresFor(st.sex,st.age).list.some(b=>b.id===st.fig)) st.fig=figuresFor(st.sex,st.age).list[0].id;
+    st.folk=st.folk||'human';   // heroes made before elves
+    if(!st.fig||!figuresFor(st.sex,st.age,st.folk).list.some(b=>b.id===st.fig)) st.fig=figuresFor(st.sex,st.age,st.folk).list[0].id;
     st.trim=st.trim||'Gold'; st.staff=st.staff||'Oak'; st.skin=st.skin||'Natural'; st.eyes=st.eyes||'Blue';   // heroes made before trim, skin and eyes
     if(box) box.remove();
     box=document.createElement('div'); box.className='hc'; root.appendChild(box);
@@ -360,22 +368,24 @@ async function open(root, opts){
     const topList=()=>TOPPERS.filter(q=>STARTER_TOPPERS.includes(q.id)||(opts.toppers||[]).includes(q.id)||q.id===st.topper);
     const randomize=()=>{
       if(!opts.edit){ st.sex=rnd(['m','f']); st.elem=rnd(ELEMS).id; st.name=rnd(NAMES[st.sex]); }
-      st.age=rnd(AGES)[0]; st.fig=rnd(figuresFor(st.sex,st.age).list).id;
+      if(!opts.edit) st.folk=Math.random()<0.3?'elf':'human';
+      st.age=rnd(AGES)[0]; st.fig=rnd(figuresFor(st.sex,st.age,st.folk).list).id;
       st.robe=rnd(ROBES).name; st.trim=rnd(TRIMS).name; st.skin=rnd(SKINS).name; st.eyes=rnd(EYES).name;
       st.hair=(st.age==='old'&&Math.random()<0.6)?rnd(['Silver','White']):rnd(HAIRS).name;   // the old mostly grey
     };
     const render=()=>{
-      const F=figuresFor(st.sex,st.age), i=Math.max(0,F.list.findIndex(b=>b.id===st.fig)), op=opposite(st.elem);
+      const F=figuresFor(st.sex,st.age,st.folk), i=Math.max(0,F.list.findIndex(b=>b.id===st.fig)), op=opposite(st.elem);
       $('.hc-opts').innerHTML=
         `<div class="hc-row"><span class="hc-lab">Name</span><div class="hc-name"><input class="hc-in" maxlength="16" value="${(st.name||'').replace(/"/g,'&quot;')}" aria-label="Name"><button type="button" class="ex-btn hc-dice" title="Another name">↻</button></div></div>`+
         (opts.edit?'':pills('sex',[['m','Man'],['f','Woman']],'I am'))+
+        pills('folk',FOLKS,'Folk')+
         pills('age',AGES,'Age')+
         `<div class="hc-row"><span class="hc-lab">Figure</span><div class="hc-pills"><button type="button" class="hc-pill" data-fig="-1">‹</button><span class="hc-figno">${i+1} of ${F.list.length}</span><button type="button" class="hc-pill" data-fig="1">›</button></div></div>`+
         (topList().length>1?`<div class="hc-row"><span class="hc-lab">Topper</span><div class="hc-pills"><button type="button" class="hc-pill" data-top="-1">‹</button><span class="hc-figno">${(TOPPERS.find(q=>q.id===(st.topper||''))||TOPPERS[0]).name}</span><button type="button" class="hc-pill" data-top="1">›</button></div></div>`:'')+
         swatches('robe',ROBES,'Robes')+swatches('trim',TRIMS,'Trim')+swatches('staff',STAVES,'Staff')+swatches('hair',HAIRS,'Hair')+swatches('skin',SKINS,'Skin')+swatches('eyes',EYES,'Eyes')+
         (opts.edit?'':`<div class="hc-row"><span class="hc-lab">Element</span><div class="hc-pills">`+ELEMS.map(e=>`<button type="button" class="hc-pill hc-el${st.elem===e.id?' on':''}" data-k="elem" data-v="${e.id}"><i style="background:${e.col}"></i>${e.name}</button>`).join('')+`</div></div>`+
         `<div class="hc-elnote">Your magic burns ${ELEMS.find(e=>e.id===st.elem).name.toLowerCase()}-coloured. Your first spells will be ${ELEMS.find(e=>e.id===st.elem).name}, and in time ${op.name}, its opposite, will come hardest to you.</div>`);
-      $('.hc-note').textContent=F.standIn?'Stand-in figure: the art for '+(st.age==='middle'?'a middle-aged':'a '+st.age)+' '+(st.sex==='m'?'man':'woman')+' is still to come.':'';
+      $('.hc-note').textContent=F.standIn?'Stand-in figure: the art for '+(st.folk==='elf'?'an elf':(st.age==='middle'?'a middle-aged':'a '+st.age))+' '+(st.sex==='m'?'man':'woman')+' is still to come.':'';
       draw();
     };
     box.addEventListener('click',e=>{
@@ -383,10 +393,10 @@ async function open(root, opts){
       if(t.classList.contains('hc-rand')){ randomize(); render(); return; }
       if(t.classList.contains('hc-dice')){ st.name=rnd(NAMES[st.sex].filter(n=>n!==st.name)); render(); return; }
       if(t.dataset.top){ const T=topList(), i=Math.max(0,T.findIndex(q=>q.id===(st.topper||''))); st.topper=T[(i+(+t.dataset.top)+T.length)%T.length].id; render(); return; }
-      if(t.dataset.fig){ const F=figuresFor(st.sex,st.age).list, i=F.findIndex(b=>b.id===st.fig); st.fig=F[(i+(+t.dataset.fig)+F.length)%F.length].id; render(); return; }
+      if(t.dataset.fig){ const F=figuresFor(st.sex,st.age,st.folk).list, i=F.findIndex(b=>b.id===st.fig); st.fig=F[(i+(+t.dataset.fig)+F.length)%F.length].id; render(); return; }
       if(t.dataset.k){
         const k=t.dataset.k; st[k]=t.dataset.v;
-        if(k==='sex'||k==='age'){ st.fig=figuresFor(st.sex,st.age).list[0].id; if(!opts.edit||k==='age') st.hair=AGE_HAIR[st.age]; if(k==='sex') st.name=rnd(NAMES[st.sex]); }
+        if(k==='sex'||k==='age'||k==='folk'){ if(k!=='age'||st.folk!=='elf'||!figuresFor(st.sex,st.age,st.folk).list.some(b=>b.id===st.fig)) st.fig=figuresFor(st.sex,st.age,st.folk).list[0].id; if(!opts.edit||k==='age') st.hair=AGE_HAIR[st.age]; if(k==='sex') st.name=rnd(NAMES[st.sex]); }
         render(); return;
       }
       if(t.classList.contains('hc-cancel')){ box.remove(); box=null; resolve(null); return; }
@@ -400,5 +410,5 @@ async function open(root, opts){
     render();
   });
 }
-window.ExploreHero={open, def, loadBases, avoidLook, STARTER_TOPPERS, BASES, ROBES, TRIMS, STAVES, TOPPERS, HAIRS, SKINS, EYES, ELEMS, NAMES};
+window.ExploreHero={open, FOLKS, def, loadBases, avoidLook, STARTER_TOPPERS, BASES, ROBES, TRIMS, STAVES, TOPPERS, HAIRS, SKINS, EYES, ELEMS, NAMES};
 })();
