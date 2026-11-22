@@ -60,6 +60,7 @@ const TEXT={
   divineheal:'Heal 6.',
   purge:'Remove all your curses and heal 3.',
   radiant:'An Arcane strike of 3. The foe loses 2 mana.',
+  smite:'Buff: your next 3 Attacks are Arcane magic and deal 3 (a ward stops them, a Guard doesn\'t). A yellow token per Attack left.',
   heal:'Buff: heal 1 at every round end.',
   entangle:'Curse: roll a die; on 4+ the foe can\'t pick Damage next round.',
   vinewhip:'A blow of 3 (wards don\'t stop it). Curse: vines deal 1 blow to the foe at every round end.',
@@ -691,7 +692,8 @@ function sheet(w){
   const s=st(w), c=s.c, f=w===G.human?G.ai:G.human, foeSt=st(f);
   const ab=c.spells.map((sp,i)=>{
     const on=sp.kind==='curse'?foeSt.effects.some(e=>e.id===sp.id):sp.effect&&sp.effect.type==='minion'?0:s.effects.some(e=>e.id===sp.id);
-    const sk=sp.effect&&sp.effect.type==='minion'?minionsOf(w).length:0;
+    const own=s.effects.find(e=>e.id===sp.id);
+    const sk=sp.effect&&sp.effect.type==='minion'?minionsOf(w).length:own&&own.charges!=null?own.charges:0;
     const inPlay=S().elems.length<4||S().elems.includes(sp.elem);
     return `<div class="wk-ab ${inPlay?'':'out'}"><div class="h"><b>${i+1} ${esc(sp.name)}</b><span>${EL[sp.elem].icon} ⦿${TT.difficultyOf(sp)}</span></div>
       <div class="t">${esc(TEXT[sp.id]||sp.text)}</div>${on||sk?`<div class="mk">${tokens('y',sk||1,6)}</div>`:''}</div>`;

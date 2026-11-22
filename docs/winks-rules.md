@@ -36,7 +36,7 @@ Eight wizards to start, four men and four women. Each has HP, an **Attack** (how
 | **Skadi** the Permafrost | 11 | 1 | Lightning | Armour, freezing strikes, slow drain |
 | **Gnash** the Feral | 10 | **2** | Arcane, Ice | Brawler: blows that ignore wards |
 | **Valdris** the Undying | 11 | 1 | Fire | Skeletons that shield him and bite |
-| **Mary** the Devoted | 11 | 1 | Dark, Lightning | Healing, cleansing, mana-burning light |
+| **Mary** the Devoted | 11 | 1 | Dark, Lightning | Healing, cleansing, holy smiting |
 | **Sylvara** the Verdant | 11 | 1 | Fire, Dark | Regrowth, entangling, whipping vines |
 
 Their abilities are listed at the end (**Wizard sheets**).
@@ -248,7 +248,7 @@ HP 11 · Attack 1 · Barred: Dark, Lightning
 |---|---|---|---|
 | **1 Heal** | Arcane | 2 | Heal 6. |
 | **2 Purge** | Arcane | 1 | Remove all your curses and heal 3. |
-| **3 Radiant** | Arcane | 2 | An Arcane strike of 3. The foe loses 2 mana. |
+| **3 Smite** | Arcane | 2 | Buff: her next 3 Attacks are Arcane magic and deal 3 (her Attack 1 +2). A ward stops them, a Guard doesn't, and the +2 for a ward's opposite counts. Put 3 yellow tokens on this ability and take one off for each Attack. A Dispel can strip it. |
 
 ### SYLVARA — The Verdant
 

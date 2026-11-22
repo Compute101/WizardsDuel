@@ -153,7 +153,12 @@ function rulesOf(name){
 // A character's "hp" in tabletop.json is for the Normal rules (Beginner uses it too); it can change
 // it under a named rule set: "rules":{"advanced":{"hp":17}}. Only HP for now.
 function applyCharRules(){
-  Object.values(CHARS).forEach(c=>{ const o=c.alt[rulesName]||{}; c.hp=Math.min(RULES.maxHp,o.hp!=null?o.hp:c.baseHp); });
+  Object.values(CHARS).forEach(c=>{
+    const o=c.alt[rulesName]||{};
+    c.hp=Math.min(RULES.maxHp,o.hp!=null?o.hp:c.baseHp);
+    // "rules":{"winks":{"spells":{"radiant":{...a card}}}} swaps a card for that rule set only
+    c.spells=(c.baseSpells||c.spells).map(sp=>o.spells&&o.spells[sp.id]?o.spells[sp.id]:sp);
+  });
   // Fighters (no HP cap: they keep their own counters): "rules":{"advanced":{"hp":n,"atk":n}} in fighters.json's "tabletop"
   Object.values(FIGHTERS).forEach(c=>{ const o=c.alt[rulesName]||{}; c.hp=o.hp!=null?o.hp:c.baseHp; c.atk=o.atk!=null?o.atk:c.baseAtk; });
 }
@@ -180,7 +185,7 @@ function load(chars,tt,fighters){
       hp:Math.min(RULES.maxHp,t.hp), baseHp:Math.min(RULES.maxHp,t.hp), alt:t.rules||{},
       atk:tableAtk(c,t), skin:t.skin||null,
       deathless:t.deathless||0, forbidden:(t.forbidden||c.forbidden||[]).map(e=>e==='physical'?'earth':e).filter(e=>ELEMENTS.includes(e)),
-      spells:t.spells||[]};
+      spells:t.spells||[], baseSpells:t.spells||[]};
   });
   // Non-wizard fighters (fighters.json, "tabletop" numbers): Actions only, one trait each
   FIGHTERS={};
@@ -369,6 +374,7 @@ function meditateCards(w){
 // Winks (cards.swapAnyTime): a swap with another player needs no Meditate; each AI may offer one at the
 // start of every round (an offer to a human waits in gs.offers)
 const AI_SWAP_ASK=0.35;
+let AI_SMITE=0.9;   // how often the AI Attacks (when it picks Damage) while Smite is up
 function swapRound(){
   if(!RULES.cards||!RULES.cards.swap||!RULES.cards.swapAnyTime) return;
   // Not every round (AI_SWAP_ASK), and never the same ask twice running
@@ -769,6 +775,17 @@ function doAction(who,a){
     if(d>0) incoming(t,d,0,false,0,null,'physical');
     return;
   }
+  // Smite (Mary, Winks): her Attacks are Arcane magic and hit harder. A Guard can't stop magic; a ward can.
+  const sm=fx(st,'smite')[0];
+  if(sm){
+    // charges: one used per Attack (yellow tokens on the card); none means until dispelled
+    if(sm.charges!=null&&--sm.charges<=0) removeEffects(who,[sm]);
+    const d=atk+sm.bonus+(ta&&ta.act==='grapple'&&atMe?1:0);
+    if(a.minion!=null&&RULES.minions.target&&hitBody(who,t,a.minion,d)) return;
+    if(strikeMisses(t)) return;
+    incoming(t,hitAdjust(ts,d,'magic'),wardAdj(ts,sm.elem),false,0,sm.elem);
+    return;
+  }
   // Attack (an archer's is a bow shot: it slips past a Guard)
   if(a.minion!=null&&RULES.minions.target&&hitBody(who,t,a.minion,atk)) return;
   if(guarding(t)&&st.c.trait!=='ranged'){ gs.src=t; incoming(who,ts.c.atk,0,false,0,null,'physical'); return; }   // blocked and countered
@@ -1147,6 +1164,7 @@ function aiPhys(w,cat,smart){
     if(vanishOf(st)||vanishOf(ts)) return null;
     if(!ELEMENTS.some(e=>!st.c.forbidden.includes(e)&&canPick(st,{cat,elem:e,ring:1}))) return act('attack');
     let p=A.attackBase;
+    if(fx(st,'smite').length) return rng()<(smart?AI_SMITE:0.45)?act('attack'):null;   // Smite: Attacks are her strikes now
     if(ts.ward&&!skinOn(ts)) p+=A.attackOpen;
     if(skinOn(ts)) p*=0.5;
     if(last.act==='guard') p*=0.3;
@@ -1205,6 +1223,8 @@ function aiChooseCore(w,level){
     const usable=st.hand.filter(e=>!st.c.forbidden.includes(e)).length;
     if(rng()<(usable===0?0.85:usable===1?0.4:usable===2?0.12:0)) return {cat:'meditate'};
   }
+  // Smite up: swing (unless the foe has Vanished or Damage is locked)
+  if(fx(st,'smite').length&&!locked(st,'damage')&&!vanishOf(ts)&&rng()<AI_SMITE) return {cat:'damage', act:'attack'};
   // Meditate when short of mana
   if(canMeditate(st)&&st.mana<costOf(st,{cat:'damage',ring:2})){
     let p=st.mana<costOf(st,{cat:'damage',ring:1})?0.5:0.25;
@@ -1462,7 +1482,7 @@ useRules('normal');
 
 const TT={RULES, PRESETS, RULE_SETS, useRules, rulesOf, AI_WARDS, AI_FIGHTERS, AI_ACTIONS, AI_MINIONS, AI_ENCOUNTER, WAVES, LEVELS, BREATHER,
   get rulesName(){ return rulesName; }, ELEMENTS, opposite, load, newGame, newTable, playRound, aiChoose, simMatch, balance, canPick, costOf,
-  survival, survivalBalance, WINK_SCORES, draftOpen, draftPick, dealWith, pileTrade, askSwap, answerOffer, discardCard, swapRound,
+  survival, survivalBalance, WINK_SCORES, setSmiteAI(p){ AI_SMITE=p; }, draftOpen, draftPick, dealWith, pileTrade, askSwap, answerOffer, discardCard, swapRound,
   difficultyOf:sp=>difficultyOf(sp), sigById:(st,id)=>sigById(st,id), get chars(){ return CHARS; }, get fighters(){ return FIGHTERS; }, get state(){ return gs; }, setRng(f){ rng=f||Math.random; }};
 if(typeof module!=='undefined'&&module.exports) module.exports=TT;
 else root.TT=TT;

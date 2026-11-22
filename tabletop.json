@@ -95,6 +95,7 @@
   },
   "mary": {
     "hp": 11,
+    "rules": {"winks": {"spells": {"radiant": {"id": "smite", "name": "Smite", "cat": "protect", "elem": "arcane", "ring": 2, "kind": "buff", "effect": {"type": "smite", "bonus": 2, "charges": 3, "elem": "arcane"}, "text": "Your next 3 Attacks are Arcane magic and deal +2 (3 for Mary): a ward stops them, a Guard doesn't. Put 3 yellow tokens on this card and take one off for each Attack."}}}},
     "spells": [
       {"id": "divineheal", "name": "Heal", "cat": "protect", "elem": "arcane", "ring": 2, "cost": 5, "kind": "instant", "action": {"type": "heal", "n": 6},
        "text": "Heal 6."},
