@@ -10,14 +10,17 @@ if(src.startsWith('rate:')) TT.RULES.pot=+src.slice(5);
 else sc=src==='pooled'?TT.WINK_SCORES.daddy.concat(TT.WINK_SCORES.b):TT.WINK_SCORES[src];   // lists of 12-round games
 const opts=sc?{scores:{p1:sc,p2:sc}}:null;
 // Overall stats from a sample of games
-let rounds=[], picks={}, n=0, timeouts=0, points=0, draws=0;
+let rounds=[], picks={}, n=0, timeouts=0, points=0, draws=0, swaps=0, asks=0, trades=0;
+// Switches: node tools/winks_sim.js 200 daddy noswap,nowardcard
+(process.argv[4]||'').split(',').forEach(f=>{ if(f==='noswap') TT.RULES.cards.swap=false; if(f==='nowardcard') TT.RULES.cards.wardCard=false; if(f==='notrade') TT.RULES.cards.trade=false; });
 SIX.forEach(a=>SIX.forEach(b=>{ if(a===b) return; for(let g=0;g<20;g++){
-  const r=TT.simMatch(a,b,'normal',opts); n++; rounds.push(r.rounds); if(r.winner==='timeout') timeouts++; if(r.onPoints) points++; if(r.winner==='draw') draws++;
+  const r=TT.simMatch(a,b,'normal',opts); n++; rounds.push(r.rounds); if(r.winner==='timeout') timeouts++; if(r.onPoints) points++; if(r.winner==='draw') draws++; swaps+=r.cards.swaps; asks+=r.cards.asks; trades+=r.cards.trades;
   ['p1','p2'].forEach(w=>Object.entries(r.picks[w]).forEach(([k,v])=>picks[k]=(picks[k]||0)+v));
 }}));
 rounds.sort((x,y)=>x-y);
 const tot=Object.values(picks).reduce((a,b)=>a+b,0);
 console.log(`scores ${src}: rounds avg ${(rounds.reduce((a,b)=>a+b,0)/n).toFixed(1)}, median ${rounds[n>>1]}, 90% ${rounds[Math.floor(n*.9)]}; knockouts ${((n-points)/n*100).toFixed(0)}%, on HP after 12 ${(points/n*100).toFixed(0)}%, draws ${(draws/n*100).toFixed(0)}%`);
+console.log(`per game: ${(swaps/n).toFixed(2)} swaps with the other player (${(asks/n).toFixed(2)} asked), ${(trades/n).toFixed(2)} trades with the pile`);
 console.log('picks:',Object.entries(picks).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' '+(v/tot*100).toFixed(1)+'%').join(', '));
 console.log(TT.balance(games,'normal',SIX,opts).map(r=>`${r.name.padEnd(10)} ${r.winRate}%  ${r.rounds} rounds`).join('\n'));
 // Daddy against B: every pairing, each side with its own player's scores

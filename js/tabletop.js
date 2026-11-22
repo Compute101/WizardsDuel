@@ -122,7 +122,7 @@ const PRESETS={
   // At most 12 rounds (roundLimit): a knockout wins, else the most HP after round 12 (level is a draw).
   winks:{max:12, roundLimit:12, maxRounds:12, suddenDeath:null, flickMode:'six', flatCost:3, recoup:2, difficulty:[1,2,3], pot:0.31, squops:0,
     wards:{boost:true, layers:1, seals:false, dispelStrips:false},
-    cards:{elems:4, perElem:9, hand:7, medDraw:2, trade:true}},
+    cards:{elems:4, perElem:9, hand:7, medDraw:2, trade:true, swap:true, wardCard:true}},
 };
 const RULE_SETS=['beginner','normal','advanced'];   // Winks ('winks') is its own game, not a step in this order   // the order players learn them in
 const DEFAULTS=JSON.parse(JSON.stringify(RULES));
@@ -244,7 +244,7 @@ function dealCards(){
   }
   gs.pile=shuffle([].concat(...gs.elems.map(e=>Array(C.perElem).fill(e))));
   gs.discard=[];
-  W.forEach(w=>{ gs[w].hand=[]; drawCards(w,C.hand); });
+  W.forEach(w=>{ gs[w].hand=[]; gs[w].wardCards=[]; drawCards(w,C.hand); });
 }
 function drawCards(w,n){
   for(let i=0;i<n;i++){
@@ -253,6 +253,14 @@ function drawCards(w,n){
   }
 }
 const holds=(st,e)=>!RULES.cards||(!!st.hand&&st.hand.includes(e));
+function takeCard(w,e){ const h=gs[w].hand, i=h?h.indexOf(e):-1; if(i>=0) h.splice(i,1); }
+// Ward cards whose pile is gone (broken, worn away, replaced) go to the discards
+function syncWardCards(w){
+  const st=gs[w];
+  if(!st.wardCards||!st.wardCards.length) return;
+  const up=st.ward?[st.ward.elem].concat(st.wardInner.map(l=>l.elem)):[];
+  st.wardCards=st.wardCards.filter(e=>up.includes(e)||(gs.discard.push(e),false));
+}
 function spendCard(w,e){
   const h=gs[w].hand, i=h?h.indexOf(e):-1;
   if(i>=0){ h.splice(i,1); gs.discard.push(e); }
@@ -271,11 +279,43 @@ function worstCard(st){
   const want=e=>st.c.spells.some(sp=>sp.elem===e)?1:0;
   return h.slice().sort((a,b)=>(n(b)-want(b)*1.5)-(n(a)-want(a)*1.5))[0];
 }
-// Meditate: draw, then one trade with the pile (a pair of an element for one more draw)
+// How much a seat wants one more card of e (its last card of e, when it gives one away): nothing for
+// an element it's barred from, more for its abilities' elements, less for each one it already holds
+function cardWorth(st,e,giving){
+  if(st.c.forbidden.includes(e)) return 0;
+  const base=1+1.5*st.c.spells.filter(sp=>sp.elem===e).length;
+  const n=st.hand.filter(x=>x===e).length;
+  return base/Math.max(1,giving?n:n+1);
+}
+// A swap with another player, haggled in the open: I offer my least useful card for the one I want
+// most; they say yes only if it's worth more to them than what they give. A no isn't a trade.
+function trySwap(w){
+  const st=gs[w], C=RULES.cards;
+  if(!C.swap||!st.hand.length) return false;
+  const give=st.hand.slice().sort((a,b)=>cardWorth(st,a,true)-cardWorth(st,b,true))[0];
+  const want=gs.elems.filter(e=>e!==give).sort((a,b)=>cardWorth(st,b)-cardWorth(st,a))[0];
+  if(!want||cardWorth(st,want)<=cardWorth(st,give,true)+0.25) return false;
+  for(const f of foes(w).concat(active().filter(x=>x!==w&&gs[x].team===st.team))){
+    const ft=gs[f];
+    if(isFighter(f)||!ft.hand||!ft.hand.includes(want)) continue;
+    gs.swapAsks=(gs.swapAsks||0)+1;
+    // A foe also counts what it hands me: helping my abilities is worth less to it than its own gain
+    const deny=f===foe(w)?0.3*cardWorth(st,want):0;
+    if(cardWorth(ft,give)>cardWorth(ft,want,true)+deny){
+      takeCard(f,want); ft.hand.push(give); takeCard(w,give); st.hand.push(want);
+      st.swaps=(st.swaps||0)+1;
+      return true;
+    }
+  }
+  return false;
+}
+// Meditate: draw, then one trade: a swap with another player, or with the pile (a pair of an
+// element for one more draw)
 function meditateCards(w){
   const st=gs[w], C=RULES.cards;
   drawCards(w,C.medDraw);
   if(!C.trade) return;
+  if(trySwap(w)) return;
   const h=st.hand, cnt={}; h.forEach(e=>cnt[e]=(cnt[e]||0)+1);
   const pairs=Object.keys(cnt).filter(e=>cnt[e]>=2);
   if(!pairs.length) return;
@@ -701,6 +741,7 @@ function playRound(picks,flicks,squops){
     });
     if(checkOver()) return outcome;
   }
+  if(RULES.cards) W.forEach(syncWardCards);
   W.forEach(w=>{ if(picks[w].cat==='meditate'&&outcome[w]==='cast'&&!gs[w].out){ gainMana(w,Math.max(0,RULES.meditate-incomeDrain(gs[w]))); if(RULES.cards) meditateCards(w); } });
   squopPhase(squops);
   endRound();
@@ -802,13 +843,16 @@ function pay(w,a,flick){
   st.mana-=cost;
   if(RULES.flickMode==='six'){
     const card=cardOf(st,a);
-    if(card) spendCard(w,card);
+    if(card) takeCard(w,card);
     const n=sixPots(w,flick);
     st.potted+=n; st.flicks=(st.flicks||0)+RULES.six;
     st.sixLog=st.sixLog||[0,0,0,0,0,0,0]; st.sixLog[Math.min(6,n)]++;
-    if(sp){ if(n<difficultyOf(sp)) return 'fizzle'; }
-    else {
-      if(n<=0) return 'fizzle';
+    const fizzle=sp?n<difficultyOf(sp):n<=0;
+    // A cast ward's card goes under its pile, marking its element, until the pile is gone
+    const isWard=a.cat==='protect'&&!a.self&&!a.skin&&(!sp||sp.kind==='ward'||!!sp.ward);
+    if(card){ if(!fizzle&&isWard&&RULES.cards.wardCard) st.wardCards.push(card); else gs.discard.push(card); }
+    if(fizzle) return 'fizzle';
+    if(!sp){
       a.ring=Math.min(3,sixLevel(n));
       if(n%2===0&&RULES.recoup) gainMana(w,RULES.recoup);
     }
@@ -887,7 +931,7 @@ function endRound(){
     // Skin upkeep: pay it or the skin fades (worth it against blows, not against a wizard who casts)
     const sk=skinOn(st), up=RULES.skin.upkeep||0;
     if(sk&&up){ if(st.mana>=up) st.mana-=up; else removeEffects(w,[sk]); }
-    if(RULES.cards&&st.hand) handLimit(w);
+    if(RULES.cards&&st.hand){ syncWardCards(w); handLimit(w); }
     st.lostLast=Math.max(0,st.hpAtStart-st.hp);
   });
   gs.round++;
@@ -1242,7 +1286,8 @@ function simMatch(k1,k2,ai,opts){
   }
   return {winner:gs.over||'timeout', rounds:gs.over&&!gs.onPoints?gs.round:gs.round-1, hp:{p1:gs.p1.hp,p2:gs.p2.hp}, picks,
     wards:{p1:{...gs.p1.wardStats}, p2:{...gs.p2.wardStats}}, elems:gs.elems?gs.elems.slice():null,
-    six:{p1:gs.p1.sixLog||null, p2:gs.p2.sixLog||null}, onPoints:!!gs.onPoints};
+    six:{p1:gs.p1.sixLog||null, p2:gs.p2.sixLog||null}, onPoints:!!gs.onPoints,
+    cards:RULES.cards?{swaps:(gs.p1.swaps||0)+(gs.p2.swaps||0), asks:gs.swapAsks||0, trades:(gs.p1.trades||0)+(gs.p2.trades||0)}:null};
 }
 // Every ordered pair, `games` per matchup (half on each side). Returns [{key,name,winRate,rounds}], strongest first.
 // keys: the wizards to include (default all); opts as simMatch (both sides get the same scores unless set per side)

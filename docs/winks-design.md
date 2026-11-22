@@ -102,7 +102,7 @@ Skip your spell: **draw 2 element cards and gain 3 mana**. Not two rounds runnin
 
 - **One trade per Meditate**, either:
   - **with the pile:** discard **2 cards of the same element** to draw 1 more; or
-  - **with another player:** offer them a swap, one card for one, and haggle openly ("my Fire for your Ice"). They can say no. In a duel it happens when both of you hold cards the other wants (a card you're barred from is worth something to your foe); with 3–5 players it's table talk.
+  - **with another player:** offer them a swap, one card for one, and haggle openly ("my Fire for your Ice"). They can say no, and a no doesn't use up your trade (you can still trade with the pile). In a duel it happens when both of you hold cards the other wants (a card you're barred from is worth something to your foe); with 3–5 players it's table talk.
 - Hand limit **7**: discard down at round end. Meditate is the only way to draw.
 
 Target (3+ players, later): point the cards at the player you're aiming at.
@@ -162,14 +162,17 @@ The Winks rules are a rule set in the tabletop engine: `TT.useRules('winks')` in
 
 | Scores | Win rates | Rounds | Knockouts | On HP after 12 | Draws |
 |---|---|---|---|---|---|
-| Daddy | 45.8–54.3% (Gnash top, Skadi bottom) | 10.2 (median 12) | 49% | 52% | 9% |
-| B | 47.6–54.4% (Eldrin top) | 9.1 | 63% | 37% | 5% |
+| Daddy | 45.9–53.3% (Gnash top, Skadi bottom) | 10.1 (median 12) | 50% | 50% | 5% |
+| B | 46.7–53.6% (Eldrin top, Malachar bottom) | 8.8 | 68% | 32% | 4% |
 
 - **Game length:** about half of Daddy-level games reach round 12 and go to HP; B-level games end in a knockout more often.
 - **Picks** (Daddy's scores): Damage 22%, Protection 21%, Meditate 18%, Dispel 13%, abilities about 16% in all, Attack 5%, Guard 2%.
-- **Skill matters a lot** (and B is the better flicker): with Daddy's games against B's, Daddy wins **18%**. That's what the handicap line is for: B flicks from further back until it's near 50%.
+- **Skill matters a lot** (and B is the better flicker): with Daddy's games against B's, Daddy wins **about 19%**. That's what the handicap line is for: B flicks from further back until it's near 50%.
 - **Changes the simulator needed:** Meditate is allowed at full mana (it's how you draw; with income 4 and cost 3 mana was always full, hands ran dry and the AI just Attacked); Valdris HP 7 → **11** (his skeletons need Dark cards now), Skadi 11 → **10** (`"rules":{"winks":{"hp":n}}` in `tabletop.json`).
-- **Not modelled yet:** trading with the other player (the AI only trades with the pile), the ward's card sitting under its pile (the sim discards it at once), and the decoy card.
+- **Swaps with the other player** are simulated (`cards.swap`, `trySwap`): the Meditating AI offers its least useful card for the element it wants most (`cardWorth`: nothing for a barred element, more for its abilities' elements, less for each it already holds); the other side agrees only if the card it gets is worth more to it than the one it gives, counting a little for helping its foe. About 1 ask a game (Daddy's games), 0.4 agreed; pile trades 1.1 a game.
+- **The ward's card stays under its pile** until the pile is gone (`cards.wardCard`, `st.wardCards`, `syncWardCards`), so those cards are out of the pile meanwhile.
+- **Effect of both:** within noise. With both off, the same run gave 46.9–53.4%; Malachar gains most from swaps (46.9 → 51.9%, he wants Fire and Dark for his abilities). Switch them off to compare: `node tools/winks_sim.js 200 daddy noswap,nowardcard`.
+- **The decoy card** only keeps a pick secret; it changes no numbers, so the sim leaves it out.
 
 ## Open questions
 
