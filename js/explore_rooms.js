@@ -15,7 +15,10 @@
 'use strict';
 const P = window.ExplorePieces;
 const {T} = P;
-const RS = 0.5;                       // interior prop scale (the sheets' floor tile is ~124 px → 62)
+const RS = 0.5;                       // interior walls (the sheets' floor tile is ~124 px → 62)
+// Furniture is drawn smaller than the walls: at RS a wardrobe stood twice the wizard's height (WIZ_H 62)
+// and a bed was three wizards long. At FS a wardrobe is about 1.3× the wizard and a bed about one tall.
+const FS = 0.32;
 // Small things are drawn as big as furniture on their sheets (a letter ~180 px, nearly a floor tile),
 // so they get their own scale, judged against the 124 px floor tile and a bed about two tiles long.
 const ITEM_SCALE = {
@@ -23,9 +26,9 @@ const ITEM_SCALE = {
   potionRed:0.2, potionBlue:0.2, potionGreen:0.2, pouch:0.2, coinsS:0.22, coinsM:0.22,
   coinsL:0.25, coinSack:0.25, ironBox:0.26, chest:0.3, chestOpen:0.3,
   q_fire:0.3, q_water:0.3, q_ice:0.3, q_lightning:0.3, q_earth:0.3, q_air:0.3, q_arcane:0.3, q_dark:0.3,
-  crockery:0.26, bookPile:0.3, cauldron:0.38, lectern:0.4, alembic:0.36, herbs:0.4, washtub:0.4,
+  crockery:0.2, bookPile:0.22, cauldron:0.26, lectern:0.27, alembic:0.25, herbs:0.27, washtub:0.27,
 };
-const scaleOf = k => ITEM_SCALE[k] || RS;
+const scaleOf = k => ITEM_SCALE[k] || FS;
 
 // furniture by room type: back = against the back wall, floor = about the room
 const TYPES = {
@@ -55,6 +58,29 @@ const TYPES = {
   lab:      {name:'The Warded Laboratory', floor:'l', wall:'stone', back:[['jarShelf'],['crystalDisplay'],['jarShelf']], floor_:[['cauldron'],['alembic'],['workbench'],['herbs'],['alembic']], big:true},
   lamplighter:{name:'The Lamplighter\'s House', floor:'w', wall:'stone', back:[['bookcase'],['cupboard']], floor_:[['roundTable'],['rockingChair'],['bookPile']]},
 };
+// clutter: what a lived-in room of each type gathers, against the back wall and about the floor
+// (FURNISH; how much of it a room gets is rolled in build, from its own random stream)
+const CLUTTER = {
+  cottage:  {back:['cupboard','pantry','wardrobe','crockery'], floor:['rockingChair','cradle','spinningWheel','washtub','roundTable','cot','crockery']},
+  workshop: {back:['workbench','cupboard','weaponRack','pantry'], floor:['workbench','washtub','strongbox','crockery','spinningWheel']},
+  alchemist:{back:['jarShelf','herbs','bookcase','crystalDisplay'], floor:['alembic','cauldron','herbs','bookPile','readingDesk']},
+  rich:     {back:['bookcase','wineRack','cupboard','bookcase2'], floor:['rockingChair','roundTable','readingDesk','strongbox','rug','bookPile']},
+  shop:     {back:['jarShelf','crystalDisplay','pantry','cupboard'], floor:['counter','crockery','strongbox','washtub']},
+  tavern:   {back:['wineRack','pantry','cupboard'], floor:['roundTable','diningTable','roundTable','crockery']},
+  study:    {back:['bookcase','bookcase2','bookLadder'], floor:['bookPile','readingDesk','lectern','rug']},
+  forge:    {back:['weaponRack','workbench'], floor:['workbench','washtub','strongbox']},
+  wrenInn:  {back:['wineRack','pantry','cupboard'], floor:['roundTable','roundTable','crockery','rockingChair']},
+  lab:      {back:['bookcase','herbs'], floor:['bookPile','crockery','readingDesk']},
+  lamplighter:{back:['wardrobe'], floor:['rug','crockery']},
+};
+// how furnished a room is: extra pieces per 10 floor tiles, by level (sparse / lived-in / cluttered)
+const FURNISH = {levels:[0, 0.9, 1.8], odds:[0.25, 0.45, 0.30], safeOdds:[0.1, 0.45, 0.45], ruinedOdds:[0.6, 0.35, 0.05]};
+// at most this many of a piece in one room once clutter is added (default 2): a house has one spinning wheel
+const MAX_OF = {spinningWheel:1, cauldron:1, strongbox:1, cradle:1, counter:1, lectern:1, alembic:1, wardrobe:1, rug:1,
+  crystalDisplay:1, bed:2, cot:1, rockingChair:1, readingDesk:1, washtub:1, roundTable:3, crockery:3, bookPile:3, bookcase:3, bookcase2:3};
+// a share of ordinary houses are small: a single room with no inner walls
+const SMALL = {odds:0.35, cols:[6,8], rows:[5,6], types:['cottage','workshop','shop','alchemist','rich']};
+
 // extra furniture for the rooms a partitioned house gains (TYPES[t].more overrides)
 const MORE = [['cupboard','wardrobe'],['bed','cot'],['washtub','pantry'],['rockingChair','roundTable'],['bookPile','cradle']];
 const BROKEN = {bed:'brokenBed', cot:'brokenBed', diningTable:'brokenTable', roundTable:'brokenTable', rockingChair:'brokenChair', cradle:'brokenChair', spinningWheel:'brokenChair'};
@@ -146,7 +172,14 @@ function build(spec,rects){
   const r=P.rng(hash(spec.id));
   const type=typeFor(spec,r), D=TYPES[type];
   const ruined=!D.big&&!spec.safe&&!['wenna','lamplighter'].includes(type)&&(spec.ruined||spec.depth>0.6&&r()<0.6);
-  const C=D.size?D.size[0]:D.big?13:D.open?9+Math.floor(r()*3):10+Math.floor(r()*4), R=D.size?D.size[1]:D.big?8:D.open?6+Math.floor(r()*2):7+Math.floor(r()*2);
+  let C=D.size?D.size[0]:D.big?13:D.open?9+Math.floor(r()*3):10+Math.floor(r()*4), R=D.size?D.size[1]:D.big?8:D.open?6+Math.floor(r()*2):7+Math.floor(r()*2);
+  // the look of the room (size, how furnished) comes from its own stream, so the main one, and with it
+  // every room's encounter, is the same as before these were added
+  const r2=P.rng(hash(spec.id+':look'));
+  const small=!D.size&&!D.big&&!spec.fixed&&SMALL.types.includes(type)&&r2()<SMALL.odds;
+  if(small){ C=SMALL.cols[0]+Math.floor(r2()*(SMALL.cols[1]-SMALL.cols[0]+1)); R=SMALL.rows[0]+Math.floor(r2()*(SMALL.rows[1]-SMALL.rows[0]+1)); }
+  const fOdds=ruined?FURNISH.ruinedOdds:spec.safe?FURNISH.safeOdds:FURNISH.odds;
+  let fq=r2(), furnish=0; for(let n=0;n<fOdds.length;n++){ if((fq-=fOdds[n])<0){ furnish=n; break; } }
   const cols=C+2, rows=R+4, W=cols*T, H=rows*T;
   const floor=ruined&&D.floor==='w'?'b':D.floor;
   const ground=[]; for(let y=0;y<rows;y++){ let row=''; for(let x=0;x<cols;x++) row+=(x>=1&&x<=C&&y>=2&&y<2+R)?floor:'v'; ground.push(row); }
@@ -237,7 +270,7 @@ function build(spec,rects){
     }
     yMin=last+12;
     for(const choices of D.floor_){ const k=pick(choices), s=sz(k), p=spot(s.w,s.h,12,200);
-      if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:RS,decal:1}]); else put(k,p[0],p[1]); } }
+      if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:FS,decal:1}]); else put(k,p[0],p[1]); } }
     yMin=0;                                         // books may lie anywhere, aisles included
   } else if(D.rows){                                       // chapel pews in two columns of rows
     for(let y=Y0+2.4*T;y<Y1-T*0.6;y+=T*1.15){ put(pick(['pew','pew2']),DX-T*2.1,y); put(pick(['pew','pew2']),DX+T*2.1,y); }
@@ -245,7 +278,7 @@ function build(spec,rects){
     for(const choices of D.floor_){
       let k=pick(choices); if(ruined&&BROKEN[k]&&r()<0.7) k=BROKEN[k];
       const s=sz(k), p=spot(s.w,s.h,12);
-      if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:RS,decal:1}]); else put(k,p[0],p[1]); }
+      if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:FS,decal:1}]); else put(k,p[0],p[1]); }
     }
     if(vx||hy) for(const choices of (D.more||MORE).slice(0,(vx&&hy)?4:2)){   // the extra rooms want furnishing too
       let k=pick(choices); if(ruined&&BROKEN[k]&&r()<0.7) k=BROKEN[k];
@@ -294,6 +327,29 @@ function build(spec,rects){
     put(k,p[0],p[1],{lore:'book:'+b.id}); books.push(b.id);
     lore['book:'+b.id]=[b.title,b.text];
   }
+  // clutter, last, so it fits round everything else (the encounter, books, people) and never moves them
+  const CL=CLUTTER[type];
+  if(CL&&!D.shelves&&!D.rows&&FURNISH.levels[furnish]>0){
+    for(const e of echoes) boxes.push({x:e.x-50,y:e.y-70,w:100,h:90});
+    const count=k=>objects.filter(o=>o[0]===k).length, full=k=>count(k)>=(MAX_OF[k]||2);
+    const pk=a=>{ const ok=a.filter(k=>rects[k]&&!full(k)); return ok.length?ok[Math.floor(r2()*ok.length)]:null; };
+    // the back wall: fill the gaps between what stands there
+    const wantBack=Math.round(FURNISH.levels[furnish]*C/5);
+    for(let n=0,tries=0;n<wantBack&&tries<30;tries++){
+      const k=pk(CL.back); if(!k) break; const s=sz(k), x=X0+s.w/2+10+r2()*(C*T-s.w-20), y=Y0+34;
+      if(Math.abs(x-DX)<s.w/2+T*0.9&&!hy) continue;                 // keep the line in from the door clear
+      if(vx&&Math.abs(x-vx)<s.w/2+14) continue;
+      const fb={x:x-s.w*0.45,y:y-Math.min(s.h,30),w:s.w*0.9,h:Math.min(s.h,30)};
+      if(boxes.some(b=>P.overlap(b,fb,10))) continue;
+      put(k,x,y); n++;
+    }
+    const wantFloor=Math.round(FURNISH.levels[furnish]*C*R/10);
+    for(let n=0;n<wantFloor;n++){
+      let k=pk(CL.floor); if(!k) break; if(ruined&&BROKEN[k]&&r2()<0.7) k=BROKEN[k]; if(!rects[k]||full(k)) continue;
+      const s=sz(k), p=spot(s.w,s.h,14,40); if(!p) continue;
+      if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:FS,decal:1}]); else put(k,p[0],p[1]);
+    }
+  }
   if(type==='shop'){ const c=objects.find(o=>o[0]==='counter'); if(c){ c[3].lore='shop'; lore.shop=['An Honesty Box','The shopkeeper fled, but the box on the counter still reads "PAY WHAT IS FAIR". A few potions are left on the shelf.']; } }
   const name=ruined?D.name.replace(/^An? /,'A Ruined ').replace('A Ruined Alchemist','A Ruined Alchemist'):D.name;
   return {id:spec.id, name:(spec.label||name), cols, rows, seed:hash(spec.id)&0xffff, ground, objects, lore, blocks, glows:[], echoes, walk:[],
@@ -301,5 +357,5 @@ function build(spec,rects){
     interior:true, type, ev, npcs, flow:'S'};
 }
 
-window.ExploreRooms={build, BOOKS, TYPES, RS, ITEM_SCALE, hash};
+window.ExploreRooms={build, BOOKS, TYPES, RS, FS, ITEM_SCALE, hash};
 })();

@@ -123,7 +123,7 @@ const FOOT = {
   stormLamp3:[{ox:.35,w:.3,h:10}], rainBarrel:[{w:.8,h:20}], cartWrecked:[{w:.85,h:24}],
   slagHeap:[{w:.85,h:.3}], foundry:[{w:.9,h:.35}], chainHoist:[{ox:.08,w:.12,h:12},{ox:.92,w:.12,h:12}], oreCart:[{w:.85,h:20}],
   crucibleHoist:[{ox:.1,w:.12,h:12},{ox:.9,w:.12,h:12}], lavaWell:[{w:.75,h:.3}], lavaSpring:[{w:.85,h:.3}], bannerHung:[{w:.2,h:4}],
-  // interiors (sheets 10–13; drawn at ExploreRooms.RS)
+  // interiors (sheets 10–13; furniture drawn at ExploreRooms.FS, walls at RS)
   bed:[{w:.85,h:.4}], diningTable:[{w:.9,h:.3}], roundTable:[{w:.8,h:.3}], counter:[{w:.95,h:.35}], safeTable:[{w:.9,h:.3}],
   hearthPot:[{w:.9,h:.25}], workbench:[{w:.9,h:.25}], pantry:[{w:.9,h:.3}], bookcase:[{w:.9,h:.15}], wardrobe:[{w:.9,h:.15}],
   cupboard:[{w:.9,h:.15}], altar:[{w:.9,h:.2}], pew:[{w:.9,h:.35}], brokenBed:[{w:.85,h:.3}], brokenTable:[{w:.8,h:.3}],
