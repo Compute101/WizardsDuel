@@ -33,7 +33,7 @@ const TYPE_CPS = 42;                         // characters a second as a line ty
 const HOLD = len => 1300+len*32;             // then held: about 18 characters a second of reading, all told
 const SAY_PX = 17, SAY_W = 440, MUTTER_PX = 13;   // speech on screen, whatever the zoom
 const SEAT_CROP = 0.7;                       // a seated wizard: the upper 70% of their standing figure, down to the lap
-const PERSON = 1.25;                         // people in the theatre are drawn this much bigger than on the map, to sit with the seated students' art
+const PERSON = 1.125;                        // people in the theatre are drawn this much bigger than on the map, to sit with the seated students' art
 const LECTURER = 1.55;                       // the lecturer, standing on the stage, bigger still (the user asked)                       // a seated figure: the upper 60%, the bench hides the rest
 
 // ── who lectures (painted from the hero creator's figures until their own art: docs/art-prompts.md) ──
