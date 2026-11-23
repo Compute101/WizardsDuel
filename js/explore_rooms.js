@@ -256,7 +256,7 @@ function build(spec,rects){
   // docs/art-prompts.md), the lecture list by the door and Professor Thorley at her desk
   let theatreInfo=null;
   function theatre(){
-    const DW=0.178, SH=58, nRows=5, aisle=0.75*T, stageY=Y1-3*T, top=Y0+1.55*T, step=(stageY-40-top)/(nRows-1);
+    const DW=0.16, SH=48, nRows=5, aisle=0.75*T, stageY=Y1-3*T, top=Y0+1.55*T, step=(stageY-40-top)/(nRows-1);
     const dh=Math.round(rects.lt_bench6[3]*DW), rowYs=[], seats=[];
     const sides=[[X0+0.3*T, DX-aisle],[DX+aisle, X1-0.3*T]];
     const deck=(k,x,y,sc)=>objects.push([k,Math.round(x),Math.round(y),{scale:sc,decal:1}]);
