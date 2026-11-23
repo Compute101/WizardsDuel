@@ -120,7 +120,7 @@ Easy to remember: **strikes are 2 / 4 / 6, wards and dispels double that.**
 
 ## Buffs and curses
 
-- When an ability puts a buff on you, or a curse on your foe, **put a yellow token on that ability on your sheet**. Take it off when it ends.
+- When an ability puts a buff on you, or a curse on your foe, or a strike leaves something lasting on them (Vine Whip's vines), **put a yellow token on that ability on your sheet**. Take it off when it ends. The token is the only reminder: no labels or notes.
 - There are no round counters. **Buffs last until dispelled. Curses last until cleansed.** "Next strike" buffs (like Empower) go when used.
 - **Cleanse** (a command card) removes your own curses: 1, 2 or all of them, by the winks you pot. You choose which.
 - Casting a buff or curse that's already in play does nothing extra.

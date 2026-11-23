@@ -752,15 +752,21 @@ function cmdCard(id,w,o){
 }
 function sheet(w){
   const s=st(w), c=s.c, f=w===G.human?G.ai:G.human, foeSt=st(f);
+  // At a real table a lasting effect is a yellow token on the ability box that made it
+  // (a buff on your own sheet, a curse or a strike's lingering rider on the caster's),
+  // so nothing is spelt out in words that a player couldn't keep track of with tokens.
+  const marks=(sp,e)=>e.id===sp.id||e.id===sp.id+'-dot'||(sp.chill&&e.id==='chill');
   const ab=c.spells.map((sp,i)=>{
-    const on=sp.kind==='curse'?foeSt.effects.some(e=>e.id===sp.id):sp.effect&&sp.effect.type==='minion'?0:s.effects.some(e=>e.id===sp.id);
+    const on=sp.effect&&sp.effect.type==='minion'?0:s.effects.some(e=>e.id===sp.id)||foeSt.effects.some(e=>e.by===w&&marks(sp,e));
     const own=s.effects.find(e=>e.id===sp.id);
     const sk=sp.effect&&sp.effect.type==='minion'?minionsOf(w).length:own&&own.charges!=null?own.charges:0;
     const inPlay=S().elems.length<4||S().elems.includes(sp.elem);
     return `<div class="wk-ab ${inPlay?'':'out'}"><div class="h"><b>${i+1} ${esc(sp.name)}</b><span>${EL[sp.elem].icon} ⦿${TT.difficultyOf(sp)}</span></div>
       <div class="t">${esc(TEXT[sp.id]||sp.text)}</div>${on||sk?`<div class="mk">${tokens('y',sk||1,6)}</div>`:''}</div>`;
   }).join('');
-  const chips=s.effects.filter(e=>e.type!=='minion'&&e.kind).map(e=>`<span class="wk-eff ${e.kind}">${esc(e.name||e.id)}</span>`).join('');
+  // Only effects no ability box accounts for (Ironskin, Tonic, …) still get a label.
+  const tokened=e=>[st(G.human),st(G.ai)].some(o=>o.c.spells.some(sp=>marks(sp,e)&&(e.by==null||st(e.by)===o)));
+  const chips=s.effects.filter(e=>e.type!=='minion'&&e.kind&&!tokened(e)).map(e=>`<span class="wk-eff ${e.kind}">${esc(e.name||e.id)}</span>`).join('');
   return `<div class="wk-sheet" style="--wc:${charOf(s.key).col||'#c9a84c'}">
     <div class="wk-sh-head"><img src="portraits/small/${s.key}.jpg" alt=""><div><b>${esc(c.name)}</b><small>${esc(c.title||'')}${w===G.ai?' · '+esc(G.foeName):' · you'}</small></div></div>
     <div class="wk-boxes"><div class="wk-box hp"><span>HP</span>${tokens('r',s.hp)}</div><div class="wk-box mana"><span>Mana</span>${tokens('b',s.mana)}</div></div>
