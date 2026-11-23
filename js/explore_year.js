@@ -20,7 +20,7 @@ const REWARD = {partner:5, box:10, coll:{gold:30, potions:2}, first:20, finals:{
 
 // ── who's who (stand-in art until theirs arrives: docs/art-prompts.md) ──
 const PEOPLE = {
-  lecturer: {title:'The Lecture List', sprite:null},                // a notice board by the door (drawn by js/explore_lecture.js)
+  lecturer: {title:'The Bedel of the Schools', name:'Mr Hobday', sprite:'sprites/hero/old_man_3.png'},   // keeps the lecture list, by its notice board
   examiner: {title:'The Chair of Examiners', name:'Professor Thorley', sprite:'sprites/hero/old_woman_2.png'},
   partner:  {title:'Your Tutorial Partner', sprite:null},          // drawn from their made look (chars.partner)
   partnerLost:{title:'Your Tutorial Partner', sprite:null},

@@ -290,7 +290,7 @@ function build(spec,rects){
     put('readingDesk',X1-1.3*T,Y1-0.55*T);
     const dummy=[Math.round(DX+5.4*T),Math.round(stageY+1.45*T)], board=[Math.round(X0+1.1*T),Math.round(stageY+1.35*T)], notice=[Math.round(DX+1.3*T),Math.round(Y1-0.15*T)];
     blocks.push({x:dummy[0]-16,y:dummy[1]-10,w:32,h:12},{x:board[0]-44,y:board[1]-10,w:88,h:12},{x:notice[0]-26,y:notice[1]-10,w:52,h:12});
-    npcs.push({role:'lecturer', x:notice[0], y:notice[1]+2}, {role:'examiner', x:Math.round(X1-2.4*T), y:Math.round(Y1-0.3*T)});
+    npcs.push({role:'lecturer', x:notice[0]-38, y:notice[1]+4}, {role:'examiner', x:Math.round(X1-2.4*T), y:Math.round(Y1-0.3*T)});
     return {rows:rowYs, seats, stageY, deskH:dh, seatH:SH, aisle:[DX-aisle,DX+aisle], dummy, board, notice,
       spots:{centre:[dx+0.3*T,Y1-0.75*T], lectern:[DX-4.0*T,Y1-0.8*T], bench:[DX+3.5*T,Y1-1.2*T], dummy:[DX+4.1*T,stageY+1.4*T], board:[X0+2.4*T,stageY+1.45*T],
         wing:[X0+0.5*T,Y1-0.5*T], door:[DX,Y1-0.2*T]}};
@@ -407,7 +407,7 @@ function build(spec,rects){
   const name=ruined?D.name.replace(/^An? /,'A Ruined ').replace('A Ruined Alchemist','A Ruined Alchemist'):D.name;
   return {id:spec.id, name:(spec.label||name), cols, rows, seed:hash(spec.id)&0xffff, ground, objects, lore, blocks, glows:[], echoes, walk:[],
     spawns:{door:[DX,Y1-12]}, exits:[{x:DX-T,y:Y1+8,w:2*T,h:T*0.8,dir:'S',label:'Outside',to:'out'}],
-    interior:true, type, ev, npcs, flow:'S', theatre:theatreInfo};
+    interior:true, type, ev, npcs, flow:'S', theatre:theatreInfo, people:theatreInfo?1.4:undefined, fitTall:!!theatreInfo};   // the theatre's furniture is drawn big, so its people are too
 }
 
 window.ExploreRooms={build, BOOKS, TYPES, RS, FS, ITEM_SCALE, hash};

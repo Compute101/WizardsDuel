@@ -668,8 +668,8 @@ const Lecture = window.ExploreLecture||null;  // the lecture theatre's decor and
 // a scene: a little scripted play on the map (a lecture). While one runs you don't walk, the clock
 // stops, taps and E go to it and Escape skips it; it adds its own actors, effects and camera.
 // scene = {update(dt), actors() → [{y, draw(ctx,t)}], over(ctx,t,view), cam(vw,vh,baseZoom) → {x,y,zoom}, dim(), shake(), tap(), skip()}
-let scene=null, sceneBlend=0, sceneLast=null;
-function setScene(s){ scene=s||null; busy=!!s; keys.clear(); target=null; if(s){ hideSay(); el.act.hidden=true; el.look.hidden=true; el.hint.classList.add('fade'); } else { wiz.seated=false; sayFace=null; last=performance.now(); } }
+let scene=null, sceneBlend=0, sceneLast=null, sceneDrag=null, scenePan={x:0,y:0,t:0};   // dragging looks around; it eases back to the action 3 s after you let go
+function setScene(s){ scene=s||null; sceneDrag=null; scenePan={x:0,y:0,t:0}; busy=!!s; keys.clear(); target=null; if(s){ hideSay(); el.act.hidden=true; el.look.hidden=true; el.hint.classList.add('fade'); } else { wiz.seated=false; sayFace=null; last=performance.now(); } }
 const folkApi = {
   get chars(){ return chars; }, get fighters(){ return fighters; },
   wizKey:()=>wizKeys[wizIdx], wizName:()=>{ const n=chars[wizKeys[wizIdx]].name; return n.charAt(0)+n.slice(1).toLowerCase(); },
@@ -873,7 +873,7 @@ function drawNpc(n,t){
   const img=imgOf(src); if(!img.complete||!img.naturalWidth) return;
   // an old 192×320 mage spritesheet (stand-ins for townsfolk without art): its first frame, 48×64, facing left
   const sheet=img.naturalWidth===192&&img.naturalHeight===320, sw=sheet?48:img.naturalWidth, sh=sheet?64:img.naturalHeight;
-  const h=WIZ_H*(n.role==='wounded'?0.8:1.05), w=h*sw/sh;
+  const h=WIZ_H*(n.role==='wounded'?0.8:1.05)*(MAP.people||1), w=h*sw/sh;
   ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(n.x,n.y-2,w*0.3,5,0,0,Math.PI*2); ctx.fill();
   ctx.save(); ctx.translate(n.x,n.y);
   if(n.role==='wounded'){ ctx.filter='saturate(0.5) brightness(0.85)'; ctx.scale(-1,0.8); }   // slumped, facing in
@@ -1428,17 +1428,19 @@ function buildDom(){
   const touches=new Map(); let pinch=null;
   const spread=()=>{ const [a,b]=[...touches.values()]; return Math.hypot(a.x-b.x,a.y-b.y)||1; };
   el.cv.addEventListener('pointerdown',e=>{
-    if(scene){ if(scene.tap) scene.tap(); return; }
+    if(scene){ el.cv.setPointerCapture(e.pointerId); sceneDrag={x:e.clientX, y:e.clientY, moved:0}; return; }
     el.cv.setPointerCapture(e.pointerId); touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(touches.size===2){ pinch={d:spread(), z:zoomGoal}; dragging=false; target=null; return; }
     if(touches.size>2) return;
     setTarget(e); hideSay(); dragging=true; });
   el.cv.addEventListener('pointermove',e=>{
+    if(scene&&sceneDrag){ const dx=e.clientX-sceneDrag.x, dy=e.clientY-sceneDrag.y; sceneDrag.moved+=Math.abs(dx)+Math.abs(dy);
+      if(sceneDrag.moved>10){ scenePan.x-=dx/zoom; scenePan.y-=dy/zoom; scenePan.t=performance.now(); } sceneDrag.x=e.clientX; sceneDrag.y=e.clientY; return; }
     if(touches.has(e.pointerId)) touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pinch&&touches.size===2){ setZoom(pinch.z*spread()/pinch.d,true); return; }
     if(dragging) setTarget(e); });
   el.cv.addEventListener('wheel',e=>{ e.preventDefault(); setZoom(zoomGoal*Math.exp(-e.deltaY*0.0015)); },{passive:false});
-  const up=e=>{ touches.delete(e.pointerId); if(touches.size<2) pinch=null; dragging=false; };
+  const up=e=>{ if(scene&&sceneDrag){ if(sceneDrag.moved<=10&&scene.tap) scene.tap(); sceneDrag=null; return; } touches.delete(e.pointerId); if(touches.size<2) pinch=null; dragging=false; };
   el.cv.addEventListener('pointerup',up); el.cv.addEventListener('pointercancel',up);
   window.addEventListener('keydown',onKey); window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
   window.addEventListener('resize',resize);
@@ -1479,6 +1481,8 @@ function resize(){
   baseZoom=Math.max(0.62,Math.min(1.35,Math.min(vw/620,vh/620)));
   // a room fits the screen, walls and all
   if(MAP&&MAP.interior) baseZoom=Math.max(0.55,Math.min(1.6,Math.min(vw/(WORLD_W+20),(vh-70)/(WORLD_H-T*0.6))));
+  // a wide room on a narrow screen (the lecture theatre on a phone): fit its height and follow the wizard
+  if(MAP&&MAP.fitTall&&vw<vh) baseZoom=Math.max(baseZoom,Math.min(1.6,(vh-70)/(WORLD_H-T*0.6)));
   zoom=baseZoom*zoomMul;
   if(el.mini) el.mini.style.display=MAP&&MAP.interior?'none':'';
   sizeMini();
@@ -1887,6 +1891,8 @@ function updateCam(){
   const fx=wiz.x+(mx-wiz.x)*b, fy=wiz.y+(my-wiz.y)*b;
   let cx=fx-cw/2, cy=fy-WIZ_H/2-ch*(0.5-0.14*b);                    // the pair sits above the box
   if(sceneBlend){ const s=sceneLast; cx+=(s.x-cw/2-cx)*sceneBlend; cy+=(s.y-ch/2-cy)*sceneBlend; }   // a scene frames itself
+  if(scene){ if(!sceneDrag&&t-scenePan.t>3000){ const k=Math.min(1,dt*2); scenePan.x-=scenePan.x*k; scenePan.y-=scenePan.y*k; }
+    scenePan.x=Math.max(-cw-cx,Math.min(WORLD_W-cx,scenePan.x)); scenePan.y=Math.max(-ch-cy,Math.min(WORLD_H-cy,scenePan.y)); cx+=scenePan.x; cy+=scenePan.y; }
   cam.x=Math.max(0,Math.min(WORLD_W-cw,cx));
   cam.y=Math.max(0,Math.min(WORLD_H-ch,cy));
   if(cw>WORLD_W) cam.x=(WORLD_W-cw)/2; if(ch>WORLD_H) cam.y=(WORLD_H-ch)/2;
@@ -1909,7 +1915,7 @@ function drawWizard(t){
   const c=chars[wizKeys[wizIdx]];
   const sheet=wizImg.width===192&&wizImg.height===320;
   const sw=sheet?48:wizImg.width, sh=sheet?64:wizImg.height;
-  const h=WIZ_H*(c.spriteHeight||1)*(wiz.seated?wiz.seatScale||1:1), w=h*sw/sh*(c.spriteWidth||1);
+  const h=WIZ_H*(c.spriteHeight||1)*(wiz.seated?wiz.seatScale||1:MAP.people||1), w=h*sw/sh*(c.spriteWidth||1);
   const bob=wiz.moving?Math.abs(Math.sin(wiz.walk))*3.5:Math.sin(t/600)*0.8, k=wiz.seated?wiz.seatCrop||SEAT_CROP:1;
   const tilt=wiz.moving?Math.sin(wiz.walk)*0.05:0;
   ctx.save();
