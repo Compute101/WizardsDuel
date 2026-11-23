@@ -455,14 +455,22 @@ function drawStroller(s,t){
   if(s.moving) ctx.rotate(Math.sin(s.walk)*0.025);               // a little sway as they walk
   ctx.drawImage(img,-w/2,-h,w,h);
   ctx.restore();
-  if(s.greet){                                                  // a word as you pass
-    const a=Math.min(1,(2600-(performance.now()-s.greetAt))/400);
-    ctx.save(); ctx.globalAlpha=Math.max(0,a)*s.fade; ctx.font='9px Cinzel, serif'; ctx.textAlign='center';
-    const tw=ctx.measureText(s.greet).width+10, bx=s.x, by=s.y-h-10;
-    ctx.fillStyle='rgba(250,240,215,0.92)'; ctx.strokeStyle='rgba(60,40,20,0.8)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.rect(bx-tw/2,by-11,tw,15); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(bx-4,by+4); ctx.lineTo(bx+4,by+4); ctx.lineTo(bx,by+9); ctx.fill();
-    ctx.fillStyle='#3a2810'; ctx.fillText(s.greet,bx,by); ctx.restore();
+}
+// greetings are drawn last (over buildings and the night) at a fixed size on screen, not in world
+// pixels: zoomed out on a phone a 9 px world font came out about 5 px and couldn't be read
+const GREET_PX=15;                                             // the bubble's text size on screen
+function drawGreetings(cw){
+  for(const s of strollers){
+    if(!s.greet||!s.img.naturalWidth) continue;
+    const a=Math.max(0,Math.min(1,(2600-(performance.now()-s.greetAt))/400))*s.fade; if(a<=0) continue;
+    const k=1/zoom, fs=GREET_PX*k;                             // screen px → world units
+    ctx.save(); ctx.globalAlpha=a; ctx.font=`${fs.toFixed(2)}px Cinzel, serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const tw=ctx.measureText(s.greet).width+12*k, bh=fs+10*k;
+    const bx=Math.max(cam.x+tw/2+4*k,Math.min(cam.x+cw-tw/2-4*k,s.x)), by=Math.max(cam.y+bh+4*k,s.y-s.h-6*k);   // keep it on screen
+    ctx.fillStyle='rgba(250,240,215,0.95)'; ctx.strokeStyle='rgba(60,40,20,0.85)'; ctx.lineWidth=1.5*k;
+    ctx.beginPath(); ctx.rect(bx-tw/2,by-bh,tw,bh); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx-5*k,by); ctx.lineTo(bx+5*k,by); ctx.lineTo(bx,by+6*k); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#3a2810'; ctx.fillText(s.greet,bx,by-bh/2); ctx.restore();
   }
 }
 function drawClashes(t){                           // a crew and Echoes trading blows: sparks and steel
@@ -1965,6 +1973,7 @@ function draw(t){
   if(D>0) drawNight(t,cw,ch,D);
   else if(MAP.storm) drawNight(t,cw,ch,0.25);   // Spirewatch is never quite light
   if(embers.length) drawEmbers(t,cw,ch);
+  drawGreetings(cw);
   drawExitLabel();
   drawMini();
 }
