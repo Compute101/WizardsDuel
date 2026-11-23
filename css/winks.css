@@ -15,11 +15,24 @@
 .wk-btn:active:not(:disabled){transform:translateY(1px);box-shadow:none;}
 
 /* The table: wood, with a felt playmat on it */
-.wk-view{position:relative;flex:1;overflow:hidden;
+.wk-view{position:relative;flex:1;overflow:auto;-webkit-overflow-scrolling:touch;
   background:repeating-linear-gradient(92deg,rgba(0,0,0,.08) 0 3px,transparent 3px 11px),
     repeating-linear-gradient(88deg,rgba(255,220,160,.05) 0 2px,transparent 2px 23px),
     radial-gradient(ellipse at 50% 40%,#7a4b25,#4d2d13 70%,#331d0b);}
-.wk-stage{position:absolute;left:0;top:0;transform-origin:0 0;padding:14px;box-sizing:border-box;}
+.wk-sizer{position:relative;}
+.wk-stage{position:absolute;left:0;top:0;transform-origin:0 0;padding:14px;box-sizing:border-box;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+.wk-sheet,.wk-logbox{cursor:zoom-in;}
+/* Reading close up: a held card or a tapped sheet, drawn big */
+.wk-zoom{position:absolute;inset:0;z-index:40;background:rgba(10,5,2,.78);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:12px;padding:14px;box-sizing:border-box;overflow:auto;}
+.wk-zoom[hidden]{display:none;}
+.wk-zoombox{position:relative;flex:none;}
+.wk-zoombox>*{position:absolute;left:0;top:0;}
+.wk-zoominfo{max-width:460px;background:linear-gradient(#fbf3de,#ead9ae);color:#2a1d0c;border-radius:10px;padding:10px 14px;
+  font-size:16px;line-height:1.4;border:2px solid #8b6d3a;box-shadow:0 6px 18px rgba(0,0,0,.5);}
+.wk-zoominfo small{font-size:13px;color:#5a4626;}
+.wk-zoomx{font-size:13px;color:#d6c39a;opacity:.8;}
 .wk-mat{position:relative;border-radius:22px;padding:12px;box-sizing:border-box;
   background:radial-gradient(ellipse at 50% 45%,#2f6b45,#1f4d31 65%,#173a25);
   box-shadow:inset 0 0 40px rgba(0,0,0,.55),0 8px 24px rgba(0,0,0,.5);border:3px solid #123020;

@@ -149,13 +149,14 @@ function build(){
     <div class="wk-top">
       <div class="wk-title">🃏 Winks <span id="wk-round"></span></div>
       <div class="wk-top-btns">
+        <button class="wk-btn" id="wk-zoombtn" type="button" title="Zoom the table">🔍</button>
         <button class="wk-btn" id="wk-music" type="button" title="Tavern music on / off">\u266A\uFE0E</button>
         <button class="wk-btn" id="wk-help" type="button">? Rules</button>
         <button class="wk-btn" id="wk-new" type="button">↺ New</button>
         <button class="wk-btn" id="wk-close" type="button">✕</button>
       </div>
     </div>
-    <div class="wk-view" id="wk-view"><div class="wk-stage" id="wk-stage">
+    <div class="wk-view" id="wk-view"><div class="wk-sizer" id="wk-sizer"><div class="wk-stage" id="wk-stage">
       <div class="wk-mat">
         <div class="wk-a osheet" id="wk-osheet"></div>
         <div class="wk-a omodel" id="wk-omodel"></div>
@@ -170,14 +171,18 @@ function build(){
         <div class="wk-a hand" id="wk-hand"></div>
       </div>
       <canvas class="wk-fx" id="wk-fx"></canvas>
-    </div></div>
+    </div></div></div>
     <div class="wk-bar"><div class="wk-hint" id="wk-hint"></div><div class="wk-actions" id="wk-actions"></div></div>
-    <div class="wk-panel" id="wk-panel" hidden></div>`;
+    <div class="wk-panel" id="wk-panel" hidden></div>
+    <div class="wk-zoom" id="wk-zoom" hidden></div>`;
   document.body.appendChild(d);
   $('wk-close').onclick=close;
   $('wk-music').onclick=()=>{ opts.music=opts.music===false; saveOpts(); musicBtn(); if(opts.music===false) Tavern.stop(); else Tavern.play(); };
   $('wk-new').onclick=()=>setupPanel();
   $('wk-help').onclick=helpPanel;
+  $('wk-zoombtn').onclick=()=>{ zoomI=(zoomI+1)%ZOOMS.length; zoomBtn(); fit(); };
+  $('wk-zoom').onclick=()=>{ $('wk-zoom').hidden=true; };
+  setupMagnify();
   window.addEventListener('resize',()=>{ if(isOpen()) fit(); });
   const cv=$('wk-fx');
   cv.addEventListener('pointerdown',flickDown);
@@ -204,21 +209,27 @@ function close(){
   if(window.TT) TT.useRules('normal');   // the Tabletop screen and the pub expect Normal
 }
 
-// Fit the stage (designed at a fixed width) to the window
-let scale=1;
+// Fit the stage (designed at a fixed width) to the window. A tall (phone) window fits the
+// table's width and scrolls up and down; a wide one fits it whole. 🔍 zooms in from there.
+let scale=1, zoomI=0;
+const ZOOMS=[1,1.6,2.4];
+function zoomBtn(){ const b=$('wk-zoombtn'); if(b) b.textContent=zoomI?'🔍 ×'+ZOOMS[zoomI]:'🔍'; }
 function fit(){
-  const v=$('wk-view'), sg=$('wk-stage');
-  if(!v||!sg) return;
-  const portrait=v.clientWidth<v.clientHeight*0.95;
+  const v=$('wk-view'), sg=$('wk-stage'), sz=$('wk-sizer');
+  if(!v||!sg||!sz) return;
+  const vw=v.clientWidth, vh=v.clientHeight;
+  const portrait=vw<vh*0.95;
   const W=portrait?580:1180;
   sg.style.width=W+'px';
   sg.classList.toggle('portrait',portrait);
   sg.style.transform='none';
   const H=sg.offsetHeight;
-  scale=Math.min(v.clientWidth/W, v.clientHeight/H);
+  const base=portrait?vw/W:Math.min(vw/W, vh/H);
+  scale=base*ZOOMS[zoomI];
   sg.style.transform=`scale(${scale})`;
-  sg.style.left=Math.max(0,(v.clientWidth-W*scale)/2)+'px';
-  sg.style.top=Math.max(0,(v.clientHeight-H*scale)/2)+'px';
+  sz.style.width=W*scale+'px'; sz.style.height=H*scale+'px';
+  sz.style.marginLeft=Math.max(0,(vw-W*scale)/2)+'px';
+  sz.style.marginTop=Math.max(0,(vh-H*scale)/2)+'px';
   const cv=$('wk-fx'), dpr=Math.min(2,window.devicePixelRatio||1);
   cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
   cv._dpr=dpr;
@@ -275,6 +286,7 @@ function draftStep(){
   if(s.elems.length>=4){
     TT.dealWith(s.elems);
     addLog('The deck is shuffled: 7 element cards each.');
+    addLog('Tip: hold any card, or tap a sheet or this log, to read it close up. 🔍 zooms the table.');
     hidePanel(); startRound(); return;
   }
   const w=G.draftOrder[s.elems.length], suit=SUITS[s.elems.length];
@@ -474,6 +486,7 @@ function aiFlick(){
 }
 function humanFlick(){
   G.phase='flick'; G.potted=0; G.flicked=0;
+  const cup=$('wk-cup'); if(cup&&opts.flick!=='real') cup.scrollIntoView({block:'center',behavior:'smooth'});
   if(opts.flick==='real'){
     $('wk-hint').textContent='Flick your six real winks, then tap how many went in.';
     $('wk-actions').innerHTML=[0,1,2,3,4,5,6].map(n=>`<button type="button" class="wk-btn num" data-n="${n}">${n}</button>`).join('');
@@ -846,6 +859,69 @@ function actions(){
     a.innerHTML=`<button type="button" class="wk-btn big" id="wk-again2">Play again</button>`;
     $('wk-again2').onclick=setupPanel;
   }
+}
+
+// ── Reading close up ───────────────────────────────────────
+// Hold a card (command, element, Ace or ability box) to see it big with what it does;
+// tap a wizard sheet or the log to read it. The tap that ends a hold doesn't pick the card.
+const OPP_ORDER=['fire','air','lightning','arcane','water','earth','ice','dark'];
+const oppOf=e=>OPP_ORDER[(OPP_ORDER.indexOf(e)+4)%8];
+const CMD_HELP={
+  strike:'A spell: 3 mana, then flick. Damage 2 / 4 / 6 (Lesser / Normal / Greater) of the element card\'s element. +2 against a ward of its opposite.',
+  ward:'A spell: 3 mana, then flick. A ward of 4 / 8 / 12 of the element card\'s element. It stops magic, not blows; the card sits under it until it\'s gone.',
+  dispel:'A spell: 3 mana, then flick. Takes 4 / 8 / 12 off the foe\'s ward, then strips buffs. +2 against a ward of its opposite.',
+  attack:'Free, no flick: a blow for your Attack. Wards don\'t stop it; a Guard blocks it and hits back. The element card is a decoy and comes back.',
+  guard:'Free, no flick: blocks every blow at you this round and hits an Attacker back. A Grapple gets through. The element card is a decoy.',
+  grapple:'Free, no flick: hits a Guard for your Attack, anything else for half. Fails against an Attack at you. The element card is a decoy.',
+  meditate:'+3 mana, draw 2 cards, and you may trade a pair from your hand for a draw. The element card is a decoy.',
+  cleanse:'3 mana, then flick: clears 1 / 2 / all curses (you choose which). The element card is a decoy.',
+};
+function magnify(el){
+  const z=$('wk-zoom'), w=el.offsetWidth||100;
+  const vw=$('wk-screen').clientWidth, vh=$('wk-screen').clientHeight;
+  const sheetLike=el.classList.contains('wk-sheet')||el.classList.contains('wk-logbox');
+  const target=sheetLike?Math.min(vw*0.94,560):Math.min(vw*0.6,240);
+  let k=Math.max(1,target/w);
+  const h=el.offsetHeight||100; if(h*k>vh*(sheetLike?0.86:0.5)) k=Math.max(1,vh*(sheetLike?0.86:0.5)/h);
+  const clone=el.cloneNode(true);
+  clone.classList.remove('sel','dim','gone','flip');
+  clone.removeAttribute('id'); clone.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));
+  clone.style.width=w+'px'; clone.style.height=sheetLike&&el.classList.contains('wk-logbox')?'auto':h+'px';
+  clone.style.margin='0'; clone.style.transform=`scale(${k})`; clone.style.transformOrigin='0 0';
+  if(el.classList.contains('wk-logbox')) clone.innerHTML=(G?G.log:[]).map(t=>`<div>${esc(t)}</div>`).join('');
+  let info='';
+  const cmd=el.dataset.cmd, c=cmd&&cmdById(cmd);
+  if(c&&c.kind==='ability'){ const sp=spells(G.human)[c.num-1]; if(sp) info=`<b>${esc(sp.name)}</b> (${EL[sp.elem].icon} ${EL[sp.elem].name}, pot ⦿${TT.difficultyOf(sp)}): ${esc(TEXT[sp.id]||sp.text)}<br><small>3 mana and a ${EL[sp.elem].name} card. Pot at least its ⦿ winks to cast it.</small>`; }
+  else if(c) info=`<b>${c.name}</b>: ${CMD_HELP[c.id]||''}`;
+  const ek=el.classList.contains('wk-card')||el.classList.contains('wk-ace')?Object.keys(EL).find(k=>el.innerHTML.includes('>'+EL[k].name+'<')):null;
+  if(ek){ const o=oppOf(ek); info=`<b>${EL[ek].icon} ${EL[ek].name}</b>: spend it for a Strike, Ward or Dispel of ${EL[ek].name}, or a ${EL[ek].name} ability. Its opposite is ${EL[o].icon} ${EL[o].name} (+2 against each other's wards).`; }
+  if(el.classList.contains('wk-ab')) info='';
+  const ch=Math.ceil((el.classList.contains('wk-logbox')?Math.min(vh*0.8/k,2000):h)*k);
+  z.innerHTML=`<div class="wk-zoombox" style="width:${Math.ceil(w*k)}px;${el.classList.contains('wk-logbox')?'':'height:'+ch+'px'}"></div>${info?`<div class="wk-zoominfo">${info}</div>`:''}<div class="wk-zoomx">Tap anywhere to close</div>`;
+  z.firstChild.appendChild(clone);
+  if(el.classList.contains('wk-logbox')){ z.firstChild.style.height=Math.min(vh*0.75, clone.scrollHeight*k)+'px'; z.firstChild.style.overflow='hidden'; clone.style.height='auto'; }
+  z.hidden=false;
+}
+let holdT=null, holdAt=null, swallow=false;
+function setupMagnify(){
+  const sg=$('wk-stage');
+  const HOLD='.wk-cmd,.wk-card:not(.back):not(.ghost),.wk-ace,.wk-ab';
+  sg.addEventListener('pointerdown',e=>{
+    const el=e.target.closest(HOLD); if(!el) return;
+    holdAt={x:e.clientX,y:e.clientY};
+    clearTimeout(holdT);
+    holdT=setTimeout(()=>{ holdT=null; swallow=true; magnify(el); if(navigator.vibrate) try{navigator.vibrate(15);}catch(_){} },450);
+  });
+  sg.addEventListener('pointermove',e=>{ if(holdT&&holdAt&&Math.hypot(e.clientX-holdAt.x,e.clientY-holdAt.y)>10){ clearTimeout(holdT); holdT=null; } });
+  const stop=()=>{ if(holdT){ clearTimeout(holdT); holdT=null; } if(swallow) setTimeout(()=>{ swallow=false; },60); };   // the overlay can take the click instead
+  window.addEventListener('pointerup',stop); window.addEventListener('pointercancel',stop);
+  sg.addEventListener('contextmenu',e=>{ if(e.target.closest(HOLD)) e.preventDefault(); });
+  sg.addEventListener('click',e=>{
+    if(swallow){ swallow=false; e.stopPropagation(); e.preventDefault(); return; }
+    if(e.target.closest('button')) return;
+    const sh=e.target.closest('.wk-sheet,.wk-logbox');
+    if(sh){ e.stopPropagation(); magnify(sh); }
+  },true);
 }
 
 window.addEventListener('DOMContentLoaded',()=>{
