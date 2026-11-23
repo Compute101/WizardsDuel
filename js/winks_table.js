@@ -774,15 +774,21 @@ function cmdCard(id,w,o){
 }
 function sheet(w){
   const s=st(w), c=s.c, f=w===G.human?G.ai:G.human, foeSt=st(f);
+  // At a real table a lasting effect is a yellow token on the ability box that made it
+  // (a buff on your own sheet, a curse or a strike's lingering rider on the caster's),
+  // so nothing is spelt out in words that a player couldn't keep track of with tokens.
+  const marks=(sp,e)=>e.id===sp.id||e.id===sp.id+'-dot'||(sp.chill&&e.id==='chill');
   const ab=c.spells.map((sp,i)=>{
-    const on=sp.kind==='curse'?foeSt.effects.some(e=>e.id===sp.id):sp.effect&&sp.effect.type==='minion'?0:s.effects.some(e=>e.id===sp.id);
+    const on=sp.effect&&sp.effect.type==='minion'?0:s.effects.some(e=>e.id===sp.id)||foeSt.effects.some(e=>e.by===w&&marks(sp,e));
     const own=s.effects.find(e=>e.id===sp.id);
     const sk=sp.effect&&sp.effect.type==='minion'?minionsOf(w).length:own&&own.charges!=null?own.charges:0;
     const inPlay=S().elems.length<4||S().elems.includes(sp.elem);
     return `<div class="wk-ab ${inPlay?'':'out'}"><div class="h"><b>${i+1} ${esc(sp.name)}</b><span>${EL[sp.elem].icon} ⦿${TT.difficultyOf(sp)}</span></div>
-      <div class="t">${esc(TEXT[sp.id]||sp.text)}</div>${on||sk?`<div class="mk">${tokens('y',sk||1,6)}</div>`:''}</div>`;
+      <div class="t">${esc(TEXT[sp.id]||sp.text)}</div>${on||sk?`<div class="mk" data-why="${w}:${i}" title="Why is this token here?">${tokens('y',sk||1,6)}</div>`:''}</div>`;
   }).join('');
-  const chips=s.effects.filter(e=>e.type!=='minion'&&e.kind).map(e=>`<span class="wk-eff ${e.kind}">${esc(e.name||e.id)}</span>`).join('');
+  // Only effects no ability box accounts for (Ironskin, Tonic, …) still get a label.
+  const tokened=e=>[st(G.human),st(G.ai)].some(o=>o.c.spells.some(sp=>marks(sp,e)&&(e.by==null||st(e.by)===o)));
+  const chips=s.effects.filter(e=>e.type!=='minion'&&e.kind&&!tokened(e)).map(e=>`<span class="wk-eff ${e.kind}">${esc(e.name||e.id)}</span>`).join('');
   return `<div class="wk-sheet" style="--wc:${charOf(s.key).col||'#c9a84c'}">
     <div class="wk-sh-head"><img src="portraits/small/${s.key}.jpg" alt=""><div><b>${esc(c.name)}</b><small>${esc(c.title||'')}${w===G.ai?' · '+esc(G.foeName):' · you'}</small></div></div>
     <div class="wk-boxes"><div class="wk-box hp"><span>HP</span>${tokens('r',s.hp)}</div><div class="wk-box mana"><span>Mana</span>${tokens('b',s.mana)}</div></div>
@@ -924,11 +930,49 @@ function magnify(el){
   if(el.classList.contains('wk-logbox')){ z.firstChild.style.height=Math.min(vh*0.75, clone.scrollHeight*k)+'px'; z.firstChild.style.overflow='hidden'; clone.style.height='auto'; }
   z.hidden=false;
 }
+// Tap a yellow token on an ability box: say why it's there, what it's doing and what ends it.
+function tokenWhy(w,i){
+  const s=st(w), sp=s.c.spells[i]; if(!sp) return '';
+  const f=w===G.human?G.ai:G.human, foeSt=st(f);
+  const mine=w===G.human, whose=mine?'Your':esc(G.foeName)+'\'s', them=f===G.human?'you':esc(G.foeName);
+  const wiz=esc(s.c.name), nm=esc(sp.name), txt=esc(TEXT[sp.id]||sp.text);
+  const lines=[];
+  if(sp.effect&&sp.effect.type==='minion'){
+    const n=minionsOf(w).length;
+    lines.push(`<b>${n} yellow token${n===1?'':'s'}: ${whose} ${nm}</b>. One token for each that ${wiz} has on the table.`);
+    lines.push(txt);
+    lines.push(`<small>Take a token off for each one that falls. Dispels can't touch them.</small>`);
+  }
+  const own=s.effects.find(e=>e.id===sp.id);
+  if(own){
+    lines.push(`<b>${nm} is active on ${wiz}</b> (${whose.toLowerCase()==='your'?'your':whose} buff).`);
+    lines.push(txt);
+    if(own.charges!=null) lines.push(`<small>${own.charges} token${own.charges===1?'':'s'} left: take one off each time it's used. It ends when the last goes, or when a Dispel strips it.</small>`);
+    else lines.push(`<small>It stays until a Dispel strips it${own.type==='empower'||own.type==='absorbNext'?' or it is used':''}. Take the token off then.</small>`);
+  }
+  foeSt.effects.filter(e=>e.by===w&&(e.id===sp.id||e.id===sp.id+'-dot'||(sp.chill&&e.id==='chill'))).forEach(e=>{
+    const lock=e.type==='lock';
+    if(e.id===sp.id) lines.push(`<b>${nm} is on ${them}</b>: ${wiz} cursed ${them==='you'?'you':'them'} with it.`);
+    else if(e.id==='chill') lines.push(`<b>${nm} chilled ${them}</b>.`);
+    else lines.push(`<b>${nm} left something lasting on ${them}</b> (${e.dmgKind==='physical'?'a blow':'magic'} of ${e.dmg} at every round end).`);
+    if(e.id===sp.id) lines.push(txt);
+    else if(e.id==='chill') lines.push(`${them==='you'?'You':them} can't pick Damage next round.`);
+    lines.push(`<small>${lock?'It wears off at the end of the next round.':'It stays until '+(them==='you'?'you Cleanse':them+' Cleanses')+' it.'} The token sits on ${whose.toLowerCase()==='your'?'your':whose} sheet because ${wiz} cast it; take it off when it ends.</small>`);
+  });
+  return lines.join('<br>');
+}
+function explainToken(el){
+  const [w,i]=el.dataset.why.split(':'), info=tokenWhy(w,+i); if(!info) return;
+  const z=$('wk-zoom');
+  z.innerHTML=`<div class="wk-zoominfo">${info}</div><div class="wk-zoomx">Tap anywhere to close</div>`;
+  z.hidden=false;
+}
 let holdT=null, holdAt=null, swallow=false;
 function setupMagnify(){
   const sg=$('wk-stage');
   const HOLD='.wk-cmd,.wk-card:not(.back):not(.ghost),.wk-ace,.wk-ab';
   sg.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.mk[data-why]')) return;
     const el=e.target.closest(HOLD); if(!el) return;
     holdAt={x:e.clientX,y:e.clientY};
     clearTimeout(holdT);
@@ -941,6 +985,8 @@ function setupMagnify(){
   sg.addEventListener('click',e=>{
     if(swallow){ swallow=false; e.stopPropagation(); e.preventDefault(); return; }
     if(e.target.closest('button')) return;
+    const mk=e.target.closest('.mk[data-why]');
+    if(mk){ e.stopPropagation(); e.preventDefault(); explainToken(mk); return; }
     const sh=e.target.closest('.wk-sheet,.wk-logbox');
     if(sh){ e.stopPropagation(); magnify(sh); }
   },true);
