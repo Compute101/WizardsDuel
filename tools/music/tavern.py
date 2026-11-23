@@ -1,14 +1,17 @@
 # Tavern music for the Winks Table: a cheery set of two jigs, the kind a fiddler plays in the corner of
 # the Wren's Nest while you flick. Background music: steady, warm, never loud, and bright enough to buck
 # you up when the game's going badly.
-#   python3 tools/music/tavern.py          -> audio/tavern_theme.mid / .mp3 (a seamless loop)
-#   python3 tools/music/tavern.py --x3     -> also tavern_theme_x3.mp3 (the loop three times, to hear the join)
+#   python3 tools/music/tavern.py          -> audio/tavern/jigs.mid / .mp3: the set with an ending and a pause,
+#                                             one of the Winks Table's playlist (the others: tavern_set.py)
+#   python3 tools/music/tavern.py --loop   -> the old seamless loop instead, audio/tavern_theme.mid / .mp3
+#                                             (--x3 also writes it three times, to hear the join)
 #
 # A set of two jigs in 6/8 (quaver = half a beat, a bar = three beats), each played AABB:
 #   Squop's Jig    G major    A: fiddle alone          A: whistle on the tune, fiddle a third below
 #                             B: accordion on the tune B: everyone, tambourine in
 #   Bucked Up      D major    the same build again, a step brighter
-# The last bar walks down from D7 (D C B A) into the first bar again, so the loop never stops.
+# As a loop, the last bar walks down from D7 (D C B A) into the first bar again; as a piece it ends on a
+# held D chord.
 # Under it: guitar off-beat strums, a plucked bass on the beat (root, then fifth) and a soft bodhran.
 # Same tools as the other music (FluidSynth + FluidR3_GM, the reverb tail folded onto the start), but
 # mixed quiet: about -24 dBFS RMS, so it sits under the table's sounds and talk.
@@ -133,7 +136,7 @@ def tune_set(start, A, B, key, last=False):
     melody('fiddle', b, A, 78); backing(b, A, False); b += 24
     melody('whistle', b, A, 70, key, harm='fiddle'); backing(b, A, False); b += 24
     melody('accordion', b, B, 72); backing(b, B, False); b += 24
-    B2 = B[:-1] + [TURN] if last else B
+    B2 = B[:-1] + [TURN] if last and LOOP else B
     melody('fiddle', b, B2, 82); melody('whistle', b, B2, 60); accordion_chords(b, B2, 50); backing(b, B2, True)
     return b + 24
 
@@ -141,7 +144,14 @@ def tune_set(start, A, B, key, last=False):
 def build():
     b = tune_set(0, SQUOP_A, SQUOP_B, 'G')
     b = tune_set(b, BUCK_A, BUCK_B, 'D', last=True)
-    return b                                                   # the loop's length in beats
+    if LOOP:
+        return b                                               # the loop's length in beats
+    # the piece's ending: the last bar's held D rings on as a chord, the bass and bodhran on the one
+    b0 = b - 3
+    for p in ('D4', 'F#4', 'A4'):
+        note('accordion', b0, N[p], 4.5, 56)
+    note('bass', b0, N['D2'], 3, 86); note('drums', b0, 41, 0.3, 70)
+    return b0 + 4.5
 
 
 def save(path, end):
@@ -205,6 +215,28 @@ def render(end, x3=False):
             L / sr, end / 3, BPM * 2 / 3, 20 * np.log10(np.sqrt((pcm.astype(float) ** 2).mean()) / 32767), peak))
 
 
+def render_piece(end):
+    sys.path.insert(0, HERE)
+    import tavern_set as ts
+    os.makedirs(ts.OUT, exist_ok=True)
+    mpath = os.path.join(ts.OUT, 'jigs.mid')
+    save(mpath, end)
+    with tempfile.TemporaryDirectory() as td:
+        raw = os.path.join(td, 'raw.wav')
+        subprocess.run(['fluidsynth', '-ni', '-g', '0.5', '-r', '44100', '-F', raw, SF2, mpath],
+                       check=True, capture_output=True)
+        with wave.open(raw) as w:
+            sr, nch = w.getframerate(), w.getnchannels()
+            a = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float64).reshape(-1, nch)
+    secs, peak = ts.finish(a, sr, end * 60 / BPM, os.path.join(ts.OUT, 'jigs.mp3'))
+    print('jigs     %5.1f s, peak %.2f' % (secs, peak))
+
+
+LOOP = '--loop' in sys.argv
+
 if __name__ == '__main__':
     end = build()
-    render(end, x3='--x3' in sys.argv)
+    if LOOP:
+        render(end, x3='--x3' in sys.argv)
+    else:
+        render_piece(end)
