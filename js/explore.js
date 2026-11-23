@@ -131,6 +131,9 @@ function setupMap(data){
       case 'l': return 'floorFlag'+(1+Math.floor(r()*4));
       case 'y': return 'floorTerra'+(1+Math.floor(r()*4));
       case 'b': return r()<.3?'floorBroken'+(1+Math.floor(r()*3)):'floorWood'+(1+Math.floor(r()*4));
+      // the Undercroft (sheet 24): sewer brick, wet in places, and its water channel
+      case 'u': return r()<.12?'floorSewerWet':'floorSewer';
+      case 'q': return 'sewerChannel';
       case 'v': return null;
       default:  return 'grass';
     }
@@ -499,6 +502,16 @@ function drawEcho(a,t){
     ctx.fillStyle=a.e.el?SPILL[a.e.el][1]:'#ff8060'; ctx.fillText('×'+a.n,a.x+w*0.25+11,a.y-h+9);
   }
 }
+// the battle backdrop (backgrounds/<name>.jpg) for a fight here: a story room's own, else the place's
+// (a room fights on its town's ground), Wrenford's by the time of day; anywhere else the ruined streets
+const ARENA_ROOMS={undercroft:'wren_undercroft', undercroft2:'wren_orrery', lectures:'wren_schools', library:'library', remnant:'library'};
+const ARENA_MAPS={hollowmere:'hollowmere', corvanthe_road:'road', spirewatch:'spirewatch', conductory:'spirewatch', collegium:'collegium', old_schools:'collegium'};
+function arenaHere(){
+  if(MAP.interior&&ARENA_ROOMS[MAP.type]) return ARENA_ROOMS[MAP.type];
+  const id=MAP.id.startsWith('room:')?MAP.id.slice(5).split('#')[0]:MAP.id;
+  if(id==='wrenford') return darkness()>0.5?'wren_quad':'wren_schools';
+  return ARENA_MAPS[id]||'ruins';
+}
 // walk into an Echo: the battle plays on the duel screen, then we come back here
 function fight(a){
   if(busy||typeof window.startExploreBattle!=='function') return;
@@ -511,7 +524,7 @@ function fight(a){
     running=false; el.root.classList.remove('active'); fade(false); syncMusic();
     const key=wizKeys[wizIdx];
     if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
-    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:fighting.map(x=>({key:x.key,level:x.level,name:x.name,hp:x.hp,wizard:x.wizard,known:x.wizard&&Year?Year.allyKnown(x,folkApi):undefined})), text, arena:MAP.arena,
+    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:fighting.map(x=>({key:x.key,level:x.level,name:x.name,hp:x.hp,wizard:x.wizard,known:x.wizard&&Year?Year.allyKnown(x,folkApi):undefined})), text, arena:arenaHere(),
       onEnd:(won,low,allyHp)=>afterFight(a,won,low,key,fighting,allyHp)});
   });
 }
@@ -707,7 +720,7 @@ function spar({foes, text, onWin, onLose, fists, allies:al}){
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false); syncMusic();
     if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
-    window.startExploreBattle({wizKey:key, foes, hp:maxHp(key), allies:al||[], text, fists, arena:MAP.arena||'library',
+    window.startExploreBattle({wizKey:key, foes, hp:maxHp(key), allies:al||[], text, fists, arena:arenaHere(),
       onEnd:won=>{
         el.root.classList.add('active'); running=true; busy=false; resize(); syncMusic();
         clock=(clock+20)%1440; vit[key]=Math.max(before,1);
@@ -750,7 +763,7 @@ function battle({foes, allies:al, text, onWin, onLose, fists}){
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false); syncMusic();
     if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
-    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:al||[], text, fists, arena:MAP.arena||'library',
+    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:al||[], text, fists, arena:arenaHere(),
       onEnd:(won,low)=>{
         el.root.classList.add('active'); running=true; busy=false; resize(); syncMusic();
         clock=(clock+20)%1440; navGrid=null;
@@ -1018,6 +1031,7 @@ function wet(px,py){
     const dry=(xx,yy)=>(groundKind[yy]||[])[xx]!=='O';
     return !((dry(tx-1,ty)&&fx<R)||(dry(tx+1,ty)&&fx>T-R)||(dry(tx,ty-1)&&fy<R)||(dry(tx,ty+1)&&fy>T-R));
   }
+  if(t==='q') return true;                          // the Undercroft's channel: no bridge crosses it
   if(t!=='W'&&t!=='X') return false;                 // X: a hole onto the Wound (inner districts), crossed by rope bridges
   for(const b of bridges) for(const w of b.fb) if(inside(px,py,w)) return false;
   for(const w of MAP.walk||[]) if(inside(px,py,w)) return false;
@@ -1165,6 +1179,7 @@ async function enterMap(id,at,instant){
     await Promise.all([loadPalette(data.palette),atlasesFor(data)]);   // this map's sheets, before anything draws from them
     setupMap(data);
     prefetchAround(data);
+    { const im=new Image(); im.src='backgrounds/'+arenaHere()+'.jpg'; }   // this place's battle backdrop, so a fight opens on it
     resize();
     const p=Array.isArray(at)?at:(data.spawns[at]||data.spawns.start||Object.values(data.spawns)[0]);
     wiz.x=p[0]; wiz.y=p[1]; wiz.face=1;
@@ -2155,7 +2170,7 @@ function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.
 const NC={cache:'no-cache'};
 // CORE sheets are the ground and the loot every map and the satchel use.
 const ATLAS_NAMES=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13',
-  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23'];
+  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23','ruins24'];
 const CORE_ATLASES=['ruins','ruins2','ruins3','ruins13'];
 const atlasLoading={};
 function loadAtlas(i){
@@ -2163,7 +2178,7 @@ function loadAtlas(i){
   return atlasLoading[i];
 }
 // the sheets a map draws from: its pieces' and its ground's (the ground letters that aren't on a core sheet)
-const GROUND_PIECE={S:'tr_snow_11',F:'tr_flood_11',X:'tr_wound_21',w:'floorWood1',l:'floorFlag1',y:'floorTerra1',b:'floorBroken1'};
+const GROUND_PIECE={S:'tr_snow_11',F:'tr_flood_11',X:'tr_wound_21',w:'floorWood1',l:'floorFlag1',y:'floorTerra1',b:'floorBroken1',u:'floorSewer',q:'sewerChannel'};
 function atlasesFor(data){
   const need=new Set(CORE_ATLASES.map(n=>ATLAS_NAMES.indexOf(n)));
   for(const o of data.objects||[]){ const q=rects[o[0]]; if(q&&q[4]<ATLAS_NAMES.length) need.add(q[4]); }
