@@ -9,10 +9,10 @@
 //  and take notes. Tap (or E) to hurry a line along; Escape or the Skip
 //  button jumps to the questions. js/explore_year.js asks the questions
 //  afterwards (lecture()) and then calls end().
-//  Also the room's own decor, drawn here until real art arrives
-//  (docs/art-prompts.md, "The lecture theatre"): the tiers' risers, the
-//  aisle runner, the stage's edge, the dummy, the blackboard and the
-//  lecture list's notice board.
+//  Also the pieces of the room that change: the straw dummy (fresh, charred,
+//  frosted), the blackboard (chalked afresh by each lecturer) and the lecture
+//  list's notice board, from sheet 24 (the rest of the theatre is laid out by
+//  theatre() in js/explore_rooms.js).
 //  ExploreLecture: play(api, id, L, opts) → Promise<end()>, under(ctx,t,MAP), props(MAP, inScene).
 // ═══════════════════════════════════════════════════════════════════
 (function(){
@@ -46,19 +46,12 @@ const LOOKS = {
   dark:     {name:'Lavinia Crowe',    sex:'f', age:'old',    fig:'old_woman_4', robe:'Black',   trim:'Silver',  staff:'Ebony',      hair:'Black',  skin:'Pale',  eyes:'Dark',  elem:'dark'},
 };
 LOOKS.wards=LOOKS.ice; LOOKS.unmaking=LOOKS.arcane;
-// the rest of the year's students (the four Wrenford students, painted already, come too)
-const STUDENTS = [
-  {name:'Student A', sex:'m', age:'young', fig:'young_man_1', robe:'Black',    trim:'Bone',   hair:'Brown',  skin:'Olive', eyes:'Brown', elem:'fire',  staff:'Oak'},
-  {name:'Student B', sex:'f', age:'young', fig:'young_woman_1',robe:'Black',   trim:'Gold',   hair:'Auburn', skin:'Fair',  eyes:'Green', elem:'ice',   staff:'Ash'},
-  {name:'Student C', sex:'m', age:'young', fig:'young_man_2', robe:'Midnight', trim:'Silver', hair:'Blonde', skin:'Pale',  eyes:'Blue',  elem:'air',   staff:'Silverwood'},
-  {name:'Student D', sex:'f', age:'young', fig:'young_woman_2',robe:'Black',   trim:'Scarlet',hair:'Black',  skin:'Deep',  eyes:'Dark',  elem:'dark',  staff:'Ebony'},
-  {name:'Student E', sex:'m', age:'young', fig:'young_man_4', robe:'Russet',   trim:'Gold',   hair:'Copper', skin:'Fair',  eyes:'Hazel', elem:'earth', staff:'Oak'},
-  {name:'Student F', sex:'f', age:'young', fig:'young_woman_4',robe:'Black',   trim:'Sky',    hair:'Brown',  skin:'Tan',   eyes:'Brown', elem:'water', staff:'Driftwood'},
-  {name:'Student G', sex:'m', age:'young', fig:'young_man_3', robe:'Black',    trim:'Jade',   hair:'Black',  skin:'Brown', eyes:'Amber', elem:'lightning', staff:'Mahogany'},
-  {name:'Student H', sex:'f', age:'young', fig:'young_woman_3',robe:'Forest',  trim:'Bone',   hair:'Blonde', skin:'Natural',eyes:'Blue', elem:'arcane', staff:'Ash'},
-];
-const FOLK_STUDENTS = ['corin','isla','marigold','rook'];
-
+// the students: the user's seated students (sprites/folk/student_seated_<n>[_<gown>].png, cut by
+// tools/cut_students.py: 1-4 women, 5-8 men), in their painted purple and two gown recolours each
+const GOWN_OF = {1:['black','midnight'], 2:['crimson','forest'], 3:['black','forest'], 4:['midnight','crimson'],
+  5:['black','forest'], 6:['crimson','midnight'], 7:['black','crimson'], 8:['black','midnight']};
+const STUDENTS = []; for(let n=1;n<=8;n++) for(const g of [''].concat(GOWN_OF[n])) STUDENTS.push('sprites/folk/student_seated_'+n+(g?'_'+g:'')+'.png');
+const ROOK = 'sprites/folk/student_seated_8_black.png';   // Rook, of On Wards
 const cache = {};          // painted looks: key → {img, glow, face, h}
 function loadImg(src){ return new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; }); }
 async function painted(api, key, rec){
@@ -68,96 +61,56 @@ async function painted(api, key, rec){
   const img=await loadImg(d.sprite); if(!img) return null;
   return cache[key]={img, glow:d.glow, face:d.face, h:d.spriteHeight||1};
 }
-async function folkStudent(role){
-  const F=window.ExploreFolk&&ExploreFolk.FOLK&&ExploreFolk.FOLK[role];
-  if(!F||!F._sprite) return null;
-  if(cache['folk:'+role]) return cache['folk:'+role];
-  const img=await loadImg(F._sprite); if(!img) return null;
-  return cache['folk:'+role]={img, glow:F._glow, face:F._face, h:1, name:F.name};
+async function seatedLook(src){
+  if(cache[src]) return cache[src];
+  const img=await loadImg(src); if(!img) return null;
+  return cache[src]={img, src, name:src===ROOK?'Rook':'', h:1};
 }
-
 // ═══ THE ROOM'S DECOR (always, not only in a lecture) ════════════════
 let boardText={title:'Statute IV', sub:'None in the street.', glyphs:null, shown:999};
 const dummy={x:0,y:0, char:0, burn:0, wet:0, frost:0, lift:0, spin:0, hit:0, glow:0};
 function resetDummy(){ Object.assign(dummy,{char:0,burn:0,wet:0,frost:0,lift:0,spin:0,hit:0,glow:0}); }
+// the stage's edge: the tiers end in a step down to the flagstones (the tiers, desks, aisle steps and
+// dais are the room's own pieces, sheet 24; js/explore_rooms.js lays them out)
 function under(ctx, t, MAP){
-  const th=MAP.theatre, cols=MAP.cols, X0=T, X1=(cols-1)*T, [a0,a1]=th.aisle;
-  // the aisle: a red runner up the steps
-  const top=th.rows[0]-th.pewH-6, bot=th.stageY;
-  ctx.fillStyle='rgba(120,24,30,0.78)'; ctx.fillRect(a0+12,top,a1-a0-24,bot-top);
-  ctx.fillStyle='rgba(220,170,70,0.55)'; ctx.fillRect(a0+12,top,3,bot-top); ctx.fillRect(a1-15,top,3,bot-top);
-  // each tier is a step: its riser's shadow below the bench row, a lit nosing above it, and the aisle's steps
-  for(let k=0;k<th.rows.length;k++){
-    const y=th.rows[k]+3, prev=k?th.rows[k-1]+3:top;
-    ctx.fillStyle=k%2?'rgba(255,225,180,0.05)':'rgba(0,0,0,0.05)'; ctx.fillRect(X0,prev,X1-X0,y-prev);   // each tier's tread, a shade apart
-    ctx.fillStyle='rgba(30,14,4,0.5)'; ctx.fillRect(X0,y,X1-X0,8);                                       // the riser
-    ctx.fillStyle='rgba(255,214,150,0.3)'; ctx.fillRect(X0,y-2,X1-X0,2);                                  // its nosing
-    for(const h of [0,0.5]){ const sy=y-th.pewH*0.95*h; ctx.fillStyle='rgba(0,0,0,0.28)'; ctx.fillRect(a0+12,sy,a1-a0-24,3); ctx.fillStyle='rgba(255,220,160,0.18)'; ctx.fillRect(a0+12,sy-1,a1-a0-24,1); }
-  }
-  // the back rows sit higher, nearer the lamps; the front rows in the stage's shade
-  const g=ctx.createLinearGradient(0,top,0,bot); g.addColorStop(0,'rgba(255,220,160,0.06)'); g.addColorStop(1,'rgba(0,0,0,0.12)');
-  ctx.fillStyle=g; ctx.fillRect(X0,top,X1-X0,bot-top);
-  // the stage's edge: a step down, with a brass rail before the front row
-  ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(X0,th.stageY,X1-X0,9);
-  ctx.fillStyle='#6a4422'; ctx.fillRect(X0,th.stageY-4,a0-X0+8,4); ctx.fillRect(a1-8,th.stageY-4,X1-a1+8,4);
-  ctx.fillStyle='#d8b060'; ctx.fillRect(X0,th.stageY-5,a0-X0+8,1.5); ctx.fillRect(a1-8,th.stageY-5,X1-a1+8,1.5);
-  for(let x=X0+20;x<X1;x+=56){ if(x>a0-6&&x<a1+6) continue; ctx.fillStyle='#4a2e16'; ctx.fillRect(x,th.stageY-14,3,10); ctx.fillStyle='#d8b060'; ctx.fillRect(x,th.stageY-15,3,2); }
+  const th=MAP.theatre, X0=T, X1=(MAP.cols-1)*T;
+  ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(X0,th.stageY,X1-X0,10);
+  ctx.fillStyle='rgba(255,214,150,0.22)'; ctx.fillRect(X0,th.stageY-2,X1-X0,2);
 }
-function props(MAP, inScene){
+const DUMMY_S=0.25, BOARD_S=0.34, NOTICE_S=0.2;
+function props(MAP, inScene, drawPiece){
   const th=MAP.theatre;
   dummy.x=th.dummy[0]; dummy.y=th.dummy[1];
   return [
-    {y:th.dummy[1], draw:(ctx,t)=>drawDummy(ctx,t)},
-    {y:th.board[1], draw:(ctx,t)=>drawBoard(ctx,t,th.board[0],th.board[1])},
-    {y:th.notice[1]-1, draw:ctx=>drawNotice(ctx,th.notice[0],th.notice[1])},
+    {y:th.dummy[1], draw:(ctx,t)=>drawDummy(ctx,t,drawPiece)},
+    {y:th.board[1], draw:(ctx,t)=>drawBoard(ctx,t,th.board[0],th.board[1],drawPiece)},
+    {y:th.notice[1], draw:ctx=>drawPiece('lt_notice',th.notice[0],th.notice[1],undefined,NOTICE_S)},
   ];
 }
 function px(ctx,c,x,y,w,h){ ctx.fillStyle=c; ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h)); }
-function drawDummy(ctx,t){
-  const d=dummy, sh=d.hit>0?Math.sin(t/25)*d.hit*3:0, lift=d.lift, x=d.x+sh, y=d.y;
-  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(d.x,y-2,16,5,0,0,Math.PI*2); ctx.fill();
-  px(ctx,'#4a2e16',d.x-11,y-5,22,5); px(ctx,'#6a4422',d.x-10,y-5,20,2);           // the stand's foot
-  ctx.save(); ctx.translate(x,y-lift);
-  if(d.spin) ctx.scale(Math.cos(d.spin),1);
-  const c=k=>{ const ch=d.char; const mix=(a,b)=>Math.round(a+(b-a)*ch); const [r,g,b]=k; return `rgb(${mix(r,48)},${mix(g,36)},${mix(b,28)})`; };
-  px(ctx,'#5a3a1c',-2,-58,4,56);                                      // the post
-  px(ctx,c([200,160,80]),-17,-44,34,5); px(ctx,'#3a2410',-17,-44,34,1);   // the crossbar arms, straw-wrapped
-  ctx.fillStyle=c([216,182,96]); ctx.strokeStyle='#3a2410'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.ellipse(0,-30,11,17,0,0,Math.PI*2); ctx.fill(); ctx.stroke();       // the body
-  ctx.strokeStyle=c([150,110,50]); ctx.lineWidth=1;
-  for(const yy of [-40,-34,-27,-20]){ ctx.beginPath(); ctx.moveTo(-9,yy); ctx.lineTo(9,yy+1); ctx.stroke(); }
-  px(ctx,'#7a4a20',-11,-31,22,2);                                     // a rope round the middle
-  ctx.fillStyle=c([226,196,118]); ctx.strokeStyle='#3a2410'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.arc(0,-56,8,0,Math.PI*2); ctx.fill(); ctx.stroke();                  // the head
-  ctx.strokeStyle='#3a2410'; ctx.lineWidth=1.2;
-  for(const ex of [-3,3]){ ctx.beginPath(); ctx.moveTo(ex-1.5,-58); ctx.lineTo(ex+1.5,-55); ctx.moveTo(ex+1.5,-58); ctx.lineTo(ex-1.5,-55); ctx.stroke(); }
-  if(d.wet>0){ ctx.fillStyle=`rgba(60,130,210,${Math.min(0.35,d.wet*0.1)})`; ctx.beginPath(); ctx.ellipse(0,-34,13,24,0,0,Math.PI*2); ctx.fill(); }
-  if(d.frost>0){ ctx.fillStyle=`rgba(220,245,255,${Math.min(0.55,d.frost*0.5)})`; ctx.beginPath(); ctx.ellipse(0,-36,13,26,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle=`rgba(255,255,255,${Math.min(0.8,d.frost)})`; ctx.lineWidth=1; for(let i=0;i<6;i++){ const a=i*1.05; ctx.beginPath(); ctx.moveTo(0,-36); ctx.lineTo(Math.cos(a)*10,-36+Math.sin(a)*16); ctx.stroke(); } }
-  if(d.glow>0){ ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(255,140,60,${d.glow*0.5})`; ctx.beginPath(); ctx.ellipse(0,-34,15,26,0,0,Math.PI*2); ctx.fill(); ctx.globalCompositeOperation='source-over'; }
+// the straw dummy: fresh, charred (and smoking) once a strike has burnt it, frosted after Ice; it shakes when
+// hit, rides a whirlwind (lift, spin) and darkens when drenched
+function drawDummy(ctx,t,drawPiece){
+  const d=dummy, sh=d.hit>0?Math.sin(t/25)*d.hit*3:0, kind=d.frost>0.35?'lt_dummyFrost':d.char>0.45?'lt_dummyBurnt':'lt_dummy';
+  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(d.x,d.y-2,16,5,0,0,Math.PI*2); ctx.fill();
+  ctx.save(); ctx.translate(d.x+sh,-d.lift); if(d.spin){ ctx.translate(0,d.y); ctx.scale(Math.cos(d.spin),1); ctx.translate(0,-d.y); }
+  if(d.wet>0) ctx.filter=`brightness(${1-Math.min(0.3,d.wet*0.06)}) saturate(${1-Math.min(0.4,d.wet*0.08)})`;
+  drawPiece(kind,0,d.y,undefined,DUMMY_S); ctx.filter='none';
+  if(d.glow>0){ ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(255,140,60,${d.glow*0.45})`; ctx.beginPath(); ctx.ellipse(0,d.y-40,14,26,0,0,Math.PI*2); ctx.fill(); }
   ctx.restore();
 }
-function drawBoard(ctx,t,x,y){
-  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(x,y-2,46,5,0,0,Math.PI*2); ctx.fill();
-  ctx.strokeStyle='#4a2e16'; ctx.lineWidth=3;
-  ctx.beginPath(); ctx.moveTo(x-34,y); ctx.lineTo(x-26,y-74); ctx.moveTo(x+34,y); ctx.lineTo(x+26,y-74); ctx.moveTo(x,y-4); ctx.lineTo(x,y-30); ctx.stroke();
-  px(ctx,'#5a3a1c',x-48,y-82,96,58); px(ctx,'#1d3328',x-44,y-78,88,50); px(ctx,'#24402f',x-44,y-78,88,3);
-  px(ctx,'#5a3a1c',x-48,y-26,96,4); px(ctx,'#e8e4d8',x+26,y-27,8,2);   // the chalk ledge and a stub of chalk
-  const B=boardText, n=Math.floor(B.shown);
-  ctx.save(); ctx.fillStyle='rgba(235,235,225,0.9)'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.font='bold 11px Georgia, serif'; ctx.fillText(B.title.slice(0,n),x,y-66);
+// the blackboard on its easel: the room's chalked board, or wiped and chalked afresh by the lecturer
+function drawBoard(ctx,t,x,y,drawPiece){
+  const B=boardText;
+  if(!B.title){ drawPiece('lt_board',x,y,undefined,BOARD_S); return; }
+  drawPiece('lt_boardBlank',x,y,undefined,BOARD_S);
+  const n=Math.floor(B.shown), w=92, h=80, cy=y-h+h*0.36;
+  ctx.save(); ctx.fillStyle='rgba(238,236,226,0.92)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='bold 9px Georgia, serif'; ctx.fillText(B.title.slice(0,n),x,cy-12);
   const m=Math.max(0,n-B.title.length);
-  ctx.font='italic 7.5px Georgia, serif'; ctx.fillText(B.sub.slice(0,m),x,y-54);
-  if(B.glyphs&&m>B.sub.length){ ctx.font='11px serif'; B.glyphs.slice(0,Math.floor((m-B.sub.length)/3)).forEach((g,i)=>ctx.fillText(GLYPHS[g],x-24+i*16,y-40)); }
-  ctx.restore();
-}
-function drawNotice(ctx,x,y){
-  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(x,y-2,18,4,0,0,Math.PI*2); ctx.fill();
-  px(ctx,'#4a2e16',x-15,y-30,3,30); px(ctx,'#4a2e16',x+12,y-30,3,30);
-  px(ctx,'#5a3a1c',x-20,y-62,40,34); px(ctx,'#9a6a3a',x-17,y-59,34,28);
-  for(const [dx,dy,w,h,c] of [[-14,-57,12,14,'#efe4c8'],[0,-56,14,10,'#e8dcc0'],[-12,-41,10,9,'#f2ead6'],[2,-44,13,12,'#e4d6b4']]){ px(ctx,c,x+dx,y+dy,w,h); px(ctx,'#b02020',x+dx+w/2-1,y+dy,2,2);
-    for(let l=3;l<h-1;l+=3) px(ctx,'rgba(60,40,20,0.5)',x+dx+2,y+dy+l,w-4,1); }
-  px(ctx,'#3a2410',x-20,y-66,40,4);
+  ctx.font='italic 6.5px Georgia, serif'; ctx.fillText(B.sub.slice(0,m),x,cy-2);
+  if(B.glyphs&&m>B.sub.length){ ctx.font='10px serif'; B.glyphs.slice(0,Math.floor((m-B.sub.length)/3)).forEach((g,i)=>ctx.fillText(GLYPHS[g],x-21+i*14,cy+11)); }
+  ctx.restore(); void w;
 }
 
 // ═══ A LECTURE ═══════════════════════════════════════════════════════
@@ -296,26 +249,26 @@ function play(api, id, L, opts){
       students:[], partner:null, seatY:0, me, skipBtn:null, onEnd:null};
     if(id==='dark'){ S.lect.x=sp('centre').x; S.lect.y=sp('centre').y; S.dimV=0.55; }   // she is simply there when the lamps come back
     boardText={title:'', sub:'', glyphs:null, shown:0};
-    // your seat: the left block, the fourth tier, by the aisle; your partner beside you
-    const seats=th.seats.slice().sort((a,b)=>Math.abs(a.row-3)-Math.abs(b.row-3)||a.side-b.side||a.toAisle-b.toAisle);
+    // your seat: the left block, the middle tier, by the aisle; your partner beside you
+    const seats=th.seats.slice().sort((a,b)=>Math.abs(a.row-2)-Math.abs(b.row-2)||a.side-b.side||a.toAisle-b.toAisle);
     const mine=seats[0], theirs=seats.find(s=>s!==mine&&s.row===mine.row&&s.side===mine.side);
-    S.mine=mine; S.seatLift=th.pewH*0.3;
+    S.mine=mine; S.seatLift=th.deskH*0.7; S.stuLift=8;
     api.seat(mine.x, mine.y+1, mine.side?-1:1, S.seatLift);
     api.scene(scene);
     // paint everyone (cached after the first lecture), then let them in
     (async()=>{
       const lk=LOOKS[id]||LOOKS.arcane;
-      const [lec, ...rest]=await Promise.all([painted(api,'lect:'+lk.name,lk)].concat(STUDENTS.map((s,i)=>painted(api,'stu:'+i,s))).concat(FOLK_STUDENTS.map(folkStudent)));
+      const [lec, ...rest]=await Promise.all([painted(api,'lect:'+lk.name,lk)].concat(STUDENTS.map(seatedLook)));
       if(lec){ S.lect.img=lec.img; S.lect.glow=lec.glow; S.lect.face=lec.face; S.face=lec.face; }
-      const looks=rest.filter(Boolean);
-      if(opts.partner&&api.chars.partner){ const c=api.chars.partner, img=await loadImg(c.sprite); if(img) S.partnerLook={img, glow:c.glow, name:(c.name||'').split(' ')[0]}; }
+      const looks=rest.filter(Boolean), rook=looks.find(l=>l.src===ROOK), others=looks.filter(l=>l!==rook).sort(()=>Math.random()-0.5);
+      if(opts.partner&&api.chars.partner){ const c=api.chars.partner, img=await loadImg(c.sprite); if(img) S.partnerLook={img, glow:c.glow, name:(c.name||'').split(' ')[0], standing:true}; }
       const used=new Set([mine, theirs]);
       if(theirs&&S.partnerLook){ S.partner=student(theirs, S.partnerLook); S.partner.isPartner=true; }
       const free=th.seats.filter(s=>!used.has(s)&&!(id==='fire'&&s.row===th.rows.length-1));   // nobody sits in Dr Pyle's front row
-      const n=Math.min(free.length, 30);
-      const order=free.map(s=>({s, w:Math.random()+(s.row>=2&&s.row<=5?0.5:0)+(s.toAisle<4*T?0.25:0)})).sort((a,b)=>b.w-a.w).slice(0,n);
-      order.forEach((o,k)=>{ const look=looks[k%looks.length]; if(look) S.students.push(student(o.s, look)); });
-      S.rook=S.students.find(s=>s.look.name==='Rook')||S.students[0];
+      const n=Math.round(free.length*0.62);
+      const order=free.map(s=>({s, w:Math.random()+s.row*0.18+(s.toAisle<4*T?0.25:0)})).sort((a,b)=>b.w-a.w).slice(0,n);
+      order.forEach((o,k)=>{ const look=k===0&&rook?rook:others[k%others.length]; if(look) S.students.push(student(o.s, look)); });
+      S.rook=S.students.find(s=>s.look===rook)||S.students[0];
       S.ready=true;
     })().catch(e=>{ console.error(e); S.ready=true; });
     // the skip button
@@ -420,7 +373,7 @@ function crowd(kind){
 
 // ── the camera: the stage and the front tiers, wider on a wide screen; on a narrow one it follows the action ──
 function camera(vw,vh){
-  const th=S.th, a=th.aisle, DX=(a[0]+a[1])/2, y0=th.rows[Math.max(0,S.mine.row-1)]-th.pewH-10, y1=th.stageY+3*T+8, w=12*T, h=y1-y0;
+  const th=S.th, a=th.aisle, DX=(a[0]+a[1])/2, y0=th.rows[Math.max(0,S.mine.row-1)]-th.seatH-12, y1=th.stageY+3*T+8, w=15*T, h=y1-y0;
   let z=Math.min(vh/h, Math.max(vw/w, vw/(7*T)));      // a phone shows about seven tiles across and follows the action
   z=clamp(z, 0.6, 2.2);
   const viewW=vw/z, L=S.lect;
@@ -443,19 +396,22 @@ function drawLecturer(ctx,t){
   else L.staff={x:L.x+f*w*0.3, y:L.y-h*0.75};
   ctx.restore();
 }
+const headY = s => s.look&&!s.look.standing?s.y-S.stuLift-S.th.seatH:s.y-S.seatLift-S.api.WIZ_H*SEAT_CROP;
 function drawStudent(ctx,t,s){
   const img=s.look.img; if(!img||!img.naturalWidth) return;
-  const h=S.api.WIZ_H*(s.look.h||1), w=h*img.naturalWidth/img.naturalHeight, lift=S.seatLift;
   const writing=s.write<0, bob=(writing?Math.abs(Math.sin(S.t*9+s.phase))*1.2:0)+Math.sin(t/900+s.phase)*0.5-s.jolt*3;
-  const base=s.y-lift+ (writing?1:0);
-  ctx.save(); ctx.translate(s.x, base-bob); if(s.face<0) ctx.scale(-1,1);
-  ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight*SEAT_CROP,-w/2,-h*SEAT_CROP,w,h*SEAT_CROP);
-  const g=s.look.glow;
-  if(g&&g.y<SEAT_CROP&&window.StaffGlow) StaffGlow.draw(ctx,-w/2+g.x*w,-h*SEAT_CROP+g.y*h,Math.max(g.r*h,h*0.03)*0.6,g.col,g.elem,t+s.phase*1000,0.5);
-  // notes on their lap, a quill scratching when they write
-  const nx=w*0.06, ny=-h*0.06;
-  px(ctx,'#e8dcc0',nx-4,ny-2,9,5); px(ctx,'rgba(60,40,20,0.55)',nx-3,ny-1,6,1); px(ctx,'rgba(60,40,20,0.55)',nx-3,ny+1,4,1);
-  if(writing){ const qx=nx-2+((S.t*12+s.phase)%5); ctx.strokeStyle='#fbf8f0'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(qx,ny); ctx.lineTo(qx+3,ny-7); ctx.stroke(); }
+  ctx.save();
+  if(s.look.standing){                                             // your partner: their own figure, cropped at the waist
+    const h=S.api.WIZ_H, w=h*img.naturalWidth/img.naturalHeight;
+    ctx.translate(s.x, s.y-S.seatLift-bob); if(s.face<0) ctx.scale(-1,1);
+    ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight*SEAT_CROP,-w/2,-h*SEAT_CROP,w,h*SEAT_CROP);
+    const g=s.look.glow;
+    if(g&&g.y<SEAT_CROP&&window.StaffGlow) StaffGlow.draw(ctx,-w/2+g.x*w,-h*SEAT_CROP+g.y*h,Math.max(g.r*h,h*0.03)*0.7,g.col,g.elem,t,0.6);
+  } else {                                                         // a seated student: the desk in front hides the lap
+    const h=S.th.seatH, w=h*img.naturalWidth/img.naturalHeight;
+    ctx.translate(s.x, s.y-S.stuLift-bob); if(s.face<0) ctx.scale(-1,1);
+    ctx.drawImage(img,-w/2,-h,w,h);
+  }
   ctx.restore();
 }
 
@@ -662,7 +618,7 @@ const FX = {
   // On Wards: Rook throws a spark at the Professor's ward, which ripples and holds
   studentBolt(){
     const s=S.rook; if(!s) return; s.jolt=1;
-    const from={x:s.x+s.face*6, y:s.y-S.seatLift-30}; let hit=false;
+    const from={x:s.x+s.face*8, y:headY(s)+18}; let hit=false;
     S.fx.push(mk({dur:0.7, add:true,
       upd(dt,u){ const to={x:S.lect.x, y:S.lect.y-34}, p=ELF(from,to,u,20); this.x=p.x; this.y=p.y; part({x:p.x,y:p.y,vx:rnd(-15,15),vy:rnd(-15,15),life:0.25,r:2,col:'#ffaa44',add:true});
         if(!hit&&u>=0.98){ hit=true; const w=S.fx.find(f=>f.ward); if(w) w.hitT=w.t; burst(p.x,p.y,18,['#ffcc66','#ffffff','#a8e0ff'],{v0:40,v1:140,l1:0.5}); S.shakeV=3; } },
@@ -704,9 +660,9 @@ function drawOver(ctx,t,v){
   if(S.flash>0){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(255,250,235,${S.flash*0.25})`; ctx.fillRect(v.x,v.y,v.w,v.h); ctx.restore(); }
   // speech: a fixed size on screen, whatever the zoom
   const k=1/v.zoom;
-  for(const m of S.mutters){ const a=Math.min(1,m.left/300); bubble(ctx,v,k,m.who.x,m.who.y-S.seatLift-S.api.WIZ_H*0.6-4,m.text,MUTTER_PX,200,a,null,false,true); }
+  for(const m of S.mutters){ const a=Math.min(1,m.left/300); bubble(ctx,v,k,m.who.x,headY(m.who)-4,m.text,MUTTER_PX,200,a,null,false,true); }
   const b=S.bubble;
-  if(b){ const who=b.who, isL=who===S.lect, hx=who.x, hy=isL?who.y-S.api.WIZ_H*1.12:who.y-S.seatLift-S.api.WIZ_H*0.6-4;
+  if(b){ const who=b.who, isL=who===S.lect, hx=who.x, hy=isL?who.y-S.api.WIZ_H*1.12:headY(who)-4;
     bubble(ctx,v,k,hx,hy,b.text.slice(0,Math.floor(b.shown)),isL?SAY_PX:SAY_PX-2,SAY_W,1,b.name,b.whisper,false,b.shown>=b.text.length, b.text); }
   // the fades: in when the students are seated, out at the end
   const black=!S.ready?1:S.fadeOut?Math.min(1,S.fadeOut):1-S.fadeIn;

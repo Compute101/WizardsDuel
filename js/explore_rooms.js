@@ -192,7 +192,10 @@ function build(spec,rects){
     const o={kind:k,x,y,scale:e.scale}; for(const b of P.footBoxes(rects,o)) boxes.push(b); return o; };
   const X0=T, X1=(C+1)*T, Y0=2*T, Y1=(2+R)*T, DX=W/2;
   // back wall
-  const walls=WALLS[D.wall]; let wx=X0-8, i=0;
+  const TWALL=['lt_wallWindow','lt_wallPlain','lt_wallCrest','lt_wallWindow','lt_wallPlain','lt_wallPortrait'];   // the theatre's panelled back wall
+  if(D.theatre&&rects.lt_wallPlain){ let x=X0-8, n=0; const ws=0.19;
+    while(x<X1-10){ const k=TWALL[n%TWALL.length], w=rects[k][2]*ws; objects.push([k,Math.round(x+w/2),Y0+6,{scale:ws}]); x+=w-3; n++; } }
+  const walls=WALLS[D.wall]; let wx=D.theatre&&rects.lt_wallPlain?X1:X0-8, i=0;
   const rubbleAt=ruined&&r()<0.5?Math.floor(r()*Math.max(1,Math.floor(C*T/72)-3)):-1;
   const hearthAt=D.wall==='plaster'&&!ruined&&type!=='chapel'&&r()<0.3?1+Math.floor(r()*2):-1;
   while(wx<X1-10){
@@ -253,27 +256,44 @@ function build(spec,rects){
   // docs/art-prompts.md), the lecture list by the door and Professor Thorley at her desk
   let theatreInfo=null;
   function theatre(){
-    const PW=0.36, pw=rects.pew[2]*PW, ph=rects.pew[3]*PW, step=0.85*T, nRows=7, aisle=0.75*T;
-    const stageY=Y1-3*T, rowYs=[], seats=[];
-    const sides=[[X0+0.25*T, DX-aisle],[DX+aisle, X1-0.25*T]];
+    const DW=0.178, SH=58, nRows=5, aisle=0.75*T, stageY=Y1-3*T, top=Y0+1.55*T, step=(stageY-40-top)/(nRows-1);
+    const dh=Math.round(rects.lt_bench6[3]*DW), rowYs=[], seats=[];
+    const sides=[[X0+0.3*T, DX-aisle],[DX+aisle, X1-0.3*T]];
+    const deck=(k,x,y,sc)=>objects.push([k,Math.round(x),Math.round(y),{scale:sc,decal:1}]);
+    // the aisle's carpeted steps, from the stage up to the back
+    const sw=rects.lt_steps, ss=(2*aisle)/sw[2], sh=sw[3]*ss;
+    for(let y=stageY+6;y>top-dh-sh*0.5;y-=sh*0.92) deck('lt_steps',DX,y,ss);
     for(let k=0;k<nRows;k++){
-      const y=Y0+1.3*T+k*step; rowYs.push(y);
+      const y=Math.round(top+k*step); rowYs.push(y);
+      // the tier's step edge under the desks
+      const tw=rects.lt_tier[2]*0.3;
+      for(const [a,b] of sides) for(let x=a;x<b;x+=tw-2) deck('lt_tier',Math.min(x+tw/2,b-tw/2),y+14,0.3);
       sides.forEach(([a,b],side)=>{
-        const n=Math.floor((b-a+2)/(pw-2)), span=n*(pw-2)+2, x0=side?a:b-span;   // flush with the aisle
-        for(let i=0;i<n;i++){ const cx=x0+pw/2+i*(pw-2); put('pew',cx,y,{scale:PW});
-          for(const f of [-0.21,0.21]) seats.push({x:Math.round(cx+f*pw), y:Math.round(y), row:k, side, toAisle:Math.abs(cx+f*pw-DX)}); }
+        // desks from the aisle out: long ones of three seats, a short one of two to finish the row
+        const w6=rects.lt_bench6[2]*DW, w4=rects.lt_bench4[2]*DW, ew=rects.lt_benchEnd[2]*DW;
+        let x=side?a+ew:b-ew;
+        put('lt_benchEnd',side?a+ew/2:b-ew/2,y,{scale:DW});
+        while(true){
+          const left=side?b-x:x-a, k6=left>=w6+4, k4=!k6&&left>=w4+4; if(!k6&&!k4) break;
+          const w=k6?w6:w4, cx=side?x+w/2:x-w/2, n=k6?3:2;
+          put(k6?'lt_bench6':'lt_bench4',cx,y,{scale:DW});
+          for(let i=0;i<n;i++){ const sx=cx+(i-(n-1)/2)*w/n; seats.push({x:Math.round(sx), y, row:k, side, toAisle:Math.abs(sx-DX)}); }
+          x+=side?w+2:-w-2;
+        }
       });
     }
-    put('lectern',DX-2.1*T,stageY+1.55*T,{scale:0.3});
-    put('counter',DX+1.9*T,Y1-0.55*T,{scale:0.34});
+    // the stage: a dais with its lectern on the left, the demonstration bench, the dummy and the board
+    const DAIS=0.53, dx=DX-3.4*T;
+    deck('lt_dais',dx,Y1-4,DAIS);
+    put('lt_lectern',DX-4.7*T,Y1-0.75*T,{scale:0.28});
+    put('lt_demo',DX+3.5*T,Y1-0.2*T,{scale:0.3});
     put('readingDesk',X1-1.3*T,Y1-0.55*T);
-    put('bookPile',X1-0.55*T,stageY+0.7*T);
-    const dummy=[Math.round(DX+4.6*T),Math.round(stageY+1.45*T)], board=[Math.round(DX-4.7*T),Math.round(stageY+1.2*T)];
-    blocks.push({x:dummy[0]-16,y:dummy[1]-10,w:32,h:12},{x:board[0]-48,y:board[1]-10,w:96,h:12});
-    npcs.push({role:'lecturer', x:Math.round(X0+1.5*T), y:Math.round(Y1-0.3*T)}, {role:'examiner', x:Math.round(X1-2.6*T), y:Math.round(Y1-0.45*T)});
-    return {rows:rowYs, seats, stageY, pewH:Math.round(ph), aisle:[DX-aisle,DX+aisle], dummy, board, notice:[Math.round(X0+1.5*T),Math.round(Y1-0.3*T)],
-      spots:{centre:[DX-0.2*T,stageY+1.3*T], lectern:[DX-1.45*T,stageY+1.4*T], bench:[DX+1.9*T,Y1-0.95*T], dummy:[DX+2.9*T,stageY+1.35*T], board:[DX-3.5*T,stageY+1.3*T],
-        wing:[X0+0.6*T,stageY+1.6*T], door:[DX,Y1-0.2*T]}};
+    const dummy=[Math.round(DX+5.4*T),Math.round(stageY+1.45*T)], board=[Math.round(X0+1.1*T),Math.round(stageY+1.35*T)], notice=[Math.round(DX+1.3*T),Math.round(Y1-0.15*T)];
+    blocks.push({x:dummy[0]-16,y:dummy[1]-10,w:32,h:12},{x:board[0]-44,y:board[1]-10,w:88,h:12},{x:notice[0]-26,y:notice[1]-10,w:52,h:12});
+    npcs.push({role:'lecturer', x:notice[0], y:notice[1]+2}, {role:'examiner', x:Math.round(X1-2.4*T), y:Math.round(Y1-0.3*T)});
+    return {rows:rowYs, seats, stageY, deskH:dh, seatH:SH, aisle:[DX-aisle,DX+aisle], dummy, board, notice,
+      spots:{centre:[dx+0.3*T,Y1-0.75*T], lectern:[DX-4.0*T,Y1-0.8*T], bench:[DX+3.5*T,Y1-1.2*T], dummy:[DX+4.1*T,stageY+1.4*T], board:[X0+2.4*T,stageY+1.45*T],
+        wing:[X0+0.5*T,Y1-0.5*T], door:[DX,Y1-0.2*T]}};
   }
   // furniture
   let bx=X0+20;

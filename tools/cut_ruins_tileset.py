@@ -302,6 +302,14 @@ RECTS23 = {k: _pad(v) for k, v in {   # Cindergate's inner district: the crucibl
     'crucibleHoist': (506, 523, 275, 251), 'stallBurnt': (822, 520, 360, 255), 'lavaWell': (1216, 518, 277, 286),
     'lavaSpring': (31, 828, 266, 156), 'bannerAnvil': (378, 799, 154, 204), 'bannerHammers': (586, 799, 138, 204),
     'bannerFlame': (780, 799, 137, 204), 'bannerAshen': (971, 799, 137, 204)}.items()}
+RECTS24 = {k: _pad(v) for k, v in {   # the lecture theatre (Wrenford's Examination Schools; js/explore_lecture.js)
+    'lt_bench2': (59, 15, 207, 164), 'lt_bench4': (334, 15, 412, 164), 'lt_bench6': (809, 14, 675, 165),
+    'lt_benchEnd': (41, 222, 98, 177), 'lt_tier': (185, 299, 417, 62), 'lt_steps': (634, 212, 207, 196), 'lt_dais': (898, 215, 588, 191),
+    'lt_lectern': (45, 438, 173, 213), 'lt_demo': (279, 399, 565, 249), 'lt_board': (920, 425, 272, 236), 'lt_boardBlank': (1232, 425, 273, 237),
+    'lt_dummy': (27, 696, 167, 278), 'lt_dummyBurnt': (216, 658, 161, 316), 'lt_dummyFrost': (400, 690, 164, 284),
+    'lt_notice': (635, 672, 291, 301), 'lt_candelabra': (994, 672, 127, 261), 'lt_chandelier': (1191, 672, 314, 281)}.items()}
+RECTS25 = {k: _pad(v) for k, v in {   # the lecture theatre's back wall
+    'lt_wallWindow': (48, 43, 484, 634), 'lt_wallPlain': (573, 43, 489, 634), 'lt_wallCrest': (1106, 43, 495, 634), 'lt_wallPortrait': (1642, 43, 489, 634)}.items()}
 # a neighbour inside a crop, blanked before the crop is cleaned (sheet coords)
 ERASE = {'armillary': [(150, 0, 372, 325)]}
 
@@ -322,6 +330,8 @@ SHEETS = {
                     out='ruins%d' % n, key=str(n), clean='strict', square=TR)
        for n, R in [(14, RECTS14), (15, RECTS15), (16, RECTS16), (17, RECTS17), (18, RECTS18), (19, RECTS19),
                     (20, RECTS20), (21, RECTS21), (22, RECTS22), (23, RECTS23)]},
+    '24': dict(src='tileset24_source.png', bg=(11, 14, 21), rects=RECTS24, ground=set(), out='ruins24', key='24', clean=True),
+    '25': dict(src='tileset25_source.png', bg=(13, 17, 24), rects=RECTS25, ground=set(), out='ruins25', key='25', clean=True),
     '3': dict(src='tileset3_source.png', bg=(13, 16, 21), rects=RECTS3, ground=set(RECTS3), out='ruins3', key='3', square=TR),
 }
 

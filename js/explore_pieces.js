@@ -128,6 +128,8 @@ const FOOT = {
   hearthPot:[{w:.9,h:.25}], workbench:[{w:.9,h:.25}], pantry:[{w:.9,h:.3}], bookcase:[{w:.9,h:.15}], wardrobe:[{w:.9,h:.15}],
   cupboard:[{w:.9,h:.15}], altar:[{w:.9,h:.2}], pew:[{w:.9,h:.35}], brokenBed:[{w:.85,h:.3}], brokenTable:[{w:.8,h:.3}],
   wallRubble:[{w:.5,h:.2}], chest:[{w:.85,h:.4}], q_:[{w:.6,h:.3}],
+  // the lecture theatre (sheet 24): desks keep their front, the demonstration bench and lectern their foot
+  lt_bench:[{w:.98,h:.45}], lt_benchEnd:[{w:.9,h:.3}], lt_demo:[{w:.95,h:.35}], lt_lectern:[{w:.8,h:.2}], lt_wall:[{w:1,h:.2}],
   // small things on the floor (ExploreRooms.ITEM_SCALE): a sliver to stand by, barely in the way
   letter:[{w:.6,h:6}], scroll:[{w:.6,h:6}], journal:[{w:.6,h:6}], bookOpen:[{w:.6,h:6}], bookClosed:[{w:.6,h:6}],
   key:[{w:.6,h:6}], coins:[{w:.6,h:6}], pouch:[{w:.6,h:6}], potion:[{w:.6,h:6}], crockery:[{w:.7,h:6}],
@@ -153,6 +155,7 @@ const LIGHTS = {
   hoodedShrine:[[.5,.75]], bellTower:[[.5,.2],[.5,.85]], watchTower:[[.5,.9]], tiltedHouse:[[.45,.55],[.7,.5]],
   catacomb:[[.5,.6]], lightningRod:[[.5,.08,'lamp']], glassPatch:[[.5,.5]], frozenFountain:[[.5,.4]],
   wallPlasterWin:[[.5,.4]], wallStoneWin:[[.5,.4]], wallHearth:[[.5,.75,'lamp']], hearthPot:[[.5,.6,'lamp']], safeHearth:[[.5,.65,'lamp']],
+  lt_wallWindow:[[.5,.35]], lt_demo:[[.2,.12,'lamp']], lt_lectern:[[.5,.15]],
   readingDesk:[[.8,.12]], diningTable:[[.45,.08]], roundTable:[[.5,.12]], altar:[[.5,.4,'lamp']], cauldron:[[.5,.7]], crystalDisplay:[[.5,.35]],
   safeTable:[[.45,.25]], q_fire:[[.5,.5]], q_water:[[.5,.5]], q_ice:[[.5,.5]], q_lightning:[[.5,.5]], q_earth:[[.5,.5]], q_air:[[.5,.5]], q_arcane:[[.5,.5]], q_dark:[[.5,.5]],
   // inner districts

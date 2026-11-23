@@ -1968,7 +1968,7 @@ function draw(t){
     if(b.y<cam.y||b.y-s.h>cam.y+ch) continue;
     drawPiece(b.kind,b.x,b.y,undefined,b.scale);
   }
-  if(MAP.theatre&&Lecture) Lecture.under(ctx,t,MAP);           // the theatre's tiers and the stage's edge
+  if(MAP.theatre&&Lecture) Lecture.under(ctx,t,MAP,drawPiece);           // the theatre's tiers and the stage's edge
   if(!scene) drawExits(t);
   // walk-to marker
   if(target){
@@ -1990,7 +1990,7 @@ function draw(t){
   for(const c of crews) if(c.x>cam.x-120&&c.x<cam.x+cw+120&&c.y>cam.y&&c.y<cam.y+ch+160) list.push({crew:c,y:c.y});
   for(const n of npcs) if(present(n)) list.push({npc:n,y:n.y});
   for(const s of strollers) if(s.x>cam.x-80&&s.x<cam.x+cw+80&&s.y>cam.y&&s.y<cam.y+ch+120) list.push({stroll:s,y:s.y});
-  if(MAP.theatre&&Lecture) for(const a of Lecture.props(MAP,!!scene)) list.push({sc:a,y:a.y});
+  if(MAP.theatre&&Lecture) for(const a of Lecture.props(MAP,!!scene,drawPiece)) list.push({sc:a,y:a.y});
   if(scene) for(const a of scene.actors()) list.push({sc:a,y:a.y});
   list.sort((a,b)=>a.y-b.y);
   for(const o of list){
@@ -2182,7 +2182,7 @@ function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.
 const NC={cache:'no-cache'};
 // CORE sheets are the ground and the loot every map and the satchel use.
 const ATLAS_NAMES=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13',
-  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23'];
+  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23','ruins24','ruins25'];
 const CORE_ATLASES=['ruins','ruins2','ruins3','ruins13'];
 const atlasLoading={};
 function loadAtlas(i){

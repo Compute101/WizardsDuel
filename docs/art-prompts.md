@@ -55,7 +55,7 @@ as style references; replace `[DESCRIPTION]`):
 | `college_porter.png` | a college porter at a failing gate ward | `sprites/halberdier.png` | `PEOPLE.gateward` | a stout college porter in a bowler hat and a dark coat with brass buttons, both hands pressed against a glowing stone gatepost, looking alarmed |
 | `landlady.png` | Mrs Dorcas Pegg, landlady of the Wren's Nest | `sprites/hero/mid_woman_1.png` | `PEOPLE.landlady` | a broad rosy-cheeked woman, apron over a brown dress, sleeves rolled, a tankard in each hand (no gown) |
 | `squop.png` | Old Bartholomew "Squop" Finch, winks player | `sprites/hero/old_man_1.png` | `PEOPLE.squop` | a little old man in a shabby tweed coat and flat cap, a small cup and a handful of coloured tiddlywinks counters (no gown) |
-| `student_seated_1.png` … `_8.png` | the students at a lecture (four men, four women) | hero-creator looks (`STUDENTS`) and the four Wrenford students, standing figures cropped at the waist so the bench hides the rest | `STUDENTS` / `drawStudent` in `js/explore_lecture.js` (`SEAT_CROP`) | see **Seated students** below |
+| ~~`student_seated_1.png` … `_8.png`~~ | ~~the students at a lecture~~ | **Done:** the art arrived (`sprites/folk/source/student_seated_<n>.png`, cut by `python3 tools/cut_students.py` with two gown recolours each) | `STUDENTS` / `drawStudent` in `js/explore_lecture.js` | the prompt below, kept for more |
 | `proctor.png` | Mr Ravel, the Senior Proctor (not in the game yet) | none | planned | a severe thin man, black gown with velvet bands, white bands at the throat, a tall black hat, a short black staff of office |
 
 **Seated students** (a different pose from the other people, so a prompt of its own; attach the same two
@@ -107,7 +107,7 @@ scale as the earlier sheets (a floor tile about 100 px). Attach `sprites/ruins/t
 | Sheet | Stands in now | Used by |
 |---|---|---|
 | The Undercroft: sewers and culverts | the crypt room (stone walls, which have windows, and flagstones) | `TYPES.undercroft` / `undercroft2` in `js/explore_rooms.js` |
-| The lecture theatre | the chapel's pews (rows of short pews make the tiers), a lectern, the shop counter as the demonstration bench; the tiers' risers, the aisle runner, the stage edge and rail, the straw dummy, the blackboard and the notice board are drawn in code | `theatre()` in `js/explore_rooms.js` (layout), `under` / `drawDummy` / `drawBoard` / `drawNotice` in `js/explore_lecture.js` |
+| ~~The lecture theatre~~ | **Done:** sheets 24 (furniture) and 25 (back wall) arrived, cut into `ruins24` / `ruins25` (`RECTS24` / `RECTS25`, pieces `lt_*`). Not used yet: `lt_candelabra` (a wall sconce) and `lt_chandelier` (seen from below) | `theatre()` in `js/explore_rooms.js`, `drawDummy` / `drawBoard` in `js/explore_lecture.js` |
 
 **Sewer sheet prompt:**
 
