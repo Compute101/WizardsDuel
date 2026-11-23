@@ -254,7 +254,7 @@ function play(api, id, L, opts){
     // your seat: the left block, the middle tier, by the aisle; your partner beside you
     const seats=th.seats.slice().sort((a,b)=>Math.abs(a.row-2)-Math.abs(b.row-2)||a.side-b.side||a.toAisle-b.toAisle);
     const mine=seats[0], theirs=seats.find(s=>s!==mine&&s.row===mine.row&&s.side===mine.side);
-    S.mine=mine; S.stuLift=8; S.seatLift=S.stuLift;   // seated wizards sit on the same line as the students
+    S.mine=mine; S.stuLift=3; S.seatLift=S.stuLift;   // seated wizards sit on the same line as the students
     api.seat(mine.x, mine.y+1, mine.side?-1:1, S.seatLift, PERSON, SEAT_CROP);
     api.scene(scene);
     // paint everyone (cached after the first lecture), then let them in
