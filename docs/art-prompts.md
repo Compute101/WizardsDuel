@@ -216,7 +216,7 @@ Nothing in this section is in the game yet. Use the house rules above, plus the 
 
 #### 5a. Arena backdrops for Explore fights (`backgrounds/<name>.jpg`)
 
-Done so far (in `backgrounds/`, picked by `arenaHere` in `js/explore.js`): `wren_schools`, `wren_quad`, `wren_undercroft`, `wren_orrery`, `hollowmere`, `road`, `spirewatch`, `collegium`. Still to make: `cindergate`, `heights`, `drowned`, `quarry`, `frost`, `gloam`, `wound` (those places fight in `ruins` until then). When one arrives, add it to `ARENA_MAPS`. Attach `backgrounds/ruins.jpg` as the style reference and use this base prompt:
+Done so far (in `backgrounds/`, picked by `arenaHere` in `js/explore.js`): `wren_schools`, `wren_quad`, `wren_undercroft`, `wren_orrery`, `hollowmere`, `road`, `spirewatch`, `collegium`, `cindergate`, `heights`, `drowned`, `quarry`, `frost`, `gloam` (each sector's also used by its inner district). Still to make: `wound` (for the Wound itself, once it's built). When one arrives, add it to `ARENA_MAPS`. Attach `backgrounds/ruins.jpg` as the style reference and use this base prompt:
 
 > Painterly dark-fantasy battle backdrop in the same style, palette and lighting as the attached image. Wide 16:9, 1920×1080. A flat, open floor across the bottom third where two duelling wizards will stand at the left and right. No people, no creatures, no text. Moody, slightly dim, the most detail in the middle distance, a calm clear area in the centre for spell effects. Setting: [SETTING]
 
