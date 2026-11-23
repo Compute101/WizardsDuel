@@ -4,10 +4,14 @@
 #   python3 tools/music/tavern_set.py            -> audio/tavern/<name>.mid / .mp3 for all four
 #   python3 tools/music/tavern_set.py polka      -> just one
 #
-#   reel     The Squidger's Reel  D major, 4/4, crotchet 176   banjo, then fiddle and whistle; the quick one
-#   waltz    Lantern Light        F major, 3/4, crotchet 126   accordion, then flute; oom-pah-pah, the gentle one
-#   polka    Potted It!           B♭ major, 2/4, crotchet 112  clarinet, trombone, pub piano and tuba; bouncy
-#   slipjig  The Fen Road         E Dorian, 9/8, crotchet 138  recorder, lute and harp, tabor; a minstrel's tune
+#   reel     The Squidger's Reel  D major, 4/4, crotchet 176   fiddle leads, then the whistle; the quick one
+#   waltz    Lantern Light        F major, 3/4, crotchet 126   accordion, then fiddle; oom-pah-pah, the gentle one
+#   polka    Potted It!           B♭ major, 2/4, crotchet 112  accordion, fiddle on the trio; bouncy
+#   slipjig  The Fen Road         E Dorian, 9/8, crotchet 138  whistle, fiddle harmony; a wandering tune
+#
+# One house band plays everything (the user wanted the Wren's Nest's own band, not a new band per tune):
+# the jigs' line-up and mix, `BAND` (fiddle, tin whistle, accordion, steel guitar, double bass) plus the
+# bodhran and tambourine. Tunes differ by tempo, metre, key, who leads and the backing's groove.
 #
 # All background music: steady, warm, mixed quiet (about -24 dBFS RMS like the jigs), FluidSynth +
 # FluidR3_GM like the rest of the game's music. Each ends on a held chord, lets the reverb ring out, fades
@@ -23,6 +27,10 @@ TPB = 480
 TARGET_DB = -24.0
 RING = 2.6            # seconds after the last note for the reverb to die away (faded over its last second)
 PAUSE = 1.6           # seconds of silence after that, before the next tune
+
+# The house band, the same programs, levels, pans and reverb as tools/music/tavern.py's PARTS
+BAND = {'fiddle': (110, 100, 50, 60), 'whistle': (78, 84, 76, 60), 'accordion': (21, 80, 40, 50),
+        'guitar': (25, 72, 84, 45), 'bass': (32, 92, 64, 30)}
 
 PCN = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 PC = {n: i for i, n in enumerate(PCN)}
@@ -119,9 +127,7 @@ REEL_END = ('D', 'D5:2 A5 F#5 D6:4')
 
 
 def reel():
-    s = Piece('reel', 176, 4, 4, 4, {'banjo': (105, 88, 40, 40), 'fiddle': (110, 96, 60, 60),
-                                    'whistle': (78, 80, 80, 60), 'guitar': (25, 70, 90, 45),
-                                    'bass': (32, 92, 64, 30)})
+    s = Piece('reel', 176, 4, 4, 4, BAND)
 
     def back(start, bars, full):
         b = start
@@ -147,18 +153,18 @@ def reel():
 
     b = 0
     st = (0, 4)
-    # A A: banjo alone, then the fiddle joins it
-    s.melody('banjo', b, REEL_A, 74, strong=st, legato=0.6); back(b, REEL_A, False); b += 32
-    s.melody('fiddle', b, REEL_A, 76, strong=st); s.melody('banjo', b, REEL_A, 50, strong=st, legato=0.5)
+    # A A: fiddle alone, then the accordion doubles it an octave down
+    s.melody('fiddle', b, REEL_A, 76, strong=st); back(b, REEL_A, False); b += 32
+    s.melody('fiddle', b, REEL_A, 76, strong=st); s.melody('accordion', b, REEL_A, 52, strong=st, shift=-12)
     back(b, REEL_A, False); b += 32
     # B B: whistle up top, fiddle under it; then everyone
     s.melody('whistle', b, REEL_B, 70, strong=st, harm=('fiddle', 'third', 14)); back(b, REEL_B, False); b += 32
     s.melody('fiddle', b, REEL_B, 80, strong=st); s.melody('whistle', b, REEL_B, 58, strong=st)
-    s.melody('banjo', b, REEL_B, 46, strong=st, legato=0.5, shift=-12); back(b, REEL_B, True); b += 32
+    s.melody('accordion', b, REEL_B, 46, strong=st, shift=-12); back(b, REEL_B, True); b += 32
     # A once more, everyone, with the ending
     last = REEL_A[:-1] + [REEL_END]
     s.melody('fiddle', b, last, 80, strong=st); s.melody('whistle', b, last, 62, strong=st)
-    s.melody('banjo', b, last, 48, strong=st, legato=0.5)
+    s.melody('accordion', b, last, 46, strong=st, shift=-12)
     back(b, last[:-1], True); b += 28
     # the final bar: a held D chord, a bass and bodhran stop on the one
     for p in voice('D', 50) + [38, 50]:
@@ -178,11 +184,9 @@ WALTZ_END = [('C7', 'E5:2 D5 C5 G5 E5'), ('F', 'F5:6')]
 
 
 def waltz():
-    s = Piece('waltz', 126, 3, 3, 4, {'accordion': (21, 84, 46, 50), 'flute': (73, 86, 70, 70),
-                                     'guitar': (24, 76, 86, 50), 'harp': (46, 60, 30, 70),
-                                     'bass': (32, 90, 64, 30)})
+    s = Piece('waltz', 126, 3, 3, 4, BAND)
 
-    def back(start, bars, harp):
+    def back(start, bars, roll):
         b = start
         for i, (ch, _) in enumerate(bars):
             pcs = chord_pcs(ch)
@@ -192,11 +196,11 @@ def waltz():
             for q in (1, 2):                                         # oom-PAH-PAH
                 for k, p in enumerate(voice(ch, 57)):
                     s.note('guitar', b + q + k * 0.012, p, 0.6, 50 if q == 1 else 44)
-            if harp:                                                # rolling harp quavers
-                arp = voice(ch, 60) + [voice(ch, 72)[0]]
-                for k, p in enumerate(arp + arp[-2:0:-1][:2]):
-                    s.note('harp', b + k * 0.5, p, 0.9, 40 if k else 48)
-            s.note('drums', b, 41, 0.2, 40); s.note('drums', b + 1, 42, 0.1, 22); s.note('drums', b + 2, 42, 0.1, 22)
+            if roll:                                                # the whistle's soft broken chords up top
+                arp = voice(ch, 72)
+                for k, p in enumerate(arp + arp[1:2]):
+                    s.note('whistle', b + 0.5 + k * 0.5, p, 0.45, 30)
+            s.note('drums', b, 41, 0.2, 44); s.note('drums', b + 1, 54, 0.1, 18); s.note('drums', b + 2, 54, 0.1, 18)
             b += 3
         return b
 
@@ -204,18 +208,20 @@ def waltz():
     st = (0,)
     AB = WALTZ_A + WALTZ_B
     s.melody('accordion', b, AB, 70, strong=st); back(b, AB, False); b += 48
-    s.melody('flute', b, AB, 72, strong=st)
-    for i, (ch, _) in enumerate(AB):                                # accordion holds the chords under the flute
+    s.melody('fiddle', b, AB, 74, strong=st)
+    for i, (ch, _) in enumerate(AB):                                # accordion holds the chords under the fiddle
         for p in voice(ch, 60):
             s.note('accordion', b + i * 3, p, 2.8, 38)
     back(b, AB, True); b += 48
     last = WALTZ_A + WALTZ_B[:-2] + WALTZ_END
-    s.melody('flute', b, last, 70, strong=st); s.melody('accordion', b, last, 52, strong=st, shift=-12)
+    s.melody('fiddle', b, last, 72, strong=st); s.melody('accordion', b, last, 54, strong=st)
     back(b, last[:-1], True); b += 45
-    for p in voice('F', 53) + [41, 29]:                             # a long last chord, harp rolled up to it
+    for p in voice('F', 53) + [41, 29]:                             # a long last chord, strummed slowly up
         s.note('bass' if p < 45 else 'guitar', b, p, 5, 62)
-    for k, p in enumerate([53, 57, 60, 65, 69, 72, 77]):
-        s.note('harp', b + k * 0.12, p, 4.5, 46)
+    for k, p in enumerate([53, 57, 60, 65, 69]):
+        s.note('guitar', b + 0.4 + k * 0.08, p, 4.5, 50)
+    for p in voice('F', 60):
+        s.note('accordion', b, p, 4.5, 46)
     s.end = b + 5.5
     return s
 
@@ -233,43 +239,42 @@ POLKA_END = [('Bb', 'Bb4 -:1 F4 Bb4'), ('Bb', 'Bb5 -:3')]
 
 
 def polka():
-    s = Piece('polka', 112, 2, 2, 4, {'clarinet': (71, 92, 54, 50), 'trombone': (57, 76, 76, 50),
-                                     'piano': (3, 70, 40, 40), 'tuba': (58, 88, 64, 30)})
+    s = Piece('polka', 112, 2, 2, 4, BAND)
 
     def back(start, bars, snare):
         b = start
         for i, (ch, _) in enumerate(bars):
             pcs = chord_pcs(ch)
-            root = 34 + ((pcs[0] - 10) % 12)                        # tuba from B♭1 up
-            s.note('tuba', b, root if i % 2 == 0 else root + 7 - (12 if root + 7 > 46 else 0), 0.45, 88)
-            for q in (0.5, 1.5):                                     # oom-PAH: pub piano off the beat
+            root = 34 + ((pcs[0] - 10) % 12)                        # bass from B♭1 up
+            s.note('bass', b, root if i % 2 == 0 else root + 7 - (12 if root + 7 > 46 else 0), 0.45, 90)
+            for q in (0.5, 1.5):                                     # oom-PAH: guitar chops off the beat
                 for k, p in enumerate(voice(ch, 58)):
-                    s.note('piano', b + q, p, 0.3, 54)
-            s.note('drums', b, 36, 0.2, 54)
-            s.note('drums', b + 0.5, 38 if snare else 37, 0.1, 30 if snare else 40)
-            s.note('drums', b + 1, 36, 0.2, 44)
-            s.note('drums', b + 1.5, 38 if snare else 37, 0.1, 30 if snare else 40)
+                    s.note('guitar', b + q + k * 0.008, p, 0.22, 56)
+            s.note('drums', b, 41, 0.2, 60); s.note('drums', b + 1, 41, 0.2, 48)
+            s.note('drums', b + 0.5, 64, 0.1, 30); s.note('drums', b + 1.5, 64, 0.1, 34)
+            if snare:
+                s.note('drums', b + 0.5, 54, 0.1, 30); s.note('drums', b + 1.5, 54, 0.1, 30)
             b += 2
         return b
 
     b = 0
     st = (0, 2)
-    s.melody('clarinet', b, POLKA_A, 74, strong=st, legato=0.8); back(b, POLKA_A, False); b += 32
-    s.melody('clarinet', b, POLKA_A, 76, strong=st, legato=0.8, harm=('trombone', 'third', 16))
+    s.melody('accordion', b, POLKA_A, 76, strong=st, legato=0.75); back(b, POLKA_A, False); b += 32
+    s.melody('accordion', b, POLKA_A, 76, strong=st, legato=0.75, harm=('fiddle', 'third', 18))
     back(b, POLKA_A, True); b += 32
-    # the trio, a fourth up in E♭: trombone takes the tune, then the clarinet over it
-    s.melody('trombone', b, POLKA_B, 78, strong=st, shift=-12, legato=0.85); back(b, POLKA_B, False); b += 32
-    s.melody('clarinet', b, POLKA_B, 74, strong=st, legato=0.8)
-    s.melody('trombone', b, POLKA_B, 60, strong=st, shift=-12, legato=0.85); back(b, POLKA_B, True); b += 32
+    # the trio, a fourth up in E♭: the fiddle takes the tune, then the whistle over it
+    s.melody('fiddle', b, POLKA_B, 76, strong=st, legato=0.85); back(b, POLKA_B, False); b += 32
+    s.melody('whistle', b, POLKA_B, 66, strong=st, legato=0.8, shift=12)
+    s.melody('fiddle', b, POLKA_B, 62, strong=st, legato=0.85); back(b, POLKA_B, True); b += 32
     last = POLKA_A[:-1] + POLKA_END
-    s.melody('clarinet', b, last, 78, strong=st, legato=0.8, harm=('trombone', 'third', 14))
-    s.melody('piano', b, last, 46, strong=st, legato=0.5, shift=12)
+    s.melody('accordion', b, last, 78, strong=st, legato=0.75, harm=('fiddle', 'third', 14))
+    s.melody('whistle', b, last, 52, strong=st, legato=0.7, shift=12)
     back(b, last[:-2], True); b += 30
     # the button: "da-da ... DUM"
-    s.note('tuba', b, 34, 0.4, 90); s.note('tuba', b + 2, 34, 0.5, 96)
+    s.note('bass', b, 34, 0.4, 92); s.note('bass', b + 2, 34, 0.6, 98)
     for p in voice('Bb', 58):
-        s.note('piano', b + 2, p, 0.6, 70)
-    s.note('drums', b, 36, 0.2, 60); s.note('drums', b + 2, 36, 0.3, 74); s.note('drums', b + 2, 49, 1.0, 44)
+        s.note('guitar', b + 2, p, 0.6, 70); s.note('accordion', b + 2, p, 0.6, 64)
+    s.note('drums', b, 41, 0.2, 64); s.note('drums', b + 2, 41, 0.3, 80); s.note('drums', b + 2, 54, 0.3, 44)
     s.end = b + 3
     return s
 
@@ -287,9 +292,7 @@ SLIP_END = ('E', 'E5:6 -:3')
 
 
 def slipjig():
-    s = Piece('slipjig', 138, 4.5, 9, 8, {'recorder': (74, 90, 56, 70), 'lute': (24, 82, 80, 50),
-                                         'harp': (46, 66, 34, 70), 'viola': (41, 60, 44, 70),
-                                         'bass': (43, 70, 64, 40)})
+    s = Piece('slipjig', 138, 4.5, 9, 8, BAND)
 
     def back(start, bars, full):
         b = start
@@ -297,35 +300,37 @@ def slipjig():
             v = voice(ch, 52)
             pcs = chord_pcs(ch)
             root = 40 + ((pcs[0] - 4) % 12)
-            for beat in range(3):                                   # lute: root, then the chord, each dotted beat
+            for beat in range(3):                                   # guitar picked: root, then the chord, each dotted beat
                 t = b + beat * 1.5
-                s.note('lute', t, v[0] if beat != 1 else v[0] - 12 + (12 if v[0] - 12 < 40 else 0), 0.45, 60)
-                s.note('lute', t + 0.5, v[1], 0.45, 46); s.note('lute', t + 1.0, v[2], 0.45, 46)
+                s.note('guitar', t, v[0] if beat != 1 else v[0] - 12 + (12 if v[0] - 12 < 40 else 0), 0.45, 60)
+                s.note('guitar', t + 0.5, v[1], 0.45, 44); s.note('guitar', t + 1.0, v[2], 0.45, 44)
             if full:
-                s.note('bass', b, root - 12 if root > 47 else root, 4.2, 54)
-            s.note('drums', b, 45, 0.2, 52); s.note('drums', b + 1.5, 45, 0.2, 34)
-            s.note('drums', b + 3, 45, 0.2, 40); s.note('drums', b + 4, 76, 0.1, 22)   # tabor, and a woodblock tick
+                s.note('bass', b, root - 12 if root > 47 else root, 1.3, 76); s.note('bass', b + 3, root - 12 if root > 47 else root, 1.3, 64)
+            s.note('drums', b, 41, 0.2, 58); s.note('drums', b + 1.5, 64, 0.2, 30)
+            s.note('drums', b + 3, 41, 0.2, 44); s.note('drums', b + 4, 64, 0.1, 26)   # bodhran
             b += 4.5
         return b
 
     b = 0
     st = (0, 3, 6)
-    s.melody('recorder', b, SLIP_A, 72, strong=st); back(b, SLIP_A, False); b += 36
-    s.melody('harp', b, SLIP_A, 66, strong=st, legato=1.4); s.melody('recorder', b, SLIP_A, 48, strong=st, shift=12)
-    back(b, SLIP_A, True); b += 36
-    s.melody('recorder', b, SLIP_B, 72, strong=st, harm=('viola', 'third', 18)); back(b, SLIP_B, True); b += 36
-    s.melody('recorder', b, SLIP_B, 74, strong=st); s.melody('harp', b, SLIP_B, 50, strong=st, shift=-12, legato=1.2)
+    s.melody('whistle', b, SLIP_A, 72, strong=st); back(b, SLIP_A, False); b += 36
+    s.melody('fiddle', b, SLIP_A, 74, strong=st); back(b, SLIP_A, True); b += 36
+    s.melody('whistle', b, SLIP_B, 72, strong=st, harm=('fiddle', 'third', 18)); back(b, SLIP_B, True); b += 36
+    s.melody('accordion', b, SLIP_B, 72, strong=st)
+    for i, (ch, _) in enumerate(SLIP_B):                            # the fiddle drones a long chord tone under it
+        s.note('fiddle', b + i * 4.5, voice(ch, 55)[0], 4.2, 40)
     back(b, SLIP_B, True); b += 36
     last = SLIP_A[:-1] + [SLIP_END]
-    s.melody('recorder', b, last, 74, strong=st, harm=('viola', 'third', 18))
+    s.melody('whistle', b, last, 74, strong=st, harm=('fiddle', 'third', 18))
+    s.melody('accordion', b, last, 46, strong=st, shift=-12)
     back(b, last[:-1], True); b += 31.5
-    # end bright: E major, harp rolled up to it
-    for p in voice('E', 52):
-        s.note('lute', b, p, 4, 60)
-    s.note('bass', b, 40, 4.5, 60)
-    for k, p in enumerate([52, 56, 59, 64, 68, 71, 76]):
-        s.note('harp', b + k * 0.1, p, 4, 46)
-    s.note('drums', b, 45, 0.3, 56)
+    # end bright: E major, strummed up
+    for k, p in enumerate([52, 56, 59, 64, 68]):
+        s.note('guitar', b + k * 0.06, p, 4, 58)
+    for p in voice('E', 56):
+        s.note('accordion', b, p, 4, 48)
+    s.note('bass', b, 40, 4.5, 66)
+    s.note('drums', b, 41, 0.3, 64)
     s.end = b + 4.5
     return s
 
@@ -349,7 +354,7 @@ def save(s, path):
                     mido.Message('control_change', channel=c, control=10, value=pan),
                     mido.Message('control_change', channel=c, control=91, value=rev)]
         else:
-            head = [mido.Message('control_change', channel=9, control=7, value=88),
+            head = [mido.Message('control_change', channel=9, control=7, value=90),
                     mido.Message('control_change', channel=9, control=91, value=40)]
         for m in head:
             tr.append(m.copy(time=0))

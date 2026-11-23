@@ -105,7 +105,7 @@ const charOf=k=>CHARS[k]||{};
 // Web Audio (the next tune is fetched while one plays), an <audio> element if that's missing; fades in and
 // out. The ♪ button turns it off (opts.music). It starts from the tap that opened the table, so phones allow it.
 const TAVERN_TUNES=['jigs','reel','waltz','polka','slipjig'], TAVERN_VOL=0.55;
-const tavernSrc=n=>'audio/tavern/'+n+'.mp3?v=1';
+const tavernSrc=n=>'audio/tavern/'+n+'.mp3?v=2';
 const Tavern=(()=>{
   let ctx=null, gain=null, src=null, el=null, want=false, order=[], pos=-1, token=0;
   const bufs={};
