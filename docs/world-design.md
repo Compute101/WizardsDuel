@@ -391,6 +391,13 @@ About 45–60 minutes a term, 2½–3 hours to graduation, with a fight (real or
 
 ### As built (where it differs from the plan above)
 
+- **Lectures are played live** in the Examination Schools' lecture theatre (`js/explore_lecture.js`): the
+  students file in and sit on seven tiers of benches either side of a stepped aisle, you take your seat
+  (Wil / Nell beside you once met), and the lecturer walks the stage talking in timed speech bubbles,
+  chalks the board, traces the element's four glyphs in the air and casts it at a straw dummy (each
+  element its own effect; Dr Crowe puts the lamps out). Students mutter, gasp, laugh and take notes;
+  your partner whispers. Then the lecturer asks the two questions. Tap to hurry a line; Skip jumps to
+  the questions. About a minute and a half each.
 - **Timetable:** lectures can be heard any time, not at set hours; a term just limits how many electives
   you may have heard (one by Michaelmas, two by Hilary, three by Trinity). Your own element's lecture is
   a bonus (a potion for answering well), since Matriculation already taught it.

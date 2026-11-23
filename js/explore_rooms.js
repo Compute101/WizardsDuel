@@ -52,7 +52,9 @@ const TYPES = {
   remnant:  {name:'The Remnant Library', floor:'y', wall:'panel', back:[['bookcase2'],['bookLadder'],['bookcase2'],['bookcase']], floor_:[['lectern'],['readingDesk'],['bookPile'],['rug']], big:true, size:[15,10], shelves:true, open:true},
   // the University Year (js/explore_year.js): the lecture theatre and examination hall; the Undercroft
   // under the Covered Market (a crypt for now: sewer art is still to come, docs/art-prompts.md)
-  lectures: {name:'The Examination Schools', floor:'y', wall:'panel', back:[['lectern'],['bookcase2'],['bookcase']], floor_:[['pew'],['pew2'],['pew'],['pew2']], rows:true, open:true, big:true, size:[15,9], npcs:['lecturer','examiner']},
+  // a real lecture theatre (theatre: tiers of benches looking down on a stage; the stage is at the front,
+  // the south, so the seated students face it as their sprites do): built by `theatre` below
+  lectures: {name:'The Examination Schools', floor:'w', wall:'panel', back:[], floor_:[], theatre:true, open:true, big:true, size:[17,10], npcs:[]},
   undercroft:{name:'The Undercroft', floor:'l', wall:'stone', back:[['barricade'],['jarShelf'],['weaponRack']], floor_:[['pantry'],['workbench'],['bookPile']], big:true, open:true},
   undercroft2:{name:'Beneath the Orrery', floor:'l', wall:'stone', back:[['altar'],['crystalDisplay']], floor_:[['bookPile'],['alembic']], big:true, open:true, npcs:['ashgrove','partnerLost']},
   lab:      {name:'The Warded Laboratory', floor:'l', wall:'stone', back:[['jarShelf'],['crystalDisplay'],['jarShelf']], floor_:[['cauldron'],['alembic'],['workbench'],['herbs'],['alembic']], big:true},
@@ -183,10 +185,11 @@ function build(spec,rects){
   const cols=C+2, rows=R+4, W=cols*T, H=rows*T;
   const floor=ruined&&D.floor==='w'?'b':D.floor;
   const ground=[]; for(let y=0;y<rows;y++){ let row=''; for(let x=0;x<cols;x++) row+=(x>=1&&x<=C&&y>=2&&y<2+R)?floor:'v'; ground.push(row); }
-  const objects=[], boxes=[], lore={}, ev=rollEvent(spec,r);
+  if(D.theatre) for(let y=0;y<rows;y++) if(y>=2+R-3&&y<2+R) ground[y]=ground[y].replace(/[^v]/g,'l');   // the stage: flagstones
+  const objects=[], boxes=[], lore={}, npcs=[], ev=rollEvent(spec,r);
   const sz=k=>{ const q=rects[k]; return {w:q[2]*scaleOf(k), h:q[3]*scaleOf(k)}; };
   const put=(k,x,y,extra)=>{ if(!rects[k]) return null; const e=Object.assign({scale:scaleOf(k)},extra||{}); objects.push([k,Math.round(x),Math.round(y),e]);
-    const o={kind:k,x,y,scale:scaleOf(k)}; for(const b of P.footBoxes(rects,o)) boxes.push(b); return o; };
+    const o={kind:k,x,y,scale:e.scale}; for(const b of P.footBoxes(rects,o)) boxes.push(b); return o; };
   const X0=T, X1=(C+1)*T, Y0=2*T, Y1=(2+R)*T, DX=W/2;
   // back wall
   const walls=WALLS[D.wall]; let wx=X0-8, i=0;
@@ -244,6 +247,34 @@ function build(spec,rects){
       }
     }
   }
+  // the lecture theatre (js/explore_lecture.js plays the lectures in it): seven tiers of benches either
+  // side of a stepped aisle, then the stage across the front: the lectern, the demonstration bench, a
+  // straw dummy and a blackboard (both drawn by js/explore_lecture.js until their art arrives,
+  // docs/art-prompts.md), the lecture list by the door and Professor Thorley at her desk
+  let theatreInfo=null;
+  function theatre(){
+    const PW=0.36, pw=rects.pew[2]*PW, ph=rects.pew[3]*PW, step=0.85*T, nRows=7, aisle=0.75*T;
+    const stageY=Y1-3*T, rowYs=[], seats=[];
+    const sides=[[X0+0.25*T, DX-aisle],[DX+aisle, X1-0.25*T]];
+    for(let k=0;k<nRows;k++){
+      const y=Y0+1.3*T+k*step; rowYs.push(y);
+      sides.forEach(([a,b],side)=>{
+        const n=Math.floor((b-a+2)/(pw-2)), span=n*(pw-2)+2, x0=side?a:b-span;   // flush with the aisle
+        for(let i=0;i<n;i++){ const cx=x0+pw/2+i*(pw-2); put('pew',cx,y,{scale:PW});
+          for(const f of [-0.21,0.21]) seats.push({x:Math.round(cx+f*pw), y:Math.round(y), row:k, side, toAisle:Math.abs(cx+f*pw-DX)}); }
+      });
+    }
+    put('lectern',DX-2.1*T,stageY+1.55*T,{scale:0.3});
+    put('counter',DX+1.9*T,Y1-0.55*T,{scale:0.34});
+    put('readingDesk',X1-1.3*T,Y1-0.55*T);
+    put('bookPile',X1-0.55*T,stageY+0.7*T);
+    const dummy=[Math.round(DX+4.6*T),Math.round(stageY+1.45*T)], board=[Math.round(DX-4.7*T),Math.round(stageY+1.2*T)];
+    blocks.push({x:dummy[0]-16,y:dummy[1]-10,w:32,h:12},{x:board[0]-48,y:board[1]-10,w:96,h:12});
+    npcs.push({role:'lecturer', x:Math.round(X0+1.5*T), y:Math.round(Y1-0.3*T)}, {role:'examiner', x:Math.round(X1-2.6*T), y:Math.round(Y1-0.45*T)});
+    return {rows:rowYs, seats, stageY, pewH:Math.round(ph), aisle:[DX-aisle,DX+aisle], dummy, board, notice:[Math.round(X0+1.5*T),Math.round(Y1-0.3*T)],
+      spots:{centre:[DX-0.2*T,stageY+1.3*T], lectern:[DX-1.45*T,stageY+1.4*T], bench:[DX+1.9*T,Y1-0.95*T], dummy:[DX+2.9*T,stageY+1.35*T], board:[DX-3.5*T,stageY+1.3*T],
+        wing:[X0+0.6*T,stageY+1.6*T], door:[DX,Y1-0.2*T]}};
+  }
   // furniture
   let bx=X0+20;
   for(const choices of D.back){
@@ -272,6 +303,8 @@ function build(spec,rects){
     for(const choices of D.floor_){ const k=pick(choices), s=sz(k), p=spot(s.w,s.h,12,200);
       if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:FS,decal:1}]); else put(k,p[0],p[1]); } }
     yMin=0;                                         // books may lie anywhere, aisles included
+  } else if(D.theatre){
+    theatreInfo=theatre();
   } else if(D.rows){                                       // chapel pews in two columns of rows
     for(let y=Y0+2.4*T;y<Y1-T*0.6;y+=T*1.15){ put(pick(['pew','pew2']),DX-T*2.1,y); put(pick(['pew','pew2']),DX+T*2.1,y); }
   } else {
@@ -288,7 +321,7 @@ function build(spec,rects){
   if(ruined) for(let n=0;n<2;n++){ const p=spot(60,30,6); if(p) put('crockery',p[0],p[1]); }
   // the encounter's pieces
   const centre=spot(50,60,16)||[DX,Y1-T*1.5];
-  const npcs=[], echoes=[];
+  const echoes=[];
   if(ev.type==='treasure'){
     const p=spot(80,60,10)||centre;
     put(ev.chest?'chest':(ev.gold>20?'coinsL':'coinsM'),p[0],p[1],{lore:'ev'});
@@ -354,7 +387,7 @@ function build(spec,rects){
   const name=ruined?D.name.replace(/^An? /,'A Ruined ').replace('A Ruined Alchemist','A Ruined Alchemist'):D.name;
   return {id:spec.id, name:(spec.label||name), cols, rows, seed:hash(spec.id)&0xffff, ground, objects, lore, blocks, glows:[], echoes, walk:[],
     spawns:{door:[DX,Y1-12]}, exits:[{x:DX-T,y:Y1+8,w:2*T,h:T*0.8,dir:'S',label:'Outside',to:'out'}],
-    interior:true, type, ev, npcs, flow:'S'};
+    interior:true, type, ev, npcs, flow:'S', theatre:theatreInfo};
 }
 
 window.ExploreRooms={build, BOOKS, TYPES, RS, FS, ITEM_SCALE, hash};

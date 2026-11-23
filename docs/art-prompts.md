@@ -34,14 +34,14 @@ as style references; replace `[DESCRIPTION]`):
 
 | File | Who | Stands in now | Used by | [DESCRIPTION] |
 |---|---|---|---|---|
-| `lect_fire.png` | Dr Ignatius Pyle, Fire lecturer | the lecture list's figure (`sprites/hero/old_man_2.png`) | `PEOPLE.lecturer` in `js/explore_year.js` (one figure stands for all lecturers until theirs arrive) | a stout middle-aged man, bald, no eyebrows, soot smudges on his face, a scorched black academic gown with a singed hem over a red waistcoat, holding long iron tongs with a small flame at their tip, cheerful |
-| `lect_water.png` | Miss Perpetua Wells, Water | as above | as above | a tall thin woman in her forties, damp hair plastered flat in a bun, a sea-blue gown dripping at the hem, sleeves rolled up, a punt pole over her shoulder, a small swirl of water above her other palm |
-| `lect_air.png` | Professor Halcyon Drift, Air | as above | as above | a lanky old man mid-stride, long white hair and gown swept sideways by wind, loose papers flying from his hand, a pale grey-white waistcoat, a small whirl of wind at his fingertips |
-| `lect_earth.png` | Dr Agnes Barrow, Earth | as above | as above | a sturdy middle-aged woman, sun-browned, short practical hair under a wide-brimmed brown field hat, a brown canvas coat with many pockets over a black gown, a geologist's hammer in one hand and a rough stone in the other, dusty boots |
-| `lect_lightning.png` | Dr Erasmus Fulmer, Lightning | as above | as above | a wiry young-looking man, wild hair standing straight up on end, round spectacles, a yellow-and-black waistcoat under a black gown, small blue-white sparks crackling between his raised fingers, an eager grin |
-| `lect_ice.png` | Professor Ingrid Rime, Ice (also On Wards) | as above | as above | a tall stern woman in her fifties, a big white fur hat and a fur-collared pale blue coat over a black gown, frost on her shoulders, a slim staff tipped with an ice crystal, breath misting |
-| `lect_arcane.png` | Dr Oriel Nightingale, Arcane (also On Unmaking) | as above | as above | a slight elderly scholar of no particular age, neat silver hair, a deep violet gown embroidered with tiny stars, half-moon spectacles, an open book in one hand with glowing violet runes floating off its pages |
-| `lect_dark.png` | Dr Lavinia Crowe, Dark | as above | as above | a gaunt woman in her sixties, a white streak in black hair, a high-collared black gown, a faint scar over one eye, a hooded shuttered lantern held low giving almost no light, purple shadow curling at her feet, calm and unsettling |
+| `lect_fire.png` | Dr Ignatius Pyle, Fire lecturer | a look painted from the hero creator (`mid_man_1`, black robe, scarlet trim) | `LOOKS` in `js/explore_lecture.js` (each lecturer's stand-in; `drawLecturer` draws it and casts from its staff glow) | a stout middle-aged man, bald, no eyebrows, soot smudges on his face, a scorched black academic gown with a singed hem over a red waistcoat, holding a short black staff topped with an iron fire-basket with a small flame in it, cheerful, mid-gesture with his free hand |
+| `lect_water.png` | Miss Perpetua Wells, Water | as above (`mid_woman_3`, teal) | as above | a tall thin woman in her forties, damp hair plastered flat in a bun, a sea-blue gown dripping at the hem, sleeves rolled up, holding a driftwood staff topped with a curl of water, a small swirl of water above her other palm |
+| `lect_air.png` | Professor Halcyon Drift, Air | as above (`old_man_2`, ash grey) | as above | a lanky old man mid-stride, long white hair and gown swept sideways by wind, loose papers flying from his free hand, a pale grey-white waistcoat, a pale silverwood staff with a small whirl of wind at its tip |
+| `lect_earth.png` | Dr Agnes Barrow, Earth | as above (`mid_woman_2`, russet) | as above | a sturdy middle-aged woman, sun-browned, short practical hair under a wide-brimmed brown field hat, a brown canvas coat with many pockets over a black gown, an oak staff topped with a rough lump of quartz in one hand and a geologist's hammer at her belt, dusty boots |
+| `lect_lightning.png` | Dr Erasmus Fulmer, Lightning | as above (`young_man_1`, black) | as above | a wiry young-looking man, wild hair standing straight up on end, round spectacles, a yellow-and-black waistcoat under a black gown, a staff tipped with a copper coil crackling with blue-white sparks, small sparks between the fingers of his other hand, an eager grin |
+| `lect_ice.png` | Professor Ingrid Rime, Ice (also On Wards) | as above (`old_woman_3`, midnight) | as above | a tall stern woman in her fifties, a big white fur hat and a fur-collared pale blue coat over a black gown, frost on her shoulders, a slim staff tipped with an ice crystal, breath misting |
+| `lect_arcane.png` | Dr Oriel Nightingale, Arcane (also On Unmaking) | as above (`old_man_4`, violet) | as above | a slight elderly scholar of no particular age, neat silver hair, a deep violet gown embroidered with tiny stars, half-moon spectacles, a slim blackthorn staff with a violet light at its tip in one hand and an open book in the other with glowing violet runes floating off its pages |
+| `lect_dark.png` | Dr Lavinia Crowe, Dark | as above (`old_woman_4`, black) | as above | a gaunt woman in her sixties, a white streak in black hair, a high-collared black gown, a faint scar over one eye, an ebony staff topped with a hooded shuttered lantern giving almost no light, purple shadow curling at her feet, calm and unsettling |
 | `examiner.png` | Professor Thorley, Chair of Examiners | `sprites/hero/old_woman_2.png` | `PEOPLE.examiner` | a small, terrifying elderly don, black gown with a scarlet-lined hood, a mortarboard, a fat ledger under one arm and a pen in the other hand, peering over spectacles |
 | `wil.png` | Wil Ashby, tutorial partner (if you play a woman) | a look painted from the hero creator (`young_man_2`, russet robe) | `ensureChars` in `js/explore_year.js` | a wiry young man about 19, tousled brown hair, freckles, a student's short black commoner's gown thrown over a patched gleaner's leather jerkin and boots, a satchel, a knife at his belt, a cocky grin, fists half-raised |
 | `nell.png` | Nell Ashby, tutorial partner (if you play a man) | a look painted from the hero creator (`young_woman_2`, russet robe) | as above | a wiry young woman about 19, cropped brown hair, freckles, a student's short black commoner's gown thrown over a patched gleaner's leather jerkin and boots, a satchel, a knife at her belt, a cocky grin, fists half-raised |
@@ -55,7 +55,23 @@ as style references; replace `[DESCRIPTION]`):
 | `college_porter.png` | a college porter at a failing gate ward | `sprites/halberdier.png` | `PEOPLE.gateward` | a stout college porter in a bowler hat and a dark coat with brass buttons, both hands pressed against a glowing stone gatepost, looking alarmed |
 | `landlady.png` | Mrs Dorcas Pegg, landlady of the Wren's Nest | `sprites/hero/mid_woman_1.png` | `PEOPLE.landlady` | a broad rosy-cheeked woman, apron over a brown dress, sleeves rolled, a tankard in each hand (no gown) |
 | `squop.png` | Old Bartholomew "Squop" Finch, winks player | `sprites/hero/old_man_1.png` | `PEOPLE.squop` | a little old man in a shabby tweed coat and flat cap, a small cup and a handful of coloured tiddlywinks counters (no gown) |
+| `student_seated_1.png` … `_8.png` | the students at a lecture (four men, four women) | hero-creator looks (`STUDENTS`) and the four Wrenford students, standing figures cropped at the waist so the bench hides the rest | `STUDENTS` / `drawStudent` in `js/explore_lecture.js` (`SEAT_CROP`) | see **Seated students** below |
 | `proctor.png` | Mr Ravel, the Senior Proctor (not in the game yet) | none | planned | a severe thin man, black gown with velvet bands, white bands at the throat, a tall black hat, a short black staff of office |
+
+**Seated students** (a different pose from the other people, so a prompt of its own; attach the same two
+references, one student per image, and ask for four men and four women, varied in hair, skin and gown
+colour, mostly black commoners' gowns):
+
+> Pixel-art sprite in exactly the same style, scale and level of detail as the attached two wizards: a
+> university student of about 19 SITTING on a bench we can't see, seen in three-quarter view facing right
+> as if watching a lecture below and to the right. Upper body to mid-thigh only, the bottom edge of the
+> image cuts across the lap. A short black student's gown over [CLOTHES], a quill in the right hand and a
+> small open notebook on the lap, a short student's staff leaning on the left shoulder. [HAIR AND FACE].
+> Hard pixel edges, no glow halo. Plain flat pure green (#00FF00) background, nothing else in the
+> picture, no text. No green anywhere on the figure. The figure about 460 pixels tall (the same scale as
+> the references' upper bodies).
+
+A second pose of each (writing, head down) would let them take notes for real; the code bobs them now.
 
 The Bulldogs use the halberdier (`sprites/halberdier.png`), which fits; Clemency's Echo in the finale
 uses the weak Water Echo (`sprites/echoes/water_weak.png`), which also fits, though a girl-shaped one
@@ -91,7 +107,7 @@ scale as the earlier sheets (a floor tile about 100 px). Attach `sprites/ruins/t
 | Sheet | Stands in now | Used by |
 |---|---|---|
 | The Undercroft: sewers and culverts | the crypt room (stone walls, which have windows, and flagstones) | `TYPES.undercroft` / `undercroft2` in `js/explore_rooms.js` |
-| The lecture theatre | the chapel's pews and a lectern | `TYPES.lectures` |
+| The lecture theatre | the chapel's pews (rows of short pews make the tiers), a lectern, the shop counter as the demonstration bench; the tiers' risers, the aisle runner, the stage edge and rail, the straw dummy, the blackboard and the notice board are drawn in code | `theatre()` in `js/explore_rooms.js` (layout), `under` / `drawDummy` / `drawBoard` / `drawNotice` in `js/explore_lecture.js` |
 
 **Sewer sheet prompt:**
 
@@ -104,13 +120,32 @@ scale as the earlier sheets (a floor tile about 100 px). Attach `sprites/ruins/t
 > chalk ritual circle drawn on the floor, a cluster of candles on the floor, rats (two small poses).
 > Loose pieces with 16 pixel gaps on a flat #101217 background, no labels, no dividers, no text.
 
-**Lecture theatre prompt:**
+**Lecture theatre prompt** (the room is seen from above and slightly in front, like the other interiors;
+the stage is at the bottom of the screen and the benches face down towards it, the way the pews on
+sheet 12 face; attach `tileset10_source.png` and `tileset12_source.png`):
 
-> A sprite sheet of top-down pixel-art furniture for a university lecture theatre, in exactly the same
-> style, scale and palette as the attached sheets: a long scorched stone demonstration bench, a raised
-> lectern on a step, tiered wooden benches in three lengths (seen from above and slightly in front), a
-> large blackboard on an easel covered in glyphs, a straw training dummy on a stand, a burnt straw
-> dummy. Loose pieces with 16 pixel gaps on a flat #101217 background, no labels, no dividers, no text.
+> A sprite sheet of pixel-art furniture for a university lecture theatre, in exactly the same style,
+> scale, palette and top-down-slightly-in-front viewpoint as the attached sheets. Everything faces DOWN
+> the picture, towards the viewer: a long tiered lecture bench in three lengths (2, 4 and 6 seats) made of
+> dark oak, a backrest with a narrow writing ledge on top for the row behind, inkwells and a few books on
+> the ledge; a carved bench end panel; a tier step strip (the edge of a raised wooden floor, a dark
+> riser with a lit oak nosing) that tiles left to right; aisle steps with a worn red runner, which tile
+> upwards; the stage's front edge: a low stone step with a brass rail on short posts, tiling left to
+> right; a raised lecturer's dais; a carved lectern with an open book; a long scorched stone
+> demonstration bench with burn marks, a brass brazier, a bowl of water and a stack of rocks on it; a
+> large blackboard on an oak easel with chalk glyphs on it; a blank version of the same blackboard; a straw
+> training dummy on a wooden stand (pristine), the same dummy charred black and smoking, and the same
+> dummy frosted white; a notice board on two posts covered in pinned lecture lists; a tall wall candelabra;
+> an iron chandelier with candles seen from below. Loose pieces with 16 pixel gaps on a flat #101217
+> background, no labels, no dividers, no text.
+
+**Lecture theatre back wall** (sheet 10's wall pieces are about 150 px wide; ask for the same height):
+
+> Pixel-art back-wall pieces for a grand university lecture theatre, in exactly the same style, scale
+> and height as the attached wall pieces: a panelled oak wall with a tall arched leaded window and
+> stone mullions, a plain panelled oak wall, a panelled wall with a painted crest of an open book and a
+> wren, and a panelled wall with a framed portrait of a stern old scholar. Loose pieces with 16 pixel
+> gaps on a flat #101217 background, no labels, no text.
 
 ---
 
