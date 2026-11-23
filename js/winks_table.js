@@ -99,13 +99,37 @@ const spells=w=>st(w).c.spells;
 const charOf=k=>CHARS[k]||{};
 
 // ── Tavern music ───────────────────────────────────────────
-// audio/tavern_theme.mp3 (tools/music/tavern.py): two jigs, a seamless 77 s loop, quiet and cheery.
-// A Web Audio loop for a gapless join, an <audio> loop if that's missing; fades in and out. The ♪
-// button turns it off (opts.music). It starts from the tap that opened the table, so phones allow it.
-const TAVERN_SRC='audio/tavern_theme.mp3?v=1', TAVERN_VOL=0.55;
+// A playlist (audio/tavern/, tools/music/tavern.py and tavern_set.py): Squop's jigs, a reel, a waltz, a
+// polka and a slip jig, at different tempos, quiet and cheery. Each ends with a pause of its own, and the
+// next one starts when it's over; the order is shuffled each time round, never the same tune twice running.
+// Web Audio (the next tune is fetched while one plays), an <audio> element if that's missing; fades in and
+// out. The ♪ button turns it off (opts.music). It starts from the tap that opened the table, so phones allow it.
+const TAVERN_TUNES=['jigs','reel','waltz','polka','slipjig'], TAVERN_VOL=0.55;
+const tavernSrc=n=>'audio/tavern/'+n+'.mp3?v=1';
 const Tavern=(()=>{
-  let ctx=null, gain=null, buf=null, src=null, el=null, want=false, loading=null;
-  const load=()=>loading||(loading=fetch(TAVERN_SRC).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>ctx.decodeAudioData(b,ok,no))).then(b=>buf=b));
+  let ctx=null, gain=null, src=null, el=null, want=false, order=[], pos=-1, token=0;
+  const bufs={};
+  const load=n=>bufs[n]||(bufs[n]=fetch(tavernSrc(n)).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>ctx.decodeAudioData(b,ok,no))));
+  function next(){
+    pos++;
+    if(pos>=order.length){
+      const last=order[order.length-1];
+      order=TAVERN_TUNES.slice().sort(()=>Math.random()-0.5);
+      if(order[0]===last) order.push(order.shift());
+      pos=0;
+    }
+    return order[pos];
+  }
+  function startTune(n){
+    const my=++token;
+    load(n).then(buf=>{
+      if(!want||my!==token) return;
+      src=ctx.createBufferSource(); src.buffer=buf; src.connect(gain);
+      const s=src; s.onended=()=>{ if(want&&my===token&&src===s){ src=null; startTune(next()); } };
+      s.start();
+      load(order[pos+1]||order[0]).catch(()=>{});            // the next one, ready in time
+    }).catch(fallback);
+  }
   function play(){
     want=true;
     try{
@@ -113,21 +137,19 @@ const Tavern=(()=>{
       if(!AC) throw 0;
       if(!ctx){ ctx=new AC(); gain=ctx.createGain(); gain.gain.value=0; gain.connect(ctx.destination); }
       if(ctx.state==='suspended') ctx.resume();
-      load().then(()=>{
-        if(!want) return;
-        if(!src){ src=ctx.createBufferSource(); src.buffer=buf; src.loop=true; src.connect(gain); src.start(); }
-        const t=ctx.currentTime; gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(gain.gain.value,t);
-        gain.gain.linearRampToValueAtTime(TAVERN_VOL,t+1.5);
-      }).catch(fallback);
+      const t=ctx.currentTime; gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(gain.gain.value,t);
+      gain.gain.linearRampToValueAtTime(TAVERN_VOL,t+1.5);
+      if(!src) startTune(next());
     }catch(e){ fallback(); }
   }
   function fallback(){
     if(!want) return;
-    if(!el){ el=new Audio(TAVERN_SRC); el.loop=true; }
+    if(!el){ el=new Audio(); el.onended=()=>{ if(want){ el.src=tavernSrc(next()); const p=el.play(); if(p&&p.catch) p.catch(()=>{}); } }; }
+    if(!el.src||el.ended) el.src=tavernSrc(next());
     el.volume=TAVERN_VOL; const p=el.play(); if(p&&p.catch) p.catch(()=>{});
   }
   function stop(){
-    want=false;
+    want=false; token++;
     if(el) el.pause();
     if(ctx&&gain&&src){
       const t=ctx.currentTime, s=src; src=null;
@@ -137,7 +159,7 @@ const Tavern=(()=>{
   }
   // a start the browser blocked gets another go at the next tap
   window.addEventListener('pointerdown',()=>{ if(want&&ctx&&ctx.state==='suspended') ctx.resume(); },true);
-  return {play, stop};
+  return {play, stop, _now:()=>order[pos]};
 })();
 function musicBtn(){ const b=$('wk-music'); if(b){ b.textContent=opts.music===false?'\u266A\uFE0E off':'\u266A\uFE0E'; b.style.opacity=opts.music===false?0.55:1; } }
 
