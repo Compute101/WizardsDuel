@@ -1396,6 +1396,7 @@ function buildDom(){
   ctx=el.cv.getContext('2d');
   dark=document.createElement('canvas'); dctx=dark.getContext('2d');
   $('#ex-back').onclick=close;
+  el.toast.onclick=e=>{ e.stopPropagation(); toastNext(); };
   $('#ex-prev').onclick=()=>setWizard(wizIdx-1);
   $('#ex-next').onclick=()=>setWizard(wizIdx+1);
   $('#ex-mapbtn').onclick=()=>{ if(!busy&&MAP) openWorld('view'); };
@@ -1699,8 +1700,27 @@ function inspect(){ if(!near) return; sayFace=near.npc?npcFace(near.npc):null;
   talkFocus=near.npc?{x:near.npc.x, y:near.npc.y, who:near.npc}:null;
   if(near.npc&&Math.abs(near.npc.x-wiz.x)>4) wiz.face=near.npc.x>wiz.x?1:-1;     // turn to them
   if(near.npc) talkTo(near.npc); else if(!(Folk&&Folk.inspect(near,folkApi))&&!roomAct(near)) showSay(near); }
-let toastTimer=0;
-function toast(msg){ el.toast.textContent=msg; el.toast.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.toast.hidden=true; },2200); }
+// Banners queue rather than overwrite each other, stay up long enough to read
+// (by length: TOAST_MS + TOAST_PER_CHAR, up to TOAST_MAX_MS), only count down
+// while the map is on screen (not during a fight or with the tab hidden), and
+// a tap dismisses one early.
+const TOAST_MS=2500, TOAST_PER_CHAR=65, TOAST_MIN_MS=3500, TOAST_MAX_MS=11000;
+let toastTimer=0, toastLeft=0, toastQ=[];
+function toastShowing(){ return !el.toast.hidden&&el.toast.offsetParent!==null&&!document.hidden; }
+function toastNext(){
+  const msg=toastQ.shift();
+  if(msg==null){ el.toast.hidden=true; clearInterval(toastTimer); toastTimer=0; return; }
+  el.toast.textContent=msg; el.toast.hidden=false;
+  toastLeft=Math.min(TOAST_MAX_MS,Math.max(TOAST_MIN_MS,TOAST_MS+msg.length*TOAST_PER_CHAR));
+  if(!toastTimer) toastTimer=setInterval(()=>{ if(toastShowing()&&(toastLeft-=200)<=0) toastNext(); },200);
+}
+function toast(msg){
+  msg=String(msg);
+  if(el.toast.hidden){ toastQ=[msg]; toastNext(); return; }
+  if(el.toast.textContent===msg||toastQ.includes(msg)) return;
+  toastQ.push(msg);
+  if(toastQ.length>1) toastLeft=Math.min(toastLeft,1500);   // a backlog moves things on a little
+}
 
 // ═══ LOOP ══════════════════════════════════════════════════════════
 // a room with foes still in it can't be left: they're between you and the door (no slipping in
