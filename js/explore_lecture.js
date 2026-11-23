@@ -32,8 +32,9 @@ const ease = u => u<0.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
 const TYPE_CPS = 42;                         // characters a second as a line types out
 const HOLD = len => 1300+len*32;             // then held: about 18 characters a second of reading, all told
 const SAY_PX = 17, SAY_W = 440, MUTTER_PX = 13;   // speech on screen, whatever the zoom
-const SEAT_CROP = 0.6;
-const PERSON = 1.25;                         // people in the theatre are drawn this much bigger than on the map, to sit with the seated students' art                       // a seated figure: the upper 60%, the bench hides the rest
+const SEAT_CROP = 0.7;                       // a seated wizard: the upper 70% of their standing figure, down to the lap
+const PERSON = 1.25;                         // people in the theatre are drawn this much bigger than on the map, to sit with the seated students' art
+const LECTURER = 1.55;                       // the lecturer, standing on the stage, bigger still (the user asked)                       // a seated figure: the upper 60%, the bench hides the rest
 
 // ── who lectures (painted from the hero creator's figures until their own art: docs/art-prompts.md) ──
 const LOOKS = {
@@ -253,8 +254,8 @@ function play(api, id, L, opts){
     // your seat: the left block, the middle tier, by the aisle; your partner beside you
     const seats=th.seats.slice().sort((a,b)=>Math.abs(a.row-2)-Math.abs(b.row-2)||a.side-b.side||a.toAisle-b.toAisle);
     const mine=seats[0], theirs=seats.find(s=>s!==mine&&s.row===mine.row&&s.side===mine.side);
-    S.mine=mine; S.seatLift=12; S.stuLift=8;
-    api.seat(mine.x, mine.y+1, mine.side?-1:1, S.seatLift, PERSON);
+    S.mine=mine; S.seatLift=4; S.stuLift=8;
+    api.seat(mine.x, mine.y+1, mine.side?-1:1, S.seatLift, PERSON, SEAT_CROP);
     api.scene(scene);
     // paint everyone (cached after the first lecture), then let them in
     (async()=>{
@@ -385,7 +386,7 @@ function camera(vw,vh){
 // ── drawing the people ──
 function drawLecturer(ctx,t){
   const L=S.lect, img=L.img; if(!img) return;
-  const h=S.api.WIZ_H*PERSON, w=h*img.naturalWidth/img.naturalHeight, bob=L.moving?Math.abs(Math.sin(L.walk))*3:Math.sin(t/500)*0.6;
+  const h=S.api.WIZ_H*LECTURER, w=h*img.naturalWidth/img.naturalHeight, bob=L.moving?Math.abs(Math.sin(L.walk))*3:Math.sin(t/500)*0.6;
   const f=L.facing!=null?L.facing:(S.bubble&&S.bubble.who===L?(Math.sin(S.t*0.7)>0?1:-1):1);
   ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(L.x,L.y-2,17,6,0,0,Math.PI*2); ctx.fill();
   ctx.save(); ctx.translate(L.x,L.y-bob-(L.cast>0?2:0)); if(f<0) ctx.scale(-1,1);
@@ -663,7 +664,7 @@ function drawOver(ctx,t,v){
   const k=1/v.zoom;
   for(const m of S.mutters){ const a=Math.min(1,m.left/300); bubble(ctx,v,k,m.who.x,headY(m.who)-4,m.text,MUTTER_PX,200,a,null,false,true); }
   const b=S.bubble;
-  if(b){ const who=b.who, isL=who===S.lect, hx=who.x, hy=isL?who.y-S.api.WIZ_H*PERSON-4:headY(who)-4;
+  if(b){ const who=b.who, isL=who===S.lect, hx=who.x, hy=isL?who.y-S.api.WIZ_H*LECTURER-4:headY(who)-4;
     bubble(ctx,v,k,hx,hy,b.text.slice(0,Math.floor(b.shown)),isL?SAY_PX:SAY_PX-2,SAY_W,1,b.name,b.whisper,false,b.shown>=b.text.length, b.text); }
   // the fades: in when the students are seated, out at the end
   const black=!S.ready?1:S.fadeOut?Math.min(1,S.fadeOut):1-S.fadeIn;

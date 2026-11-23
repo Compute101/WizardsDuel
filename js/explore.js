@@ -705,7 +705,7 @@ const folkApi = {
   heal:n=>{ heal(wizKeys[wizIdx],n); renderHp(); },
   // scenes (a lecture, js/explore_lecture.js)
   scene:s=>setScene(s), room:()=>MAP, img:src=>imgOf(src), face:src=>{ sayFace=src||null; }, WIZ_H,
-  seat:(x,y,face,lift,scale)=>{ wiz.x=x; wiz.y=y; wiz.face=face||1; wiz.seated=true; wiz.seatLift=lift||0; wiz.seatScale=scale||1; wiz.moving=false; },
+  seat:(x,y,face,lift,scale,crop)=>{ wiz.x=x; wiz.y=y; wiz.face=face||1; wiz.seated=true; wiz.seatLift=lift||0; wiz.seatScale=scale||1; wiz.seatCrop=crop||SEAT_CROP; wiz.moving=false; },
   stand:(x,y)=>{ wiz.seated=false; if(x!=null){ wiz.x=x; wiz.y=y; } },
   wizPos:()=>({x:wiz.x, y:wiz.y, face:wiz.face, glow:wizGlow}),
   passTime:m=>{ clock=(clock+m)%1440; renderClock(); },
@@ -1910,7 +1910,7 @@ function drawWizard(t){
   const sheet=wizImg.width===192&&wizImg.height===320;
   const sw=sheet?48:wizImg.width, sh=sheet?64:wizImg.height;
   const h=WIZ_H*(c.spriteHeight||1)*(wiz.seated?wiz.seatScale||1:1), w=h*sw/sh*(c.spriteWidth||1);
-  const bob=wiz.moving?Math.abs(Math.sin(wiz.walk))*3.5:Math.sin(t/600)*0.8, k=wiz.seated?SEAT_CROP:1;
+  const bob=wiz.moving?Math.abs(Math.sin(wiz.walk))*3.5:Math.sin(t/600)*0.8, k=wiz.seated?wiz.seatCrop||SEAT_CROP:1;
   const tilt=wiz.moving?Math.sin(wiz.walk)*0.05:0;
   ctx.save();
   ctx.translate(wiz.x,wiz.y-bob-(wiz.seated?wiz.seatLift||0:0));
