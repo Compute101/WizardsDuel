@@ -1592,7 +1592,7 @@ function learn(o){
 }
 function graduate(electives){ magic=fullMagic(hero.elem,electives); applyMagic(); save(); }
 // a random wizard who has sat Finals, as the Senior Tutor records it: three electives (never the barred
-// one) and Matriculation's tasks done; then Agathe's errand taken and off to Elfhome (for testing the forest)
+// one) and Matriculation's tasks done; Agathe's errand already taken (for testing the forest)
 async function randomGraduate(){
   stopTheme();
   hero=await window.ExploreHero.randomHero(); await useHero();
@@ -1600,10 +1600,10 @@ async function randomGraduate(){
   for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
   graduate(pool.slice(0,3));
   Object.assign(quests.wren||(quests.wren={}),{stage:2, finals:true, library:true, lab:true, schools:true, spar1:true});
-  // and straight to the Moriquende: Agathe's letter taken, the place found, standing in Elfhome
+  // Agathe's letter already taken and the Moriquende found, so the forest is a world-map trip away;
+  // you start in Wrenford, so Corvanthe (east) is as near as Elfhome (west)
   Object.assign(quests.forest||(quests.forest={}),{asked:true}); found.add('moriquende');
   save();
-  await enterMap('elfhome','road');
   toast(hero.name+', a graduate of '+[hero.elem].concat(pool.slice(0,3)).map(cap).join(', ')+'. Barred: '+cap(ban)+'.');
 }
 // one line for the satchel: what you can cast
