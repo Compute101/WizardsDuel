@@ -287,11 +287,7 @@ wrong scale, ask for that one again on its own with the cottage from `tileset_so
     (old, wood, glade, hill, marsh, crag, lake, felled, burnt, home, hamlet, talan, ancient) and
     `tok_<kind>.png` (goblin, shaman, varg, orc, totem, deer, seer, talon, charm, guild), 256 colours.
   - **Battle fighters:** a prompt per figure in "1b. The Moriquende's battle figures" above.
-  - **Battle backdrop** (`backgrounds/forest.jpg`, 1672×941, like the others in 5a; the duels use
-    `arena:'road'` in `leadFight` until then): "A painted fantasy battle backdrop, wide, an ancient
-    elven forest at dusk: huge mossy trunks, roots across a leaf-strewn clearing for the fighters to
-    stand in, elven lanterns and a rope bridge high in the canopy, shafts of green-gold light, mist
-    between the trees, the same painterly style as the attached backdrop."
+  - **Battle backdrop** (`backgrounds/forest.jpg`, 1672×941): the `forest` row of section 5a, with its shared prompt.
 - ~~**Elfhome**~~: **Done**, its own sheets 27 and 28 (see section 2). The six house leaders are painted from the elf hero
   figures (`PEOPLE` in `js/explore_elfhome.js`) and need no art.
 - **The four invented dons** (Dr Penhallow, Mr Quill, Canon Marrow, Widow Coyle) are recolours of two
@@ -411,6 +407,7 @@ Done so far (in `backgrounds/`, picked by `arenaHere` in `js/explore.js`): `wren
 | `quarry` | a dusty quarry district: cut stone, mine-cart rails, a pit-head winch, a giant toppled stone face |
 | `frost` | a frozen market square: icicle-hung stalls, snowdrifts, a frozen fountain, pale blue light |
 | `gloam` | a graveyard district: mausoleums, black iron gates, violet-flame lamps, drifting shade |
+| `forest` | an ancient elven forest clearing at dusk: huge mossy trunks and roots framing a leaf-strewn open floor, elven lanterns and a rope bridge high in the canopy, shafts of green-gold light, mist between the trees (the Moriquende's duels and Elfhome; until it arrives they use `road`: `arena:'road'` in `leadFight` in `js/forest.js`, `ARENA_MAPS.elfhome` in `js/explore.js`) |
 | `wound` | the edge of the Wound: a glowing purple-white rift, floating rubble and inside-out houses, crystal spill in all eight element colours, a huge barred gate (the Last Gate) far behind |
 
 #### 5b. Wrenford's own tileset (one sheet, tileset house rules)
