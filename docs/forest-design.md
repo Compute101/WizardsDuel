@@ -1,4 +1,6 @@
-# The Wood — design (plan, nothing built)
+# The Moriquende — design
+
+Step 1 is built (see "As built" at the end); the rest is plan.
 
 The next place after Wrenford: a great forest some way west, where the player meets Sylvara.
 It is a different kind of game from the rest of Explore: a **hex-map strategy layer** about
@@ -9,7 +11,7 @@ on a procedurally made hex map.
 ## The pitch in one line
 
 A 4X turned inside out: you must not expand. You hold a small elven settlement, you can't watch
-the whole wood, and you keep goblins, gnolls and incoming orcs **in check against each other**
+the whole wood, and you keep goblins, Varg and incoming orcs **in check against each other**
 until the year turns. Wiping something out is possible, but it costs a lot and puts the balance
 at risk.
 
@@ -21,10 +23,10 @@ at risk.
    smoke, howls, war drums, a flock of birds startled up, the crash of a felled oak. Reading the
    signs is a skill, and it pays.
 3. **An ecology, not an enemy list.** Every faction holds another in check. Whatever you do
-   spreads to the others: kill the gnolls and the goblins boom; hunt too much and the gnolls
+   spreads to the others: kill the Varg and the goblins boom; hunt too much and the Varg
    starve and come for you.
 4. **Steer, don't conquer.** Your best moves are often indirect: lure a herd toward a goblin
-   warren so the gnolls follow it there, ward a path so the orcs go the other way, let two
+   warren so the Varg follow it there, ward a path so the orcs go the other way, let two
    enemies wear each other down.
 5. **The Wood is a character.** The forest has moods. It rewards balance and punishes greed,
    including yours (in the spirit of the Old World's living forests, with our own names).
@@ -37,23 +39,22 @@ at risk.
 - **Lore hook:** the Unweaving drove the nomad orc tribes west out of the lands around Corvanthe.
   This year they reach the wood. Sylvara has kept the balance for centuries with only a few
   wardens, but she can't hold back a migration.
-- **How you get there:** the first University **field trip** after graduating (Fizzwick, the
-  Master of the Laboratory, wants the wood's greenglass, Earth quintessence; Weizan can come
-  later). Sylvara asks the visiting wizard to stay for a year as war-mage and adviser.
-- **Sylvara:** the Warden of the grove. She is on the map as a hero unit (wide sight, strong in a
-  fight, can't be everywhere). She judges you at the year's end, and if you kept the balance she
-  joins you as a companion (`allies`, `wizard:true`).
+- **How you get there:** someone at the University with a connection to Sylvara (Mother Agathe
+  the herbwife, who trades with Elfhome's healers) passes on her plea for a wizard; you walk there on
+  the world map. Sylvara asks you to keep the watch for a year.
+- **Sylvara:** the Warden of the grove. She guides you for the first week, then walks the wood
+  tending its four ancient trees (see Decided). At the year's end she judges you, and if you kept the
+  balance she joins you as a companion (`allies`, `wizard:true`).
 
 ### Name candidates
-- The forest: **the Moriquende** (from the old project), Mardiwood, the Verdance, the Eldwold.
-- The settlement at the centre: **Elfhome** (the old project's name), the Heartgrove, Mardi.
+- Chosen: the forest is **the Moriquende**, the settlement **Elfhome**.
 
 ## The map
 
 - A hex grid, about **91 hexes** (radius 5) for the first version, generated from a seed like
   the city maps. Terrain kinds from Elfhome: **old growth** (deep forest, sight 0 into it),
   **woodland**, **glade** (open, where game grazes and orcs like to camp), **hills** (+1 sight),
-  **marsh** (goblins' favourite), **crags** (gnoll dens), **river and lake** (cut across the map,
+  **marsh** (goblins' favourite), **crags** (Varg dens), **river and lake** (cut across the map,
   fords are choke points).
 - **Elfhome** in the centre, plus **2–3 outlying hamlets** (a herb garden, a shrine, a
   beast-speakers' lodge) that are also worth protecting.
@@ -86,7 +87,7 @@ Target: 30–45 minutes for the year. Saved per profile like the rest of Explore
 - **Signs** from unwatched hexes, each with a range and a reliability:
   - Smoke (orc camps, fires): seen 3 hexes away, gives the exact hex.
   - War drums (goblins gathering, or a Waaagh brewing): a direction only.
-  - Howls (gnolls on the hunt): a direction, at night.
+  - Howls (Varg on the hunt): a direction, at night.
   - Startled birds: a hex something big moved through this turn. It might be a herd.
   - Falling timber: the hex where orcs are felling.
   - Silence (game gone quiet): something's been hunted out.
@@ -102,7 +103,7 @@ The six houses from Elfhome become the roles:
 |-------|------------------|
 | **Seers** | Watchers. The only source of clear sight. |
 | **Talons** | Wardens: patrol (move 2), fight, garrison talans so they shoot. |
-| **Charming** | Beast-speakers: **herd** game (move a herd one hex), **calm** a gnoll pack for a few turns, **lure**. |
+| **Charming** | Beast-speakers: **herd** game (move a herd one hex), **calm** a Varg pack for a few turns, **lure**. |
 | **Guild** | Builders: talans, thorn hedges, hidden caches. |
 | **Healers** | Bring wounded elves back (an elf at 0 is wounded, not dead, if a healer reaches them in time). |
 | **Elders** | The council: one seasonal choice (see Council below). |
@@ -116,14 +117,14 @@ Every faction runs on a few plain rules, so the player can learn them, and fight
 the same rules that apply to you.
 
 ### Game (deer, boar), not a faction but the base of everything
-Herds graze glades and move between them, breeding in spring. Eaten by gnolls, elves and orcs.
-Too few and the gnolls get hungry; too many and they strip the glades (forest health falls).
+Herds graze glades and move between them, breeding in spring. Eaten by Varg, elves and orcs.
+Too few and the Varg get hungry; too many and they strip the glades (forest health falls).
 
-### Gnolls (wolfmen), native, belong here
+### Varg (wolfmen), native, belong here
 - Packs den in crags and **follow the herds**. Their numbers are capped by the game.
-- **Fed gnolls leave elves alone.** When game runs short they range wider, then raid hunters,
+- **Fed Varg leave elves alone.** When game runs short they range wider, then raid hunters,
   then hamlets.
-- They **hunt goblins.** Gnolls are the goblins' main check.
+- They **hunt goblins.** Varg are the goblins' main check.
 - Sylvara counts them as part of the wood. Wiping out a den angers the Wood.
 
 ### Goblins, native, multiply
@@ -138,7 +139,7 @@ Too few and the gnolls get hungry; too many and they strip the glades (forest he
 ### Orcs, newcomers from season 2
 - Warbands arrive at the map edge (east first, from Corvanthe's way), one or two a season.
 - They camp in a glade and **fell the hexes round it**, one a turn. Felling is the real harm.
-- They fight anything nearby: gnolls, goblins they don't take in, elves.
+- They fight anything nearby: Varg, goblins they don't take in, elves.
 - **Nomads:** harried enough (camp raided, felled wood burned, chiefs struck) a band **moves on**.
   You don't have to kill them, just make staying cost more than leaving.
 - **Waaagh!** A band that takes in goblins grows. Past a size threshold the drums start (a sign
@@ -148,13 +149,13 @@ Too few and the gnolls get hungry; too many and they strip the glades (forest he
 ### The food web, in short
 
 ```
-  elves ──hunt──▶ game ◀──hunt── gnolls ──hunt──▶ goblins ──join──▶ orcs
+  elves ──hunt──▶ game ◀──hunt── Varg ──hunt──▶ goblins ──join──▶ orcs
     ▲                                                   │             │
     └──────────── raids if starving / swarming ─────────┴─── fell ───▶ forest
 ```
 
-Each faction keeps another down, and you hold the joints. Kill the gnolls and the goblins boom,
-the goblins reach the orcs, and a Waaagh follows. Overhunt and the gnolls starve and raid you.
+Each faction keeps another down, and you hold the joints. Kill the Varg and the goblins boom,
+the goblins reach the orcs, and a Waaagh follows. Overhunt and the Varg starve and raid you.
 Ignore the orcs and the wood falls.
 
 ## The Wood (the balance meter)
@@ -168,7 +169,7 @@ Ignore the orcs and the wood falls.
     −1 there).
   - *Angry:* the wood turns on everyone, elves included: patrols get lost, and hunters come back
     empty.
-- **Faction bands:** each native population has a healthy band (gnolls 2–4 packs, goblins 3–6
+- **Faction bands:** each native population has a healthy band (Varg 2–4 packs, goblins 3–6
   warrens, game 5–9 herds). Each week inside it scores; outside it costs.
 
 ### How the year ends
@@ -208,8 +209,8 @@ New fighters for `fighters.json` (art needed; see Art):
 | Goblin | weak, cheap, comes in threes; **Swarm**: +1 Attack for each other goblin |
 | Goblin archer | slips past Guard like the Archer |
 | Goblin shaman | a small wizard: wards, a curse |
-| Gnoll | pack hunter: **Pack**, hits harder at a wounded target |
-| Gnoll alpha | leads a pack |
+| Varg | pack hunter: **Pack**, hits harder at a wounded target |
+| Varg alpha | leads a pack |
 | Orc | tough brute, Attack 6 |
 | Orc big'un | leads a band, Shield Wall-like |
 | Orc warboss | the Waaagh's leader, a set-piece fight |
@@ -229,10 +230,10 @@ Small dilemmas that colour the run, e.g.:
 
 | Season | What's new |
 |--------|-----------|
-| Spring | Learn the map. Herds breed, goblins split for the first time. One gnoll pack is hungry. |
-| Summer | Goblins spread; gnolls at their peak. First orc band arrives at the season's end. |
+| Spring | Learn the map. Herds breed, goblins split for the first time. One Varg pack is hungry. |
+| Summer | Goblins spread; Varg at their peak. First orc band arrives at the season's end. |
 | Autumn | Two or three orc bands; felling; the first Waaagh threat. |
-| Winter | Game and foraging fall. Hungry gnolls, desperate goblins, a Waaagh if you let one build. Snow shows tracks: unwatched hexes give better signs. |
+| Winter | Game and foraging fall. Hungry Varg, desperate goblins, a Waaagh if you let one build. Snow shows tracks: unwatched hexes give better signs. |
 
 ## Testing it (the same way as the duel game)
 
@@ -261,17 +262,61 @@ tuned until these hold:
 ## Art needed (later, briefs to `docs/art-prompts.md`)
 - Hex tiles: old growth, woodland, glade, hills, marsh, crags, river / ford, lake, stumps, Elfhome,
   hamlet, talan. (Elfhome had its own hex art, which may still be useful as a style reference.)
-- Fighters: goblin, goblin archer, goblin shaman, gnoll, gnoll alpha, orc, orc big'un, orc
+- Fighters: goblin, goblin archer, goblin shaman, Varg, Varg alpha, orc, orc big'un, orc
   warboss, elf Talon (male and female).
 - Map tokens: herds, warrens, dens, orc camp, treant.
 
-## Open questions for the user
-1. **Turn-based or real-time with pause?** The plan assumes turns (one week each), which fits
-   the duel game's secret-pick rhythm and touchscreens.
-2. **How much fighting by hand?** Auto-resolve the small ones and fight the big ones, or
-   fight everything?
-3. **One year, or a sandbox?** The plan is a fixed year with an ending; a longer campaign could
-   follow.
-4. **Names:** the forest and the settlement (see the candidates above).
-5. **Is Sylvara the Warden who stays, or is she away for part of the year** (lost on a long
-   errand, so the grove is yours alone until she returns)?
+## Decided (the user's answers)
+- **Turn-based**, a week a turn.
+- **Fighting is your choice.** A clever player can win the year with watchers and elves alone;
+  the wizard is the strongest piece and big warbands are much likelier to be beaten if you take a
+  personal hand (step 2 makes that a real duel; step 1 settles it with the wizard's numbers).
+- **Names:** the forest is **the Moriquende**, the settlement **Elfhome**.
+- **Sylvara** guides you for the first week, then gets busy: she walks the wood tending its **four
+  ancient trees**, each of which must be tended before the year ends or it dies. Keeping her safe
+  on the way is part of the job (she avoids danger your watchers can see, and only that).
+- **Wolfmen, not hyena-men:** called **Varg** for now (Old Norse for wolf; one name in
+  `FAC.varg.name` to change).
+- **The hook** is not Fizzwick's field trip (that one goes to Corvanthe): someone at the University
+  with a connection to Sylvara starts it, and you travel there on the world map. Suggested: **Mother
+  Agathe** the herbwife, who has traded with Elfhome's healers for years and hears from them that
+  Sylvara needs a wizard.
+- **New art** for the map; the old Elfhome map code (Java) isn't reused, only its ideas, its six
+  houses and its names (`NAMES` in the engine: Seers Manx, Talons Breton, Guild Irish, the rest
+  Welsh, from `Elfhome/src/Config/Names/elven.txt`; checked against the creator's names).
+
+## As built (step 1)
+- **Engine:** `js/forest_engine.js` (`ForestEngine`, also `require`d by Node): map generation from
+  a seed (`makeMap`: 91 hexes, old growth, marsh, hills, lakes, crags, glades; Elfhome in the middle,
+  three hamlets two out, four ancient trees three to four out), sight (`vision`: Elfhome 1 clear / 2
+  dim, hamlets 0 / 1, a Seer on foot 0 / 1, in a sentry post 1 / 2, +1 on a hill; old growth is
+  only ever dim from outside; an uneasy wood puts a random hex in mist), memory (`intel`, faded on
+  the map with its age), signs (`sign`, `SIGN_TEXT`), orders (`move`, `tasksFor` / `setTask`,
+  `cast`, `train`) and `endTurn` (orders → Sylvara → herds → Varg → goblins → orcs → movement →
+  the wild meeting the wild → night: sentry posts shoot, Talons harry orc camps, treants, fire,
+  raids → upkeep). All the numbers are at the top of the file.
+- **Fights** are settled by `fightElves` / `clash` (three exchanges; a side below 40% breaks; an
+  elf at 0 is wounded for 3 weeks, or killed 20% of the time). Your wizard is attack 7, HP 12, the
+  same as Sylvara; a Talon 4 / 6.
+- **Spells** (one a week, mana 10, +2 a week): Strike 2 / 3 / 5 mana for 3 / 6 / 10 (needs clear
+  sight; a Fire wizard can set the trees alight), Ward (a thicket for 5 weeks: bands that enter stop
+  a week, defenders there take 2 less an exchange), Dispel (a goblin fetish, an orc war-totem, a
+  fire). No minigame yet.
+- **Orcs:** five bands of 6–8 from weeks 7, 10, 13, 16 and 19, walking in from the east and
+  camping on glades ever nearer Elfhome; they fell a hex a week, raid elves within 2 of camp
+  (Sylvara first), take in goblins (3 a week from warrens within 2, whole bands that touch them),
+  merge with other bands, fight the Varg. Size 10+ (goblins count half) with a war-totem beats the
+  drums: 3 weeks later they march, and every orc band within 3 rallies to them. Harried to 1.5× their
+  size (damage taken, Talons beside the camp at night) they leave by the nearest edge.
+- **The screen:** `js/forest.js` and `css/forest.css`, 🌲 Moriquende in the title screen's Test
+  menu (`Forest.open()`). The canvas map (pan, pinch, wheel and + / −), the side panel (under
+  the map on a phone) for the hex and the elf you've picked, Elves (roster and training), Spell,
+  ↶ (take back this week's orders), End week, and a dawn report of the week and its signs. Saved in
+  `localStorage` `wd-forest-save`.
+- **Tuning:** `node tools/forest_sim.js [games] [bots]`. Last run (200 games each): **idle** falls
+  69% (about week 19), the rest scarred; **turtle** (everyone at home) falls 33%, mostly scarred;
+  **exterminate** scores 103 (the best ending 9%, the Varg wiped out, the wood angry at slaughter);
+  **balance** scores 138, the best ending 60%, sees 37% of the wood clearly on average (73% at all).
+- **Not yet:** healers (wounds just take 3 weeks), the Council of Elders, the seasonal events,
+  fights in the duel engine (step 2), the story and the Explore save (step 3), art and music
+  (step 4), river hexes and fords.

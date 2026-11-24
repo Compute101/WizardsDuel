@@ -156,6 +156,22 @@ sheet 12 face; attach `tileset10_source.png` and `tileset12_source.png`):
   wink). Fine as it is; a pixel-art felt table, cup and counters would be a nice touch.
 - **Wenna and the Lamplighter** (Cindergate, Gloamside) use Echo sprites as stand-ins: see "Echo art
   brief" in `docs/world-design.md`.
+- **The Moriquende** (`js/forest.js`, the forest strategy year): everything is drawn on a canvas
+  for now: flat coloured hexes with dots for trees (`TCOL`, `terrainMarks`), and emoji tokens for the
+  wild and your elves (`TOKEN`, `F.ROLES[].icon`). The real art (plan: `docs/forest-design.md`, Art
+  needed) is a hex tile set and small map figures:
+  - **Hex tiles** (`sprites/forest/hex_<kind>.png`, pointy-top, about 256 px across): "Top-down
+    pixel-art hex tile, pointy-top, for a fantasy forest strategy map, same style as the attached
+    tileset. One tile per image on a flat #101217 background: deep old-growth forest, ordinary
+    woodland, a sunlit glade, wooded hills, a reedy marsh, grey crags with a cave mouth, a small
+    lake, a felled clearing full of stumps, a burnt clearing, an elven tree-town (Elfhome) of
+    flets and lanterns in great trees, a small elven hamlet, an elven sentry platform (a talan) up a
+    tree, and an enormous ancient glowing tree."
+  - **Map figures** (`sprites/forest/tok_<kind>.png`, about 128 px tall, facing right, black
+    background): a goblin, a goblin shaman with a mushroom fetish, a Varg (a hulking wolfman), an orc
+    nomad with an axe, an orc war-totem, deer, an elf Seer with a lantern, an elf Talon with a
+    longbow, an elf beast-speaker with antlers on her hood, an elf builder with a mallet.
+  - Later, full battle fighters for the same creatures (house rules: "Fighters / creatures").
 - **The four invented dons** (Dr Penhallow, Mr Quill, Canon Marrow, Widow Coyle) are recolours of two
   base figures (`tools/make_folk_sprites.py`); their own art would replace them, with the shared people
   prompt above.
