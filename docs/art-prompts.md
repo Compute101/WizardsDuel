@@ -196,6 +196,10 @@ sheet 12 face; attach `tileset10_source.png` and `tileset12_source.png`):
 
 ### Elfhome's tileset (sheets 27 and 28)
 
+**Done:** both sheets arrived (`tileset27_source.png`, `tileset28_source.png`), cut into `ruins27` / `ruins28`
+(`RECTS27` / `RECTS28`, pieces `ef*`, ground `elfFloor` / `elfGrass` / `elfPath` and the path's
+`tr_elfpath_*` set) and built into Elfhome. The prompts are kept below for more.
+
 Elfhome is the elves' town in the Moriquende (`maps/elfhome.json`, `tools/mapgen/elfhome.js`): a glade
 round the Heart Tree with the Watch Table under it, and a place for each of the six houses round the
 edge. It's built from human town pieces for now (a watchtower, a chapel, mossy cottages; see "Elfhome"
@@ -288,13 +292,8 @@ wrong scale, ask for that one again on its own with the cottage from `tileset_so
     elven forest at dusk: huge mossy trunks, roots across a leaf-strewn clearing for the fighters to
     stand in, elven lanterns and a rope bridge high in the canopy, shafts of green-gold light, mist
     between the trees, the same painterly style as the attached backdrop."
-- **Elfhome** (`maps/elfhome.json`, `tools/mapgen/elfhome.js`): built from the town tilesets for now: a
-  grove of the ordinary `tree` for the Heart Tree, the `watchTower` for the Seers' talan, the `chapel` for
-  the Healing House, mossy cottages (`house2_moss`, `house5_moss`, `house3_moss`) for the Talons' lodge, the
-  Guild's workshop and the Beast-speakers' lodge, a `hoodedShrine` for the Elders' Stone and a tavern
-  `roundTable` for the Watch Table. The real art is two new sheets: prompts in "Elfhome's tileset (sheets
-  27 and 28)" in section 2 above. The six house leaders are painted from the elf hero figures (`PEOPLE` in
-  `js/explore_elfhome.js`) and need no art.
+- ~~**Elfhome**~~: **Done**, its own sheets 27 and 28 (see section 2). The six house leaders are painted from the elf hero
+  figures (`PEOPLE` in `js/explore_elfhome.js`) and need no art.
 - **The four invented dons** (Dr Penhallow, Mr Quill, Canon Marrow, Widow Coyle) are recolours of two
   base figures (`tools/make_folk_sprites.py`); their own art would replace them, with the shared people
   prompt above.

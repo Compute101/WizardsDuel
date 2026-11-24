@@ -328,6 +328,27 @@ RECTS25 = {k: _pad(v) for k, v in {   # the lecture theatre (Wrenford's Examinat
     'lt_notice': (635, 672, 291, 301), 'lt_candelabra': (994, 672, 127, 261), 'lt_chandelier': (1191, 672, 314, 281)}.items()}
 RECTS26 = {k: _pad(v) for k, v in {   # the lecture theatre's back wall
     'lt_wallWindow': (48, 43, 484, 634), 'lt_wallPlain': (573, 43, 489, 634), 'lt_wallCrest': (1106, 43, 495, 634), 'lt_wallPortrait': (1642, 43, 489, 634)}.items()}
+# ── sheets 27 and 28: Elfhome, the elves' town in the Moriquende (tools/mapgen/elfhome.js), drawn at the
+#    town sheets' scale. 27 is the buildings; 28 the props, three ground tiles (forest floor, grass,
+#    mossy flagstones) and the flagstone path's 3x3 edge set (tr_elfpath_<row><col>, squared to TR) ──
+RECTS27 = {k: _pad(v, 4) for k, v in {
+    'efHeartTree': (13, 4, 639, 480), 'efTalan': (665, 10, 325, 448), 'efHealing': (1020, 62, 469, 301),
+    'efWorkshop': (818, 407, 595, 300), 'efLodge': (90, 487, 629, 221), 'efBeastLodge': (46, 726, 343, 269),
+    'efElders': (414, 736, 430, 265), 'efCottage1': (876, 720, 296, 271), 'efCottage2': (1209, 738, 273, 254)}.items()}
+RECTS28 = {k: _pad(v, 4) for k, v in {
+    'efWatchTable': (23, 22, 288, 242), 'efLantern': (341, 15, 108, 222), 'efLanternCrook': (466, 26, 106, 211),
+    'efLanternBlue': (591, 62, 87, 175), 'efTarget': (715, 58, 138, 169), 'efBowRack': (877, 32, 178, 193),
+    'efHerbRack': (1091, 17, 310, 201), 'efBeehive': (1406, 92, 116, 123), 'efRope': (26, 320, 151, 124),
+    'efLadders': (192, 275, 287, 158), 'efSpring': (514, 259, 337, 190), 'efLog': (878, 288, 349, 141),
+    'efFernBig': (1242, 268, 270, 160), 'efFern1': (13, 475, 197, 135), 'efFern2': (223, 469, 184, 141),
+    'efToadstools1': (421, 501, 142, 109), 'efToadstools2': (587, 515, 114, 94), 'efBlossom': (720, 470, 186, 140),
+    'efFoxgloves': (920, 442, 155, 167), 'efStump': (1096, 474, 207, 133), 'efStone': (1322, 437, 182, 177)}.items()}
+_E28G = {'elfFloor': (100, 722, 182, 180), 'elfGrass': (328, 722, 180, 180), 'elfPath': (554, 722, 181, 180)}
+RECTS28.update(_E28G)
+for _r, (_y0, _y1) in enumerate([(631, 748), (757, 872), (880, 999)]):
+    for _c, (_x0, _x1) in enumerate([(866, 982), (991, 1106), (1115, 1231)]):
+        RECTS28['tr_elfpath_%d%d' % (_r, _c)] = (_x0 + 1, _y0 + 1, _x1 - _x0 - 2, _y1 - _y0 - 2)
+
 # a neighbour inside a crop, blanked before the crop is cleaned (sheet coords)
 ERASE = {'armillary': [(150, 0, 372, 325)]}
 
@@ -352,6 +373,9 @@ SHEETS = {
                clean=True, square=124, shrink=0.757),
     '25': dict(src='tileset25_source.png', bg=(11, 14, 21), rects=RECTS25, ground=set(), out='ruins25', key='25', clean=True),
     '26': dict(src='tileset26_source.png', bg=(13, 17, 24), rects=RECTS26, ground=set(), out='ruins26', key='26', clean=True),
+    '27': dict(src='tileset27_source.png', bg=(12, 16, 23), rects=RECTS27, ground=set(), out='ruins27', key='27', clean=True, holes=40),
+    '28': dict(src='tileset28_source.png', bg=(13, 15, 21), rects=RECTS28, ground=set(_E28G) | {k for k in RECTS28 if k.startswith('tr_')},
+               out='ruins28', key='28', clean=True, square=TR, holes=40),
     '3': dict(src='tileset3_source.png', bg=(13, 16, 21), rects=RECTS3, ground=set(RECTS3), out='ruins3', key='3', square=TR),
 }
 
@@ -463,13 +487,21 @@ def drop_edge_scraps(c, share=0.15):
     return Image.fromarray(a, 'RGBA')
 
 
-def transparent_sheet(path, bg):
+def transparent_sheet(path, bg, holes=0):
     src = Image.open(path).convert('RGB')
     a = np.array(src).astype(int)
     bgish = np.abs(a - bg).sum(2) < 34
-    lab, _ = ndimage.label(bgish)
+    lab, n = ndimage.label(bgish)
     edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {0}
-    alpha = np.where(np.isin(lab, list(edge)), 0, 255).astype(np.uint8)
+    clear = np.isin(lab, list(edge))
+    # holes: background showing through a piece (between branches, behind a rack, inside an arch) is
+    # cleared too when the enclosed patch is at least this many pixels and very close to the background
+    if holes:
+        tight = np.abs(a - bg).sum(2) < 14
+        sizes = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))
+        for i, sz in enumerate(sizes, 1):
+            if i not in edge and sz >= holes: clear |= (lab == i) & tight
+    alpha = np.where(clear, 0, 255).astype(np.uint8)
     return Image.fromarray(np.dstack([np.array(src), alpha]), 'RGBA')
 
 
@@ -484,7 +516,7 @@ def main():
 
 
 def cut(sh, write=True):
-    sheet = transparent_sheet(os.path.join(DIR, sh['src']), sh['bg'])
+    sheet = transparent_sheet(os.path.join(DIR, sh['src']), sh['bg'], sh.get('holes', 0))
     crops = {}
     for k, (x, y, w, h) in sh['rects'].items():
         c = sheet.crop((x, y, x + w, y + h))

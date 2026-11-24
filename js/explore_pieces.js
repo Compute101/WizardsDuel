@@ -61,6 +61,13 @@ function scaleOf(kind,sc){ return sc||KIND_SCALE[kind]||KIND_SCALE[kind.split('_
 // (h < 1 is a fraction of the drawn height). Looked up by exact name, else the
 // longest matching prefix (footOf).
 const FOOT = {
+  // Elfhome (sheets 27 and 28, tools/mapgen/elfhome.js)
+  efHeartTree:[{w:.42,h:40}], efTalan:[{w:.28,h:16}], efHealing:[{w:.8,h:.3}], efWorkshop:[{w:.9,h:.22}],
+  efLodge:[{w:.92,h:.3}], efBeastLodge:[{w:.8,h:.3}], efElders:[{w:.85,h:.28}], efCottage:[{w:.85,h:.4}],
+  efWatchTable:[{w:.85,h:30}], efLantern:[{ox:.3,w:.22,h:10}], efTarget:[{w:.6,h:12}], efBowRack:[{w:.9,h:14}],
+  efHerbRack:[{w:.9,h:14}], efBeehive:[{w:.7,h:14}], efRope:[{w:.8,h:14}], efLadders:[{w:.9,h:16}],
+  efSpring:[{w:.85,h:.5}], efLog:[{w:.9,h:18}], efFern:[{w:.5,h:10}], efToadstools:[{w:.4,h:6}],
+  efBlossom:[{w:.6,h:12}], efFoxgloves:[{w:.5,h:12}], efStump:[{w:.6,h:14}], efStone:[{w:.6,h:14}],
   house:   [{w:.9, h:.5}],
   tree:    [{w:.22,h:16}], deadtree:[{w:.2,h:16}],
   bush:    [{w:.7,h:20}],  flowerbush:[{w:.7,h:20}],
@@ -143,6 +150,11 @@ function footOf(kind){
 
 // light sources inside a piece, in atlas px of its trimmed crop ('lamp' = a lantern, bigger)
 const LIGHTS = {
+  // Elfhome (fractions of the piece's size): windows, and the lanterns hung about the Heart Tree and posts
+  efHeartTree:[[.11,.62,'lamp'],[.22,.73,'lamp'],[.18,.44,'lamp'],[.34,.39,'lamp'],[.59,.26,'lamp'],[.69,.51,'lamp'],[.87,.6,'lamp'],[.5,.48],[.49,.63]],
+  efTalan:[[.18,.31,'lamp'],[.8,.46,'lamp'],[.54,.2]], efHealing:[[.15,.75],[.31,.75],[.83,.74]],
+  efLodge:[[.14,.45],[.5,.27],[.86,.45]], efCottage1:[[.6,.22],[.4,.47],[.8,.47]], efCottage2:[[.47,.26],[.22,.69],[.4,.69]],
+  efLantern:[[.74,.47,'lamp']], efLanternCrook:[[.76,.42,'lamp']], efLanternBlue:[[.5,.26,'lamp']],
   house1:[[165,208]], house2:[[70,205],[158,205]], house3:[[170,205]],
   house4:[[170,208]], house5:[[180,190]], house6:[[77,185]],
   tavern:[[114,218],[288,218],[92,332],[153,332],[280,332],[337,330,'lamp']],

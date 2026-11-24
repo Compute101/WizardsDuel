@@ -416,3 +416,13 @@ tuned until these hold:
   callings, and your wizard and Sylvara as their own battle sprites (`elfArt`). Everything falls back to
   the old canvas drawing until its picture has loaded (`art`, `preloadArt`).
 
+## Elfhome's own art (from the user)
+- Sheets 27 (buildings) and 28 (props and ground) cut into `ruins27` / `ruins28` by
+  `tools/cut_ruins_tileset.py` (`RECTS27` / `RECTS28`; `holes:40` clears background enclosed inside a piece,
+  e.g. between the Heart Tree's branches). Elfhome (`tools/mapgen/elfhome.js`) is rebuilt from them: the Heart
+  Tree (1.5×) over a glade of flowered grass (`J`) with the Watch Table and two lantern posts before it and the
+  spring beside it; mossy flagstone paths (`Y`, edges from `tr_elfpath_*`) out to the Elders' Stone, the Seers'
+  talan, the Healing House (herb rack, beehive), the Talons' lodge (target, bow rack), the Guild's workshop
+  (ladders, rope), the Beast-speakers' lodge and four cottages; forest floor (`L`) everywhere else, ferns,
+  foxgloves, toadstools, stumps and logs in it, and the town tileset's trees round the edge.
+

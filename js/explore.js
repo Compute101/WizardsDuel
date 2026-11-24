@@ -134,6 +134,10 @@ function setupMap(data){
       // the Undercroft (sheet 24): sewer brick, wet in places, and its water channel
       case 'u': return r()<.12?'floorSewerWet':'floorSewer';
       case 'q': return 'sewerChannel';
+      // Elfhome (sheet 28): mossy forest floor, flowered grass, the mossy flagstone path
+      case 'L': return 'elfFloor';
+      case 'J': return 'elfGrass';
+      case 'Y': return 'tr_elfpath_11';
       case 'v': return null;
       default:  return 'grass';
     }
@@ -216,7 +220,7 @@ function updateEchoes(dt){
 // (ExploreBands.clashOdds); a winning crew takes the spill and may lose a member, a losing one is broken.
 // Toll crews stop you and ask for gold or spill; hostile ones charge. bandState[id] (saved): beaten (time),
 // lost (fallen members), gold, spill, tollUntil, met.
-const ROAD_KINDS='RMcPfDF';
+const ROAD_KINDS='RMcPfDFY';
 const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
 let roadSet=null, roadList=[];
 function bandRec(b){
@@ -1003,6 +1007,7 @@ const EDGE_SET = {
   S:{set:'snow',   out:c=>c!=='S'},
   F:{set:'flood',  out:c=>c!=='F'&&c!=='W'},
   X:{set:'wound',  out:c=>c!=='X'},
+  Y:{set:'elfpath', out:c=>c!=='Y'},
 };
 function edgeTile(E,x,y,r){
   const k=groundKind, at=(xx,yy)=>(k[yy]||[])[xx];
@@ -1062,7 +1067,7 @@ const MINI_PAL = {
 function buildMinimap(){
   const S=4, c=document.createElement('canvas'); c.width=COLS*S; c.height=ROWS*S;
   const m=c.getContext('2d');
-  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70',S:'#dfe6f0',F:'#2f6a78',X:'#7a2ab0'};
+  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70',S:'#dfe6f0',F:'#2f6a78',X:'#7a2ab0',L:'#4a4a26',J:'#5f8a32',Y:'#8a8478'};
   Object.assign(col,MINI_PAL[MAP.palette]||{});
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ m.fillStyle=col[groundKind[y][x]]||col.G; m.fillRect(x*S,y*S,S,S); }
   const k=S/T;
@@ -2294,7 +2299,7 @@ function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.
 const NC={cache:'no-cache'};
 // CORE sheets are the ground and the loot every map and the satchel use.
 const ATLAS_NAMES=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13',
-  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23','ruins24','ruins25','ruins26'];
+  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23','ruins24','ruins25','ruins26','ruins27','ruins28'];
 const CORE_ATLASES=['ruins','ruins2','ruins3','ruins13'];
 const atlasLoading={};
 function loadAtlas(i){
@@ -2302,7 +2307,7 @@ function loadAtlas(i){
   return atlasLoading[i];
 }
 // the sheets a map draws from: its pieces' and its ground's (the ground letters that aren't on a core sheet)
-const GROUND_PIECE={S:'tr_snow_11',F:'tr_flood_11',X:'tr_wound_21',w:'floorWood1',l:'floorFlag1',y:'floorTerra1',b:'floorBroken1',u:'floorSewer',q:'sewerChannel'};
+const GROUND_PIECE={L:'elfFloor',J:'elfGrass',Y:'tr_elfpath_11',S:'tr_snow_11',F:'tr_flood_11',X:'tr_wound_21',w:'floorWood1',l:'floorFlag1',y:'floorTerra1',b:'floorBroken1',u:'floorSewer',q:'sewerChannel'};
 function atlasesFor(data){
   const need=new Set(CORE_ATLASES.map(n=>ATLAS_NAMES.indexOf(n)));
   for(const o of data.objects||[]){ const q=rects[o[0]]; if(q&&q[4]<ATLAS_NAMES.length) need.add(q[4]); }

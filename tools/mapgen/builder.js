@@ -4,7 +4,7 @@
 'use strict';
 const P = require('../../js/explore_pieces.js');
 const {T} = P;
-const GRASSY=['G','d','a','e','S'];   // ground scatter may stand on: grass, worn grass, ash, ash dirt, snow
+const GRASSY=['G','d','a','e','S','L','J'];   // ground scatter may stand on: grass, worn grass, ash, ash dirt, snow, Elfhome's floor and grass
 
 class MapBuilder {
   constructor(rects, {id, name, cols, rows, seed}){
@@ -16,7 +16,7 @@ class MapBuilder {
     this.lore={}; this.spawns={}; this.exits=[]; this.blocks=[]; this.glows=[]; this.echoes=[]; this.walk=[];
   }
   // ── ground kinds: G grass, d worn grass, D dirt lane, R road, M mossy road, P plaza flags,
-  //    W river water, O pond water, K plank docks; burnt (Cindergate): a ash, e ash dirt,
+  //    W river water, O pond water, K plank docks; Elfhome: L forest floor, J flowered grass, Y mossy flagstone path; burnt (Cindergate): a ash, e ash dirt,
   //    c ash cobble street, f ash flagstones; inner districts: S snow, F flooded street (walkable), X the Wound's edge ──
   fill(x0,y0,x1,y1,c){ for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) if(this.k[y]&&this.k[y][x]!==undefined) this.k[y][x]=c; }
   at(x,y){ return (this.k[y]||[])[x]; }
