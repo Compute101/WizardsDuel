@@ -676,7 +676,7 @@
     "trait": "brute",
     "explore": true,
     "sprite": "sprites/forest/orc_bigun.png",
-    "spriteHeight": 1.15,
+    "spriteHeight": 1.05,
     "col": "#5e7a34",
     "hp": 46,
     "phys": {
@@ -698,7 +698,7 @@
     "trait": "brute",
     "explore": true,
     "sprite": "sprites/forest/orc_warboss.png",
-    "spriteHeight": 1.3,
+    "spriteHeight": 1.2,
     "col": "#a33a2a",
     "hp": 64,
     "phys": {

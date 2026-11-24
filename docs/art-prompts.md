@@ -100,6 +100,9 @@ The prompt that made it, for more variants. Attach `sprites/fighters/source/halb
 
 ## 1b. The Moriquende's battle figures
 
+**Done:** all seven arrived (`sprites/fighters/source/<key>.png`), cut by `python3 tools/cut_fighters.py`
+into `sprites/forest/<key>.png` with hand-set faces (`FACES`). The prompts are kept below for more.
+
 The creatures and elves you fight beside in the forest year (`fighters.json`; `docs/forest-design.md`).
 Until these arrive the game uses recolours of other art (`python3 tools/make_forest_placeholders.py`:
 Gretch for goblins and orcs, Gnash greyed for the Varg, the Archer in green for the Talons), and the
@@ -109,7 +112,7 @@ recolours never overwrite real art once it's there.
 flat on the bottom edge, on a **flat pure black background** (not green: these go through the fighter
 cutter, which keys out black). Painted in their final colours. **Every figure fills the height of its
 picture**, the little goblin as much as the warboss: the game sets their sizes (goblin 0.7, Varg 1.05,
-alpha 1.15, orc 1.0, big'un 1.15, warboss 1.3 of a wizard's height, `spriteHeight` in `fighters.json`).
+alpha 1.15, orc 1.0, big'un 1.05, warboss 1.2 of a wizard's height, `spriteHeight` in `fighters.json`).
 Keep weapons, banners and horns inside the picture.
 
 **Shared prompt** (attach `sprites/fighters/source/soldier.png` and `sprites/fighters/source/knight.png`

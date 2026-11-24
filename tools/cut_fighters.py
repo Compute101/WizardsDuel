@@ -47,6 +47,9 @@ FACES = {        # HUD face (portraits/small/<key>.jpg): x, y, size in the 768-t
     'halberdier': (200, 72, 140),
     'halberdier_fat': (205, 80, 140),
     'knight': (250, 40, 150),
+    # the Moriquende's creatures (sprites/forest/<key>.png)
+    'goblin': (402, 112, 114), 'varg': (404, 39, 131), 'varg_alpha': (413, 59, 131), 'orc': (369, 71, 113),
+    'orc_bigun': (364, 58, 119), 'orc_warboss': (377, 116, 119), 'elf_talon': (264, 83, 101),
 }
 PAD = 6
 
