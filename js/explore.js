@@ -1249,9 +1249,10 @@ function reachable(l){ return !l.locked && (found.has(l.id) || (l.seenFrom||[]).
 function visible(l){ return l.known || found.has(l.id) || (l.seenFrom||[]).some(id=>found.has(id)); }
 function openWorld(mode){
   worldMode=mode; worldOpen=true; keys.clear(); target=null; hideSay();
-  const here=locationOfMap(MAP.id);
+  const here=locationOfMap(MAP.id), [WW,WH]=worldDims();
   worldSel=here||null;
-  el.world.hidden=false;
+  worldView=here?{cx:here.x, cy:here.y}:{cx:WW/2, cy:WH/2};
+  el.world.hidden=false; worldPan(0,0);
   el.worldTitle.textContent=world.name;
   showWorldPanel();
   requestAnimationFrame(drawWorldLoop);
@@ -1325,10 +1326,27 @@ function worldXY(e){
   const b=el.worldCv.getBoundingClientRect(), f=worldFit();
   return {x:(e.clientX-b.left-f.ox)/f.s, y:(e.clientY-b.top-f.oy)/f.s};
 }
+// The parchment (world.w × world.h) is drawn at the scale WORLD_VIEW of it would fit the screen, so it's
+// bigger than the screen: drag it (or wheel it) about. worldView is the world point at the screen's centre.
+let worldView=null, worldDrag=null;
+const worldDims=()=>[world.w||1000, world.h||700];
+const WORLD_VIEW=[800,560];   // how much of the parchment fills the screen (the rest scrolls)
 function worldFit(){
-  const w=el.worldCv.clientWidth, h=el.worldCv.clientHeight, s=Math.min(w/1000,h/700);
-  return {s, ox:(w-1000*s)/2, oy:(h-700*s)/2, w, h};
+  const w=el.worldCv.clientWidth, h=el.worldCv.clientHeight, [WW,WH]=worldDims();
+  const s=Math.max(Math.min(w/WORLD_VIEW[0],h/WORLD_VIEW[1]), Math.min(w/WW,h/WH));
+  if(!worldView) worldView={cx:WW/2, cy:WH/2};
+  const axis=(len,full,c)=>{ const m=full*s; return m<=len?(len-m)/2:Math.min(0,Math.max(len-m,len/2-c*s)); };
+  return {s, ox:axis(w,WW,worldView.cx), oy:axis(h,WH,worldView.cy), w, h};
 }
+function worldPan(dx,dy){   // by screen px; kept to where there's map
+  const f=worldFit(), [WW,WH]=worldDims();
+  worldView.cx=Math.max(f.w/2/f.s,Math.min(WW-f.w/2/f.s,worldView.cx-dx/f.s));
+  worldView.cy=Math.max(f.h/2/f.s,Math.min(WH-f.h/2/f.s,worldView.cy-dy/f.s));
+}
+function worldDown(e){ worldDrag={x:e.clientX, y:e.clientY, moved:false}; try{ el.worldCv.setPointerCapture(e.pointerId); }catch(_){} }
+function worldMove(e){ if(!worldDrag) return; const dx=e.clientX-worldDrag.x, dy=e.clientY-worldDrag.y;
+  if(!worldDrag.moved&&Math.hypot(dx,dy)<6) return; worldDrag.moved=true; worldPan(dx,dy); worldDrag.x=e.clientX; worldDrag.y=e.clientY; }
+function worldUp(e){ const d=worldDrag; worldDrag=null; if(d&&!d.moved) worldClick(e); }
 function worldClick(e){
   const p=worldXY(e);
   let best=null, bd=40;
@@ -1348,17 +1366,19 @@ function drawWorld(t){
   g.setTransform(d,0,0,d,0,0); g.fillStyle='#120e08'; g.fillRect(0,0,W,H);
   g.setTransform(d*f.s,0,0,d*f.s,d*f.ox,d*f.oy);
   // parchment
-  const bg=g.createRadialGradient(500,350,80,500,350,620);
+  const [WW,WH]=worldDims(), area=WW*WH/700000, R=Math.max(WW,WH);
+  const bg=g.createRadialGradient(WW/2,WH/2,80,WW/2,WH/2,R*0.62);
   bg.addColorStop(0,'#e4d2a6'); bg.addColorStop(0.7,'#cdb27c'); bg.addColorStop(1,'#8c7448');
-  g.fillStyle=bg; g.fillRect(0,0,1000,700);
+  g.fillStyle=bg; g.fillRect(0,0,WW,WH);
   const r=P.rng(77);
   g.fillStyle='rgba(90,60,30,0.08)';
-  for(let i=0;i<900;i++){ g.fillRect(r()*1000,r()*700,1+r()*2,1+r()*2); }
+  for(let i=0;i<900*area;i++){ g.fillRect(r()*WW,r()*WH,1+r()*2,1+r()*2); }
+  const wound=world.locations.find(l=>l.kind==='city')||{x:-999,y:-999};
   // woods and hills, in ink
   g.strokeStyle='rgba(70,50,25,0.55)'; g.fillStyle='rgba(70,90,40,0.35)'; g.lineWidth=1.2;
-  for(let i=0;i<150;i++){
-    const x=r()*1000, y=r()*700;
-    if(Math.hypot(x-700,y-230)<130) continue;                       // nothing grows near the Wound
+  for(let i=0;i<150*area;i++){
+    const x=r()*WW, y=r()*WH;
+    if(Math.hypot(x-wound.x,y-wound.y)<130) continue;               // nothing grows near the Wound
     if(world.locations.some(l=>Math.hypot(l.x-x,l.y-y)<45)) continue;
     if(r()<0.7){ g.beginPath(); g.moveTo(x,y-9); g.lineTo(x-6,y+4); g.lineTo(x+6,y+4); g.closePath(); g.fill(); g.stroke(); }
     else { g.beginPath(); g.arc(x,y+6,12,Math.PI*1.1,Math.PI*1.9); g.stroke(); }
@@ -1416,9 +1436,9 @@ function drawWorld(t){
     }
   }
   // edges fade into the unknown
-  const fog=g.createRadialGradient(500,350,300,500,350,640);
+  const fog=g.createRadialGradient(WW/2,WH/2,R*0.3,WW/2,WH/2,R*0.64);
   fog.addColorStop(0,'rgba(18,14,8,0)'); fog.addColorStop(1,'rgba(18,14,8,0.85)');
-  g.fillStyle=fog; g.fillRect(0,0,1000,700);
+  g.fillStyle=fog; g.fillRect(0,0,WW,WH);
 }
 
 // ═══ UI ════════════════════════════════════════════════════════════
@@ -1479,7 +1499,12 @@ function buildDom(){
   $('#ex-mapbtn').onclick=()=>{ if(!busy&&MAP) openWorld('view'); };
   $('#ex-world-close').onclick=closeWorld;
   el.wpGo.onclick=worldGo;
-  el.worldCv.addEventListener('click',worldClick);
+  el.worldCv.addEventListener('pointerdown',worldDown);
+  el.worldCv.addEventListener('pointermove',worldMove);
+  el.worldCv.addEventListener('pointerup',worldUp);
+  el.worldCv.addEventListener('pointercancel',()=>{ worldDrag=null; });
+  el.worldCv.addEventListener('wheel',e=>{ e.preventDefault(); worldPan(-(e.shiftKey?e.deltaY:e.deltaX),e.shiftKey?0:-e.deltaY); },{passive:false});
+  el.worldCv.style.touchAction='none';
   el.night.onclick=()=>{ lightMode={auto:'day',day:'night',night:'auto'}[lightMode]; renderClock(); save(); };
   el.spill.onclick=()=>{ if(!busy) openBag('pack'); };
   $('#ex-bagbtn').onclick=()=>{ if(!busy&&MAP) openBag(); };
@@ -2436,6 +2461,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
 window.Explore={open, close, refreshTitle, titleMusic:()=>titleMusic(),
   _talk:n=>talkTo(n), _magic:()=>magic, _folk:()=>folkApi,
+  _worldPt:id=>{ const l=world.locations.find(x=>x.id===id), f=worldFit(), b=el.worldCv.getBoundingClientRect(); return [b.left+f.ox+l.x*f.s, b.top+f.oy+l.y*f.s]; },   // tests: a place on screen
   _setClock:m=>folkApi.setClock(m),
   _fightActor:id=>{ const a=actors.find(x=>x.e.incident===id||x.e.id===id); if(a) fight(a); return !!a; }, _actorIds:()=>actors.map(a=>a.e.incident||a.e.id), _quests:()=>quests, _allies:()=>allies, _tick:()=>Year&&Year.tick(folkApi),
   knowAll:()=>{ if(!hero) return false; magic=fullMagic(hero.elem); applyMagic(); save(); return true; },   // testing: the whole Year at once
