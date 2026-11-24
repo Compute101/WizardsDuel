@@ -1,6 +1,6 @@
 {
  "name": "The Vale of the Hollow",
- "note": "Hand-written. Coordinates are on a 1000 x 700 parchment. A location's map/spawn is where travelling there puts you; 'locked' ones show on the map but can't be reached yet; 'known' ones are on the map from the start, the rest appear once visited (or once a neighbour is visited, if 'seen' lists it). Wrenford, the new University town where a new game starts, lies far to the west on the river Wren. The river is the Hollow: it rises north of Corvanthe, runs through the Wound and the city, then south-west past Hollowmere.",
+ "note": "Hand-written. Coordinates are on a 1000 x 700 parchment. A location's map/spawn is where travelling there puts you; 'locked' ones show on the map but can't be reached yet; 'known' ones are on the map from the start, the rest appear once visited (or once a neighbour is visited, if 'seen' lists it). Wrenford, the new University town where a new game starts, lies far to the west on the river Wren. The river is the Hollow: it rises north of Corvanthe, runs through the Wound and the city, then south-west past Hollowmere. The Moriquende (forest: true) has no map: travelling there opens the forest year (js/forest.js); Mother Agathe puts it on the map.",
  "locations": [
   {
    "id": "wrenford",
@@ -56,6 +56,15 @@
     "corvanthe_road"
    ],
    "blurb": "The great university city, ruined in the Unweaving. Its citizens walk its streets still, as Echoes. The gleaners have cut a way in through the Wardgate, into Cindergate."
+  },
+  {
+   "id": "moriquende",
+   "name": "The Moriquende",
+   "kind": "forest",
+   "x": 78,
+   "y": 420,
+   "forest": true,
+   "blurb": "The elf-wood at the end of the West Road, older than the University and older than Corvanthe. Elfhome is in its heart, and Sylvara is its Warden."
   }
  ],
  "roads": [
@@ -70,6 +79,10 @@
   [
    "corvanthe_road",
    "corvanthe"
+  ],
+  [
+   "wrenford",
+   "moriquende"
   ]
  ],
  "river": [

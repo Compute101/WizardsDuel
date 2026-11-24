@@ -20,7 +20,10 @@ const TOKEN = {gob:'👺', varg:'🐺', orc:'👹', herd:'🦌', warren:'🕳'};
 let lastPanel='', S=null, weekStart=null, ui={sel:null, elf:null, spell:null, ring:2}, view={zoom:1, ox:0, oy:0}, raf=0;
 
 // ── Save ─────────────────────────────────────────────────────────────
-function save(){ try{ localStorage.setItem(SAVE, JSON.stringify(S)); }catch(e){} }
+// ctx: opened from Explore (Mother Agathe's errand, js/explore.js openForest): the year lives in the Explore
+// save, your wizard is Explore's own, and closing goes back to Wrenford's West Road
+let ctx=null;
+function save(){ if(ctx){ ctx.onSave(S); return; } try{ localStorage.setItem(SAVE, JSON.stringify(S)); }catch(e){} }
 function loadSave(){ try{ const s=JSON.parse(localStorage.getItem(SAVE)||'null'); return s&&s.v===1?s:null; }catch(e){ return null; } }
 
 // ── Screen ───────────────────────────────────────────────────────────
@@ -71,16 +74,49 @@ function build(){
   return d;
 }
 const isOpen=()=>{ const d=$('fr-screen'); return !!d&&d.classList.contains('active'); };
-function open(){
+function open(opts){
   const d=$('fr-screen')||build(); d.classList.add('active');
+  ctx=opts&&opts.explore||null;
+  d.classList.toggle('fr-explore',!!ctx);
   if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
-  S=loadSave();
-  fitCanvas(); view={zoom:1,ox:0,oy:0};
+  S=ctx?(ctx.state||null):loadSave();
+  fitCanvas(); view={zoom:1,ox:0,oy:0}; ui={sel:F.HOME, elf:null, spell:null, ring:2};
   if(S&&!S.over){ weekStart=F.clone(S); F.vision(S); render(); if(S.pending) fightPrompt(); }
+  else if(ctx&&S&&S.over){ F.vision(S); render(); yearOverPanel(); }
+  else if(ctx) beginStory();
   else setupPanel(false);
   loop();
 }
-function close(){ const d=$('fr-screen'); if(d) d.classList.remove('active'); cancelAnimationFrame(raf); if(window.Explore&&Explore.titleMusic) Explore.titleMusic(); }
+function close(){
+  const d=$('fr-screen'); if(d) d.classList.remove('active'); cancelAnimationFrame(raf);
+  if(ctx){ save(); const c=ctx; ctx=null; c.onClose(S); return; }
+  if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
+}
+// ── From Explore: Agathe's errand ────────────────────────────────────
+function beginStory(){
+  S=F.newYear({element:ctx.element, heroName:ctx.name, wizKey:ctx.wizKey, handFights:true});
+  weekStart=F.clone(S); save(); render();
+  modal(`<h2>Elfhome</h2>
+    <p>The West Road runs out at a stile, and past the stile there is only the wood: oaks older than the University, older than Corvanthe, with moss to the knee and light coming down green.</p>
+    <p>The elves find you before you find them. They walk you in by paths you couldn't see, up to a town built into the trees, and a tall woman in bark-brown robes takes Mother Agathe's letter from your hand and reads it twice.</p>
+    <p>“So Agathe sent me a wizard.” Sylvara, the Warden of the Moriquende, looks you over. “Good. I asked for one. The orcs the Unweaving drove out of the east will be in my wood by midsummer, and I can't watch for them: the four eldest trees must be tended before the year turns, or they die, and only I can tend them. Keep Elfhome standing. Keep the wood in balance. And keep me alive while I walk.”</p>
+    <p class="fr-note">The year is kept in your save. ✕ takes you back to Wrenford; the wood waits for you.</p>
+    <div class="fr-row"><button class="fr-btn big" type="button" id="fr-ok">To the wood</button></div>`);
+  $('fr-ok').onclick=()=>reportPanel(1);
+}
+function yearOverPanel(){
+  const sc=F.score(S), E=F.ENDINGS[sc.ending];
+  modal(`<h2>${E.name}</h2><p>${esc(E.text)}</p>${endText()}${S.rewardText?`<p>${esc(S.rewardText)}</p>`:''}
+    <p class="fr-note">${sc.ending==='song'?'The Moriquende will always have room for you.':'Sylvara would welcome you back next spring, if you\u2019d try the year again.'}</p>
+    <div class="fr-row"><button class="fr-btn" type="button" id="fr-back">Back to Wrenford</button>${sc.ending==='song'?'':'<button class="fr-btn big" type="button" id="fr-again">Try another year</button>'}</div>`);
+  $('fr-back').onclick=()=>{ closeModal(); close(); };
+  if($('fr-again')) $('fr-again').onclick=()=>{ closeModal(); beginStory(); };
+}
+// the year's end pays out once (Explore decides what: js/explore.js forestEnd)
+function settleYear(){
+  if(!ctx||!S.over||S.rewarded) return;
+  S.rewarded=true; S.rewardText=ctx.onEnd(S,F.score(S))||''; save();
+}
 
 // ── Panels ───────────────────────────────────────────────────────────
 function modal(html){ $('fr-card').innerHTML=html; $('fr-modal').hidden=false; }
@@ -137,8 +173,9 @@ function reportPanel(turn){
     ${lines.length?`<ul class="fr-log">${lines.map(l=>`<li class="k-${l.kind}">${esc(l.text)}</li>`).join('')}</ul>`:'<p>A quiet week.</p>'}
     ${signs.length?`<p class="fr-lbl">Signs from the wood</p><ul class="fr-log">${signs.map(s=>`<li>${SIGN_ICON[s.kind]||'•'} ${esc(signText(s))}</li>`).join('')}</ul>`:''}
     ${S.over?endText():''}
-    <div class="fr-row"><button class="fr-btn big" type="button" id="fr-ok">${S.over?'Close':'To the wood'}</button>${S.over?'<button class="fr-btn" type="button" id="fr-again">A new year</button>':''}</div>`);
-  $('fr-ok').onclick=closeModal;
+    ${S.over&&S.rewardText?`<p><b>${esc(S.rewardText)}</b></p>`:''}
+    <div class="fr-row"><button class="fr-btn big" type="button" id="fr-ok">${S.over?(ctx?'Back to Wrenford':'Close'):'To the wood'}</button>${S.over&&!ctx?'<button class="fr-btn" type="button" id="fr-again">A new year</button>':''}</div>`);
+  $('fr-ok').onclick=()=>{ closeModal(); if(S.over&&ctx) close(); };
   if($('fr-again')) $('fr-again').onclick=()=>setupPanel(false);
 }
 function endText(){
@@ -162,7 +199,9 @@ function rosterPanel(){
 function spellPanel(){
   if(S.spellUsed){ toast('You have cast this week’s spell.'); return; }
   const sp=F.SPELLS, m=S.mana;
-  const b=(id,ring,label,cost)=>`<button class="fr-btn" data-sp="${id}" data-ring="${ring||''}" type="button" ${m<cost?'disabled':''}>${label} <small>${cost} mana</small></button>`;
+  // from Explore, a wizard still at the University casts only what it has learnt (category and ring)
+  const unlearnt=(id,ring)=>!!(ctx&&ctx.cats&&(!ctx.cats.includes(sp[id].cat)||(ring&&ring>(ctx.rings||1))));
+  const b=(id,ring,label,cost)=>`<button class="fr-btn" data-sp="${id}" data-ring="${ring||''}" type="button" ${m<cost||unlearnt(id,ring)?'disabled':''}>${label} <small>${unlearnt(id,ring)?'not learnt yet':cost+' mana'}</small></button>`;
   modal(`<h2>✨ Cast a spell</h2><p>Mana ${m} of ${F.MANA_MAX}. One spell a week.</p>
     <div class="fr-spells">
       ${b('strike',1,'⚔ Lesser Strike (3)',sp.strike.cost[1])}${b('strike',2,'⚔ Strike (6)',sp.strike.cost[2])}${b('strike',3,'⚔ Greater Strike (10)',sp.strike.cost[3])}
@@ -187,7 +226,7 @@ function runWeek(){
   const t=S.weekOf||S.turn;
   F.endTurn(S);
   if(S.pending){ save(); render(); fightPrompt(); return; }
-  weekStart=F.clone(S); save(); render();
+  weekStart=F.clone(S); settleYear(); save(); render();
   reportPanel(S.over?S.turn:t);
 }
 
@@ -224,6 +263,7 @@ function leadFight(set,wk){
   const spec=duelSpec(set), d=CHAR_DEFS[wk];
   const foe=F.foeById(S,S.pending.foeId);
   $('fr-screen').classList.remove('active'); cancelAnimationFrame(raf);
+  if(ctx&&ctx.beforeBattle) ctx.beforeBattle();
   startExploreBattle({wizKey:wk, foes:spec.foes, allies:spec.allies, hp:Math.max(1,Math.round(d.hp*set.hpFrac)), arena:'road',
     text:{winTitle:'The Moriquende Holds', win:`The ${foe.fac==='orc'?'orcs':F.FAC[foe.fac||'gob'].name.toLowerCase()} break and scatter into the trees.`,
       loseTitle:'Carried Home', lose:`${titleCase(d.name)} falls. The elves carry you back to Elfhome.`},
@@ -427,5 +467,5 @@ function drawContents(c,k,s,T){
 }
 
 window.addEventListener('DOMContentLoaded',()=>{ const b=$('btn-forest'); if(b) b.addEventListener('click',open); });
-window.Forest={open, close, duelSpec, _peek:()=>({S, ui, view})};   // _peek: for tests
+window.Forest={open, close, duelSpec, isOpen, _peek:()=>({S, ui, view, ctx})};   // _peek: for tests
 })();

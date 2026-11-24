@@ -62,6 +62,9 @@
 .fr-log li.k-sylvara{color:#1f6a35;}
 .fr-end{margin-top:10px;padding:8px 10px;background:rgba(255,255,255,.35);border-radius:8px;}
 
+/* opened from Explore: no new-year button (the year is the story's) */
+.fr.fr-explore #fr-new{display:none;}
+
 /* setup: your wizard */
 .fr-wizzes{display:flex;flex-wrap:wrap;gap:6px;max-height:190px;overflow:auto;padding:2px;}
 .fr-wiz{font:inherit;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:2px;width:72px;padding:4px 2px;

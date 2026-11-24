@@ -712,7 +712,7 @@ const folkApi = {
   dropEcho:id=>{ actors=actors.filter(a=>!(a.e.incident===id)); },
   registerChar:(key,d)=>{ chars[key]=d; if(typeof CHAR_DEFS!=='undefined') CHAR_DEFS[key]=d; },
   hero:()=>hero, heroDef:rec=>window.ExploreHero?window.ExploreHero.def(rec):Promise.resolve(null),
-  allies:()=>allies, addAlly:a=>{ if(!allies.some(x=>x.key===a.key)) allies.push(Object.assign({level:0,hp:null},a)); },
+  reveal:id=>{ found.add(id); }, allies:()=>allies, addAlly:a=>{ if(!allies.some(x=>x.key===a.key)) allies.push(Object.assign({level:0,hp:null},a)); },
   bodies:()=>wizKeys[wizIdx]==='hero', walkTo:(x,y)=>{ wiz.x=x; wiz.y=y; },
   enterMap:(id,at)=>enterMap(id,at), fullMagic:()=>!!(magic&&magic.grad), refreshDoors:()=>{ if(MAP&&!MAP.interior) findDoors(); },
   earnTopper:(id,how)=>earnTopper(id,how), hasTopper:id=>toppers.includes(id)||!!(window.ExploreHero&&ExploreHero.STARTER_TOPPERS.includes(id)),
@@ -1274,7 +1274,48 @@ function worldGo(){
   const here=locationOfMap(MAP.id);
   closeWorld();
   if(here&&l.id===here.id) return;
+  if(l.forest){ openForest(); return; }
   enterMap(l.map,l.spawn);
+}
+
+// ═══ THE MORIQUENDE ═════════════════════════════════════════════════
+// Mother Agathe's errand (js/explore_folk.js): the forest year (js/forest.js) on its own screen, fought by
+// the wizard you walk as. The year lives in quests.forest.S; closing it (or the year's end) brings you back
+// where you set out from. Each ending pays once, only when it beats your best (FOREST_PRIZE); the best of
+// all brings Sylvara into your companions.
+const FOREST_PRIZE={song:{gold:60,spill:6}, endures:{gold:30,spill:3}, scarred:{gold:10,spill:0}, fallen:{gold:0,spill:0}};
+const FOREST_RANK=['fallen','scarred','endures','song'];
+function forestElem(key){ const d=chars[key]; const sp=d&&(d.spells||[]).find(x=>x.el&&x.el.elem); return sp?sp.el.elem:'earth'; }
+function openForest(){
+  if(!window.Forest||busy) return;
+  const key=wizKeys[wizIdx], q=quests.forest||(quests.forest={});
+  busy=true; keys.clear(); target=null; hideSay(); save();
+  fade(true).then(()=>{
+    running=false; el.root.classList.remove('active'); fade(false); syncMusic();
+    if(typeof CHAR_DEFS!=='undefined') CHAR_DEFS[key]=chars[key];
+    window.Forest.open({explore:{wizKey:key, name:folkApi.wizName(), element:key==='hero'&&hero?hero.elem:forestElem(key),
+      state:q.S||null, cats:key==='hero'&&magic&&!magic.grad?(magic.cats||[]):null, rings:key==='hero'&&magic&&!magic.grad?(magic.rings||1):null,
+      onSave:S=>{ q.S=S; save(); },
+      onEnd:(S,sc)=>forestEnd(q,sc),
+      onClose:()=>{
+        el.root.classList.add('active'); running=true; busy=false; resize(); syncMusic();
+        renderHp(); renderSpill(); save(); grace=1.5; last=performance.now(); requestAnimationFrame(frame);
+      }}});
+  });
+}
+function forestEnd(q,sc){
+  q.years=(q.years||0)+1;
+  const was=q.best?FOREST_RANK.indexOf(q.best):-1, now=FOREST_RANK.indexOf(sc.ending), out=[];
+  if(now>was){
+    const P=FOREST_PRIZE[sc.ending], O=was>=0?FOREST_PRIZE[q.best]:{gold:0,spill:0};
+    const g=P.gold-O.gold, sp=P.spill-O.spill;
+    if(g>0){ gold+=g; out.push(g+' gold'); }
+    if(sp>0){ spill.earth=(spill.earth||0)+sp; out.push(sp+' '+SPILL.earth[0]); }
+    q.best=sc.ending;
+  }
+  if(sc.ending==='song'&&!q.sylvara&&wizKeys[wizIdx]!=='sylvara'){ q.sylvara=true; folkApi.addAlly({key:'sylvara', wizard:true, name:'Sylvara'}); out.push('Sylvara herself, who joins your companions'); }
+  save();
+  return out.length?'You leave the Moriquende with '+out.join(', ')+'.':'';
 }
 function worldXY(e){
   const b=el.worldCv.getBoundingClientRect(), f=worldFit();
@@ -1352,6 +1393,9 @@ function drawWorld(t){
         g.beginPath(); g.moveTo(l.x+dx-w/2-1,l.y+8-h); g.lineTo(l.x+dx,l.y+8-h-9); g.lineTo(l.x+dx+w/2+1,l.y+8-h); g.fill();
       }
       g.fillRect(l.x-24,l.y+6,48,5);
+    } else if(l.kind==='forest'){
+      g.fillStyle='#2f4a1c';
+      for(const [dx,dy,r] of [[-16,6,9],[0,-4,11],[15,5,9],[-6,14,7],[9,15,7]]){ g.beginPath(); g.moveTo(l.x+dx,l.y+dy-r*1.6); g.lineTo(l.x+dx+r,l.y+dy+r*0.6); g.lineTo(l.x+dx-r,l.y+dy+r*0.6); g.fill(); }
     } else if(l.kind==='town'){
       g.fillStyle='#3a2810';
       for(const [dx,dy] of [[-10,4],[2,-6],[12,6]]){ g.fillRect(l.x+dx-5,l.y+dy-3,10,8); g.beginPath(); g.moveTo(l.x+dx-7,l.y+dy-3); g.lineTo(l.x+dx,l.y+dy-10); g.lineTo(l.x+dx+7,l.y+dy-3); g.fill(); }

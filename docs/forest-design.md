@@ -354,3 +354,25 @@ tuned until these hold:
   far better led: an orc camp with two Talons 19 → 86%, orcs raiding Sylvara with you beside her
   46 → 99%, a Waaagh of 16 + 4 at Elfhome 68 → 99%; caught alone by seven orcs, 0 → 10%.
 
+## As built (step 3: the story)
+- **The hook:** Mother Agathe, the herbwife in Wrenford (`westWood` in `js/explore_folk.js`, a ★ choice in
+  her talk until asked). She buys her best herbs from Elfhome's healers; their last bundle came with
+  Sylvara's letter asking for a wizard. Before you may leave Wrenford (the Proctors' licence,
+  `ExploreYear.blockExit`) she only hints at it; after, she gives you the letter and **I'll go** puts the
+  Moriquende on the world map (`folkApi.reveal`). Later she asks how it's going, and after the year she
+  answers your ending. Playing as Sylvara, she just tells you to go home.
+- **The journey:** the Moriquende is a world-map place with no map (`maps/world.json`: `forest:true`,
+  `kind:'forest'`, drawn as a stand of trees; a road from Wrenford). Travelling there from the West Road
+  (`worldGo` → `openForest` in `js/explore.js`) hides Explore and opens the forest screen with
+  `Forest.open({explore:{…}})`: your Explore wizard (the hero's element, or a roster wizard's first
+  signature element), the year from `quests.forest.S`, fights offered by default. A wizard still at the
+  University casts only the spell categories and rings it has learnt (`cats` / `rings`). The first visit
+  opens with Sylvara meeting you (`beginStory`). ✕ (or the year's end) brings you back where you set out;
+  the year waits in the save, and the journal shows the week and the trees tended.
+- **The ending pays once** (`forestEnd`, `FOREST_PRIZE`): only an ending better than your best pays, and
+  only the difference (The Wood in Song 60 gold and 6 lodestone, Endures 30 / 3, Scarred 10). The Wood in
+  Song brings **Sylvara into your companions** (`addAlly`, a wizard ally). Short of that, the year can be
+  tried again (Try another year); after it there's no new year to start.
+- **Not yet:** the wood's own music, its battle backdrop and art; your Explore wounds don't carry into the
+  forest's fights or back (the forest keeps its own HP for your wizard).
+
