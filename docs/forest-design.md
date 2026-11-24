@@ -401,3 +401,18 @@ tuned until these hold:
   itself (`selfHeal:false`, `S.wizSelfHeal`): rest at the **Healing House**, which heals you to full and,
   once a week, takes two weeks off every wound in Elfhome (`HEAL_WEEKS`, `S.healedWeek`).
 
+## Map art (from the user)
+- Two sheets in `sprites/forest/source/`: 13 pointy-top hex tiles (old growth, woodland, glade, hills,
+  marsh, crags with a cave, lake, felled clearing, burnt clearing, Elfhome's tree-town, a hamlet, a
+  sentry-post tree, the ancient tree) and 10 map figures (goblin, goblin shaman, Varg, orc, war-totem,
+  deer, and the Seer, Talon, Beast-speaker and Builder). `python3 tools/cut_forest_art.py` cuts them:
+  each hex masked to an exact pointy-top hexagon at a regular hexagon's proportions (240 × 277), each
+  figure keyed off black and trimmed (256 tall); 256 colours, about 700 KB in all.
+- `js/forest.js`: `hexArt` picks a hex's tile (burnt, felled, Elfhome, hamlet, the ancient tree (felled
+  if it died), a finished sentry post, else the terrain) and draws it in place of the flat colour; only
+  what changes during the year goes on top (a tree's tending ring, a post being built). `figure` stands a
+  figure on a small round base in place of an emoji token: the wild (a warren is a goblin, or the shaman
+  when it has a fetish; an orc band with a war-totem has the totem beside it), the deer, the four
+  callings, and your wizard and Sylvara as their own battle sprites (`elfArt`). Everything falls back to
+  the old canvas drawing until its picture has loaded (`art`, `preloadArt`).
+

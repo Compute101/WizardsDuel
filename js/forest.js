@@ -16,6 +16,25 @@ const ELEMS = [
 const TCOL = {home:'#b89a52', wood:'#2f6b34', old:'#1c4a25', glade:'#7fae55', hill:'#6f7d3c', marsh:'#3f6d62', crag:'#7c7568', lake:'#2f5f8f'};
 const SIGN_ICON = {smoke:'💨', timber:'🪓', drums:'🥁', waaagh:'🥁', howl:'🐺', birds:'🐦', silence:'🤫', fire:'🔥'};
 const TOKEN = {gob:'👺', varg:'🐺', orc:'👹', herd:'🦌', warren:'🕳'};
+// ── The map art (the user's sheets, cut by tools/cut_forest_art.py): a hex tile per terrain and a figure
+// for each thing on the map; the canvas drawing and emoji stand in until each picture has loaded ──
+const ART_V='?v=1', ART={};
+function art(src){ let a=ART[src]; if(!a){ a=ART[src]={img:new Image(), ok:false}; a.img.onload=()=>{ a.ok=true; }; a.img.src=src; } return a.ok?a.img:null; }
+const HEX_KINDS=['old','wood','glade','hill','marsh','crag','lake','felled','burnt','home','hamlet','talan','ancient'];
+const TOK_KINDS=['goblin','shaman','varg','orc','totem','deer','seer','talon','charm','guild'];
+function hexArt(hx){
+  const k=hx.burnt?'burnt':hx.felled?'felled':hx.t==='home'?'home':hx.hamlet?'hamlet':hx.tree!=null?(S.trees[hx.tree].dead?'felled':'ancient'):hx.talan&&!hx.build?'talan':hx.t;
+  return art('sprites/forest/hex_'+k+'.png'+ART_V);
+}
+const tokArt=k=>art('sprites/forest/tok_'+k+'.png'+ART_V);
+const WILD_ART={gob:'goblin', varg:'varg', orc:'orc', herd:'deer'};
+// your wizard and Sylvara stand as their own battle sprites
+function elfArt(e){
+  if(e.role==='sylvara') return art('sprites/sylvara.png');
+  if(e.role==='wizard'){ const d=S.wizKey&&typeof CHAR_DEFS!=='undefined'&&CHAR_DEFS[S.wizKey]; return d&&d.sprite?art(d.sprite):null; }
+  return tokArt(e.role);
+}
+function preloadArt(){ HEX_KINDS.forEach(k=>art('sprites/forest/hex_'+k+'.png'+ART_V)); TOK_KINDS.forEach(tokArt); art('sprites/sylvara.png'); }
 
 let lastPanel='', S=null, weekStart=null, ui={sel:null, elf:null, spell:null, ring:2}, view={zoom:1, ox:0, oy:0}, raf=0;
 
@@ -79,6 +98,7 @@ function open(opts){
   ctx=opts&&opts.explore||null;
   d.classList.toggle('fr-explore',!!ctx);
   if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
+  preloadArt();
   S=ctx?(ctx.state||null):loadSave();
   fitCanvas(); view={zoom:1,ox:0,oy:0}; ui={sel:F.HOME, elf:null, spell:null, ring:2};
   if(S&&!S.over){ syncIn(); weekStart=F.clone(S); F.vision(S); render(); if(S.pending) fightPrompt(); }
@@ -394,9 +414,10 @@ function draw(){
   const reach=e&&!e.moved&&!e.wounded&&e.role!=='sylvara'?F.reachable(S,e.pos,F.ROLES[e.role].move):null;
   for(const k in S.hexes){
     const hx=S.hexes[k], [x,y]=hexXY(k); if(x<-s||y<-s||x>cw+s||y>ch+s) continue;
-    hexPath(c,x,y,s*0.98);
-    c.fillStyle=hx.burnt?'#2d2a26':hx.felled?'#6b5233':TCOL[hx.t]; c.fill();
-    terrainMarks(c,k,hx,x,y,s);
+    const tile=hexArt(hx);
+    if(tile) c.drawImage(tile,x-Math.sqrt(3)/2*s,y-s,Math.sqrt(3)*s,2*s);
+    else { hexPath(c,x,y,s*0.98); c.fillStyle=hx.burnt?'#2d2a26':hx.felled?'#6b5233':TCOL[hx.t]; c.fill(); }
+    terrainMarks(c,k,hx,x,y,s,!!tile);
     // fog
     const v=S.vis[k];
     if(v!=='clear'){ hexPath(c,x,y,s*0.98); c.fillStyle=v==='dim'?'rgba(5,12,8,0.32)':'rgba(5,12,8,0.6)'; c.fill(); }
@@ -420,9 +441,14 @@ function draw(){
   // the selected hex
   if(ui.sel){ const [x,y]=hexXY(ui.sel); hexPath(c,x,y,s*0.98); c.strokeStyle='#ffe58a'; c.lineWidth=3; c.stroke(); }
 }
-function terrainMarks(c,k,hx,x,y,s){
+function terrainMarks(c,k,hx,x,y,s,tiled){
   const r=(n)=>hash(k,n);
   c.save();
+  if(tiled){   // the tile shows the ground; only what changes over the year goes on top
+    if(hx.tree!=null){ const t=S.trees[hx.tree]; c.beginPath(); c.arc(x,y,s*0.72,-Math.PI/2,-Math.PI/2+Math.PI*2*(t.done?1:t.tended/F.TEND)); c.strokeStyle=t.dead?'#888':t.done?'#ffd76a':'#8cffaa'; c.lineWidth=3; c.stroke(); }
+    if(hx.talan&&hx.build){ c.setLineDash([4,3]); c.strokeStyle='#e0b070'; c.lineWidth=2; c.strokeRect(x-s*0.18,y-s*0.85,s*0.36,s*0.3); c.setLineDash([]); }
+    c.restore(); return;
+  }
   if(hx.felled||hx.burnt){ for(let i=0;i<4;i++){ c.beginPath(); c.arc(x+(r(i)-0.5)*s*1.1,y+(r(i+9)-0.5)*s*1.0,s*0.08,0,7); c.fillStyle=hx.burnt?'#151311':'#a5845a'; c.fill(); } }
   else if(hx.t==='wood'||hx.t==='old'||hx.t==='hill'){ const n=hx.t==='old'?7:hx.t==='hill'?2:4; for(let i=0;i<n;i++){ const tx=x+(r(i)-0.5)*s*1.15, ty=y+(r(i+9)-0.5)*s*1.0; c.beginPath(); c.arc(tx,ty,s*(hx.t==='old'?0.2:0.16),0,7); c.fillStyle=hx.t==='old'?'#0f3018':'#1e4f26'; c.fill(); }
     if(hx.t==='hill'){ c.beginPath(); c.arc(x,y+s*0.35,s*0.55,Math.PI*1.1,Math.PI*1.9); c.strokeStyle='#3e4a1e'; c.lineWidth=2; c.stroke(); } }
@@ -445,6 +471,15 @@ function token(c,icon,x,y,r,col,n,alpha){
   if(n!=null){ c.font=`bold ${Math.round(r*0.85)}px sans-serif`; c.fillStyle='#fff'; c.strokeStyle='#000'; c.lineWidth=3; c.strokeText(n,x+r*0.75,y+r*0.7); c.fillText(n,x+r*0.75,y+r*0.7); }
   c.restore();
 }
+// a figure standing on a little round base, feet at the base's middle; n is a count badge
+function figure(c,img,x,y,r,col,n,alpha,base){
+  c.save(); c.globalAlpha=alpha==null?1:alpha;
+  const fy=y+r*0.55;
+  if(base!==false){ c.beginPath(); c.ellipse(x,fy,r*0.95,r*0.36,0,0,7); c.fillStyle=col; c.fill(); c.lineWidth=1.2; c.strokeStyle='rgba(0,0,0,0.65)'; c.stroke(); }
+  const h=r*2.6, w=h*img.width/img.height; c.drawImage(img,x-w/2,fy-h*0.97,w,h);
+  if(n!=null){ c.font=`bold ${Math.round(r*0.85)}px sans-serif`; c.fillStyle='#fff'; c.strokeStyle='#000'; c.lineWidth=3; c.textAlign='center'; c.textBaseline='middle'; c.strokeText(n,x+r*0.85,fy-r*0.1); c.fillText(n,x+r*0.85,fy-r*0.1); }
+  c.restore();
+}
 function drawContents(c,k,s,T){
   const [x,y]=hexXY(k), v=S.vis[k], r=Math.max(7,s*0.27);
   const slots=[[-0.42,0.3],[0.42,0.3],[0,-0.45],[-0.42,-0.15],[0.42,-0.15],[0,0.5]];
@@ -455,15 +490,21 @@ function drawContents(c,k,s,T){
   else if(S.intel[k]&&S.intel[k].what.length){ what=S.intel[k].what; alpha=Math.max(0.25,0.6-0.06*(S.turn-S.intel[k].turn)); }
   if(what) for(const w of what){ const [tx,ty]=put();
     const col=w.t==='orc'?(w.march?'#c0241b':'#7a2a1f'):w.t==='varg'?'#5c5a6e':w.t==='herd'?'#8a6a3a':'#4d5a20';
-    token(c,TOKEN[w.t]||'?',tx,ty,r,col,w.t==='orc'&&w.gobs?w.n+'+':w.n,alpha);
-    if(w.t==='orc'&&w.drums&&alpha===1){ c.beginPath(); c.arc(tx,ty,r*(1.3+0.2*Math.sin(T/150)),0,7); c.strokeStyle='#ff4433'; c.lineWidth=2; c.stroke(); } }
+    const img=tokArt(w.t==='warren'?(w.fetish?'shaman':'goblin'):WILD_ART[w.t]);
+    const n=w.t==='orc'&&w.gobs?w.n+'+':w.n;
+    if(img){
+      if(w.t==='orc'&&w.totem){ const tt=tokArt('totem'); if(tt) figure(c,tt,tx-r*1.05,ty-r*0.2,r*0.85,col,null,alpha,false); }
+      figure(c,img,tx,ty,r,w.t==='warren'?'#3a2a14':col,n,alpha);
+    } else token(c,TOKEN[w.t]||'?',tx,ty,r,col,n,alpha);
+    if(w.t==='orc'&&w.drums&&alpha===1){ c.beginPath(); c.ellipse(tx,ty+r*0.55,r*(1.25+0.2*Math.sin(T/150)),r*(0.5+0.08*Math.sin(T/150)),0,0,7); c.strokeStyle='#ff4433'; c.lineWidth=2; c.stroke(); } }
   if(v==='dim'&&dimMoves(k)){ emoji(c,'❔',x,y,s*0.55); }
   // your elves
   const elves=S.elves.filter(e=>e.pos===k&&!e.wounded);
   for(const e of elves){ const [tx,ty]=put();
     const col=e.role==='sylvara'?'#2e9a55':e.role==='wizard'?'#5b3c99':'#c9a84c';
-    token(c,F.ROLES[e.role].icon,tx,ty,e.role==='sylvara'?r*1.2:r,col,null,1);
-    if(e.id===ui.elf){ c.beginPath(); c.arc(tx,ty,r*1.35,0,7); c.strokeStyle='#fff'; c.lineWidth=2; c.stroke(); }
+    const img=elfArt(e), rr=e.role==='sylvara'||e.role==='wizard'?r*1.15:r;
+    if(img) figure(c,img,tx,ty,rr,col,null,1); else token(c,F.ROLES[e.role].icon,tx,ty,rr,col,null,1);
+    if(e.id===ui.elf){ c.beginPath(); c.ellipse(tx,ty+rr*0.55,rr*1.2,rr*0.48,0,0,7); c.strokeStyle='#fff'; c.lineWidth=2; c.stroke(); }
     if(e.task&&e.task.t==='attack'){ emoji(c,'⚔',tx+r,ty-r,r); } }
 }
 
