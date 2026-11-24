@@ -63,6 +63,20 @@ async function painted(api, key, rec){
   const img=await loadImg(d.sprite); if(!img) return null;
   return cache[key]={img, glow:d.glow, face:d.face, h:d.spriteHeight||1};
 }
+// the lecturers' own art (sprites/folk/lect_<element>.png, cut by tools/cut_lecturers.py; the hero-creator
+// LOOKS stay as a fallback): their magic sits where lecturers.json's `hand` says, and spells leave from there
+const LECT_ART = {wards:'ice', unmaking:'arcane'};
+let lectInfo=null;
+async function lecturerArt(id){
+  const el=LECT_ART[id]||id, key='lect_'+el;
+  if(cache[key]) return cache[key];
+  try{
+    if(!lectInfo) lectInfo=await (await fetch('sprites/folk/lecturers.json',{cache:'no-cache'})).json();
+    const inf=lectInfo[key]; if(!inf) return null;
+    const img=await loadImg('sprites/folk/'+key+'.png'); if(!img) return null;
+    return cache[key]={img, face:'sprites/folk/'+key+'_face.png', glow:{x:inf.hand[0], y:inf.hand[1], r:0.022, col:ECOL[el]||'#a8c0ff', elem:el}};
+  }catch(e){ return null; }
+}
 async function seatedLook(src){
   if(cache[src]) return cache[src];
   const img=await loadImg(src); if(!img) return null;
@@ -260,7 +274,7 @@ function play(api, id, L, opts){
     // paint everyone (cached after the first lecture), then let them in
     (async()=>{
       const lk=LOOKS[id]||LOOKS.arcane;
-      const [lec, ...rest]=await Promise.all([painted(api,'lect:'+lk.name,lk)].concat(STUDENTS.map(seatedLook)));
+      const [lec, ...rest]=await Promise.all([lecturerArt(id).then(a=>a||painted(api,'lect:'+lk.name,lk))].concat(STUDENTS.map(seatedLook)));
       if(lec){ S.lect.img=lec.img; S.lect.glow=lec.glow; S.lect.face=lec.face; S.face=lec.face; }
       const looks=rest.filter(Boolean), rook=looks.find(l=>l.src===ROOK), others=looks.filter(l=>l!==rook).sort(()=>Math.random()-0.5);
       if(opts.partner&&api.chars.partner){ const c=api.chars.partner, img=await loadImg(c.sprite); if(img) S.partnerLook={img, glow:c.glow, name:(c.name||'').split(' ')[0], standing:true}; }

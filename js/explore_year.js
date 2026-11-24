@@ -21,7 +21,7 @@ const REWARD = {partner:5, box:10, coll:{gold:30, potions:2}, first:20, finals:{
 // ── who's who (stand-in art until theirs arrives: docs/art-prompts.md) ──
 const PEOPLE = {
   lecturer: {title:'The Bedel of the Schools', name:'Mr Hobday', sprite:'sprites/hero/old_man_3.png'},   // keeps the lecture list, by its notice board
-  examiner: {title:'The Chair of Examiners', name:'Professor Thorley', sprite:'sprites/hero/old_woman_2.png'},
+  examiner: {title:'The Chair of Examiners', name:'Professor Thorley', sprite:'sprites/folk/examiner.png', face:'sprites/folk/examiner_face.png'},
   partner:  {title:'Your Tutorial Partner', sprite:null},          // drawn from their made look (chars.partner)
   partnerLost:{title:'Your Tutorial Partner', sprite:null},
   ashgrove: {title:'The Sub-Warden of All Absent', name:'Dr Edwin Ashgrove', sprite:null},
@@ -572,7 +572,7 @@ function face(n, api){
   const k=n.role==='partner'||n.role==='partnerLost'?'partner':n.role==='ashgrove'?'ashgrove':null, c=k&&api.chars[k];
   if(c&&c.face) return c.face;
   if(n.role==='fancy') return 'portraits/small/soldier.jpg';
-  return null;
+  return PEOPLE[n.role]&&PEOPLE[n.role].face||null;
 }
 window.ExploreYear={knows, title, sprite, face, talk, onMap, tick, afterFight, doors, blockExit, allyKnown, journal, keeperBeat, aureliaBeat, labPracticals, skinDue,
   partnerName, partnerKnown, termNeeds, PEOPLE, LECT, REWARD, _Y:Y};
