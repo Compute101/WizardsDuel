@@ -8,7 +8,8 @@ Recolours of existing art until the real figures arrive (docs/art-prompts.md, "T
   elf_talon    the Archer, a green ranger's cloak
 
   python3 tools/make_forest_placeholders.py
-writes sprites/forest/<key>.png and portraits/small/<key>.jpg.
+writes sprites/forest/<key>.png and portraits/small/<key>.jpg, except where the real art has arrived
+(sprites/fighters/source/<key>.png, cut by tools/cut_fighters.py).
 """
 import colorsys, os
 from PIL import Image
@@ -51,6 +52,8 @@ def recolour(im, dh, ds, dv, tint):
 def main():
     os.makedirs(OUT, exist_ok=True)
     for key, (src, dh, ds, dv, tint) in LOOKS.items():
+        if os.path.exists(os.path.join(ROOT, 'sprites', 'fighters', 'source', key + '.png')):
+            print('real art for', key, '(tools/cut_fighters.py): left alone'); continue
         spr = recolour(Image.open(os.path.join(ROOT, 'sprites', src + '.png')), dh, ds, dv, tint)
         spr.save(os.path.join(OUT, key + '.png'), optimize=True)
         face = recolour(Image.open(os.path.join(ROOT, 'portraits', 'small', src + '.jpg')), dh, ds, dv, tint)

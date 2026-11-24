@@ -98,6 +98,48 @@ The prompt that made it, for more variants. Attach `sprites/fighters/source/halb
 
 ---
 
+## 1b. The Moriquende's battle figures
+
+The creatures and elves you fight beside in the forest year (`fighters.json`; `docs/forest-design.md`).
+Until these arrive the game uses recolours of other art (`python3 tools/make_forest_placeholders.py`:
+Gretch for goblins and orcs, Gnash greyed for the Varg, the Archer in green for the Talons), and the
+recolours never overwrite real art once it's there.
+
+**Format:** like the soldier, archer and knight: full body, three-quarter view **facing right**, feet
+flat on the bottom edge, on a **flat pure black background** (not green: these go through the fighter
+cutter, which keys out black). Painted in their final colours. **Every figure fills the height of its
+picture**, the little goblin as much as the warboss: the game sets their sizes (goblin 0.7, Varg 1.05,
+alpha 1.15, orc 1.0, big'un 1.15, warboss 1.3 of a wizard's height, `spriteHeight` in `fighters.json`).
+Keep weapons, banners and horns inside the picture.
+
+**Shared prompt** (attach `sprites/fighters/source/soldier.png` and `sprites/fighters/source/knight.png`
+as style references; replace `[DESCRIPTION]`):
+
+> Pixel-art full-body battle sprite in exactly the same style, scale, pose conventions and level of
+> detail as the attached two figures: three-quarter view facing right, a ready fighting stance, feet
+> flat at the bottom of the image. This is [DESCRIPTION]. An original design. Hard pixel edges, a dark
+> outline round the figure, no glow, halo or magic effects around it. Plain flat pure black (#000000)
+> background, nothing else in the picture, no text, no shadow on the ground. Keep the figure's own
+> darkest shadows dark grey or dark brown, never pure black. Portrait image, the figure filling the
+> whole height, about 768 pixels tall.
+
+**After:** save each as `sprites/fighters/source/<file>`, run `python3 tools/cut_fighters.py` (it cuts
+it into `sprites/forest/<key>.png` and makes a first-guess HUD face in `portraits/small/<key>.jpg`),
+then tell Claude, who sets the face crop by hand (`FACES` in the tool) and strikes the row.
+
+| File | Who | Trait to show | Used by | [DESCRIPTION] |
+|---|---|---|---|---|
+| `goblin.png` | Goblin of the Moriquende | **Swarm**: they come in threes | `fighters.json` `goblin` | a scrawny forest goblin with mottled yellow-green skin, huge pointed ears with notches cut in them, a long hooked nose, a wide grin of needle teeth and small red eyes; a stolen elven cloak far too big for him, moss green, torn and dragging, tied on with string; a necklace of acorns and little bird bones; a crude spear made from a sharpened branch with a flint head bound in sinew; bare clawed feet. Crouched low and eager, spear jabbing forward |
+| `varg.png` | Varg (a wolfman) | **Pack Hunter**: goes for the wounded | `fighters.json` `varg` | a Varg, a hulking wolfman of the deep forest, standing upright on long wolf legs, a head taller than a man: a true wolf's head (long narrow snout, tall pointed ears, a thick ruff at the neck, not a hyena), shaggy grey fur darker along the back, pale yellow eyes, bared fangs; a hide loincloth and a belt hung with bone charms and a pouch, leather wraps round the forearms; a heavy stone axe lashed to an antler haft in one clawed hand, the other hand open with long claws. Hunched forward, snarling |
+| `varg_alpha.png` | Varg Alpha, leader of the pack | **Pack Hunter** | `fighters.json` `varg_alpha` | the leader of a Varg pack: an older, bigger wolfman with near-black fur and a streak of silver down the muzzle and spine, one ear torn, three long scars across the chest, one eye clouded white; a whole deer hide worn as a cloak with the antlered head as a hood thrown back; a necklace of orc tusks; a great two-handed stone maul. Upright and broad-chested, head raised as if about to howl, proud and menacing |
+| `orc.png` | Orc nomad of the east | **Brute**: grapples through a guard | `fighters.json` `orc` | an orc nomad driven west from the eastern plains: taller and much broader than a man, dark olive-green skin, a jutting jaw with two lower tusks, small fierce eyes, a shaved head with a black topknot; travel-worn furs over a patched leather jerkin, rag wraps on the forearms, heavy dusty boots; a big woodsman's felling axe held in both hands, its blade notched from chopping trees; a coil of rope and a waterskin at his belt. A wanderer, not a soldier. Axe raised to swing |
+| `orc_bigun.png` | Orc Big'un, chief of a band | **Brute** | `fighters.json` `orc_bigun` | the chief of an orc nomad band, the biggest of them: dark green skin covered in scars and rough tattooed bands, long tusks capped with bronze, a horned iron helm, a bear-fur mantle over the shoulders, a studded leather hauberk and iron bracers; a heavy cleaver-bladed war axe in one hand and a round wooden shield painted with a red hand print in the other. A swaggering, confident stance, grinning |
+| `orc_warboss.png` | Warboss, leader of a Waaagh | **Brute** | `fighters.json` `orc_warboss` | an orc warboss, huge and hulking, the strongest orc in the warband: very dark green skin, a massive jaw crowded with tusks, a spiked iron crown-helm, mismatched scavenged armour (a knight's dented breastplate, a cart-wheel rim worn as a shoulder guard, a chainmail skirt), a cloak of wolf pelts; a tall war-totem pole strapped to his back, hung with skulls, feathers and a ragged red banner, all inside the picture; a gigantic two-handed axe held high. Roaring |
+| `elf_talon.png` | Talons, the wardens of Elfhome (your ally) | **At Range**: a longbow | `fighters.json` `elf_talon` | an elf woman, a Talon, a warden of the Moriquende: tall and slender, pointed ears, long auburn hair in a warrior's braid, a calm, hard face; a hooded cloak in mottled leaf greens and browns over close-fitting brown leather armour tooled like bark, bracers, soft boots; drawing a tall, elegant pale-yew longbow with a green-fletched arrow nocked and aimed right, a quiver at her hip, a curved long knife at her belt |
+
+The elves you talk to in Elfhome need no art: they're painted from the elf hero figures
+(`PEOPLE` in `js/explore_elfhome.js`), and Sylvara is her own sprite.
+
 ## 2. Places (tilesets)
 
 **Format:** loose pieces on a flat #101217 background, no labels or dividers, 16 px gaps, the same
@@ -171,16 +213,7 @@ sheet 12 face; attach `tileset10_source.png` and `tileset12_source.png`):
     background): a goblin, a goblin shaman with a mushroom fetish, a Varg (a hulking wolfman), an orc
     nomad with an axe, an orc war-totem, deer, an elf Seer with a lantern, an elf Talon with a
     longbow, an elf beast-speaker with antlers on her hood, an elf builder with a mallet.
-  - **Battle fighters** (step 2 stand-ins, `python3 tools/make_forest_placeholders.py`, `FIGHTER_DEFS`
-    `sprite`): goblin, orc, orc big'un and warboss are recolours of Gretch; Varg and Varg alpha of
-    Gnash (a hyena-man, greyed to wolf); the elf Talons the Archer in green. Real art goes to
-    `sprites/forest/<key>.png` (then the face to `portraits/small/<key>.jpg`), house rules "Fighters /
-    creatures": "Full-body pixel-art, facing right, feet at the bottom edge, flat black background,
-    about 768 px tall: (1) a wiry green goblin with a crude spear and a stolen elven cloak; (2) a Varg,
-    a hulking grey wolfman of the deep forest with bone charms and a stone axe; (3) the Varg alpha,
-    older, scarred and near-black; (4) an orc nomad with a woodsman's axe and furs; (5) an orc chief
-    (big'un), bigger, with a horned helm; (6) an orc warboss, huge, in scavenged plate with a war-totem
-    banner on his back; (7) an elf Talon, a wood-elf warden with a longbow, green and brown leathers."
+  - **Battle fighters:** a prompt per figure in "1b. The Moriquende's battle figures" above.
   - **Battle backdrop** (`backgrounds/forest.jpg`, 1672×941, like the others in 5a; the duels use
     `arena:'road'` in `leadFight` until then): "A painted fantasy battle backdrop, wide, an ancient
     elven forest at dusk: huge mossy trunks, roots across a leaf-strewn clearing for the fighters to
