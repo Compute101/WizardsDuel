@@ -416,5 +416,16 @@ async function open(root, opts){
     render();
   });
 }
-window.ExploreHero={open, def, loadBases, avoidLook, STARTER_TOPPERS, BASES, ROBES, TRIMS, STAVES, TOPPERS, HAIRS, SKINS, EYES, ELEMS, NAMES, DWARF_NAMES, RACES};
+// a whole random new wizard, as 🎲 Random makes one in the creator (the Test menu's random graduate,
+// js/explore.js open({random:true}))
+async function randomHero(){
+  await loadBases();
+  const st={sex:rnd(['m','f']), race:rnd(['human','human','human','human','dwarf','elf']), elem:rnd(ELEMS).id};
+  st.name=rnd(namesFor(st.sex,st.race)); st.age=rnd(AGES)[0]; st.fig=rnd(figuresFor(st.sex,st.age,st.race).list).id;
+  st.robe=rnd(ROBES).name; st.trim=rnd(TRIMS).name; st.skin=rnd(SKINS).name; st.eyes=rnd(EYES).name;
+  st.hair=(st.age==='old'&&Math.random()<0.6)?rnd(['Silver','White']):rnd(HAIRS).name;
+  st.staff=rnd(STAVES).name; st.topper=rnd(STARTER_TOPPERS);
+  return st;
+}
+window.ExploreHero={open, def, randomHero, loadBases, avoidLook, STARTER_TOPPERS, BASES, ROBES, TRIMS, STAVES, TOPPERS, HAIRS, SKINS, EYES, ELEMS, NAMES, DWARF_NAMES, RACES};
 })();

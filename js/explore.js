@@ -1591,6 +1591,18 @@ function learn(o){
   applyMagic(); save();
 }
 function graduate(electives){ magic=fullMagic(hero.elem,electives); applyMagic(); save(); }
+// a random wizard who has sat Finals, as the Senior Tutor records it: three electives (never the barred
+// one) and Matriculation's tasks done
+async function randomGraduate(){
+  stopTheme();
+  hero=await window.ExploreHero.randomHero(); await useHero();
+  const ban=oppOf(hero.elem), pool=ELEM_IDS.filter(e=>e!==hero.elem&&e!==ban);
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  graduate(pool.slice(0,3));
+  Object.assign(quests.wren||(quests.wren={}),{stage:2, finals:true, library:true, lab:true, schools:true, spar1:true});
+  save();
+  toast(hero.name+', a graduate of '+[hero.elem].concat(pool.slice(0,3)).map(cap).join(', ')+'. Barred: '+cap(ban)+'.');
+}
 // one line for the satchel: what you can cast
 function magicLine(){
   if(!hero||!magic) return '';
@@ -2295,11 +2307,14 @@ async function load(){
   built=true;
 }
 // open({fresh:true}) is New Game: a new save slot, so the creator opens in Wrenford.
+// open({random:true}) (Test → 🎲 Random Graduate) is a new slot with a random wizard who has already sat
+// Finals: no creator or introduction, three random electives (randomGraduate).
 // open({slot:key}) loads that slot (Load Game); open() (Test → Explore) the profile's latest, or a new one.
 async function open(opts){
   opts=opts||{};
   if(!el.root) buildDom();
   el.root.classList.add('active');
+  if(opts.random) opts.fresh=true;
   { const who=profileNow(), k=opts.fresh?null:(opts.slot||(who.id===saveOwner&&saveKey)||((slotsOf(who.id)[0]||{}).key));
     const sv=k&&!opts.fresh?loadSave(k):null, warm=MAP&&k===saveKey&&who.id===saveOwner, m=sv&&sv.map?(sv.map.startsWith('room:')&&sv.roomSpec&&sv.roomSpec.outside?sv.roomSpec.outside.map:sv.map):null;
     if(!warm){
@@ -2329,7 +2344,8 @@ async function open(opts){
   sizeMini();
   let saved=s&&s.wiz; if(!saved) try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}
   setWizard(Math.max(0,wizKeys.indexOf(saved||'eldrin'))); renderClock();
-  if(!hero&&window.ExploreHero) await createHero(false); else { stopTheme(); await useHero(); }
+  if(!hero&&window.ExploreHero&&opts.random) await randomGraduate();
+  else if(!hero&&window.ExploreHero) await createHero(false); else { stopTheme(); await useHero(); }
   last=performance.now(); requestAnimationFrame(frame);
   el.hint.classList.remove('fade');
   setTimeout(()=>{ if(el.hint) el.hint.classList.add('fade'); },7000);
@@ -2396,6 +2412,8 @@ function renderLoad(){
 window.addEventListener('DOMContentLoaded',()=>{
   const b=document.getElementById('btn-explore');
   if(b) b.addEventListener('click',()=>open());
+  const rg=document.getElementById('btn-random-grad');
+  if(rg) rg.addEventListener('click',()=>open({random:true}));
   const nb=document.getElementById('btn-new-game'), lb=document.getElementById('btn-load-game');
   const tb=document.getElementById('btn-test'), tp=document.getElementById('title-test');
   if(nb) nb.addEventListener('click',()=>{ playTheme(); open({fresh:true}); });
