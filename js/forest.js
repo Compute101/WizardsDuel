@@ -81,7 +81,7 @@ function open(opts){
   if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
   S=ctx?(ctx.state||null):loadSave();
   fitCanvas(); view={zoom:1,ox:0,oy:0}; ui={sel:F.HOME, elf:null, spell:null, ring:2};
-  if(S&&!S.over){ weekStart=F.clone(S); F.vision(S); render(); if(S.pending) fightPrompt(); }
+  if(S&&!S.over){ syncIn(); weekStart=F.clone(S); F.vision(S); render(); if(S.pending) fightPrompt(); }
   else if(ctx&&S&&S.over){ F.vision(S); render(); yearOverPanel(); }
   else if(ctx) beginStory();
   else setupPanel(false);
@@ -94,15 +94,22 @@ function close(){
 }
 // ── From Explore: Agathe's errand ────────────────────────────────────
 function beginStory(){
-  S=F.newYear({element:ctx.element, heroName:ctx.name, wizKey:ctx.wizKey, handFights:true});
-  weekStart=F.clone(S); save(); render();
-  modal(`<h2>Elfhome</h2>
-    <p>The West Road runs out at a stile, and past the stile there is only the wood: oaks older than the University, older than Corvanthe, with moss to the knee and light coming down green.</p>
-    <p>The elves find you before you find them. They walk you in by paths you couldn't see, up to a town built into the trees, and a tall woman in bark-brown robes takes Mother Agathe's letter from your hand and reads it twice.</p>
-    <p>“So Agathe sent me a wizard.” Sylvara, the Warden of the Moriquende, looks you over. “Good. I asked for one. The orcs the Unweaving drove out of the east will be in my wood by midsummer, and I can't watch for them: the four eldest trees must be tended before the year turns, or they die, and only I can tend them. Keep Elfhome standing. Keep the wood in balance. And keep me alive while I walk.”</p>
-    <p class="fr-note">The year is kept in your save. ✕ takes you back to Wrenford; the wood waits for you.</p>
-    <div class="fr-row"><button class="fr-btn big" type="button" id="fr-ok">To the wood</button></div>`);
-  $('fr-ok').onclick=()=>reportPanel(1);
+  S=F.newYear({element:ctx.element, heroName:ctx.name, wizKey:ctx.wizKey, handFights:true, selfHeal:false});
+  syncIn(); weekStart=F.clone(S); save(); render();
+  reportPanel(1);
+}
+// your wizard's HP is Explore's (one pool): the year starts from it, and writes wounds back after each week
+// and fight. S.wizHpSync is the forest HP last agreed with Explore ('w' while wounded), so a precise duel
+// result isn't rounded over by the forest's coarser 12-point HP.
+const meOf = () => S&&S.elves.find(e=>e.role==='wizard');
+function syncIn(){
+  const me=meOf(); if(!ctx||!me||me.wounded) return;
+  const max=F.ROLES.wizard.hp; me.hp=Math.max(1,Math.min(max,Math.round(max*ctx.hp()/ctx.maxHp()))); S.wizHpSync=me.hp;
+}
+function syncOut(){
+  const me=meOf(); if(!ctx||!me) return;
+  if(me.wounded){ if(S.wizHpSync!=='w'){ ctx.setHp(Math.max(1,ctx.maxHp()*0.25)); S.wizHpSync='w'; } return; }
+  if(me.hp!==S.wizHpSync){ ctx.setHp(ctx.maxHp()*me.hp/F.ROLES.wizard.hp); S.wizHpSync=me.hp; }
 }
 function yearOverPanel(){
   const sc=F.score(S), E=F.ENDINGS[sc.ending];
@@ -110,7 +117,7 @@ function yearOverPanel(){
     <p class="fr-note">${sc.ending==='song'?'The Moriquende will always have room for you.':'Sylvara would welcome you back next spring, if you\u2019d try the year again.'}</p>
     <div class="fr-row"><button class="fr-btn" type="button" id="fr-back">Back to Wrenford</button>${sc.ending==='song'?'':'<button class="fr-btn big" type="button" id="fr-again">Try another year</button>'}</div>`);
   $('fr-back').onclick=()=>{ closeModal(); close(); };
-  if($('fr-again')) $('fr-again').onclick=()=>{ closeModal(); beginStory(); };
+  if($('fr-again')) $('fr-again').onclick=()=>{ closeModal(); beginStory(); };   // (another year, the same way Sylvara offers it)
 }
 // the year's end pays out once (Explore decides what: js/explore.js forestEnd)
 function settleYear(){
@@ -121,34 +128,26 @@ function settleYear(){
 // ── Panels ───────────────────────────────────────────────────────────
 function modal(html){ $('fr-card').innerHTML=html; $('fr-modal').hidden=false; }
 function closeModal(){ $('fr-modal').hidden=true; }
-const WIZ_PREF='wd-forest-wiz';
-function rosterKeys(){ return typeof CHAR_DEFS!=='undefined'?Object.keys(CHAR_DEFS).filter(k=>k!=='sylvara'&&k!=='hero'&&!CHAR_DEFS[k].fighter):[]; }
 const titleCase=t=>String(t||'').toLowerCase().replace(/(^|[\s-])\S/g,c=>c.toUpperCase());
+// the Test menu's quick year: no wizard of your own to lead fights (that's Explore's, via Elfhome), so every
+// fight plays itself out
 function setupPanel(canCancel){
   let el='earth';
-  const keys=rosterKeys(); let wk=null; try{ wk=localStorage.getItem(WIZ_PREF); }catch(e){}
-  if(!keys.includes(wk)) wk=keys.includes('eldrin')?'eldrin':keys[0]||null;
-  let lead=true;
   modal(`<h2>The Moriquende</h2>
     <p>Sylvara has asked you to keep the watch over the Moriquende for a year, while she tends its four ancient trees.
     Keep Elfhome standing, keep the wild in balance, and keep Sylvara safe until every tree has been tended.</p>
+    <p class="fr-note">A test year: fights play themselves out. In a real game you get here from Elfhome, with your own wizard.</p>
     <p class="fr-lbl">Your element</p>
     <div class="fr-elems" id="fr-elems">${ELEMS.map(([k,i,n])=>`<button class="fr-btn${k===el?' on':''}" data-el="${k}" type="button">${i} ${n}</button>`).join('')}</div>
     <p class="fr-note" id="fr-elnote"></p>
-    ${keys.length?`<p class="fr-lbl">Your wizard <small>(who fights if you lead a fight yourself)</small></p>
-    <div class="fr-wizzes" id="fr-wizzes">${keys.map(k=>`<button class="fr-wiz${k===wk?' on':''}" data-wk="${k}" type="button" title="${esc(titleCase(CHAR_DEFS[k].name))}"><img src="${faceOf(k)}" alt=""><span>${esc(titleCase(CHAR_DEFS[k].name))}</span></button>`).join('')}</div>
-    <label class="fr-check"><input type="checkbox" id="fr-lead" checked> Offer me the fight when my wizard is in it (you can always let it play out)</label>`:''}
     <div class="fr-row"><button class="fr-btn big" id="fr-go" type="button">Begin the year</button>${canCancel&&S&&!S.over?'<button class="fr-btn" id="fr-cancel" type="button">Back</button>':''}</div>`);
   const note=()=>{ $('fr-elnote').textContent=el==='fire'?'Careful: a Fire strike in the trees can set the wood alight.':''; };
   $('fr-elems').onclick=e=>{ const b=e.target.closest('[data-el]'); if(!b) return; el=b.dataset.el; [...$('fr-elems').children].forEach(x=>x.classList.toggle('on',x===b)); note(); };
   note();
-  if($('fr-wizzes')) $('fr-wizzes').onclick=e=>{ const b=e.target.closest('[data-wk]'); if(!b) return; wk=b.dataset.wk; [...$('fr-wizzes').children].forEach(x=>x.classList.toggle('on',x===b)); };
-  if($('fr-lead')) $('fr-lead').onchange=e=>{ lead=e.target.checked; };
-  $('fr-go').onclick=()=>{ try{ if(wk) localStorage.setItem(WIZ_PREF,wk); }catch(e){}
-    S=F.newYear({element:el, heroName:wk?titleCase(CHAR_DEFS[wk].name):heroName(), wizKey:wk, handFights:!!wk&&lead}); weekStart=F.clone(S); ui={sel:F.HOME, elf:null, spell:null, ring:2}; view={zoom:1,ox:0,oy:0}; save(); closeModal(); render(); reportPanel(1); };
+  $('fr-go').onclick=()=>{
+    S=F.newYear({element:el, heroName:heroName()}); weekStart=F.clone(S); ui={sel:F.HOME, elf:null, spell:null, ring:2}; view={zoom:1,ox:0,oy:0}; save(); closeModal(); render(); reportPanel(1); };
   if($('fr-cancel')) $('fr-cancel').onclick=closeModal;
 }
-function faceOf(k){ return typeof faceSrc==='function'?faceSrc(k):'portraits/small/'+k+'.jpg'; }
 function heroName(){ try{ const p=typeof Profiles!=='undefined'&&Profiles.active&&Profiles.active(); return p&&p.name||'You'; }catch(e){ return 'You'; } }
 function helpPanel(){
   modal(`<h2>How the year goes</h2>
@@ -224,7 +223,7 @@ function endWeek(){
 // run the rest of the week; a fight your wizard stands in stops it for the prompt
 function runWeek(){
   const t=S.weekOf||S.turn;
-  F.endTurn(S);
+  F.endTurn(S); syncOut();
   if(S.pending){ save(); render(); fightPrompt(); return; }
   weekStart=F.clone(S); settleYear(); save(); render();
   reportPanel(S.over?S.turn:t);
@@ -264,13 +263,15 @@ function leadFight(set,wk){
   const foe=F.foeById(S,S.pending.foeId);
   $('fr-screen').classList.remove('active'); cancelAnimationFrame(raf);
   if(ctx&&ctx.beforeBattle) ctx.beforeBattle();
-  startExploreBattle({wizKey:wk, foes:spec.foes, allies:spec.allies, hp:Math.max(1,Math.round(d.hp*set.hpFrac)), arena:'road',
+  startExploreBattle({wizKey:wk, foes:spec.foes, allies:spec.allies, hp:ctx?Math.max(1,ctx.hp()):Math.max(1,Math.round(d.hp*set.hpFrac)), arena:'road',
     text:{winTitle:'The Moriquende Holds', win:`The ${foe.fac==='orc'?'orcs':F.FAC[foe.fac||'gob'].name.toLowerCase()} break and scatter into the trees.`,
       loseTitle:'Carried Home', lose:`${titleCase(d.name)} falls. The elves carry you back to Elfhome.`},
     onEnd:(won,low,allyHp,info)=>{
       $('fr-screen').classList.add('active'); fitCanvas(); loop();
       if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
       F.resolvePending(S,{won, foeLeft:info.foeLeft, hpEnd:info.hpEnd, maxHp:info.maxHp, allyHp});
+      // the duel's own HP is exact: Explore keeps it (a lost duel leaves you wounded, at a quarter)
+      if(ctx){ const me=meOf(); if(me&&!me.wounded){ ctx.setHp(Math.max(1,info.hpEnd)); S.wizHpSync=me.hp; } else syncOut(); }
       runWeek();
     }});
 }

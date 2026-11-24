@@ -107,19 +107,17 @@ function townTalk(n, api){
 }
 // ── Mother Agathe's errand: the Moriquende (js/forest.js, opened from the world map by js/explore.js) ──
 // She buys her best herbs from Elfhome's healers; their last bundle came with Sylvara's letter asking for a
-// wizard. Offered once you may leave Wrenford (the Proctors' licence, js/explore_year.js blockExit).
+// wizard. Offered once you've graduated (sat Finals, or the Year's own Finals): api.fullMagic().
 const FOREST_ENDS = {song:'The Wood in Song', endures:'The Wood Endures', scarred:'The Wood Scarred', fallen:'Elfhome Falls'};
 function westWood(n, api){
   const fq=api.quest('forest'), say=(x,ch)=>api.dialog(title(n,api),x,ch||[]);
-  const blocked=Year()&&Year().blockExit(api,{to:'world'});
   const yr=fq.S, F=window.ForestEngine;
-  if(api.wizKey()==='sylvara'){ say('"The wood to the west?" Agathe peers over her spectacles at you, then laughs. "Dearie, you\'re its Warden. You know it better than any letter could tell you." She presses a bundle of comfrey into your hand. "Go home when you can. They miss you."'); return; }
-  if(blocked){ say('"There\'s a wood out past the end of the West Road, older than anything. The Moriquende. The elves of Elfhome live in it, and their healers sell me my best herbs." She lowers her voice. "The last bundle came with a letter in it. Come and ask me again when the Proctors let you out of town, dearie, and I\'ll tell you what it says."'); return; }
+  if(!api.fullMagic()){ say('"There\'s a wood out past the end of the West Road, older than anything. The Moriquende. The elves of Elfhome live in it, and their healers sell me my best herbs." She lowers her voice. "The last bundle came with a letter in it. It\'s no errand for a student, dearie. Sit your Finals, and come and ask me again."'); return; }
   if(!fq.asked){
     say('Agathe takes a folded letter from under the comfrey, sealed in green wax with a leaf pressed into it. "From Elfhome. From Sylvara, the Warden of the Moriquende." She doesn\'t hand it over yet. "Orcs, dearie. The Unweaving drove the nomad bands out of the east, and they\'re coming west, with axes, and the wood is in their way. Sylvara has the old trees to tend this year, the four eldest, or they die. She can\'t tend them and watch for orcs both. She asked me to send her a wizard."',
       [{label:'I\'ll go', fn:()=>{ fq.asked=true; api.reveal('moriquende'); api.save();
-          say('"Good." She gives you the letter. "Take the West Road out of town and keep going when it stops. Don\'t burn anything." A pause. "Even if you\'re a fire one. Especially then."');
-          api.toast('The Moriquende is on your map. Take the West Road out of Wrenford.'); }},
+          say('"Good." She gives you the letter. "Take the West Road out of town and keep going when it stops. The elves will find you. Don\'t burn anything." A pause. "Even if you\'re a fire one. Especially then."');
+          api.toast('The Moriquende is on your map. Take the West Road out of Wrenford to Elfhome.'); }},
        {label:'Not yet', fn:()=>say('"It\'ll keep a little while. Not long. Orcs don\'t."')}]);
     return;
   }
@@ -130,8 +128,8 @@ function westWood(n, api){
       fallen:'"Elfhome fell?" Agathe goes pale, then sets her jaw. "Then they\'ll need you more, not less. Go back, dearie."'};
     say(lines[fq.best]+(fq.best!=='song'?' (The Moriquende is still on your map.)':'')); return;
   }
-  if(yr&&!yr.over&&F) say('"How is it out there? Week '+yr.turn+', is it? '+(yr.trees.filter(t=>t.done).length)+' of the old trees tended." She nods. "Don\'t dawdle here, then. The orcs won\'t."');
-  else say('"Take the West Road out of town and keep going when it stops," Agathe says. "Sylvara will find you."');
+  if(yr&&!yr.over&&F) say('"How is it out there? Week '+yr.turn+', is it? '+(yr.trees.filter(t=>t.done).length)+' of the old trees tended." She nods. "Don\'t dawdle here, then. The orcs won\'t. And if you\'re hurt, let Essyllt at the Healing House see to you, not me. She\'s better."');
+  else say('"Take the West Road out of town and keep going when it stops," Agathe says. "The elves will walk you in to Elfhome."');
 }
 // staff toppers for sale (js/explore.js earnTopper fits them): Dr Wrexley's glyphs, Widow Coyle's curiosities
 const SHOPS = {
@@ -153,17 +151,18 @@ function castOf(role, api){
 }
 function nameOf(role, api){ const F=FOLK[role]; if(F&&F.name) return F.name; const k=castOf(role,api); return k?cap(api.chars[k].name):''; }
 // a 'metLater' wizard isn't here if you're playing them
-function absent(n, api){ const F=FOLK[n.role]; return !!(F&&F.fate==='metLater'&&F.cast.includes(api.wizKey())); }
+function absent(n, api){ const F=FOLK[n.role]; if(!F&&Elf()&&Elf().knows(n.role)) return Elf().absent(n,api); return !!(F&&F.fate==='metLater'&&F.cast.includes(api.wizKey())); }
 // did you meet this roster wizard at the University? (for later meetings: "we met at uni")
 function metAtUni(key, api){ return !!api.quest('met')[key]; }
 const Year = () => window.ExploreYear||null;    // the University Year's own people (js/explore_year.js)
+const Elf = () => window.ExploreElfhome||null;  // Elfhome's people (js/explore_elfhome.js)
 function title(n, api){
-  const F=FOLK[n.role]; if(!F) return Year()?Year().title(n,api):null;
+  const F=FOLK[n.role]; if(!F) return Elf()&&Elf().knows(n.role)?Elf().title(n,api):Year()?Year().title(n,api):null;
   const nm=nameOf(n.role,api);
   return nm?F.title+' ('+nm+')':F.title;
 }
 function sprite(n, api){
-  const F=FOLK[n.role]; if(!F) return Year()?Year().sprite(n,api):null;
+  const F=FOLK[n.role]; if(!F) return Elf()&&Elf().knows(n.role)?Elf().sprite(n,api):Year()?Year().sprite(n,api):null;
   if(F.look) return F._sprite||null;
   if(F.sprite) return F.sprite;
   if(F.fighter) return (api.fighters[F.fighter]||{}).sprite||null;
@@ -173,12 +172,12 @@ function sprite(n, api){
 // their face in the dialog box: portraits/small/<key>.jpg (a fighter's or roster wizard's thumbnail;
 // the dons' are cropped from their sprites by tools/make_folk_sprites.py, FACES)
 function face(n, api){
-  const F=FOLK[n.role]; if(!F) return Year()&&Year().face?Year().face(n,api):null;
+  const F=FOLK[n.role]; if(!F) return Elf()&&Elf().knows(n.role)?Elf().face(n,api):Year()&&Year().face?Year().face(n,api):null;
   if(F.look) return F._face||null;
   const k=F.face||F.fighter||(F.cast?castOf(n.role,api):n.role);
   return k?'portraits/small/'+k+'.jpg':null;
 }
-function knows(role){ return !!FOLK[role]||!!(Year()&&Year().knows(role)); }
+function knows(role){ return !!FOLK[role]||!!(Elf()&&Elf().knows(role))||!!(Year()&&Year().knows(role)); }
 
 // ── the Matriculation quest's state (saved by explore.js under quests.wren) ──
 function q(api){ return api.quest('wren'); }
@@ -203,8 +202,8 @@ function journal(api){
   const yj=Year()&&s.stage>=2?Year().journal(api):''; if(yj) out.push(yj);
   const fq=api.quest('forest');
   if(fq.best) out.push('The Moriquende: '+FOREST_ENDS[fq.best]+(fq.sylvara?'. Sylvara travels with you.':'. You could try another year.'));
-  else if(fq.S&&!fq.S.over) out.push('The Moriquende: week '+fq.S.turn+' of 24, '+fq.S.trees.filter(t=>t.done).length+' of 4 ancient trees tended. Take the West Road out of Wrenford to go back.');
-  else if(fq.asked) out.push('The Moriquende: take Mother Agathe\'s letter to Sylvara. The West Road out of Wrenford, then on past where it stops.');
+  else if(fq.S&&!fq.S.over) out.push('The Moriquende: week '+fq.S.turn+' of 24, '+fq.S.trees.filter(t=>t.done).length+' of 4 ancient trees tended. The Watch Table is under the Heart Tree in Elfhome.');
+  else if(fq.asked) out.push('The Moriquende: take Mother Agathe\'s letter to Sylvara in Elfhome. The West Road out of Wrenford, then on past where it stops.');
   return out.join('\n');
 }
 
@@ -212,7 +211,7 @@ function journal(api){
 function talk(n, api){
   const s=q(api), me=api.wizName(), say=(_,x,ch)=>api.dialog(title(n,api),x,ch||[]);
   const nm=r=>nameOf(r,api), F_=FOLK[n.role], home0=()=>mg(api)&&api.homeElem();
-  if(!F_){ if(Year()) Year().talk(n,api); return; }
+  if(!F_){ if(Elf()&&Elf().knows(n.role)) Elf().talk(n,api); else if(Year()) Year().talk(n,api); return; }
   if(F_&&F_.kind==='roster'){ const k=castOf(n.role,api), met=api.quest('met'); if(k&&!met[k]){ met[k]=true; api.save(); } }
   if(F_&&F_.lines){ townTalk(n,api); return; }
   switch(n.role){
@@ -482,6 +481,7 @@ function talk(n, api){
 
 // inspecting a quest object on the map; returns true if handled
 function inspect(o, api){
+  if(Elf()&&Elf().inspect(o,api)) return true;
   if(o.lore!=='q:satchel') return false;
   const s=q(api), L=api.lore(o.lore);
   if(s.satchel||s.satchelDone){ api.removeObj(o); return true; }

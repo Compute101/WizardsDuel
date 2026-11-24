@@ -172,7 +172,8 @@ function newYear(opts){
     S={v:1, seed0:seed, seed, turn:1, over:null, log:[], signs:[], intel:{}, elves:[], bands:[], warrens:[], herds:[], nextId:1,
        food:30, mana:6, wood:WOOD.start, youths:1, training:[], lost:0, killedNative:0, bandWeeks:{varg:0,warrens:0,game:0},
        element:opts.element||'earth', heroName:opts.heroName||'Your wizard', spellUsed:false, sylWait:false, hints:true, stats:{},
-       wizKey:opts.wizKey||null, handFights:!!opts.handFights, pending:null, step:null};
+       wizKey:opts.wizKey||null, handFights:!!opts.handFights, pending:null, step:null,
+       wizSelfHeal:opts.selfHeal!==false};   // from Explore, your wizard heals only at the Healing House
     if(makeMap(S)) break; seed=(seed*1103515245+12345)>>>0;
   }
   // the wild
@@ -780,8 +781,9 @@ function upkeep(S){
   if(S.turn%YOUTH_EVERY===0&&S.food>=YOUTH_FOOD){ S.youths++; say(S,'elf','A youth of Elfhome comes of age and is ready to learn a calling.'); }
   for(const t of S.training.slice()){ if(--t.left<=0){ const e=addElf(S,t.role); say(S,'elf',`${e.name} joins the ${ROLES[t.role].house}.`); S.training=S.training.filter(x=>x!==t); } }
   const healers=0;
-  for(const e of S.elves) if(e.wounded){ e.wounded--; if(!e.wounded) { e.hp=ROLES[e.role].hp; say(S,'elf',`${e.name} is well again.`); } }
-  for(const e of S.elves) if(!e.wounded) e.hp=Math.min(ROLES[e.role].hp,e.hp+1);
+  const selfHeal=e=>e.role!=='wizard'||S.wizSelfHeal!==false;
+  for(const e of S.elves) if(e.wounded){ e.wounded--; if(!e.wounded) { e.hp=selfHeal(e)?ROLES[e.role].hp:Math.ceil(ROLES[e.role].hp/4); say(S,'elf',selfHeal(e)?`${e.name} is well again.`:`${e.name} is back on their feet, just. The Healing House could do more.`); } }
+  for(const e of S.elves) if(!e.wounded&&selfHeal(e)) e.hp=Math.min(ROLES[e.role].hp,e.hp+1);
   for(const h of S.hamlets) if(h.sacked) h.sacked--;
   for(const k in H){ const h=H[k]; if(h.thicket) h.thicket--; if(h.warded) h.warded--;
     if((h.felled||h.burnt)&&h.tree==null&&rand(S)<WOOD.regrow){ h.felled=0; h.burnt=0; } }

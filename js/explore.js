@@ -405,7 +405,7 @@ function newStroller(atDoor){
 }
 function spawnStrollers(){
   strollers=[];
-  if(!MAP.safe||MAP.interior) return;
+  if(!MAP.safe||MAP.interior||MAP.noStroll) return;   // (Elfhome has its own people, not Wrenford's peasants)
   roadsOf(); if(!roadList.length) return;
   const n=Math.round(STROLL.n*(1-darkness()));
   for(let i=0;i<n;i++) strollers.push(newStroller(false));
@@ -505,7 +505,7 @@ function drawEcho(a,t){
 // the battle backdrop (backgrounds/<name>.jpg) for a fight here: a story room's own, else the place's
 // (a room fights on its town's ground), Wrenford's by the time of day; anywhere else the ruined streets
 const ARENA_ROOMS={undercroft:'wren_undercroft', undercroft2:'wren_orrery', lectures:'wren_schools', library:'library', remnant:'library'};
-const ARENA_MAPS={hollowmere:'hollowmere', corvanthe_road:'road', spirewatch:'spirewatch', conductory:'spirewatch', collegium:'collegium', old_schools:'collegium',
+const ARENA_MAPS={hollowmere:'hollowmere', corvanthe_road:'road', elfhome:'road', spirewatch:'spirewatch', conductory:'spirewatch', collegium:'collegium', old_schools:'collegium',
   cindergate:'cindergate', crucible:'cindergate', heights:'heights', drift:'heights', drowned_quarter:'drowned', sunken_harbour:'drowned',
   quarry_ward:'quarry', deep_cut:'quarry', frostmarket:'frost', winter_fair:'frost', gloamside:'gloam', necropolis:'gloam'};
 function arenaHere(){
@@ -712,7 +712,7 @@ const folkApi = {
   dropEcho:id=>{ actors=actors.filter(a=>!(a.e.incident===id)); },
   registerChar:(key,d)=>{ chars[key]=d; if(typeof CHAR_DEFS!=='undefined') CHAR_DEFS[key]=d; },
   hero:()=>hero, heroDef:rec=>window.ExploreHero?window.ExploreHero.def(rec):Promise.resolve(null),
-  reveal:id=>{ found.add(id); }, allies:()=>allies, addAlly:a=>{ if(!allies.some(x=>x.key===a.key)) allies.push(Object.assign({level:0,hp:null},a)); },
+  reveal:id=>{ found.add(id); }, openForest:o=>{ hideSay(); openForest(o); }, allies:()=>allies, addAlly:a=>{ if(!allies.some(x=>x.key===a.key)) allies.push(Object.assign({level:0,hp:null},a)); },
   bodies:()=>wizKeys[wizIdx]==='hero', walkTo:(x,y)=>{ wiz.x=x; wiz.y=y; },
   enterMap:(id,at)=>enterMap(id,at), fullMagic:()=>!!(magic&&magic.grad), refreshDoors:()=>{ if(MAP&&!MAP.interior) findDoors(); },
   earnTopper:(id,how)=>earnTopper(id,how), hasTopper:id=>toppers.includes(id)||!!(window.ExploreHero&&ExploreHero.STARTER_TOPPERS.includes(id)),
@@ -1191,6 +1191,7 @@ async function enterMap(id,at,instant){
     if(!room&&!el.loading.hidden&&data.name) el.lName.textContent=data.name;
     if(data.interior&&roomSpec&&roomSpec.outside) await getMap(roomSpec.outside.map).catch(()=>{});   // a room plays its town's theme
     await Promise.all([loadPalette(data.palette),atlasesFor(data)]);   // this map's sheets, before anything draws from them
+    if(id==='elfhome'&&window.ExploreElfhome) await window.ExploreElfhome.prep(folkApi);   // paint Elfhome's people
     setupMap(data);
     prefetchAround(data);
     { const im=new Image(); im.src='backgrounds/'+arenaHere()+'.jpg'; }   // this place's battle backdrop, so a fight opens on it
@@ -1202,6 +1203,7 @@ async function enterMap(id,at,instant){
     const loc=locationOfMap(id); if(loc) found.add(loc.id);
     if(!id.startsWith('room:')) visited.add(id);
     if(Year) Year.onMap(folkApi);
+    if(window.ExploreElfhome) window.ExploreElfhome.onMap(folkApi);
     save(); syncMusic();
   }catch(err){ console.error(err); toast('That way is blocked.'); }
   finally{ clearTimeout(slow); if(!instant) await hideLoading(); busy=false; fade(false); }
@@ -1274,26 +1276,28 @@ function worldGo(){
   const here=locationOfMap(MAP.id);
   closeWorld();
   if(here&&l.id===here.id) return;
-  if(l.forest){ openForest(); return; }
   enterMap(l.map,l.spawn);
 }
 
 // ═══ THE MORIQUENDE ═════════════════════════════════════════════════
-// Mother Agathe's errand (js/explore_folk.js): the forest year (js/forest.js) on its own screen, fought by
-// the wizard you walk as. The year lives in quests.forest.S; closing it (or the year's end) brings you back
-// where you set out from. Each ending pays once, only when it beats your best (FOREST_PRIZE); the best of
-// all brings Sylvara into your companions.
+// Mother Agathe's errand (js/explore_folk.js, after Finals) leads to Elfhome (maps/elfhome.json; its people
+// in js/explore_elfhome.js). The forest year (js/forest.js) opens from the Watch Table there, fought by your
+// own wizard; it lives in quests.forest.S, and closing it leaves you standing in Elfhome. Your HP is one
+// pool: the year starts its fights from it and writes their wounds back (hp / setHp); the Healing House
+// heals it. Each ending pays once, only when it beats your best (FOREST_PRIZE); the best of all brings
+// Sylvara into your companions.
 const FOREST_PRIZE={song:{gold:60,spill:6}, endures:{gold:30,spill:3}, scarred:{gold:10,spill:0}, fallen:{gold:0,spill:0}};
 const FOREST_RANK=['fallen','scarred','endures','song'];
-function forestElem(key){ const d=chars[key]; const sp=d&&(d.spells||[]).find(x=>x.el&&x.el.elem); return sp?sp.el.elem:'earth'; }
-function openForest(){
-  if(!window.Forest||busy) return;
+function openForest(o){
+  if(!window.Forest||busy||!hero) return;
   const key=wizKeys[wizIdx], q=quests.forest||(quests.forest={});
+  if(o&&o.fresh&&q.S&&q.S.over) q.S=null;   // another year (Sylvara offers it after one that fell short)
   busy=true; keys.clear(); target=null; hideSay(); save();
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false); syncMusic();
     if(typeof CHAR_DEFS!=='undefined') CHAR_DEFS[key]=chars[key];
-    window.Forest.open({explore:{wizKey:key, name:folkApi.wizName(), element:key==='hero'&&hero?hero.elem:forestElem(key),
+    window.Forest.open({explore:{wizKey:key, name:folkApi.wizName(), element:hero.elem,
+      hp:()=>hpOf(key), maxHp:()=>maxHp(key), setHp:v=>{ vit[key]=Math.max(0,Math.min(maxHp(key),Math.round(v))); },
       state:q.S||null, cats:key==='hero'&&magic&&!magic.grad?(magic.cats||[]):null, rings:key==='hero'&&magic&&!magic.grad?(magic.rings||1):null,
       onSave:S=>{ q.S=S; save(); },
       onEnd:(S,sc)=>forestEnd(q,sc),
@@ -1313,7 +1317,7 @@ function forestEnd(q,sc){
     if(sp>0){ spill.earth=(spill.earth||0)+sp; out.push(sp+' '+SPILL.earth[0]); }
     q.best=sc.ending;
   }
-  if(sc.ending==='song'&&!q.sylvara&&wizKeys[wizIdx]!=='sylvara'){ q.sylvara=true; folkApi.addAlly({key:'sylvara', wizard:true, name:'Sylvara'}); out.push('Sylvara herself, who joins your companions'); }
+  if(sc.ending==='song'&&!q.sylvara){ q.sylvara=true; folkApi.addAlly({key:'sylvara', wizard:true, name:'Sylvara'}); out.push('Sylvara herself, who joins your companions'); }
   save();
   return out.length?'You leave the Moriquende with '+out.join(', ')+'.':'';
 }
@@ -1404,7 +1408,7 @@ function drawWorld(t){
     }
     g.font='bold 17px Cinzel, serif'; g.textAlign='center';
     g.fillStyle=l.locked?'rgba(58,40,16,0.7)':'#2a1c08';
-    g.fillText(l.name,l.x,l.y+(l.kind==='city'?60:30));
+    g.fillText(l.name,l.x+(l.labelDx||0),l.y+(l.labelDy!=null?l.labelDy:l.kind==='city'?60:30));
     if(worldSel===l){ g.strokeStyle='#9a2a1a'; g.lineWidth=2; g.beginPath(); g.arc(l.x,l.y,l.kind==='city'?48:22,0,Math.PI*2); g.stroke(); }
     if(here===l){
       const pr=16+4*Math.sin(t/250);

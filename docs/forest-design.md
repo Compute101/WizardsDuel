@@ -376,3 +376,28 @@ tuned until these hold:
 - **Not yet:** the wood's own music, its battle backdrop and art; your Explore wounds don't carry into the
   forest's fights or back (the forest keeps its own HP for your wizard).
 
+## As built (step 3, revised after the user's feedback)
+- **Elfhome is a place you walk** (`maps/elfhome.json` from `tools/mapgen/elfhome.js`; its people in
+  `js/explore_elfhome.js`, `ExploreElfhome`, hooked into `js/explore_folk.js` like the University Year):
+  the user didn't want the town reduced to a dialog box. A glade round the **Heart Tree** (a grove of
+  trees at their crisp scale), the **Watch Table** under it (inspect it: 🗺 Take the watch opens the year;
+  it's the central command), and a place for each house round the edge, each with its leader to talk to:
+  the Elders' Stone (Olwen Derwen: the wood's mood, the stores), the Seers' talan (Calybride Seren: how
+  much of the wood you see), the Healing House (Essyllt Celyn), the Talons' lodge (Gwilherm Hebog: orcs,
+  drums, a march), the Guild's workshop (Kennan Saer: sentry posts), the Beast-speakers' lodge (Ifan Bedw:
+  deer and Varg). Their reports read the year live. Names from the old project's lists, three women and
+  three men, painted from the elf hero figures when you first enter (`prep`, so they don't slow other
+  loads). **Sylvara** waits by the Heart Tree when you arrive and gives you the watch; during the year
+  she's only in Elfhome when the forest has her home (`absent`). The West Road leads back out east. No
+  strolling peasants (`noStroll`). Stand-in buildings from the town tilesets (`docs/art-prompts.md`).
+- **The world map:** the Moriquende now lies west of Wrenford (its label above it, `labelDx` / `labelDy`)
+  and leads to Elfhome like any place (`map:'elfhome'`). Closing the forest leaves you in Elfhome.
+- **After Finals only:** Agathe offers the errand once you've graduated (`api.fullMagic()`), the hero
+  only; roster wizards don't get it, and the Test menu's quick year has no wizard picker (its fights play
+  themselves out).
+- **One HP pool:** your wizard's HP in the forest is your Explore HP. The year starts from it (`syncIn`),
+  a duel starts at it and writes its exact result back, and auto-settled wounds go back after each week
+  (`syncOut`, `S.wizHpSync`); a wound leaves you at a quarter. The forest no longer heals your wizard by
+  itself (`selfHeal:false`, `S.wizSelfHeal`): rest at the **Healing House**, which heals you to full and,
+  once a week, takes two weeks off every wound in Elfhome (`HEAL_WEEKS`, `S.healedWeek`).
+

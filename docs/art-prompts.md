@@ -186,6 +186,19 @@ sheet 12 face; attach `tileset10_source.png` and `tileset12_source.png`):
     elven forest at dusk: huge mossy trunks, roots across a leaf-strewn clearing for the fighters to
     stand in, elven lanterns and a rope bridge high in the canopy, shafts of green-gold light, mist
     between the trees, the same painterly style as the attached backdrop."
+- **Elfhome** (`maps/elfhome.json`, `tools/mapgen/elfhome.js`): built from the town tilesets for now: a
+  grove of the ordinary `tree` for the Heart Tree, the `watchTower` for the Seers' talan, the `chapel` for
+  the Healing House, mossy cottages (`house2_moss`, `house5_moss`, `house3_moss`) for the Talons' lodge, the
+  Guild's workshop and the Beast-speakers' lodge, a `hoodedShrine` for the Elders' Stone and a tavern
+  `roundTable` for the Watch Table. The real art is one new tileset sheet (`tileset27_source.png`, cut into
+  `ruins27`; tileset house rules): "Top-down 3/4 view pixel-art game assets for a wood-elf town in an
+  ancient forest, same scale as the attached sheets: one enormous ancient oak (the Heart Tree, about 600 px
+  tall) with lanterns and walkways in its branches; a round carved oak map-table with little wooden
+  figures on it; a lookout platform (talan) high in a tree with a rope ladder; a healing house of living
+  wood and hanging herbs; a longbow lodge with racks of bows and a straw target; a builders' workshop of
+  rope, platforms and ladders; a hide tent with antlers over the door; a mossy council stone with six
+  carved seats; elven lanterns on posts; flowering ferns, toadstools and mossy logs." The six house
+  leaders are painted from the elf hero figures (`PEOPLE` in `js/explore_elfhome.js`) and need no art.
 - **The four invented dons** (Dr Penhallow, Mr Quill, Canon Marrow, Widow Coyle) are recolours of two
   base figures (`tools/make_folk_sprites.py`); their own art would replace them, with the shared people
   prompt above.
