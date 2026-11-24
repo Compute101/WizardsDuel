@@ -690,7 +690,8 @@ function drawOver(ctx,t,v){
 function bubble(ctx,v,k,hx,hy,text,pxSize,maxW,alpha,name,whisper,small,done,full){
   full=full||text;
   const fs=pxSize*k, pad=10*k, lh=fs*1.3, mw=Math.min(maxW, v.w/k-36)*k;
-  ctx.save(); ctx.globalAlpha=alpha; ctx.font=`${whisper?'italic ':''}${fs.toFixed(2)}px Georgia, 'Times New Roman', serif`;
+  ctx.save(); ctx.globalAlpha=alpha; ctx.textAlign='left'; ctx.textBaseline='top';   // set here: whatever drew last may have left them centred
+  ctx.font=`${whisper?'italic ':''}${fs.toFixed(2)}px Georgia, 'Times New Roman', serif`;
   const wrap=s=>{ const out=[]; let line=''; for(const w of s.split(' ')){ const tl=line?line+' '+w:w; if(ctx.measureText(tl).width>mw-pad*2&&line){ out.push(line); line=w; } else line=tl; } if(line) out.push(line); return out; };
   const lines=wrap(full), shown=[]; let left=text.length;
   for(const l of lines){ if(left<=0) break; shown.push(l.slice(0,left)); left-=l.length+1; }
