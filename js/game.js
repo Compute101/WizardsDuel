@@ -4079,6 +4079,7 @@ function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena, fists
   const me=fists?{key:wizKey,human:true,team:'A',hp,cfg:Object.assign({},defOf(wizKey),{known:{glyphs:[],elems:[],cats:[],rings:1,skin:false}})}:{key:wizKey,human:true,team:'A',hp};
   const seats=[me].concat(allyList.map(a=>a.wizard?wizSeat(a,'A'):fighterSeat(a,'A')),foeSeats);
   exploreFight={onEnd, foes, low:Infinity, allies:allyList.length, text:text||{}, arena:arena||null};
+  arenaFor(p2Key);   // start loading the backdrop now (Explore preloads it on entering the map)
   multiMode=true; trainingMode=false; twoPlayerMode=false;
   if(window.Profiles&&Profiles.setSeats) Profiles.setSeats({});
   startMultiBattle(seats);

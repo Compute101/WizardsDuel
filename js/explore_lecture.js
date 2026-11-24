@@ -11,7 +11,7 @@
 //  afterwards (lecture()) and then calls end().
 //  Also the pieces of the room that change: the straw dummy (fresh, charred,
 //  frosted), the blackboard (chalked afresh by each lecturer) and the lecture
-//  list's notice board, from sheet 24 (the rest of the theatre is laid out by
+//  list's notice board, from sheet 25 (the rest of the theatre is laid out by
 //  theatre() in js/explore_rooms.js).
 //  ExploreLecture: play(api, id, L, opts) → Promise<end()>, under(ctx,t,MAP), props(MAP, inScene).
 // ═══════════════════════════════════════════════════════════════════
@@ -87,7 +87,7 @@ let boardText={title:'Statute IV', sub:'None in the street.', glyphs:null, shown
 const dummy={x:0,y:0, char:0, burn:0, wet:0, frost:0, lift:0, spin:0, hit:0, glow:0};
 function resetDummy(){ Object.assign(dummy,{char:0,burn:0,wet:0,frost:0,lift:0,spin:0,hit:0,glow:0}); }
 // the stage's edge: the tiers end in a step down to the flagstones (the tiers, desks, aisle steps and
-// dais are the room's own pieces, sheet 24; js/explore_rooms.js lays them out)
+// dais are the room's own pieces, sheet 25; js/explore_rooms.js lays them out)
 function under(ctx, t, MAP){
   const th=MAP.theatre, X0=T, X1=(MAP.cols-1)*T;
   ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(X0,th.stageY,X1-X0,10);

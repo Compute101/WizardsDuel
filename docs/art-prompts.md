@@ -107,10 +107,10 @@ scale as the earlier sheets (a floor tile about 100 px). Attach `sprites/ruins/t
 
 | Sheet | Stands in now | Used by |
 |---|---|---|
-| The Undercroft: sewers and culverts | the crypt room (stone walls, which have windows, and flagstones) | `TYPES.undercroft` / `undercroft2` in `js/explore_rooms.js` |
-| ~~The lecture theatre~~ | **Done:** sheets 24 (furniture) and 25 (back wall) arrived, cut into `ruins24` / `ruins25` (`RECTS24` / `RECTS25`, pieces `lt_*`). Not used yet: `lt_candelabra` (a wall sconce) and `lt_chandelier` (seen from below) | `theatre()` in `js/explore_rooms.js`, `drawDummy` / `drawBoard` in `js/explore_lecture.js` |
+| ~~The Undercroft: sewers and culverts~~ | **Done:** sheet 24 (`ruins24`), see below | `TYPES.undercroft` in `js/explore_rooms.js` |
+| ~~The lecture theatre~~ | **Done:** sheets 25 (furniture) and 26 (back wall) arrived, cut into `ruins25` / `ruins26` (`RECTS25` / `RECTS26`, pieces `lt_*`). Not used yet: `lt_candelabra` (a wall sconce) and `lt_chandelier` (seen from below) | `theatre()` in `js/explore_rooms.js`, `props` in `js/explore_lecture.js` |
 
-**Sewer sheet prompt:**
+**Sewer sheet prompt** (done: `tileset24_source.png`, the Undercroft; kept for reference):
 
 > A sprite sheet of top-down pixel-art pieces for an underground sewer and culvert level, in exactly
 > the same style, scale and palette as the attached sheets: brick tunnel floor tiles (dry, and wet with
@@ -253,7 +253,7 @@ Nothing in this section is in the game yet. Use the house rules above, plus the 
 
 #### 5a. Arena backdrops for Explore fights (`backgrounds/<name>.jpg`)
 
-Every Explore fight now happens in `ruins` (Corvanthe) or `library` (Wrenford). If each place had its own backdrop, fights would feel like they happen where you are. Attach `backgrounds/ruins.jpg` as the style reference and use this base prompt:
+Done so far (in `backgrounds/`, picked by `arenaHere` in `js/explore.js`): `wren_schools`, `wren_quad`, `wren_undercroft`, `wren_orrery`, `hollowmere`, `road`, `spirewatch`, `collegium`, `cindergate`, `heights`, `drowned`, `quarry`, `frost`, `gloam` (each sector's also used by its inner district). Still to make: `wound` (for the Wound itself, once it's built). When one arrives, add it to `ARENA_MAPS`. Attach `backgrounds/ruins.jpg` as the style reference and use this base prompt:
 
 > Painterly dark-fantasy battle backdrop in the same style, palette and lighting as the attached image. Wide 16:9, 1920×1080. A flat, open floor across the bottom third where two duelling wizards will stand at the left and right. No people, no creatures, no text. Moody, slightly dim, the most detail in the middle distance, a calm clear area in the centre for spell effects. Setting: [SETTING]
 

@@ -302,13 +302,31 @@ RECTS23 = {k: _pad(v) for k, v in {   # Cindergate's inner district: the crucibl
     'crucibleHoist': (506, 523, 275, 251), 'stallBurnt': (822, 520, 360, 255), 'lavaWell': (1216, 518, 277, 286),
     'lavaSpring': (31, 828, 266, 156), 'bannerAnvil': (378, 799, 154, 204), 'bannerHammers': (586, 799, 138, 204),
     'bannerFlame': (780, 799, 137, 204), 'bannerAshen': (971, 799, 137, 204)}.items()}
-RECTS24 = {k: _pad(v) for k, v in {   # the lecture theatre (Wrenford's Examination Schools; js/explore_lecture.js)
+# ── sheet 24: the Undercroft (sewers and culverts under Wrenford). Drawn bigger than sheets 10–13,
+#    so every piece is shrunk to their scale (`shrink`: a back wall about 215 px tall, like wallStone);
+#    the floors and the channel are ground tiles, squared to sheet 10's 124 px floor tile.
+_S24G = {'floorSewer': (35, 340, 249, 221), 'floorSewerWet': (342, 340, 249, 221), 'sewerChannel': (645, 339, 267, 222),
+         'sewerChannelBend': (1240, 339, 250, 222)}
+RECTS24 = {k: (x + 3, y + 3, w - 6, h - 6) for k, (x, y, w, h) in _S24G.items()}
+RECTS24.update({k: _pad(v, 4) for k, v in {
+    'sewerWall': (17, 26, 345, 283), 'sewerWallCrack': (393, 25, 338, 284), 'sewerWallPipe': (765, 25, 330, 292),
+    'sewerWallGrille': (1129, 26, 292, 283), 'sewerSide': (1450, 23, 66, 289),
+    'sewerEdgeL': (978, 338, 75, 223), 'sewerEdgeR': (1102, 339, 74, 222),
+    'sewerLadder': (18, 586, 166, 236), 'drainGrate': (217, 622, 161, 165), 'sewerPlank': (419, 592, 196, 227),
+    'sewerCrates': (635, 593, 309, 222), 'crystalChest': (978, 595, 213, 215), 'ritualCircle': (1228, 592, 289, 225),
+    'sewerCandles': (297, 835, 244, 163), 'ratRun': (646, 899, 148, 67), 'ratSit': (897, 865, 116, 102)}.items()})
+
+# pieces painted with a dark halo round them (the candles' glow): near-black pixels below this go clear
+KNOCK_DARK = {'sewerCandles': 72}
+# chalk drawn on the floor: only the pale lines are kept (soft edge), so it lies on any floor
+CHALK = {'ritualCircle': (120, 175)}
+RECTS25 = {k: _pad(v) for k, v in {   # the lecture theatre (Wrenford's Examination Schools; js/explore_lecture.js)
     'lt_bench2': (59, 15, 207, 164), 'lt_bench4': (334, 15, 412, 164), 'lt_bench6': (809, 14, 675, 165),
     'lt_benchEnd': (41, 222, 98, 177), 'lt_tier': (185, 299, 417, 62), 'lt_steps': (634, 212, 207, 196), 'lt_dais': (898, 215, 588, 191),
     'lt_lectern': (45, 438, 173, 213), 'lt_demo': (279, 399, 565, 249), 'lt_board': (920, 425, 272, 236), 'lt_boardBlank': (1232, 425, 273, 237),
     'lt_dummy': (27, 696, 167, 278), 'lt_dummyBurnt': (216, 658, 161, 316), 'lt_dummyFrost': (400, 690, 164, 284),
     'lt_notice': (635, 672, 291, 301), 'lt_candelabra': (994, 672, 127, 261), 'lt_chandelier': (1191, 672, 314, 281)}.items()}
-RECTS25 = {k: _pad(v) for k, v in {   # the lecture theatre's back wall
+RECTS26 = {k: _pad(v) for k, v in {   # the lecture theatre's back wall
     'lt_wallWindow': (48, 43, 484, 634), 'lt_wallPlain': (573, 43, 489, 634), 'lt_wallCrest': (1106, 43, 495, 634), 'lt_wallPortrait': (1642, 43, 489, 634)}.items()}
 # a neighbour inside a crop, blanked before the crop is cleaned (sheet coords)
 ERASE = {'armillary': [(150, 0, 372, 325)]}
@@ -330,8 +348,10 @@ SHEETS = {
                     out='ruins%d' % n, key=str(n), clean='strict', square=TR)
        for n, R in [(14, RECTS14), (15, RECTS15), (16, RECTS16), (17, RECTS17), (18, RECTS18), (19, RECTS19),
                     (20, RECTS20), (21, RECTS21), (22, RECTS22), (23, RECTS23)]},
-    '24': dict(src='tileset24_source.png', bg=(11, 14, 21), rects=RECTS24, ground=set(), out='ruins24', key='24', clean=True),
-    '25': dict(src='tileset25_source.png', bg=(13, 17, 24), rects=RECTS25, ground=set(), out='ruins25', key='25', clean=True),
+    '24': dict(src='tileset24_source.png', bg=(12, 15, 20), rects=RECTS24, ground=set(_S24G), out='ruins24', key='24',
+               clean=True, square=124, shrink=0.757),
+    '25': dict(src='tileset25_source.png', bg=(11, 14, 21), rects=RECTS25, ground=set(), out='ruins25', key='25', clean=True),
+    '26': dict(src='tileset26_source.png', bg=(13, 17, 24), rects=RECTS26, ground=set(), out='ruins26', key='26', clean=True),
     '3': dict(src='tileset3_source.png', bg=(13, 16, 21), rects=RECTS3, ground=set(RECTS3), out='ruins3', key='3', square=TR),
 }
 
@@ -470,10 +490,17 @@ def cut(sh, write=True):
         c = sheet.crop((x, y, x + w, y + h))
         for ex0, ey0, ex1, ey1 in ERASE.get(k, []):
             a = np.array(c); a[max(0, ey0 - y):max(0, ey1 - y), max(0, ex0 - x):max(0, ex1 - x), 3] = 0; c = Image.fromarray(a, 'RGBA')
+        if k in KNOCK_DARK:
+            a = np.array(c); a[..., 3] = np.where(a[..., :3].max(2) < KNOCK_DARK[k], 0, a[..., 3]); c = Image.fromarray(a, 'RGBA')
+        if k in CHALK:
+            lo, hi = CHALK[k]; a = np.array(c).astype(float); lum = a[..., :3].mean(2)
+            a[..., 3] = np.clip((lum - lo) / (hi - lo), 0, 1) * a[..., 3]; c = Image.fromarray(a.astype(np.uint8), 'RGBA')
         if sh.get('clean'):
             c = drop_edge_scraps(c, 1.0 if sh['clean'] == 'strict' else 0.15)
         if k not in sh['ground']:
             c = c.crop(c.getbbox())
+            if sh.get('shrink'):
+                c = c.resize((round(c.size[0] * sh['shrink']), round(c.size[1] * sh['shrink'])), Image.LANCZOS)
         elif sh.get('square'):             # transition cells: every cell the same square size
             c = c.convert('RGB').resize((sh['square'], sh['square']), Image.LANCZOS).convert('RGBA')
         crops[k] = c
