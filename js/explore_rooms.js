@@ -27,7 +27,14 @@ const ITEM_SCALE = {
   coinsL:0.25, coinSack:0.25, ironBox:0.26, chest:0.3, chestOpen:0.3,
   q_fire:0.3, q_water:0.3, q_ice:0.3, q_lightning:0.3, q_earth:0.3, q_air:0.3, q_arcane:0.3, q_dark:0.3,
   crockery:0.2, bookPile:0.22, cauldron:0.26, lectern:0.27, alembic:0.25, herbs:0.27, washtub:0.27,
+  // the Undercroft (sheet 24, already shrunk to sheets 10–13's scale by the cutter)
+  sewerCrates:0.36, crystalChest:0.3, sewerCandles:0.24, ratRun:0.2, ratSit:0.2, drainGrate:0.34, ritualCircle:0.72,
 };
+// flat things laid on the floor (drawn under everything, never in the way)
+const DECALS = new Set(['rug','ritualCircle','drainGrate','ratRun','ratSit']);
+// wall pieces drawn at their own scale rather than RS: the sewer's ladder and side wall are drawn
+// taller than its brick walls on the sheet
+const WALL_SCALE = {sewerLadder:0.6, sewerSide:0.31};
 const scaleOf = k => ITEM_SCALE[k] || FS;
 
 // furniture by room type: back = against the back wall, floor = about the room
@@ -51,9 +58,9 @@ const TYPES = {
   wrenInn:  {name:'The Wren\'s Nest',     floor:'w', wall:'plaster', back:[['hearthPot'],['cupboard'],['wineRack']], floor_:[['diningTable'],['roundTable'],['bed'],['rug']], big:true, npcs:['landlady','squop']},
   remnant:  {name:'The Remnant Library', floor:'y', wall:'panel', back:[['bookcase2'],['bookLadder'],['bookcase2'],['bookcase']], floor_:[['lectern'],['readingDesk'],['bookPile'],['rug']], big:true, size:[15,10], shelves:true, open:true},
   // the University Year (js/explore_year.js): the lecture theatre and examination hall; the Undercroft
-  // under the Covered Market (a crypt for now: sewer art is still to come, docs/art-prompts.md)
+  // under the Covered Market, a sewer culvert (sheet 24: brick floor, a channel down the left wall)
   lectures: {name:'The Examination Schools', floor:'y', wall:'panel', back:[['lectern'],['bookcase2'],['bookcase']], floor_:[['pew'],['pew2'],['pew'],['pew2']], rows:true, open:true, big:true, size:[15,9], npcs:['lecturer','examiner']},
-  undercroft:{name:'The Undercroft', floor:'l', wall:'stone', back:[['barricade'],['jarShelf'],['weaponRack']], floor_:[['pantry'],['workbench'],['bookPile']], big:true, open:true},
+  undercroft:{name:'The Undercroft', floor:'u', wall:'sewer', channel:true, back:[['sewerCrates'],['barricade'],['sewerCrates']], floor_:[['ritualCircle'],['crystalChest'],['sewerCrates'],['sewerCandles'],['drainGrate'],['sewerCandles'],['ratRun'],['ratSit']], big:true, open:true},
   undercroft2:{name:'Beneath the Orrery', floor:'l', wall:'stone', back:[['altar'],['crystalDisplay']], floor_:[['bookPile'],['alembic']], big:true, open:true, npcs:['ashgrove','partnerLost']},
   lab:      {name:'The Warded Laboratory', floor:'l', wall:'stone', back:[['jarShelf'],['crystalDisplay'],['jarShelf']], floor_:[['cauldron'],['alembic'],['workbench'],['herbs'],['alembic']], big:true},
   lamplighter:{name:'The Lamplighter\'s House', floor:'w', wall:'stone', back:[['bookcase'],['cupboard']], floor_:[['roundTable'],['rockingChair'],['bookPile']]},
@@ -84,9 +91,9 @@ const SMALL = {odds:0.35, cols:[6,8], rows:[5,6], types:['cottage','workshop','s
 // extra furniture for the rooms a partitioned house gains (TYPES[t].more overrides)
 const MORE = [['cupboard','wardrobe'],['bed','cot'],['washtub','pantry'],['rockingChair','roundTable'],['bookPile','cradle']];
 const BROKEN = {bed:'brokenBed', cot:'brokenBed', diningTable:'brokenTable', roundTable:'brokenTable', rockingChair:'brokenChair', cradle:'brokenChair', spinningWheel:'brokenChair'};
-const WALLS = {plaster:['wallPlaster','wallPlasterWin'], stone:['wallStone','wallStoneWin'], panel:['wallPanel','wallPanel']};
-const SIDES = {plaster:'sidePlaster', stone:'sideStone', panel:'sidePlaster'};
-const FRONTS = {plaster:'frontPlaster', stone:'frontStone', panel:'frontPlaster2'};
+const WALLS = {plaster:['wallPlaster','wallPlasterWin'], stone:['wallStone','wallStoneWin'], panel:['wallPanel','wallPanel'], sewer:['sewerWall','sewerWallGrille']};
+const SIDES = {plaster:'sidePlaster', stone:'sideStone', panel:'sidePlaster', sewer:'sewerSide'};
+const FRONTS = {plaster:'frontPlaster', stone:'frontStone', panel:'frontPlaster2', sewer:'frontStone'};
 
 // ── lore books: short stories found in rooms. lib:true ones only in the Collegium library,
 //    lib:'wren' ones only in Wrenford's Remnant Library (three of them count toward Matriculation) ──
@@ -182,7 +189,7 @@ function build(spec,rects){
   let fq=r2(), furnish=0; for(let n=0;n<fOdds.length;n++){ if((fq-=fOdds[n])<0){ furnish=n; break; } }
   const cols=C+2, rows=R+4, W=cols*T, H=rows*T;
   const floor=ruined&&D.floor==='w'?'b':D.floor;
-  const ground=[]; for(let y=0;y<rows;y++){ let row=''; for(let x=0;x<cols;x++) row+=(x>=1&&x<=C&&y>=2&&y<2+R)?floor:'v'; ground.push(row); }
+  const ground=[]; for(let y=0;y<rows;y++){ let row=''; for(let x=0;x<cols;x++) row+=(x>=1&&x<=C&&y>=2&&y<2+R)?(D.channel&&x===1?'q':floor):'v'; ground.push(row); }
   const objects=[], boxes=[], lore={}, ev=rollEvent(spec,r);
   const sz=k=>{ const q=rects[k]; return {w:q[2]*scaleOf(k), h:q[3]*scaleOf(k)}; };
   const put=(k,x,y,extra)=>{ if(!rects[k]) return null; const e=Object.assign({scale:scaleOf(k)},extra||{}); objects.push([k,Math.round(x),Math.round(y),e]);
@@ -192,6 +199,18 @@ function build(spec,rects){
   const walls=WALLS[D.wall]; let wx=X0-8, i=0;
   const rubbleAt=ruined&&r()<0.5?Math.floor(r()*Math.max(1,Math.floor(C*T/72)-3)):-1;
   const hearthAt=D.wall==='plaster'&&!ruined&&type!=='chapel'&&r()<0.3?1+Math.floor(r()*2):-1;
+  if(D.wall==='sewer'){
+    // the culvert: a pipe pouring into the channel (its spout over the channel's middle, 39% across the
+    // piece), the ladder down from the grate, then brick, grilles and cracks, spaced by drawn width
+    const ws=k=>WALL_SCALE[k]||RS;
+    wx=X0+T/2-rects.sewerWallPipe[2]*RS*0.39;
+    for(;wx<X1-10;i++){
+      const k=i===0?'sewerWallPipe':i===2?'sewerLadder':i%3===1?walls[1]:r()<0.35?'sewerWallCrack':walls[0];
+      const w=rects[k][2]*ws(k), x=Math.min(wx+w/2,X1+8-w/2);
+      objects.push([k,Math.round(x),Y0+6,{scale:ws(k)}]); wx+=w-4;
+    }
+    boxes.push({x:X0,y:Y0,w:T,h:Y1-Y0});              // nothing stands in the channel
+  }
   while(wx<X1-10){
     let k=i%3===1?walls[1]:walls[0];
     if(ruined&&r()<0.3) k='wallCracked';
@@ -202,7 +221,7 @@ function build(spec,rects){
     wx+=s.w-4; i++;
   }
   // side and front walls
-  for(let y=Y0+T;y<=Y1;y+=T){ const k=SIDES[D.wall]; objects.push([k,X0-6,y,{scale:RS}]); objects.push([k,X1+6,y,{scale:RS}]); }
+  for(let y=Y0+T;y<=Y1;y+=T){ const k=SIDES[D.wall], sc=WALL_SCALE[k]||RS; objects.push([k,X0-6,y,{scale:sc}]); objects.push([k,X1+6,y,{scale:sc}]); }
   const fk=FRONTS[D.wall], fw=sz(fk).w;
   for(let x0=X0-8;x0<X1;x0+=fw-4){ const x=Math.min(x0,X1+8-fw); if(x+fw>DX-T&&x<DX+T) continue; objects.push([fk,Math.round(x+fw/2),Y1+24,{scale:RS}]); }   // the last piece tucks in, not past the corner
   const blocks=[{x:0,y:0,w:W,h:Y0+14},{x:0,y:0,w:X0-4,h:H},{x:X1+4,y:0,w:W,h:H},
@@ -245,7 +264,7 @@ function build(spec,rects){
     }
   }
   // furniture
-  let bx=X0+20;
+  let bx=X0+(D.channel?T+12:20);
   for(const choices of D.back){
     const k=pick(choices), s=sz(k);
     if(bx+s.w>X1-10) break;
@@ -277,8 +296,8 @@ function build(spec,rects){
   } else {
     for(const choices of D.floor_){
       let k=pick(choices); if(ruined&&BROKEN[k]&&r()<0.7) k=BROKEN[k];
-      const s=sz(k), p=spot(s.w,s.h,12);
-      if(p){ if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:FS,decal:1}]); else put(k,p[0],p[1]); }
+      const s=sz(k), p=spot(s.w,s.h,DECALS.has(k)&&k!=='rug'?2:12);
+      if(p){ if(DECALS.has(k)) objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:scaleOf(k),decal:1}]); else put(k,p[0],p[1]); }
     }
     if(vx||hy) for(const choices of (D.more||MORE).slice(0,(vx&&hy)?4:2)){   // the extra rooms want furnishing too
       let k=pick(choices); if(ruined&&BROKEN[k]&&r()<0.7) k=BROKEN[k];
@@ -350,6 +369,7 @@ function build(spec,rects){
       if(k==='rug') objects.push([k,Math.round(p[0]),Math.round(p[1]),{scale:FS,decal:1}]); else put(k,p[0],p[1]);
     }
   }
+  if(type==='undercroft'){ const c=objects.find(o=>o[0]==='crystalChest'); if(c){ c[3].lore='haul'; lore.haul=['The Smugglers\' Haul','A crate of raw quintessence, packed in straw for the night barges. Every crystal in it is somebody\'s street in Corvanthe.']; } }
   if(type==='shop'){ const c=objects.find(o=>o[0]==='counter'); if(c){ c[3].lore='shop'; lore.shop=['An Honesty Box','The shopkeeper fled, but the box on the counter still reads "PAY WHAT IS FAIR". A few potions are left on the shelf.']; } }
   const name=ruined?D.name.replace(/^An? /,'A Ruined ').replace('A Ruined Alchemist','A Ruined Alchemist'):D.name;
   return {id:spec.id, name:(spec.label||name), cols, rows, seed:hash(spec.id)&0xffff, ground, objects, lore, blocks, glows:[], echoes, walk:[],
