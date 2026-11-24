@@ -190,6 +190,81 @@ sheet 12 face; attach `tileset10_source.png` and `tileset12_source.png`):
 > wren, and a panelled wall with a framed portrait of a stern old scholar. Loose pieces with 16 pixel
 > gaps on a flat #101217 background, no labels, no text.
 
+
+### Elfhome's tileset (sheets 27 and 28)
+
+Elfhome is the elves' town in the Moriquende (`maps/elfhome.json`, `tools/mapgen/elfhome.js`): a glade
+round the Heart Tree with the Watch Table under it, and a place for each of the six houses round the
+edge. It's built from human town pieces for now (a watchtower, a chapel, mossy cottages; see "Elfhome"
+under 3 below). Two sheets replace them, one of buildings and one of props and ground, at the
+**outdoor** scale (not the interiors'): the same as `tileset_source.png` and `tileset4_source.png`, where
+a cottage is about 220 × 265 px and a ground tile about 100 px.
+
+**Attach:** `sprites/ruins/tileset_source.png` and `sprites/ruins/tileset4_source.png` (for scale, view
+and style), and `sprites/forest/source/hexes_source.png` (for the elven look: the tree-town and hamlet
+hexes are the town to match). **Save as** `sprites/ruins/tileset27_source.png` and
+`tileset28_source.png`; Claude adds `RECTS27` / `RECTS28` to `tools/cut_ruins_tileset.py`, swaps the
+pieces into the generator and strikes this entry.
+
+**The look, for both:** wood elves who grow their town rather than build it: living trees shaped into
+walls and roofs, curving lines, roofs of overlapping leaf-shaped shingles or living moss, pointed
+leaf-shaped windows glowing warm gold, round-arched doors, carved leaf and antler motifs, rope bridges
+and ladders, hanging lanterns, moss and ferns everywhere. Greens, browns, warm gold light, a touch of
+pale blue for the Seers. No stone castles, nothing human-looking.
+
+**Sheet 27, the buildings** (sizes are rough, in the sheet's own pixels):
+
+> A sprite sheet of top-down three-quarter-view pixel-art buildings for a wood-elf town in an ancient
+> forest, in exactly the same style, scale, palette and viewpoint as the attached town sheets, and in
+> the elven look of the attached hex tiles (the tree-town and the hamlet). Each a separate piece, its
+> base at the bottom, standing on a small patch of mossy ground:
+> (1) the Heart Tree, an enormous ancient oak about 550 px tall and 480 px wide, with roots spreading at
+> its foot, small round doors and windows in the trunk, a spiral stair round it, walkways and hanging
+> gold lanterns in its branches;
+> (2) the Seers' talan, a lookout platform high up a tall slender tree (about 300 px tall), a rope ladder
+> down to the ground, pale blue lanterns, a green banner with a white leaf;
+> (3) the Healing House, a low house grown from two living trees whose branches meet as its roof (about
+> 260 × 240), a round-arched door, bundles of herbs hanging under the eaves, warm windows;
+> (4) the Talons' lodge, a long timber hall with a curving leaf-shingled roof and carved hawk heads on
+> the gable ends (about 280 × 220), longbows racked under the eaves;
+> (5) the Guild's workshop, an open-fronted workshop under a broad tree (about 260 × 220), a half-built
+> wooden platform on trestles, coils of rope, ladders and a pole-lathe;
+> (6) the Beast-speakers' lodge, a round lodge of hide and woven wicker (about 220 × 200), antlers over
+> the door, a water trough beside it;
+> (7) the Elders' Stone, a ring of mossy stone with six carved seats round a flat stone table, under a
+> low arch of living branches (about 260 × 170);
+> (8) two small elven cottages, different from each other, with leaf-shingled roofs and pointed
+> gold-lit windows (about 200 × 220 each).
+> Loose pieces with at least 16 pixel gaps between them on a flat #101217 background. No labels, no
+> dividers, no text, no shadows touching other pieces.
+
+**Sheet 28, props and ground:**
+
+> A sprite sheet of top-down three-quarter-view pixel-art props and ground tiles for a wood-elf town in
+> an ancient forest, in exactly the same style, scale, palette and viewpoint as the attached town
+> sheets, and in the elven look of the attached hex tiles:
+> (1) the Watch Table, a round oak table about 150 px across with a map of hexagons carved into its top
+> and little wooden figures standing on it;
+> (2) three elven lantern posts: a slender carved post with a gold lantern, a curved shepherd's-crook
+> post with a hanging lantern, and a short post with a pale blue lantern (each about 60 × 110);
+> (3) a plaited-straw archery target on a wooden stand, and a rack of longbows;
+> (4) a wooden drying rack hung with herbs, a stone mortar and pestle, and a straw beehive skep;
+> (5) coils of rope with a stack of ladders and planks;
+> (6) a small spring: a clear pool ringed with mossy stones (about 200 × 140, flat on the ground);
+> (7) nature: a mossy fallen log, three clumps of ferns, two rings of red-capped toadstools, two kinds of
+> flowering bush (white blossom, purple foxgloves), a tree stump with toadstools on it, and a standing
+> stone carved with a leaf rune;
+> (8) ground tiles, each exactly 100 × 100 px and seamless when repeated: a mossy forest floor with
+> fallen leaves, a soft grass tile, and a mossy flagstone path tile;
+> (9) a 3 × 3 set of 100 × 100 tiles for the edges and corners of that mossy flagstone path where it
+> meets the forest floor (centre, four edges, four outer corners), the tiles butting together with no
+> gaps between them.
+> Everything except the 3 × 3 set as loose pieces with at least 16 pixel gaps between them on a flat
+> #101217 background. No labels, no dividers, no text.
+
+Tips that worked for the earlier sheets: make one sheet at a time, and if a piece comes out at the
+wrong scale, ask for that one again on its own with the cottage from `tileset_source.png` attached.
+
 ---
 
 ## 3. Other placeholders
@@ -214,15 +289,9 @@ sheet 12 face; attach `tileset10_source.png` and `tileset12_source.png`):
   grove of the ordinary `tree` for the Heart Tree, the `watchTower` for the Seers' talan, the `chapel` for
   the Healing House, mossy cottages (`house2_moss`, `house5_moss`, `house3_moss`) for the Talons' lodge, the
   Guild's workshop and the Beast-speakers' lodge, a `hoodedShrine` for the Elders' Stone and a tavern
-  `roundTable` for the Watch Table. The real art is one new tileset sheet (`tileset27_source.png`, cut into
-  `ruins27`; tileset house rules): "Top-down 3/4 view pixel-art game assets for a wood-elf town in an
-  ancient forest, same scale as the attached sheets: one enormous ancient oak (the Heart Tree, about 600 px
-  tall) with lanterns and walkways in its branches; a round carved oak map-table with little wooden
-  figures on it; a lookout platform (talan) high in a tree with a rope ladder; a healing house of living
-  wood and hanging herbs; a longbow lodge with racks of bows and a straw target; a builders' workshop of
-  rope, platforms and ladders; a hide tent with antlers over the door; a mossy council stone with six
-  carved seats; elven lanterns on posts; flowering ferns, toadstools and mossy logs." The six house
-  leaders are painted from the elf hero figures (`PEOPLE` in `js/explore_elfhome.js`) and need no art.
+  `roundTable` for the Watch Table. The real art is two new sheets: prompts in "Elfhome's tileset (sheets
+  27 and 28)" in section 2 above. The six house leaders are painted from the elf hero figures (`PEOPLE` in
+  `js/explore_elfhome.js`) and need no art.
 - **The four invented dons** (Dr Penhallow, Mr Quill, Canon Marrow, Widow Coyle) are recolours of two
   base figures (`tools/make_folk_sprites.py`); their own art would replace them, with the shared people
   prompt above.
