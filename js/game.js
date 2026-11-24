@@ -3969,8 +3969,12 @@ function physOf(who){ return Object.assign({},PHYS_DEFAULT,seatCfg(who).phys||{}
 //   ranged (Archer): his Attack is a bow shot: it slips past a Guard (no block, no counter), and he keeps
 //     his distance, so a Grapple at him fails.
 //   reach (Halberdier, Explore only): a long-hafted axe holds you off, so a Grapple at him fails.
+//   The Moriquende's creatures (js/forest.js, Explore only):
+//   pack (Varg): wolves go for the wounded: his Attack is ×1.5 at a target below half HP.
+//   swarm (Goblin): +1 Attack for every other goblin still standing on his side.
+//   brute (Orc): his Grapple lands in full, guard or no guard.
 const FIGHTER_TRAITS={shieldwall:{name:'Shield Wall',icon:'🛡️',magicTake:0.5}, ranged:{name:'At Range',icon:'🏹'}, reach:{name:'Long Reach',icon:'🪓'},
-  echo:{name:'Echo',icon:'✦'}};
+  echo:{name:'Echo',icon:'✦'}, pack:{name:'Pack Hunter',icon:'🐺',mult:1.5}, swarm:{name:'Swarm',icon:'👺',per:1}, brute:{name:'Brute',icon:'💪'}};
 // Echoes (Explore: Corvanthe's citizens remade in one element, fighters.json `echo`): their blow is a
 // strike in that element (magic: a ward stops it, a Guard doesn't), they shrug off their own element
 // and their element's opposite tears them apart.
@@ -4055,10 +4059,22 @@ let exploreFight=null;
 // (4 seats in all); a foe with wizard:true is a roster wizard leading a rival party. text: {win, lose}.
 function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena, fists}){
   survival=null; encounterPending=false;
+  const seats=exploreSeats({wizKey, foes, hp, allies, fists}), allyList=seats.filter(x=>x.team==='A').slice(1);
+  exploreFight={onEnd, foes, low:Infinity, allies:allyList.length, text:text||{}, arena:arena||null};
+  arenaFor(p2Key);   // start loading the backdrop now (Explore preloads it on entering the map)
+  multiMode=true; trainingMode=false; twoPlayerMode=false;
+  if(window.Profiles&&Profiles.setSeats) Profiles.setSeats({});
+  startMultiBattle(seats);
+}
+// The seats of an Explore fight (also used by the Moriquende's duel sim, tools/forest_duel_sim.js):
+// you, then up to three foes, then allies in whatever seats are left. A fighter foe can carry `level`
+// (SURVIVAL_LEVELS), `hpMul` (a seat standing for a bigger band) and `hp` (where it starts).
+function exploreSeats({wizKey, foes, hp, allies, fists, human=true}){
   const seen={}, count=k=>foes.filter(f=>f.key===k).length;
   const fighterSeat=(f,team)=>{
     const cfg=fighterCfg(f.key,f.level||0);
     if(f.name) cfg.name=f.name.toUpperCase();
+    if(f.hpMul&&f.hpMul!==1) cfg.hp=Math.round(cfg.hp*f.hpMul);
     // fat Bulldogs (by request): about half the University's Bulldogs are fat in battle too. A halberdier
     // Bulldog gets the fat halberdier's own sprite and face; any other kind is stretched a little (1.3x at most)
     if(/^bulldog /i.test(f.name||'')&&Math.random()<0.5){
@@ -4076,13 +4092,8 @@ function startExploreBattle({wizKey, foes, onEnd, hp, allies, text, arena, fists
   const foeSeats=foes.slice(0,3).map(f=>f.wizard?wizSeat(f,'B'):fighterSeat(f,'B'));
   const room=Math.max(0,3-foeSeats.length), allyList=(allies||[]).slice(0,room);
   // fists:true (the Boxing Club, a Town v Gown brawl): the hero fights with the Actions alone
-  const me=fists?{key:wizKey,human:true,team:'A',hp,cfg:Object.assign({},defOf(wizKey),{known:{glyphs:[],elems:[],cats:[],rings:1,skin:false}})}:{key:wizKey,human:true,team:'A',hp};
-  const seats=[me].concat(allyList.map(a=>a.wizard?wizSeat(a,'A'):fighterSeat(a,'A')),foeSeats);
-  exploreFight={onEnd, foes, low:Infinity, allies:allyList.length, text:text||{}, arena:arena||null};
-  arenaFor(p2Key);   // start loading the backdrop now (Explore preloads it on entering the map)
-  multiMode=true; trainingMode=false; twoPlayerMode=false;
-  if(window.Profiles&&Profiles.setSeats) Profiles.setSeats({});
-  startMultiBattle(seats);
+  const me=fists?{key:wizKey,human,team:'A',hp,cfg:Object.assign({},defOf(wizKey),{known:{glyphs:[],elems:[],cats:[],rings:1,skin:false}})}:{key:wizKey,human,team:'A',hp};
+  return [me].concat(allyList.map(a=>a.wizard?wizSeat(a,'A'):fighterSeat(a,'A')),foeSeats);
 }
 window.startExploreBattle=startExploreBattle;
 // The breather between waves: heal, mana, curses gone (the rest carries on)
@@ -4905,7 +4916,7 @@ function executeAction(who,action,cb){
     if(traitOf(tgt)==='ranged'){ addFloat(seatX(tgt),bH*.3,'🏹 Keeps his distance','#cccccc',12); combatTimeout(cb,700); return; }
     if(traitOf(tgt)==='reach'){ addFloat(seatX(tgt),bH*.3,'🪓 Held off by the halberd','#cccccc',12); combatTimeout(cb,700); return; }
     if(isVanished(tgt)){ addFloat(seatX(tgt),bH*.3,'👻 Grasps at nothing','#b8a0e8',12); combatTimeout(cb,700); return; }   // Vanish: nothing to hold
-    const full=isGuarding(tgt), dmg=Math.max(1,Math.round(ph.atk*(full?1:ACT_RULES.grappleOther)));
+    const full=isGuarding(tgt)||traitOf(who)==='brute', dmg=Math.max(1,Math.round(ph.atk*(full?1:ACT_RULES.grappleOther)));
     lunge(who,.2,()=>{
       addFloat(seatX(tgt),bH*.3,full?'🤼 Grappled through the guard!':'🤼 Grappled',full?'#ffd75a':'#e8dcc0',14);
       elemIncoming(tgt,dmg,'earth','🤼','#e8dcc0',true,null,true,0,'physical');
@@ -4915,7 +4926,10 @@ function executeAction(who,action,cb){
   }
   // Attack: a plain blow (Empower-style strike buffs still apply); harder into someone grappling you
   const intoGrapple=ta&&ta.act==='grapple'&&ta.target===who;
-  const power=Math.round(ph.atk*(intoGrapple?ACT_RULES.attackVsGrapple:1));
+  let power=Math.round(ph.atk*(intoGrapple?ACT_RULES.attackVsGrapple:1));
+  const tr=traitOf(who);
+  if(tr==='pack'&&gs[tgt]&&gs[tgt].hp<gs[tgt].maxHp/2){ power=Math.round(power*FIGHTER_TRAITS.pack.mult); addFloat(seatX(tgt),bH*.42,'🐺 The pack smells blood','#d8c8b8',12); }
+  if(tr==='swarm') power+=FIGHTER_TRAITS.swarm.per*PLAYERS.filter(w=>w!==who&&!gs[w].out&&seatTeam(w)===seatTeam(who)&&traitOf(w)==='swarm').length;
   if(intoGrapple) addFloat(seatX(tgt),bH*.36,'⚔️ Caught mid-grapple!','#ffd75a',13);
   const echo=seatCfg(who).echo;
   if(echo){
@@ -6483,6 +6497,10 @@ function showMultiEnd(team){
     const won=team===seatTeam('p1');
     exploreFight.won=won;
     exploreFight.allyHp=[...Array(exploreFight.allies)].map((_,i)=>{ const w='p'+(i+2); return gs[w]&&!gs[w].out?Math.max(0,gs[w].hp):0; });
+    // what's left of the other side, and of you (the Moriquende turns a lost fight into losses on both sides)
+    const foeSeats=PLAYERS.filter(w=>seatTeam(w)!==seatTeam('p1'));
+    const foeMax=foeSeats.reduce((t,w)=>t+gs[w].maxHp,0)||1;
+    exploreFight.info={foeLeft:foeSeats.reduce((t,w)=>t+(gs[w].out?0:Math.max(0,gs[w].hp)),0)/foeMax, hpEnd:Math.max(0,gs.p1.hp), maxHp:gs.p1.maxHp, rounds:gs.round};
     setTimeout(()=>{
       battleRunning=false;
       document.getElementById('ovico').textContent=won?'✦':'☠';
@@ -10767,7 +10785,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     if(exploreFight){
       const f=exploreFight; exploreFight=null;
       battleRunning=false; gameEnded=false; endMultiMode(); showScreen('title-screen');
-      if(f.onEnd) f.onEnd(!!f.won, f.low, f.allyHp||[]);
+      if(f.onEnd) f.onEnd(!!f.won, f.low, f.allyHp||[], f.info||{});
       return;
     }
     if(multiMode){ battleRunning=false; gameEnded=false; endMultiMode(); showScreen('title-screen'); return; }

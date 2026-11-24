@@ -318,5 +318,39 @@ tuned until these hold:
   **exterminate** scores 103 (the best ending 9%, the Varg wiped out, the wood angry at slaughter);
   **balance** scores 138, the best ending 60%, sees 37% of the wood clearly on average (73% at all).
 - **Not yet:** healers (wounds just take 3 weeks), the Council of Elders, the seasonal events,
-  fights in the duel engine (step 2), the story and the Explore save (step 3), art and music
-  (step 4), river hexes and fords.
+  the story and the Explore save (step 3), art and music (step 4), river hexes and fords.
+
+## As built (step 2: leading a fight yourself)
+- **When:** a fight your wizard stands in (your attack order, or a raid on your hex, Elfhome included)
+  pauses the week (`S.pending`, only with `S.handFights`, the setup's "Offer me the fight" box; the
+  sim leaves it off). The prompt says what you face, who's with you and how likely it is to go your
+  way if left to play out (`autoOdds`: the same fight on 40 copies). **⚔ Lead it yourself** or **Let
+  it play out**; "Don't ask again this year" turns it off. The week then carries on from the phase it
+  stopped in (`endTurn` runs `PHASES` from `S.step`; each pausing phase marks what it has done:
+  `t.week` on tasks, `b.raided` on bands). ↶ can't take back a week that's under way.
+- **Your wizard** is picked on the setup screen from the roster (Sylvara excepted; remembered in
+  `wd-forest-wiz`). Step 3 swaps in the Explore save's own wizard.
+- **The duel** (`battleSetup` in the engine, `duelSpec` in `js/forest.js`, then `startExploreBattle`
+  on the Corvanthe Road backdrop until the forest's own arrives): the band becomes up to three seats,
+  one per `DUEL.per` of them (goblins 2, Varg 2, orcs 2.5, plus a goblin seat for an orc band's 3+
+  goblins), each a level up by how many it stands for (`levelAt`) and `hpMul` past four; a band of 4+
+  Varg is led by an alpha, an orc band of 5+ by a big'un, a Waaagh by the warboss. Beside you, one
+  seat: Sylvara herself if she's there, else the Talons in the hex (a level for each beyond the first,
+  +2 behind Elfhome's walls, +1 at a hamlet, and more HP for walls, `wallHp`). You start at your
+  forest HP's share of your wizard's HP.
+- **Afterwards** (`resolvePending`): the band loses what the duel took from it (all of it if you won,
+  else the share of its seats' HP you knocked off; `foeLeft` from `startExploreBattle`'s `onEnd`).
+  Your forest HP is what you finished on; elves whose seat fell are wounded. Lose, and you're carried
+  home wounded and **whoever's left fights on** as usual against the weakened band (Elfhome's walls
+  too), so leading is never worse than standing back.
+- **New fighters** (`fighters.json`, `explore:true`, placeholder art by
+  `python3 tools/make_forest_placeholders.py` into `sprites/forest/` and `portraits/small/`): Goblin
+  HP 14 / atk 3, **Swarm** (+1 Attack for every other goblin beside him); Varg 28 / 5 and Varg Alpha
+  40 / 6, **Pack Hunter** (Attack ×1.5 at a target under half HP); Orc 34 / 6, Big'un 46 / 7,
+  Warboss 64 / 8, **Brute** (a Grapple lands in full); Talons 24 / 5, at range (the ally).
+- **Tuning:** `node tools/forest_duel_sim.js [duels per wizard]` plays each typical fight as a duel
+  across the roster (AI on your side) and settles it in the forest. Last run (4 a wizard): small fights
+  the same either way (a goblin raid 100% left / 99% led, four hungry Varg alone 99 / 97%); big ones
+  far better led: an orc camp with two Talons 19 → 86%, orcs raiding Sylvara with you beside her
+  46 → 99%, a Waaagh of 16 + 4 at Elfhome 68 → 99%; caught alone by seven orcs, 0 → 10%.
+

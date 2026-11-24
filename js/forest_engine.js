@@ -171,7 +171,8 @@ function newYear(opts){
   for(let tries=0;tries<50;tries++){
     S={v:1, seed0:seed, seed, turn:1, over:null, log:[], signs:[], intel:{}, elves:[], bands:[], warrens:[], herds:[], nextId:1,
        food:30, mana:6, wood:WOOD.start, youths:1, training:[], lost:0, killedNative:0, bandWeeks:{varg:0,warrens:0,game:0},
-       element:opts.element||'earth', heroName:opts.heroName||'You', spellUsed:false, sylWait:false, hints:true, stats:{}};
+       element:opts.element||'earth', heroName:opts.heroName||'Your wizard', spellUsed:false, sylWait:false, hints:true, stats:{},
+       wizKey:opts.wizKey||null, handFights:!!opts.handFights, pending:null, step:null};
     if(makeMap(S)) break; seed=(seed*1103515245+12345)>>>0;
   }
   // the wild
@@ -386,19 +387,22 @@ function clash(S,a,b,k){
 }
 
 // ── End the week ─────────────────────────────────────────────────────
+// The week runs in phases. A fight your wizard is in can pause it (S.pending, when S.handFights is on):
+// the screen offers a duel or the usual settling, calls resolvePending, then endTurn again, which carries
+// on from the phase it stopped in (S.step). Every phase that can pause marks what it has done this week.
+const PHASES = ['orders','sylvara','herds','varg','goblins','orcs','move','meet','arrows','raids','upkeep'];
+const PHASE_FN = {orders:doOrders, sylvara:sylvaraActs, herds:herdsAct, varg:vargAct, goblins:goblinsAct, orcs:orcsAct,
+  move:moveBands, meet:wildMeets, arrows:nightArrows, raids:raids, upkeep:upkeep};
 function endTurn(S){
-  if(S.over) return S;
-  S.signs=[]; const T=S.turn;
-  doOrders(S);
-  sylvaraActs(S);
-  herdsAct(S);
-  vargAct(S);
-  goblinsAct(S);
-  orcsAct(S);
-  moveBands(S);
-  wildMeets(S);
-  night(S);
-  upkeep(S);
+  if(S.over||S.pending) return S;
+  if(S.step==null){ S.step=0; S.signs=[]; }
+  while(S.step<PHASES.length){
+    const ph=PHASES[S.step];
+    if(S.over&&ph!=='upkeep'){ S.step++; continue; }
+    if(PHASE_FN[ph](S)==='pause') return S;
+    S.step++;
+  }
+  S.step=null;
   if(!S.over){
     S.turn++;
     if(S.turn>YEAR) endYear(S);
@@ -416,27 +420,40 @@ function endTurn(S){
 
 function doOrders(S){
   for(const e of S.elves.slice()){
-    const t=e.task; if(!t||e.wounded) continue; const k=e.pos;
+    const t=e.task; if(!t||e.wounded||t.week===S.turn) continue; const k=e.pos;
+    t.week=S.turn;
     if(t.t==='hunt'){ const h=herdAt(S,k); if(h&&h.n>=2){ const angry=mood(S)==='angry'; h.n--; const got=angry?Math.floor(HUNT_FOOD/2):HUNT_FOOD; S.food+=got; say(S,'elf',`${e.name} brings down a deer (+${got} food).`,k); } }
     if(t.t==='herd'){ const h=herdAt(S,k); if(h&&passable(S,t.to)){ h.k=t.to; say(S,'elf',`${e.name} leads the herd on.`,t.to); } }
     if(t.t==='calm'){ const b=S.bands.find(x=>x.id===t.id&&x.k===k); if(b){ b.calm=VARG.calm; b.goal=null; say(S,'elf',`${e.name} sings to the Varg. They quieten.`,k); } }
     if(t.t==='talan'){ const h=S.hexes[k]; if(!h.talan){ h.talan=1; h.build=TALAN_BUILD; } if(h.build>0){ h.build--; if(h.build===0){ say(S,'elf',`${e.name} finishes a sentry post.`,k); e.task=null; } } }
     if(t.t==='thorn'){ S.hexes[k].thicket=THICKET_TURNS; say(S,'elf',`${e.name} plants a thorn hedge.`,k); }
     if(t.t==='attack'){
-      const b=S.bands.find(x=>x.id===t.id&&x.k===k&&x.n>0), w=S.warrens.find(x=>x.id===t.id&&x.k===k&&x.n>0);
-      const foe=b||w; if(!foe) continue;
+      const foe=foeById(S,t.id); if(!foe||foe.k!==k) continue;
       // everyone else ordered to attack the same foe joins this one fight
-      const r=fightElves(S,k,w?Object.assign(w,{fac:'gob'}):foe,{attacking:true, lair:!!w});
-      for(const o of S.elves) if(o.task&&o.task.t==='attack'&&o.task.id===t.id) o.task=null;
-      const name=w?'the goblin warren':FAC[foe.fac].name.toLowerCase();
-      if(w&&w.n<=0){ say(S,'fight',`Your elves raze the goblin warren.`,k); S.wood-=WOOD.raze; S.killedNative++; }
-      else say(S,'fight',r.won==='elves'?`Your elves rout ${name}${foe.n>0?' ('+foe.n+' flee)':''}.`:`Your elves are beaten back by ${name}.`,k);
-      fightNotes(S,r,k);
-      if(b&&b.fac==='varg'&&!b.goal&&b.k===b.den){ S.wood-=WOOD.slaughter; S.killedNative++; }
-      if(b&&b.n>0&&r.won==='elves'){ b.goal={kind:'home', k:b.den||b.k}; if(b.fac==='gob') b.goal={kind:'home',k:(S.warrens.find(x=>x.id===b.from)||{k:b.k}).k}; }
+      for(const o of S.elves) if(o.task&&o.task.t==='attack'&&o.task.id===t.id) o.task.week=S.turn;
+      if(handHere(S,k)){ S.pending={kind:'attack', k, foeId:t.id}; return 'pause'; }
+      attackFight(S,k,foe);
     }
   }
   S.warrens=S.warrens.filter(w=>w.n>0); S.bands=S.bands.filter(b=>b.n>0);
+}
+const foeById = (S,id) => S.bands.find(x=>x.id===id&&x.n>0)||S.warrens.find(x=>x.id===id&&x.n>0);
+const isWarren = (S,f) => S.warrens.includes(f);
+// a fight here asks the player first: your wizard is standing in it
+const handHere = (S,k) => { const w=wiz(S); return !!(S.handFights&&w&&!w.wounded&&w.pos===k); };
+// your elves attack a band or a warren; r (from a duel) skips the settling
+function attackFight(S,k,foe,r){
+  const w=isWarren(S,foe), b=w?null:foe;
+  if(w) foe.fac='gob';
+  r=r||fightElves(S,k,foe,{attacking:true, lair:w});
+  for(const o of S.elves) if(o.task&&o.task.t==='attack'&&o.task.id===foe.id) o.task=null;
+  const name=w?'the goblin warren':FAC[foe.fac].name.toLowerCase();
+  if(w&&foe.n<=0){ say(S,'fight',`Your elves raze the goblin warren.`,k); S.wood-=WOOD.raze; S.killedNative++; }
+  else say(S,'fight',r.won==='elves'?`Your elves rout ${name}${foe.n>0?' ('+foe.n+' flee)':''}.`:`Your elves are beaten back by ${name}.`,k);
+  fightNotes(S,r,k);
+  if(b&&b.fac==='varg'&&b.k===b.den&&!(b.goal&&b.goal.kind==='raid')){ S.wood-=WOOD.slaughter; S.killedNative++; }
+  if(b&&b.n>0&&r.won==='elves'){ b.goal={kind:'home', k:b.den||b.k}; if(b.fac==='gob') b.goal={kind:'home',k:(S.warrens.find(x=>x.id===b.from)||{k:b.k}).k}; }
+  S.warrens=S.warrens.filter(x=>x.n>0); S.bands=S.bands.filter(x=>x.n>0);
 }
 function fightNotes(S,r,k){
   for(const e of r.wounded) say(S,'hurt',`${e.name} is wounded and carried home.`,k);
@@ -627,7 +644,7 @@ function wildMeets(S){
   S.bands=S.bands.filter(b=>b.n>0); S.warrens=S.warrens.filter(w=>w.n>0); S.herds=S.herds.filter(h=>h.n>0);
 }
 
-function night(S){
+function nightArrows(S){
   const H=S.hexes;
   // sentry posts with Talons in them shoot at the wild passing by
   for(const k in H){ const h=H[k]; if(!h.talan||h.build) continue;
@@ -643,15 +660,28 @@ function night(S){
   for(const k in H){ const h=H[k]; if(!h.fire) continue; h.fire--; if(!h.burnt){ h.burnt=1; S.wood-=WOOD.burn; sign(S,'fire',k,{anywhere:true}); if(h.tree!=null&&!S.trees[h.tree].dead){ S.trees[h.tree].dead=true; S.wood-=WOOD.ancient; say(S,'tree',`${S.trees[h.tree].name} burns!`,k); } }
     if(h.fire>0&&rand(S)<0.3){ const n=pick(S,nbrs(k).filter(x=>H[x]&&isForest(H[x])&&!H[x].thicket)); if(n) H[n].fire=2; } }
   S.bands=S.bands.filter(b=>b.n>0);
-  // raids: the wild in a hex with elves (or at a hamlet, or Elfhome) attacks
+}
+// raids: the wild in a hex with elves (or at a hamlet, or Elfhome) attacks
+function raids(S){
+  const H=S.hexes;
   for(const b of S.bands.slice()){
-    if(b.n<=0) continue;
+    if(b.n<=0||b.raided===S.turn) continue;
     const k=b.k, elves=elfAt(S,k), hx=H[k];
     const hostile=b.fac==='orc'?b.state!=='leave':b.fac==='gob'?true:(b.goal&&b.goal.kind==='raid'&&!b.calm);
     if(!hostile) continue;
     if(!elves.length&&!hx.hamlet&&k!==HOME) continue;
     if(hx.hamlet&&!elves.length&&S.hamlets.find(h=>h.k===k).sacked) continue;
-    const r=fightElves(S,k,b);
+    b.raided=S.turn;
+    if(handHere(S,k)){ S.pending={kind:'raid', k, foeId:b.id}; return 'pause'; }
+    raidFight(S,b);
+    if(S.over) return;
+  }
+  S.bands=S.bands.filter(b=>b.n>0);
+}
+function raidFight(S,b,r){
+  const H=S.hexes, k=b.k, hx=H[k];
+  r=r||fightElves(S,k,b);
+  {
     const who=b.fac==='orc'?`The ${b.name}`:FAC[b.fac].name;
     if(k===HOME){
       if(r.won==='wild'){ S.over='fallen'; say(S,'end',`${who} break into Elfhome. The Moriquende has lost its heart.`,k); return; }
@@ -664,6 +694,77 @@ function night(S){
     if(b.n>0){ if(b.fac==='gob') b.goal={kind:'home', k:(S.warrens.find(x=>x.id===b.from)||{k:b.k}).k}; else if(b.fac==='varg'){ b.goal={kind:'home',k:b.den}; if(r.won==='wild') b.hunger=0; } }
   }
   S.bands=S.bands.filter(b=>b.n>0);
+}
+
+// ── Fighting it yourself (a duel in the battle engine) ───────────────
+// battleSetup describes the duel for the pending fight: the band becomes up to three seats, each standing
+// for several of them (`level` from SURVIVAL_LEVELS and `hpMul` for the rest); the elves beside you
+// become one ally seat (Sylvara herself if she's there, else the Talons, stronger behind Elfhome's walls
+// or a hamlet's). The screen turns this into startExploreBattle's seats.
+// per: how many of a band one seat stands for; walls: an Elfhome / hamlet ally seat's extra levels and HP
+const DUEL = {seatsMax:3, levelAt:[1.2,2.2,3.2], hpPer:0.15, per:{gob:2, varg:2, orc:2.5}, wallHp:[1,1.3,1.8]};
+function battleSetup(S,p){
+  p=p||S.pending; const foe=foeById(S,p.foeId), k=p.k, H=S.hexes[k];
+  const me=wiz(S), here=elfAt(S,k).filter(e=>e!==me);
+  const sy=here.find(e=>e.role==='sylvara'), talons=here.filter(e=>e.role==='talon');
+  const walls=k===HOME?2:H.hamlet?1:0;
+  const cands=[];
+  if(sy) cands.push({key:'sylvara', wizard:true, hpFrac:sy.hp/ROLES.sylvara.hp, represent:[sy.id], name:'SYLVARA'});
+  if(talons.length||walls) cands.push({key:'elf_talon', level:Math.min(3,Math.max(0,talons.length-1+walls)), represent:talons.map(e=>e.id),
+    hpMul:DUEL.wallHp[walls]*(1+0.15*Math.max(0,talons.length-1)),
+    name:talons.length?(talons.length>1?talons.length+' TALONS':'TALON'):'ELFHOME\u2019S WARDENS'});
+  // the band's seats
+  const fac=foe.fac||'gob', gobs=foe.gobs||0;
+  const members=fac==='orc'?foe.n:foe.n;
+  const want=Math.ceil(members/DUEL.per[fac])+(gobs>=3?1:0);
+  const room=DUEL.seatsMax-(cands.length?1:0);
+  const nSeats=Math.max(1,Math.min(room,want));
+  const keys=[];
+  if(fac==='gob') for(let i=0;i<nSeats;i++) keys.push('goblin');
+  if(fac==='varg') for(let i=0;i<nSeats;i++) keys.push(i===0&&members>=4?'varg_alpha':'varg');
+  if(fac==='orc'){ const lead=foe.state==='march'||bandPower(foe)>=ORC.waaagh?'orc_warboss':members>=5?'orc_bigun':'orc';
+    const gobSeat=gobs>=3&&nSeats>=2;
+    for(let i=0;i<nSeats;i++) keys.push(i===0?lead:gobSeat&&i===nSeats-1?'goblin':'orc'); }
+  // share the members out: goblins in an orc band get their own seat
+  const orcSeats=keys.filter(x=>x!=='goblin').length, gobSeats=keys.length-orcSeats;
+  const foes=keys.map(key=>{
+    const m=key==='goblin'&&fac==='orc'?gobs/gobSeats:fac==='orc'?members/orcSeats:members/nSeats;
+    const level=m<=DUEL.levelAt[0]?0:m<=DUEL.levelAt[1]?1:m<=DUEL.levelAt[2]?2:3;
+    return {key, level, hpMul:m>4?1+DUEL.hpPer*(m-4):1, m:Math.round(m*10)/10};
+  });
+  const allies=cands.slice(0,DUEL.seatsMax-foes.length);
+  return {foes, allies, hpFrac:me.hp/ROLES.wizard.hp, k, kind:p.kind, foeName:fac==='orc'?foe.name:FAC[fac].name, warren:isWarren(S,foe),
+    represent:allies.reduce((a,x)=>a.concat(x.represent),[])};
+}
+// the auto-settled chance of winning, for the fight prompt: the same fight played out on copies
+function autoOdds(S,tries){
+  const p=S.pending; let won=0; tries=tries||40;
+  for(let i=0;i<tries;i++){ const C=api.clone(S); C.seed=(C.seed+i*7919)>>>0; const f=foeById(C,p.foeId);
+    const r=fightElves(C,p.k,f,p.kind==='attack'?{attacking:true,lair:isWarren(C,f)}:{}); if(r.won==='elves') won++; }
+  return won/tries;
+}
+// settle the pending fight: out=null settles it as usual; else a duel's result
+// {won, foeLeft (0–1 of the band's seats' HP), hpEnd, maxHp, allyHp:[…]}
+function resolvePending(S,out){
+  const p=S.pending; if(!p) return; S.pending=null;
+  const foe=foeById(S,p.foeId); if(!foe) return;
+  const run=r=>p.kind==='attack'?attackFight(S,p.k,foe,r):raidFight(S,foe,r);
+  if(!out){ run(); return; }
+  const set=battleSetup(S,p), me=wiz(S);
+  const hp0=wildHp(foe), dealt=out.won?hp0+1:hp0*Math.max(0,1-(out.foeLeft==null?1:out.foeLeft));
+  hurtWild(S,foe,dealt);   // (endFight adds the orcs' harry)
+  // you, and the elves your ally seat stood for
+  me.hp=out.won?Math.max(1,Math.round(ROLES.wizard.hp*(out.hpEnd||0)/(out.maxHp||1))):0;
+  const allyDown=out.won?(out.allyHp||[]).map(h=>h<=0):set.allies.map(()=>true);
+  set.allies.forEach((a,i)=>{ if(allyDown[i]) for(const id of a.represent){ const e=S.elves.find(x=>x.id===id); if(e) e.hp=0; } });
+  say(S,'duel',out.won?`You lead the fight yourself, and win it.`:`You lead the fight yourself, and fall.`,p.k);
+  if(out.won||foe.n<=0){ run(endFight(S,p.k,elfAt(S,p.k),foe,'elves',dealt)); return; }
+  // beaten: those who fell are carried home; whoever's left (and any walls) fight on as usual
+  const down=elfAt(S,p.k).filter(e=>e.hp<=0), r0=endFight(S,p.k,down,foe,'wild',dealt);
+  fightNotes(S,r0,p.k);
+  const H=S.hexes[p.k];
+  if(foe.n>0&&(elfAt(S,p.k).length||p.k===HOME||H.hamlet)) run();
+  else run({won:'wild', wounded:[], killed:[], foe:foe.fac||'gob', left:foe.n});
 }
 
 function upkeep(S){
@@ -732,11 +833,11 @@ function score(S){
 
 // ── Public ───────────────────────────────────────────────────────────
 const api = {
-  newYear, endTurn, move, canMove, tasksFor, setTask, cast, canCast, train, vision, score, reachable,
+  newYear, endTurn, resolvePending, battleSetup, autoOdds, foeById, move, canMove, tasksFor, setTask, cast, canCast, train, vision, score, reachable,
   coverage, mood, seasonOf, weekOf, placeName, dist, nbrs, unkey, key, dirOf, gameTotal, bandPower, path,
   herdAt, warrenAt, bandsAt, elfAt, syl, wiz,
   R, YEAR, SEASON, SEASONS, ROLES, FAC, TERRAIN, SPELLS, TRAIN_COST, TRAIN_TURNS, TREES, TEND, WOOD, BANDS, ENDINGS,
-  SIGN_TEXT, DIR_NAMES, ORC, HOME, MANA_MAX, TRAINABLE,
+  SIGN_TEXT, DIR_NAMES, ORC, HOME, MANA_MAX, TRAINABLE, DUEL,
   clone: S => JSON.parse(JSON.stringify(S)),
 };
 if(typeof module!=='undefined'&&module.exports) module.exports=api; else root.ForestEngine=api;

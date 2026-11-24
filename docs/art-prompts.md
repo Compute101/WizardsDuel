@@ -171,7 +171,21 @@ sheet 12 face; attach `tileset10_source.png` and `tileset12_source.png`):
     background): a goblin, a goblin shaman with a mushroom fetish, a Varg (a hulking wolfman), an orc
     nomad with an axe, an orc war-totem, deer, an elf Seer with a lantern, an elf Talon with a
     longbow, an elf beast-speaker with antlers on her hood, an elf builder with a mallet.
-  - Later, full battle fighters for the same creatures (house rules: "Fighters / creatures").
+  - **Battle fighters** (step 2 stand-ins, `python3 tools/make_forest_placeholders.py`, `FIGHTER_DEFS`
+    `sprite`): goblin, orc, orc big'un and warboss are recolours of Gretch; Varg and Varg alpha of
+    Gnash (a hyena-man, greyed to wolf); the elf Talons the Archer in green. Real art goes to
+    `sprites/forest/<key>.png` (then the face to `portraits/small/<key>.jpg`), house rules "Fighters /
+    creatures": "Full-body pixel-art, facing right, feet at the bottom edge, flat black background,
+    about 768 px tall: (1) a wiry green goblin with a crude spear and a stolen elven cloak; (2) a Varg,
+    a hulking grey wolfman of the deep forest with bone charms and a stone axe; (3) the Varg alpha,
+    older, scarred and near-black; (4) an orc nomad with a woodsman's axe and furs; (5) an orc chief
+    (big'un), bigger, with a horned helm; (6) an orc warboss, huge, in scavenged plate with a war-totem
+    banner on his back; (7) an elf Talon, a wood-elf warden with a longbow, green and brown leathers."
+  - **Battle backdrop** (`backgrounds/forest.jpg`, 1672×941, like the others in 5a; the duels use
+    `arena:'road'` in `leadFight` until then): "A painted fantasy battle backdrop, wide, an ancient
+    elven forest at dusk: huge mossy trunks, roots across a leaf-strewn clearing for the fighters to
+    stand in, elven lanterns and a rope bridge high in the canopy, shafts of green-gold light, mist
+    between the trees, the same painterly style as the attached backdrop."
 - **The four invented dons** (Dr Penhallow, Mr Quill, Canon Marrow, Widow Coyle) are recolours of two
   base figures (`tools/make_folk_sprites.py`); their own art would replace them, with the shared people
   prompt above.

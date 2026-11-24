@@ -580,5 +580,159 @@
       "Now we're boxing."
     ],
     "desc": "The Champion: elegant, orderly, never rattled. Until he is."
+  },
+  "goblin": {
+    "name": "GOBLIN",
+    "title": "Goblin of the Moriquende",
+    "fighter": true,
+    "trait": "swarm",
+    "explore": true,
+    "sprite": "sprites/forest/goblin.png",
+    "spriteHeight": 0.7,
+    "col": "#b8c84a",
+    "hp": 14,
+    "phys": {
+      "atk": 3
+    },
+    "spells": [],
+    "taunts": [
+      "Stab it! Stab it!",
+      "More of us than you!",
+      "Shiny staff. Mine now."
+    ],
+    "desc": "Small, quick and never alone. Swarm: +1 to his Attack for every other goblin still standing beside him.",
+    "arena": "road"
+  },
+  "varg": {
+    "name": "VARG",
+    "title": "Varg of the Moriquende",
+    "fighter": true,
+    "trait": "pack",
+    "explore": true,
+    "sprite": "sprites/forest/varg.png",
+    "spriteHeight": 1.05,
+    "col": "#9aa4b4",
+    "hp": 28,
+    "phys": {
+      "atk": 5
+    },
+    "spells": [],
+    "taunts": [
+      "The wood is ours to hunt.",
+      "I smell your fear.",
+      "Run. It is better sport."
+    ],
+    "desc": "A wolfman of the deep wood. Pack Hunter: he goes for the wounded, his Attack ×1.5 at anyone below half their HP.",
+    "arena": "road"
+  },
+  "varg_alpha": {
+    "name": "VARG ALPHA",
+    "title": "Leader of the Pack",
+    "fighter": true,
+    "trait": "pack",
+    "explore": true,
+    "sprite": "sprites/forest/varg_alpha.png",
+    "spriteHeight": 1.15,
+    "col": "#6a7488",
+    "hp": 40,
+    "phys": {
+      "atk": 6
+    },
+    "spells": [],
+    "taunts": [
+      "My pack is hungry.",
+      "Your elves hunt our deer.",
+      "Bare your throat."
+    ],
+    "desc": "The pack’s leader, bigger and older. Pack Hunter: his Attack is ×1.5 at anyone below half their HP.",
+    "arena": "road"
+  },
+  "orc": {
+    "name": "ORC",
+    "title": "Nomad of the East",
+    "fighter": true,
+    "trait": "brute",
+    "explore": true,
+    "sprite": "sprites/forest/orc.png",
+    "spriteHeight": 1.0,
+    "col": "#7d9a4a",
+    "hp": 34,
+    "phys": {
+      "atk": 6
+    },
+    "spells": [],
+    "taunts": [
+      "Trees burn good.",
+      "Ere we go!",
+      "Little wizard. Big axe."
+    ],
+    "desc": "A nomad driven west by the Unweaving, with an axe for the trees and for you. Brute: his Grapple lands in full, guard or no guard.",
+    "arena": "road"
+  },
+  "orc_bigun": {
+    "name": "ORC BIG’UN",
+    "title": "Chief of the Band",
+    "fighter": true,
+    "trait": "brute",
+    "explore": true,
+    "sprite": "sprites/forest/orc_bigun.png",
+    "spriteHeight": 1.15,
+    "col": "#5e7a34",
+    "hp": 46,
+    "phys": {
+      "atk": 7
+    },
+    "spells": [],
+    "taunts": [
+      "I says we stay.",
+      "Chop it all.",
+      "You first, then the trees."
+    ],
+    "desc": "A band’s chief, the biggest of them. Brute: his Grapple lands in full, guard or no guard.",
+    "arena": "road"
+  },
+  "orc_warboss": {
+    "name": "WARBOSS",
+    "title": "Leader of the Waaagh",
+    "fighter": true,
+    "trait": "brute",
+    "explore": true,
+    "sprite": "sprites/forest/orc_warboss.png",
+    "spriteHeight": 1.3,
+    "col": "#a33a2a",
+    "hp": 64,
+    "phys": {
+      "atk": 8
+    },
+    "spells": [],
+    "taunts": [
+      "WAAAGH!",
+      "Your tree-town is mine.",
+      "Bring me the green witch."
+    ],
+    "desc": "He has beaten every other orc in the band to lead it. Brute: his Grapple lands in full, guard or no guard.",
+    "arena": "road"
+  },
+  "elf_talon": {
+    "name": "TALONS",
+    "title": "Wardens of Elfhome",
+    "fighter": true,
+    "trait": "ranged",
+    "explore": true,
+    "sprite": "sprites/forest/elf_talon.png",
+    "spriteHeight": 1.0,
+    "col": "#5fae6a",
+    "hp": 24,
+    "phys": {
+      "atk": 5
+    },
+    "spells": [],
+    "taunts": [
+      "For the Moriquende!",
+      "We see you, from the trees.",
+      "Loose!"
+    ],
+    "desc": "Elfhome’s wardens, longbows in hand. At Range: their shots slip past a Guard, and a Grapple at them fails.",
+    "arena": "road"
   }
 }

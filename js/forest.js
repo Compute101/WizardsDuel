@@ -57,7 +57,7 @@ function build(){
   $('fr-new').onclick=()=>setupPanel(true);
   $('fr-help').onclick=helpPanel;
   $('fr-end').onclick=endWeek;
-  $('fr-undo').onclick=()=>{ if(weekStart){ S=F.clone(weekStart); ui.elf=null; ui.spell=null; F.vision(S); save(); render(); } };
+  $('fr-undo').onclick=()=>{ if(weekStart&&!S.pending&&S.step==null){ S=F.clone(weekStart); ui.elf=null; ui.spell=null; F.vision(S); save(); render(); } };
   $('fr-elves').onclick=rosterPanel;
   $('fr-spell').onclick=spellPanel;
   $('fr-zin').onclick=()=>zoomBy(1.3);
@@ -76,7 +76,7 @@ function open(){
   if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
   S=loadSave();
   fitCanvas(); view={zoom:1,ox:0,oy:0};
-  if(S&&!S.over){ weekStart=F.clone(S); F.vision(S); render(); }
+  if(S&&!S.over){ weekStart=F.clone(S); F.vision(S); render(); if(S.pending) fightPrompt(); }
   else setupPanel(false);
   loop();
 }
@@ -85,21 +85,34 @@ function close(){ const d=$('fr-screen'); if(d) d.classList.remove('active'); ca
 // ── Panels ───────────────────────────────────────────────────────────
 function modal(html){ $('fr-card').innerHTML=html; $('fr-modal').hidden=false; }
 function closeModal(){ $('fr-modal').hidden=true; }
+const WIZ_PREF='wd-forest-wiz';
+function rosterKeys(){ return typeof CHAR_DEFS!=='undefined'?Object.keys(CHAR_DEFS).filter(k=>k!=='sylvara'&&k!=='hero'&&!CHAR_DEFS[k].fighter):[]; }
+const titleCase=t=>String(t||'').toLowerCase().replace(/(^|[\s-])\S/g,c=>c.toUpperCase());
 function setupPanel(canCancel){
   let el='earth';
+  const keys=rosterKeys(); let wk=null; try{ wk=localStorage.getItem(WIZ_PREF); }catch(e){}
+  if(!keys.includes(wk)) wk=keys.includes('eldrin')?'eldrin':keys[0]||null;
+  let lead=true;
   modal(`<h2>The Moriquende</h2>
     <p>Sylvara has asked you to keep the watch over the Moriquende for a year, while she tends its four ancient trees.
     Keep Elfhome standing, keep the wild in balance, and keep Sylvara safe until every tree has been tended.</p>
     <p class="fr-lbl">Your element</p>
     <div class="fr-elems" id="fr-elems">${ELEMS.map(([k,i,n])=>`<button class="fr-btn${k===el?' on':''}" data-el="${k}" type="button">${i} ${n}</button>`).join('')}</div>
     <p class="fr-note" id="fr-elnote"></p>
+    ${keys.length?`<p class="fr-lbl">Your wizard <small>(who fights if you lead a fight yourself)</small></p>
+    <div class="fr-wizzes" id="fr-wizzes">${keys.map(k=>`<button class="fr-wiz${k===wk?' on':''}" data-wk="${k}" type="button" title="${esc(titleCase(CHAR_DEFS[k].name))}"><img src="${faceOf(k)}" alt=""><span>${esc(titleCase(CHAR_DEFS[k].name))}</span></button>`).join('')}</div>
+    <label class="fr-check"><input type="checkbox" id="fr-lead" checked> Offer me the fight when my wizard is in it (you can always let it play out)</label>`:''}
     <div class="fr-row"><button class="fr-btn big" id="fr-go" type="button">Begin the year</button>${canCancel&&S&&!S.over?'<button class="fr-btn" id="fr-cancel" type="button">Back</button>':''}</div>`);
   const note=()=>{ $('fr-elnote').textContent=el==='fire'?'Careful: a Fire strike in the trees can set the wood alight.':''; };
   $('fr-elems').onclick=e=>{ const b=e.target.closest('[data-el]'); if(!b) return; el=b.dataset.el; [...$('fr-elems').children].forEach(x=>x.classList.toggle('on',x===b)); note(); };
   note();
-  $('fr-go').onclick=()=>{ S=F.newYear({element:el, heroName:heroName()}); weekStart=F.clone(S); ui={sel:F.HOME, elf:null, spell:null, ring:2}; view={zoom:1,ox:0,oy:0}; save(); closeModal(); render(); reportPanel(1); };
+  if($('fr-wizzes')) $('fr-wizzes').onclick=e=>{ const b=e.target.closest('[data-wk]'); if(!b) return; wk=b.dataset.wk; [...$('fr-wizzes').children].forEach(x=>x.classList.toggle('on',x===b)); };
+  if($('fr-lead')) $('fr-lead').onchange=e=>{ lead=e.target.checked; };
+  $('fr-go').onclick=()=>{ try{ if(wk) localStorage.setItem(WIZ_PREF,wk); }catch(e){}
+    S=F.newYear({element:el, heroName:wk?titleCase(CHAR_DEFS[wk].name):heroName(), wizKey:wk, handFights:!!wk&&lead}); weekStart=F.clone(S); ui={sel:F.HOME, elf:null, spell:null, ring:2}; view={zoom:1,ox:0,oy:0}; save(); closeModal(); render(); reportPanel(1); };
   if($('fr-cancel')) $('fr-cancel').onclick=closeModal;
 }
+function faceOf(k){ return typeof faceSrc==='function'?faceSrc(k):'portraits/small/'+k+'.jpg'; }
 function heroName(){ try{ const p=typeof Profiles!=='undefined'&&Profiles.active&&Profiles.active(); return p&&p.name||'You'; }catch(e){ return 'You'; } }
 function helpPanel(){
   modal(`<h2>How the year goes</h2>
@@ -165,10 +178,61 @@ let toastT=0; function toast(t){ const h=$('fr-hint'); h.textContent=t; h.classL
 
 // ── Turn ─────────────────────────────────────────────────────────────
 function endWeek(){
-  if(!S||S.over) return;
-  const t=S.turn; ui.elf=null; ui.spell=null;
-  F.endTurn(S); weekStart=F.clone(S); save(); render();
+  if(!S||S.over||S.pending) return;
+  ui.elf=null; ui.spell=null;
+  S.weekOf=S.turn; runWeek();
+}
+// run the rest of the week; a fight your wizard stands in stops it for the prompt
+function runWeek(){
+  const t=S.weekOf||S.turn;
+  F.endTurn(S);
+  if(S.pending){ save(); render(); fightPrompt(); return; }
+  weekStart=F.clone(S); save(); render();
   reportPanel(S.over?S.turn:t);
+}
+
+// ── Leading a fight yourself (a duel in the battle engine) ───────────
+// The band's seats and your ally seat (F.battleSetup) as startExploreBattle wants them. Shared with
+// tools/forest_duel_sim.js, so the sim plays exactly these duels.
+function duelSpec(set){
+  const D=typeof FIGHTER_DEFS!=='undefined'?FIGHTER_DEFS:{};
+  const foes=set.foes.map(f=>({key:f.key, level:f.level, hpMul:f.hpMul,
+    name:f.m>=1.5&&D[f.key]?`${D[f.key].name} \u00d7${Math.round(f.m)}`:undefined}));
+  const allies=set.allies.map(a=>a.wizard?{key:a.key, wizard:true, hp:Math.max(1,Math.round(CHAR_DEFS[a.key].hp*a.hpFrac))}
+    :{key:a.key, level:a.level, hpMul:a.hpMul, name:a.name});
+  return {foes, allies};
+}
+function fightPrompt(){
+  const set=F.battleSetup(S), odds=F.autoOdds(S,40), wk=S.wizKey;
+  const where=F.placeName(S,set.k), cap=where[0].toUpperCase()+where.slice(1);
+  const foe=F.foeById(S,S.pending.foeId);
+  const what=set.warren?`a goblin warren of about ${foe.n}`:foe.fac==='orc'?`${foe.name}: ${foe.n} orcs${foe.gobs?' and '+foe.gobs+' goblins':''}`:`${foe.n} ${F.FAC[foe.fac].name.toLowerCase()}`;
+  const withYou=F.elfAt(S,set.k).filter(e=>e.role!=='wizard').map(e=>e.name);
+  const pct=Math.round(odds*100), word=pct>=75?'likely to win':pct>=45?'a close thing':pct>=20?'likely to lose':'all but lost';
+  modal(`<h2>⚔ ${S.pending.kind==='attack'?'Your attack':'An attack'}: ${esc(cap)}</h2>
+    <p>${S.pending.kind==='attack'?'You go in against':'You are set upon by'} <b>${esc(what)}</b>.${withYou.length?` With you: ${esc(withYou.join(', '))}.`:' You are alone.'}${set.k===F.HOME?' Elfhome\u2019s walls stand with you.':''}</p>
+    <p>Left to play out, it's <b>${word}</b> (about ${pct}%).</p>
+    <p class="fr-note">Lead it yourself and you fight it as a duel: ${set.foes.length} of them${set.allies.length?', with '+esc(set.allies.map(a=>titleCase(a.name)).join(' and '))+' beside you':''}. Win, and the band is broken. Lose, and you're carried home wounded; whoever's left fights on.</p>
+    <div class="fr-row"><button class="fr-btn big" id="fr-lead-go" type="button">⚔ Lead it yourself</button><button class="fr-btn" id="fr-auto" type="button">Let it play out</button></div>
+    <label class="fr-check"><input type="checkbox" id="fr-noask"> Don't ask again this year</label>`);
+  const noask=()=>{ if($('fr-noask').checked) S.handFights=false; };
+  $('fr-auto').onclick=()=>{ noask(); closeModal(); F.resolvePending(S,null); runWeek(); };
+  $('fr-lead-go').onclick=()=>{ noask(); closeModal(); leadFight(set,wk); };
+  if(typeof startExploreBattle!=='function'||!wk||!CHAR_DEFS[wk]){ $('fr-lead-go').disabled=true; }
+}
+function leadFight(set,wk){
+  const spec=duelSpec(set), d=CHAR_DEFS[wk];
+  const foe=F.foeById(S,S.pending.foeId);
+  $('fr-screen').classList.remove('active'); cancelAnimationFrame(raf);
+  startExploreBattle({wizKey:wk, foes:spec.foes, allies:spec.allies, hp:Math.max(1,Math.round(d.hp*set.hpFrac)), arena:'road',
+    text:{winTitle:'The Moriquende Holds', win:`The ${foe.fac==='orc'?'orcs':F.FAC[foe.fac||'gob'].name.toLowerCase()} break and scatter into the trees.`,
+      loseTitle:'Carried Home', lose:`${titleCase(d.name)} falls. The elves carry you back to Elfhome.`},
+    onEnd:(won,low,allyHp,info)=>{
+      $('fr-screen').classList.add('active'); fitCanvas(); loop();
+      if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
+      F.resolvePending(S,{won, foeLeft:info.foeLeft, hpEnd:info.hpEnd, maxHp:info.maxHp, allyHp});
+      runWeek();
+    }});
 }
 function selectElf(e){ ui.elf=e?e.id:null; ui.spell=null; if(e){ ui.sel=e.pos; centreOn(e.pos); } render(); }
 
@@ -180,7 +244,7 @@ function render(){
   const mood=F.mood(S), mi={content:'🌳',uneasy:'🍂',angry:'🥀'}[mood];
   const elves=S.elves.filter(e=>e.role!=='sylvara');
   $('fr-stats').innerHTML=`<span title="Food">🍖 ${Math.floor(S.food)}</span><span title="Mana">✨ ${S.mana}</span><span title="The Wood: ${mood}">${mi} Wood ${Math.round(S.wood)}</span><span title="Elves (youths)">🧝 ${elves.length}${S.youths?'+'+S.youths:''}</span><span title="Ancient trees tended">🌲 ${S.trees.filter(t=>t.done).length}/${F.TREES}</span><span title="Seen clearly / at all">👁 ${Math.round(F.coverage(S)*100)}%</span>`;
-  $('fr-spell').disabled=S.spellUsed||!!S.over; $('fr-end').disabled=!!S.over;
+  $('fr-spell').disabled=S.spellUsed||!!S.over||!!S.pending; $('fr-end').disabled=!!S.over||!!S.pending;
   const h=$('fr-hint');
   if(!h.classList.contains('on')) h.textContent=ui.spell?`Tap a hex to ${ui.spell==='strike'?'strike':ui.spell}. (Esc to cancel)`:(()=>{ const e=ui.elf&&S.elves.find(x=>x.id===ui.elf); return e&&!e.moved&&!e.wounded&&e.role!=='sylvara'?'Tap a lit hex to move there.':''; })();
   h.style.display=h.textContent?'':'none';
@@ -363,5 +427,5 @@ function drawContents(c,k,s,T){
 }
 
 window.addEventListener('DOMContentLoaded',()=>{ const b=$('btn-forest'); if(b) b.addEventListener('click',open); });
-window.Forest={open, close, _peek:()=>({S, ui, view})};   // _peek: for tests
+window.Forest={open, close, duelSpec, _peek:()=>({S, ui, view})};   // _peek: for tests
 })();
