@@ -679,6 +679,12 @@ const buyPotion=price=>({label:'Buy a potion ('+price+' gold)', disabled:gold<pr
 // ── townsfolk (js/explore_folk.js): what they need to act on the world ──
 const Folk = window.ExploreFolk||null;
 const Year = window.ExploreYear||null;    // the University Year's terms, lectures, exams, clubs and plot (js/explore_year.js)
+const Lecture = window.ExploreLecture||null;  // the lecture theatre's decor and the lectures played in it (js/explore_lecture.js)
+// a scene: a little scripted play on the map (a lecture). While one runs you don't walk, the clock
+// stops, taps and E go to it and Escape skips it; it adds its own actors, effects and camera.
+// scene = {update(dt), actors() → [{y, draw(ctx,t)}], over(ctx,t,view), cam(vw,vh,baseZoom) → {x,y,zoom}, dim(), shake(), tap(), skip()}
+let scene=null, sceneBlend=0, sceneLast=null, sceneDrag=null, scenePan={x:0,y:0,t:0};   // dragging looks around; it eases back to the action 3 s after you let go
+function setScene(s){ scene=s||null; sceneDrag=null; scenePan={x:0,y:0,t:0}; busy=!!s; keys.clear(); target=null; if(s){ hideSay(); el.act.hidden=true; el.look.hidden=true; el.hint.classList.add('fade'); } else { wiz.seated=false; sayFace=null; last=performance.now(); } }
 const folkApi = {
   get chars(){ return chars; }, get fighters(){ return fighters; },
   wizKey:()=>wizKeys[wizIdx], wizName:()=>{ const n=chars[wizKeys[wizIdx]].name; return n.charAt(0)+n.slice(1).toLowerCase(); },
@@ -712,6 +718,12 @@ const folkApi = {
   earnTopper:(id,how)=>earnTopper(id,how), hasTopper:id=>toppers.includes(id)||!!(window.ExploreHero&&ExploreHero.STARTER_TOPPERS.includes(id)),
   topperName:id=>{ const t=window.ExploreHero&&ExploreHero.TOPPERS.find(q=>q.id===id); return t?t.name:id; },
   heal:n=>{ heal(wizKeys[wizIdx],n); renderHp(); },
+  // scenes (a lecture, js/explore_lecture.js)
+  scene:s=>setScene(s), room:()=>MAP, img:src=>imgOf(src), face:src=>{ sayFace=src||null; }, WIZ_H,
+  seat:(x,y,face,lift,scale,crop)=>{ wiz.x=x; wiz.y=y; wiz.face=face||1; wiz.seated=true; wiz.seatLift=lift||0; wiz.seatScale=scale||1; wiz.seatCrop=crop||SEAT_CROP; wiz.moving=false; },
+  stand:(x,y)=>{ wiz.seated=false; if(x!=null){ wiz.x=x; wiz.y=y; } },
+  wizPos:()=>({x:wiz.x, y:wiz.y, face:wiz.face, glow:wizGlow}),
+  passTime:m=>{ clock=(clock+m)%1440; renderClock(); },
 };
 // a practice bout (the Schools, the Laboratory): fought at full strength, and you come back as you went
 // in (the University's healers see to that); nothing is lost on a defeat
@@ -876,7 +888,7 @@ function drawNpc(n,t){
   const img=imgOf(src); if(!img.complete||!img.naturalWidth) return;
   // an old 192×320 mage spritesheet (stand-ins for townsfolk without art): its first frame, 48×64, facing left
   const sheet=img.naturalWidth===192&&img.naturalHeight===320, sw=sheet?48:img.naturalWidth, sh=sheet?64:img.naturalHeight;
-  const h=WIZ_H*(n.role==='wounded'?0.8:1.05), w=h*sw/sh;
+  const h=WIZ_H*(n.role==='wounded'?0.8:1.05)*(MAP.people||1), w=h*sw/sh;
   ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(n.x,n.y-2,w*0.3,5,0,0,Math.PI*2); ctx.fill();
   ctx.save(); ctx.translate(n.x,n.y);
   if(n.role==='wounded'){ ctx.filter='saturate(0.5) brightness(0.85)'; ctx.scale(-1,0.8); }   // slumped, facing in
@@ -1433,16 +1445,19 @@ function buildDom(){
   const touches=new Map(); let pinch=null;
   const spread=()=>{ const [a,b]=[...touches.values()]; return Math.hypot(a.x-b.x,a.y-b.y)||1; };
   el.cv.addEventListener('pointerdown',e=>{
+    if(scene){ el.cv.setPointerCapture(e.pointerId); sceneDrag={x:e.clientX, y:e.clientY, moved:0}; return; }
     el.cv.setPointerCapture(e.pointerId); touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(touches.size===2){ pinch={d:spread(), z:zoomGoal}; dragging=false; target=null; return; }
     if(touches.size>2) return;
     setTarget(e); hideSay(); dragging=true; });
   el.cv.addEventListener('pointermove',e=>{
+    if(scene&&sceneDrag){ const dx=e.clientX-sceneDrag.x, dy=e.clientY-sceneDrag.y; sceneDrag.moved+=Math.abs(dx)+Math.abs(dy);
+      if(sceneDrag.moved>10){ scenePan.x-=dx/zoom; scenePan.y-=dy/zoom; scenePan.t=performance.now(); } sceneDrag.x=e.clientX; sceneDrag.y=e.clientY; return; }
     if(touches.has(e.pointerId)) touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pinch&&touches.size===2){ setZoom(pinch.z*spread()/pinch.d,true); return; }
     if(dragging) setTarget(e); });
   el.cv.addEventListener('wheel',e=>{ e.preventDefault(); setZoom(zoomGoal*Math.exp(-e.deltaY*0.0015)); },{passive:false});
-  const up=e=>{ touches.delete(e.pointerId); if(touches.size<2) pinch=null; dragging=false; };
+  const up=e=>{ if(scene&&sceneDrag){ if(sceneDrag.moved<=10&&scene.tap) scene.tap(); sceneDrag=null; return; } touches.delete(e.pointerId); if(touches.size<2) pinch=null; dragging=false; };
   el.cv.addEventListener('pointerup',up); el.cv.addEventListener('pointercancel',up);
   window.addEventListener('keydown',onKey); window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
   window.addEventListener('resize',resize);
@@ -1458,6 +1473,8 @@ function onKey(e){
   if(!running) return;
   const k=e.key.toLowerCase();
   if(creating) return;
+  if(scene){ if(k==='e'||k===' '||k==='enter'){ if(el.say.hidden&&scene.tap) scene.tap(); else return; e.preventDefault(); }
+    else if(k==='escape'){ if(scene.skip) scene.skip(); e.preventDefault(); } return; }
   if(bagOpen){ if(k==='escape'||k==='i'){ closeBag(); e.preventDefault(); } return; }
   if(worldOpen){
     if(k==='escape'){ closeWorld(); e.preventDefault(); }
@@ -1481,6 +1498,8 @@ function resize(){
   baseZoom=Math.max(0.62,Math.min(1.35,Math.min(vw/620,vh/620)));
   // a room fits the screen, walls and all
   if(MAP&&MAP.interior) baseZoom=Math.max(0.55,Math.min(1.6,Math.min(vw/(WORLD_W+20),(vh-70)/(WORLD_H-T*0.6))));
+  // a wide room on a narrow screen (the lecture theatre on a phone): fit its height and follow the wizard
+  if(MAP&&MAP.fitTall&&vw<vh) baseZoom=Math.max(baseZoom,Math.min(1.6,(vh-70)/(WORLD_H-T*0.6)));
   zoom=baseZoom*zoomMul;
   if(el.mini) el.mini.style.display=MAP&&MAP.interior?'none':'';
   sizeMini();
@@ -1789,6 +1808,7 @@ function exitAt(x,y){
   return null;
 }
 function update(dt){
+  if(scene){ wiz.moving=false; el.act.hidden=true; el.look.hidden=true; scene.update(dt); return; }
   if(busy||worldOpen||bagOpen||creating){ wiz.moving=false; return; }
   let dx=0, dy=0;
   if(keys.has('arrowleft')||keys.has('a')) dx--;
@@ -1876,7 +1896,9 @@ function updateCam(){
   if(talkFocus&&el.say.hidden) talkFocus=null;
   if(talkFocus&&talkFocus.who&&talkFocus.who.gone) talkFocus=null;
   talkBlend+=((talkFocus?1:0)-talkBlend)*Math.min(1,dt*6); if(talkBlend<0.002) talkBlend=0;
-  const goal=talkFocus?Math.max(zoomGoal,Math.min(3,Math.max(TALK_ZOOM,TALK_ABS/baseZoom))):zoomGoal;   // phones start further out
+  const sc=scene&&scene.cam?scene.cam(vw,vh,baseZoom):null; if(sc) sceneLast=sc;
+  sceneBlend+=((sc?1:0)-sceneBlend)*Math.min(1,dt*2.5); if(sceneBlend<0.002){ sceneBlend=0; if(!sc) sceneLast=null; } if(sceneBlend>0.998&&sc) sceneBlend=1;
+  const goal=sc?sc.zoom/baseZoom:talkFocus?Math.max(zoomGoal,Math.min(3,Math.max(TALK_ZOOM,TALK_ABS/baseZoom))):zoomGoal;   // phones start further out
   zoomMul+=(goal-zoomMul)*Math.min(1,dt*6); if(Math.abs(goal-zoomMul)<0.002) zoomMul=goal;
   zoom=baseZoom*zoomMul;
   const cw=vw/zoom, ch=vh/zoom;
@@ -1884,9 +1906,14 @@ function updateCam(){
   const b=talkLast?talkBlend:0, mx=talkLast?(wiz.x+talkLast.x)/2:wiz.x, my=talkLast?(wiz.y+talkLast.y)/2:wiz.y;
   if(!b) talkLast=null;
   const fx=wiz.x+(mx-wiz.x)*b, fy=wiz.y+(my-wiz.y)*b;
-  cam.x=Math.max(0,Math.min(WORLD_W-cw,fx-cw/2));
-  cam.y=Math.max(0,Math.min(WORLD_H-ch,fy-WIZ_H/2-ch*(0.5-0.14*b)));   // the pair sits above the box
+  let cx=fx-cw/2, cy=fy-WIZ_H/2-ch*(0.5-0.14*b);                    // the pair sits above the box
+  if(sceneBlend){ const s=sceneLast; cx+=(s.x-cw/2-cx)*sceneBlend; cy+=(s.y-ch/2-cy)*sceneBlend; }   // a scene frames itself
+  if(scene){ if(!sceneDrag&&t-scenePan.t>3000){ const k=Math.min(1,dt*2); scenePan.x-=scenePan.x*k; scenePan.y-=scenePan.y*k; }
+    scenePan.x=Math.max(-cw-cx,Math.min(WORLD_W-cx,scenePan.x)); scenePan.y=Math.max(-ch-cy,Math.min(WORLD_H-cy,scenePan.y)); cx+=scenePan.x; cy+=scenePan.y; }
+  cam.x=Math.max(0,Math.min(WORLD_W-cw,cx));
+  cam.y=Math.max(0,Math.min(WORLD_H-ch,cy));
   if(cw>WORLD_W) cam.x=(WORLD_W-cw)/2; if(ch>WORLD_H) cam.y=(WORLD_H-ch)/2;
+  if(scene&&scene.shake){ const q=scene.shake(); if(q){ cam.x+=(Math.random()-0.5)*q; cam.y+=(Math.random()-0.5)*q; } }
 }
 
 function drawPiece(kind,x,y,alpha,sc){
@@ -1897,27 +1924,28 @@ function drawPiece(kind,x,y,alpha,sc){
   ctx.drawImage(A,q[0],q[1],q[2],q[3],x-w/2,y-h,w,h);
   ctx.globalAlpha=1;
 }
+const SEAT_CROP=0.6;          // seated on a bench (a lecture): the upper body, the bench hides the rest
 function drawWizard(t){
-  ctx.fillStyle='rgba(0,0,0,0.35)';
-  ctx.beginPath(); ctx.ellipse(wiz.x,wiz.y-2,17,6,0,0,Math.PI*2); ctx.fill();
+  if(!wiz.seated){ ctx.fillStyle='rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(wiz.x,wiz.y-2,17,6,0,0,Math.PI*2); ctx.fill(); }
   if(!wizImg) return;
   const c=chars[wizKeys[wizIdx]];
   const sheet=wizImg.width===192&&wizImg.height===320;
   const sw=sheet?48:wizImg.width, sh=sheet?64:wizImg.height;
-  const h=WIZ_H*(c.spriteHeight||1), w=h*sw/sh*(c.spriteWidth||1);
-  const bob=wiz.moving?Math.abs(Math.sin(wiz.walk))*3.5:Math.sin(t/600)*0.8;
+  const h=WIZ_H*(c.spriteHeight||1)*(wiz.seated?wiz.seatScale||1:MAP.people||1), w=h*sw/sh*(c.spriteWidth||1);
+  const bob=wiz.moving?Math.abs(Math.sin(wiz.walk))*3.5:Math.sin(t/600)*0.8, k=wiz.seated?wiz.seatCrop||SEAT_CROP:1;
   const tilt=wiz.moving?Math.sin(wiz.walk)*0.05:0;
   ctx.save();
-  ctx.translate(wiz.x,wiz.y-bob);
+  ctx.translate(wiz.x,wiz.y-bob-(wiz.seated?wiz.seatLift||0:0));
   ctx.rotate(tilt);
   const flip=sheet?wiz.face>0:wiz.face<0;    // stills face right, the old sheets face left
   if(flip) ctx.scale(-1,1);
-  ctx.drawImage(wizImg,0,0,sw,sh,-w/2,-h,w,h);
+  ctx.drawImage(wizImg,0,0,sw,sh*k,-w/2,-h*k,w,h*k);
   const g=c.glow; wizGlow=null;
-  if(g&&!sheet&&window.StaffGlow){                                 // a made wizard's staff light (js/staff_glow.js)
-    const lx=-w/2+g.x*w, ly=-h+g.y*h;
+  if(g&&!sheet&&window.StaffGlow&&g.y<k){                          // a made wizard's staff light (js/staff_glow.js)
+    const lx=-w/2+g.x*w, ly=-h*k+g.y*h;
     StaffGlow.draw(ctx,lx,ly,Math.max(g.r*h,h*0.03),g.col,g.elem,t,1);
-    wizGlow={x:wiz.x+(flip?-lx:lx), y:wiz.y-bob+ly, c:StaffGlow.rgb(g.col).join(','), lamp:g.lamp};
+    wizGlow={x:wiz.x+(flip?-lx:lx), y:wiz.y-bob-(wiz.seated?wiz.seatLift||0:0)+ly, c:StaffGlow.rgb(g.col).join(','), lamp:g.lamp};
   }
   ctx.restore();
 }
@@ -1963,7 +1991,8 @@ function draw(t){
     if(b.y<cam.y||b.y-s.h>cam.y+ch) continue;
     drawPiece(b.kind,b.x,b.y,undefined,b.scale);
   }
-  drawExits(t);
+  if(MAP.theatre&&Lecture) Lecture.under(ctx,t,MAP,drawPiece);           // the theatre's tiers and the stage's edge
+  if(!scene) drawExits(t);
   // walk-to marker
   if(target){
     ctx.strokeStyle='rgba(201,168,76,0.8)'; ctx.lineWidth=2;
@@ -1984,8 +2013,11 @@ function draw(t){
   for(const c of crews) if(c.x>cam.x-120&&c.x<cam.x+cw+120&&c.y>cam.y&&c.y<cam.y+ch+160) list.push({crew:c,y:c.y});
   for(const n of npcs) if(present(n)) list.push({npc:n,y:n.y});
   for(const s of strollers) if(s.x>cam.x-80&&s.x<cam.x+cw+80&&s.y>cam.y&&s.y<cam.y+ch+120) list.push({stroll:s,y:s.y});
+  if(MAP.theatre&&Lecture) for(const a of Lecture.props(MAP,!!scene,drawPiece)) list.push({sc:a,y:a.y});
+  if(scene) for(const a of scene.actors()) list.push({sc:a,y:a.y});
   list.sort((a,b)=>a.y-b.y);
   for(const o of list){
+    if(o.sc){ o.sc.draw(ctx,t); continue; }
     if(o.wiz){ drawWizard(t); continue; }
     if(o.actor){ drawEcho(o.actor,t); continue; }
     if(o.crew){ drawCrew(o.crew,t); continue; }
@@ -1998,7 +2030,7 @@ function draw(t){
   }
   drawClashes(t);
   // inspect marker
-  if(near && el.say.hidden){
+  if(near && el.say.hidden && !scene){
     const s=near.npc?{h:WIZ_H}:near.decal?{h:40}:sizeOf(near.kind,near.scale), bob=Math.sin(t/250)*3;
     ctx.fillStyle='#ffd866'; ctx.strokeStyle='#3a2a08'; ctx.lineWidth=2;
     ctx.font='bold 18px Cinzel, serif'; ctx.textAlign='center';
@@ -2006,10 +2038,11 @@ function draw(t){
     ctx.strokeText('?',near.x,my); ctx.fillText('?',near.x,my);
   }
   if(MAP.haze){ const [r,g,b,a]=MAP.haze.split(','); ctx.fillStyle=`rgba(${r},${g},${b},${a})`; ctx.fillRect(cam.x,cam.y,cw,ch); }
-  const D=MAP.interior?0.55:darkness();
+  const D=scene&&scene.dim?scene.dim():MAP.interior?0.55:darkness();
   if(D>0) drawNight(t,cw,ch,D);
   else if(MAP.storm) drawNight(t,cw,ch,0.25);   // Spirewatch is never quite light
   if(embers.length) drawEmbers(t,cw,ch);
+  if(scene) scene.over(ctx,t,{x:cam.x, y:cam.y, w:cw, h:ch, zoom});
   drawGreetings(cw);
   drawExitLabel();
   drawMini();
@@ -2172,7 +2205,7 @@ function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.
 const NC={cache:'no-cache'};
 // CORE sheets are the ground and the loot every map and the satchel use.
 const ATLAS_NAMES=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13',
-  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23','ruins24'];
+  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23','ruins24','ruins25','ruins26'];
 const CORE_ATLASES=['ruins','ruins2','ruins3','ruins13'];
 const atlasLoading={};
 function loadAtlas(i){
@@ -2332,7 +2365,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   titleMusic();
 });
 window.Explore={open, close, refreshTitle, titleMusic:()=>titleMusic(),
-  _talk:n=>talkTo(n), _magic:()=>magic,
+  _talk:n=>talkTo(n), _magic:()=>magic, _folk:()=>folkApi,
   _setClock:m=>folkApi.setClock(m),
   _fightActor:id=>{ const a=actors.find(x=>x.e.incident===id||x.e.id===id); if(a) fight(a); return !!a; }, _actorIds:()=>actors.map(a=>a.e.incident||a.e.id), _quests:()=>quests, _allies:()=>allies, _tick:()=>Year&&Year.tick(folkApi),
   knowAll:()=>{ if(!hero) return false; magic=fullMagic(hero.elem); applyMagic(); save(); return true; },   // testing: the whole Year at once

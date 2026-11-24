@@ -320,6 +320,14 @@ RECTS24.update({k: _pad(v, 4) for k, v in {
 KNOCK_DARK = {'sewerCandles': 72}
 # chalk drawn on the floor: only the pale lines are kept (soft edge), so it lies on any floor
 CHALK = {'ritualCircle': (120, 175)}
+RECTS25 = {k: _pad(v) for k, v in {   # the lecture theatre (Wrenford's Examination Schools; js/explore_lecture.js)
+    'lt_bench2': (59, 15, 207, 164), 'lt_bench4': (334, 15, 412, 164), 'lt_bench6': (809, 14, 675, 165),
+    'lt_benchEnd': (41, 222, 98, 177), 'lt_tier': (185, 299, 417, 62), 'lt_steps': (634, 212, 207, 196), 'lt_dais': (898, 215, 588, 191),
+    'lt_lectern': (45, 438, 173, 213), 'lt_demo': (279, 399, 565, 249), 'lt_board': (920, 425, 272, 236), 'lt_boardBlank': (1232, 425, 273, 237),
+    'lt_dummy': (27, 696, 167, 278), 'lt_dummyBurnt': (216, 658, 161, 316), 'lt_dummyFrost': (400, 690, 164, 284),
+    'lt_notice': (635, 672, 291, 301), 'lt_candelabra': (994, 672, 127, 261), 'lt_chandelier': (1191, 672, 314, 281)}.items()}
+RECTS26 = {k: _pad(v) for k, v in {   # the lecture theatre's back wall
+    'lt_wallWindow': (48, 43, 484, 634), 'lt_wallPlain': (573, 43, 489, 634), 'lt_wallCrest': (1106, 43, 495, 634), 'lt_wallPortrait': (1642, 43, 489, 634)}.items()}
 # a neighbour inside a crop, blanked before the crop is cleaned (sheet coords)
 ERASE = {'armillary': [(150, 0, 372, 325)]}
 
@@ -342,6 +350,8 @@ SHEETS = {
                     (20, RECTS20), (21, RECTS21), (22, RECTS22), (23, RECTS23)]},
     '24': dict(src='tileset24_source.png', bg=(12, 15, 20), rects=RECTS24, ground=set(_S24G), out='ruins24', key='24',
                clean=True, square=124, shrink=0.757),
+    '25': dict(src='tileset25_source.png', bg=(11, 14, 21), rects=RECTS25, ground=set(), out='ruins25', key='25', clean=True),
+    '26': dict(src='tileset26_source.png', bg=(13, 17, 24), rects=RECTS26, ground=set(), out='ruins26', key='26', clean=True),
     '3': dict(src='tileset3_source.png', bg=(13, 16, 21), rects=RECTS3, ground=set(RECTS3), out='ruins3', key='3', square=TR),
 }
 

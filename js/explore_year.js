@@ -20,8 +20,8 @@ const REWARD = {partner:5, box:10, coll:{gold:30, potions:2}, first:20, finals:{
 
 // ── who's who (stand-in art until theirs arrives: docs/art-prompts.md) ──
 const PEOPLE = {
-  lecturer: {title:'The Lecture List', sprite:'sprites/hero/old_man_2.png'},
-  examiner: {title:'The Chair of Examiners', name:'Professor Thorley', sprite:'sprites/hero/old_woman_2.png'},
+  lecturer: {title:'The Bedel of the Schools', name:'Mr Hobday', sprite:'sprites/hero/old_man_3.png'},   // keeps the lecture list, by its notice board
+  examiner: {title:'The Chair of Examiners', name:'Professor Thorley', sprite:'sprites/folk/examiner.png', face:'sprites/folk/examiner_face.png'},
   partner:  {title:'Your Tutorial Partner', sprite:null},          // drawn from their made look (chars.partner)
   partnerLost:{title:'Your Tutorial Partner', sprite:null},
   ashgrove: {title:'The Sub-Warden of All Absent', name:'Dr Edwin Ashgrove', sprite:null},
@@ -284,9 +284,13 @@ function talk(n, api){
 
 // ── a lecture: the lecturer's piece, then two questions (a potion for both right, the first time) ──
 function lecture(api, id){
-  const y=Y(api), L=LECT[id], qs=lectQuestions(id, api);
+  const y=Y(api), L=LECT[id], qs=lectQuestions(id, api), h=api.hero(), me=h&&h.name?h.name.split(' ')[0]:api.wizName();
+  // in the theatre the lecture is given live (js/explore_lecture.js), then the lecturer asks the questions
+  const XL=window.ExploreLecture, room=api.room&&api.room();
+  const run=XL&&room&&room.theatre?XL.play(api, id, L, {partner:!!(y.plot.met&&api.chars.partner)}):null;
+  if(run){ run.then(end=>{ const face=XL.face(); api.face(face); ask(0,0,end,face); }); return; }
   api.dialog(L.who, L.text, [{label:'Take notes', fn:()=>ask(0,0)}]);
-  function ask(i, right){
+  function ask(i, right, end, face){
     if(i>=qs.length){
       const fresh=!y.lect[id]; y.lect[id]=true;
       const prize=fresh&&right===qs.length&&!y.ans[id];
@@ -294,12 +298,18 @@ function lecture(api, id){
       if(prize) api.addPotions(REWARD.lectPotion);
       api.save();
       const next=id==='wards'?'Fizzwick will see your first ward in the Laboratory.':id==='unmaking'?'Learn Dispel\'s glyphs in the Library, then Fizzwick will see your first dispel.':id===api.homeElem()?'':'Learn its glyphs in the Library, if you haven\'t, then Fizzwick will see your first '+up(id)+' strike in the Laboratory.';
-      api.dialog(L.who, (right===qs.length?'"Quite right." ':'"'+right+' of '+qs.length+'. Read your notes." ')+'The lecture ends; the benches empty.'+(next?'\n\n'+next:''), []);
-      api.toast((fresh?'Lecture heard: ':'Heard again: ')+(id==='wards'?'On Wards':id==='unmaking'?'On Unmaking':'On '+up(id))+(prize?' · +1 potion for answering well':''));
+      const close=()=>{
+        if(face) api.face(face);
+        api.dialog(L.who, (right===qs.length?'"Quite right." ':'"'+right+' of '+qs.length+'. Read your notes." ')+'The lecture ends; the benches empty.'+(next?'\n\n'+next:''), []);
+        api.toast((fresh?'Lecture heard: ':'Heard again: ')+(id==='wards'?'On Wards':id==='unmaking'?'On Unmaking':'On '+up(id))+(prize?' · +1 potion for answering well':''));
+      };
+      if(end) end(close); else close();
       return;
     }
     const [q,opts,good]=qs[i];
-    api.dialog(L.who, q, opts.map((o,j)=>({label:o, fn:()=>ask(i+1, right+(j===good?1:0))})));
+    if(face) api.face(face);
+    const lead=end&&i===0?'"Now then. You, '+me+'." ':'';
+    api.dialog(L.who, lead+q, opts.map((o,j)=>({label:o, fn:()=>ask(i+1, right+(j===good?1:0), end, face)})));
   }
 }
 
@@ -562,7 +572,7 @@ function face(n, api){
   const k=n.role==='partner'||n.role==='partnerLost'?'partner':n.role==='ashgrove'?'ashgrove':null, c=k&&api.chars[k];
   if(c&&c.face) return c.face;
   if(n.role==='fancy') return 'portraits/small/soldier.jpg';
-  return null;
+  return PEOPLE[n.role]&&PEOPLE[n.role].face||null;
 }
 window.ExploreYear={knows, title, sprite, face, talk, onMap, tick, afterFight, doors, blockExit, allyKnown, journal, keeperBeat, aureliaBeat, labPracticals, skinDue,
   partnerName, partnerKnown, termNeeds, PEOPLE, LECT, REWARD, _Y:Y};
