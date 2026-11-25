@@ -98,7 +98,7 @@ function talk(n, api){
     const intro='A lean elf restringing a longbow, a row of notches on the door behind him. "Talons. We fight, we hunt, we hold the sentry posts: a Talon in a post shoots whatever walks past it at night. And we harry. An orc camp with Talons in the trees all round it doesn\'t sleep, and orcs who don\'t sleep move on."';
     if(!S||S.over){ say(intro+' "Watch for the drums. Ten orcs or more with a war-totem beat them, and three weeks later they march on Elfhome. Break the totem and the drums stop."'); return; }
     const orcs=S.bands.filter(b=>b.fac==='orc'&&b.n>0), seen=orcs.filter(b=>S.vis[b.k]==='clear'), drums=orcs.some(b=>b.drums>0), march=orcs.some(b=>b.state==='march');
-    say(intro+' "'+(march?'They\'re marching on us. Every bow to Elfhome.':drums?'War drums, somewhere. A Waaagh is brewing. Find the totem.':orcs.length?(seen.length?seen.length+' orc band'+(seen.length>1?'s':'')+' in sight.':'There are orcs in the wood. We just can\'t see them.'):F.seasonOf(S.turn)===0?'No orcs yet. They\'ll come from the east by summer.':'No orcs in the wood that we know of.')+'"',[watch]);
+    say(intro+' "'+(march?'They\'re marching on us. Every bow to Elfhome.':drums?'War drums, somewhere. A Warhost is gathering. Find the totem.':orcs.length?(seen.length?seen.length+' orc band'+(seen.length>1?'s':'')+' in sight.':'There are orcs in the wood. We just can\'t see them.'):F.seasonOf(S.turn)===0?'No orcs yet. They\'ll come from the east by summer.':'No orcs in the wood that we know of.')+'"',[watch]);
     return;
   }
   case 'elf_healer': {

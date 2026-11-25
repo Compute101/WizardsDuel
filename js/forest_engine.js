@@ -48,7 +48,7 @@ const WARREN = {grow:0.12, cap:12, fetishGrow:1.5, split:6, raidChance:0.05, fou
 const VARG = {packMax:6, breedEvery:4, hungry:3, raid:5, calm:5, eatGoblins:2};
 const ORC = {
   arrive:[7,10,13,16,19], size:[6,8],     // weeks a warband walks in, and its size
-  fellEvery:1, moveAfter:4, waaagh:10, drums:3, totemAfter:2, totemRebuild:3,
+  fellEvery:1, moveAfter:4, warhost:10, drums:3, totemAfter:2, totemRebuild:3,
   gobJoin:3, gobWorth:0.5, harryTalon:1, stubborn:1.5, raidR:2, raidChance:0.5, rally:3,
 };
 const WOOD = {start:75, fell:2, ancient:12, burn:2, raze:3, slaughter:1, foul:0.3, overgraze:0.5,
@@ -251,7 +251,7 @@ function sign(S,kind,k,opts){
   S.signs.push({kind, k:opts.dir?null:k, dir:opts.dir?dirOf(k):null, turn:S.turn, decoy:!!opts.decoy});
 }
 const SIGN_TEXT = {
-  smoke:'Smoke rises', timber:'The crash of a felled tree', drums:'Goblin drums', waaagh:'War drums: a Waaagh is brewing',
+  smoke:'Smoke rises', timber:'The crash of a felled tree', drums:'Goblin drums', warhost:'War drums: a Warhost is gathering', waaagh:'War drums: a Warhost is gathering',   // waaagh: the old name, in older saves
   howl:'Howling', birds:'Birds start up from the trees', silence:'The wood falls silent', fire:'The trees are burning',
 };
 
@@ -560,10 +560,10 @@ function orcsAct(S){
       if(b.k===b.goal.k){ b.state='camp'; b.camp=b.k; b.goal=null; b.fell=0; }
       continue;
     }
-    if(b.drums>0&&b.totem){ b.drums--; sign(S,'waaagh',b.k,{dir:true, anywhere:true});
-      if(b.drums<=0){ b.state='march'; b.goal={kind:'march',k:HOME}; say(S,'orc',`WAAAGH! The ${b.name} march on Elfhome!`);
+    if(b.drums>0&&b.totem){ b.drums--; sign(S,'warhost',b.k,{dir:true, anywhere:true});
+      if(b.drums<=0){ b.state='march'; b.goal={kind:'march',k:HOME}; say(S,'orc',`The drums fall silent. The ${b.name} march on Elfhome as a Warhost!`);
         // every orc band within reach rallies to it
-        for(const o of S.bands) if(o!==b&&o.fac==='orc'&&o.state!=='leave'&&dist(o.k,b.k)<=ORC.rally){ b.n+=o.n; b.gobs=(b.gobs||0)+(o.gobs||0); o.n=0; say(S,'orc','Another orc band rallies to the Waaagh.'); }
+        for(const o of S.bands) if(o!==b&&o.fac==='orc'&&o.state!=='leave'&&dist(o.k,b.k)<=ORC.rally){ b.n+=o.n; b.gobs=(b.gobs||0)+(o.gobs||0); o.n=0; say(S,'orc','Another orc band rallies to the Warhost.'); }
         continue; } }
     if(b.state==='camp'){
       // out from camp after any elf in reach, Sylvara above all
@@ -576,8 +576,8 @@ function orcsAct(S){
       sign(S,'smoke',b.k,{range:4});
       // the totem goes up after a while; a big enough band with one beats the drums
       if(!b.totem){ if(b.totemWait>0) b.totemWait--; else b.totem=1; }
-      if(bandPower(b)>=ORC.waaagh&&b.totem){
-        if(!b.drums){ b.drums=ORC.drums; say(S,'orc',`War drums from the ${b.name}: a Waaagh is brewing.`); sign(S,'waaagh',b.k,{dir:true, anywhere:true}); }
+      if(bandPower(b)>=ORC.warhost&&b.totem){
+        if(!b.drums){ b.drums=ORC.drums; say(S,'orc',`War drums from the ${b.name}: a Warhost is gathering.`); sign(S,'warhost',b.k,{dir:true, anywhere:true}); }
       }
       // goblins near the camp join
       for(const w of S.warrens) if(w.n>0&&dist(w.k,b.k)<=2){ const n=Math.min(w.n,ORC.gobJoin); w.n-=n; b.gobs=(b.gobs||0)+n; }
@@ -723,7 +723,7 @@ function battleSetup(S,p){
   const keys=[];
   if(fac==='gob') for(let i=0;i<nSeats;i++) keys.push('goblin');
   if(fac==='varg') for(let i=0;i<nSeats;i++) keys.push(i===0&&members>=4?'varg_alpha':'varg');
-  if(fac==='orc'){ const lead=foe.state==='march'||bandPower(foe)>=ORC.waaagh?'orc_warboss':members>=5?'orc_bigun':'orc';
+  if(fac==='orc'){ const lead=foe.state==='march'||bandPower(foe)>=ORC.warhost?'orc_warboss':members>=5?'orc_bigun':'orc';
     const gobSeat=gobs>=3&&nSeats>=2;
     for(let i=0;i<nSeats;i++) keys.push(i===0?lead:gobSeat&&i===nSeats-1?'goblin':'orc'); }
   // share the members out: goblins in an orc band get their own seat
@@ -853,14 +853,14 @@ function counsel(S){
   const dirs=list=>[...new Set(list.map(x=>x.dir!=null?DIR_NAMES[x.dir]:x.k?DIR_NAMES[dirOf(x.k)]:null).filter(Boolean))].join(' and ');
   const ago=w=>w.now?'':' (seen '+(w.age===1?'last week':w.age+' weeks ago')+')';
 
-  // 1. a Waaagh on the march
+  // 1. a Warhost on the march
   const march=orcs.filter(o=>o.march);
-  if(march.length) add(100,'Talons','The Waaagh is marching on us'+(march[0].now?' from '+at(march[0].k):'')+'. Bring every Talon home and stand with them yourself: Elfhome\'s walls fight beside you. Ward Elfhome if the mana is there, so they stop a week at the thicket.');
+  if(march.length) add(100,'Talons','The Warhost is marching on us'+(march[0].now?' from '+at(march[0].k):'')+'. Bring every Talon home and stand with them yourself: Elfhome\'s walls fight beside you. Ward Elfhome if the mana is there, so they stop a week at the thicket.');
   // 2. the drums: break the totem
-  const drums=orcs.filter(o=>o.drums&&o.totem&&!o.march), drumSigns=sign('waaagh');
+  const drums=orcs.filter(o=>o.drums&&o.totem&&!o.march), drumSigns=[...sign('warhost'), ...sign('waaagh')];
   const totemNow=drums.find(o=>o.now);
   if(totemNow) add(95,'Spell',spell&&mana>=SPELLS.dispel.cost?'War drums at '+at(totemNow.k)+', and we can see the totem. Dispel it this week ('+SPELLS.dispel.cost+' mana): the drums stop, and they\'re weeks from raising another.':'War drums at '+at(totemNow.k)+'. Save '+SPELLS.dispel.cost+' mana and Dispel that totem next week, before they march.');
-  else if(drums.length||drumSigns.length) add(92,'Seers','War drums '+(drumSigns.length?'from the '+dirs(drumSigns):'at '+at(drums[0].k))+'. A Waaagh is coming. Send a Seer that way to find the totem, so you can see it to Dispel it.');
+  else if(drums.length||drumSigns.length) add(92,'Seers','War drums '+(drumSigns.length?'from the '+dirs(drumSigns):'at '+at(drums[0].k))+'. A Warhost is gathering. Send a Seer that way to find the totem, so you can see it to Dispel it.');
   // 3. Sylvara
   const trees=S.trees.filter(t=>!t.done&&!t.dead);
   if(up(s)&&trees.length&&S.turn>=SYL_START){
@@ -887,7 +887,7 @@ function counsel(S){
   if(!S.log.some(l=>l.kind==='orc')&&S.turn>=ORC.arrive[0]-2) add(40,'Guild','The orcs will come from the east any week now. Have a sentry post on that side, with a Seer in it.');
   // 5. goblins near orcs: the one time to fight goblins
   for(const w of warrens){ const o=orcs.find(o=>dist(o.k,w.k)<=2);
-    if(o){ add(68,'Talons','Goblins at '+at(w.k)+ago(w)+' are within reach of the orcs at '+at(o.k)+'. Orcs take goblins in, and that\'s how a Waaagh grows. Raze that warren, or Strike it. This is the one time to fight goblins.'); break; } }
+    if(o){ add(68,'Talons','Goblins at '+at(w.k)+ago(w)+' are within reach of the orcs at '+at(o.k)+'. Orcs take goblins in, and that\'s how a Warhost grows. Raze that warren, or Strike it. This is the one time to fight goblins.'); break; } }
   // a burning wood
   const fire=Object.keys(H).find(k=>H[k].fire&&S.vis[k]==='clear');
   if(fire) add(85,'Spell','The wood is burning at '+at(fire)+'. Dispel the fire before it spreads.');

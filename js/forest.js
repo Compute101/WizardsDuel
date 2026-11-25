@@ -14,7 +14,7 @@ const ELEMS = [
   ['water','🌊','Water'],['earth','🪨','Earth'],['ice','❄️','Ice'],['dark','🌑','Dark'],
 ];
 const TCOL = {home:'#b89a52', wood:'#2f6b34', old:'#1c4a25', glade:'#7fae55', hill:'#6f7d3c', marsh:'#3f6d62', crag:'#7c7568', lake:'#2f5f8f'};
-const SIGN_ICON = {smoke:'💨', timber:'🪓', drums:'🥁', waaagh:'🥁', howl:'🐺', birds:'🐦', silence:'🤫', fire:'🔥'};
+const SIGN_ICON = {smoke:'💨', timber:'🪓', drums:'🥁', warhost:'🥁', waaagh:'🥁', howl:'🐺', birds:'🐦', silence:'🤫', fire:'🔥'};
 const TOKEN = {gob:'👺', varg:'🐺', orc:'👹', herd:'🦌', warren:'🕳'};
 // ── The map art (the user's sheets, cut by tools/cut_forest_art.py): a hex tile per terrain and a figure
 // for each thing on the map; the canvas drawing and emoji stand in until each picture has loaded ──
@@ -203,7 +203,7 @@ function helpPanel(){
     <li><b>Sylvara</b> walks to each ancient tree and tends it for ${F.TEND} weeks. She keeps clear of danger your watchers can see, but she can't avoid what nobody saw. All four must be tended by the year's end.</li>
     <li><b>The Varg</b> (wolfmen) follow the deer and eat goblins. Fed, they leave you alone; starved, they raid. Killing them in their dens angers the wood.</li>
     <li><b>Goblins</b> breed fast and split off new warrens. Goblins that reach the orcs join them.</li>
-    <li><b>Orcs</b> come from the east from summer on. They camp and fell the trees. Harry their camp (Talons next to it, arrows, strikes) and they move on. A big band with a war-totem beats the drums: three weeks later, a <b>Waaagh</b> marches on Elfhome. Dispel the totem to stop the drums.</li>
+    <li><b>Orcs</b> come from the east from summer on. They camp and fell the trees. Harry their camp (Talons next to it, arrows, strikes) and they move on. A big band with a war-totem beats the drums: three weeks later, a <b>Warhost</b> marches on Elfhome. Dispel the totem to stop the drums.</li>
     <li><b>Your elves:</b> 👁 Seers watch. 🏹 Talons fight, hunt, and man sentry posts (which shoot at whatever passes). 🦌 Beast-speakers herd deer and calm Varg. 🔨 Builders raise sentry posts and thorn hedges. A youth can train in any calling (${F.TRAIN_COST} food, ${F.TRAIN_TURNS} weeks).</li>
     <li><b>You</b> can fight too: you're stronger than any Talon. It's never required, but against a big band it helps.</li>
     <li><b>The Wood</b> keeps score. Felled and burnt trees, slaughter and overgrazing hurt it; quiet weeks mend it. A content wood fights orcs in the old growth; an angry one starves you.</li>
@@ -461,7 +461,7 @@ function draw(){
   for(const sg of S.signs){
     if(sg.k){ const [x,y]=hexXY(sg.k); const p=0.5+0.5*Math.sin(T/300); c.beginPath(); c.arc(x,y,s*(0.55+0.15*p),0,7); c.strokeStyle=`rgba(255,220,120,${0.35+0.4*p})`; c.lineWidth=2; c.stroke(); emoji(c,SIGN_ICON[sg.kind],x+s*0.45,y-s*0.45,s*0.42); }
     else { const a=-Math.PI/3*sg.dir; const r=Math.min(cw,ch)/2-14; const x=cw/2+view.ox*0+Math.cos(a)*r, y=ch/2+Math.sin(a)*r;
-      c.beginPath(); c.arc(x,y,14,0,7); c.fillStyle='rgba(30,20,10,0.75)'; c.fill(); c.strokeStyle=sg.kind==='waaagh'?'#ff5544':'#e8c872'; c.lineWidth=2; c.stroke(); emoji(c,SIGN_ICON[sg.kind],x,y,16); }
+      c.beginPath(); c.arc(x,y,14,0,7); c.fillStyle='rgba(30,20,10,0.75)'; c.fill(); c.strokeStyle=sg.kind==='warhost'||sg.kind==='waaagh'?'#ff5544':'#e8c872'; c.lineWidth=2; c.stroke(); emoji(c,SIGN_ICON[sg.kind],x,y,16); }
   }
   // the selected hex
   if(ui.sel){ const [x,y]=hexXY(ui.sel); hexPath(c,x,y,s*0.98); c.strokeStyle='#ffe58a'; c.lineWidth=3; c.stroke(); }

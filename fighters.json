@@ -692,8 +692,8 @@
     "arena": "forest"
   },
   "orc_warboss": {
-    "name": "WARBOSS",
-    "title": "Leader of the Waaagh",
+    "name": "WARCHIEF",
+    "title": "Leader of the Warhost",
     "fighter": true,
     "trait": "brute",
     "explore": true,
@@ -706,7 +706,7 @@
     },
     "spells": [],
     "taunts": [
-      "WAAAGH!",
+      "The drums call! The wood falls!",
       "Your tree-town is mine.",
       "Bring me the green witch."
     ],
