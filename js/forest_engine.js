@@ -48,7 +48,7 @@ const WARREN = {grow:0.12, cap:12, fetishGrow:1.5, split:6, raidChance:0.05, fou
 const VARG = {packMax:6, breedEvery:4, hungry:3, raid:5, calm:5, eatGoblins:2};
 const ORC = {
   arrive:[7,10,13,16,19], size:[6,8],     // weeks a warband walks in, and its size
-  fellEvery:1, moveAfter:4, waaagh:10, drums:3, totemAfter:2, totemRebuild:3,
+  fellEvery:1, moveAfter:4, warhost:10, drums:3, totemAfter:2, totemRebuild:3,
   gobJoin:3, gobWorth:0.5, harryTalon:1, stubborn:1.5, raidR:2, raidChance:0.5, rally:3,
 };
 const WOOD = {start:75, fell:2, ancient:12, burn:2, raze:3, slaughter:1, foul:0.3, overgraze:0.5,
@@ -251,7 +251,7 @@ function sign(S,kind,k,opts){
   S.signs.push({kind, k:opts.dir?null:k, dir:opts.dir?dirOf(k):null, turn:S.turn, decoy:!!opts.decoy});
 }
 const SIGN_TEXT = {
-  smoke:'Smoke rises', timber:'The crash of a felled tree', drums:'Goblin drums', waaagh:'War drums: a Waaagh is brewing',
+  smoke:'Smoke rises', timber:'The crash of a felled tree', drums:'Goblin drums', warhost:'War drums: a Warhost is gathering', waaagh:'War drums: a Warhost is gathering',   // waaagh: the old name, in older saves
   howl:'Howling', birds:'Birds start up from the trees', silence:'The wood falls silent', fire:'The trees are burning',
 };
 
@@ -560,10 +560,10 @@ function orcsAct(S){
       if(b.k===b.goal.k){ b.state='camp'; b.camp=b.k; b.goal=null; b.fell=0; }
       continue;
     }
-    if(b.drums>0&&b.totem){ b.drums--; sign(S,'waaagh',b.k,{dir:true, anywhere:true});
-      if(b.drums<=0){ b.state='march'; b.goal={kind:'march',k:HOME}; say(S,'orc',`WAAAGH! The ${b.name} march on Elfhome!`);
+    if(b.drums>0&&b.totem){ b.drums--; sign(S,'warhost',b.k,{dir:true, anywhere:true});
+      if(b.drums<=0){ b.state='march'; b.goal={kind:'march',k:HOME}; say(S,'orc',`The drums fall silent. The ${b.name} march on Elfhome as a Warhost!`);
         // every orc band within reach rallies to it
-        for(const o of S.bands) if(o!==b&&o.fac==='orc'&&o.state!=='leave'&&dist(o.k,b.k)<=ORC.rally){ b.n+=o.n; b.gobs=(b.gobs||0)+(o.gobs||0); o.n=0; say(S,'orc','Another orc band rallies to the Waaagh.'); }
+        for(const o of S.bands) if(o!==b&&o.fac==='orc'&&o.state!=='leave'&&dist(o.k,b.k)<=ORC.rally){ b.n+=o.n; b.gobs=(b.gobs||0)+(o.gobs||0); o.n=0; say(S,'orc','Another orc band rallies to the Warhost.'); }
         continue; } }
     if(b.state==='camp'){
       // out from camp after any elf in reach, Sylvara above all
@@ -576,8 +576,8 @@ function orcsAct(S){
       sign(S,'smoke',b.k,{range:4});
       // the totem goes up after a while; a big enough band with one beats the drums
       if(!b.totem){ if(b.totemWait>0) b.totemWait--; else b.totem=1; }
-      if(bandPower(b)>=ORC.waaagh&&b.totem){
-        if(!b.drums){ b.drums=ORC.drums; say(S,'orc',`War drums from the ${b.name}: a Waaagh is brewing.`); sign(S,'waaagh',b.k,{dir:true, anywhere:true}); }
+      if(bandPower(b)>=ORC.warhost&&b.totem){
+        if(!b.drums){ b.drums=ORC.drums; say(S,'orc',`War drums from the ${b.name}: a Warhost is gathering.`); sign(S,'warhost',b.k,{dir:true, anywhere:true}); }
       }
       // goblins near the camp join
       for(const w of S.warrens) if(w.n>0&&dist(w.k,b.k)<=2){ const n=Math.min(w.n,ORC.gobJoin); w.n-=n; b.gobs=(b.gobs||0)+n; }
@@ -723,7 +723,7 @@ function battleSetup(S,p){
   const keys=[];
   if(fac==='gob') for(let i=0;i<nSeats;i++) keys.push('goblin');
   if(fac==='varg') for(let i=0;i<nSeats;i++) keys.push(i===0&&members>=4?'varg_alpha':'varg');
-  if(fac==='orc'){ const lead=foe.state==='march'||bandPower(foe)>=ORC.waaagh?'orc_warboss':members>=5?'orc_bigun':'orc';
+  if(fac==='orc'){ const lead=foe.state==='march'||bandPower(foe)>=ORC.warhost?'orc_warboss':members>=5?'orc_bigun':'orc';
     const gobSeat=gobs>=3&&nSeats>=2;
     for(let i=0;i<nSeats;i++) keys.push(i===0?lead:gobSeat&&i===nSeats-1?'goblin':'orc'); }
   // share the members out: goblins in an orc band get their own seat
@@ -833,11 +833,105 @@ function score(S){
   return {pts, trees, bal:Math.round(bal*100), wood:Math.round(S.wood), lost:S.lost, ending};
 }
 
+// ── Counsel: the Eldest's advice from what your watchers know ────────
+// Reads only what the player can know (clear sight, memory up to COUNSEL.memory weeks old, this week's
+// signs, the log's public news), never the hidden state. Returns advice, most urgent first:
+// [{pri, house, text}]. Olwen gives it in Elfhome (js/explore_elfhome.js).
+const COUNSEL = {memory:3, escort:2, posts:3, seersWanted:6, foodLow:15, foodHunt:20, warrensMany:6};
+function counsel(S){
+  const H=S.hexes, out=[], add=(pri,house,text)=>out.push({pri,house,text}), at=k=>placeName(S,k);
+  if(S.over) return out;
+  // what is known of each hex: seen now, or remembered
+  const known={};
+  for(const k in S.intel){ const m=S.intel[k]; if(S.turn-m.turn<=COUNSEL.memory) known[k]={...m, now:S.vis[k]==='clear'}; }
+  const seenOf=t=>Object.keys(known).flatMap(k=>known[k].what.filter(w=>w.t===t).map(w=>({...w, k, now:known[k].now, age:S.turn-known[k].turn})));
+  const orcs=seenOf('orc').filter(o=>!o.leave), warrens=seenOf('warren'), varg=seenOf('varg');
+  const me=wiz(S), s=syl(S), up=e=>e&&!e.wounded;
+  const free=role=>S.elves.filter(e=>e.role===role&&!e.wounded);
+  const mana=S.mana, spell=!S.spellUsed;
+  const sign=kind=>S.signs.filter(x=>x.kind===kind);
+  const dirs=list=>[...new Set(list.map(x=>x.dir!=null?DIR_NAMES[x.dir]:x.k?DIR_NAMES[dirOf(x.k)]:null).filter(Boolean))].join(' and ');
+  const ago=w=>w.now?'':' (seen '+(w.age===1?'last week':w.age+' weeks ago')+')';
+
+  // 1. a Warhost on the march
+  const march=orcs.filter(o=>o.march);
+  if(march.length) add(100,'Talons','The Warhost is marching on us'+(march[0].now?' from '+at(march[0].k):'')+'. Bring every Talon home and stand with them yourself: Elfhome\'s walls fight beside you. Ward Elfhome if the mana is there, so they stop a week at the thicket.');
+  // 2. the drums: break the totem
+  const drums=orcs.filter(o=>o.drums&&o.totem&&!o.march), drumSigns=[...sign('warhost'), ...sign('waaagh')];
+  const totemNow=drums.find(o=>o.now);
+  if(totemNow) add(95,'Spell',spell&&mana>=SPELLS.dispel.cost?'War drums at '+at(totemNow.k)+', and we can see the totem. Dispel it this week ('+SPELLS.dispel.cost+' mana): the drums stop, and they\'re weeks from raising another.':'War drums at '+at(totemNow.k)+'. Save '+SPELLS.dispel.cost+' mana and Dispel that totem next week, before they march.');
+  else if(drums.length||drumSigns.length) add(92,'Seers','War drums '+(drumSigns.length?'from the '+dirs(drumSigns):'at '+at(drums[0].k))+'. A Warhost is gathering. Send a Seer that way to find the totem, so you can see it to Dispel it.');
+  // 3. Sylvara
+  const trees=S.trees.filter(t=>!t.done&&!t.dead);
+  if(up(s)&&trees.length&&S.turn>=SYL_START){
+    const next=trees.slice().sort((a,b)=>dist(a.k,s.pos)-dist(b.k,s.pos))[0];
+    const danger=[...orcs, ...warrens, ...seenOf('gob')].filter(w=>w.now&&(dist(w.k,s.pos)<=2||dist(w.k,next.k)<=1));
+    const escort=S.elves.filter(e=>!e.wounded&&(e.role==='talon'||e.role==='wizard')&&dist(e.pos,s.pos)<=1).length;
+    if(danger.length){
+      const d=danger.find(w=>w.t==='orc')||danger[0], what=d.t==='orc'?'there are orcs':d.t==='warren'?'there is a goblin warren':'there are goblins';
+      add(d.t==='orc'?90:72,'Sylvara','Sylvara walks toward '+next.name+', and '+what+' at '+at(d.k)+', close to her. '+(spell&&mana>=SPELLS.ward.cost&&!H[s.pos].thicket?'Ward her hex ('+SPELLS.ward.cost+' mana): anything that comes at her there stops a week in the thicket.':'Put Talons beside her.'));
+    }
+    if(escort<COUNSEL.escort) add(danger.length?75:55,'Talons','Sylvara walks toward '+next.name+' with '+(escort?'only one':'nobody')+' to guard her. Keep two Talons, or yourself, on her hex or next to it. '+(S.log.some(l=>l.kind==='orc')?'The orcs go for her before anyone.':'Goblins raid anyone walking alone, and the orcs, when they come, go for her first.'));
+    if(S.vis[next.k]!=='clear'&&!free('seer').some(e=>dist(e.pos,next.k)<=1)) add(50,'Seers','Nobody watches the way to '+next.name+'. Sylvara steers round only the danger we can see, so put a Seer near it.');
+  }
+  if(s&&s.wounded&&trees.length) add(60,'Healers','Sylvara is in the Healing House with '+trees.length+' tree'+(trees.length>1?'s':'')+' still to tend. Rest there yourself: Essyllt\'s healers take weeks off every wound, hers included, once a week.');
+  // 4. orc camps: harry them till they leave
+  for(const o of orcs.filter(o=>o.now&&!o.march&&o.camp).sort((a,b)=>b.n-a.n)){
+    const harriers=S.elves.filter(e=>!e.wounded&&e.role==='talon'&&dist(e.pos,o.k)===1).length;
+    if(!harriers) add(70,'Talons','Orcs camped at '+at(o.k)+' ('+o.n+(o.gobs?' and '+o.gobs+' goblins':'')+'), felling a tree a week. Put Talons in the trees next to the camp: every night they harry it, and harried enough, orcs move on. You don\'t have to kill them.');
+    if(spell&&mana>=SPELLS.strike.cost[3]&&!totemNow) add(58,'Spell','Strike the orcs at '+at(o.k)+' at full strength ('+SPELLS.strike.cost[3]+' mana). Every blow counts toward driving them out.');
+    break;
+  }
+  if(!orcs.length&&!drumSigns.length&&S.bands.some(b=>b.fac==='orc'&&b.state!=='leave'&&b.n>0)&&S.log.some(l=>l.kind==='orc'))
+    add(65,'Seers','There are orcs in the wood and nobody can see them. They come from the east: send a Seer that way, to a hill if there is one.');
+  if(!S.log.some(l=>l.kind==='orc')&&S.turn>=ORC.arrive[0]-2) add(40,'Guild','The orcs will come from the east any week now. Have a sentry post on that side, with a Seer in it.');
+  // 5. goblins near orcs: the one time to fight goblins
+  for(const w of warrens){ const o=orcs.find(o=>dist(o.k,w.k)<=2);
+    if(o){ add(68,'Talons','Goblins at '+at(w.k)+ago(w)+' are within reach of the orcs at '+at(o.k)+'. Orcs take goblins in, and that\'s how a Warhost grows. Raze that warren, or Strike it. This is the one time to fight goblins.'); break; } }
+  // a burning wood
+  const fire=Object.keys(H).find(k=>H[k].fire&&S.vis[k]==='clear');
+  if(fire) add(85,'Spell','The wood is burning at '+at(fire)+'. Dispel the fire before it spreads.');
+  // 6. watch: posts and seers
+  const posts=Object.keys(H).filter(k=>H[k].talan&&!H[k].build&&k!==HOME);
+  const empty=posts.filter(k=>!S.elves.some(e=>!e.wounded&&e.role==='seer'&&e.pos===k));
+  if(empty.length&&free('seer').length) add(62,'Seers','The sentry post at '+at(empty[0])+' has no Seer in it. A Seer in a post sees a ring clearly and two dimly, three on a hill.');
+  const builders=free('guild'), idle=builders.filter(e=>!(e.task&&e.task.t==='talan')&&!H[e.pos].build);
+  if(idle.length&&posts.length+Object.keys(H).filter(k=>H[k].build>0).length<COUNSEL.posts)
+    add(52,'Guild','Kennan\'s builders are idle. Put sentry posts two or three hexes out from Elfhome, on hills when you can, about three apart: '+(posts.length?posts.length+' up so far.':'there are none yet.'));
+  const cov=coverage(S);
+  if(cov<0.25) add(45,'Seers','We see only '+Math.round(cov*100)+'% of the wood clearly. Spread the Seers out: one on foot sees only her own hex clearly.');
+  // 7. the Varg and the deer
+  const howl=sign('howl');
+  if(howl.length&&free('charm').length) add(57,'Charming','Howling from the '+dirs(howl)+': a hungry Varg pack. '+(varg.find(v=>v.now)?'Send Ifan\'s beast-speaker to calm the pack at '+at(varg.find(v=>v.now).k)+', or it will come for our hunters.':'Find it and send a beast-speaker to calm it, or it will come for our hunters.'));
+  const game=gameTotal(S);
+  if(game<BANDS.game[0]) add(54,'Charming','Too few deer ('+game+'). Stop hunting: hungry Varg raid us, and starved Varg let the goblins breed. Feed the elves from the stores and foraging.');
+  else if(game>BANDS.game[1]) add(44,'Talons','Too many deer ('+game+'): they\'re stripping the glades. Let the Talons hunt.');
+  if(!S.bands.some(b=>b.fac==='varg')&&S.log.length) add(70,'Charming','There are no Varg left. Nothing keeps the goblins down now, and the wood mourns them every week.');
+  else if(varg.some(v=>v.now)&&S.elves.some(e=>!e.wounded&&(e.role==='talon'||e.role==='wizard')&&varg.some(v=>v.now&&v.k===e.pos))) add(48,'Elders','Leave the Varg be. They belong here, they keep the goblins down, and killing them angers the wood.');
+  // 8. goblins
+  if(warrens.length>COUNSEL.warrensMany) add(46,'Talons','Goblin warrens all over the wood ('+warrens.length+' that we know of). Raze the ones nearest Elfhome and the orcs; leave the far ones to the Varg.');
+  const fetish=warrens.find(w=>w.now&&w.fetish);
+  if(fetish&&spell&&mana>=SPELLS.dispel.cost&&!orcs.some(o=>o.now)) add(30,'Spell','The shaman\'s fetish at '+at(fetish.k)+' makes that warren breed fast and lights false fires. With nothing more pressing, Dispel it.');
+  // 9. food, youths, the wood's mood, mana
+  if(S.food<COUNSEL.foodLow) add(64,'Elders','The stores are low ('+Math.floor(S.food)+'). Send a Talon to hunt a herd of three or more, or elves will leave us for a grove that can feed them.');
+  if(S.youths>0) add(S.food>=TRAIN_COST?42:20,'Elders',S.food>=TRAIN_COST?'A youth is ready for a calling. '+(free('seer').length+S.training.filter(t=>t.role==='seer').length<COUNSEL.seersWanted?'Make a Seer: the more eyes, the less the wood can hide.':'Make a Talon.'):'A youth is ready, but training takes '+TRAIN_COST+' food we haven\'t got.');
+  const md=mood(S);
+  if(md==='angry') add(66,'Elders','The wood is angry. Stop killing its own: Varg, goblins far from the orcs, the deer. Quiet weeks with no felling calm it.');
+  if(spell&&mana>=MANA_MAX&&!out.some(a=>a.house==='Spell')) add(35,'Spell','Your mana is full and does nothing in the pouch. Ward Sylvara\'s path, or break a fetish.');
+  // 10. your wizard
+  if(me&&me.wounded) add(60,'Healers','You\'re wounded for '+me.wounded+' more week'+(me.wounded>1?'s':'')+'. Rest in the Healing House: Essyllt mends faster than time.');
+  else if(me&&me.hp<ROLES.wizard.hp/2) add(50,'Healers','You\'re hurt. Rest in the Healing House before you lead another fight.');
+  const hurt=S.elves.filter(e=>e.wounded>1);
+  if(hurt.length&&S.healedWeek!==S.turn&&!(me&&me.wounded)&&!(s&&s.wounded)) add(36,'Healers',(hurt.length>1?hurt.length+' of ours lie':'One of ours lies')+' wounded. Rest in the Healing House this week and Essyllt\'s healers will have them up sooner.');
+  if(!out.length) add(10,'Elders','The wood is quiet. Keep the Seers in their posts, Sylvara guarded, and the goblins away from the orcs. That\'s all the keeping there is.');
+  return out.sort((a,b)=>b.pri-a.pri);
+}
+
 // ── Public ───────────────────────────────────────────────────────────
 const api = {
   newYear, endTurn, resolvePending, battleSetup, autoOdds, foeById, move, canMove, tasksFor, setTask, cast, canCast, train, vision, score, reachable,
   coverage, mood, seasonOf, weekOf, placeName, dist, nbrs, unkey, key, dirOf, gameTotal, bandPower, path,
-  herdAt, warrenAt, bandsAt, elfAt, syl, wiz,
+  herdAt, warrenAt, bandsAt, elfAt, syl, wiz, counsel, COUNSEL,
   R, YEAR, SEASON, SEASONS, ROLES, FAC, TERRAIN, SPELLS, TRAIN_COST, TRAIN_TURNS, TREES, TEND, WOOD, BANDS, ENDINGS,
   SIGN_TEXT, DIR_NAMES, ORC, HOME, MANA_MAX, TRAINABLE, DUEL,
   clone: S => JSON.parse(JSON.stringify(S)),

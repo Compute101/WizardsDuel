@@ -27,9 +27,9 @@ const CASES=[
   {name:'Orc band (7) at camp, you + 2 Talons', fac:'orc', n:7, talons:2, kind:'attack', state:'camp'},
   {name:'Orc band (7) catches you alone',    fac:'orc',  n:7, state:'camp'},
   {name:'Orcs raid Sylvara (7), you with her', fac:'orc', n:7, syl:true, state:'camp'},
-  {name:'Waaagh (12 + 6 gobs) at Elfhome, 3 Talons', fac:'orc', n:12, gobs:6, home:true, talons:3, state:'march'},
-  {name:'Waaagh (16 + 4 gobs) at Elfhome, 3 Talons', fac:'orc', n:16, gobs:4, home:true, talons:3, state:'march'},
-  {name:'Waaagh (16) at Elfhome, Sylvara home',  fac:'orc', n:16, home:true, talons:3, syl:true, state:'march'},
+  {name:'Warhost (12 + 6 gobs) at Elfhome, 3 Talons', fac:'orc', n:12, gobs:6, home:true, talons:3, state:'march'},
+  {name:'Warhost (16 + 4 gobs) at Elfhome, 3 Talons', fac:'orc', n:16, gobs:4, home:true, talons:3, state:'march'},
+  {name:'Warhost (16) at Elfhome, Sylvara home',  fac:'orc', n:16, home:true, talons:3, syl:true, state:'march'},
 ];
 (async()=>{
   await new Promise(r=>server.listen(0,r));

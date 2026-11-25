@@ -14,7 +14,7 @@ const ELEMS = [
   ['water','🌊','Water'],['earth','🪨','Earth'],['ice','❄️','Ice'],['dark','🌑','Dark'],
 ];
 const TCOL = {home:'#b89a52', wood:'#2f6b34', old:'#1c4a25', glade:'#7fae55', hill:'#6f7d3c', marsh:'#3f6d62', crag:'#7c7568', lake:'#2f5f8f'};
-const SIGN_ICON = {smoke:'💨', timber:'🪓', drums:'🥁', waaagh:'🥁', howl:'🐺', birds:'🐦', silence:'🤫', fire:'🔥'};
+const SIGN_ICON = {smoke:'💨', timber:'🪓', drums:'🥁', warhost:'🥁', waaagh:'🥁', howl:'🐺', birds:'🐦', silence:'🤫', fire:'🔥'};
 const TOKEN = {gob:'👺', varg:'🐺', orc:'👹', herd:'🦌', warren:'🕳'};
 // ── The map art (the user's sheets, cut by tools/cut_forest_art.py): a hex tile per terrain and a figure
 // for each thing on the map; the canvas drawing and emoji stand in until each picture has loaded ──
@@ -53,6 +53,7 @@ function build(){
       <div class="fr-title">🌲 Moriquende <span id="fr-when"></span></div>
       <div class="fr-stats" id="fr-stats"></div>
       <div class="fr-top-btns">
+        <button class="fr-btn" id="fr-sfx" type="button" title="Sound effects">🔊</button>
         <button class="fr-btn" id="fr-help" type="button">?</button>
         <button class="fr-btn" id="fr-new" type="button" title="A new year">↺</button>
         <button class="fr-btn" id="fr-close" type="button">✕</button>
@@ -78,6 +79,8 @@ function build(){
   $('fr-close').onclick=close;
   $('fr-new').onclick=()=>setupPanel(true);
   $('fr-help').onclick=helpPanel;
+  $('fr-sfx').onclick=()=>{ sfxOn=!sfxOn; try{ localStorage.setItem(SFX_KEY, sfxOn?'1':'0'); }catch(e){} sfxButton(); if(sfxOn) sfx('birds',.5); };
+  sfxButton();
   $('fr-end').onclick=endWeek;
   $('fr-undo').onclick=()=>{ if(weekStart&&!S.pending&&S.step==null){ S=F.clone(weekStart); ui.elf=null; ui.spell=null; F.vision(S); save(); render(); } };
   $('fr-elves').onclick=rosterPanel;
@@ -115,6 +118,43 @@ function woodMusic(on){
 }
 // a browser that refused to start it (no tap yet) gets another go at the next tap or key
 ['pointerdown','keydown'].forEach(t=>window.addEventListener(t,()=>{ if(woodBlocked&&isOpen()){ woodBlocked=false; woodMusic(true); } },true));
+// ── Sound effects (audio/sfx/forest/, synthesised by tools/sfx/forest_sfx.py) ─────
+// The dawn report plays the week's two loudest moments (FOREST_SFX ranks them: a Warhost marching
+// beats the war drums, beats a horn from the east, …), and each spell you cast has its own. 🔊 in the
+// top bar turns them off (localStorage wd-forest-sfx).
+const SFX_DIR='audio/sfx/forest/', SFX_V='?v=1', SFX_KEY='wd-forest-sfx', SFX_VOL=.8, SFX_GAP=1600;
+const FOREST_SFX=[   // [sound, rank, volume, does this week call for it?]
+  ['warhost',      100, 1.0, (L,G)=>L.some(l=>l.kind==='orc'&&/march on Elfhome/.test(l.text))],
+  ['drums_war',     90, .9,  (L,G)=>G.has('warhost')||G.has('waaagh')||L.some(l=>l.kind==='orc'&&/War drums/.test(l.text))],
+  ['horn_far',      85, .9,  (L,G)=>L.some(l=>l.kind==='orc'&&/entered the Moriquende/.test(l.text))],
+  ['fire',          80, .8,  (L,G)=>G.has('fire')||L.some(l=>l.kind==='fire')],
+  ['fight',         70, .7,  (L,G)=>L.some(l=>l.kind==='fight'||l.kind==='hurt'||l.kind==='dead'&&!/Hunger/.test(l.text))],
+  ['horn_leave',    60, .8,  (L,G)=>L.some(l=>l.kind==='orc'&&/moving on/.test(l.text))],
+  ['timber',        58, .8,  (L,G)=>G.has('timber')||L.some(l=>l.kind==='tree'&&/felled/.test(l.text))],
+  ['tend',          50, .6,  (L,G)=>L.some(l=>l.kind==='sylvara'&&/finishes tending/.test(l.text))],
+  ['drums_goblin',  45, .7,  (L,G)=>G.has('drums')],
+  ['howl',          40, .7,  (L,G)=>G.has('howl')],
+  ['birds',         30, .5,  (L,G)=>G.has('birds')],
+  ['silence',       20, .6,  (L,G)=>G.has('silence')],
+];
+let sfxOn=(()=>{ try{ return localStorage.getItem(SFX_KEY)!=='0'; }catch(e){ return true; } })();
+const sfxCache={};
+function sfx(name,vol,delay){
+  if(!sfxOn) return;
+  const go=()=>{ if(!sfxOn||!isOpen()) return; try{
+    let a=sfxCache[name]; if(!a){ a=sfxCache[name]=new Audio(SFX_DIR+name+'.mp3'+SFX_V); a.preload='auto'; }
+    const p=a.cloneNode(); p.volume=Math.max(0,Math.min(1,(vol==null?1:vol)*SFX_VOL)); const r=p.play(); if(r&&r.catch) r.catch(()=>{});
+  }catch(e){} };
+  if(delay) setTimeout(go,delay); else go();
+}
+function sfxButton(){ const b=$('fr-sfx'); if(b){ b.textContent=sfxOn?'🔊':'🔇'; b.title=sfxOn?'Sound effects on':'Sound effects off'; } }
+function preloadSfx(){ FOREST_SFX.forEach(([n])=>{ if(!sfxCache[n]){ const a=sfxCache[n]=new Audio(SFX_DIR+n+'.mp3'+SFX_V); a.preload='auto'; } }); }
+// the week's sounds at dawn: the two that matter most, one after the other
+function dawnSfx(turn){
+  const L=S.log.filter(l=>l.turn===turn), G=new Set(S.signs.map(x=>x.kind));
+  FOREST_SFX.filter(([,,,when])=>when(L,G)).sort((a,b)=>b[1]-a[1]).slice(0,2)
+    .forEach(([n,,v],i)=>sfx(n,v,300+i*SFX_GAP));
+}
 const isOpen=()=>{ const d=$('fr-screen'); return !!d&&d.classList.contains('active'); };
 function open(opts){
   const d=$('fr-screen')||build(); d.classList.add('active');
@@ -122,7 +162,7 @@ function open(opts){
   d.classList.toggle('fr-explore',!!ctx);
   if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
   woodMusic(true);
-  preloadArt();
+  preloadArt(); preloadSfx();
   S=ctx?(ctx.state||null):loadSave();
   fitCanvas(); view={zoom:1,ox:0,oy:0}; ui={sel:F.HOME, elf:null, spell:null, ring:2};
   if(S&&!S.over){ syncIn(); weekStart=F.clone(S); F.vision(S); render(); if(S.pending) fightPrompt(); }
@@ -203,7 +243,7 @@ function helpPanel(){
     <li><b>Sylvara</b> walks to each ancient tree and tends it for ${F.TEND} weeks. She keeps clear of danger your watchers can see, but she can't avoid what nobody saw. All four must be tended by the year's end.</li>
     <li><b>The Varg</b> (wolfmen) follow the deer and eat goblins. Fed, they leave you alone; starved, they raid. Killing them in their dens angers the wood.</li>
     <li><b>Goblins</b> breed fast and split off new warrens. Goblins that reach the orcs join them.</li>
-    <li><b>Orcs</b> come from the east from summer on. They camp and fell the trees. Harry their camp (Talons next to it, arrows, strikes) and they move on. A big band with a war-totem beats the drums: three weeks later, a <b>Waaagh</b> marches on Elfhome. Dispel the totem to stop the drums.</li>
+    <li><b>Orcs</b> come from the east from summer on. They camp and fell the trees. Harry their camp (Talons next to it, arrows, strikes) and they move on. A big band with a war-totem beats the drums: three weeks later, a <b>Warhost</b> marches on Elfhome. Dispel the totem to stop the drums.</li>
     <li><b>Your elves:</b> 👁 Seers watch. 🏹 Talons fight, hunt, and man sentry posts (which shoot at whatever passes). 🦌 Beast-speakers herd deer and calm Varg. 🔨 Builders raise sentry posts and thorn hedges. A youth can train in any calling (${F.TRAIN_COST} food, ${F.TRAIN_TURNS} weeks).</li>
     <li><b>You</b> can fight too: you're stronger than any Talon. It's never required, but against a big band it helps.</li>
     <li><b>The Wood</b> keeps score. Felled and burnt trees, slaughter and overgrazing hurt it; quiet weeks mend it. A content wood fights orcs in the old growth; an angry one starves you.</li>
@@ -272,6 +312,7 @@ function runWeek(){
   if(S.pending){ save(); render(); fightPrompt(); return; }
   weekStart=F.clone(S); settleYear(); save(); render();
   reportPanel(S.over?S.turn:t);
+  dawnSfx(t);
 }
 
 // ── Leading a fight yourself (a duel in the battle engine) ───────────
@@ -417,7 +458,7 @@ function pMove(e){ if(!ptrs.has(e.pointerId)||!drag) return; ptrs.set(e.pointerI
 function pUp(e){ const d=drag; ptrs.delete(e.pointerId); if(ptrs.size) return; drag=null; if(d&&!d.moved) tap(e.offsetX,e.offsetY); }
 function tap(x,y){
   const k=pixToHex(x,y); if(!k||!S||S.over) return;
-  if(ui.spell){ const err=F.cast(S,ui.spell,k,ui.ring); if(err) toast(err); else { ui.spell=null; save(); ui.sel=k; } render(); return; }
+  if(ui.spell){ const err=F.cast(S,ui.spell,k,ui.ring); if(err) toast(err); else { sfx('spell_'+ui.spell); ui.spell=null; save(); ui.sel=k; } render(); return; }
   const e=ui.elf&&S.elves.find(x=>x.id===ui.elf);
   if(e&&e.role!=='sylvara'&&!e.wounded&&!e.moved&&k!==e.pos){ const err=F.canMove(S,e,k); if(!err){ F.move(S,e.id,k); ui.sel=k; save(); render(); return; } }
   ui.sel=k;
@@ -461,7 +502,7 @@ function draw(){
   for(const sg of S.signs){
     if(sg.k){ const [x,y]=hexXY(sg.k); const p=0.5+0.5*Math.sin(T/300); c.beginPath(); c.arc(x,y,s*(0.55+0.15*p),0,7); c.strokeStyle=`rgba(255,220,120,${0.35+0.4*p})`; c.lineWidth=2; c.stroke(); emoji(c,SIGN_ICON[sg.kind],x+s*0.45,y-s*0.45,s*0.42); }
     else { const a=-Math.PI/3*sg.dir; const r=Math.min(cw,ch)/2-14; const x=cw/2+view.ox*0+Math.cos(a)*r, y=ch/2+Math.sin(a)*r;
-      c.beginPath(); c.arc(x,y,14,0,7); c.fillStyle='rgba(30,20,10,0.75)'; c.fill(); c.strokeStyle=sg.kind==='waaagh'?'#ff5544':'#e8c872'; c.lineWidth=2; c.stroke(); emoji(c,SIGN_ICON[sg.kind],x,y,16); }
+      c.beginPath(); c.arc(x,y,14,0,7); c.fillStyle='rgba(30,20,10,0.75)'; c.fill(); c.strokeStyle=sg.kind==='warhost'||sg.kind==='waaagh'?'#ff5544':'#e8c872'; c.lineWidth=2; c.stroke(); emoji(c,SIGN_ICON[sg.kind],x,y,16); }
   }
   // the selected hex
   if(ui.sel){ const [x,y]=hexXY(ui.sel); hexPath(c,x,y,s*0.98); c.strokeStyle='#ffe58a'; c.lineWidth=3; c.stroke(); }

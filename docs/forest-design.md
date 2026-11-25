@@ -86,7 +86,7 @@ Target: 30–45 minutes for the year. Saved per profile like the rest of Explore
   **60%**. There is never enough.
 - **Signs** from unwatched hexes, each with a range and a reliability:
   - Smoke (orc camps, fires): seen 3 hexes away, gives the exact hex.
-  - War drums (goblins gathering, or a Waaagh brewing): a direction only.
+  - War drums (goblins gathering, or a Warhost brewing): a direction only.
   - Howls (Varg on the hunt): a direction, at night.
   - Startled birds: a hex something big moved through this turn. It might be a herd.
   - Falling timber: the hex where orcs are felling.
@@ -133,7 +133,7 @@ Too few and the Varg get hungry; too many and they strip the glades (forest heal
   alone, they spread across the map like a rash.
 - They raid lone hunters and watchers, steal food, and foul glades.
 - Their shamans (with mushroom fetishes) light decoy fires and can ward a warren.
-- **The danger:** goblins that meet orcs **join them** (see Waaagh). Keeping goblins away from
+- **The danger:** goblins that meet orcs **join them** (see Warhost). Keeping goblins away from
   the orcs matters more than killing goblins.
 
 ### Orcs, newcomers from season 2
@@ -142,7 +142,7 @@ Too few and the Varg get hungry; too many and they strip the glades (forest heal
 - They fight anything nearby: Varg, goblins they don't take in, elves.
 - **Nomads:** harried enough (camp raided, felled wood burned, chiefs struck) a band **moves on**.
   You don't have to kill them, just make staying cost more than leaving.
-- **Waaagh!** A band that takes in goblins grows. Past a size threshold the drums start (a sign
+- **The Warhost.** A band that takes in goblins grows. Past a size threshold the drums start (a sign
   you can hear from anywhere), and two turns later it stops felling and **marches on Elfhome**.
   That's the big set-piece fight, and the reason you watch the orcs.
 
@@ -155,7 +155,7 @@ Too few and the Varg get hungry; too many and they strip the glades (forest heal
 ```
 
 Each faction keeps another down, and you hold the joints. Kill the Varg and the goblins boom,
-the goblins reach the orcs, and a Waaagh follows. Overhunt and the Varg starve and raid you.
+the goblins reach the orcs, and a Warhost follows. Overhunt and the Varg starve and raid you.
 Ignore the orcs and the wood falls.
 
 ## The Wood (the balance meter)
@@ -187,7 +187,7 @@ One spell a turn from Elfhome's mana. It uses the duel game's categories, so it 
 |----------|-----------|
 | **Damage** | Strike a band in a **watched** hex (you must see it). Inner / middle / outer ring = harm and cost. |
 | **Protection** | Ward a hex: a thicket that slows bands (one extra turn to cross) and shields a talan or hamlet. Wards wear like duel wards. |
-| **Dispel** | Break a goblin shaman's fetish (stop a split or a decoy), break an orc war-totem (delay a Waaagh), cleanse blight. |
+| **Dispel** | Break a goblin shaman's fetish (stop a split or a decoy), break an orc war-totem (delay a Warhost), cleanse blight. |
 
 Casting is the real minigame, so learning glyphs at the University pays off here.
 **Your element matters:** a Fire wizard's Damage risks a **forest fire** (it spreads to
@@ -212,8 +212,8 @@ New fighters for `fighters.json` (art needed; see Art):
 | Varg | pack hunter: **Pack**, hits harder at a wounded target |
 | Varg alpha | leads a pack |
 | Orc | tough brute, Attack 6 |
-| Orc big'un | leads a band, Shield Wall-like |
-| Orc warboss | the Waaagh's leader, a set-piece fight |
+| Orc brute | leads a band, Shield Wall-like |
+| Orc warchief | the Warhost's leader, a set-piece fight |
 | Elf Talon | ally (longbow) |
 
 ## Council of the Elders (one choice a season)
@@ -232,8 +232,8 @@ Small dilemmas that colour the run, e.g.:
 |--------|-----------|
 | Spring | Learn the map. Herds breed, goblins split for the first time. One Varg pack is hungry. |
 | Summer | Goblins spread; Varg at their peak. First orc band arrives at the season's end. |
-| Autumn | Two or three orc bands; felling; the first Waaagh threat. |
-| Winter | Game and foraging fall. Hungry Varg, desperate goblins, a Waaagh if you let one build. Snow shows tracks: unwatched hexes give better signs. |
+| Autumn | Two or three orc bands; felling; the first Warhost threat. |
+| Winter | Game and foraging fall. Hungry Varg, desperate goblins, a Warhost if you let one build. Snow shows tracks: unwatched hexes give better signs. |
 
 ## Testing it (the same way as the duel game)
 
@@ -262,8 +262,8 @@ tuned until these hold:
 ## Art needed (later, briefs to `docs/art-prompts.md`)
 - Hex tiles: old growth, woodland, glade, hills, marsh, crags, river / ford, lake, stumps, Elfhome,
   hamlet, talan. (Elfhome had its own hex art, which may still be useful as a style reference.)
-- Fighters: goblin, goblin archer, goblin shaman, Varg, Varg alpha, orc, orc big'un, orc
-  warboss, elf Talon (male and female).
+- Fighters: goblin, goblin archer, goblin shaman, Varg, Varg alpha, orc, orc brute, orc
+  warchief, elf Talon (male and female).
 - Map tokens: herds, warrens, dens, orc camp, treant.
 
 ## Decided (the user's answers)
@@ -334,7 +334,7 @@ tuned until these hold:
   on the forest backdrop, `backgrounds/forest.jpg`): the band becomes up to three seats,
   one per `DUEL.per` of them (goblins 2, Varg 2, orcs 2.5, plus a goblin seat for an orc band's 3+
   goblins), each a level up by how many it stands for (`levelAt`) and `hpMul` past four; a band of 4+
-  Varg is led by an alpha, an orc band of 5+ by a big'un, a Waaagh by the warboss. Beside you, one
+  Varg is led by an alpha, an orc band of 5+ by a brute, a Warhost by the warchief. Beside you, one
   seat: Sylvara herself if she's there, else the Talons in the hex (a level for each beyond the first,
   +2 behind Elfhome's walls, +1 at a hamlet, and more HP for walls, `wallHp`). You start at your
   forest HP's share of your wizard's HP.
@@ -346,13 +346,13 @@ tuned until these hold:
 - **New fighters** (`fighters.json`, `explore:true`, placeholder art by
   `python3 tools/make_forest_placeholders.py` into `sprites/forest/` and `portraits/small/`): Goblin
   HP 14 / atk 3, **Swarm** (+1 Attack for every other goblin beside him); Varg 28 / 5 and Varg Alpha
-  40 / 6, **Pack Hunter** (Attack ×1.5 at a target under half HP); Orc 34 / 6, Big'un 46 / 7,
-  Warboss 64 / 8, **Brute** (a Grapple lands in full); Talons 24 / 5, at range (the ally).
+  40 / 6, **Pack Hunter** (Attack ×1.5 at a target under half HP); Orc 34 / 6, Brute 46 / 7,
+  Warchief 64 / 8, **Brute** (a Grapple lands in full); Talons 24 / 5, at range (the ally).
 - **Tuning:** `node tools/forest_duel_sim.js [duels per wizard]` plays each typical fight as a duel
   across the roster (AI on your side) and settles it in the forest. Last run (4 a wizard): small fights
   the same either way (a goblin raid 100% left / 99% led, four hungry Varg alone 99 / 97%); big ones
   far better led: an orc camp with two Talons 19 → 86%, orcs raiding Sylvara with you beside her
-  46 → 99%, a Waaagh of 16 + 4 at Elfhome 68 → 99%; caught alone by seven orcs, 0 → 10%.
+  46 → 99%, a Warhost of 16 + 4 at Elfhome 68 → 99%; caught alone by seven orcs, 0 → 10%.
 
 ## As built (step 3: the story)
 - **The hook:** Mother Agathe, the herbwife in Wrenford (`westWood` in `js/explore_folk.js`, a ★ choice in
@@ -400,6 +400,23 @@ tuned until these hold:
   (`syncOut`, `S.wizHpSync`); a wound leaves you at a quarter. The forest no longer heals your wizard by
   itself (`selfHeal:false`, `S.wizSelfHeal`): rest at the **Healing House**, which heals you to full and,
   once a week, takes two weeks off every wound in Elfhome (`HEAL_WEEKS`, `S.healedWeek`).
+
+## Olwen's counsel (advice from the board)
+The user didn't know how to use the elves or whether to fight the goblins, and the leaders only
+report their own house. Olwen Derwen, the Eldest, now has **Ask for counsel**: `counsel(S)` in
+`js/forest_engine.js` ranks advice from what the player can know (clear sight, memory up to 3 weeks
+old, this week's signs, public news; never the hidden state) and she gives three at a time, most
+urgent first. It follows the `balance` bot's priorities: Warhost and totems, Sylvara's danger and
+escort, harrying orc camps, keeping goblins from the orcs (the one time to fight them), posts and
+Seers, hungry Varg, deer, food, youths, the Wood's mood, wounds. Numbers in `COUNSEL`.
+
+## Sound effects
+The user asked for war drums and the like. `tools/sfx/forest_sfx.py` synthesises 15 effects with numpy
+(no samples, no soundfont: none was installed, and drums, horns and howls synthesise well) into
+`audio/sfx/forest/`. At dawn the report plays the week's two highest-ranked sounds (`FOREST_SFX` in
+`js/forest.js`: Warhost march, war drums, an orc horn from the east, fire, a fight, a band leaving, a
+felled tree, Sylvara's tending chimes, goblin drums, howling, birds, silence), 1.6 s apart; casting a
+spell plays its own (strike, ward, dispel). 🔊 in the top bar mutes them.
 
 ## Map art (from the user)
 - Two sheets in `sprites/forest/source/`: 13 pointy-top hex tiles (old growth, woodland, glade, hills,
