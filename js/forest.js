@@ -53,6 +53,7 @@ function build(){
       <div class="fr-title">🌲 Moriquende <span id="fr-when"></span></div>
       <div class="fr-stats" id="fr-stats"></div>
       <div class="fr-top-btns">
+        <button class="fr-btn" id="fr-sfx" type="button" title="Sound effects">🔊</button>
         <button class="fr-btn" id="fr-help" type="button">?</button>
         <button class="fr-btn" id="fr-new" type="button" title="A new year">↺</button>
         <button class="fr-btn" id="fr-close" type="button">✕</button>
@@ -78,6 +79,8 @@ function build(){
   $('fr-close').onclick=close;
   $('fr-new').onclick=()=>setupPanel(true);
   $('fr-help').onclick=helpPanel;
+  $('fr-sfx').onclick=()=>{ sfxOn=!sfxOn; try{ localStorage.setItem(SFX_KEY, sfxOn?'1':'0'); }catch(e){} sfxButton(); if(sfxOn) sfx('birds',.5); };
+  sfxButton();
   $('fr-end').onclick=endWeek;
   $('fr-undo').onclick=()=>{ if(weekStart&&!S.pending&&S.step==null){ S=F.clone(weekStart); ui.elf=null; ui.spell=null; F.vision(S); save(); render(); } };
   $('fr-elves').onclick=rosterPanel;
@@ -115,6 +118,43 @@ function woodMusic(on){
 }
 // a browser that refused to start it (no tap yet) gets another go at the next tap or key
 ['pointerdown','keydown'].forEach(t=>window.addEventListener(t,()=>{ if(woodBlocked&&isOpen()){ woodBlocked=false; woodMusic(true); } },true));
+// ── Sound effects (audio/sfx/forest/, synthesised by tools/sfx/forest_sfx.py) ─────
+// The dawn report plays the week's two loudest moments (FOREST_SFX ranks them: a Warhost marching
+// beats the war drums, beats a horn from the east, …), and each spell you cast has its own. 🔊 in the
+// top bar turns them off (localStorage wd-forest-sfx).
+const SFX_DIR='audio/sfx/forest/', SFX_V='?v=1', SFX_KEY='wd-forest-sfx', SFX_VOL=.8, SFX_GAP=1600;
+const FOREST_SFX=[   // [sound, rank, volume, does this week call for it?]
+  ['warhost',      100, 1.0, (L,G)=>L.some(l=>l.kind==='orc'&&/march on Elfhome/.test(l.text))],
+  ['drums_war',     90, .9,  (L,G)=>G.has('warhost')||G.has('waaagh')||L.some(l=>l.kind==='orc'&&/War drums/.test(l.text))],
+  ['horn_far',      85, .9,  (L,G)=>L.some(l=>l.kind==='orc'&&/entered the Moriquende/.test(l.text))],
+  ['fire',          80, .8,  (L,G)=>G.has('fire')||L.some(l=>l.kind==='fire')],
+  ['fight',         70, .7,  (L,G)=>L.some(l=>l.kind==='fight'||l.kind==='hurt'||l.kind==='dead'&&!/Hunger/.test(l.text))],
+  ['horn_leave',    60, .8,  (L,G)=>L.some(l=>l.kind==='orc'&&/moving on/.test(l.text))],
+  ['timber',        58, .8,  (L,G)=>G.has('timber')||L.some(l=>l.kind==='tree'&&/felled/.test(l.text))],
+  ['tend',          50, .6,  (L,G)=>L.some(l=>l.kind==='sylvara'&&/finishes tending/.test(l.text))],
+  ['drums_goblin',  45, .7,  (L,G)=>G.has('drums')],
+  ['howl',          40, .7,  (L,G)=>G.has('howl')],
+  ['birds',         30, .5,  (L,G)=>G.has('birds')],
+  ['silence',       20, .6,  (L,G)=>G.has('silence')],
+];
+let sfxOn=(()=>{ try{ return localStorage.getItem(SFX_KEY)!=='0'; }catch(e){ return true; } })();
+const sfxCache={};
+function sfx(name,vol,delay){
+  if(!sfxOn) return;
+  const go=()=>{ if(!sfxOn||!isOpen()) return; try{
+    let a=sfxCache[name]; if(!a){ a=sfxCache[name]=new Audio(SFX_DIR+name+'.mp3'+SFX_V); a.preload='auto'; }
+    const p=a.cloneNode(); p.volume=Math.max(0,Math.min(1,(vol==null?1:vol)*SFX_VOL)); const r=p.play(); if(r&&r.catch) r.catch(()=>{});
+  }catch(e){} };
+  if(delay) setTimeout(go,delay); else go();
+}
+function sfxButton(){ const b=$('fr-sfx'); if(b){ b.textContent=sfxOn?'🔊':'🔇'; b.title=sfxOn?'Sound effects on':'Sound effects off'; } }
+function preloadSfx(){ FOREST_SFX.forEach(([n])=>{ if(!sfxCache[n]){ const a=sfxCache[n]=new Audio(SFX_DIR+n+'.mp3'+SFX_V); a.preload='auto'; } }); }
+// the week's sounds at dawn: the two that matter most, one after the other
+function dawnSfx(turn){
+  const L=S.log.filter(l=>l.turn===turn), G=new Set(S.signs.map(x=>x.kind));
+  FOREST_SFX.filter(([,,,when])=>when(L,G)).sort((a,b)=>b[1]-a[1]).slice(0,2)
+    .forEach(([n,,v],i)=>sfx(n,v,300+i*SFX_GAP));
+}
 const isOpen=()=>{ const d=$('fr-screen'); return !!d&&d.classList.contains('active'); };
 function open(opts){
   const d=$('fr-screen')||build(); d.classList.add('active');
@@ -122,7 +162,7 @@ function open(opts){
   d.classList.toggle('fr-explore',!!ctx);
   if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
   woodMusic(true);
-  preloadArt();
+  preloadArt(); preloadSfx();
   S=ctx?(ctx.state||null):loadSave();
   fitCanvas(); view={zoom:1,ox:0,oy:0}; ui={sel:F.HOME, elf:null, spell:null, ring:2};
   if(S&&!S.over){ syncIn(); weekStart=F.clone(S); F.vision(S); render(); if(S.pending) fightPrompt(); }
@@ -272,6 +312,7 @@ function runWeek(){
   if(S.pending){ save(); render(); fightPrompt(); return; }
   weekStart=F.clone(S); settleYear(); save(); render();
   reportPanel(S.over?S.turn:t);
+  dawnSfx(t);
 }
 
 // ── Leading a fight yourself (a duel in the battle engine) ───────────
@@ -417,7 +458,7 @@ function pMove(e){ if(!ptrs.has(e.pointerId)||!drag) return; ptrs.set(e.pointerI
 function pUp(e){ const d=drag; ptrs.delete(e.pointerId); if(ptrs.size) return; drag=null; if(d&&!d.moved) tap(e.offsetX,e.offsetY); }
 function tap(x,y){
   const k=pixToHex(x,y); if(!k||!S||S.over) return;
-  if(ui.spell){ const err=F.cast(S,ui.spell,k,ui.ring); if(err) toast(err); else { ui.spell=null; save(); ui.sel=k; } render(); return; }
+  if(ui.spell){ const err=F.cast(S,ui.spell,k,ui.ring); if(err) toast(err); else { sfx('spell_'+ui.spell); ui.spell=null; save(); ui.sel=k; } render(); return; }
   const e=ui.elf&&S.elves.find(x=>x.id===ui.elf);
   if(e&&e.role!=='sylvara'&&!e.wounded&&!e.moved&&k!==e.pos){ const err=F.canMove(S,e,k); if(!err){ F.move(S,e.id,k); ui.sel=k; save(); render(); return; } }
   ui.sel=k;

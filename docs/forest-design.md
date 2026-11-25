@@ -410,6 +410,14 @@ urgent first. It follows the `balance` bot's priorities: Warhost and totems, Syl
 escort, harrying orc camps, keeping goblins from the orcs (the one time to fight them), posts and
 Seers, hungry Varg, deer, food, youths, the Wood's mood, wounds. Numbers in `COUNSEL`.
 
+## Sound effects
+The user asked for war drums and the like. `tools/sfx/forest_sfx.py` synthesises 15 effects with numpy
+(no samples, no soundfont: none was installed, and drums, horns and howls synthesise well) into
+`audio/sfx/forest/`. At dawn the report plays the week's two highest-ranked sounds (`FOREST_SFX` in
+`js/forest.js`: Warhost march, war drums, an orc horn from the east, fire, a fight, a band leaving, a
+felled tree, Sylvara's tending chimes, goblin drums, howling, birds, silence), 1.6 s apart; casting a
+spell plays its own (strike, ward, dispel). 🔊 in the top bar mutes them.
+
 ## Map art (from the user)
 - Two sheets in `sprites/forest/source/`: 13 pointy-top hex tiles (old growth, woodland, glade, hills,
   marsh, crags with a cave, lake, felled clearing, burnt clearing, Elfhome's tree-town, a hamlet, a
