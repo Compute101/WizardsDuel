@@ -92,6 +92,9 @@ function build(){
   cv.addEventListener('pointerup',pUp); cv.addEventListener('pointercancel',pUp);
   cv.addEventListener('wheel',e=>{ e.preventDefault(); zoomBy(e.deltaY<0?1.12:1/1.12, e.offsetX, e.offsetY); },{passive:false});
   window.addEventListener('resize',()=>{ if(isOpen()) { fitCanvas(); draw(); } });
+  // the map area can change size without the window doing so (the top bar or button bar wrapping onto another row on a phone),
+  // which left the canvas at its old height, hanging over the panel below
+  if(window.ResizeObserver) new ResizeObserver(()=>{ if(isOpen()&&($('fr-map').clientWidth!==cw||$('fr-map').clientHeight!==ch)){ fitCanvas(); draw(); } }).observe($('fr-map'));
   window.addEventListener('keydown',e=>{ if(!isOpen()) return; if(e.key==='Escape'){ if(!$('fr-modal').hidden) closeModal(); else if(ui.spell||ui.elf){ ui.spell=null; ui.elf=null; render(); } } });
   return d;
 }
