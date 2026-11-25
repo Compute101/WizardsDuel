@@ -415,7 +415,7 @@ function spawnStrollers(){
   for(let i=0;i<n;i++) strollers.push(newStroller(false));
 }
 function updateStrollers(dt){
-  if(!MAP.safe||MAP.interior||!roadList.length) return;
+  if(!MAP.safe||MAP.interior||MAP.noStroll||!roadList.length){ strollers=[]; return; }
   // how many should be out: fewer as the light goes; the extra ones head home, new ones come out of doors
   strollT-=dt;
   if(strollT<=0){
