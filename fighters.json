@@ -670,7 +670,7 @@
     "arena": "forest"
   },
   "orc_bigun": {
-    "name": "ORC BIG’UN",
+    "name": "ORC BRUTE",
     "title": "Chief of the Band",
     "fighter": true,
     "trait": "brute",

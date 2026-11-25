@@ -212,7 +212,7 @@ New fighters for `fighters.json` (art needed; see Art):
 | Varg | pack hunter: **Pack**, hits harder at a wounded target |
 | Varg alpha | leads a pack |
 | Orc | tough brute, Attack 6 |
-| Orc big'un | leads a band, Shield Wall-like |
+| Orc brute | leads a band, Shield Wall-like |
 | Orc warchief | the Warhost's leader, a set-piece fight |
 | Elf Talon | ally (longbow) |
 
@@ -262,7 +262,7 @@ tuned until these hold:
 ## Art needed (later, briefs to `docs/art-prompts.md`)
 - Hex tiles: old growth, woodland, glade, hills, marsh, crags, river / ford, lake, stumps, Elfhome,
   hamlet, talan. (Elfhome had its own hex art, which may still be useful as a style reference.)
-- Fighters: goblin, goblin archer, goblin shaman, Varg, Varg alpha, orc, orc big'un, orc
+- Fighters: goblin, goblin archer, goblin shaman, Varg, Varg alpha, orc, orc brute, orc
   warboss, elf Talon (male and female).
 - Map tokens: herds, warrens, dens, orc camp, treant.
 
@@ -334,7 +334,7 @@ tuned until these hold:
   on the forest backdrop, `backgrounds/forest.jpg`): the band becomes up to three seats,
   one per `DUEL.per` of them (goblins 2, Varg 2, orcs 2.5, plus a goblin seat for an orc band's 3+
   goblins), each a level up by how many it stands for (`levelAt`) and `hpMul` past four; a band of 4+
-  Varg is led by an alpha, an orc band of 5+ by a big'un, a Warhost by the warchief. Beside you, one
+  Varg is led by an alpha, an orc band of 5+ by a brute, a Warhost by the warchief. Beside you, one
   seat: Sylvara herself if she's there, else the Talons in the hex (a level for each beyond the first,
   +2 behind Elfhome's walls, +1 at a hamlet, and more HP for walls, `wallHp`). You start at your
   forest HP's share of your wizard's HP.
@@ -346,7 +346,7 @@ tuned until these hold:
 - **New fighters** (`fighters.json`, `explore:true`, placeholder art by
   `python3 tools/make_forest_placeholders.py` into `sprites/forest/` and `portraits/small/`): Goblin
   HP 14 / atk 3, **Swarm** (+1 Attack for every other goblin beside him); Varg 28 / 5 and Varg Alpha
-  40 / 6, **Pack Hunter** (Attack ×1.5 at a target under half HP); Orc 34 / 6, Big'un 46 / 7,
+  40 / 6, **Pack Hunter** (Attack ×1.5 at a target under half HP); Orc 34 / 6, Brute 46 / 7,
   Warchief 64 / 8, **Brute** (a Grapple lands in full); Talons 24 / 5, at range (the ally).
 - **Tuning:** `node tools/forest_duel_sim.js [duels per wizard]` plays each typical fight as a duel
   across the roster (AI on your side) and settles it in the forest. Last run (4 a wizard): small fights
