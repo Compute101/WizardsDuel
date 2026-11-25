@@ -83,7 +83,8 @@ function talk(n, api){
     const intro='An old elf with a face like folded paper sits on the worn bench. "The Council of Elders. Six houses, one Elfhome. We don\'t expand, wizard: that\'s the first thing the young ones forget. We keep. The wood keeps us."';
     if(!S||S.over){ say(intro+' "The goblins breed, the Varg eat goblins, the orcs eat everything. Keep each in check by the others and the wood will thank you."'); return; }
     const mood=F.mood(S);
-    say(intro+' "'+weekLine(S)+'. The wood is '+(mood==='content'?'content: the old trees will fight for us':mood==='uneasy'?'uneasy: paths shift, and mist sits where it shouldn\'t':'angry: our hunters come home empty')+'. Food in the stores: '+Math.floor(S.food)+'."',[watch]);
+    const state=weekLine(S)+'. The wood is '+(mood==='content'?'content: the old trees will fight for us':mood==='uneasy'?'uneasy: paths shift, and mist sits where it shouldn\'t':'angry: our hunters come home empty')+'. Food in the stores: '+Math.floor(S.food)+'.';
+    say(intro+' "'+state+'"',[{label:'🌿 Ask for counsel', fn:()=>counsel(n,api,0)},watch]);
     return;
   }
   case 'elf_seer': {
@@ -97,7 +98,7 @@ function talk(n, api){
     const intro='A lean elf restringing a longbow, a row of notches on the door behind him. "Talons. We fight, we hunt, we hold the sentry posts: a Talon in a post shoots whatever walks past it at night. And we harry. An orc camp with Talons in the trees all round it doesn\'t sleep, and orcs who don\'t sleep move on."';
     if(!S||S.over){ say(intro+' "Watch for the drums. Ten orcs or more with a war-totem beat them, and three weeks later they march on Elfhome. Break the totem and the drums stop."'); return; }
     const orcs=S.bands.filter(b=>b.fac==='orc'&&b.n>0), seen=orcs.filter(b=>S.vis[b.k]==='clear'), drums=orcs.some(b=>b.drums>0), march=orcs.some(b=>b.state==='march');
-    say(intro+' "'+(march?'They\'re marching on us. Every bow to Elfhome.':drums?'War drums, somewhere. A Waaagh is brewing. Find the totem.':orcs.length?(seen.length?seen.length+' orc band'+(seen.length>1?'s':'')+' in sight.':'There are orcs in the wood. We just can\'t see them.'):F.seasonOf(S.turn)===0?'No orcs yet. They\'ll come from the east by summer.':'No orcs in the wood that we know of.')+'"',[watch]);
+    say(intro+' "'+(march?'They\'re marching on us. Every bow to Elfhome.':drums?'War drums, somewhere. A Warhost is gathering. Find the totem.':orcs.length?(seen.length?seen.length+' orc band'+(seen.length>1?'s':'')+' in sight.':'There are orcs in the wood. We just can\'t see them.'):F.seasonOf(S.turn)===0?'No orcs yet. They\'ll come from the east by summer.':'No orcs in the wood that we know of.')+'"',[watch]);
     return;
   }
   case 'elf_healer': {
@@ -124,6 +125,21 @@ function talk(n, api){
   }
   }
 }
+// Olwen's counsel: ForestEngine.counsel reads the board as your watchers see it and ranks what to do;
+// she gives it COUNSEL_PAGE at a time, most urgent first
+const COUNSEL_PAGE = 3;
+const HOUSE_TAG = {Talons:'🏹', Seers:'👁', Guild:'🔨', Charming:'🦌', Healers:'🌿', Elders:'📜', Sylvara:'🌳', Spell:'✨'};
+function counsel(n, api, from){
+  const S=yearOf(api), F=FE(); if(!S||S.over) return;
+  const all=F.counsel(S), page=all.slice(from, from+COUNSEL_PAGE);
+  const open=from===0?'Olwen spreads her thin hands on the bench as if it were the Watch Table. "Here is how the wood looks from where I sit."':'"There\'s more, if you\'ve the patience for an old woman."';
+  const body=page.map(a=>(HOUSE_TAG[a.house]||'•')+' '+a.text).join('\n\n');
+  const more=from+COUNSEL_PAGE<all.length;
+  const close=more?'':' "That\'s all I have. The rest is yours to judge."';
+  api.dialog(title(n), open+'\n\n'+body+(close?'\n\n'+close.trim():''),
+    [...(more?[{label:'📜 What else?', fn:()=>counsel(n,api,from+COUNSEL_PAGE)}]:[]), {label:'🗺 To the Watch Table', fn:()=>api.openForest()}, {label:'Thank you'}]);
+}
+
 // the Healing House: rest to full, and once a week the healers take weeks off the wounded's mending
 function woundsToMend(S){ return !!(S&&!S.over&&S.healedWeek!==S.turn&&S.elves.some(e=>e.wounded>1)); }
 function rest(n, api){
