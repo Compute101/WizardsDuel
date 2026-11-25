@@ -35,8 +35,9 @@ module.exports = function elfhome(rects){
   const path=(x0,y0,x1,y1)=>m.fill(Math.min(x0,x1),Math.min(y0,y1),Math.max(x0,x1),Math.max(y0,y1),'Y');
   path(23,16,39,17);                           // the West Road in from the east
   path(14,16,26,17);                           // across the glade, under the Watch Table
-  path(12,8,13,17); path(12,8,15,9);           // to the Elders' Stone
-  path(27,8,28,17); path(27,9,30,10);          // to the Seers' talan and the Healing House
+  // the Heart Tree is drawn big (1.5×): its canopy covers cols 12–27, rows 3–14, so nothing stands behind it
+  path(8,9,9,17); path(8,16,14,17);            // west, round the tree to the Elders' Stone
+  path(29,8,30,17); path(30,11,34,12);         // east, to the Seers' talan and the Healing House
   path(10,17,11,21); path(29,17,30,21);        // to the Talons' lodge and the Guild's workshop
   path(19,17,20,23);                           // south to the Beast-speakers
 
@@ -47,10 +48,10 @@ module.exports = function elfhome(rects){
   m.place('efSpring',CX+330,CY+60,{lore:'well'});
 
   // ── the six houses ──
-  m.place('efElders',13*T,8*T,{lore:'elders'});
-  m.place('efTalan',26*T,8*T,{lore:'seers'}); m.place('efLanternBlue',24*T+20,8*T+30);
-  m.place('efHealing',32*T,10*T+10,{lore:'healing'});
-  m.place('efHerbRack',35*T+20,11*T,{lore:'herbs'}); m.place('efBeehive',29*T+20,11*T);
+  m.place('efElders',8*T+30,9*T,{lore:'elders'});
+  m.place('efTalan',30*T+10,8*T,{lore:'seers'}); m.place('efLanternBlue',32*T+30,8*T+30);
+  m.place('efHealing',33*T+20,11*T,{lore:'healing'});
+  m.place('efHerbRack',32*T,13*T+30,{lore:'herbs'}); m.place('efBeehive',36*T+20,12*T+40);
   m.place('efLodge',9*T,22*T+10,{lore:'talons'});
   m.place('efTarget',14*T+10,22*T,{lore:'target'}); m.place('efBowRack',4*T,22*T+30);
   m.place('efWorkshop',31*T,22*T+20,{lore:'guild'});
@@ -59,10 +60,10 @@ module.exports = function elfhome(rects){
   m.place('efCottage1',6*T,13*T,{lore:'cottage'}); m.place('efCottage2',34*T,16*T-10,{lore:'cottage'});
   m.place('efCottage2',23*T+40,26*T-10,{lore:'cottage'}); m.place('efCottage1',16*T,26*T-10,{lore:'cottage'});
   m.place('efStone',7*T,17*T+20,{lore:'stone'});
-  for(const [x,y] of [[11*T,10*T],[29*T,13*T],[13*T,19*T],[27*T,19*T]]) m.place('efLantern',x,y);
+  for(const [x,y] of [[10*T+20,12*T],[31*T+20,10*T+20],[13*T,19*T],[27*T,19*T]]) m.place('efLantern',x,y);
 
   // ── the wood all round, and its undergrowth ──
-  const keep=[[CX-7*T,CY-7*T,14*T,12*T],[9*T,5*T,8*T,5*T],[23*T,4*T,12*T,8*T],[3*T,18*T,13*T,6*T],[25*T,18*T,13*T,6*T],
+  const keep=[[CX-7*T,CY-7*T,14*T,12*T],[4*T,5*T,9*T,6*T],[28*T,4*T,9*T,11*T],[3*T,18*T,13*T,6*T],[25*T,18*T,13*T,6*T],
     [CX-5*T,22*T,10*T,5*T],[3*T,10*T,6*T,4*T],[31*T,13*T,6*T,4*T],[22*T,14*T,18*T,5*T]].map(([x,y,w,h])=>({x,y,w,h}));
   m.blocks.push(...keep);
   m.edgeWoods(1100,T*3.2,()=>m.r()<.92?'tree':'deadtree');
@@ -70,7 +71,7 @@ module.exports = function elfhome(rects){
     ['efToadstools1',1],['efToadstools2',1],['efStump',1],['efLog',1],['bush',1]]);
   m.blocks.splice(m.blocks.length-keep.length,keep.length);
   // a few flowers in the glade itself
-  for(const [k,x,y] of [['efFoxgloves',CX-280,CY+120],['efBlossom',CX+240,CY+180],['efToadstools2',CX-200,CY+230],['efFern2',CX+300,CY-60],['efToadstools1',CX-330,CY-40]]) m.place(k,x,y);
+  for(const [k,x,y] of [['efFoxgloves',CX-280,CY+120],['efBlossom',CX+240,CY+180],['efToadstools2',CX-200,CY+230],['efFern2',CX+400,CY+250],['efToadstools1',CX-420,CY+90]]) m.place(k,x,y);
 
   // the Heart Tree's own green glow at night, and the lanterns' warm light (LIGHTS does the windows)
   m.glows.push({x:CX, y:CY-260, r:300, c:'150,255,170'});
@@ -78,9 +79,9 @@ module.exports = function elfhome(rects){
   // ── who stands where (js/explore_elfhome.js) ──
   m.npcs=[
     {role:'warden', x:CX+230, y:CY+215},
-    {role:'elf_elder', x:13*T+70, y:8*T+40},
-    {role:'elf_seer', x:26*T+70, y:8*T+50},
-    {role:'elf_healer', x:31*T, y:10*T+60},
+    {role:'elf_elder', x:10*T+40, y:9*T+50},
+    {role:'elf_seer', x:28*T+30, y:8*T+60},
+    {role:'elf_healer', x:34*T+40, y:12*T+20},
     {role:'elf_talon', x:12*T, y:22*T+60},
     {role:'elf_guild', x:29*T, y:22*T+70},
     {role:'elf_charm', x:CX+150, y:25*T+40},

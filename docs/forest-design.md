@@ -425,4 +425,7 @@ tuned until these hold:
   talan, the Healing House (herb rack, beehive), the Talons' lodge (target, bow rack), the Guild's workshop
   (ladders, rope), the Beast-speakers' lodge and four cottages; forest floor (`L`) everywhere else, ferns,
   foxgloves, toadstools, stumps and logs in it, and the town tileset's trees round the edge.
+  Nothing stands behind the Heart Tree: its canopy covers cols 12–27, rows 3–14, so the Elders' Stone (west)
+  and the Seers' talan and Healing House (east) sit clear of it, with the paths going round (the user found
+  them hidden).
 
