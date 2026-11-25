@@ -601,7 +601,7 @@
       "Shiny staff. Mine now."
     ],
     "desc": "Small, quick and never alone. Swarm: +1 to his Attack for every other goblin still standing beside him.",
-    "arena": "road"
+    "arena": "forest"
   },
   "varg": {
     "name": "VARG",
@@ -623,7 +623,7 @@
       "Run. It is better sport."
     ],
     "desc": "A wolfman of the deep wood. Pack Hunter: he goes for the wounded, his Attack ×1.5 at anyone below half their HP.",
-    "arena": "road"
+    "arena": "forest"
   },
   "varg_alpha": {
     "name": "VARG ALPHA",
@@ -645,7 +645,7 @@
       "Bare your throat."
     ],
     "desc": "The pack’s leader, bigger and older. Pack Hunter: his Attack is ×1.5 at anyone below half their HP.",
-    "arena": "road"
+    "arena": "forest"
   },
   "orc": {
     "name": "ORC",
@@ -667,7 +667,7 @@
       "Little wizard. Big axe."
     ],
     "desc": "A nomad driven west by the Unweaving, with an axe for the trees and for you. Brute: his Grapple lands in full, guard or no guard.",
-    "arena": "road"
+    "arena": "forest"
   },
   "orc_bigun": {
     "name": "ORC BIG’UN",
@@ -689,7 +689,7 @@
       "You first, then the trees."
     ],
     "desc": "A band’s chief, the biggest of them. Brute: his Grapple lands in full, guard or no guard.",
-    "arena": "road"
+    "arena": "forest"
   },
   "orc_warboss": {
     "name": "WARBOSS",
@@ -711,7 +711,7 @@
       "Bring me the green witch."
     ],
     "desc": "He has beaten every other orc in the band to lead it. Brute: his Grapple lands in full, guard or no guard.",
-    "arena": "road"
+    "arena": "forest"
   },
   "elf_talon": {
     "name": "TALONS",
@@ -733,6 +733,6 @@
       "Loose!"
     ],
     "desc": "Elfhome’s wardens, longbows in hand. At Range: their shots slip past a Guard, and a Grapple at them fails.",
-    "arena": "road"
+    "arena": "forest"
   }
 }

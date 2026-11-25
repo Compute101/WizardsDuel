@@ -331,7 +331,7 @@ tuned until these hold:
 - **Your wizard** is picked on the setup screen from the roster (Sylvara excepted; remembered in
   `wd-forest-wiz`). Step 3 swaps in the Explore save's own wizard.
 - **The duel** (`battleSetup` in the engine, `duelSpec` in `js/forest.js`, then `startExploreBattle`
-  on the Corvanthe Road backdrop until the forest's own arrives): the band becomes up to three seats,
+  on the forest backdrop, `backgrounds/forest.jpg`): the band becomes up to three seats,
   one per `DUEL.per` of them (goblins 2, Varg 2, orcs 2.5, plus a goblin seat for an orc band's 3+
   goblins), each a level up by how many it stands for (`levelAt`) and `hpMul` past four; a band of 4+
   Varg is led by an alpha, an orc band of 5+ by a big'un, a Waaagh by the warboss. Beside you, one
@@ -373,7 +373,7 @@ tuned until these hold:
   only the difference (The Wood in Song 60 gold and 6 lodestone, Endures 30 / 3, Scarred 10). The Wood in
   Song brings **Sylvara into your companions** (`addAlly`, a wizard ally). Short of that, the year can be
   tried again (Try another year); after it there's no new year to start.
-- **Not yet:** the wood's own music, its battle backdrop and art; your Explore wounds don't carry into the
+- **Not yet:** (the music, backdrop and art have since arrived: `audio/moriquende_theme.mp3`, `tools/music/moriquende.py`); your Explore wounds don't carry into the
   forest's fights or back (the forest keeps its own HP for your wizard).
 
 ## As built (step 3, revised after the user's feedback)

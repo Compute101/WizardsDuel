@@ -509,7 +509,7 @@ function drawEcho(a,t){
 // the battle backdrop (backgrounds/<name>.jpg) for a fight here: a story room's own, else the place's
 // (a room fights on its town's ground), Wrenford's by the time of day; anywhere else the ruined streets
 const ARENA_ROOMS={undercroft:'wren_undercroft', undercroft2:'wren_orrery', lectures:'wren_schools', library:'library', remnant:'library'};
-const ARENA_MAPS={hollowmere:'hollowmere', corvanthe_road:'road', elfhome:'road', spirewatch:'spirewatch', conductory:'spirewatch', collegium:'collegium', old_schools:'collegium',
+const ARENA_MAPS={hollowmere:'hollowmere', corvanthe_road:'road', elfhome:'forest', spirewatch:'spirewatch', conductory:'spirewatch', collegium:'collegium', old_schools:'collegium',
   cindergate:'cindergate', crucible:'cindergate', heights:'heights', drift:'heights', drowned_quarter:'drowned', sunken_harbour:'drowned',
   quarry_ward:'quarry', deep_cut:'quarry', frostmarket:'frost', winter_fair:'frost', gloamside:'gloam', necropolis:'gloam'};
 function arenaHere(){
@@ -1729,7 +1729,7 @@ function playTheme(){
 function titleMusic(){
   const t=document.getElementById('title-screen');
   const wk=document.getElementById('wk-screen');   // the Winks Table plays its own tavern music
-  const fr=document.getElementById('fr-screen');   // the Moriquende (silent for now)
+  const fr=document.getElementById('fr-screen');   // the Moriquende plays its own theme (js/forest.js)
   if(t&&t.classList.contains('active')&&!running&&!(wk&&wk.classList.contains('active'))&&!(fr&&fr.classList.contains('active'))) playTheme();
   else if(!creating) stopTheme();
 }

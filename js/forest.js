@@ -92,12 +92,36 @@ function build(){
   window.addEventListener('keydown',e=>{ if(!isOpen()) return; if(e.key==='Escape'){ if(!$('fr-modal').hidden) closeModal(); else if(ui.spell||ui.elf){ ui.spell=null; ui.elf=null; render(); } } });
   return d;
 }
+// ── The wood's music (audio/moriquende_theme.mp3, tools/music/moriquende.py) ─────
+// Plays while the forest screen is open; a duel you lead hands over to the battle music, and the theme
+// comes back after it. Elfhome plays the same theme as its map music (tools/mapgen/elfhome.js).
+const WOOD_SRC='audio/moriquende_theme.mp3', WOOD_VOL=.55;   // as Explore's MUSIC_VOL
+let wood=null, woodFade=0, woodBlocked=false;
+function woodMusic(on){
+  clearInterval(woodFade);
+  try{
+    if(on){
+      if(!wood){ wood=new Audio(WOOD_SRC); wood.loop=true; wood.preload='auto'; wood.volume=0; }
+      if(wood.paused){ const p=wood.play(); if(p&&p.catch) p.catch(()=>{ woodBlocked=true; }); }
+    }
+    if(!wood) return;
+    const goal=on?WOOD_VOL:0;
+    woodFade=setInterval(()=>{
+      const v=wood.volume+(goal>wood.volume?.025:-.04);
+      if((goal>wood.volume&&v>=goal)||(goal<=wood.volume&&v<=goal)){ wood.volume=goal; clearInterval(woodFade); if(!on) wood.pause(); }
+      else wood.volume=Math.max(0,Math.min(1,v));
+    },60);
+  }catch(e){}
+}
+// a browser that refused to start it (no tap yet) gets another go at the next tap or key
+['pointerdown','keydown'].forEach(t=>window.addEventListener(t,()=>{ if(woodBlocked&&isOpen()){ woodBlocked=false; woodMusic(true); } },true));
 const isOpen=()=>{ const d=$('fr-screen'); return !!d&&d.classList.contains('active'); };
 function open(opts){
   const d=$('fr-screen')||build(); d.classList.add('active');
   ctx=opts&&opts.explore||null;
   d.classList.toggle('fr-explore',!!ctx);
   if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
+  woodMusic(true);
   preloadArt();
   S=ctx?(ctx.state||null):loadSave();
   fitCanvas(); view={zoom:1,ox:0,oy:0}; ui={sel:F.HOME, elf:null, spell:null, ring:2};
@@ -109,6 +133,7 @@ function open(opts){
 }
 function close(){
   const d=$('fr-screen'); if(d) d.classList.remove('active'); cancelAnimationFrame(raf);
+  woodMusic(false);
   if(ctx){ save(); const c=ctx; ctx=null; c.onClose(S); return; }
   if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
 }
@@ -281,13 +306,13 @@ function fightPrompt(){
 function leadFight(set,wk){
   const spec=duelSpec(set), d=CHAR_DEFS[wk];
   const foe=F.foeById(S,S.pending.foeId);
-  $('fr-screen').classList.remove('active'); cancelAnimationFrame(raf);
+  $('fr-screen').classList.remove('active'); cancelAnimationFrame(raf); woodMusic(false);
   if(ctx&&ctx.beforeBattle) ctx.beforeBattle();
-  startExploreBattle({wizKey:wk, foes:spec.foes, allies:spec.allies, hp:ctx?Math.max(1,ctx.hp()):Math.max(1,Math.round(d.hp*set.hpFrac)), arena:'road',
+  startExploreBattle({wizKey:wk, foes:spec.foes, allies:spec.allies, hp:ctx?Math.max(1,ctx.hp()):Math.max(1,Math.round(d.hp*set.hpFrac)), arena:'forest',
     text:{winTitle:'The Moriquende Holds', win:`The ${foe.fac==='orc'?'orcs':F.FAC[foe.fac||'gob'].name.toLowerCase()} break and scatter into the trees.`,
       loseTitle:'Carried Home', lose:`${titleCase(d.name)} falls. The elves carry you back to Elfhome.`},
     onEnd:(won,low,allyHp,info)=>{
-      $('fr-screen').classList.add('active'); fitCanvas(); loop();
+      $('fr-screen').classList.add('active'); fitCanvas(); loop(); woodMusic(true);
       if(window.Explore&&Explore.titleMusic) Explore.titleMusic();
       F.resolvePending(S,{won, foeLeft:info.foeLeft, hpEnd:info.hpEnd, maxHp:info.maxHp, allyHp});
       // the duel's own HP is exact: Explore keeps it (a lost duel leaves you wounded, at a quarter)

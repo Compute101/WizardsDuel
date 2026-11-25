@@ -85,7 +85,7 @@ module.exports = function elfhome(rects){
     {role:'elf_guild', x:29*T, y:22*T+70},
     {role:'elf_charm', x:CX+150, y:25*T+40},
   ];
-  m.safe=1; m.noStroll=1;
+  m.safe=1; m.noStroll=1; m.music='audio/moriquende_theme.mp3';
   m.spawns={road:[37*T,16*T+40], centre:[CX+120,CY+220]};
   m.exits=[{x:W-48, y:15*T, w:48, h:4*T, label:'The West Road (Wrenford)', to:'world'}];
   return m;
