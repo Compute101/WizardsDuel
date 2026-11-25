@@ -371,7 +371,7 @@ function render(){
   const mood=F.mood(S), mi={content:'🌳',uneasy:'🍂',angry:'🥀'}[mood];
   const elves=S.elves.filter(e=>e.role!=='sylvara');
   $('fr-stats').innerHTML=`<span title="Food">🍖 ${Math.floor(S.food)}</span><span title="Mana">✨ ${S.mana}</span><span title="The Wood: ${mood}">${mi} Wood ${Math.round(S.wood)}</span><span title="Elves (youths)">🧝 ${elves.length}${S.youths?'+'+S.youths:''}</span><span title="Ancient trees tended">🌲 ${S.trees.filter(t=>t.done).length}/${F.TREES}</span><span title="Seen clearly / at all">👁 ${Math.round(F.coverage(S)*100)}%</span>`;
-  $('fr-spell').disabled=S.spellUsed||!!S.over||!!S.pending; $('fr-end').disabled=!!S.over||!!S.pending;
+  $('fr-spell').disabled=S.spellUsed||!!S.over||!!S.pending; $('fr-end').disabled=!!S.over||!!S.pending; { const n=S.over?0:toAct(); $('fr-end').textContent=n?`End week ▸ (${n} to act)`:'End week ▸'; $('fr-end').title=n?`${n} elf${n>1?'s':''} still without orders this week`:''; }
   const h=$('fr-hint');
   if(!h.classList.contains('on')) h.textContent=ui.spell?`Tap a hex to ${ui.spell==='strike'?'strike':ui.spell}. (Esc to cancel)`:(()=>{ const e=ui.elf&&S.elves.find(x=>x.id===ui.elf); return e&&!e.moved&&!e.wounded&&e.role!=='sylvara'?'Tap a lit hex to move there.':''; })();
   h.style.display=h.textContent?'':'none';
@@ -538,6 +538,9 @@ function token(c,icon,x,y,r,col,n,alpha){
   c.restore();
 }
 // a figure standing on a little round base, feet at the base's middle; n is a count badge
+// an elf has its orders for the week once it has moved or been given a task (Sylvara keeps her own counsel)
+function hasActed(e){ return e.role==='sylvara'||e.wounded||e.moved||!!e.task; }
+function toAct(){ return S.elves.filter(e=>!hasActed(e)).length; }
 function figure(c,img,x,y,r,col,n,alpha,base){
   c.save(); c.globalAlpha=alpha==null?1:alpha;
   const fy=y+r*0.55;
@@ -569,7 +572,8 @@ function drawContents(c,k,s,T){
   for(const e of elves){ const [tx,ty]=put();
     const col=e.role==='sylvara'?'#2e9a55':e.role==='wizard'?'#5b3c99':'#c9a84c';
     const img=elfArt(e), rr=e.role==='sylvara'||e.role==='wizard'?r*1.15:r;
-    if(img) figure(c,img,tx,ty,rr,col,null,1); else token(c,F.ROLES[e.role].icon,tx,ty,rr,col,null,1);
+    const a=e.role!=='sylvara'&&hasActed(e)&&!S.over?0.5:1;   // dimmed once it has its orders
+    if(img) figure(c,img,tx,ty,rr,col,null,a); else token(c,F.ROLES[e.role].icon,tx,ty,rr,col,null,a);
     if(e.id===ui.elf){ c.beginPath(); c.ellipse(tx,ty+rr*0.55,rr*1.2,rr*0.48,0,0,7); c.strokeStyle='#fff'; c.lineWidth=2; c.stroke(); }
     if(e.task&&e.task.t==='attack'){ emoji(c,'⚔',tx+r,ty-r,r); } }
 }
