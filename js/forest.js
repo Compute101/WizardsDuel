@@ -15,6 +15,17 @@ const ELEMS = [
 ];
 const TCOL = {home:'#b89a52', wood:'#2f6b34', old:'#1c4a25', glade:'#7fae55', hill:'#6f7d3c', marsh:'#3f6d62', crag:'#7c7568', lake:'#2f5f8f'};
 const SIGN_ICON = {smoke:'💨', timber:'🪓', drums:'🥁', warhost:'🥁', waaagh:'🥁', howl:'🐺', birds:'🐦', silence:'🤫', fire:'🔥'};
+// the help's key to the signs: icon, what it is, what's usually behind it
+const SIGN_KEY = [
+  ['💨','Smoke rises','orcs: a band arriving from the east or a camp felling trees. Sometimes a goblin shaman\u2019s fake, to look like orcs'],
+  ['🪓','A tree crashes down','orcs felling the wood'],
+  ['🥁','Goblin drums (gold badge)','goblins setting up a new warren'],
+  ['🥁','War drums (red badge)','a Warhost is gathering, to march on Elfhome'],
+  ['🐺','Howling','a Varg pack'],
+  ['🐦','Birds start up','something moving through the trees'],
+  ['🤫','The wood falls silent','something big passing'],
+  ['🔥','The trees are burning','a real fire: Dispel puts it out'],
+];
 const TOKEN = {gob:'👺', varg:'🐺', orc:'👹', herd:'🦌', warren:'🕳'};
 // ── The map art (the user's sheets, cut by tools/cut_forest_art.py): a hex tile per terrain and a figure
 // for each thing on the map; the canvas drawing and emoji stand in until each picture has loaded ──
@@ -85,13 +96,16 @@ function build(){
   $('fr-undo').onclick=()=>{ if(weekStart&&!S.pending&&S.step==null){ S=F.clone(weekStart); ui.elf=null; ui.spell=null; F.vision(S); save(); render(); } };
   $('fr-elves').onclick=rosterPanel;
   $('fr-spell').onclick=spellPanel;
-  $('fr-zin').onclick=()=>zoomBy(1.3);
-  $('fr-zout').onclick=()=>zoomBy(1/1.3);
+  $('fr-zin').onclick=()=>zoomBy(1.6);
+  $('fr-zout').onclick=()=>zoomBy(1/1.6);
   const cv=$('fr-cv');
   cv.addEventListener('pointerdown',pDown); cv.addEventListener('pointermove',pMove);
   cv.addEventListener('pointerup',pUp); cv.addEventListener('pointercancel',pUp);
   cv.addEventListener('wheel',e=>{ e.preventDefault(); zoomBy(e.deltaY<0?1.12:1/1.12, e.offsetX, e.offsetY); },{passive:false});
   window.addEventListener('resize',()=>{ if(isOpen()) { fitCanvas(); draw(); } });
+  // the map area can change size without the window doing so (the top bar or button bar wrapping onto another row on a phone),
+  // which left the canvas at its old height, hanging over the panel below
+  if(window.ResizeObserver) new ResizeObserver(()=>{ if(isOpen()&&($('fr-map').clientWidth!==cw||$('fr-map').clientHeight!==ch)){ fitCanvas(); draw(); } }).observe($('fr-map'));
   window.addEventListener('keydown',e=>{ if(!isOpen()) return; if(e.key==='Escape'){ if(!$('fr-modal').hidden) closeModal(); else if(ui.spell||ui.elf){ ui.spell=null; ui.elf=null; render(); } } });
   return d;
 }
@@ -239,7 +253,8 @@ function helpPanel(){
   <ul>
     <li><b>A turn is a week</b>, a year 24 weeks. Move your elves, give them tasks, cast one spell, then <b>End week</b>. The wild moves while you can't see it.</li>
     <li><b>Watch.</b> You can never see the whole wood. A Seer sees their own hex clearly and the ring around it dimly (something moves, but what?). In a sentry post they see a ring clearly and two dimly, more from hills. Old growth hides what's in it.</li>
-    <li><b>Signs.</b> The wood tells you about hexes you can't see: smoke, the crash of a felled tree, drums from a direction, howling, birds starting up. Goblin shamans light false fires.</li>
+    <li><b>Signs.</b> The wood tells you about hexes you can't see. A sign from a hex puts a pulsing gold ring round it with the icon at its corner; a sign only heard from a direction sits in a round badge at the edge of the map, its arrow pointing the way. Tap either to read it.
+      <ul class="fr-key">${SIGN_KEY.map(([i,n,w])=>`<li>${i} <b>${n}</b>: ${w}</li>`).join('')}</ul></li>
     <li><b>Sylvara</b> walks to each ancient tree and tends it for ${F.TEND} weeks. She keeps clear of danger your watchers can see, but she can't avoid what nobody saw. All four must be tended by the year's end.</li>
     <li><b>The Varg</b> (wolfmen) follow the deer and eat goblins. Fed, they leave you alone; starved, they raid. Killing them in their dens angers the wood.</li>
     <li><b>Goblins</b> breed fast and split off new warrens. Goblins that reach the orcs join them.</li>
@@ -300,8 +315,21 @@ function esc(t){ return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 let toastT=0; function toast(t){ const h=$('fr-hint'); h.textContent=t; h.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>{ h.classList.remove('on'); render(); },2600); }
 
 // ── Turn ─────────────────────────────────────────────────────────────
-function endWeek(){
+function endWeek(force){
   if(!S||S.over||S.pending) return;
+  // elves still without orders: say so first (tap one to give it orders), rather than counting them on the button
+  const idle=S.elves.filter(e=>!hasActed(e));
+  if(idle.length&&force!==true){
+    modal(`<h2>${idle.length} still without orders</h2>
+      <p>${idle.length>1?'These elves haven\u2019t moved or been given a task':'This elf hasn\u2019t moved or been given a task'} this week. Tap one to give orders.</p>
+      <div class="fr-roster">${idle.map(e=>{ const R=F.ROLES[e.role]; return `<button class="fr-elf" data-id="${e.id}" type="button"><span>${R.icon}</span> ${esc(e.name)} <small>${R.name}</small></button>`; }).join('')}</div>
+      <div class="fr-row"><button class="fr-btn" type="button" id="fr-back">Give orders</button><button class="fr-btn big" type="button" id="fr-go">End the week anyway ▸</button></div>`);
+    $('fr-card').onclick=ev=>{
+      const b=ev.target.closest('[data-id]'); if(b){ const el=S.elves.find(x=>x.id===b.dataset.id); closeModal(); selectElf(el); return; }
+      if(ev.target.id==='fr-back') closeModal();
+      if(ev.target.id==='fr-go'){ closeModal(); endWeek(true); } };
+    return;
+  }
   ui.elf=null; ui.spell=null;
   S.weekOf=S.turn; runWeek();
 }
@@ -371,7 +399,7 @@ function render(){
   const mood=F.mood(S), mi={content:'🌳',uneasy:'🍂',angry:'🥀'}[mood];
   const elves=S.elves.filter(e=>e.role!=='sylvara');
   $('fr-stats').innerHTML=`<span title="Food">🍖 ${Math.floor(S.food)}</span><span title="Mana">✨ ${S.mana}</span><span title="The Wood: ${mood}">${mi} Wood ${Math.round(S.wood)}</span><span title="Elves (youths)">🧝 ${elves.length}${S.youths?'+'+S.youths:''}</span><span title="Ancient trees tended">🌲 ${S.trees.filter(t=>t.done).length}/${F.TREES}</span><span title="Seen clearly / at all">👁 ${Math.round(F.coverage(S)*100)}%</span>`;
-  $('fr-spell').disabled=S.spellUsed||!!S.over||!!S.pending; $('fr-end').disabled=!!S.over||!!S.pending; { const n=S.over?0:toAct(); $('fr-end').textContent=n?`End week ▸ (${n} to act)`:'End week ▸'; $('fr-end').title=n?`${n} elf${n>1?'s':''} still without orders this week`:''; }
+  $('fr-spell').disabled=S.spellUsed||!!S.over||!!S.pending; $('fr-end').disabled=!!S.over||!!S.pending;
   const h=$('fr-hint');
   if(!h.classList.contains('on')) h.textContent=ui.spell?`Tap a hex to ${ui.spell==='strike'?'strike':ui.spell}. (Esc to cancel)`:(()=>{ const e=ui.elf&&S.elves.find(x=>x.id===ui.elf); return e&&!e.moved&&!e.wounded&&e.role!=='sylvara'?'Tap a lit hex to move there.':''; })();
   h.style.display=h.textContent?'':'none';
@@ -403,6 +431,7 @@ function panelHtml(){
   const name=F.placeName(S,k); const t=F.TERRAIN[hx.t].name;
   h+=`<div class="fr-sel"><b>${esc(name[0].toUpperCase()+name.slice(1))}</b> <small>${t}${hx.felled?' · felled':''}${hx.burnt?' · burnt':''}${hx.talan?hx.build?' · sentry post (building)':' · sentry post':''}${hx.thicket?' · thicket '+hx.thicket+' wk':''}</small></div>`;
   if(hx.tree!=null){ const tr=S.trees[hx.tree]; h+=`<p>🌳 ${tr.dead?'Dead.':tr.done?'Tended: it will live.':`Needs tending (${tr.tended} of ${F.TEND} weeks).`}</p>`; }
+  const sgs=S.signs.filter(x=>x.k===k); if(sgs.length) h+=`<p>${sgs.map(x=>`${SIGN_ICON[x.kind]||'•'} ${esc(F.SIGN_TEXT[x.kind]||x.kind)}${x.kind==='smoke'?' <small>(orcs, or a goblin shaman\u2019s trick)</small>':''}`).join('<br>')}</p>`;
   const hm=S.hamlets.find(x=>x.k===k); if(hm&&hm.sacked) h+=`<p>Sacked: no food from here for ${hm.sacked} weeks.</p>`;
   if(vis==='clear'){ const c=F.vision&&S.intel[k]?S.intel[k].what:[]; h+=c.length?`<p>${c.map(whatText).join('<br>')}</p>`:'<p class="fr-note">Nothing stirs.</p>'; }
   else if(vis==='dim') h+=`<p class="fr-note">Seen dimly. ${S.intel[k]&&S.intel[k].turn===S.turn?'':''}${dimMoves(k)?'Something moves there.':'Nothing seems to move.'}</p>`;
@@ -434,7 +463,10 @@ function wirePanel(){
 // ── The map ──────────────────────────────────────────────────────────
 let cw=0, ch=0, dpr=1;
 function fitCanvas(){ const m=$('fr-map'), cv=$('fr-cv'); dpr=Math.min(2,window.devicePixelRatio||1); cw=m.clientWidth; ch=m.clientHeight; cv.width=cw*dpr; cv.height=ch*dpr; cv.style.width=cw+'px'; cv.style.height=ch+'px'; }
-function hexSize(){ const R=F.R; const fit=Math.min(cw/(Math.sqrt(3)*(2*R+1)+1), ch/(1.5*(2*R)+2.2)); return fit*view.zoom; }
+function fitSize(){ const R=F.R; return Math.min(cw/(Math.sqrt(3)*(2*R+1)+1), ch/(1.5*(2*R)+2.2)); }
+function hexSize(){ return fitSize()*view.zoom; }
+// zoomed right in, one hex fills the map (a hex is sqrt(3)·s wide and 2·s tall)
+function maxZoom(){ const f=fitSize(); return f>0?Math.max(3.5, Math.min(cw/Math.sqrt(3), ch/2)/f):3.5; }
 function hexXY(k){ const [q,r]=F.unkey(k), s=hexSize(); return [cw/2+view.ox+s*Math.sqrt(3)*(q+r/2), ch/2+view.oy+s*1.5*r]; }
 function pixToHex(x,y){
   const s=hexSize(); const px=(x-cw/2-view.ox)/s, py=(y-ch/2-view.oy)/s;
@@ -444,9 +476,9 @@ function pixToHex(x,y){
   if(dx>dy&&dx>dz) rx=-ry-rz; else if(dy>dz) ry=-rx-rz; else rz=-rx-ry;
   const k=F.key(rx,rz); return S.hexes[k]?k:null;
 }
-function zoomBy(f,x,y){ const z=Math.max(1,Math.min(3.5,view.zoom*f)); const fx=x==null?cw/2:x, fy=y==null?ch/2:y; const r=z/view.zoom;
+function zoomBy(f,x,y){ const z=Math.max(1,Math.min(maxZoom(),view.zoom*f)); const fx=x==null?cw/2:x, fy=y==null?ch/2:y; const r=z/view.zoom;
   view.ox=(view.ox+cw/2-fx)*r-(cw/2-fx); view.oy=(view.oy+ch/2-fy)*r-(ch/2-fy); view.zoom=z; clampView(); draw(); }
-function clampView(){ const lim=(view.zoom-1)*Math.max(cw,ch)*0.6; view.ox=Math.max(-lim,Math.min(lim,view.ox)); view.oy=Math.max(-lim,Math.min(lim,view.oy)); if(view.zoom<=1){ view.ox=0; view.oy=0; } }
+function clampView(){ const R=F.R, s=hexSize(), lim=Math.max((view.zoom-1)*Math.max(cw,ch)*0.6, Math.sqrt(3)*R*s); view.ox=Math.max(-lim,Math.min(lim,view.ox)); view.oy=Math.max(-lim,Math.min(lim,view.oy)); if(view.zoom<=1){ view.ox=0; view.oy=0; } }
 function centreOn(k){ if(view.zoom<=1) return; const [x,y]=hexXY(k); view.ox+=cw/2-x; view.oy+=ch/2-y; clampView(); }
 const ptrs=new Map(); let drag=null;
 function pDown(e){ $('fr-cv').setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY}); drag={x:e.offsetX,y:e.offsetY,ox:view.ox,oy:view.oy,moved:false,pinch:ptrs.size===2?pinchD():0,z:view.zoom}; }
@@ -456,7 +488,25 @@ function pMove(e){ if(!ptrs.has(e.pointerId)||!drag) return; ptrs.set(e.pointerI
   const dx=e.offsetX-drag.x, dy=e.offsetY-drag.y; if(Math.hypot(dx,dy)>7) drag.moved=true;
   if(drag.moved&&view.zoom>1){ view.ox=drag.ox+dx; view.oy=drag.oy+dy; clampView(); draw(); } }
 function pUp(e){ const d=drag; ptrs.delete(e.pointerId); if(ptrs.size) return; drag=null; if(d&&!d.moved) tap(e.offsetX,e.offsetY); }
+// signs heard only from a direction: a badge at the map's edge that way (signs from the same way sit side by side)
+const BADGE_R=15, BADGE_IN=26;
+function dirBadges(){
+  const out=[], by={};
+  for(const sg of S.signs) if(!sg.k&&sg.dir!=null) (by[sg.dir]=by[sg.dir]||[]).push(sg);
+  for(const d in by){ const a=-Math.PI/3*d, ca=Math.cos(a), sa=Math.sin(a);
+    const hw=cw/2-BADGE_IN, hh=ch/2-BADGE_IN, t=Math.min(Math.abs(ca)>1e-6?hw/Math.abs(ca):1e9, Math.abs(sa)>1e-6?hh/Math.abs(sa):1e9);
+    const cx=cw/2+ca*t, cy=ch/2+sa*t, list=by[d];
+    // spread along the edge they sit on
+    const alongX=Math.abs(cy-BADGE_IN)<1||Math.abs(cy-(ch-BADGE_IN))<1;
+    list.forEach((sg,i)=>{ const off=(i-(list.length-1)/2)*(BADGE_R*2+6);
+      let x=cx+(alongX?off:0), y=cy+(alongX?0:off);
+      x=Math.max(BADGE_IN,Math.min(cw-BADGE_IN,x)); y=Math.max(BADGE_IN,Math.min(ch-BADGE_IN,y));
+      out.push({x,y,a,sg}); }); }
+  return out;
+}
 function tap(x,y){
+  // a sign's badge: say what it is
+  if(S){ const b=dirBadges().find(b=>Math.hypot(b.x-x,b.y-y)<=BADGE_R+8); if(b){ toast(`${SIGN_ICON[b.sg.kind]||''} ${signText(b.sg)}`); return; } }
   const k=pixToHex(x,y); if(!k||!S||S.over) return;
   if(ui.spell){ const err=F.cast(S,ui.spell,k,ui.ring); if(err) toast(err); else { sfx('spell_'+ui.spell); ui.spell=null; save(); ui.sel=k; } render(); return; }
   const e=ui.elf&&S.elves.find(x=>x.id===ui.elf);
@@ -500,10 +550,12 @@ function draw(){
   for(const k in S.hexes) drawContents(c,k,s,T);
   // signs
   for(const sg of S.signs){
-    if(sg.k){ const [x,y]=hexXY(sg.k); const p=0.5+0.5*Math.sin(T/300); c.beginPath(); c.arc(x,y,s*(0.55+0.15*p),0,7); c.strokeStyle=`rgba(255,220,120,${0.35+0.4*p})`; c.lineWidth=2; c.stroke(); emoji(c,SIGN_ICON[sg.kind],x+s*0.45,y-s*0.45,s*0.42); }
-    else { const a=-Math.PI/3*sg.dir; const r=Math.min(cw,ch)/2-14; const x=cw/2+view.ox*0+Math.cos(a)*r, y=ch/2+Math.sin(a)*r;
-      c.beginPath(); c.arc(x,y,14,0,7); c.fillStyle='rgba(30,20,10,0.75)'; c.fill(); c.strokeStyle=sg.kind==='warhost'||sg.kind==='waaagh'?'#ff5544':'#e8c872'; c.lineWidth=2; c.stroke(); emoji(c,SIGN_ICON[sg.kind],x,y,16); }
-  }
+    if(sg.k){ const [x,y]=hexXY(sg.k); const p=0.5+0.5*Math.sin(T/300); c.beginPath(); c.arc(x,y,s*(0.55+0.15*p),0,7); c.strokeStyle=`rgba(255,220,120,${0.35+0.4*p})`; c.lineWidth=2; c.stroke(); emoji(c,SIGN_ICON[sg.kind],x+s*0.45,y-s*0.45,s*0.42); } }
+  for(const b of dirBadges()){ const {x,y,a,sg}=b, war=sg.kind==='warhost'||sg.kind==='waaagh', col=war?'#ff5544':'#e8c872';
+    // an arrow on the outer side, pointing the way the sign came from
+    const ax=x+Math.cos(a)*BADGE_R, ay=y+Math.sin(a)*BADGE_R, px=-Math.sin(a), py=Math.cos(a);
+    c.beginPath(); c.moveTo(ax+Math.cos(a)*7,ay+Math.sin(a)*7); c.lineTo(ax+px*6,ay+py*6); c.lineTo(ax-px*6,ay-py*6); c.closePath(); c.fillStyle=col; c.fill();
+    c.beginPath(); c.arc(x,y,BADGE_R,0,7); c.fillStyle='rgba(30,20,10,0.8)'; c.fill(); c.strokeStyle=col; c.lineWidth=2; c.stroke(); emoji(c,SIGN_ICON[sg.kind],x,y,16); }
   // the selected hex
   if(ui.sel){ const [x,y]=hexXY(ui.sel); hexPath(c,x,y,s*0.98); c.strokeStyle='#ffe58a'; c.lineWidth=3; c.stroke(); }
 }
@@ -540,7 +592,6 @@ function token(c,icon,x,y,r,col,n,alpha){
 // a figure standing on a little round base, feet at the base's middle; n is a count badge
 // an elf has its orders for the week once it has moved or been given a task (Sylvara keeps her own counsel)
 function hasActed(e){ return e.role==='sylvara'||e.wounded||e.moved||!!e.task; }
-function toAct(){ return S.elves.filter(e=>!hasActed(e)).length; }
 function figure(c,img,x,y,r,col,n,alpha,base){
   c.save(); c.globalAlpha=alpha==null?1:alpha;
   const fy=y+r*0.55;

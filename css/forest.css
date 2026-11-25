@@ -18,7 +18,7 @@
 .fr-btn:active:not(:disabled){transform:translateY(1px);box-shadow:none;}
 
 .fr-main{flex:1;display:flex;min-height:0;}
-.fr-map{position:relative;flex:1;min-width:0;touch-action:none;}
+.fr-map{position:relative;flex:1;min-width:0;min-height:0;overflow:hidden;touch-action:none;}
 .fr-map canvas{display:block;position:absolute;inset:0;}
 .fr-zoom{position:absolute;left:8px;top:8px;display:flex;flex-direction:column;gap:6px;}
 .fr-zoom .fr-btn{width:36px;padding:4px 0;font-size:18px;}
@@ -50,6 +50,8 @@
 .fr-card h3{margin:4px 0;color:#5b2d0c;}
 .fr-card ul{padding-left:20px;margin:6px 0;}
 .fr-card li{margin:4px 0;}
+.fr-card .fr-key{list-style:none;padding-left:4px;margin:6px 0 2px;font-size:14px;}
+.fr-card .fr-key li{margin:3px 0;}
 .fr-card .fr-note{color:#5f5536;}
 .fr-card .fr-elf{color:#2a2112;background:#efe3c0;border-color:#a89155;}
 .fr-card .fr-elf small{color:#6b5f3c;}
