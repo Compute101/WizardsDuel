@@ -401,6 +401,15 @@ tuned until these hold:
   itself (`selfHeal:false`, `S.wizSelfHeal`): rest at the **Healing House**, which heals you to full and,
   once a week, takes two weeks off every wound in Elfhome (`HEAL_WEEKS`, `S.healedWeek`).
 
+## Olwen's counsel (advice from the board)
+The user didn't know how to use the elves or whether to fight the goblins, and the leaders only
+report their own house. Olwen Derwen, the Eldest, now has **Ask for counsel**: `counsel(S)` in
+`js/forest_engine.js` ranks advice from what the player can know (clear sight, memory up to 3 weeks
+old, this week's signs, public news; never the hidden state) and she gives three at a time, most
+urgent first. It follows the `balance` bot's priorities: Waaagh and totems, Sylvara's danger and
+escort, harrying orc camps, keeping goblins from the orcs (the one time to fight them), posts and
+Seers, hungry Varg, deer, food, youths, the Wood's mood, wounds. Numbers in `COUNSEL`.
+
 ## Map art (from the user)
 - Two sheets in `sprites/forest/source/`: 13 pointy-top hex tiles (old growth, woodland, glade, hills,
   marsh, crags with a cave, lake, felled clearing, burnt clearing, Elfhome's tree-town, a hamlet, a
