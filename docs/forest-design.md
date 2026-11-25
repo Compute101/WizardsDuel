@@ -263,7 +263,7 @@ tuned until these hold:
 - Hex tiles: old growth, woodland, glade, hills, marsh, crags, river / ford, lake, stumps, Elfhome,
   hamlet, talan. (Elfhome had its own hex art, which may still be useful as a style reference.)
 - Fighters: goblin, goblin archer, goblin shaman, Varg, Varg alpha, orc, orc brute, orc
-  warboss, elf Talon (male and female).
+  warchief, elf Talon (male and female).
 - Map tokens: herds, warrens, dens, orc camp, treant.
 
 ## Decided (the user's answers)

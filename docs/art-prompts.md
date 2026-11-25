@@ -111,7 +111,7 @@ recolours never overwrite real art once it's there.
 **Format:** like the soldier, archer and knight: full body, three-quarter view **facing right**, feet
 flat on the bottom edge, on a **flat pure black background** (not green: these go through the fighter
 cutter, which keys out black). Painted in their final colours. **Every figure fills the height of its
-picture**, the little goblin as much as the warboss: the game sets their sizes (goblin 0.7, Varg 1.05,
+picture**, the little goblin as much as the warchief: the game sets their sizes (goblin 0.7, Varg 1.05,
 alpha 1.15, orc 1.0, brute 1.05, warchief 1.2 of a wizard's height, `spriteHeight` in `fighters.json`).
 Keep weapons, banners and horns inside the picture.
 
