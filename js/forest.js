@@ -283,7 +283,7 @@ function leadFight(set,wk){
   const foe=F.foeById(S,S.pending.foeId);
   $('fr-screen').classList.remove('active'); cancelAnimationFrame(raf);
   if(ctx&&ctx.beforeBattle) ctx.beforeBattle();
-  startExploreBattle({wizKey:wk, foes:spec.foes, allies:spec.allies, hp:ctx?Math.max(1,ctx.hp()):Math.max(1,Math.round(d.hp*set.hpFrac)), arena:'road',
+  startExploreBattle({wizKey:wk, foes:spec.foes, allies:spec.allies, hp:ctx?Math.max(1,ctx.hp()):Math.max(1,Math.round(d.hp*set.hpFrac)), arena:'forest',
     text:{winTitle:'The Moriquende Holds', win:`The ${foe.fac==='orc'?'orcs':F.FAC[foe.fac||'gob'].name.toLowerCase()} break and scatter into the trees.`,
       loseTitle:'Carried Home', lose:`${titleCase(d.name)} falls. The elves carry you back to Elfhome.`},
     onEnd:(won,low,allyHp,info)=>{

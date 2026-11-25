@@ -287,7 +287,7 @@ wrong scale, ask for that one again on its own with the cottage from `tileset_so
     (old, wood, glade, hill, marsh, crag, lake, felled, burnt, home, hamlet, talan, ancient) and
     `tok_<kind>.png` (goblin, shaman, varg, orc, totem, deer, seer, talon, charm, guild), 256 colours.
   - **Battle fighters:** a prompt per figure in "1b. The Moriquende's battle figures" above.
-  - **Battle backdrop** (`backgrounds/forest.jpg`, 1672×941): the `forest` row of section 5a, with its shared prompt.
+  - ~~**Battle backdrop**~~: **Done**, `backgrounds/forest.jpg` (the user's painting: an elven forest clearing with talans, a rope bridge and a waterfall), used by the forest duels (`leadFight`), Elfhome's fights (`ARENA_MAPS.elfhome`) and the forest fighters' `arena`.
 - ~~**Elfhome**~~: **Done**, its own sheets 27 and 28 (see section 2). The six house leaders are painted from the elf hero
   figures (`PEOPLE` in `js/explore_elfhome.js`) and need no art.
 - **The four invented dons** (Dr Penhallow, Mr Quill, Canon Marrow, Widow Coyle) are recolours of two
@@ -387,7 +387,7 @@ Nothing in this section is in the game yet. Use the house rules above, plus the 
 
 #### 5a. Arena backdrops for Explore fights (`backgrounds/<name>.jpg`)
 
-Done so far (in `backgrounds/`, picked by `arenaHere` in `js/explore.js`): `wren_schools`, `wren_quad`, `wren_undercroft`, `wren_orrery`, `hollowmere`, `road`, `spirewatch`, `collegium`, `cindergate`, `heights`, `drowned`, `quarry`, `frost`, `gloam` (each sector's also used by its inner district). Still to make: `wound` (for the Wound itself, once it's built). When one arrives, add it to `ARENA_MAPS`. Attach `backgrounds/ruins.jpg` as the style reference and use this base prompt:
+Done so far (in `backgrounds/`, picked by `arenaHere` in `js/explore.js`): `wren_schools`, `wren_quad`, `wren_undercroft`, `wren_orrery`, `hollowmere`, `road`, `spirewatch`, `collegium`, `cindergate`, `heights`, `drowned`, `quarry`, `frost`, `gloam`, `forest` (each sector's also used by its inner district). Still to make: `wound` (for the Wound itself, once it's built). When one arrives, add it to `ARENA_MAPS`. Attach `backgrounds/ruins.jpg` as the style reference and use this base prompt:
 
 > Painterly dark-fantasy battle backdrop in the same style, palette and lighting as the attached image. Wide 16:9, 1920×1080. A flat, open floor across the bottom third where two duelling wizards will stand at the left and right. No people, no creatures, no text. Moody, slightly dim, the most detail in the middle distance, a calm clear area in the centre for spell effects. Setting: [SETTING]
 
@@ -407,7 +407,6 @@ Done so far (in `backgrounds/`, picked by `arenaHere` in `js/explore.js`): `wren
 | `quarry` | a dusty quarry district: cut stone, mine-cart rails, a pit-head winch, a giant toppled stone face |
 | `frost` | a frozen market square: icicle-hung stalls, snowdrifts, a frozen fountain, pale blue light |
 | `gloam` | a graveyard district: mausoleums, black iron gates, violet-flame lamps, drifting shade |
-| `forest` | an ancient elven forest clearing at dusk: huge mossy trunks and roots framing a leaf-strewn open floor, elven lanterns and a rope bridge high in the canopy, shafts of green-gold light, mist between the trees (the Moriquende's duels and Elfhome; until it arrives they use `road`: `arena:'road'` in `leadFight` in `js/forest.js`, `ARENA_MAPS.elfhome` in `js/explore.js`) |
 | `wound` | the edge of the Wound: a glowing purple-white rift, floating rubble and inside-out houses, crystal spill in all eight element colours, a huge barred gate (the Last Gate) far behind |
 
 #### 5b. Wrenford's own tileset (one sheet, tileset house rules)
