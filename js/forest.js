@@ -303,8 +303,21 @@ function esc(t){ return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 let toastT=0; function toast(t){ const h=$('fr-hint'); h.textContent=t; h.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>{ h.classList.remove('on'); render(); },2600); }
 
 // ── Turn ─────────────────────────────────────────────────────────────
-function endWeek(){
+function endWeek(force){
   if(!S||S.over||S.pending) return;
+  // elves still without orders: say so first (tap one to give it orders), rather than counting them on the button
+  const idle=S.elves.filter(e=>!hasActed(e));
+  if(idle.length&&force!==true){
+    modal(`<h2>${idle.length} still without orders</h2>
+      <p>${idle.length>1?'These elves haven\u2019t moved or been given a task':'This elf hasn\u2019t moved or been given a task'} this week. Tap one to give orders.</p>
+      <div class="fr-roster">${idle.map(e=>{ const R=F.ROLES[e.role]; return `<button class="fr-elf" data-id="${e.id}" type="button"><span>${R.icon}</span> ${esc(e.name)} <small>${R.name}</small></button>`; }).join('')}</div>
+      <div class="fr-row"><button class="fr-btn" type="button" id="fr-back">Give orders</button><button class="fr-btn big" type="button" id="fr-go">End the week anyway ▸</button></div>`);
+    $('fr-card').onclick=ev=>{
+      const b=ev.target.closest('[data-id]'); if(b){ const el=S.elves.find(x=>x.id===b.dataset.id); closeModal(); selectElf(el); return; }
+      if(ev.target.id==='fr-back') closeModal();
+      if(ev.target.id==='fr-go'){ closeModal(); endWeek(true); } };
+    return;
+  }
   ui.elf=null; ui.spell=null;
   S.weekOf=S.turn; runWeek();
 }
@@ -374,7 +387,7 @@ function render(){
   const mood=F.mood(S), mi={content:'🌳',uneasy:'🍂',angry:'🥀'}[mood];
   const elves=S.elves.filter(e=>e.role!=='sylvara');
   $('fr-stats').innerHTML=`<span title="Food">🍖 ${Math.floor(S.food)}</span><span title="Mana">✨ ${S.mana}</span><span title="The Wood: ${mood}">${mi} Wood ${Math.round(S.wood)}</span><span title="Elves (youths)">🧝 ${elves.length}${S.youths?'+'+S.youths:''}</span><span title="Ancient trees tended">🌲 ${S.trees.filter(t=>t.done).length}/${F.TREES}</span><span title="Seen clearly / at all">👁 ${Math.round(F.coverage(S)*100)}%</span>`;
-  $('fr-spell').disabled=S.spellUsed||!!S.over||!!S.pending; $('fr-end').disabled=!!S.over||!!S.pending; { const n=S.over?0:toAct(); $('fr-end').textContent=n?`End week ▸ (${n} to act)`:'End week ▸'; $('fr-end').title=n?`${n} elf${n>1?'s':''} still without orders this week`:''; }
+  $('fr-spell').disabled=S.spellUsed||!!S.over||!!S.pending; $('fr-end').disabled=!!S.over||!!S.pending;
   const h=$('fr-hint');
   if(!h.classList.contains('on')) h.textContent=ui.spell?`Tap a hex to ${ui.spell==='strike'?'strike':ui.spell}. (Esc to cancel)`:(()=>{ const e=ui.elf&&S.elves.find(x=>x.id===ui.elf); return e&&!e.moved&&!e.wounded&&e.role!=='sylvara'?'Tap a lit hex to move there.':''; })();
   h.style.display=h.textContent?'':'none';
@@ -543,7 +556,6 @@ function token(c,icon,x,y,r,col,n,alpha){
 // a figure standing on a little round base, feet at the base's middle; n is a count badge
 // an elf has its orders for the week once it has moved or been given a task (Sylvara keeps her own counsel)
 function hasActed(e){ return e.role==='sylvara'||e.wounded||e.moved||!!e.task; }
-function toAct(){ return S.elves.filter(e=>!hasActed(e)).length; }
 function figure(c,img,x,y,r,col,n,alpha,base){
   c.save(); c.globalAlpha=alpha==null?1:alpha;
   const fy=y+r*0.55;
