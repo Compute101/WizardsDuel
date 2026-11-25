@@ -96,8 +96,8 @@ function build(){
   $('fr-undo').onclick=()=>{ if(weekStart&&!S.pending&&S.step==null){ S=F.clone(weekStart); ui.elf=null; ui.spell=null; F.vision(S); save(); render(); } };
   $('fr-elves').onclick=rosterPanel;
   $('fr-spell').onclick=spellPanel;
-  $('fr-zin').onclick=()=>zoomBy(1.3);
-  $('fr-zout').onclick=()=>zoomBy(1/1.3);
+  $('fr-zin').onclick=()=>zoomBy(1.6);
+  $('fr-zout').onclick=()=>zoomBy(1/1.6);
   const cv=$('fr-cv');
   cv.addEventListener('pointerdown',pDown); cv.addEventListener('pointermove',pMove);
   cv.addEventListener('pointerup',pUp); cv.addEventListener('pointercancel',pUp);
@@ -463,7 +463,10 @@ function wirePanel(){
 // ── The map ──────────────────────────────────────────────────────────
 let cw=0, ch=0, dpr=1;
 function fitCanvas(){ const m=$('fr-map'), cv=$('fr-cv'); dpr=Math.min(2,window.devicePixelRatio||1); cw=m.clientWidth; ch=m.clientHeight; cv.width=cw*dpr; cv.height=ch*dpr; cv.style.width=cw+'px'; cv.style.height=ch+'px'; }
-function hexSize(){ const R=F.R; const fit=Math.min(cw/(Math.sqrt(3)*(2*R+1)+1), ch/(1.5*(2*R)+2.2)); return fit*view.zoom; }
+function fitSize(){ const R=F.R; return Math.min(cw/(Math.sqrt(3)*(2*R+1)+1), ch/(1.5*(2*R)+2.2)); }
+function hexSize(){ return fitSize()*view.zoom; }
+// zoomed right in, one hex fills the map (a hex is sqrt(3)·s wide and 2·s tall)
+function maxZoom(){ const f=fitSize(); return f>0?Math.max(3.5, Math.min(cw/Math.sqrt(3), ch/2)/f):3.5; }
 function hexXY(k){ const [q,r]=F.unkey(k), s=hexSize(); return [cw/2+view.ox+s*Math.sqrt(3)*(q+r/2), ch/2+view.oy+s*1.5*r]; }
 function pixToHex(x,y){
   const s=hexSize(); const px=(x-cw/2-view.ox)/s, py=(y-ch/2-view.oy)/s;
@@ -473,9 +476,9 @@ function pixToHex(x,y){
   if(dx>dy&&dx>dz) rx=-ry-rz; else if(dy>dz) ry=-rx-rz; else rz=-rx-ry;
   const k=F.key(rx,rz); return S.hexes[k]?k:null;
 }
-function zoomBy(f,x,y){ const z=Math.max(1,Math.min(3.5,view.zoom*f)); const fx=x==null?cw/2:x, fy=y==null?ch/2:y; const r=z/view.zoom;
+function zoomBy(f,x,y){ const z=Math.max(1,Math.min(maxZoom(),view.zoom*f)); const fx=x==null?cw/2:x, fy=y==null?ch/2:y; const r=z/view.zoom;
   view.ox=(view.ox+cw/2-fx)*r-(cw/2-fx); view.oy=(view.oy+ch/2-fy)*r-(ch/2-fy); view.zoom=z; clampView(); draw(); }
-function clampView(){ const lim=(view.zoom-1)*Math.max(cw,ch)*0.6; view.ox=Math.max(-lim,Math.min(lim,view.ox)); view.oy=Math.max(-lim,Math.min(lim,view.oy)); if(view.zoom<=1){ view.ox=0; view.oy=0; } }
+function clampView(){ const R=F.R, s=hexSize(), lim=Math.max((view.zoom-1)*Math.max(cw,ch)*0.6, Math.sqrt(3)*R*s); view.ox=Math.max(-lim,Math.min(lim,view.ox)); view.oy=Math.max(-lim,Math.min(lim,view.oy)); if(view.zoom<=1){ view.ox=0; view.oy=0; } }
 function centreOn(k){ if(view.zoom<=1) return; const [x,y]=hexXY(k); view.ox+=cw/2-x; view.oy+=ch/2-y; clampView(); }
 const ptrs=new Map(); let drag=null;
 function pDown(e){ $('fr-cv').setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY}); drag={x:e.offsetX,y:e.offsetY,ox:view.ox,oy:view.oy,moved:false,pinch:ptrs.size===2?pinchD():0,z:view.zoom}; }
