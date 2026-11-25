@@ -373,7 +373,7 @@ tuned until these hold:
   only the difference (The Wood in Song 60 gold and 6 lodestone, Endures 30 / 3, Scarred 10). The Wood in
   Song brings **Sylvara into your companions** (`addAlly`, a wizard ally). Short of that, the year can be
   tried again (Try another year); after it there's no new year to start.
-- **Not yet:** the wood's own music (the backdrop and art have since arrived); your Explore wounds don't carry into the
+- **Not yet:** (the music, backdrop and art have since arrived: `audio/moriquende_theme.mp3`, `tools/music/moriquende.py`); your Explore wounds don't carry into the
   forest's fights or back (the forest keeps its own HP for your wizard).
 
 ## As built (step 3, revised after the user's feedback)

@@ -1729,7 +1729,7 @@ function playTheme(){
 function titleMusic(){
   const t=document.getElementById('title-screen');
   const wk=document.getElementById('wk-screen');   // the Winks Table plays its own tavern music
-  const fr=document.getElementById('fr-screen');   // the Moriquende (silent for now)
+  const fr=document.getElementById('fr-screen');   // the Moriquende plays its own theme (js/forest.js)
   if(t&&t.classList.contains('active')&&!running&&!(wk&&wk.classList.contains('active'))&&!(fr&&fr.classList.contains('active'))) playTheme();
   else if(!creating) stopTheme();
 }
