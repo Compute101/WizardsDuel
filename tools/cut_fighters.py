@@ -24,6 +24,15 @@ CUTS = {                       # source -> output still
     'halberdier.png': 'halberdier.png',  # Thessaly's hired bodyguards
     'halberdier_fat.png': 'halberdier_fat.png',  # a fat Bulldog (Wrenford's town guards)
     'knight.png': 'knight.png',          # a knight in plate (not used in the game yet)
+    # the Moriquende's creatures (docs/art-prompts.md, "The Moriquende's battle figures"); until a source
+    # arrives the game uses tools/make_forest_placeholders.py's recolours, which never overwrite these
+    'goblin.png': 'forest/goblin.png',
+    'varg.png': 'forest/varg.png',
+    'varg_alpha.png': 'forest/varg_alpha.png',
+    'orc.png': 'forest/orc.png',
+    'orc_bigun.png': 'forest/orc_bigun.png',
+    'orc_warboss.png': 'forest/orc_warboss.png',
+    'elf_talon.png': 'forest/elf_talon.png',
 }
 DARK = 22        # max channel at or below this is black (background or outline)
 DARK_FOR = {'knight.png': 4}   # the knight's cloak shadow is near-black (10-15) on a pure black background
@@ -38,6 +47,9 @@ FACES = {        # HUD face (portraits/small/<key>.jpg): x, y, size in the 768-t
     'halberdier': (200, 72, 140),
     'halberdier_fat': (205, 80, 140),
     'knight': (250, 40, 150),
+    # the Moriquende's creatures (sprites/forest/<key>.png)
+    'goblin': (402, 112, 114), 'varg': (404, 39, 131), 'varg_alpha': (413, 59, 131), 'orc': (369, 71, 113),
+    'orc_bigun': (364, 58, 119), 'orc_warboss': (377, 116, 119), 'elf_talon': (264, 83, 101),
 }
 PAD = 6
 
@@ -85,9 +97,10 @@ def cut(src, dst):
     im = im.resize((round(im.width * s), HEIGHT), Image.LANCZOS)
     im.save(os.path.join(OUT, dst), optimize=True)
     print(dst, im.size)
-    key = os.path.splitext(dst)[0]
-    if key in FACES:
-        x, y, n = FACES[key]
+    key = os.path.splitext(os.path.basename(dst))[0]
+    # a face crop set by hand in FACES, else a first guess (the top middle) to tune by hand
+    x, y, n = FACES.get(key) or (max(0, im.width // 2 - 80), 30, 160)
+    if True:
         face = Image.new('RGBA', (n, n), (24, 20, 30, 255))
         face.alpha_composite(im.crop((x, y, x + n, y + n)))
         face.convert('RGB').resize((256, 256), Image.LANCZOS).save(
@@ -95,4 +108,5 @@ def cut(src, dst):
 
 if __name__ == '__main__':
     for s, d in CUTS.items():
+        if not os.path.exists(os.path.join(SRC, s)): print('waiting for', s); continue
         cut(s, d)

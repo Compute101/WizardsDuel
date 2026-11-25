@@ -134,6 +134,10 @@ function setupMap(data){
       // the Undercroft (sheet 24): sewer brick, wet in places, and its water channel
       case 'u': return r()<.12?'floorSewerWet':'floorSewer';
       case 'q': return 'sewerChannel';
+      // Elfhome (sheet 28): mossy forest floor, flowered grass, the mossy flagstone path
+      case 'L': return 'elfFloor';
+      case 'J': return 'elfGrass';
+      case 'Y': return 'tr_elfpath_11';
       case 'v': return null;
       default:  return 'grass';
     }
@@ -216,7 +220,7 @@ function updateEchoes(dt){
 // (ExploreBands.clashOdds); a winning crew takes the spill and may lose a member, a losing one is broken.
 // Toll crews stop you and ask for gold or spill; hostile ones charge. bandState[id] (saved): beaten (time),
 // lost (fallen members), gold, spill, tollUntil, met.
-const ROAD_KINDS='RMcPfDF';
+const ROAD_KINDS='RMcPfDFY';
 const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
 let roadSet=null, roadList=[];
 function bandRec(b){
@@ -405,7 +409,7 @@ function newStroller(atDoor){
 }
 function spawnStrollers(){
   strollers=[];
-  if(!MAP.safe||MAP.interior) return;
+  if(!MAP.safe||MAP.interior||MAP.noStroll) return;   // (Elfhome has its own people, not Wrenford's peasants)
   roadsOf(); if(!roadList.length) return;
   const n=Math.round(STROLL.n*(1-darkness()));
   for(let i=0;i<n;i++) strollers.push(newStroller(false));
@@ -505,7 +509,7 @@ function drawEcho(a,t){
 // the battle backdrop (backgrounds/<name>.jpg) for a fight here: a story room's own, else the place's
 // (a room fights on its town's ground), Wrenford's by the time of day; anywhere else the ruined streets
 const ARENA_ROOMS={undercroft:'wren_undercroft', undercroft2:'wren_orrery', lectures:'wren_schools', library:'library', remnant:'library'};
-const ARENA_MAPS={hollowmere:'hollowmere', corvanthe_road:'road', spirewatch:'spirewatch', conductory:'spirewatch', collegium:'collegium', old_schools:'collegium',
+const ARENA_MAPS={hollowmere:'hollowmere', corvanthe_road:'road', elfhome:'road', spirewatch:'spirewatch', conductory:'spirewatch', collegium:'collegium', old_schools:'collegium',
   cindergate:'cindergate', crucible:'cindergate', heights:'heights', drift:'heights', drowned_quarter:'drowned', sunken_harbour:'drowned',
   quarry_ward:'quarry', deep_cut:'quarry', frostmarket:'frost', winter_fair:'frost', gloamside:'gloam', necropolis:'gloam'};
 function arenaHere(){
@@ -712,7 +716,7 @@ const folkApi = {
   dropEcho:id=>{ actors=actors.filter(a=>!(a.e.incident===id)); },
   registerChar:(key,d)=>{ chars[key]=d; if(typeof CHAR_DEFS!=='undefined') CHAR_DEFS[key]=d; },
   hero:()=>hero, heroDef:rec=>window.ExploreHero?window.ExploreHero.def(rec):Promise.resolve(null),
-  allies:()=>allies, addAlly:a=>{ if(!allies.some(x=>x.key===a.key)) allies.push(Object.assign({level:0,hp:null},a)); },
+  reveal:id=>{ found.add(id); }, openForest:o=>{ hideSay(); openForest(o); }, allies:()=>allies, addAlly:a=>{ if(!allies.some(x=>x.key===a.key)) allies.push(Object.assign({level:0,hp:null},a)); },
   bodies:()=>wizKeys[wizIdx]==='hero', walkTo:(x,y)=>{ wiz.x=x; wiz.y=y; },
   enterMap:(id,at)=>enterMap(id,at), fullMagic:()=>!!(magic&&magic.grad), refreshDoors:()=>{ if(MAP&&!MAP.interior) findDoors(); },
   earnTopper:(id,how)=>earnTopper(id,how), hasTopper:id=>toppers.includes(id)||!!(window.ExploreHero&&ExploreHero.STARTER_TOPPERS.includes(id)),
@@ -1003,6 +1007,7 @@ const EDGE_SET = {
   S:{set:'snow',   out:c=>c!=='S'},
   F:{set:'flood',  out:c=>c!=='F'&&c!=='W'},
   X:{set:'wound',  out:c=>c!=='X'},
+  Y:{set:'elfpath', out:c=>c!=='Y'},
 };
 function edgeTile(E,x,y,r){
   const k=groundKind, at=(xx,yy)=>(k[yy]||[])[xx];
@@ -1062,7 +1067,7 @@ const MINI_PAL = {
 function buildMinimap(){
   const S=4, c=document.createElement('canvas'); c.width=COLS*S; c.height=ROWS*S;
   const m=c.getContext('2d');
-  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70',S:'#dfe6f0',F:'#2f6a78',X:'#7a2ab0'};
+  const col={G:'#3f6a2a',d:'#5d6a33',D:'#7a5a3a',R:'#8a8a94',M:'#6f7d63',P:'#a69a8e',W:'#1d4a70',K:'#8a5a30',O:'#24557a',a:'#3d3a32',e:'#4e4034',c:'#6a6560',f:'#857b70',S:'#dfe6f0',F:'#2f6a78',X:'#7a2ab0',L:'#4a4a26',J:'#5f8a32',Y:'#8a8478'};
   Object.assign(col,MINI_PAL[MAP.palette]||{});
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ m.fillStyle=col[groundKind[y][x]]||col.G; m.fillRect(x*S,y*S,S,S); }
   const k=S/T;
@@ -1191,6 +1196,7 @@ async function enterMap(id,at,instant){
     if(!room&&!el.loading.hidden&&data.name) el.lName.textContent=data.name;
     if(data.interior&&roomSpec&&roomSpec.outside) await getMap(roomSpec.outside.map).catch(()=>{});   // a room plays its town's theme
     await Promise.all([loadPalette(data.palette),atlasesFor(data)]);   // this map's sheets, before anything draws from them
+    if(id==='elfhome'&&window.ExploreElfhome) await window.ExploreElfhome.prep(folkApi);   // paint Elfhome's people
     setupMap(data);
     prefetchAround(data);
     { const im=new Image(); im.src='backgrounds/'+arenaHere()+'.jpg'; }   // this place's battle backdrop, so a fight opens on it
@@ -1202,6 +1208,7 @@ async function enterMap(id,at,instant){
     const loc=locationOfMap(id); if(loc) found.add(loc.id);
     if(!id.startsWith('room:')) visited.add(id);
     if(Year) Year.onMap(folkApi);
+    if(window.ExploreElfhome) window.ExploreElfhome.onMap(folkApi);
     save(); syncMusic();
   }catch(err){ console.error(err); toast('That way is blocked.'); }
   finally{ clearTimeout(slow); if(!instant) await hideLoading(); busy=false; fade(false); }
@@ -1247,9 +1254,10 @@ function reachable(l){ return !l.locked && (found.has(l.id) || (l.seenFrom||[]).
 function visible(l){ return l.known || found.has(l.id) || (l.seenFrom||[]).some(id=>found.has(id)); }
 function openWorld(mode){
   worldMode=mode; worldOpen=true; keys.clear(); target=null; hideSay();
-  const here=locationOfMap(MAP.id);
+  const here=locationOfMap(MAP.id), [WW,WH]=worldDims();
   worldSel=here||null;
-  el.world.hidden=false;
+  worldView=here?{cx:here.x, cy:here.y}:{cx:WW/2, cy:WH/2};
+  el.world.hidden=false; worldPan(0,0);
   el.worldTitle.textContent=world.name;
   showWorldPanel();
   requestAnimationFrame(drawWorldLoop);
@@ -1276,14 +1284,74 @@ function worldGo(){
   if(here&&l.id===here.id) return;
   enterMap(l.map,l.spawn);
 }
+
+// ═══ THE MORIQUENDE ═════════════════════════════════════════════════
+// Mother Agathe's errand (js/explore_folk.js, after Finals) leads to Elfhome (maps/elfhome.json; its people
+// in js/explore_elfhome.js). The forest year (js/forest.js) opens from the Watch Table there, fought by your
+// own wizard; it lives in quests.forest.S, and closing it leaves you standing in Elfhome. Your HP is one
+// pool: the year starts its fights from it and writes their wounds back (hp / setHp); the Healing House
+// heals it. Each ending pays once, only when it beats your best (FOREST_PRIZE); the best of all brings
+// Sylvara into your companions.
+const FOREST_PRIZE={song:{gold:60,spill:6}, endures:{gold:30,spill:3}, scarred:{gold:10,spill:0}, fallen:{gold:0,spill:0}};
+const FOREST_RANK=['fallen','scarred','endures','song'];
+function openForest(o){
+  if(!window.Forest||busy||!hero) return;
+  const key=wizKeys[wizIdx], q=quests.forest||(quests.forest={});
+  if(o&&o.fresh&&q.S&&q.S.over) q.S=null;   // another year (Sylvara offers it after one that fell short)
+  busy=true; keys.clear(); target=null; hideSay(); save();
+  fade(true).then(()=>{
+    running=false; el.root.classList.remove('active'); fade(false); syncMusic();
+    if(typeof CHAR_DEFS!=='undefined') CHAR_DEFS[key]=chars[key];
+    window.Forest.open({explore:{wizKey:key, name:folkApi.wizName(), element:hero.elem,
+      hp:()=>hpOf(key), maxHp:()=>maxHp(key), setHp:v=>{ vit[key]=Math.max(0,Math.min(maxHp(key),Math.round(v))); },
+      state:q.S||null, cats:key==='hero'&&magic&&!magic.grad?(magic.cats||[]):null, rings:key==='hero'&&magic&&!magic.grad?(magic.rings||1):null,
+      onSave:S=>{ q.S=S; save(); },
+      onEnd:(S,sc)=>forestEnd(q,sc),
+      onClose:()=>{
+        el.root.classList.add('active'); running=true; busy=false; resize(); syncMusic();
+        renderHp(); renderSpill(); save(); grace=1.5; last=performance.now(); requestAnimationFrame(frame);
+      }}});
+  });
+}
+function forestEnd(q,sc){
+  q.years=(q.years||0)+1;
+  const was=q.best?FOREST_RANK.indexOf(q.best):-1, now=FOREST_RANK.indexOf(sc.ending), out=[];
+  if(now>was){
+    const P=FOREST_PRIZE[sc.ending], O=was>=0?FOREST_PRIZE[q.best]:{gold:0,spill:0};
+    const g=P.gold-O.gold, sp=P.spill-O.spill;
+    if(g>0){ gold+=g; out.push(g+' gold'); }
+    if(sp>0){ spill.earth=(spill.earth||0)+sp; out.push(sp+' '+SPILL.earth[0]); }
+    q.best=sc.ending;
+  }
+  if(sc.ending==='song'&&!q.sylvara){ q.sylvara=true; folkApi.addAlly({key:'sylvara', wizard:true, name:'Sylvara'}); out.push('Sylvara herself, who joins your companions'); }
+  save();
+  return out.length?'You leave the Moriquende with '+out.join(', ')+'.':'';
+}
 function worldXY(e){
   const b=el.worldCv.getBoundingClientRect(), f=worldFit();
   return {x:(e.clientX-b.left-f.ox)/f.s, y:(e.clientY-b.top-f.oy)/f.s};
 }
+// The parchment (world.w × world.h) is drawn at the scale WORLD_VIEW of it would fit the screen, so it's
+// bigger than the screen: drag it (or wheel it) about. worldView is the world point at the screen's centre.
+let worldView=null, worldDrag=null;
+const worldDims=()=>[world.w||1000, world.h||700];
+const WORLD_VIEW=[800,560];   // how much of the parchment fills the screen (the rest scrolls)
 function worldFit(){
-  const w=el.worldCv.clientWidth, h=el.worldCv.clientHeight, s=Math.min(w/1000,h/700);
-  return {s, ox:(w-1000*s)/2, oy:(h-700*s)/2, w, h};
+  const w=el.worldCv.clientWidth, h=el.worldCv.clientHeight, [WW,WH]=worldDims();
+  const s=Math.max(Math.min(w/WORLD_VIEW[0],h/WORLD_VIEW[1]), Math.min(w/WW,h/WH));
+  if(!worldView) worldView={cx:WW/2, cy:WH/2};
+  const axis=(len,full,c)=>{ const m=full*s; return m<=len?(len-m)/2:Math.min(0,Math.max(len-m,len/2-c*s)); };
+  return {s, ox:axis(w,WW,worldView.cx), oy:axis(h,WH,worldView.cy), w, h};
 }
+function worldPan(dx,dy){   // by screen px; kept to where there's map
+  const f=worldFit(), [WW,WH]=worldDims();
+  worldView.cx=Math.max(f.w/2/f.s,Math.min(WW-f.w/2/f.s,worldView.cx-dx/f.s));
+  worldView.cy=Math.max(f.h/2/f.s,Math.min(WH-f.h/2/f.s,worldView.cy-dy/f.s));
+}
+function worldDown(e){ worldDrag={x:e.clientX, y:e.clientY, moved:false}; try{ el.worldCv.setPointerCapture(e.pointerId); }catch(_){} }
+function worldMove(e){ if(!worldDrag) return; const dx=e.clientX-worldDrag.x, dy=e.clientY-worldDrag.y;
+  if(!worldDrag.moved&&Math.hypot(dx,dy)<6) return; worldDrag.moved=true; worldPan(dx,dy); worldDrag.x=e.clientX; worldDrag.y=e.clientY; }
+function worldUp(e){ const d=worldDrag; worldDrag=null; if(d&&!d.moved) worldClick(e); }
 function worldClick(e){
   const p=worldXY(e);
   let best=null, bd=40;
@@ -1303,17 +1371,19 @@ function drawWorld(t){
   g.setTransform(d,0,0,d,0,0); g.fillStyle='#120e08'; g.fillRect(0,0,W,H);
   g.setTransform(d*f.s,0,0,d*f.s,d*f.ox,d*f.oy);
   // parchment
-  const bg=g.createRadialGradient(500,350,80,500,350,620);
+  const [WW,WH]=worldDims(), area=WW*WH/700000, R=Math.max(WW,WH);
+  const bg=g.createRadialGradient(WW/2,WH/2,80,WW/2,WH/2,R*0.62);
   bg.addColorStop(0,'#e4d2a6'); bg.addColorStop(0.7,'#cdb27c'); bg.addColorStop(1,'#8c7448');
-  g.fillStyle=bg; g.fillRect(0,0,1000,700);
+  g.fillStyle=bg; g.fillRect(0,0,WW,WH);
   const r=P.rng(77);
   g.fillStyle='rgba(90,60,30,0.08)';
-  for(let i=0;i<900;i++){ g.fillRect(r()*1000,r()*700,1+r()*2,1+r()*2); }
+  for(let i=0;i<900*area;i++){ g.fillRect(r()*WW,r()*WH,1+r()*2,1+r()*2); }
+  const wound=world.locations.find(l=>l.kind==='city')||{x:-999,y:-999};
   // woods and hills, in ink
   g.strokeStyle='rgba(70,50,25,0.55)'; g.fillStyle='rgba(70,90,40,0.35)'; g.lineWidth=1.2;
-  for(let i=0;i<150;i++){
-    const x=r()*1000, y=r()*700;
-    if(Math.hypot(x-700,y-230)<130) continue;                       // nothing grows near the Wound
+  for(let i=0;i<150*area;i++){
+    const x=r()*WW, y=r()*WH;
+    if(Math.hypot(x-wound.x,y-wound.y)<130) continue;               // nothing grows near the Wound
     if(world.locations.some(l=>Math.hypot(l.x-x,l.y-y)<45)) continue;
     if(r()<0.7){ g.beginPath(); g.moveTo(x,y-9); g.lineTo(x-6,y+4); g.lineTo(x+6,y+4); g.closePath(); g.fill(); g.stroke(); }
     else { g.beginPath(); g.arc(x,y+6,12,Math.PI*1.1,Math.PI*1.9); g.stroke(); }
@@ -1352,6 +1422,9 @@ function drawWorld(t){
         g.beginPath(); g.moveTo(l.x+dx-w/2-1,l.y+8-h); g.lineTo(l.x+dx,l.y+8-h-9); g.lineTo(l.x+dx+w/2+1,l.y+8-h); g.fill();
       }
       g.fillRect(l.x-24,l.y+6,48,5);
+    } else if(l.kind==='forest'){
+      g.fillStyle='#2f4a1c';
+      for(const [dx,dy,r] of [[-16,6,9],[0,-4,11],[15,5,9],[-6,14,7],[9,15,7]]){ g.beginPath(); g.moveTo(l.x+dx,l.y+dy-r*1.6); g.lineTo(l.x+dx+r,l.y+dy+r*0.6); g.lineTo(l.x+dx-r,l.y+dy+r*0.6); g.fill(); }
     } else if(l.kind==='town'){
       g.fillStyle='#3a2810';
       for(const [dx,dy] of [[-10,4],[2,-6],[12,6]]){ g.fillRect(l.x+dx-5,l.y+dy-3,10,8); g.beginPath(); g.moveTo(l.x+dx-7,l.y+dy-3); g.lineTo(l.x+dx,l.y+dy-10); g.lineTo(l.x+dx+7,l.y+dy-3); g.fill(); }
@@ -1360,7 +1433,7 @@ function drawWorld(t){
     }
     g.font='bold 17px Cinzel, serif'; g.textAlign='center';
     g.fillStyle=l.locked?'rgba(58,40,16,0.7)':'#2a1c08';
-    g.fillText(l.name,l.x,l.y+(l.kind==='city'?60:30));
+    g.fillText(l.name,l.x+(l.labelDx||0),l.y+(l.labelDy!=null?l.labelDy:l.kind==='city'?60:30));
     if(worldSel===l){ g.strokeStyle='#9a2a1a'; g.lineWidth=2; g.beginPath(); g.arc(l.x,l.y,l.kind==='city'?48:22,0,Math.PI*2); g.stroke(); }
     if(here===l){
       const pr=16+4*Math.sin(t/250);
@@ -1368,9 +1441,9 @@ function drawWorld(t){
     }
   }
   // edges fade into the unknown
-  const fog=g.createRadialGradient(500,350,300,500,350,640);
+  const fog=g.createRadialGradient(WW/2,WH/2,R*0.3,WW/2,WH/2,R*0.64);
   fog.addColorStop(0,'rgba(18,14,8,0)'); fog.addColorStop(1,'rgba(18,14,8,0.85)');
-  g.fillStyle=fog; g.fillRect(0,0,1000,700);
+  g.fillStyle=fog; g.fillRect(0,0,WW,WH);
 }
 
 // ═══ UI ════════════════════════════════════════════════════════════
@@ -1431,7 +1504,12 @@ function buildDom(){
   $('#ex-mapbtn').onclick=()=>{ if(!busy&&MAP) openWorld('view'); };
   $('#ex-world-close').onclick=closeWorld;
   el.wpGo.onclick=worldGo;
-  el.worldCv.addEventListener('click',worldClick);
+  el.worldCv.addEventListener('pointerdown',worldDown);
+  el.worldCv.addEventListener('pointermove',worldMove);
+  el.worldCv.addEventListener('pointerup',worldUp);
+  el.worldCv.addEventListener('pointercancel',()=>{ worldDrag=null; });
+  el.worldCv.addEventListener('wheel',e=>{ e.preventDefault(); worldPan(-(e.shiftKey?e.deltaY:e.deltaX),e.shiftKey?0:-e.deltaY); },{passive:false});
+  el.worldCv.style.touchAction='none';
   el.night.onclick=()=>{ lightMode={auto:'day',day:'night',night:'auto'}[lightMode]; renderClock(); save(); };
   el.spill.onclick=()=>{ if(!busy) openBag('pack'); };
   $('#ex-bagbtn').onclick=()=>{ if(!busy&&MAP) openBag(); };
@@ -1543,6 +1621,21 @@ function learn(o){
   applyMagic(); save();
 }
 function graduate(electives){ magic=fullMagic(hero.elem,electives); applyMagic(); save(); }
+// a random wizard who has sat Finals, as the Senior Tutor records it: three electives (never the barred
+// one) and Matriculation's tasks done; Agathe's errand already taken (for testing the forest)
+async function randomGraduate(){
+  stopTheme();
+  hero=await window.ExploreHero.randomHero(); await useHero();
+  const ban=oppOf(hero.elem), pool=ELEM_IDS.filter(e=>e!==hero.elem&&e!==ban);
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  graduate(pool.slice(0,3));
+  Object.assign(quests.wren||(quests.wren={}),{stage:2, finals:true, library:true, lab:true, schools:true, spar1:true});
+  // Agathe's letter already taken and the Moriquende found, so the forest is a world-map trip away;
+  // you start in Wrenford, so Corvanthe (east) is as near as Elfhome (west)
+  Object.assign(quests.forest||(quests.forest={}),{asked:true}); found.add('moriquende');
+  save();
+  toast(hero.name+', a graduate of '+[hero.elem].concat(pool.slice(0,3)).map(cap).join(', ')+'. Barred: '+cap(ban)+'.');
+}
 // one line for the satchel: what you can cast
 function magicLine(){
   if(!hero||!magic) return '';
@@ -1636,7 +1729,8 @@ function playTheme(){
 function titleMusic(){
   const t=document.getElementById('title-screen');
   const wk=document.getElementById('wk-screen');   // the Winks Table plays its own tavern music
-  if(t&&t.classList.contains('active')&&!running&&!(wk&&wk.classList.contains('active'))) playTheme();
+  const fr=document.getElementById('fr-screen');   // the Moriquende (silent for now)
+  if(t&&t.classList.contains('active')&&!running&&!(wk&&wk.classList.contains('active'))&&!(fr&&fr.classList.contains('active'))) playTheme();
   else if(!creating) stopTheme();
 }
 ['pointerdown','keydown'].forEach(t=>window.addEventListener(t,()=>{
@@ -2205,7 +2299,7 @@ function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.
 const NC={cache:'no-cache'};
 // CORE sheets are the ground and the loot every map and the satchel use.
 const ATLAS_NAMES=['ruins','ruins2','ruins3','ruins4','ruins5','ruins6','ruins7','ruins8','ruins9','ruins10','ruins11','ruins12','ruins13',
-  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23','ruins24','ruins25','ruins26'];
+  'ruins14','ruins15','ruins16','ruins17','ruins18','ruins19','ruins20','ruins21','ruins22','ruins23','ruins24','ruins25','ruins26','ruins27','ruins28'];
 const CORE_ATLASES=['ruins','ruins2','ruins3','ruins13'];
 const atlasLoading={};
 function loadAtlas(i){
@@ -2213,7 +2307,7 @@ function loadAtlas(i){
   return atlasLoading[i];
 }
 // the sheets a map draws from: its pieces' and its ground's (the ground letters that aren't on a core sheet)
-const GROUND_PIECE={S:'tr_snow_11',F:'tr_flood_11',X:'tr_wound_21',w:'floorWood1',l:'floorFlag1',y:'floorTerra1',b:'floorBroken1',u:'floorSewer',q:'sewerChannel'};
+const GROUND_PIECE={L:'elfFloor',J:'elfGrass',Y:'tr_elfpath_11',S:'tr_snow_11',F:'tr_flood_11',X:'tr_wound_21',w:'floorWood1',l:'floorFlag1',y:'floorTerra1',b:'floorBroken1',u:'floorSewer',q:'sewerChannel'};
 function atlasesFor(data){
   const need=new Set(CORE_ATLASES.map(n=>ATLAS_NAMES.indexOf(n)));
   for(const o of data.objects||[]){ const q=rects[o[0]]; if(q&&q[4]<ATLAS_NAMES.length) need.add(q[4]); }
@@ -2246,11 +2340,14 @@ async function load(){
   built=true;
 }
 // open({fresh:true}) is New Game: a new save slot, so the creator opens in Wrenford.
+// open({random:true}) (Test → 🎲 Random Graduate) is a new slot with a random wizard who has already sat
+// Finals: no creator or introduction, three random electives (randomGraduate).
 // open({slot:key}) loads that slot (Load Game); open() (Test → Explore) the profile's latest, or a new one.
 async function open(opts){
   opts=opts||{};
   if(!el.root) buildDom();
   el.root.classList.add('active');
+  if(opts.random) opts.fresh=true;
   { const who=profileNow(), k=opts.fresh?null:(opts.slot||(who.id===saveOwner&&saveKey)||((slotsOf(who.id)[0]||{}).key));
     const sv=k&&!opts.fresh?loadSave(k):null, warm=MAP&&k===saveKey&&who.id===saveOwner, m=sv&&sv.map?(sv.map.startsWith('room:')&&sv.roomSpec&&sv.roomSpec.outside?sv.roomSpec.outside.map:sv.map):null;
     if(!warm){
@@ -2280,7 +2377,8 @@ async function open(opts){
   sizeMini();
   let saved=s&&s.wiz; if(!saved) try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}
   setWizard(Math.max(0,wizKeys.indexOf(saved||'eldrin'))); renderClock();
-  if(!hero&&window.ExploreHero) await createHero(false); else { stopTheme(); await useHero(); }
+  if(!hero&&window.ExploreHero&&opts.random) await randomGraduate();
+  else if(!hero&&window.ExploreHero) await createHero(false); else { stopTheme(); await useHero(); }
   last=performance.now(); requestAnimationFrame(frame);
   el.hint.classList.remove('fade');
   setTimeout(()=>{ if(el.hint) el.hint.classList.add('fade'); },7000);
@@ -2347,6 +2445,8 @@ function renderLoad(){
 window.addEventListener('DOMContentLoaded',()=>{
   const b=document.getElementById('btn-explore');
   if(b) b.addEventListener('click',()=>open());
+  const rg=document.getElementById('btn-random-grad');
+  if(rg) rg.addEventListener('click',()=>open({random:true}));
   const nb=document.getElementById('btn-new-game'), lb=document.getElementById('btn-load-game');
   const tb=document.getElementById('btn-test'), tp=document.getElementById('title-test');
   if(nb) nb.addEventListener('click',()=>{ playTheme(); open({fresh:true}); });
@@ -2366,6 +2466,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
 window.Explore={open, close, refreshTitle, titleMusic:()=>titleMusic(),
   _talk:n=>talkTo(n), _magic:()=>magic, _folk:()=>folkApi,
+  _worldPt:id=>{ const l=world.locations.find(x=>x.id===id), f=worldFit(), b=el.worldCv.getBoundingClientRect(); return [b.left+f.ox+l.x*f.s, b.top+f.oy+l.y*f.s]; },   // tests: a place on screen
   _setClock:m=>folkApi.setClock(m),
   _fightActor:id=>{ const a=actors.find(x=>x.e.incident===id||x.e.id===id); if(a) fight(a); return !!a; }, _actorIds:()=>actors.map(a=>a.e.incident||a.e.id), _quests:()=>quests, _allies:()=>allies, _tick:()=>Year&&Year.tick(folkApi),
   knowAll:()=>{ if(!hero) return false; magic=fullMagic(hero.elem); applyMagic(); save(); return true; },   // testing: the whole Year at once

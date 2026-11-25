@@ -98,6 +98,51 @@ The prompt that made it, for more variants. Attach `sprites/fighters/source/halb
 
 ---
 
+## 1b. The Moriquende's battle figures
+
+**Done:** all seven arrived (`sprites/fighters/source/<key>.png`), cut by `python3 tools/cut_fighters.py`
+into `sprites/forest/<key>.png` with hand-set faces (`FACES`). The prompts are kept below for more.
+
+The creatures and elves you fight beside in the forest year (`fighters.json`; `docs/forest-design.md`).
+Until these arrive the game uses recolours of other art (`python3 tools/make_forest_placeholders.py`:
+Gretch for goblins and orcs, Gnash greyed for the Varg, the Archer in green for the Talons), and the
+recolours never overwrite real art once it's there.
+
+**Format:** like the soldier, archer and knight: full body, three-quarter view **facing right**, feet
+flat on the bottom edge, on a **flat pure black background** (not green: these go through the fighter
+cutter, which keys out black). Painted in their final colours. **Every figure fills the height of its
+picture**, the little goblin as much as the warboss: the game sets their sizes (goblin 0.7, Varg 1.05,
+alpha 1.15, orc 1.0, big'un 1.05, warboss 1.2 of a wizard's height, `spriteHeight` in `fighters.json`).
+Keep weapons, banners and horns inside the picture.
+
+**Shared prompt** (attach `sprites/fighters/source/soldier.png` and `sprites/fighters/source/knight.png`
+as style references; replace `[DESCRIPTION]`):
+
+> Pixel-art full-body battle sprite in exactly the same style, scale, pose conventions and level of
+> detail as the attached two figures: three-quarter view facing right, a ready fighting stance, feet
+> flat at the bottom of the image. This is [DESCRIPTION]. An original design. Hard pixel edges, a dark
+> outline round the figure, no glow, halo or magic effects around it. Plain flat pure black (#000000)
+> background, nothing else in the picture, no text, no shadow on the ground. Keep the figure's own
+> darkest shadows dark grey or dark brown, never pure black. Portrait image, the figure filling the
+> whole height, about 768 pixels tall.
+
+**After:** save each as `sprites/fighters/source/<file>`, run `python3 tools/cut_fighters.py` (it cuts
+it into `sprites/forest/<key>.png` and makes a first-guess HUD face in `portraits/small/<key>.jpg`),
+then tell Claude, who sets the face crop by hand (`FACES` in the tool) and strikes the row.
+
+| File | Who | Trait to show | Used by | [DESCRIPTION] |
+|---|---|---|---|---|
+| `goblin.png` | Goblin of the Moriquende | **Swarm**: they come in threes | `fighters.json` `goblin` | a scrawny forest goblin with mottled yellow-green skin, huge pointed ears with notches cut in them, a long hooked nose, a wide grin of needle teeth and small red eyes; a stolen elven cloak far too big for him, moss green, torn and dragging, tied on with string; a necklace of acorns and little bird bones; a crude spear made from a sharpened branch with a flint head bound in sinew; bare clawed feet. Crouched low and eager, spear jabbing forward |
+| `varg.png` | Varg (a wolfman) | **Pack Hunter**: goes for the wounded | `fighters.json` `varg` | a Varg, a hulking wolfman of the deep forest, standing upright on long wolf legs, a head taller than a man: a true wolf's head (long narrow snout, tall pointed ears, a thick ruff at the neck, not a hyena), shaggy grey fur darker along the back, pale yellow eyes, bared fangs; a hide loincloth and a belt hung with bone charms and a pouch, leather wraps round the forearms; a heavy stone axe lashed to an antler haft in one clawed hand, the other hand open with long claws. Hunched forward, snarling |
+| `varg_alpha.png` | Varg Alpha, leader of the pack | **Pack Hunter** | `fighters.json` `varg_alpha` | the leader of a Varg pack: an older, bigger wolfman with near-black fur and a streak of silver down the muzzle and spine, one ear torn, three long scars across the chest, one eye clouded white; a whole deer hide worn as a cloak with the antlered head as a hood thrown back; a necklace of orc tusks; a great two-handed stone maul. Upright and broad-chested, head raised as if about to howl, proud and menacing |
+| `orc.png` | Orc nomad of the east | **Brute**: grapples through a guard | `fighters.json` `orc` | an orc nomad driven west from the eastern plains: taller and much broader than a man, dark olive-green skin, a jutting jaw with two lower tusks, small fierce eyes, a shaved head with a black topknot; travel-worn furs over a patched leather jerkin, rag wraps on the forearms, heavy dusty boots; a big woodsman's felling axe held in both hands, its blade notched from chopping trees; a coil of rope and a waterskin at his belt. A wanderer, not a soldier. Axe raised to swing |
+| `orc_bigun.png` | Orc Big'un, chief of a band | **Brute** | `fighters.json` `orc_bigun` | the chief of an orc nomad band, the biggest of them: dark green skin covered in scars and rough tattooed bands, long tusks capped with bronze, a horned iron helm, a bear-fur mantle over the shoulders, a studded leather hauberk and iron bracers; a heavy cleaver-bladed war axe in one hand and a round wooden shield painted with a red hand print in the other. A swaggering, confident stance, grinning |
+| `orc_warboss.png` | Warboss, leader of a Waaagh | **Brute** | `fighters.json` `orc_warboss` | an orc warboss, huge and hulking, the strongest orc in the warband: very dark green skin, a massive jaw crowded with tusks, a spiked iron crown-helm, mismatched scavenged armour (a knight's dented breastplate, a cart-wheel rim worn as a shoulder guard, a chainmail skirt), a cloak of wolf pelts; a tall war-totem pole strapped to his back, hung with skulls, feathers and a ragged red banner, all inside the picture; a gigantic two-handed axe held high. Roaring |
+| `elf_talon.png` | Talons, the wardens of Elfhome (your ally) | **At Range**: a longbow | `fighters.json` `elf_talon` | an elf woman, a Talon, a warden of the Moriquende: tall and slender, pointed ears, long auburn hair in a warrior's braid, a calm, hard face; a hooded cloak in mottled leaf greens and browns over close-fitting brown leather armour tooled like bark, bracers, soft boots; drawing a tall, elegant pale-yew longbow with a green-fletched arrow nocked and aimed right, a quiver at her hip, a curved long knife at her belt |
+
+The elves you talk to in Elfhome need no art: they're painted from the elf hero figures
+(`PEOPLE` in `js/explore_elfhome.js`), and Sylvara is her own sprite.
+
 ## 2. Places (tilesets)
 
 **Format:** loose pieces on a flat #101217 background, no labels or dividers, 16 px gaps, the same
@@ -148,6 +193,85 @@ sheet 12 face; attach `tileset10_source.png` and `tileset12_source.png`):
 > wren, and a panelled wall with a framed portrait of a stern old scholar. Loose pieces with 16 pixel
 > gaps on a flat #101217 background, no labels, no text.
 
+
+### Elfhome's tileset (sheets 27 and 28)
+
+**Done:** both sheets arrived (`tileset27_source.png`, `tileset28_source.png`), cut into `ruins27` / `ruins28`
+(`RECTS27` / `RECTS28`, pieces `ef*`, ground `elfFloor` / `elfGrass` / `elfPath` and the path's
+`tr_elfpath_*` set) and built into Elfhome. The prompts are kept below for more.
+
+Elfhome is the elves' town in the Moriquende (`maps/elfhome.json`, `tools/mapgen/elfhome.js`): a glade
+round the Heart Tree with the Watch Table under it, and a place for each of the six houses round the
+edge. It's built from human town pieces for now (a watchtower, a chapel, mossy cottages; see "Elfhome"
+under 3 below). Two sheets replace them, one of buildings and one of props and ground, at the
+**outdoor** scale (not the interiors'): the same as `tileset_source.png` and `tileset4_source.png`, where
+a cottage is about 220 × 265 px and a ground tile about 100 px.
+
+**Attach:** `sprites/ruins/tileset_source.png` and `sprites/ruins/tileset4_source.png` (for scale, view
+and style), and `sprites/forest/source/hexes_source.png` (for the elven look: the tree-town and hamlet
+hexes are the town to match). **Save as** `sprites/ruins/tileset27_source.png` and
+`tileset28_source.png`; Claude adds `RECTS27` / `RECTS28` to `tools/cut_ruins_tileset.py`, swaps the
+pieces into the generator and strikes this entry.
+
+**The look, for both:** wood elves who grow their town rather than build it: living trees shaped into
+walls and roofs, curving lines, roofs of overlapping leaf-shaped shingles or living moss, pointed
+leaf-shaped windows glowing warm gold, round-arched doors, carved leaf and antler motifs, rope bridges
+and ladders, hanging lanterns, moss and ferns everywhere. Greens, browns, warm gold light, a touch of
+pale blue for the Seers. No stone castles, nothing human-looking.
+
+**Sheet 27, the buildings** (sizes are rough, in the sheet's own pixels):
+
+> A sprite sheet of top-down three-quarter-view pixel-art buildings for a wood-elf town in an ancient
+> forest, in exactly the same style, scale, palette and viewpoint as the attached town sheets, and in
+> the elven look of the attached hex tiles (the tree-town and the hamlet). Each a separate piece, its
+> base at the bottom, standing on a small patch of mossy ground:
+> (1) the Heart Tree, an enormous ancient oak about 550 px tall and 480 px wide, with roots spreading at
+> its foot, small round doors and windows in the trunk, a spiral stair round it, walkways and hanging
+> gold lanterns in its branches;
+> (2) the Seers' talan, a lookout platform high up a tall slender tree (about 300 px tall), a rope ladder
+> down to the ground, pale blue lanterns, a green banner with a white leaf;
+> (3) the Healing House, a low house grown from two living trees whose branches meet as its roof (about
+> 260 × 240), a round-arched door, bundles of herbs hanging under the eaves, warm windows;
+> (4) the Talons' lodge, a long timber hall with a curving leaf-shingled roof and carved hawk heads on
+> the gable ends (about 280 × 220), longbows racked under the eaves;
+> (5) the Guild's workshop, an open-fronted workshop under a broad tree (about 260 × 220), a half-built
+> wooden platform on trestles, coils of rope, ladders and a pole-lathe;
+> (6) the Beast-speakers' lodge, a round lodge of hide and woven wicker (about 220 × 200), antlers over
+> the door, a water trough beside it;
+> (7) the Elders' Stone, a ring of mossy stone with six carved seats round a flat stone table, under a
+> low arch of living branches (about 260 × 170);
+> (8) two small elven cottages, different from each other, with leaf-shingled roofs and pointed
+> gold-lit windows (about 200 × 220 each).
+> Loose pieces with at least 16 pixel gaps between them on a flat #101217 background. No labels, no
+> dividers, no text, no shadows touching other pieces.
+
+**Sheet 28, props and ground:**
+
+> A sprite sheet of top-down three-quarter-view pixel-art props and ground tiles for a wood-elf town in
+> an ancient forest, in exactly the same style, scale, palette and viewpoint as the attached town
+> sheets, and in the elven look of the attached hex tiles:
+> (1) the Watch Table, a round oak table about 150 px across with a map of hexagons carved into its top
+> and little wooden figures standing on it;
+> (2) three elven lantern posts: a slender carved post with a gold lantern, a curved shepherd's-crook
+> post with a hanging lantern, and a short post with a pale blue lantern (each about 60 × 110);
+> (3) a plaited-straw archery target on a wooden stand, and a rack of longbows;
+> (4) a wooden drying rack hung with herbs, a stone mortar and pestle, and a straw beehive skep;
+> (5) coils of rope with a stack of ladders and planks;
+> (6) a small spring: a clear pool ringed with mossy stones (about 200 × 140, flat on the ground);
+> (7) nature: a mossy fallen log, three clumps of ferns, two rings of red-capped toadstools, two kinds of
+> flowering bush (white blossom, purple foxgloves), a tree stump with toadstools on it, and a standing
+> stone carved with a leaf rune;
+> (8) ground tiles, each exactly 100 × 100 px and seamless when repeated: a mossy forest floor with
+> fallen leaves, a soft grass tile, and a mossy flagstone path tile;
+> (9) a 3 × 3 set of 100 × 100 tiles for the edges and corners of that mossy flagstone path where it
+> meets the forest floor (centre, four edges, four outer corners), the tiles butting together with no
+> gaps between them.
+> Everything except the 3 × 3 set as loose pieces with at least 16 pixel gaps between them on a flat
+> #101217 background. No labels, no dividers, no text.
+
+Tips that worked for the earlier sheets: make one sheet at a time, and if a piece comes out at the
+wrong scale, ask for that one again on its own with the cottage from `tileset_source.png` attached.
+
 ---
 
 ## 3. Other placeholders
@@ -156,6 +280,16 @@ sheet 12 face; attach `tileset10_source.png` and `tileset12_source.png`):
   wink). Fine as it is; a pixel-art felt table, cup and counters would be a nice touch.
 - **Wenna and the Lamplighter** (Cindergate, Gloamside) use Echo sprites as stand-ins: see "Echo art
   brief" in `docs/world-design.md`.
+- **The Moriquende** (`js/forest.js`, the forest strategy year):
+  - ~~**Hex tiles**~~ and ~~**map figures**~~: **Done.** The user's two sheets
+    (`sprites/forest/source/hexes_source.png`: 13 pointy-top tiles; `tokens_source.png`: 10 figures) are
+    cut by `python3 tools/cut_forest_art.py` (`--preview out.png`) into `sprites/forest/hex_<kind>.png`
+    (old, wood, glade, hill, marsh, crag, lake, felled, burnt, home, hamlet, talan, ancient) and
+    `tok_<kind>.png` (goblin, shaman, varg, orc, totem, deer, seer, talon, charm, guild), 256 colours.
+  - **Battle fighters:** a prompt per figure in "1b. The Moriquende's battle figures" above.
+  - **Battle backdrop** (`backgrounds/forest.jpg`, 1672×941): the `forest` row of section 5a, with its shared prompt.
+- ~~**Elfhome**~~: **Done**, its own sheets 27 and 28 (see section 2). The six house leaders are painted from the elf hero
+  figures (`PEOPLE` in `js/explore_elfhome.js`) and need no art.
 - **The four invented dons** (Dr Penhallow, Mr Quill, Canon Marrow, Widow Coyle) are recolours of two
   base figures (`tools/make_folk_sprites.py`); their own art would replace them, with the shared people
   prompt above.
@@ -273,6 +407,7 @@ Done so far (in `backgrounds/`, picked by `arenaHere` in `js/explore.js`): `wren
 | `quarry` | a dusty quarry district: cut stone, mine-cart rails, a pit-head winch, a giant toppled stone face |
 | `frost` | a frozen market square: icicle-hung stalls, snowdrifts, a frozen fountain, pale blue light |
 | `gloam` | a graveyard district: mausoleums, black iron gates, violet-flame lamps, drifting shade |
+| `forest` | an ancient elven forest clearing at dusk: huge mossy trunks and roots framing a leaf-strewn open floor, elven lanterns and a rope bridge high in the canopy, shafts of green-gold light, mist between the trees (the Moriquende's duels and Elfhome; until it arrives they use `road`: `arena:'road'` in `leadFight` in `js/forest.js`, `ARENA_MAPS.elfhome` in `js/explore.js`) |
 | `wound` | the edge of the Wound: a glowing purple-white rift, floating rubble and inside-out houses, crystal spill in all eight element colours, a huge barred gate (the Last Gate) far behind |
 
 #### 5b. Wrenford's own tileset (one sheet, tileset house rules)

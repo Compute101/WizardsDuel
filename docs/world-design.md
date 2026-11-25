@@ -121,6 +121,8 @@ in battle: you pick for each, or set one to AI.
 6. **Warbands.** *Done:* 17 named crews (`js/explore_bands.js`) walk the streets, hunt Echoes for spill, take tolls or attack, and can be robbed or rob you; the halberdier joins the soldiers and archers. Talking, trading and hiring them waits for step 5.
 7. **Character creation and the party** (needs the 6-seat battle work) can start any time after 1. *Started:* the look (see "Character creation" below); the magic (a starting element's spells, the barred opposite, growth) and the party come next.
 
+8. **The Moriquende (after Wrenford):** a hex-map strategy year in the forest west of Wrenford, where you meet Sylvara: limited watch, goblins, Varg (wolfmen) and incoming orcs kept in check against each other, while Sylvara tends four ancient trees. *Step 1 built* (the strategy layer on its own screen): `docs/forest-design.md`.
+
 1 and 3 are the backbone.
 
 ## Art needed
