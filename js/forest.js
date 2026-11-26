@@ -401,7 +401,7 @@ function render(){
   $('fr-stats').innerHTML=`<span title="Food">🍖 ${Math.floor(S.food)}</span><span title="Mana">✨ ${S.mana}</span><span title="The Wood: ${mood}">${mi} Wood ${Math.round(S.wood)}</span><span title="Elves (youths)">🧝 ${elves.length}${S.youths?'+'+S.youths:''}</span><span title="Ancient trees tended">🌲 ${S.trees.filter(t=>t.done).length}/${F.TREES}</span><span title="Seen clearly / at all">👁 ${Math.round(F.coverage(S)*100)}%</span>`;
   $('fr-spell').disabled=S.spellUsed||!!S.over||!!S.pending; $('fr-end').disabled=!!S.over||!!S.pending;
   const h=$('fr-hint');
-  if(!h.classList.contains('on')) h.textContent=ui.spell?`Tap a hex to ${ui.spell==='strike'?'strike':ui.spell}. (Esc to cancel)`:(()=>{ const e=ui.elf&&S.elves.find(x=>x.id===ui.elf); return e&&!e.moved&&!e.wounded&&e.role!=='sylvara'?'Tap a lit hex to move there.':''; })();
+  if(!h.classList.contains('on')) h.textContent=ui.spell?`Tap a hex to ${ui.spell==='strike'?'strike':ui.spell}. (Esc to cancel)`:(()=>{ const e=ui.elf&&S.elves.find(x=>x.id===ui.elf); return e&&!e.moved&&!e.wounded&&e.role!=='sylvara'?(e.task?'Busy here this week. Pick \u2018No task\u2019 to move instead.':'Tap a lit hex to move there.'):''; })();
   h.style.display=h.textContent?'':'none';
   const pk=ui.elf+'|'+ui.sel, pn=$('fr-panel'); pn.innerHTML=panelHtml(); if(pk!==lastPanel){ pn.scrollTop=0; lastPanel=pk; }
   wirePanel();
@@ -420,7 +420,7 @@ function panelHtml(){
       if(!e.wounded&&next&&S.turn>=2) h+=`<button class="fr-btn" id="fr-wait" type="button" ${S.sylWait?'disabled':''}>${S.sylWait?'She will wait this week':'Ask her to wait a week'}</button>`;
     } else if(e.wounded) h+=`<p>Wounded: resting at Elfhome for ${e.wounded} more weeks.</p>`;
     else {
-      h+=`<p class="fr-note">${e.moved?'Moved this week.':'Tap a lit hex to move (up to '+R.move+').'}</p>`;
+      h+=`<p class="fr-note">${e.moved?'Moved this week.':e.task?'Busy here this week. Pick \u2018No task\u2019 to move instead.':'Tap a lit hex to move (up to '+R.move+').'}</p>`;
       const ts=F.tasksFor(S,e);
       if(ts.length) h+=`<div class="fr-tasks">${ts.map((t,i)=>`<button class="fr-btn${e.task&&e.task.t===t.t&&(e.task.id===t.id)&&(e.task.to===t.to)?' on':''}" data-task="${i}" type="button">${esc(t.label)}</button>`).join('')}${e.task?'<button class="fr-btn" data-task="-1" type="button">No task</button>':''}</div>`;
       else if(e.role==='seer') h+=`<p class="fr-note">${hx.talan&&!hx.build?'Watching from the sentry post.':'Watching. A sentry post here would let them see further.'}</p>`;
@@ -505,12 +505,13 @@ function dirBadges(){
   return out;
 }
 function tap(x,y){
+  // an elf with a task stays put: tapping another hex just lets go of it (pick 'No task' to move)
   // a sign's badge: say what it is
   if(S){ const b=dirBadges().find(b=>Math.hypot(b.x-x,b.y-y)<=BADGE_R+8); if(b){ toast(`${SIGN_ICON[b.sg.kind]||''} ${signText(b.sg)}`); return; } }
   const k=pixToHex(x,y); if(!k||!S||S.over) return;
   if(ui.spell){ const err=F.cast(S,ui.spell,k,ui.ring); if(err) toast(err); else { sfx('spell_'+ui.spell); ui.spell=null; save(); ui.sel=k; } render(); return; }
   const e=ui.elf&&S.elves.find(x=>x.id===ui.elf);
-  if(e&&e.role!=='sylvara'&&!e.wounded&&!e.moved&&k!==e.pos){ const err=F.canMove(S,e,k); if(!err){ F.move(S,e.id,k); ui.sel=k; save(); render(); return; } }
+  if(e&&e.role!=='sylvara'&&!e.wounded&&!e.moved&&!e.task&&k!==e.pos){ const err=F.canMove(S,e,k); if(!err){ F.move(S,e.id,k); ui.sel=k; save(); render(); return; } }
   ui.sel=k;
   // tapping a hex with one of your elves in it picks the first if none is picked
   if(!e){ const here=S.elves.filter(x=>x.pos===k&&!x.wounded&&x.role!=='sylvara'); if(here.length===1){ ui.elf=here[0].id; } }
@@ -527,7 +528,7 @@ function draw(){
   c.fillStyle='#0d1a10'; c.fillRect(0,0,cw,ch);
   const s=hexSize(), T=performance.now();
   const e=ui.elf&&S.elves.find(x=>x.id===ui.elf);
-  const reach=e&&!e.moved&&!e.wounded&&e.role!=='sylvara'?F.reachable(S,e.pos,F.ROLES[e.role].move):null;
+  const reach=e&&!e.moved&&!e.task&&!e.wounded&&e.role!=='sylvara'?F.reachable(S,e.pos,F.ROLES[e.role].move):null;
   for(const k in S.hexes){
     const hx=S.hexes[k], [x,y]=hexXY(k); if(x<-s||y<-s||x>cw+s||y>ch+s) continue;
     const tile=hexArt(hx);
