@@ -4,7 +4,7 @@
  "cols": 56,
  "rows": 44,
  "seed": 7501,
- "flow": "N",
+ "flow": "S",
  "fx": "rain",
  "haze": "20,60,90,0.18",
  "palette": "drowned",
@@ -812,7 +812,7 @@
   ],
   "line": [
    "The Rim of the Wound",
-   "The harbour drains into the Wound here, over a lip of drowned stone, without a sound. The water does not fall. It just stops being."
+   "The harbour's water wells up out of the Wound here, over a lip of drowned stone, without a sound. Nobody has ever seen where it comes from."
   ],
   "lastGate": [
    "The Sea Gate",

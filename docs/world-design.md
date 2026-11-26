@@ -129,7 +129,16 @@ in battle: you pick for each, or set one to AI.
 
 The user's outline (November 2026), so the world feels like you could go anywhere. Everything built so
 far (Wrenford, the Moriquende, Hollowmere, Corvanthe) is one region, **the Vale of the Hollow**, on a
-home isle. Names with "?" are placeholders. A tappable sketch of it was published as an artifact.
+home **island**. Names with "?" are placeholders. A tappable sketch was published as an artifact
+("The Known World Sketch"). **It stays a design map for now:** the game keeps its own world map of the
+Vale (`maps/world.json`); later this chart could become the top level (long roads, sea voyages and
+airships between regions), each region with its own walking map at today's scale.
+
+**Decided:** home is an island, across **the Narrows** from the Mainland (a ferry from Ferryhythe?
+lands in Hallowmark?). The Hollow was reversed (see "The Hollow"). The snakemen are **the Sythrae**,
+Gnash's hyena people **the Hrakka**.
+
+### The home isle and its seas
 
 | Where | Who lives there | Notes |
 |---|---|---|
@@ -138,15 +147,33 @@ home isle. Names with "?" are placeholders. A tappable sketch of it was publishe
 | **The Hammerfells?** (north of Wrenford) | dwarves in closed holds; humans and Varg in mining towns below | the dwarves trade with the towns and don't welcome outsiders |
 | **The Harrow** (lowlands between Wrenford and the mountains) | roving orc bands | the lowlands are plagued with orcs |
 | **The Grey Sea? and the Skerries?** (north of the mountains) | hardy humans, Varg and dwarves on small islands | a cold sea; not meant for travel beyond it |
-| **The Wolf Sea?** (east of Corvanthe) | Varg pirates | cold; the river reaches it east of the city (**Wolfmouth?** at the mouth); **the Reaver Isles?** to its north |
-| **The Mainland** (south) | to be filled in | a large continent like Europe, a different shape: forests, plains, mountains, rivers |
-| **The Southlands** (south of the Mainland, over **the Middle Sea?**) | snakemen (name needed), humans, hyenamen like Gnash | desert in the north, savannah, jungle in the south |
+| **The Wolf Sea?** (east of Corvanthe) | Varg pirates | cold; the Hollow reaches it east of the city (**Wolfmouth?** at the mouth); **the Reaver Isles?** to its north |
 
-**Open questions:**
-- **The Hollow's direction.** The user puts the river running east from Corvanthe to the sea; the game has it rising north of the city and flowing south-west past Hollowmere. Suggested fix: reverse it (rises in the southern downs, runs north-east past Hollowmere, in through Cindergate, through the Wound, out through the Drowned Quarter, the old harbour, now downstream, to the Wolf Sea). Changing it means the `flow` on the city maps, `maps/world.json`'s `river`, and the lore lines.
-- **Island or not:** the sketch has a channel (**the Narrows**, a ferry) between the home isle and the Mainland; it could join by land instead.
-- **Names** for the snakemen and for Gnash's hyena people.
-- **Two levels of map:** this chart as the top level (long roads and sea voyages between regions), each region with its own walking map at today's scale.
+### The Mainland (south, across the Narrows)
+
+Deep, since a lot is planned to happen there. Like Europe, a different shape. North to south:
+
+| Country | Who | The idea |
+|---|---|---|
+| **Hallowmark?** (just across the Narrows; capital Hale?) | humans | **magic is illegal** as too dangerous; witch-finders watch the ferries, so your first step onto the Mainland is as a criminal |
+| **The Brazen Dominion?** (east of it; Varrow?) | humans, soldiers, battle-mages | **warlike; hires and drafts wizards** into its armies; at war with Hallowmark |
+| **The Tuskholds?** (the north-east arm, across the Wolf Sea; Grukmoot?) | **orcs who have settled down** | farms, herds, walled towns; they call the Harrow's orcs savages |
+| **Gimbaldry?** (western foothills; the skyport Gimbal?) | **gnomes** | **magical airships** that fly all over the world (routes on the sketch) |
+| **The Greatspine? and the Deepholds?** (the great central range; the Deepgate) | **deep dwarves** | live deep under the mountains, **loathe daylight**, come up only to trade |
+| **The Gravemarches?** (south-west; Barrowcourt?) | **necromancer-lords** like Daveron, the dead, tithe-paying peasants | the dead work the fields and guard the roads |
+| **Velumbra?** (beside them, by the Middle Sea; Umbral Hollow?) | **drow**: dark elves, purple skin, pale hair | a twilight forest over deep caverns |
+| **The Lumen Hierarchy?** (the central river plain; holy city Lumen?) | priest-mages, pilgrims | **a theocracy that worships magic**; its priests are mages |
+| **The Concord?** (south-east of the range; Brassgate?) | ruling wizards, engineers, clerks | **very orderly; magiscience and industry** (canals that run uphill, rune-mills, lightning lamps) |
+| **Wyrmreach?** (the volcanic south-east; the Ember Throne?) | **a dragon king**, **half-dragon lizardmen nobles** like Korvath, human subjects | the nobles all do magic |
+| The southern coast | not decided | free ports, a trade league or pirates? |
+
+### The Southlands (over **the Middle Sea?**)
+
+Desert along the north coast, savannah in the middle, jungle in the south: **the Sythrae** (snakemen,
+temple-cities in the jungle), humans, and **the Hrakka** (hyenamen like Gnash, clans on the savannah).
+
+**Still open:** the countries' names; who trades with Saltreach from the west; the southern coast;
+whether the gnome airships become the way to travel between regions.
 
 ## Art needed
 
@@ -534,10 +561,12 @@ check `ExploreFolk.metAtUni(key)` to say "we met at uni"; and more townsfolk, no
 
 ## The Hollow
 
-The river of Hollowmere rises north of Corvanthe and runs through the city: in under the harbour wall
-in the Drowned Quarter, through the Wound, and out of Cindergate boiling, then south-west to
-Hollowmere. That is why Hollowmere's folk say it runs the other way at night. Only those two sectors
-(opposites, Water and Fire) carry it; the inner rings will carry it on to the Wound.
+The river of Hollowmere rises in the southern downs, runs north past Hollowmere (just outside the
+walls), and through the city: in under the wall in Cindergate, boiling by the next bridge, through
+the Wound, and out through the Drowned Quarter, the old harbour, then east to the Wolf Sea. Hollowmere's
+folk say it runs the other way at night. (Until November 2026 it ran the other way, from the north,
+out of Cindergate to Hollowmere; the user reversed it so the river reaches the sea east of the city.)
+Only those two sectors (opposites, Fire and Water) and their inner districts carry it.
 
 ## Interiors
 

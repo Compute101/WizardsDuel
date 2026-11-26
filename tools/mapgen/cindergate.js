@@ -17,7 +17,7 @@ const LORE = {
   square:  ['Forge Square', 'Where the guild forges stood round a square of iron-grey flags. The flags are cracked in rings, as if something very hot had walked in circles here.'],
   tavern:  ['The Anvil and Ember', 'The forgers\' tavern. Tankards stand half-full on every table, the ale boiled away inside them.'],
   chapel:  ['Chapel of the Hearth', 'Every candle in the chapel is lit, and none of them burns down.'],
-  river:   ['The Hollow, Boiling', 'The river comes out of the Wound scalding. Steam rolls off it day and night, and fish swim in it, cooked white, and do not die.'],
+  river:   ['The Hollow, Boiling', 'The river comes in under the wall cold, and is scalding by the next bridge. Steam rolls off it day and night on its way to the Wound, and fish swim in it, cooked white, and do not die.'],
   bridge:  ['Foundry Bridge', 'Iron plates bolted over stone. They are warm underfoot, from the water.'],
   bridgeBroken:['Melted Bridge', 'The iron span sagged into the river like wax. The far half still glows dull red where the water touches it.'],
   lamppost:['Lantern', 'The glass is black with soot, but something inside is still burning.'],
@@ -56,8 +56,8 @@ module.exports = function cindergate(rects){
   city.square(SQ.x,SQ.y,4.4,3.3);                                              // Forge Square
   city.square(9.5,15.5,2.8,2.2,'c');                                           // Tinkers' Corner
   city.square(28.5,39.5,3.5,1.8,'c');                                          // inside the gate
-  // the Hollow, boiling: it comes out of the Wound and leaves the city here, under the wall
-  const riv=river(m,city,44,46,'S'), rgap=riv.gap;
+  // the Hollow, boiling: it comes into the city here, under the wall, and runs north to the Wound
+  const riv=river(m,city,44,46,'N'), rgap=riv.gap;
   for(let y=3*T;y<42*T;y+=150+m.r()*120) m.glows.push({x:riv.mid(Math.floor(y/T)),y,r:140,c:'255,150,70'});   // the scalding water glows
 
   // ── landmarks, then the terraces round them ──
