@@ -84,7 +84,7 @@ module.exports = function elfhome(rects){
     {role:'elf_healer', x:34*T+40, y:12*T+20},
     {role:'elf_talon', x:12*T, y:22*T+60},
     {role:'elf_guild', x:29*T, y:22*T+70},
-    {role:'elf_charm', x:CX+150, y:25*T+40},
+    {role:'elf_charm', x:CX+150, y:23*T},
   ];
   m.safe=1; m.noStroll=1; m.music='audio/moriquende_theme.mp3';
   m.spawns={road:[37*T,16*T+40], centre:[CX+120,CY+220]};
