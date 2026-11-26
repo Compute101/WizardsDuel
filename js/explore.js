@@ -480,6 +480,67 @@ function drawGreetings(cw){
     ctx.fillStyle='#3a2810'; ctx.fillText(s.greet,bx,by-bh/2); ctx.restore();
   }
 }
+// ── Asking the way: a townsperson's directions leave a gold trail along the streets (js/explore_folk.js guides) ──
+// `way` = {x, y, label, map, until}: the dots follow the streets (a BFS over roadSet from the road tile nearest
+// you to the reached tile nearest the place), then run straight to it; a ring marks it here and on the minimap.
+// It clears when you get there (WAY.reach), leave the map or after WAY.ms.
+const WAY = {ms:240000, reach:110, every:0.8};
+let way=null, wayPath=null, wayT=0;
+function showWay(o){ if(!MAP||!o) return; way={x:o.x, y:o.y, label:o.label||'', map:MAP.id, until:performance.now()+WAY.ms}; wayPath=null; wayT=0; }
+// a step between two street tiles counts only if you could walk it: walls and fences stand on some
+// street edges (Founders' Quad's low wall over its path), so sample the way between the tile centres
+let wayEdges=null;
+function wayOpen(c,n){
+  if(!wayEdges||wayEdges.map!==MAP) wayEdges={map:MAP, ok:new Map()};
+  const key=Math.min(c,n)+':'+Math.max(c,n); let v=wayEdges.ok.get(key);
+  if(v===undefined){ const ax=(c%COLS+0.5)*T, ay=(Math.floor(c/COLS)+0.5)*T, bx=(n%COLS+0.5)*T, by=(Math.floor(n/COLS)+0.5)*T;
+    v=true; for(const f of [0.2,0.4,0.6,0.8]) if(blocked(ax+(bx-ax)*f,ay+(by-ay)*f+4)){ v=false; break; }
+    wayEdges.ok.set(key,v); }
+  return v;
+}
+function wayRoute(){
+  if(!roadSet) roadsOf();
+  if(!roadList.length) return [];
+  const from=nearestRoad(wiz.x,wiz.y); if(from==null) return [];
+  const prev=new Map([[from,-1]]), q=[from]; let best=from, bd=1e9;
+  for(let h=0;h<q.length;h++){ const c=q[h], x=c%COLS;
+    const d=Math.hypot(x*T+T/2-way.x,Math.floor(c/COLS)*T+T/2-way.y); if(d<bd){ bd=d; best=c; }
+    for(const n of [c-COLS,c+COLS,x>0?c-1:-1,x<COLS-1?c+1:-1]) if(n>=0&&roadSet.has(n)&&!prev.has(n)&&wayOpen(c,n)){ prev.set(n,c); q.push(n); } }
+  const out=[]; for(let c=best;c!==-1;c=prev.get(c)) out.unshift({x:(c%COLS)*T+T/2, y:Math.floor(c/COLS)*T+T/2});
+  out.push({x:way.x, y:way.y});
+  return out;
+}
+function updateWay(dt){
+  if(!way) return;
+  if(!MAP||MAP.id!==way.map||performance.now()>way.until){ way=null; wayPath=null; return; }
+  if(Math.hypot(wiz.x-way.x,(wiz.y-way.y)*1.3)<WAY.reach){ toast((way.label?way.label+': ':'')+'you\'re there.'); way=null; wayPath=null; return; }
+  if((wayT-=dt)<=0||!wayPath){ wayT=WAY.every; wayPath=wayRoute(); }
+}
+function drawWay(t){
+  if(!way||!wayPath||wayPath.length<1) return;
+  // dots every GAP px along the route, drifting toward the place; skip the stretch you're already standing on
+  const k=Math.max(1,1/zoom), GAP=44*k, shift=(t/18*k)%GAP, R=9*k;   // at least this big on screen
+  const pts=[{x:wiz.x,y:wiz.y}].concat(wayPath);
+  let acc=-shift;
+  ctx.save();
+  for(let i=1;i<pts.length;i++){
+    const a=pts[i-1], b=pts[i], len=Math.hypot(b.x-a.x,b.y-a.y); if(!len) continue;
+    for(;acc<len;acc+=GAP){ if(acc<0) continue;
+      const x=a.x+(b.x-a.x)*acc/len, y=a.y+(b.y-a.y)*acc/len;
+      if(Math.hypot(x-wiz.x,y-wiz.y)<40) continue;
+      if(Math.hypot(x-way.x,y-way.y)<GAP*0.6) continue;
+      const pulse=0.75+0.25*Math.sin(t/160-(x+y)/40);
+      ctx.fillStyle=`rgba(255,200,80,${0.35*pulse})`; ctx.beginPath(); ctx.ellipse(x,y,R*1.9,R*1.05,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(60,35,0,0.6)'; ctx.beginPath(); ctx.ellipse(x,y+1,R+1.5,R*0.6+1,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=`rgba(255,205,70,${pulse})`; ctx.beginPath(); ctx.ellipse(x,y,R,R*0.55,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=`rgba(255,250,215,${pulse})`; ctx.beginPath(); ctx.ellipse(x,y-R*0.1,R*0.45,R*0.25,0,0,Math.PI*2); ctx.fill(); }
+    acc-=len;
+  }
+  const r=(18+Math.sin(t/200)*4)*k;
+  ctx.strokeStyle='rgba(255,214,102,0.95)'; ctx.lineWidth=3*k;
+  ctx.beginPath(); ctx.ellipse(way.x,way.y,r,r*0.45,0,0,Math.PI*2); ctx.stroke();
+  ctx.restore();
+}
 function drawClashes(t){                           // a crew and Echoes trading blows: sparks and steel
   for(const k of clashes){
     const e=(t-k.t0)/1000;
@@ -771,6 +832,10 @@ const folkApi = {
   stand:(x,y)=>{ wiz.seated=false; if(x!=null){ wiz.x=x; wiz.y=y; } },
   wizPos:()=>({x:wiz.x, y:wiz.y, face:wiz.face, glow:wizGlow}),
   passTime:m=>{ clock=(clock+m)%1440; renderClock(); },
+  // asking the way (js/explore_folk.js guides): where someone or a fixed room's door is, and the gold trail there
+  npcPos:role=>{ const n=npcs.find(x=>x.role===role&&present(x)); return n?{x:n.x,y:n.y}:null; },
+  doorPos:type=>{ const d=doors.find(x=>x.spec&&x.spec.fixed===type); return d?{x:d.x,y:d.y}:null; },
+  showWay:o=>showWay(o), wizPos0:()=>({x:wiz.x,y:wiz.y}),
 };
 // a practice bout (the Schools, the Laboratory): fought at full strength, and you come back as you went
 // in (the University's healers see to that); nothing is lost on a defeat
@@ -1974,6 +2039,7 @@ function update(dt){
   updateEchoes(dt); if(busy) return;
   updateBands(dt); if(busy) return;
   updateStrollers(dt);
+  updateWay(dt);
   // a way out? (you must step out of the one you arrived in first)
   const ex=exitAt(wiz.x,wiz.y);
   if(!ex) exitArmed=true;
@@ -2166,6 +2232,7 @@ function draw(t){
     drawPiece(o.kind,o.x,o.y,hides?0.5:undefined,o.scale);
   }
   drawClashes(t);
+  if(!scene) drawWay(t);                     // over the props, so a wall or a roof edge can't hide the trail
   // inspect marker
   if(near && el.say.hidden && !scene){
     const s=near.npc?{h:WIZ_H}:near.decal?{h:40}:sizeOf(near.kind,near.scale), bob=Math.sin(t/250)*3;
@@ -2322,6 +2389,7 @@ function drawMini(){
   m.strokeRect(cam.x*k+0.5,cam.y*k+0.5,vw/zoom*k,vh/zoom*k);
   for(const a of actors){ m.fillStyle=a.e.el?SPILL[a.e.el][1]:'#ff5050'; m.fillRect(a.x*k-1.5,a.y*k-1.5,3,3); }
   for(const c of crews){ m.fillStyle=c.b.col; m.strokeStyle='#000'; m.fillRect(c.x*k-2.5,c.y*k-2.5,5,5); m.strokeRect(c.x*k-2.5,c.y*k-2.5,5,5); }
+  if(way&&way.map===MAP.id){ m.strokeStyle='#ffd666'; m.lineWidth=2; m.beginPath(); m.arc(way.x*k,way.y*k,3.5+Math.sin(performance.now()/200),0,Math.PI*2); m.stroke(); }
   m.fillStyle='#fff'; m.beginPath(); m.arc(wiz.x*k,wiz.y*k,2.5,0,Math.PI*2); m.fill();
 }
 let clockT=0;

@@ -1091,6 +1091,46 @@
    "role": "benedek",
    "x": 3155.2,
    "y": 2214.4
+  },
+  {
+   "role": "guide_tull",
+   "x": 2784,
+   "y": 1651.2
+  },
+  {
+   "role": "guide_dilly",
+   "x": 2144,
+   "y": 1651.2
+  },
+  {
+   "role": "guide_nan",
+   "x": 1504,
+   "y": 1779.2
+  },
+  {
+   "role": "guide_hob",
+   "x": 1440,
+   "y": 2227.2
+  },
+  {
+   "role": "guide_sparrow",
+   "x": 1504,
+   "y": 1139.2
+  },
+  {
+   "role": "guide_wat",
+   "x": 2336,
+   "y": 691.2
+  },
+  {
+   "role": "guide_kettle",
+   "x": 416,
+   "y": 1651.2
+  },
+  {
+   "role": "guide_ned",
+   "x": 2848,
+   "y": 2611.2
   }
  ],
  "safe": 1,
