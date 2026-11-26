@@ -125,6 +125,29 @@ in battle: you pick for each, or set one to AI.
 
 1 and 3 are the backbone.
 
+## The wider world (sketch, not built)
+
+The user's outline (November 2026), so the world feels like you could go anywhere. Everything built so
+far (Wrenford, the Moriquende, Hollowmere, Corvanthe) is one region, **the Vale of the Hollow**, on a
+home isle. Names with "?" are placeholders. A tappable sketch of it was published as an artifact.
+
+| Where | Who lives there | Notes |
+|---|---|---|
+| **The Wildwood?** (west of the Moriquende) | tribes of Varg, goblins, orcs and elves | more forest with no Warden; the West Road runs through it |
+| **Saltreach?** (the West Road's end) | fisherfolk and traders | a port on **the Sunset Ocean?**; ships come from the west, from whoever lives over the water (not yet known) |
+| **The Hammerfells?** (north of Wrenford) | dwarves in closed holds; humans and Varg in mining towns below | the dwarves trade with the towns and don't welcome outsiders |
+| **The Harrow** (lowlands between Wrenford and the mountains) | roving orc bands | the lowlands are plagued with orcs |
+| **The Grey Sea? and the Skerries?** (north of the mountains) | hardy humans, Varg and dwarves on small islands | a cold sea; not meant for travel beyond it |
+| **The Wolf Sea?** (east of Corvanthe) | Varg pirates | cold; the river reaches it east of the city (**Wolfmouth?** at the mouth); **the Reaver Isles?** to its north |
+| **The Mainland** (south) | to be filled in | a large continent like Europe, a different shape: forests, plains, mountains, rivers |
+| **The Southlands** (south of the Mainland, over **the Middle Sea?**) | snakemen (name needed), humans, hyenamen like Gnash | desert in the north, savannah, jungle in the south |
+
+**Open questions:**
+- **The Hollow's direction.** The user puts the river running east from Corvanthe to the sea; the game has it rising north of the city and flowing south-west past Hollowmere. Suggested fix: reverse it (rises in the southern downs, runs north-east past Hollowmere, in through Cindergate, through the Wound, out through the Drowned Quarter, the old harbour, now downstream, to the Wolf Sea). Changing it means the `flow` on the city maps, `maps/world.json`'s `river`, and the lore lines.
+- **Island or not:** the sketch has a channel (**the Narrows**, a ferry) between the home isle and the Mainland; it could join by land instead.
+- **Names** for the snakemen and for Gnash's hyena people.
+- **Two levels of map:** this chart as the top level (long roads and sea voyages between regions), each region with its own walking map at today's scale.
+
 ## Art needed
 
 - City pieces: terraced and two-storey houses, a city wall and gate, alleys, a market square, a
