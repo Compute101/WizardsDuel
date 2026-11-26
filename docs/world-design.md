@@ -138,6 +138,20 @@ airships between regions), each region with its own walking map at today's scale
 lands in Hallowmark?). The Hollow was reversed (see "The Hollow"). The snakemen are **the Sythrae**,
 Gnash's hyena people **the Hrakka**.
 
+**Scale and geography (the second sketch):** the home isle is half its first size and the Mainland
+about twice, roughly Britain beside Europe, so most of the world is the Mainland. Drawn by real
+geography: rivers rise in high ground (the Hammerfells, the Greatspine, the Sunwall?, the isle's
+western uplands), join into trees and end in estuaries or deltas; the Greatspine is the Mainland's
+watershed (north to the Narrows, the Wolf Sea and the inland **Salt Sea?**, south to the Middle Sea),
+crossed by two passes (the Deepgate on the western one); capitals sit on rivers, harbours and passes,
+and roads follow valleys and coasts; the west is wet and wooded, the north-east dry steppe, the Middle
+Sea coast scrub and olives, the Southlands' desert in the rain shadow of **the Sunwall?** (its Atlas).
+New on it: **Westholm?** (an island west of the home isle, its Ireland), **the Westmarch?** (the
+Mainland's rainy west coast, open), **the Free Ports?** (a peninsula into the Middle Sea, open), three
+peninsulas (Hierarchy, Free Ports, Wyrmreach), lakes at the Greatspine's feet, and a Nile-like river
+with a delta in the Southlands. Rivers named so far: the Hale? (Hallowmark), the Brass? (the
+Dominion), the Holy River? (the Hierarchy), the Mourne? (the Gravemarches).
+
 ### The home isle and its seas
 
 | Where | Who lives there | Notes |
@@ -561,8 +575,8 @@ check `ExploreFolk.metAtUni(key)` to say "we met at uni"; and more townsfolk, no
 
 ## The Hollow
 
-The river of Hollowmere rises in the southern downs, runs north past Hollowmere (just outside the
-walls), and through the city: in under the wall in Cindergate, boiling by the next bridge, through
+The river of Hollowmere rises in the western uplands, runs east past Wrenford (where the Wren joins
+it) and Hollowmere (just outside the walls), and through the city: in under the wall in Cindergate, boiling by the next bridge, through
 the Wound, and out through the Drowned Quarter, the old harbour, then east to the Wolf Sea. Hollowmere's
 folk say it runs the other way at night. (Until November 2026 it ran the other way, from the north,
 out of Cindergate to Hollowmere; the user reversed it so the river reaches the sea east of the city.)
