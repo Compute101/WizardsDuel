@@ -674,7 +674,50 @@ function showDialog(title,text,choices){
   }
   if(choices&&choices.length) el.say.appendChild(row);
   el.say.hidden=false; el.hint.classList.add('fade');
+  paginateSay(text);
 }
+// ── long speeches come a page at a time: the text is cut at paragraphs (sentences when a paragraph
+// is too long alone) into pages that fit SAY_MAX_H of the screen; a tap, E or Space reads on, and the
+// buttons only show on the last page ──
+const SAY_MAX_H=0.58;
+let sayPages=null, sayPage=0;
+function sayExtras(){ return [...el.say.querySelectorAll('.ex-rest,.ex-choice')]; }
+function sayMoreEl(){
+  let m=el.say.querySelector('.ex-say-more');
+  if(!m){ m=document.createElement('div'); m.className='ex-say-more'; el.say.appendChild(m); }
+  return m;
+}
+function paginateSay(text){
+  sayPages=null; sayPage=0;
+  const old=el.say.querySelector('.ex-say-more'); if(old) old.remove();
+  const box=el.say, tx=box.querySelector('.ex-say-text'), H=(el.root.clientHeight||innerHeight)*SAY_MAX_H;
+  if(!text||box.offsetHeight<=H) return;
+  const extras=sayExtras(), more=sayMoreEl();
+  const fits=(str,last)=>{ tx.textContent=str.trim(); extras.forEach(x=>x.hidden=!last); more.hidden=last; more.textContent='▸ Tap to read on (9/9)'; return box.offsetHeight<=H; };
+  // chunks keep their own trailing break, so joining them gives back the text
+  const chunks=[];
+  for(const para of text.split(/(?<=\n\s*\n)/)){
+    if(fits(para,false)){ chunks.push(para); continue; }
+    chunks.push(...para.split(/(?<=[.!?…]["”'’)]?\s+)/));
+  }
+  const pages=[]; let i=0;
+  while(i<chunks.length){
+    if(fits(chunks.slice(i).join(''),true)){ pages.push(chunks.slice(i).join('')); break; }
+    let j=i+1; while(j<chunks.length&&fits(chunks.slice(i,j+1).join(''),false)) j++;
+    if(j===chunks.length&&j-1>i) j--;          // the rest didn't fit with the buttons: leave some for a last page
+    pages.push(chunks.slice(i,j).join('')); i=j;
+  }
+  if(pages.length<2){ tx.textContent=text; extras.forEach(x=>x.hidden=false); more.remove(); return; }
+  sayPages=pages; showSayPage(0);
+}
+function showSayPage(n){
+  sayPage=n; const last=n===sayPages.length-1, more=sayMoreEl();
+  el.say.querySelector('.ex-say-text').textContent=sayPages[n].trim();
+  sayExtras().forEach(x=>x.hidden=!last);
+  more.hidden=last; more.textContent='▸ Tap to read on ('+(n+1)+'/'+sayPages.length+')';
+}
+// a tap on the box (or E / Space / Enter): the next page, or close it after the last
+function sayNext(){ if(sayPages&&sayPage<sayPages.length-1){ showSayPage(sayPage+1); return; } hideSay(); }
 const heal=(key,amt)=>{ vit[key]=Math.min(maxHp(key),hpOf(key)+amt); };
 function drinkPotion(){ if(potions<1) return; const key=wizKeys[wizIdx]; potions--; heal(key,Math.ceil(maxHp(key)*POTION_HEAL)); toast('You drink the potion. Warmth spreads through you.'); }
 function restFull(morning){ const key=wizKeys[wizIdx]; vit[key]=maxHp(key); allies.forEach(a=>a.hp=null); if(morning) clock=7*60; renderClock(); }
@@ -1517,7 +1560,7 @@ function buildDom(){
   el.bag.addEventListener('click',e=>{ if(e.target===el.bag) closeBag(); else bagClick(e); });
   el.look.onclick=()=>{ lookAtDoor(); dropFocus(); };
   el.act.onclick=()=>{ if(near) inspect(); else if(nearDoor&&!busy) enterDoor(nearDoor); else if(nearExit&&!busy&&!roomLocked()) takeExit(nearExit); dropFocus(); };
-  el.say.onclick=hideSay;
+  el.say.onclick=sayNext;
   el.zoom.onclick=()=>stepZoom(); renderZoom();
   // two fingers pinch the zoom instead of walking
   const touches=new Map(); let pinch=null;
@@ -1560,7 +1603,7 @@ function onKey(e){
     return;
   }
   if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)){ keys.add(k); target=null; hideSay(); e.preventDefault(); }
-  else if(k==='e'||k===' '||k==='enter'){ if(!el.say.hidden) hideSay(); else if(near) inspect(); else if(nearDoor) enterDoor(nearDoor); e.preventDefault(); }
+  else if(k==='e'||k===' '||k==='enter'){ if(!el.say.hidden) sayNext(); else if(near) inspect(); else if(nearDoor) enterDoor(nearDoor); e.preventDefault(); }
   else if(k==='q'){ if(!el.say.hidden) hideSay(); else lookAtDoor(); e.preventDefault(); }
   else if(k==='m'){ if(!busy&&MAP) openWorld('view'); }
   else if(k==='z'){ stepZoom(); }
@@ -1818,11 +1861,11 @@ function showSay(o){
     btn.onclick=ev=>{ ev.stopPropagation(); vit[key]=to; clock=R[0]>=1?7*60:(clock+240)%1440; renderHp(); renderClock(); save(); hideSay(); toast(R[1]); };
     el.say.appendChild(btn);
   }
-  el.say.hidden=false; el.hint.classList.add('fade');
+  el.say.hidden=false; el.hint.classList.add('fade');  paginateSay(L[1]);
 }
 // at a door, the building (or the lamp or statue by it) can still be inspected: the second button, or Q
 function lookAtDoor(){ if(!nearLook||busy) return; near=nearLook; inspect(); }
-function hideSay(){ if(el.say) el.say.hidden=true; dropFocus(); }
+function hideSay(){ if(el.say) el.say.hidden=true; sayPages=null; dropFocus(); }
 // a tapped button (✋ Inspect, a dialog choice) keeps focus after it hides, and Chrome then flashes
 // a highlight on later taps; hand focus back to the page
 function dropFocus(){ const a=document.activeElement; if(a&&a!==document.body&&el.root&&el.root.contains(a)&&a.blur) a.blur(); }
