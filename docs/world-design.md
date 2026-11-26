@@ -130,7 +130,8 @@ in battle: you pick for each, or set one to AI.
 The user's outline (November 2026), so the world feels like you could go anywhere. Everything built so
 far (Wrenford, the Moriquende, Hollowmere, Corvanthe) is one region, **the Vale of the Hollow**, on a
 home **island**. Names with "?" are placeholders. A tappable sketch was published as an artifact
-("The Known World Sketch"). **It stays a design map for now:** the game keeps its own world map of the
+("The Known World Sketch"); its source is `docs/world-map.html` (open it in a browser; edit that file and
+republish it to change the map). **It stays a design map for now:** the game keeps its own world map of the
 Vale (`maps/world.json`); later this chart could become the top level (long roads, sea voyages and
 airships between regions), each region with its own walking map at today's scale.
 
