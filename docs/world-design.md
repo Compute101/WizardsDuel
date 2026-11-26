@@ -152,6 +152,26 @@ peninsulas (Hierarchy, Free Ports, Wyrmreach), lakes at the Greatspine's feet, a
 with a delta in the Southlands. Rivers named so far: the Hale? (Hallowmark), the Brass? (the
 Dominion), the Holy River? (the Hierarchy), the Mourne? (the Gravemarches).
 
+**Third sketch: coastline, the Inner Sea, towns and a day's travel.** Zoomed out so the Mainland
+sits in open sea, with a varied coast: a north-western peninsula (Wavecrest?) and gulf (Gulfhaven?),
+a western bay (Baymouth?), the Gravemarches as a great south-western block, the Hierarchy's long
+peninsula, the Free Ports' peninsula, Wyrmreach's, an Eastern Ocean coast (Dawnport?), and **the Inner
+Sea?** in the south: a sea reached from the Middle Sea only through a narrow channel, like the Black Sea
+and the Bosporus, with the Free Ports' twin cities **Narrowgate?** and **Eastgate?** on either bank.
+Borders wander and neighbours share them.
+- **Travel rule:** a day by cart is about thirty miles. On the sketch Wrenford to Corvanthe is three
+  days. Every road has a named town or an unnamed inn or hamlet at least every day's ride (283 stops
+  in all; the longest leg is 1.08 days), and ferries link Ferryhythe to Halemouth, Narrowgate to
+  Eastgate, Bleakhaven to Straitwatch and the Hierarchy's delta to the Southlands'.
+- **83 named places**, each where towns really grow (a ford, a bridge, a harbour, where rivers meet, a
+  lakeshore, a pass or the foot of one, canal locks, an oasis, a border fort, a market crossroads);
+  every name with a "?" is a placeholder. Tapping one on the sketch shows why it's there and the days
+  to its neighbours. The main roads: Halemouth up the Hale to Lakemere, over **the Deepgate**, down to
+  Lumen and the delta; Hale east to Varrow, the Tuskholds and Dawnport; Varrow over **Highwatch** to
+  Brassgate, its canal (Lockford) and Sunquay; the Inner Sea's shores to Narrowgate; Lumen west through
+  Velumbra to Barrowcourt and Mournmouth; Barrowcourt north through Gimbal to the Westmarch; Wyrmreach
+  north over **Ashpass**; and the Southlands' caravan road from Straitwatch, oasis to oasis, to Sunmouth.
+
 ### The home isle and its seas
 
 | Where | Who lives there | Notes |
