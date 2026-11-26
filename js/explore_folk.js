@@ -94,6 +94,24 @@ const FOLK = {
     lines:['A bald old man with a beard to his belt leans on a punt-pole by the water. "Punts by the hour, a penny a time, and the river does the rest." He squints at you. "The Wren runs east, you know. Down to the Hollow, and the Hollow runs through Corvanthe. Everything in this town floats that way in the end."',
       '"Fished the Hollow sixty years. Since the white day, the fish come up shining." He shakes his head. "I throw them back. Seems polite."',
       '"Students fall in twice a term, regular. I keep a pole for it."']},
+  // townsfolk who stand about by day and point the way (guide): the place you need next comes first;
+  // asking leaves a gold trail to it (api.showWay). Not out at night (night: absent once it's dark).
+  guide_tull:  {kind:'local', guide:true, night:true, title:'A Carter', name:'Tull', sprite:'sprites/folk/peasant_man_1.png', face:'peasant_man',
+    hello:'A carter leans on his wheel, chewing a straw. "Lost, are you? Everyone is, first week. Where to?"'},
+  guide_dilly: {kind:'local', guide:true, night:true, title:'A Flower-Seller', name:'Dilly Marsh', sprite:'sprites/folk/peasant_woman_1.png', face:'peasant_woman',
+    hello:'A girl with a basket of violets bobs at you. "Flowers for your tutor? No? Directions, then. They\'re free."'},
+  guide_nan:   {kind:'local', guide:true, night:true, title:'A Washerwoman', name:'Nan Pottle', sprite:'sprites/folk/peasant_woman_2.png', face:'peasant_woman',
+    hello:'A washerwoman sets down her basket at the crossroads. "I\'ve done the colleges\' linen thirty years. I know every gate in this town. Where d\'you want?"'},
+  guide_hob:   {kind:'local', guide:true, night:true, title:'A Lamplighter\'s Boy', name:'Hob Ferris', sprite:'sprites/folk/peasant_man_2.png', face:'peasant_man',
+    hello:'A lad with a ladder over his shoulder grins. "Not lit till dusk, so I\'ve time. Where are you after?"'},
+  guide_sparrow:{kind:'local', guide:true, night:true, title:'A Baker\'s Wife', name:'Goody Sparrow', sprite:'sprites/folk/peasant_woman_3.png', face:'peasant_woman',
+    hello:'A woman with flour to the elbows stops you. "You\'ve that look, love. Found nothing and asked nobody. Go on, ask."'},
+  guide_wat:   {kind:'local', guide:true, night:true, title:'A Road-Sweeper', name:'Wat Hollis', sprite:'sprites/folk/peasant_man_3.png', face:'peasant_man',
+    hello:'A sweeper leans on his broom outside the Library. "Sweep this street every morning. Know where it goes, too. Where\'s it you want?"'},
+  guide_kettle:{kind:'local', guide:true, night:true, title:'A Goose-Girl', name:'Moll Kettle', sprite:'sprites/folk/peasant_woman_4.png', face:'peasant_woman',
+    hello:'A goose-girl in from the west road shoos her birds aside. "Mind the geese. They bite scholars special. Where you going?"'},
+  guide_ned:   {kind:'local', guide:true, night:true, title:'A Cowherd', name:'Ned Pike', sprite:'sprites/folk/peasant_man_4.png', face:'peasant_man',
+    hello:'A cowherd in off the Meadow touches his cap. "Cows know their way home. Students never do. Where to?"'},
 };
 // what the townsfolk with `lines` say, in turn (quest 'folk' keeps each one's count)
 function townTalk(n, api){
@@ -105,6 +123,48 @@ function townTalk(n, api){
   if(n.role==='agathe'){ const fq=api.quest('forest'); ch.unshift({label:(fq.asked?'':'★ ')+'Ask about the wood to the west', fn:()=>westWood(n,api)}); }
   api.dialog(title(n,api),F.lines[i],ch);
 }
+// ── asking the way: Wrenford's guides (FOLK guide:true). Each place: who or what the trail leads to (a
+// person's role, or a fixed room's door), and how a local would put it. The next place your quest
+// needs comes first, starred (nextPlace).
+const PLACES = [
+  {id:'tutor',   who:'tutor',    ask:'Where\'s Dr Penhallow, in Founders\' Quad?', name:'Founders\' Quad',
+    say:'"Dr Penhallow, the Senior Tutor? She\'s in Founders\' Quad. Get yourself down to Merrow Street, the long road along the south, and look for the tall bell tower, the Exiles\' Tower. The arch beside it is Founders\' gate. The Head Porter stands there; he\'ll wave you through. She\'s on the path in the quad. And keep off the grass."'},
+  {id:'library', who:'keeper',   ask:'Where\'s the Remnant Library?', name:'The Remnant Library',
+    say:'"The Remnant Library\'s up on Wide Street, in the north: the big domed place with the stone heads along the front. Up Cornmart from Carrefax and turn right. Mr Quill, the Keeper, is on the steps."'},
+  {id:'lab',     who:'fizzwick', ask:'Where\'s the Warded Laboratory?', name:'The Warded Laboratory',
+    say:'"The Laboratory? Right up in the Parks, top of the Parkway, north-east, as far from anything as they could put it. Coloured smoke out the chimney. The Master waits at the door."'},
+  {id:'schools', who:'weizan',   ask:'Where are the Schools?', name:'The Schools',
+    say:'"The Schools are south-west, off Penbrook Street: a duelling court of flagstones in front of the examination halls. Down St Aldric\'s from Carrefax and right along Penbrook. You\'ll hear the bangs before you see it."'},
+  {id:'market',  who:'dealer',   ask:'Where\'s the Covered Market?', name:'The Covered Market',
+    say:'"The Covered Market\'s just west of Cornmart, a step from Carrefax. Widow Coyle buys quintessence, and Mother Agathe sells her herbs there."'},
+  {id:'inn',     door:'wrenInn', ask:'Where can I get a bed?', name:'The Wren\'s Nest',
+    say:'"The Wren\'s Nest is on Gorse Street, off Cornmart, north of the market. A good fire and a bed, and the landlady\'s seen worse than you."'},
+];
+function nextPlace(api){
+  const s=q(api);
+  if(!s.stage) return 'tutor';
+  if(s.stage===1){ const left=tasksLeft(api); return left.length?left[0][0]:'tutor'; }
+  return 'schools';                              // after Matriculation: the lectures, in the Examination Schools
+}
+function placePos(P, api){ return P.door?api.doorPos(P.door):api.npcPos(P.who); }
+const COMPASS=['east','south-east','south','south-west','west','north-west','north','north-east'];
+function bearing(n, pos){
+  const dx=pos.x-n.x, dy=pos.y-n.y, d=Math.hypot(dx,dy)/64;
+  const dir=COMPASS[(Math.round(Math.atan2(dy,dx)/(Math.PI/4))+8)%8];
+  return d<6?'Just there, '+dir+' of here.':d<18?'A short walk '+dir+'.':'A good walk '+dir+'.';
+}
+function guideTalk(n, api){
+  const F=FOLK[n.role], nx=nextPlace(api);
+  const order=PLACES.slice().sort((a,b)=>(b.id===nx)-(a.id===nx));
+  const ch=order.map(P=>({label:(P.id===nx?'★ ':'')+P.ask, fn:()=>{
+    const pos=placePos(P,api);
+    if(!pos){ api.dialog(title(n,api),P.say,[]); return; }
+    api.showWay({x:pos.x, y:pos.y, label:P.name});
+    api.dialog(title(n,api),P.say+'\n\n'+bearing(n,pos)+' (The way is marked in gold on the street and on your map.)',[]);
+  }}));
+  api.dialog(title(n,api),F.hello,ch);
+}
+
 // ── Mother Agathe's errand: the Moriquende (js/forest.js, opened from the world map by js/explore.js) ──
 // She buys her best herbs from Elfhome's healers; their last bundle came with Sylvara's letter asking for a
 // wizard. Offered once you've graduated (sat Finals, or the Year's own Finals): api.fullMagic().
@@ -151,7 +211,7 @@ function castOf(role, api){
 }
 function nameOf(role, api){ const F=FOLK[role]; if(F&&F.name) return F.name; const k=castOf(role,api); return k?cap(api.chars[k].name):''; }
 // a 'metLater' wizard isn't here if you're playing them
-function absent(n, api){ const F=FOLK[n.role]; if(!F&&Elf()&&Elf().knows(n.role)) return Elf().absent(n,api); return !!(F&&F.fate==='metLater'&&F.cast.includes(api.wizKey())); }
+function absent(n, api){ const F=FOLK[n.role]; if(!F&&Elf()&&Elf().knows(n.role)) return Elf().absent(n,api); if(F&&F.night&&api.night()&&!api.interior()) return true; return !!(F&&F.fate==='metLater'&&F.cast.includes(api.wizKey())); }
 // did you meet this roster wizard at the University? (for later meetings: "we met at uni")
 function metAtUni(key, api){ return !!api.quest('met')[key]; }
 const Year = () => window.ExploreYear||null;    // the University Year's own people (js/explore_year.js)
@@ -214,6 +274,7 @@ function talk(n, api){
   if(!F_){ if(Elf()&&Elf().knows(n.role)) Elf().talk(n,api); else if(Year()) Year().talk(n,api); return; }
   if(F_&&F_.kind==='roster'){ const k=castOf(n.role,api), met=api.quest('met'); if(k&&!met[k]){ met[k]=true; api.save(); } }
   if(F_&&F_.lines){ townTalk(n,api); return; }
+  if(F_&&F_.guide){ guideTalk(n,api); return; }
   switch(n.role){
 
   case 'porter': {

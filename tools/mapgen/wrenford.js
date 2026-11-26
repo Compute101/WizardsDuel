@@ -267,6 +267,15 @@ module.exports = function wrenford(rects){
     {role:'wrexley', x:8.8*T,  y:15.7*T},          // sketching the gate of Lantern College
     {role:'benedek', x:(rx0(33)-0.7)*T, y:34.6*T}, // the punt-keeper, by the punt stage
   ];
+  // townsfolk who point the way (ExploreFolk guides), by day: most near the bridge and Carrefax, where
+  // newcomers arrive, then one on each road toward the places Matriculation sends you. Each stands on the
+  // street tile nearest the spot asked for.
+  const onStreet=(x,y)=>{ let best=null, bd=1e9;
+    for(let ty=Math.max(0,Math.floor(y)-4);ty<=Math.min(ROWS-1,Math.floor(y)+4);ty++) for(let tx=Math.max(0,Math.floor(x)-4);tx<=Math.min(COLS-1,Math.floor(x)+4);tx++){
+      if(!'RP'.includes(m.at(tx,ty))) continue; const d=Math.hypot(tx+0.5-x,ty+0.5-y); if(d<bd){ bd=d; best=[tx,ty]; } }
+    return best?{x:(best[0]+0.5)*T, y:(best[1]+0.8)*T}:{x:x*T, y:y*T}; };
+  for(const [role,x,y] of [['guide_tull',43.5,25.8],['guide_dilly',34,25.8],['guide_nan',23.6,27.6],['guide_hob',22.6,35],
+    ['guide_sparrow',23.4,18],['guide_wat',36.5,10.4],['guide_kettle',7,25.2],['guide_ned',44.5,40.2]]) m.npcs.push(Object.assign({role},onStreet(x,y)));
   m.place('pouch',44*T,4.6*T,{lore:'q:satchel',scale:0.22});   // Ponder's satchel, lost in the Parks
   m.lore['q:satchel']=LORE.satchel;
 
