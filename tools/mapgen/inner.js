@@ -34,7 +34,7 @@ const SIGNS = ['signTavern','signApothecary','signSmith','signBaker','signBooks'
 //   decals: [kind, n, 'street'|'ground', block?];  runs: lava channels;  rails: a mine track;  pits: holes onto the Wound
 const INNER = {
   crucible: {outer:'cindergate', seed:7101, ground:{open:'a', street:'c', square:'f'}, burnt:true, fx:'embers', haze:'90,30,8,0.2', glow:'255,120,40',
-    river:{c0:44, flow:'S', glow:'255,150,70'}, center:'lavaWell', lamp:'lanternPostBroken',
+    river:{c0:44, flow:'N', glow:'255,150,70'}, center:'lavaWell', lamp:'lanternPostBroken',
     land:['foundry','stallBurnt','foundry','crucibleHoist','chainHoist','forge'],
     props:[['slagHeap1',3],['slagHeap2',4],['slagHeap3',6],['anvilBlock',3],['bellowsGreat',2],['oreCart',2],['oreCartHot',3],['anvil',2],['slag',3]],
     runs:3, signs:['signSmith','signTavern'],
@@ -82,13 +82,13 @@ const INNER = {
       center:['The Armillary', 'The university\'s model of the heavens, in brass, still turning. One ring has come loose and lies in the grass, and the rest turn round the gap where it was.'],
       circuit:['The Inner Circuit', 'The ring road round the inner city. Here it passed between the oldest schools, and pages blow along it that were never written by anyone.']}},
   sunken_harbour: {outer:'drowned_quarter', seed:7501, pal:'drowned', ground:{street:'F'}, fx:'rain', flood:true, haze:'20,60,90,0.18', glow:'110,200,230',
-    center:'seaGod', lamp:'lanternPost', riverFromOuter:'N',
+    center:'seaGod', lamp:'lanternPost', riverFromOuter:'S',
     land:['wreckMarket','drownedShrine','sunkHouse','sunkHouse','seaMaiden'],
     props:[['rowboat',2,'O'],['rowboatSunk',2,'O'],['rowboatWreck',2,'O'],['pile1',3],['pile2',3],['pilesRope',3],['netFrame1',2],['netFrame2',2],
       ['lobsterPots1',2],['lobsterPots2',2],['lobsterPot',3],['boat',2],['nets',2]],
     signs:['signTavern','signBaker'],
     lore:{
-      line:['The Rim of the Wound', 'The harbour drains into the Wound here, over a lip of drowned stone, without a sound. The water does not fall. It just stops being.'],
+      line:['The Rim of the Wound', 'The harbour\'s water wells up out of the Wound here, over a lip of drowned stone, without a sound. Nobody has ever seen where it comes from.'],
       lastGate:['The Sea Gate', 'The old water-gate of the inner harbour, its portcullis rusted down. On the far side the water stands up in a wall. Not yet.'],
       archIn:['The Harbour Arch', 'Back out to the Drowned Quarter. On this side the scoring at the waterline is deeper, and fresher.'],
       square:['The Old Exchange', 'Where the ship-owners met to trade. The water here is knee-deep and perfectly clear, and the coins on the bottom are all face up.'],
@@ -239,7 +239,7 @@ module.exports = function inner(rects,outerId){
   city.square(SQ.x,SQ.y,rnd(3.8,4.6),rnd(2.9,3.4));
   city.square(rnd(8,14),crossY[0]+1,2.4,1.8,G.street);
   city.square(rnd(42,48),crossY[2]+1,2.4,1.8,G.street);
-  // the Hollow: into the Wound from the Drowned Quarter, out of it through Cindergate (same columns as the outer ring)
+  // the Hollow: into the Wound from Cindergate, out of it through the Drowned Quarter to the sea (same columns as the outer ring)
   const gaps=[];
   if(D.river) gaps.push(riverWith(D.river.c0,D.river.flow,D.river.glow).gap);
   if(D.riverFromOuter){ const c0=outer.k[2].indexOf('W'); if(c0>=0) gaps.push(riverWith(c0,D.riverFromOuter).gap); }

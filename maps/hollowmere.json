@@ -4,7 +4,7 @@
  "cols": 48,
  "rows": 34,
  "seed": 9031,
- "flow": "S",
+ "flow": "N",
  "fx": null,
  "haze": null,
  "palette": null,
@@ -944,7 +944,7 @@
   ],
   "river": [
    "The Hollow",
-   "Black water, slow and cold. It runs north to south, and the townsfolk said it ran the other way at night."
+   "Black water, slow and cold. It runs north to Corvanthe, and the townsfolk said it ran the other way at night."
   ]
  },
  "spawns": {

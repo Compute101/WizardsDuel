@@ -4,7 +4,7 @@
  "cols": 56,
  "rows": 44,
  "seed": 5101,
- "flow": "S",
+ "flow": "N",
  "fx": "embers",
  "haze": "70,30,10,0.16",
  "palette": null,
@@ -567,7 +567,7 @@
   ],
   "river": [
    "The Hollow, Boiling",
-   "The river comes out of the Wound scalding. Steam rolls off it day and night, and fish swim in it, cooked white, and do not die."
+   "The river comes in under the wall cold, and is scalding by the next bridge. Steam rolls off it day and night on its way to the Wound, and fish swim in it, cooked white, and do not die."
   ],
   "bridge": [
    "Foundry Bridge",

@@ -34,13 +34,14 @@ const LORE = {
   chapel:      ['Chapel of the Watcher', 'The hooded figure in the niche matches the statue in the plaza. The pews are dusty, all but the front one.'],
   tower:       ['The College Tower', 'All that stands of the duelling college. The brass orrery on its roof still turns, tracking stars that are not in the sky.'],
   pond:        ['Mill Pond', 'Fat carp circle in the shallows, unafraid. Someone still comes down here to feed them.'],
-  river:       ['The Hollow', 'Black water, slow and cold. It runs north to south, and the townsfolk said it ran the other way at night.'],
+  river:       ['The Hollow', 'Black water, slow and cold. It runs north to Corvanthe, and the townsfolk said it ran the other way at night.'],
 };
 // these kinds only carry lore where it's placed by hand
 const LORE_BY_HAND = ['house1','crane','gallows','wagon','sacks'];
 
 module.exports = function hollowmere(rects){
   const m=new MapBuilder(rects,{id:'hollowmere', name:'Hollowmere', cols:48, rows:34, seed:9031});
+  m.flow='N';                                          // the Hollow runs north, to Corvanthe and on to the Wolf Sea
   const {cols:COLS, rows:ROWS, W:WORLD_W} = m;
   m.lore=LORE;
 

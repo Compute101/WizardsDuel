@@ -4,7 +4,7 @@
  "cols": 56,
  "rows": 44,
  "seed": 6401,
- "flow": "N",
+ "flow": "S",
  "fx": "rain",
  "haze": "20,60,80,0.16",
  "palette": "drowned",
@@ -552,7 +552,7 @@
   ],
   "river": [
    "The Hollow",
-   "The river comes in under the harbour wall clean and green, and runs north toward the Wound. You do not want to see what comes out the other side."
+   "The river comes out of the Wound black and slow, and runs south under the harbour wall, down to the Wolf Sea. The barges went that way once, laden. Now only things that float face down."
   ],
   "bridge": [
    "Harbour Bridge",

@@ -2,7 +2,7 @@
  "name": "The Vale of the Hollow",
  "w": 1600,
  "h": 1000,
- "note": "Hand-written. Coordinates are on a w x h parchment (1600 x 1000), bigger than the screen: the map scrolls. A location's map/spawn is where travelling there puts you; 'locked' ones show on the map but can't be reached yet; 'known' ones are on the map from the start, the rest appear once visited (or once a neighbour is visited, if 'seen' lists it). Wrenford, the new University town where a new game starts, lies far to the west on the river Wren. The river is the Hollow: it rises north of Corvanthe, runs through the Wound and the city, then south-west past Hollowmere. The Moriquende leads to Elfhome, where the forest year (js/forest.js) is played; Mother Agathe puts it on the map once you've graduated.",
+ "note": "Hand-written. Coordinates are on a w x h parchment (1600 x 1000), bigger than the screen: the map scrolls. A location's map/spawn is where travelling there puts you; 'locked' ones show on the map but can't be reached yet; 'known' ones are on the map from the start, the rest appear once visited (or once a neighbour is visited, if 'seen' lists it). Wrenford, the new University town where a new game starts, lies far to the west on the river Wren. The river is the Hollow: it rises in the western uplands, runs east past Wrenford (where the Wren joins it) and Hollowmere (just outside Corvanthe's walls), into the city through Cindergate, through the Wound, out through the Drowned Quarter and east to the Wolf Sea. The Moriquende leads to Elfhome, where the forest year (js/forest.js) is played; Mother Agathe puts it on the map once you've graduated.",
  "locations": [
   {
    "id": "wrenford",
@@ -22,8 +22,8 @@
    "id": "hollowmere",
    "name": "Hollowmere",
    "kind": "town",
-   "x": 860,
-   "y": 580,
+   "x": 1045,
+   "y": 500,
    "map": "hollowmere",
    "spawn": "west",
    "known": true,
@@ -36,8 +36,8 @@
    "id": "corvanthe_road",
    "name": "The Corvanthe Road",
    "kind": "road",
-   "x": 1035,
-   "y": 495,
+   "x": 1115,
+   "y": 450,
    "map": "corvanthe_road",
    "spawn": "west",
    "seenFrom": [
@@ -90,48 +90,68 @@
  ],
  "river": [
   [
-   1280,
-   0
+   380,
+   820
   ],
   [
-   1260,
-   150
+   470,
+   790
   ],
   [
-   1222,
-   280
+   560,
+   760
+  ],
+  [
+   635,
+   715
+  ],
+  [
+   720,
+   690
+  ],
+  [
+   820,
+   650
+  ],
+  [
+   920,
+   600
+  ],
+  [
+   985,
+   555
+  ],
+  [
+   1045,
+   500
+  ],
+  [
+   1095,
+   462
+  ],
+  [
+   1150,
+   420
   ],
   [
    1200,
    380
   ],
   [
-   1140,
-   450
+   1290,
+   350
   ],
   [
-   1020,
-   480
+   1400,
+   332
   ],
   [
-   900,
-   510
+   1500,
+   305
   ],
   [
-   862,
-   580
-  ],
-  [
-   852,
-   710
-  ],
-  [
-   870,
-   850
-  ],
-  [
-   880,
-   1000
+   1600,
+   292
   ]
  ]
 }

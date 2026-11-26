@@ -43,7 +43,7 @@ const SECTORS = {
     chapel:['The Lecture Hall', 'A lecture was under way when it happened. The chalk is still writing on the board, by itself, the same line over and over.'],
     landmarks:['tower','tavern','chapel'],
     tower:['The Hall of Study', 'The college tower. Its orrery counts down to something, and the count is getting low.']},
-  drowned_quarter: {el:'water', pal:'drowned', seed:6401, fx:'rain', flood:true, river:'N', haze:'20,60,80,0.16', glow:'110,200,230',
+  drowned_quarter: {el:'water', pal:'drowned', seed:6401, fx:'rain', flood:true, river:'S', haze:'20,60,80,0.16', glow:'110,200,230',
     line:['The Drowning Line', 'The harbour rose and never fell. Past here the streets are under black water, and lanterns still burn beneath it.'],
     arch:['The Harbour Arch', 'The gate to the old docks, half sunk. Something has scored the stone at the waterline, again and again, from the inside.'],
     square:['Fishmarket Square', 'The fishmongers\' slabs are still laid out. What is on them now came up out of the water by itself.'],
@@ -51,7 +51,7 @@ const SECTORS = {
     tavern:['The Mermaid\'s Rest', 'Sailors\' tavern. The floor is a hand deep in water, and the tide in it comes and goes on the hour.'],
     chapel:['Chapel of the Drowned', 'Every pew is wet, as though the congregation has only just stood up and walked out of the sea.'],
     landmarks:['tavern','chapel','crane'],
-    riverLore:['The Hollow', 'The river comes in under the harbour wall clean and green, and runs north toward the Wound. You do not want to see what comes out the other side.'],
+    riverLore:['The Hollow', 'The river comes out of the Wound black and slow, and runs south under the harbour wall, down to the Wolf Sea. The barges went that way once, laden. Now only things that float face down.'],
     bridge:['Harbour Bridge', 'Barges once passed under it to the docks. The water underneath is deep and very still, and the reflection of the bridge has people on it.'],
     bridgeBroken:['Fallen Bridge', 'The current took the middle span. Something has tied the two ends together with weed and rope, but it would never take your weight.']},
   quarry_ward: {el:'earth', pal:'quarry', seed:6501, fx:'dust', haze:'120,90,50,0.13', glow:'230,190,120', rubble:true,
@@ -198,7 +198,7 @@ module.exports = function sector(rects,id){
   return m;
 };
 
-// The Hollow through the city: water from edge to edge in columns c0..c1, flowing `flow` ('N' / 'S'),
+// The Hollow through the city: water from edge to edge in columns c0..c1, flowing `flow` ('N' / 'S': toward the Wound / away from it),
 // and a bridge wherever a street meets both banks (broken ones nearer the Wound). Call it after the
 // streets are painted and before landmarks and houses.
 function river(m,city,c0,c1,flow){
