@@ -41,7 +41,7 @@ import numpy as np
 import os
 
 SPRITES_DIR = os.path.dirname(os.path.abspath(__file__))
-LAYERS_DIR  = os.path.join(SPRITES_DIR, "layers")
+LAYERS_DIR = os.path.join(SPRITES_DIR, "layers")
 
 # ---------------------------------------------------------------------------
 # Palette definitions
@@ -50,35 +50,35 @@ LAYERS_DIR  = os.path.join(SPRITES_DIR, "layers")
 PALETTE_DEFAULT = {}  # no changes — keep base colors
 
 PALETTE_DARK = {
-    (44,  20,  80,  255): ( 55,  10,  10, 255),
-    (48,  32,  80,  255): ( 35,  10,  10, 255),
-    (72,  40, 120,  255): (110,  18,  18, 255),
-    (140,  88, 200, 255): (170,  45,  45, 255),
-    (200, 160,  48,  255): (140,  18,  18, 255),
-    (60,  160, 220, 255): (180,  70,  10, 255),
-    (120, 220, 255, 255): (255, 140,  20, 255),
+    (44, 20, 80, 255): (55, 10, 10, 255),
+    (48, 32, 80, 255): (35, 10, 10, 255),
+    (72, 40, 120, 255): (110, 18, 18, 255),
+    (140, 88, 200, 255): (170, 45, 45, 255),
+    (200, 160, 48, 255): (140, 18, 18, 255),
+    (60, 160, 220, 255): (180, 70, 10, 255),
+    (120, 220, 255, 255): (255, 140, 20, 255),
     (255, 255, 180, 255): (255, 220, 100, 255),
 }
 
 PALETTE_GREEN = {
-    (44,  20,  80,  255): ( 20,  55,  20, 255),
-    (48,  32,  80,  255): ( 15,  40,  15, 255),
-    (72,  40, 120,  255): ( 25,  80,  25, 255),
-    (140,  88, 200, 255): ( 40, 130,  40, 255),
-    (200, 160,  48,  255): ( 30, 110,  30, 255),
-    (60,  160, 220, 255): ( 60, 190,  60, 255),
+    (44, 20, 80, 255): (20, 55, 20, 255),
+    (48, 32, 80, 255): (15, 40, 15, 255),
+    (72, 40, 120, 255): (25, 80, 25, 255),
+    (140, 88, 200, 255): (40, 130, 40, 255),
+    (200, 160, 48, 255): (30, 110, 30, 255),
+    (60, 160, 220, 255): (60, 190, 60, 255),
     (120, 220, 255, 255): (140, 240, 140, 255),
     (255, 255, 180, 255): (210, 255, 190, 255),
 }
 
 PALETTE_YELLOW = {
-    (44,  20,  80,  255): ( 70,  45,  10, 255),
-    (48,  32,  80,  255): ( 55,  35,   8, 255),
-    (72,  40, 120,  255): (110,  70,  12, 255),
-    (140,  88, 200, 255): (170, 130,  15, 255),
-    (200, 160,  48,  255): (180, 100,  10, 255),
-    (60,  160, 220, 255): (210, 180,  30, 255),
-    (120, 220, 255, 255): (250, 230,  80, 255),
+    (44, 20, 80, 255): (70, 45, 10, 255),
+    (48, 32, 80, 255): (55, 35, 8, 255),
+    (72, 40, 120, 255): (110, 70, 12, 255),
+    (140, 88, 200, 255): (170, 130, 15, 255),
+    (200, 160, 48, 255): (180, 100, 10, 255),
+    (60, 160, 220, 255): (210, 180, 30, 255),
+    (120, 220, 255, 255): (250, 230, 80, 255),
     (255, 255, 180, 255): (255, 245, 120, 255),
 }
 
@@ -98,35 +98,33 @@ PALETTE_YELLOW = {
 CHARACTERS = {
     # --- Female ---
     "mage-light": {
-        "body":    "mage-f",
-        "hair":    "none",
-        "hat":     "none",
-        "staff":   "none",
+        "body": "mage-f",
+        "hair": "none",
+        "hat": "none",
+        "staff": "none",
         "palette": PALETTE_DEFAULT,
     },
     "mage-dark": {
-        "body":    "mage-f",
-        "hair":    "none",
-        "hat":     "none",
-        "staff":   "none",
+        "body": "mage-f",
+        "hair": "none",
+        "hat": "none",
+        "staff": "none",
         "palette": PALETTE_DARK,
     },
-
     "mage-green": {
-        "body":    "mage-f",
-        "hair":    "none",
-        "hat":     "none",
-        "staff":   "none",
+        "body": "mage-f",
+        "hair": "none",
+        "hat": "none",
+        "staff": "none",
         "palette": PALETTE_GREEN,
     },
     "mage-yellow": {
-        "body":    "mage-f",
-        "hair":    "none",
-        "hat":     "none",
-        "staff":   "none",
+        "body": "mage-f",
+        "hair": "none",
+        "hat": "none",
+        "staff": "none",
         "palette": PALETTE_YELLOW,
     },
-
     # --- Male (add matching entries once body/mage-m.png exists) ---
     # "mage-m-light": {
     #     "body":    "mage-m",
@@ -189,7 +187,9 @@ def check_gender_balance():
         values = list(counts.values())
         if len(set(values)) > 1:
             summary = ", ".join(f"{b}: {c}" for b, c in counts.items())
-            raise ValueError(f"Unequal character counts per body type ({summary}). Add matching entries to balance.")
+            raise ValueError(
+                f"Unequal character counts per body type ({summary}). Add matching entries to balance."
+            )
 
 
 def generate_sprites():
