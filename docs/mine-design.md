@@ -1,6 +1,6 @@
 # The Stoneheart Delve — design
 
-All plan, nothing built yet. A light Dwarf-Fortress-style mining game for **Durin**, played in Explore the
+All plan, nothing built yet. The user's answers so far are under "Decided". A light Dwarf-Fortress-style mining game for **Durin**, played in Explore the
 way the Moriquende is: its own screen, its own engine, your wizard's HP and gold carried in and out.
 
 ## The pitch in one line
@@ -27,19 +27,19 @@ stone — and make it *look* like dwarves built it.
 
 ## Where it sits in the world
 
-- **Place:** **Hammerhall?**, the greatest of the three holds in the Hammerfells, above Varg's Delve
-  (`docs/world-design.md`, "Albra and its seas"). Outsiders get only as far as the gatehouse — you're
+- **Place:** one of the three holds in the Hammerfells (which one is still open, see "The three holds"),
+  called **the hold** below. Outsiders get only as far as the gatehouse — you're
   the exception, because Durin asks for you.
 - **The mountain:** a peak the hold has never worked, called **the Greyhorn?** (or **Old Anvil?**). The
   mine is **the Stoneheart Delve** after Durin's title.
 - **Lore hook:** since the Unweaving, spilt magic has seeped down through the deep stone, and the earth
-  elementals that slept in the roots of the mountains are waking (*stonewakes*). Hammerhall's old
+  elementals that slept in the roots of the mountains are waking (*stonewakes*). The hold's old
   workings are overrun. The Thane wants a new delve dug, and the hold's runesmiths are too few to
   hold the elementals off. Durin, the Stoneheart, has the Thane's leave to dig it and wants a wizard
   beside him: someone who can fight with elements the stone doesn't shrug off.
-- **How you get there:** Torvi Anvilson, the Hammerhall smith who trades in Hollowmere's market, carries
-  Durin's letter once you've graduated (like Mother Agathe and Sylvara's letter). Hammerhall goes on the
-  world map, up the mountain path from Varg's Delve.
+- **How you get there:** Torvi Anvilson, the dwarf smith who trades in Hollowmere's market, carries
+  Durin's letter once you've graduated (like Mother Agathe and Sylvara's letter). The hold goes on the
+  world map, up the mountain path from its mining town.
 - **Your part and Durin's:** you're the **Delve-planner** (Durin's "you've a straight eye for a
   wizard"). Durin is the mine's master on the map, a piece like Sylvara: he walks the workings,
   prospects, and fights. At the end, if the Delve does him proud, he joins your companions
@@ -84,7 +84,7 @@ things matters.
 
 ## Dwarves
 
-- Start with **6**, up to about **20**. New dwarves arrive from Hammerhall when the quota is met and
+- Start with **6**, up to about **20**. New dwarves arrive from the hold when the quota is met and
   when the Delve's **renown** is high (see the end of each layer).
 - Each has a name (dwarf names, never the creator's list or Durin), a **trade** (miner, mason, farmer,
   brewer, smith, warrior) and can haul. Trades level up by use (Novice → Journeyman → Master).
@@ -183,12 +183,40 @@ layer's stars.
 - **Wanderers:** stonewakes rise through the rock now and then, more on lower layers and more the more
   noise you make (lots of digging at once). The tremor marker shows roughly where.
 - **Three choices** with a chamber: **leave it** (dig round it, keep a worked wall between you),
-  **fight it** (send the barracks; or lead the fight, below), or **bind it** (Durin's runes plus a
-  Dispel, layer 3 on: a bound elemental becomes a **stone-servant** that digs very fast for a while,
-  and settles a grudge — the hold's old craft, and a nice reward for not just killing everything).
+  **fight it** (send the barracks; or lead the fight, below), or **have Durin bind it** (see "Durin's
+  binding").
 - **Kinds** (all Earth fighters with `ECHO_RULES`): shard-wight (weak), stonewake (strong), crystal
   wight (layer 3, reflects some magic?), ember-wake (layer 4, a Fire stray, as Echoes stray between
   sectors), and the Mountain's Heart.
+
+## Durin's binding (decided: Durin binds)
+
+Binding is Durin's alone: the old runecraft of the holds, and the thing that makes him the most
+valuable piece on the map. It's the answer that keeps the mountain whole rather than killing it.
+
+- **How:** select Durin, tap an elemental. He walks there and starts the binding, a channel of a
+  few seconds (longer for bigger elementals) shown as a ring of runes filling round him. While he
+  binds he can't move or fight, and the elemental fights back at him, so **someone has to hold it**:
+  warriors in front of him, or your wizard.
+- **It must be worn down first:** a binding only takes on an elemental below half its strength
+  (shown on its bar). So it's a team job: warriors (or your wizard's Air strikes) beat it down, Durin
+  binds it before they finish it off. Kill it by accident and the chance is gone.
+- **Worked stone helps:** binding inside a room with smoothed walls is quicker (the elemental can't
+  sink back into the rock to escape). In a raw tunnel it may slip away into the stone mid-binding.
+- **Runes:** each binding uses a rune-stone (cut from the layer's stone at the mason's bench; from
+  layer 3 the bigger elementals need **silver** runes). A cheap, steady cost, so you can't bind
+  everything.
+- **Interrupted:** if Durin is struck hard enough while binding (or the elemental's friends join in),
+  the binding breaks and the elemental is enraged (stronger for a while). If Durin is downed he's out
+  of the Delve until he's rested in his bed, and no bindings happen meanwhile: protect him.
+- **What you get:** a bound elemental becomes a **stone-servant** for a while (a few days of game
+  time): it digs very fast and can't be hurt by cave-ins, then sinks back into the mountain at
+  peace. Each binding also settles a grudge (the dwarves are proud of it) and counts toward the
+  Assay's "stone" stars. A bound guardian leaves its chamber safe to work.
+- **In a duel you lead:** Durin is a seat beside your wizard; binding is a signature-like pick
+  (a Dispel-category action against an elemental at or below half HP, if the duel engine can carry
+  it), which ends the fight as a binding instead of a kill.
+- **The Mountain's Heart** is the last binding: the finale (see "The end").
 
 ## Equipment
 
@@ -230,7 +258,7 @@ As in the Moriquende (`docs/forest-design.md`, "Leading a fight yourself"):
 - **Caravans** come up from Varg's Delve every few days: sell ore and gems for food, ale (until your
   farms and brewery manage), timber and new picks. Prices favour finished goods (a bronze shield sells
   for more than its copper), so the forge is worth running.
-- The Thane's share of the quota goes to Hammerhall; what's over is the Delve's to trade, and some of
+- The Thane's share of the quota goes to the hold; what's over is the Delve's to trade, and some of
   it pays you in gold back in Explore.
 
 ## The end of each layer: the Thane's Assay
@@ -243,14 +271,15 @@ blueprint, a rune, a topper for your staff?), and Durin's verdict in his own voi
 ## The end: the Mountain's Heart
 
 At the bottom of the Heartstone sleeps the great elemental whose waking stirs all the others. You
-choose: **fight it** (the hardest battle; Air-runed warriors and your wizard), **bind it** (needs every
-layer's runes and a sealed chamber of engraved walls built round it: a construction puzzle), or
+choose: **fight it** (the hardest battle; Air-runed warriors and your wizard), **have Durin bind it**
+(needs a chamber of engraved walls built round it first, a construction puzzle under pressure as it
+stirs, then the battle of your life to wear it down while Durin binds), or
 **leave it sealed** (wall it in with worked stone and go no further; the Delve ends without
 heartsilver but the mountain stays quiet). Binding is the best ending, like the forest's Wood in Song.
 
 **Endings:** the Delve's total stars name it (a Hole in the Hill → a Fair Working → a Hold of Renown →
 **a Wonder of the Hammerfells**). The best ending puts Durin in your companions and carves your name
-in Hammerhall's Hall of Delvers (and a stair from the gatehouse is now open to you).
+in the hold's Hall of Delvers (and a stair from the gatehouse is now open to you).
 
 ## Difficulty curve
 
@@ -281,7 +310,7 @@ Targets get written here once the first numbers are in.
 3. **Elementals:** tremors, chambers, worked stone stopping them, map fights, barracks and gear.
 4. **Lead it yourself** (`startExploreBattle`), the new fighters, binding.
 5. **Grudges, renown, caravans, the Assay.**
-6. **The story:** Torvi's letter, Hammerhall on the world map (gatehouse map), Durin, the Heart, the
+6. **The story:** Torvi's letter, the hold on the world map (gatehouse map), Durin, the Heart, the
    endings; one HP pool and gold with Explore (`quests.mine`).
 7. Art, music (a dwarf variation of the Corvanthe theme? low brass and anvils), sound.
 
@@ -301,11 +330,20 @@ Until then the map is drawn in canvas (as the forest was at first).
   sprites in the Echo style).
 - **A battle backdrop:** a pillared dwarf hall underground.
 
-## Questions for the user
+## Decided (the user's answers)
 
-1. **Real-time with pause** (recommended: it suits digging and watching dwarves work) or **turn-based
-   days** like the Moriquende's weeks?
-2. **Top-down per layer** (recommended, as above) or a **side-on cross-section** of the whole mountain?
-3. Is **Hammerhall** the right hold (the greatest), or Stonedeep / Coldforge?
-4. Who plays: **you as the Delve-planner with Durin as a piece** (as above), or **you play Durin**?
-5. Keep **binding** elementals (the balance theme again), or keep it simpler: fight or avoid?
+1. **Real time** (with pause and speed buttons).
+2. **A top-down grid** for each layer.
+3. **Which hold:** still open. The user doesn't like *Hammerhall* (too close to Age of Sigmar's
+   Hammerhal), so that name goes whichever hold is chosen (it's in `docs/world-design.md` and Torvi's
+   lines in `js/explore_folk.js`).
+4. **You plan the Delve; Durin is a piece** on the map, and he's the one who binds elementals.
+5. **Durin binds** (see "Durin's binding").
+
+## The three holds (to choose from)
+
+- **Stonedeep?** (above Copperhythe; copper): the oldest and deepest hold, the delvers' hold.
+- **The great hold** (above Varg's Delve; the Thane's seat; needs a new name): the biggest and the
+  proudest, its smiths sell in Hollowmere (Torvi).
+- **Coldforge?** (above Tinwell, over the Grey Sea; tin): cold, sea-facing and mercantile, its
+  factors count the Ore Road's trade (Grimma).
