@@ -275,7 +275,7 @@ module.exports = function wrenford(rects){
       if(!'RP'.includes(m.at(tx,ty))) continue; const d=Math.hypot(tx+0.5-x,ty+0.5-y); if(d<bd){ bd=d; best=[tx,ty]; } }
     return best?{x:(best[0]+0.5)*T, y:(best[1]+0.8)*T}:{x:x*T, y:y*T}; };
   for(const [role,x,y] of [['guide_tull',43.5,25.8],['guide_dilly',34,25.8],['guide_nan',23.6,27.6],['guide_hob',22.6,35],
-    ['guide_sparrow',23.4,18],['guide_wat',36.5,10.4],['guide_kettle',7,25.2],['guide_ned',44.5,40.2]]) m.npcs.push(Object.assign({role},onStreet(x,y)));
+    ['guide_sparrow',23.4,18],['guide_wat',36.5,10.4],['guide_kettle',7,25.2],['guide_ned',44.5,40.2],['ostler',54.5,24.2]]) m.npcs.push(Object.assign({role},onStreet(x,y)));
   m.place('pouch',44*T,4.6*T,{lore:'q:satchel',scale:0.22});   // Ponder's satchel, lost in the Parks
   m.lore['q:satchel']=LORE.satchel;
 

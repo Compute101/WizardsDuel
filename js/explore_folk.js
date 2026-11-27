@@ -94,6 +94,8 @@ const FOLK = {
     lines:['A bald old man with a beard to his belt leans on a punt-pole by the water. "Punts by the hour, a penny a time, and the river does the rest." He squints at you. "The Wren runs east, you know. Down to the Hollow, and the Hollow runs through Corvanthe. Everything in this town floats that way in the end."',
       '"Fished the Hollow sixty years. Since the white day, the fish come up shining." He shakes his head. "I throw them back. Seems polite."',
       '"Students fall in twice a term, regular. I keep a pole for it."']},
+  // the ostler by the East Road: sells you a horse (api.buyHorse), which halves your time on the world map's roads
+  ostler:{kind:'local', title:'The Ostler', name:'Abel Coppin', sprite:'sprites/folk/peasant_man_4.png', face:'peasant_man'},
   // townsfolk who stand about by day and point the way (guide): the place you need next comes first;
   // asking leaves a gold trail to it (api.showWay). Not out at night (night: absent once it's dark).
   guide_tull:  {kind:'local', guide:true, night:true, title:'A Carter', name:'Tull', sprite:'sprites/folk/peasant_man_1.png', face:'peasant_man',
@@ -137,6 +139,8 @@ const PLACES = [
     say:'"The Schools are south-west, off Penbrook Street: a duelling court of flagstones in front of the examination halls. Down St Aldric\'s from Carrefax and right along Penbrook. You\'ll hear the bangs before you see it."'},
   {id:'market',  who:'dealer',   ask:'Where\'s the Covered Market?', name:'The Covered Market',
     say:'"The Covered Market\'s just west of Cornmart, a step from Carrefax. Widow Coyle buys quintessence, and Mother Agathe sells her herbs there."'},
+  {id:'stable',  who:'ostler',   ask:'Where can I buy a horse?', name:'Coppin\'s Stables',
+    say:'"A horse? Abel Coppin, by the East Road where it leaves town, past the bridge. Mind his prices and mind his mare, she bites."'},
   {id:'inn',     door:'wrenInn', ask:'Where can I get a bed?', name:'The Wren\'s Nest',
     say:'"The Wren\'s Nest is on Gorse Street, off Cornmart, north of the market. A good fire and a bed, and the landlady\'s seen worse than you."'},
 ];
@@ -268,6 +272,7 @@ function journal(api){
 }
 
 // ── what they say ──
+const HORSE_PRICE=40;
 function talk(n, api){
   const s=q(api), me=api.wizName(), say=(_,x,ch)=>api.dialog(title(n,api),x,ch||[]);
   const nm=r=>nameOf(r,api), F_=FOLK[n.role], home0=()=>mg(api)&&api.homeElem();
@@ -289,6 +294,16 @@ function talk(n, api){
     else if(s.stage===1){ const left=tasksLeft(api);
       say(0,'"Getting on all right, '+me+'? '+(left.length?'You\'ve still to see to: '+left.map(t=>t[0]==='schools'?'the Schools':t[0]==='library'?'the Library':'the Laboratory').join(', ')+'."':'That\'s the lot, is it? Back to the Senior Tutor with you, then."')+' He taps the side of his nose. "And keep off the grass."',where); }
     else say(0,'"Morning, '+me+'." The Porter almost smiles. "Most of the Porters here held the Wardgate at Corvanthe, you know. We held it from the wrong side, as it turned out. Mind how you go out there."',where);
+    return;
+  }
+
+  case 'ostler': {
+    const H=api.horse(), price=HORSE_PRICE;
+    if(H) say(0,'"'+H.name+' doing all right by you?" Abel runs a hand down her neck. "Feed her, water her, don\'t let the gleaners talk you into the Corvanthe Road after dark. She\'s got more sense than they have."');
+    else say(0,'A wiry man in a leather apron, with straw in his hair and a mare\'s nose resting on his shoulder. "Going far? You\'ll want legs better than your own. Bramble here: sound in wind and limb, steady on a road, and she doesn\'t mind a spell going off, which is more than I can say for most." He names his price. "'+price+' gold, saddle and all. Halves your time on the road, near enough."',
+      [{label:'Buy Bramble ('+price+' gold)', disabled:api.gold()<price, fn:()=>{ api.addGold(-price); api.buyHorse({name:'Bramble'}); api.save();
+          api.toast('Bramble is yours. Your journeys on the roads take about half the time.'); }},
+       {label:api.gold()<price?'Not enough gold':'Not today'}]);
     return;
   }
 
