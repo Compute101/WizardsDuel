@@ -94,6 +94,8 @@
   ["sacksGrain",1241.6,902.4],
   ["cartLoaded",1574.4,921.6],
   ["basketApples",1305.6,1260.8],
+  ["handcartSacks",1120,1152],
+  ["anvilBlock",1574.4,1132.8,{"scale":0.26}],
   ["barrelsTrio",1529.6,1273.6],
   ["noticeBoard",1619.2,870.4,{"lore":"notices"}],
   ["oreCart",1657.6,1203.2],
@@ -1016,6 +1018,26 @@
    "role": "hm_pies",
    "x": 1190.4,
    "y": 1248
+  },
+  {
+   "role": "hm_smith",
+   "x": 1600,
+   "y": 1171.2
+  },
+  {
+   "role": "hm_tin",
+   "x": 1548.8,
+   "y": 1235.2
+  },
+  {
+   "role": "hm_furs",
+   "x": 1113.6,
+   "y": 1081.6
+  },
+  {
+   "role": "hm_fish",
+   "x": 1171.2,
+   "y": 985.6
   }
  ],
  "stroll": {

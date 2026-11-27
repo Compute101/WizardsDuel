@@ -98,11 +98,12 @@ module.exports = function hollowmere(rects){
   // the boom town: the plaza is a market again, crates and carts where the stalls stood, and the ore carts on their way
   // from the Hammerfells to Gilden stop here (no stall art yet: docs/art-prompts.md)
   for(const [k,x,y,o] of [['cratesProduce',17.9*T,14.3*T,{lore:'market'}],['sacksGrain',19.4*T,14.1*T],['cartLoaded',24.6*T,14.4*T],
-    ['basketApples',20.4*T,19.7*T],['barrelsTrio',23.9*T,19.9*T],['noticeBoard',25.3*T,13.6*T,{lore:'notices'}],['oreCart',25.9*T,18.8*T]]) place(k,x,y,o);
+    ['basketApples',20.4*T,19.7*T],['handcartSacks',17.5*T,18.0*T],['anvilBlock',24.6*T,17.7*T,{scale:0.26}],['barrelsTrio',23.9*T,19.9*T],['noticeBoard',25.3*T,13.6*T,{lore:'notices'}],['oreCart',25.9*T,18.8*T]]) place(k,x,y,o);
   // its people: townsfolk walk the west bank's streets by day, never the east (map.stroll), and a few stand to talk
   m.stroll={maxX:RIVER.c0*T-24, n:14};
   m.greet=['Mind the cart!','Pies, hot pies!','Going in? Good luck to you.','Ore for Gilden, out the way!','Ashcombe pays best, tell your crew.','Don\'t cross after dark.','Spill? Ask at the Crow.','Another one for the Wardgate.'];
-  m.npcs=[{role:'hm_factor',x:19.3*T,y:16.2*T},{role:'hm_carter',x:24.4*T,y:15.4*T},{role:'hm_pies',x:18.6*T,y:19.5*T}];
+  m.npcs=[{role:'hm_factor',x:19.3*T,y:16.2*T},{role:'hm_carter',x:24.4*T,y:15.4*T},{role:'hm_pies',x:18.6*T,y:19.5*T},
+    {role:'hm_smith',x:25.0*T,y:18.3*T},{role:'hm_tin',x:24.2*T,y:19.3*T},{role:'hm_furs',x:17.4*T,y:16.9*T},{role:'hm_fish',x:18.3*T,y:15.4*T}];
   // lanterns down the main street
   for(const x of [270,990,2226,2786]) place('lamppost',x,STREET_N+2);
 

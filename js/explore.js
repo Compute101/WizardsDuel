@@ -1044,7 +1044,8 @@ function drawNpc(n,t){
   const img=imgOf(src); if(!img.complete||!img.naturalWidth) return;
   // an old 192×320 mage spritesheet (stand-ins for townsfolk without art): its first frame, 48×64, facing left
   const sheet=img.naturalWidth===192&&img.naturalHeight===320, sw=sheet?48:img.naturalWidth, sh=sheet?64:img.naturalHeight;
-  const h=WIZ_H*(n.role==='wounded'?0.8:1.05)*(MAP.people||1), w=h*sw/sh;
+  const fs=(Folk&&Folk.FOLK&&Folk.FOLK[n.role]&&Folk.FOLK[n.role].scale)||1;   // dwarves stand short, Varg tall
+  const h=WIZ_H*(n.role==='wounded'?0.8:1.05)*fs*(MAP.people||1), w=h*sw/sh;
   ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(n.x,n.y-2,w*0.3,5,0,0,Math.PI*2); ctx.fill();
   ctx.save(); ctx.translate(n.x,n.y);
   if(n.role==='wounded'){ ctx.filter='saturate(0.5) brightness(0.85)'; ctx.scale(-1,0.8); }   // slumped, facing in
