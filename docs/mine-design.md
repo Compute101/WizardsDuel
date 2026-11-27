@@ -404,4 +404,11 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
     that changes with the tool (`#mn-hint`), not a toast. Toasts (the log's news) are shorter (2.2 s + 25 ms a
     character, 6 s at most), at most three wait, the same message never queues twice, and a tap dismisses
     one.
+  - *"The UI won't work for mobile, so you need a build menu where you can select the subtype."* The tool
+    bar is down to six buttons: Look, Dig, 🧱 **Build ▴**, Smooth, 🏠 **Room ▴**, Clear. Build and Room each open
+    a menu of big buttons over the tool bar (Wall / Pillar / Door; the six rooms with their colours), and the
+    button then shows what it's set to ("🧱 Wall", "🏠 Dining"). Tapping it again closes the menu without
+    changing the tool; only the open menu's button is lit. The room list left the side panel. Keys: B and R
+    open the menus, W / P / O pick a build straight away (`BUILD_MENU`, `ui.menu`, `pickFromMenu`,
+    `#mn-menu`).
 - **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.

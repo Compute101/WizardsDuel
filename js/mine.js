@@ -19,7 +19,7 @@
     eyeAt = 0,
     saveAt = 0,
     logSeen = 0;
-  const ui = { tool: 'look', sel: null, tab: 'crew', overlay: false, roomMenu: false, drag: null };
+  const ui = { tool: 'look', sel: null, tab: 'crew', overlay: false, menu: null, drag: null };
   const view = { zoom: 1, ox: 0, oy: 0 };
   let cv,
     cx,
@@ -32,12 +32,23 @@
   const TOOLS = [
     ['look', '✋', 'Look', 'Tap a dwarf, Durin, a room or a tile. Drag to move the map.'],
     ['dig', '⛏', 'Dig', 'Drag over rock to mark it for digging. Miners take the nearest.'],
+    ['build', '🧱', 'Build', 'Pick what to build.'],
     [
-      'pillar',
-      '🏛',
-      'Pillar',
-      'Drag over rock to keep it as pillars, or over dug floor to have the mason build one (a stone block each).'
+      'smooth',
+      '✨',
+      'Smooth',
+      'Drag over walls and pillars for the mason to smooth. Worked stone is finer, and (later) elementals can’t pass it.'
     ],
+    ['room', '🏠', 'Room', 'Pick a room.'],
+    [
+      'cancel',
+      '✖',
+      'Clear',
+      'Drag to clear marks: digging, pillars, smoothing and building. Takes out a built door. Built walls and pillars are dug out.'
+    ]
+  ];
+  // what the Build button's menu offers (the tool in hand is then 'wall', 'pillar' or 'door')
+  const BUILD_MENU = [
     [
       'wall',
       '🧱',
@@ -45,23 +56,16 @@
       'Drag over dug floor for the mason to wall it back up (a stone block each). Not inside a room. Dig it out again to undo.'
     ],
     [
+      'pillar',
+      '🏛',
+      'Pillar',
+      'Drag over rock to keep it as pillars, or over dug floor to have the mason build one (a stone block each).'
+    ],
+    [
       'door',
       '🚪',
       'Door',
       'Drag over dug floor for the mason to hang a door (a stone block each). Clear takes one out.'
-    ],
-    [
-      'smooth',
-      '✨',
-      'Smooth',
-      'Drag over walls and pillars for the mason to smooth. Worked stone is finer, and (later) elementals can’t pass it.'
-    ],
-    ['room', '🏠', 'Room', 'Pick a room, then drag over dug floor.'],
-    [
-      'cancel',
-      '✖',
-      'Clear',
-      'Drag to clear marks: digging, pillars, smoothing and building. Takes out a built door. Built walls and pillars are dug out.'
     ]
   ];
   const ROOM_HELP = {
@@ -120,6 +124,7 @@
         <div class="mn-tools" id="mn-tools"></div>
         <div class="mn-toast" id="mn-toast" title="Tap to dismiss"></div>
         <div class="mn-hint" id="mn-hint"></div>
+        <div class="mn-menu" id="mn-menu" hidden></div>
       </div>
       <div class="mn-side">
         <div class="mn-sel" id="mn-sel"></div>
@@ -178,7 +183,7 @@
         setSpeed(speed ? 0 : 1);
       } else if (e.key === 'Escape') {
         ui.tool = 'look';
-        ui.roomMenu = false;
+        ui.menu = null;
         ui.sel = null;
         renderTools();
         renderSide(true);
@@ -188,6 +193,7 @@
           p: 'pillar',
           w: 'wall',
           o: 'door',
+          b: 'build',
           s: 'smooth',
           r: 'room',
           c: 'cancel',
@@ -227,7 +233,7 @@
     logSeen = S.log.length;
     ui.sel = null;
     ui.tool = 'look';
-    ui.roomMenu = false;
+    ui.menu = null;
     eye = null;
     if (fresh) save();
     fitCanvas(true);
@@ -334,38 +340,77 @@
   }
 
   // ── tools ──
+  const isBuild = t => t === 'wall' || t === 'pillar' || t === 'door';
+  // the tool bar button a tool belongs to
+  const barOf = t => (isBuild(t) ? 'build' : t.startsWith('room') ? 'room' : t);
   function pickTool(t) {
-    if (t === 'room') {
-      ui.roomMenu = !ui.roomMenu || ui.tool.startsWith('room:');
-      if (ui.roomMenu) {
-        ui.tool = 'room';
-        ui.sel = null;
-      } else ui.tool = 'look';
+    if (t === 'build' || t === 'room') {
+      // open (or close) that button's menu; the tool in hand stays until something is picked
+      ui.menu = ui.menu === t ? null : t;
+      if (t === 'build' && ui.menu && !isBuild(ui.tool)) ui.sel = null;
     } else {
       ui.tool = t;
-      ui.roomMenu = false;
+      ui.menu = null;
     }
+    renderTools();
+    renderSide(true);
+  }
+  function pickFromMenu(t) {
+    ui.tool = t;
+    ui.menu = null;
     renderTools();
     renderSide(true);
   }
   // what the tool in hand does, in a line over the tool bar (it changes with the tool; no need to dismiss it)
   function renderHint() {
-    const room = ui.tool.startsWith('room:') && M.ROOMS[ui.tool.slice(5)];
-    const T = TOOLS.find(x => x[0] === (ui.tool.startsWith('room') ? 'room' : ui.tool));
-    const text = room ? 'Drag over dug floor to make a ' + room.name.toLowerCase() + '.' : T ? T[3] : '';
+    let text = '';
+    if (ui.menu === 'build') text = 'What should the mason build? A stone block each.';
+    else if (ui.menu === 'room') text = 'Which room? Then drag over dug floor.';
+    else if (ui.tool.startsWith('room:')) {
+      const k = ui.tool.slice(5);
+      text = 'Drag over dug floor to make a ' + M.ROOMS[k].name.toLowerCase() + '. ' + ROOM_HELP[k];
+    } else {
+      const T = BUILD_MENU.concat(TOOLS).find(x => x[0] === ui.tool);
+      text = T ? T[3] : '';
+    }
     const el = $('mn-hint');
     el.textContent = text;
-    el.hidden = !text || ui.tool === 'look';
+    el.hidden = !text || (ui.tool === 'look' && !ui.menu);
+    // sit above the tool bar, and above the menu when one is open
+    const bar = $('mn-tools'),
+      m = $('mn-menu');
+    el.style.bottom = bar.offsetHeight + 12 + (m.hidden ? 0 : m.offsetHeight + 8) + 'px';
+    m.style.bottom = bar.offsetHeight + 14 + 'px';
   }
   function renderTools() {
-    const cur = ui.tool.startsWith('room') ? 'room' : ui.tool;
-    $('mn-tools').innerHTML = TOOLS.map(
-      ([k, i, n]) =>
-        `<button class="mn-btn${cur === k ? ' on' : ''}" data-tool="${k}" type="button" title="${n}">${i}<small>${n}</small></button>`
-    ).join('');
+    const cur = barOf(ui.tool);
+    $('mn-tools').innerHTML = TOOLS.map(([k, i, n]) => {
+      // Build shows what it's set to build, once something is picked
+      if (k === 'build' && isBuild(ui.tool)) [, i, n] = BUILD_MENU.find(b => b[0] === ui.tool);
+      if (k === 'room' && ui.tool.startsWith('room:')) n = M.ROOMS[ui.tool.slice(5)].name.split(' ')[0];
+      const on = ui.menu ? ui.menu === k : cur === k; // an open menu lights only its own button
+      const more = k === 'build' || k === 'room' ? ' ▴' : '';
+      return `<button class="mn-btn${on ? ' on' : ''}" data-tool="${k}" type="button" title="${n}">${i}<small>${n}${more}</small></button>`;
+    }).join('');
     $('mn-tools')
       .querySelectorAll('[data-tool]')
       .forEach(b => (b.onclick = () => pickTool(b.dataset.tool)));
+    // the open menu: big buttons, easy to hit with a thumb
+    const m = $('mn-menu');
+    m.hidden = !ui.menu;
+    if (ui.menu === 'build')
+      m.innerHTML = BUILD_MENU.map(
+        ([k, i, n]) =>
+          `<button class="mn-btn${ui.tool === k ? ' on' : ''}" data-pick="${k}" type="button">${i}<small>${n}</small></button>`
+      ).join('');
+    else if (ui.menu === 'room')
+      m.innerHTML = Object.entries(M.ROOMS)
+        .map(
+          ([k, R]) =>
+            `<button class="mn-btn${ui.tool === 'room:' + k ? ' on' : ''}" data-pick="room:${k}" type="button"><span class="mn-swatch" style="background:${R.col}"></span><small>${R.name}</small></button>`
+        )
+        .join('');
+    m.querySelectorAll('[data-pick]').forEach(b => (b.onclick = () => pickFromMenu(b.dataset.pick)));
     renderHint();
   }
 
@@ -379,22 +424,18 @@
         ['eye', "Mason's Eye"],
         ['log', 'Log']
       ];
-    const body = ui.roomMenu
-      ? roomMenuHtml()
-      : { crew: crewHtml, ledger: ledgerHtml, eye: eyeHtml, log: logHtml }[ui.tab]();
+    const body = { crew: crewHtml, ledger: ledgerHtml, eye: eyeHtml, log: logHtml }[ui.tab]();
     const key = sel + '|' + ui.tab + '|' + body;
     if (!force && key === sideLast) return;
     sideLast = key;
     $('mn-sel').innerHTML = sel;
     $('mn-sel').hidden = !sel;
-    $('mn-tabs').innerHTML = ui.roomMenu
-      ? ''
-      : tabs
-          .map(
-            ([k, n]) =>
-              `<button class="mn-tab${ui.tab === k ? ' on' : ''}" data-tab="${k}" type="button">${n}</button>`
-          )
-          .join('');
+    $('mn-tabs').innerHTML = tabs
+      .map(
+        ([k, n]) =>
+          `<button class="mn-tab${ui.tab === k ? ' on' : ''}" data-tab="${k}" type="button">${n}</button>`
+      )
+      .join('');
     $('mn-panel').innerHTML = body;
     $('mn-tabs')
       .querySelectorAll('[data-tab]')
@@ -411,17 +452,6 @@
         b =>
           (b.onclick = () => {
             ui.sel = { kind: 'dwarf', id: +b.dataset.dw };
-            renderSide(true);
-          })
-      );
-    $('mn-panel')
-      .querySelectorAll('[data-room]')
-      .forEach(
-        b =>
-          (b.onclick = () => {
-            ui.tool = 'room:' + b.dataset.room;
-            ui.roomMenu = false;
-            renderTools();
             renderSide(true);
           })
       );
@@ -599,19 +629,6 @@
       '</ul>'
     );
   }
-  function roomMenuHtml() {
-    return (
-      '<p><b>Make a room</b></p><div class="mn-list">' +
-      Object.entries(M.ROOMS)
-        .map(
-          ([k, R]) =>
-            `<button class="mn-item" data-room="${k}" type="button"><b style="color:${R.col}">■</b> <b>${R.name}</b><br><small>${ROOM_HELP[k]}</small></button>`
-        )
-        .join('') +
-      '</div>'
-    );
-  }
-
   // ── modal and help ──
   function modal(html, after) {
     $('mn-card').innerHTML = html;
@@ -627,16 +644,15 @@
     <p>Durin has the Thane's leave to cut a new mine under Stonedeep. You're his planner: mark the digging, lay out the rooms, and keep the crew fed, watered and rested.</p>
     <ul>
       <li><b>⛏ Dig</b>: drag over rock. Miners dig the nearest marked stone they can reach. Ore and stone blocks are hauled to a stockpile.</li>
-      <li><b>🏛 Pillar</b>: on rock, rock you keep; on dug floor, the mason builds one. Leave pillars in your halls (soon they'll hold the roof up).</li>
-      <li><b>🧱 Wall</b> and <b>🚪 Door</b>: the mason builds them on dug floor, a stone block each. Built walls count as worked stone.</li>
+      <li><b>🧱 Build</b> opens a menu: <b>Wall</b> or <b>Door</b> on dug floor, or a <b>Pillar</b> (on rock, rock you keep; on dug floor, the mason builds one). A stone block each; built walls count as worked stone, and pillars will soon hold the roof up.</li>
       <li><b>Put a mistake right</b>: dug too much? Wall it back up. A built wall or pillar can be dug out again (you get the stone back); ✖ Clear takes out a door and any mark.</li>
-      <li><b>🏠 Room</b>: drag over dug floor. Bedrooms, a dining hall, a mushroom farm on soil, a brewery. The mason builds the furniture from stone blocks.</li>
+      <li><b>🏠 Room</b> opens a menu of rooms; pick one, then drag over dug floor. Bedrooms, a dining hall, a mushroom farm on soil, a brewery. The mason builds the furniture from stone blocks.</li>
       <li><b>✨ Smooth</b>: the mason smooths walls and pillars. Finer rooms, and worked stone will keep elementals out.</li>
       <li><b>Durin</b>: tap him, then tap floor to send him there; he prospects the stone round him once a day.</li>
       <li><b>The Ledger</b>: hungry, dry or floor-sleeping dwarves hold grudges. Too many and they slow down, then stop.</li>
       <li><b>The Mason's Eye</b>: Durin scores the look of the Delve, and names fine patterns when he sees them. The Delve-book (on the Mason's Eye tab) shows what each one is.</li>
     </ul>
-    <p class="mn-note">Space pauses. Keys: D dig, P pillar, W wall, O door, S smooth, R room, C clear, L look. This is the first layer only: cave-ins, quotas, the stair down and the elementals come next.</p>
+    <p class="mn-note">Space pauses. Keys: D dig, B build menu (W wall, P pillar, O door), S smooth, R room menu, C clear, L look. This is the first layer only: cave-ins, quotas, the stair down and the elementals come next.</p>
     <div class="mn-row"><button class="mn-btn" id="mn-ok" type="button">To work</button></div>`,
       () => {
         $('mn-ok').onclick = closeModal;
@@ -1153,8 +1169,8 @@
       const col =
         ui.tool === 'dig'
           ? '#f0c850'
-          : ui.tool === 'pillar'
-            ? '#e0e0e0'
+          : isBuild(ui.tool)
+            ? '#e8d096'
             : ui.tool === 'smooth'
               ? '#8cc8ff'
               : ui.tool === 'cancel'
