@@ -35,6 +35,9 @@
   const STONE_CHANCE = 0.35; // a dug rock tile leaves a stone block this often (ore always leaves ore)
   const NEED = { food: DAY * 1.0, ale: DAY * 1.4, sleep: DAY * 1.2 }; // seconds for a need to fall from 100 to 0
   const LOW = { food: 35, ale: 35, sleep: 25 }; // a dwarf sees to a need below this
+  const BED_WORTH = { bedroom: 100, dorm: 50, star: 10 }; // a private bedroom always beats a dormitory
+  const BED_NEAR = 0.2; // a tile's walk counts this much against a bed
+  const BED_MOVE = 5; // a dwarf moves beds only for one this much better
   const GRACE = DAY * 1.5; // no grudges for floor meals or floor beds before this (time to build)
   const GRUDGE_DAYS = 3; // an unsettled grudge fades after this many days
   const GRUMBLE = 3,
@@ -616,18 +619,29 @@
     const stocks = stockTiles(S);
     // needs first
     if (d.needs.sleep < LOW.sleep) {
-      let bed = d.bed >= 0 && S.tiles[d.bed].fu === 'bed' && S.tiles[d.bed].fb ? d.bed : -1;
-      if (bed < 0) {
-        const taken = new Set(S.dwarves.map(w => w.bed));
-        bed = -1;
-        let bd = 1e9;
-        S.tiles.forEach((t, i) => {
-          if (t.fu === 'bed' && t.fb && !taken.has(i) && dm.dist[i] >= 0 && dm.dist[i] < bd) {
-            bd = dm.dist[i];
-            bed = i;
-          }
-        });
-        if (bed >= 0) d.bed = bed;
+      // the best free bed: a bedroom of their own over a dormitory, more stars over fewer, nearer as a
+      // tie-break. A dwarf already in a bed moves out of it as soon as a better one is free.
+      const have = d.bed >= 0 && S.tiles[d.bed].fu === 'bed' && S.tiles[d.bed].fb ? d.bed : -1;
+      const taken = new Set(S.dwarves.filter(w => w !== d).map(w => w.bed));
+      let bed = have,
+        best = have >= 0 ? bedWorth(S, have) - BED_NEAR * Math.max(0, dm.dist[have]) : -1e9;
+      S.tiles.forEach((t, i) => {
+        if (t.fu !== 'bed' || !t.fb || taken.has(i) || i === have || dm.dist[i] < 0) return;
+        const v = bedWorth(S, i) - BED_NEAR * dm.dist[i];
+        // only move house for a clearly better bed, not one a few steps nearer
+        if (v > best + (have >= 0 ? BED_MOVE : 0)) {
+          best = v;
+          bed = i;
+        }
+      });
+      if (bed !== have && bed >= 0) {
+        const r = roomAt(S, bed % W, (bed / W) | 0);
+        if (have >= 0 && r && r.type === 'bedroom')
+          logMsg(
+            S,
+            '🛏 ' + d.name.split(' ')[0] + ' moves out of the dormitory into a bedroom of their own.'
+          );
+        d.bed = bed;
       }
       if (bed >= 0 && go({ type: 'sleep', tile: bed, ph: 1, w: SLEEP_S }, bed)) return;
       d.job = { type: 'sleep', tile: -1, ph: 1, w: SLEEP_S, floor: true };
@@ -656,6 +670,12 @@
     }[d.trade];
     for (const kind of order) if (findWork(S, d, dm, kind, stocks, go)) return;
     idle(S, d, dm);
+  }
+  // how much a dwarf wants a bed: its room's kind, then the room's stars
+  function bedWorth(S, i) {
+    const r = roomAt(S, i % W, (i / W) | 0);
+    if (!r) return 0;
+    return (r.type === 'bedroom' ? BED_WORTH.bedroom : BED_WORTH.dorm) + BED_WORTH.star * roomStars(S, r);
   }
   function idle(S, d, dm) {
     d.job = { type: 'idle', ph: 1, w: 3 + rnd(S) * 4 };

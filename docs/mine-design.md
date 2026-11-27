@@ -411,4 +411,9 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
     changing the tool; only the open menu's button is lit. The room list left the side panel. Keys: B and R
     open the menus, W / P / O pick a build straight away (`BUILD_MENU`, `ui.menu`, `pickFromMenu`,
     `#mn-menu`).
+  - *"I made some dormitories, then some nice bedrooms, but the dwarves don't use the bedrooms."* A dwarf
+    used to keep the first bed they got for good, and took the nearest one. Now at bedtime each takes the best
+    free bed (`bedWorth`: a bedroom 100, a dormitory 50, +10 a star; `BED_NEAR` 0.2 a tile of walk against it)
+    and moves out of the one they have for a clearly better one (`BED_MOVE` 5), with a line in the log.
+    Checked: six dwarves in two dormitories all moved into six new bedrooms within a night.
 - **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.
