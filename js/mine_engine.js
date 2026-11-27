@@ -16,6 +16,11 @@
   const WALK = 3.2; // tiles a second
   const DIG_S = [0, 2.5, 4, 6]; // seconds to dig rock of hardness 1 / 2 / 3 (a novice)
   const ORE_DIG = 1.5; // ore takes this much longer
+  const BUILDS = {
+    wall: { name: 'wall', inRoom: false },
+    pillar: { name: 'pillar', inRoom: true },
+    door: { name: 'door', inRoom: true }
+  };
   const SMOOTH_S = 3.5,
     BUILD_S = 4,
     PLANT_S = 2.5,
@@ -105,9 +110,9 @@
     cross: { name: "The Thane's Cross", desc: 'four equal arms from one hub' },
     colonnade: { name: 'The Colonnade', desc: 'a hall with its pillars in a true lattice, mirrored' },
     ninefold: { name: 'The Ninefold Hall', desc: 'nine rooms alike, three by three' },
-    cloister: { name: 'The Cloister', desc: '?' },
-    spiral: { name: 'The Spiral Stair', desc: '?' },
-    vein: { name: 'The Vein-follower', desc: '?' }
+    cloister: { name: 'The Cloister', desc: 'a pillared court with a room on each of its four sides' },
+    spiral: { name: 'The Spiral Stair', desc: 'the stair down cut as a spiral (comes with the stair)' },
+    vein: { name: 'The Vein-follower', desc: 'a straight passage eight long, cut along a vein of ore' }
   };
 
   // ── seeded random (the state lives in S so a save carries on the same) ──
@@ -498,7 +503,13 @@
             n++;
           }
         } else if (tool === 'pillar') {
-          if (t.k === 'r' && !t.p) {
+          if (t.k === 'f') {
+            // on dug floor: the mason builds one
+            if (!t.b && !t.dr && !t.fu && !S.gate.includes(i)) {
+              t.b = 'pillar';
+              n++;
+            }
+          } else if (!t.p) {
             t.p = true;
             t.d = false;
             release(S, i);
@@ -509,11 +520,24 @@
             t.m = true;
             n++;
           }
+        } else if (tool.startsWith('build:')) {
+          const what = tool.slice(6);
+          if (!BUILDS[what] || t.k !== 'f' || t.b || t.dr || t.fu || S.gate.includes(i)) continue;
+          if (t.r && !BUILDS[what].inRoom) continue; // a wall would cut a room in two
+          t.b = what;
+          n++;
         } else if (tool === 'cancel') {
-          if (t.d || t.p || t.m) {
+          if (t.dr) {
+            // a built door comes out again, its stone back in the stock
+            t.dr = false;
+            S.stock.stone++;
+            n++;
+          }
+          if (t.d || t.p || t.m || t.b) {
             t.d = false;
             t.p = false;
             t.m = false;
+            t.b = '';
             release(S, i);
             n++;
           }
@@ -626,7 +650,7 @@
     }
     const order = {
       miner: ['dig', 'haul'],
-      mason: ['build', 'smooth', 'haul', 'dig'],
+      mason: ['build', 'construct', 'smooth', 'haul', 'dig'],
       farmer: ['harvest', 'plant', 'haul', 'dig'],
       brewer: ['brew', 'haul', 'dig']
     }[d.trade];
@@ -694,6 +718,29 @@
       const st = nearest(dm, stocks);
       if (st < 0) return false;
       if (!go({ type: 'build', tile: best, ph: 0, st }, st)) return false;
+      T[best].cl = d.id;
+      return true;
+    }
+    if (kind === 'construct') {
+      if (S.stock.stone < 1) return false;
+      let best = -1,
+        stand = -1,
+        bd = 1e9;
+      for (let i = 0; i < T.length; i++) {
+        const t = T[i];
+        if (!t.b || t.cl || t.k !== 'f') continue;
+        const s = standBy(S, dm, i);
+        if (s < 0) continue;
+        if (dm.dist[s] < bd) {
+          bd = dm.dist[s];
+          best = i;
+          stand = s;
+        }
+      }
+      if (best < 0) return false;
+      const st = nearest(dm, stocks);
+      if (st < 0) return false;
+      if (!go({ type: 'construct', tile: best, ph: 0, st, stand }, st)) return false;
       T[best].cl = d.id;
       return true;
     }
@@ -769,6 +816,7 @@
     smooth: 'Smoothing a wall',
     haul: 'Hauling',
     build: 'Building',
+    construct: 'Building',
     plant: 'Planting deepcaps',
     harvest: 'Harvesting',
     brew: 'Brewing',
@@ -847,6 +895,53 @@
           d.carry = null;
         }
         d.job = null;
+        return;
+      }
+      case 'construct': {
+        const t = T[j.tile];
+        if (!t || !t.b || t.k !== 'f') {
+          drop(S, d);
+          return;
+        }
+        if (j.ph === 0) {
+          if (S.stock.stone < 1) {
+            drop(S, d);
+            return;
+          }
+          S.stock.stone--;
+          d.carry = { kind: 'stone', n: 1 };
+          j.ph = 1;
+          j.w = BUILD_S;
+          // stand beside it, never on it (or the mason would wall himself in)
+          const dm = distMap(S, d.x, d.y),
+            s = standBy(S, dm, j.tile);
+          const p = s >= 0 ? pathTo(dm, s) : null;
+          if (!p) {
+            drop(S, d);
+            return;
+          }
+          d.path = p;
+          return;
+        }
+        if (here === j.tile) {
+          // somehow standing on it: step off first
+          const dm = distMap(S, d.x, d.y),
+            s = standBy(S, dm, j.tile);
+          if (s < 0) {
+            drop(S, d);
+            return;
+          }
+          d.path = [s];
+          return;
+        }
+        d.act = ACT.construct;
+        j.w -= dt * speedOf(d);
+        if (j.w > 0) return;
+        d.carry = null;
+        t.cl = 0;
+        d.job = null;
+        d.xp += 3;
+        construct(S, j.tile, here);
         return;
       }
       case 'build':
@@ -984,15 +1079,44 @@
     d.job = null;
     d.path = [];
   }
+  // a wall or pillar turns floor into worked stone; a door stays floor (anyone can walk through it)
+  function construct(S, i, aside) {
+    const t = S.tiles[i],
+      what = t.b;
+    t.b = '';
+    if (what === 'door') {
+      t.dr = true;
+      return;
+    }
+    // whatever lies there goes into the stock, and anyone standing there steps aside to the builder's tile
+    for (const it of S.items.filter(it => it.i === i)) S.stock[it.kind] = (S.stock[it.kind] || 0) + it.n;
+    S.items = S.items.filter(it => it.i !== i);
+    for (const who of S.dwarves.concat([S.durin]))
+      if (Math.round(who.x) === i % W && Math.round(who.y) === ((i / W) | 0)) {
+        who.x = aside % W;
+        who.y = (aside / W) | 0;
+        who.path = [];
+      }
+    t.k = 'r';
+    t.h = 2;
+    t.o = '';
+    t.w = true;
+    t.bt = true;
+    t.g = 0;
+    if (what === 'pillar') t.p = true;
+  }
   function dig(S, i) {
     const t = S.tiles[i],
       x = i % W,
       y = (i / W) | 0;
+    const built = t.bt;
     t.k = 'f';
     t.d = false;
     t.m = false;
     t.w = false;
-    if (t.o === 'cu' || t.o === 'sn' || t.o === 'c') {
+    t.bt = false;
+    if (built) addItem(S, i, 'stone', 1);
+    else if (t.o === 'cu' || t.o === 'sn' || t.o === 'c') {
       addItem(S, i, ORES[t.o].name, 1);
       t.wo = true;
       t.o = '';
@@ -1276,6 +1400,41 @@
         }
       }
     }
+    // the Cloister: a court of pillars in a lattice with a room on each of its four sides (within 3 tiles)
+    cloister: for (const c of S.rooms) {
+      const pil = roomTiles(S, c).filter(i => T[i].k === 'r' && T[i].p);
+      if (pil.length < 4 || lattice(pil) < 0.99) continue;
+      const near = (r, side) => {
+        const across = side === 'n' || side === 's';
+        const overlap = across ? r.x0 <= c.x1 && r.x1 >= c.x0 : r.y0 <= c.y1 && r.y1 >= c.y0;
+        if (!overlap) return false;
+        if (side === 'n') return c.y0 - r.y1 >= 1 && c.y0 - r.y1 <= 3;
+        if (side === 's') return r.y0 - c.y1 >= 1 && r.y0 - c.y1 <= 3;
+        if (side === 'w') return c.x0 - r.x1 >= 1 && c.x0 - r.x1 <= 3;
+        return r.x0 - c.x1 >= 1 && r.x0 - c.x1 <= 3;
+      };
+      if (['n', 's', 'w', 'e'].every(side => S.rooms.some(r => r !== c && near(r, side)))) {
+        got.push('cloister');
+        break cloister;
+      }
+    }
+    // the Vein-follower: eight passage tiles in a straight line, six of them cut from ore
+    const oreRun = cells => {
+      let run = 0,
+        ore = 0;
+      for (const [x, y] of cells) {
+        if (isPass(x, y)) {
+          run++;
+          if (T[idx(x, y)].wo) ore++;
+          if (run >= 8 && ore >= 6) return true;
+        } else run = ore = 0;
+      }
+      return false;
+    };
+    let vein = false;
+    for (let y = 0; y < H && !vein; y++) vein = oreRun(Array.from({ length: W }, (_, x) => [x, y]));
+    for (let x = 0; x < W && !vein; x++) vein = oreRun(Array.from({ length: H }, (_, y) => [x, y]));
+    if (vein) got.push('vein');
     return got;
   }
   // call now and then: names any pattern found for the first time (for Durin to remark on)

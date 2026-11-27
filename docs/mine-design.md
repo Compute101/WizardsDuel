@@ -387,4 +387,21 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
   the Spiral Stair and the Vein-follower are names only.
 - **Last sim** (8 days, seed 7): every marked tile dug, 85 food and 91 ale in store, 3 / 3 dining hall,
   2★ bedrooms, Mason's Eye 69–81, the Long Gallery and the Colonnade.
+- **After the user's first play (November 2026):**
+  - *"I can't build walls, doors or pillars, so I can't correct mistakes."* The mason now builds on dug floor,
+    a stone block each: 🧱 **Wall** (not inside a room; worked stone, drawn as masonry), 🚪 **Door** (stays
+    walkable; later it'll stop elementals) and 🏛 **Pillar**, which now works on both rock (keep it) and dug
+    floor (build one). He stands beside the tile, never on it; anything lying there goes to the stock and
+    anyone standing there steps aside. To undo: dig a built wall or pillar out (the stone comes back), and
+    ✖ Clear takes out a door or any mark. Engine: `BUILDS`, `t.b` (ordered), `construct`, `t.bt` (built),
+    `t.dr` (a door); the mason's work order is furniture, then building, then smoothing.
+  - *"Most of the patterns Durin wants, I don't know what they are."* The Mason's Eye tab has
+    📖 **The Delve-book**: every named pattern, what makes it, and a little plan of one (`BOOK` in
+    `js/mine.js`). The user suggested a lore book; this is it, Durin's own. The Cloister (a pillared court
+    with a room on each side) and the Vein-follower (a straight passage along a vein of ore) are now
+    spotted too; the Spiral Stair waits for the stair.
+  - *"The helper message doesn't go away."* A tool's instructions are now a steady line over the tool bar
+    that changes with the tool (`#mn-hint`), not a toast. Toasts (the log's news) are shorter (2.2 s + 25 ms a
+    character, 6 s at most), at most three wait, the same message never queues twice, and a tap dismisses
+    one.
 - **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.

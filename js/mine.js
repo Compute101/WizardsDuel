@@ -32,7 +32,24 @@
   const TOOLS = [
     ['look', '✋', 'Look', 'Tap a dwarf, Durin, a room or a tile. Drag to move the map.'],
     ['dig', '⛏', 'Dig', 'Drag over rock to mark it for digging. Miners take the nearest.'],
-    ['pillar', '🏛', 'Pillar', 'Drag over rock to keep it as pillars. Leave them standing in your halls.'],
+    [
+      'pillar',
+      '🏛',
+      'Pillar',
+      'Drag over rock to keep it as pillars, or over dug floor to have the mason build one (a stone block each).'
+    ],
+    [
+      'wall',
+      '🧱',
+      'Wall',
+      'Drag over dug floor for the mason to wall it back up (a stone block each). Not inside a room. Dig it out again to undo.'
+    ],
+    [
+      'door',
+      '🚪',
+      'Door',
+      'Drag over dug floor for the mason to hang a door (a stone block each). Clear takes one out.'
+    ],
     [
       'smooth',
       '✨',
@@ -40,7 +57,12 @@
       'Drag over walls and pillars for the mason to smooth. Worked stone is finer, and (later) elementals can’t pass it.'
     ],
     ['room', '🏠', 'Room', 'Pick a room, then drag over dug floor.'],
-    ['cancel', '✖', 'Clear', 'Drag to clear digging, pillar and smoothing marks.']
+    [
+      'cancel',
+      '✖',
+      'Clear',
+      'Drag to clear marks: digging, pillars, smoothing and building. Takes out a built door. Built walls and pillars are dug out.'
+    ]
   ];
   const ROOM_HELP = {
     stockpile: 'Hauls go here. The gate counts as one, but a stockpile nearer the work saves walking.',
@@ -96,7 +118,8 @@
         <div class="mn-zoom"><button class="mn-btn" id="mn-zin" type="button">+</button><button class="mn-btn" id="mn-zout" type="button">−</button>
           <button class="mn-btn" id="mn-eye" type="button" title="Show what the Mason's Eye dislikes">👁</button></div>
         <div class="mn-tools" id="mn-tools"></div>
-        <div class="mn-toast" id="mn-toast"></div>
+        <div class="mn-toast" id="mn-toast" title="Tap to dismiss"></div>
+        <div class="mn-hint" id="mn-hint"></div>
       </div>
       <div class="mn-side">
         <div class="mn-sel" id="mn-sel"></div>
@@ -122,6 +145,7 @@
       );
     $('mn-zin').onclick = () => zoomBy(1.4);
     $('mn-zout').onclick = () => zoomBy(1 / 1.4);
+    $('mn-toast').onclick = dismissToast;
     $('mn-eye').onclick = () => {
       ui.overlay = !ui.overlay;
       $('mn-eye').classList.toggle('on', ui.overlay);
@@ -159,9 +183,16 @@
         renderTools();
         renderSide(true);
       } else {
-        const k = { d: 'dig', p: 'pillar', s: 'smooth', r: 'room', c: 'cancel', l: 'look' }[
-          e.key.toLowerCase()
-        ];
+        const k = {
+          d: 'dig',
+          p: 'pillar',
+          w: 'wall',
+          o: 'door',
+          s: 'smooth',
+          r: 'room',
+          c: 'cancel',
+          l: 'look'
+        }[e.key.toLowerCase()];
         if (k) pickTool(k);
       }
     });
@@ -266,9 +297,18 @@
   // ── toasts (the log's news) ──
   let toastQ = [],
     toastT = 0;
+  const TOAST_MS = 2200,
+    TOAST_PER_CHAR = 25,
+    TOAST_MAX = 6000;
   function toast(msg) {
+    if (toastQ.includes(msg)) return;
     toastQ.push(msg);
-    if (toastQ.length > 4) toastQ.shift();
+    if (toastQ.length > 3) toastQ.splice(1, 1); // drop the oldest waiting, keep the one on screen
+    if (toastQ.length === 1) showToast();
+  }
+  function dismissToast() {
+    clearTimeout(toastT);
+    toastQ.shift();
     showToast();
   }
   function showToast() {
@@ -285,7 +325,7 @@
         toastQ.shift();
         showToast();
       },
-      2600 + toastQ[0].length * 35
+      Math.min(TOAST_MAX, TOAST_MS + toastQ[0].length * TOAST_PER_CHAR)
     );
   }
   function say(msg) {
@@ -307,8 +347,15 @@
     }
     renderTools();
     renderSide(true);
-    const T = TOOLS.find(x => x[0] === t);
-    if (T) say(T[3]);
+  }
+  // what the tool in hand does, in a line over the tool bar (it changes with the tool; no need to dismiss it)
+  function renderHint() {
+    const room = ui.tool.startsWith('room:') && M.ROOMS[ui.tool.slice(5)];
+    const T = TOOLS.find(x => x[0] === (ui.tool.startsWith('room') ? 'room' : ui.tool));
+    const text = room ? 'Drag over dug floor to make a ' + room.name.toLowerCase() + '.' : T ? T[3] : '';
+    const el = $('mn-hint');
+    el.textContent = text;
+    el.hidden = !text || ui.tool === 'look';
   }
   function renderTools() {
     const cur = ui.tool.startsWith('room') ? 'room' : ui.tool;
@@ -319,6 +366,7 @@
     $('mn-tools')
       .querySelectorAll('[data-tool]')
       .forEach(b => (b.onclick = () => pickTool(b.dataset.tool)));
+    renderHint();
   }
 
   // ── the side panel ──
@@ -375,9 +423,10 @@
             ui.roomMenu = false;
             renderTools();
             renderSide(true);
-            say('Drag over dug floor to make a ' + M.ROOMS[b.dataset.room].name.toLowerCase() + '.');
           })
       );
+    const bk = $('mn-book');
+    if (bk) bk.onclick = delveBook;
     const pr = $('mn-prospect');
     if (pr)
       pr.onclick = () => {
@@ -462,17 +511,21 @@
         return `${x}<b>Unknown stone</b><p class="mn-note">Dig beside it, or have Durin prospect, to see what's there.</p>`;
       const what =
         t.k === 'f'
-          ? t.o === 'soil'
-            ? 'Dug soil (farmable)'
-            : 'Dug floor'
-          : t.p
-            ? 'A pillar' + (t.w ? ', smoothed' : '')
-            : (t.o === 'soil'
-                ? 'Loam (soft; leaves soil to farm)'
-                : t.o
-                  ? M.ORES[t.o].name[0].toUpperCase() + M.ORES[t.o].name.slice(1) + ' ore'
-                  : ['', 'Soft', 'Firm', 'Hard'][t.h] + ' rock') + (t.w ? ', smoothed' : '');
-      return `${x}<b>${what}</b>${t.d ? '<p class="mn-note">Marked for digging.</p>' : ''}${t.m ? '<p class="mn-note">Marked for smoothing.</p>' : ''}`;
+          ? t.dr
+            ? 'A door (✖ Clear takes it out)'
+            : t.o === 'soil'
+              ? 'Dug soil (farmable)'
+              : 'Dug floor'
+          : t.bt
+            ? (t.p ? 'A built pillar' : 'A built wall') + ' (dig it out to undo; you get the stone back)'
+            : t.p
+              ? 'A pillar' + (t.w ? ', smoothed' : '')
+              : (t.o === 'soil'
+                  ? 'Loam (soft; leaves soil to farm)'
+                  : t.o
+                    ? M.ORES[t.o].name[0].toUpperCase() + M.ORES[t.o].name.slice(1) + ' ore'
+                    : ['', 'Soft', 'Firm', 'Hard'][t.h] + ' rock') + (t.w ? ', smoothed' : '');
+      return `${x}<b>${what}</b>${t.d ? '<p class="mn-note">Marked for digging.</p>' : ''}${t.m ? '<p class="mn-note">Marked for smoothing.</p>' : ''}${t.b ? '<p class="mn-note">The mason is to build a ' + t.b + ' here (a stone block).</p>' : ''}`;
     }
     return '';
   }
@@ -532,7 +585,8 @@
     return `<div class="mn-score">${e.score == null ? '—' : e.score}<small>${e.ready ? ' / 100' : ' (dig more first)'}</small></div>
     <div class="mn-needs">${parts}</div>${e.penalty ? `<p class="mn-note">−${e.penalty} for ${e.waste} dead end${e.waste > 1 ? 's' : ''} that found nothing.</p>` : ''}
     <p class="mn-note">Durin judges the workings: straight passages that turn square, no shapeless holes (mark them as rooms), rooms mirrored, pillars in a lattice, walls smoothed. 👁 on the map shows what he dislikes.</p>
-    <p><b>Named patterns</b> <small>(Durin spots them himself)</small></p><ul class="mn-pats">${pats}</ul>`;
+    <p><b>Named patterns</b> <small>(Durin spots them himself)</small></p><ul class="mn-pats">${pats}</ul>
+    <button class="mn-btn" id="mn-book" type="button">📖 The Delve-book: what each pattern is</button>`;
   }
   function logHtml() {
     return (
@@ -573,15 +627,116 @@
     <p>Durin has the Thane's leave to cut a new mine under Stonedeep. You're his planner: mark the digging, lay out the rooms, and keep the crew fed, watered and rested.</p>
     <ul>
       <li><b>⛏ Dig</b>: drag over rock. Miners dig the nearest marked stone they can reach. Ore and stone blocks are hauled to a stockpile.</li>
-      <li><b>🏛 Pillar</b>: rock you keep. Leave pillars in your halls (soon they'll hold the roof up).</li>
+      <li><b>🏛 Pillar</b>: on rock, rock you keep; on dug floor, the mason builds one. Leave pillars in your halls (soon they'll hold the roof up).</li>
+      <li><b>🧱 Wall</b> and <b>🚪 Door</b>: the mason builds them on dug floor, a stone block each. Built walls count as worked stone.</li>
+      <li><b>Put a mistake right</b>: dug too much? Wall it back up. A built wall or pillar can be dug out again (you get the stone back); ✖ Clear takes out a door and any mark.</li>
       <li><b>🏠 Room</b>: drag over dug floor. Bedrooms, a dining hall, a mushroom farm on soil, a brewery. The mason builds the furniture from stone blocks.</li>
       <li><b>✨ Smooth</b>: the mason smooths walls and pillars. Finer rooms, and worked stone will keep elementals out.</li>
       <li><b>Durin</b>: tap him, then tap floor to send him there; he prospects the stone round him once a day.</li>
       <li><b>The Ledger</b>: hungry, dry or floor-sleeping dwarves hold grudges. Too many and they slow down, then stop.</li>
-      <li><b>The Mason's Eye</b>: Durin scores the look of the Delve, and names fine patterns when he sees them.</li>
+      <li><b>The Mason's Eye</b>: Durin scores the look of the Delve, and names fine patterns when he sees them. The Delve-book (on the Mason's Eye tab) shows what each one is.</li>
     </ul>
-    <p class="mn-note">Space pauses. Keys: D dig, P pillar, S smooth, R room, C clear, L look. This is the first layer only: cave-ins, quotas, the stair down and the elementals come next.</p>
+    <p class="mn-note">Space pauses. Keys: D dig, P pillar, W wall, O door, S smooth, R room, C clear, L look. This is the first layer only: cave-ins, quotas, the stair down and the elementals come next.</p>
     <div class="mn-row"><button class="mn-btn" id="mn-ok" type="button">To work</button></div>`,
+      () => {
+        $('mn-ok').onclick = closeModal;
+      }
+    );
+  }
+
+  // ── the Delve-book: what each named pattern is, with a little plan of one ──
+  // # rock, . passage, o pillar, R room floor, $ ore dug out along the way, ~ the stair (step 2)
+  const BOOK = {
+    gallery: {
+      how: 'One straight passage, twenty tiles long, not part of a room. Durin likes a tunnel that goes where it means to.',
+      plan: ['##############', '..............', '##############']
+    },
+    cross: {
+      how: 'A hub with four arms, north, south, east and west, all one tile wide and all the same length (four or more), with rock either side of each arm.',
+      plan: [
+        '####.####',
+        '####.####',
+        '####.####',
+        '####.####',
+        '.........',
+        '####.####',
+        '####.####',
+        '####.####',
+        '####.####'
+      ]
+    },
+    colonnade: {
+      how: 'A room with four or more pillars standing in a full grid at even spacing, mirrored so the hall looks the same from either end.',
+      plan: ['#########', '#RRRRRRR#', '#RoRoRoR#', '#RRRRRRR#', '#RoRoRoR#', '#RRRRRRR#', '#########']
+    },
+    ninefold: {
+      how: 'Nine rooms of the same size (2 × 2 or bigger) laid out three by three, evenly spaced, with rock between them.',
+      plan: ['RR#RR#RR', 'RR#RR#RR', '########', 'RR#RR#RR', 'RR#RR#RR', '########', 'RR#RR#RR', 'RR#RR#RR']
+    },
+    cloister: {
+      how: 'A court: a room whose pillars stand in a full, even grid, with another room on each of its four sides, no more than three tiles away.',
+      plan: [
+        '####RRRRR####',
+        '####RRRRR####',
+        '#############',
+        'RR#RRRRRRR#RR',
+        'RR#RoRRRoR#RR',
+        'RR#RRRRRRR#RR',
+        'RR#RoRRRoR#RR',
+        'RR#RRRRRRR#RR',
+        '#############',
+        '####RRRRR####',
+        '####RRRRR####'
+      ]
+    },
+    vein: {
+      how: 'Follow a vein of ore with a straight passage: eight tiles in a line, six or more of them cut out of ore.',
+      plan: ['##########', '$$$$$$$$..', '##########']
+    },
+    spiral: {
+      how: 'Cut the stair down to the next layer as a spiral. It comes with the stair, which isn\u2019t built yet.',
+      plan: ['#####', '#~~~#', '#~#~#', '#~~##', '#####']
+    }
+  };
+  const PLAN_COL = {
+    '#': '#4b4450',
+    '.': '#8a7d6e',
+    o: '#cfc2ad',
+    R: '#b98c5e',
+    $: '#d0783a',
+    '~': '#7a8fb0'
+  };
+  function planHtml(rows) {
+    const w = Math.max(...rows.map(r => r.length));
+    return (
+      `<div class="mn-plan" style="grid-template-columns:repeat(${w},12px)">` +
+      rows
+        .map(r =>
+          r
+            .padEnd(w, '#')
+            .split('')
+            .map(
+              ch =>
+                `<i class="${ch === 'o' ? 'pil' : ''}" style="background:${ch === 'o' ? PLAN_COL.R : PLAN_COL[ch]}"></i>`
+            )
+            .join('')
+        )
+        .join('') +
+      '</div>'
+    );
+  }
+  function delveBook() {
+    const entries = Object.entries(M.PATTERNS)
+      .map(([k, p]) => {
+        const b = BOOK[k];
+        return `<div class="mn-bookent${S.found[k] ? ' got' : ''}"><div><b>${S.found[k] ? '✨ ' : ''}${p.name}</b>${S.found[k] ? ` <small>found on day ${S.found[k]}</small>` : ''}
+          <p>${b.how}</p></div>${planHtml(b.plan)}</div>`;
+      })
+      .join('');
+    modal(
+      `<h3>📖 The Delve-book</h3><p class="mn-note">Durin's book of the patterns a dwarf is proud to cut. Dig one and he'll name it and write it in.</p>
+      <p class="mn-note mn-key"><i style="background:${PLAN_COL['#']}"></i> rock <i style="background:${PLAN_COL['.']}"></i> passage <i style="background:${PLAN_COL.R}"></i> room <i class="pil" style="background:${PLAN_COL.R}"></i> pillar <i style="background:${PLAN_COL.$}"></i> dug ore</p>
+      ${entries}<div class="mn-row"><button class="mn-btn" id="mn-ok" type="button">Close</button></div>`,
       () => {
         $('mn-ok').onclick = closeModal;
       }
@@ -697,8 +852,17 @@
     ui.drag = null;
     if (!g || pts.size) return;
     if (g.mark) {
-      const r = M.designate(S, ui.tool, g.x0, g.y0, g.x1, g.y1);
+      const tool = ui.tool === 'wall' || ui.tool === 'door' ? 'build:' + ui.tool : ui.tool;
+      const r = M.designate(S, tool, g.x0, g.y0, g.x1, g.y1);
       if (r && r.ok === false) say(r.why);
+      else if (r && r.n === 0 && (ui.tool === 'wall' || ui.tool === 'door'))
+        say(
+          ui.tool === 'wall'
+            ? 'Walls go on dug floor, outside rooms and clear of furniture and the gate.'
+            : 'Doors go on dug floor, clear of furniture and the gate.'
+        );
+      else if (r && r.n && /^(wall|door|pillar)$/.test(ui.tool) && S.stock.stone < 1)
+        say('No stone blocks in the stock yet: the mason builds once the miners have brought some in.');
       else if (r && r.room) {
         say(M.ROOMS[r.room.type].name + ' marked out.');
         ui.sel = { kind: 'room', id: r.room.id };
@@ -818,7 +982,27 @@
               c.fillStyle = 'rgba(0,0,0,.18)';
               c.fillRect(X + hash(x, y, k) * s * 0.85, Y + hash(x, y, k + 5) * s * 0.85, s * 0.1, s * 0.1);
             }
-          else {
+          else if (t.bt) {
+            // a built wall: dressed blocks in courses, so it reads as masonry, not smoothed rock
+            c.fillStyle = '#8a7f74';
+            c.fillRect(X, Y, s + 0.5, s + 0.5);
+            c.strokeStyle = 'rgba(40,34,30,.55)';
+            c.lineWidth = Math.max(1, s * 0.04);
+            c.beginPath();
+            for (let r = 1; r < 3; r++) {
+              c.moveTo(X, Y + (s * r) / 3);
+              c.lineTo(X + s, Y + (s * r) / 3);
+            }
+            for (let r = 0; r < 3; r++) {
+              const off = r % 2 ? s / 2 : 0;
+              for (let k = off; k < s; k += s / 2) {
+                if (k === 0) continue;
+                c.moveTo(X + k, Y + (s * r) / 3);
+                c.lineTo(X + k, Y + (s * (r + 1)) / 3);
+              }
+            }
+            c.stroke();
+          } else {
             c.strokeStyle = 'rgba(255,240,210,.28)';
             c.lineWidth = Math.max(1, s * 0.05);
             c.strokeRect(X + s * 0.12, Y + s * 0.12, s * 0.76, s * 0.76);
@@ -874,6 +1058,7 @@
         }
         drawMarks(c, t, X, Y, s);
         if (t.fu) drawFurn(c, t, X, Y, s);
+        if (t.dr) drawDoor(c, X, Y, s, x, y, 1);
         if (t.g) drawCrop(c, t, X, Y, s, x, y);
       }
     // daylight at the gate
@@ -991,7 +1176,57 @@
     c.restore();
   }
   // digging (gold hatching), smoothing (blue dashes) and pillars kept in the dark (a dashed ring)
+  // a door: planks in a stone frame, turned to run across the passage it stands in
+  function drawDoor(c, X, Y, s, x, y, alpha) {
+    const across = M.isFloor(S, x - 1, y) || M.isFloor(S, x + 1, y); // the passage runs east–west, so the door runs north–south
+    c.save();
+    c.globalAlpha = alpha;
+    c.translate(X + s / 2, Y + s / 2);
+    if (across) c.rotate(Math.PI / 2);
+    c.fillStyle = '#5a5058';
+    c.fillRect(-s * 0.5, -s * 0.16, s * 0.12, s * 0.32);
+    c.fillRect(s * 0.38, -s * 0.16, s * 0.12, s * 0.32);
+    c.fillStyle = '#7a5432';
+    c.fillRect(-s * 0.38, -s * 0.12, s * 0.76, s * 0.24);
+    c.strokeStyle = '#3e2a18';
+    c.lineWidth = Math.max(1, s * 0.03);
+    for (let k = -1; k <= 1; k++) {
+      c.beginPath();
+      c.moveTo(k * s * 0.19, -s * 0.12);
+      c.lineTo(k * s * 0.19, s * 0.12);
+      c.stroke();
+    }
+    c.fillStyle = '#d8b070';
+    c.beginPath();
+    c.arc(s * 0.26, 0, s * 0.035, 0, 7);
+    c.fill();
+    c.restore();
+  }
+  // what the mason has been asked to build here: a dashed ghost of it
+  function drawBuildMark(c, t, X, Y, s) {
+    const x = Math.round(X / s),
+      y = Math.round(Y / s);
+    c.save();
+    c.setLineDash([s * 0.12, s * 0.1]);
+    c.strokeStyle = 'rgba(232,208,150,.9)';
+    c.lineWidth = Math.max(1, s * 0.06);
+    if (t.b === 'wall') {
+      c.fillStyle = 'rgba(120,112,120,.45)';
+      c.fillRect(X + s * 0.08, Y + s * 0.08, s * 0.84, s * 0.84);
+      c.strokeRect(X + s * 0.08, Y + s * 0.08, s * 0.84, s * 0.84);
+    } else if (t.b === 'pillar') {
+      c.beginPath();
+      c.arc(X + s / 2, Y + s / 2, s * 0.36, 0, 7);
+      c.stroke();
+    } else if (t.b === 'door') {
+      c.restore();
+      drawDoor(c, X, Y, s, x, y, 0.45);
+      return;
+    }
+    c.restore();
+  }
   function drawMarks(c, t, X, Y, s) {
+    if (t.b) drawBuildMark(c, t, X, Y, s);
     if (t.d) {
       c.save();
       c.beginPath();
