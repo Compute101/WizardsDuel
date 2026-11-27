@@ -5,43 +5,204 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Alegreya+Sans:wght@400;500;700&display=swap">
 <style>
 /* Layout: a parchment chart on top, a field-notes panel for the tapped region beside it (stacked on phones). One deliberate parchment look in both themes. */
-:root{
-  --desk:#2a2219; --parch:#e9dcbc; --parch-2:#dccba2; --ink:#3b2a1a; --ink-soft:#6b5236;
-  --sea:#a9b9b0; --gold:#9a6a1c; --built:#2f6b3a; --planned:#9a6a1c; --open:#7a4f8a;
-  --f-display:"IM Fell English SC", "Iowan Old Style", Georgia, serif;
-  --f-italic:"IM Fell English", "Iowan Old Style", Georgia, serif;
-  --f-body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+:root {
+  --desk: #2a2219;
+  --parch: #e9dcbc;
+  --parch-2: #dccba2;
+  --ink: #3b2a1a;
+  --ink-soft: #6b5236;
+  --sea: #a9b9b0;
+  --gold: #9a6a1c;
+  --built: #2f6b3a;
+  --planned: #9a6a1c;
+  --open: #7a4f8a;
+  --f-display: 'IM Fell English SC', 'Iowan Old Style', Georgia, serif;
+  --f-italic: 'IM Fell English', 'Iowan Old Style', Georgia, serif;
+  --f-body: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
   color-scheme: dark;
 }
-html,body{background:var(--desk);color:var(--parch)}
-body{font-family:var(--f-body);font-size:15px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
-.wrap{max-width:1500px;margin:0 auto;display:grid;gap:18px}
-header h1{font-family:var(--f-display);font-weight:400;font-size:clamp(26px,4vw,40px);margin:0;letter-spacing:.02em;text-wrap:balance;color:var(--parch)}
-header p{margin:4px 0 0;max-width:70ch;color:#cdbd98}
-.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
-@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
-.chart{background:var(--parch);border-radius:4px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,.45);min-width:0}
-.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:2px 2px 8px;color:var(--ink);font-size:13px}
-.tools button{font:inherit;background:var(--parch-2);color:var(--ink);border:1px solid var(--ink-soft);border-radius:3px;padding:4px 10px;cursor:pointer}
-.tools button[aria-pressed="true"]{background:var(--ink);color:var(--parch)}
-.tools button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.key{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
-.key span{display:inline-flex;align-items:center;gap:5px}
-.dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1.5px solid var(--ink)}
-.scroller{overflow:auto;max-height:82vh;border:1px solid var(--parch-2);touch-action:pan-x pan-y}
-canvas{display:block;width:100%;cursor:pointer}
-aside{background:var(--parch);color:var(--ink);border-radius:4px;padding:18px 20px;min-width:0;position:sticky;top:max(16px,env(safe-area-inset-top,0px))}
-aside h2{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0;line-height:1.15;text-wrap:balance}
-aside .tag{display:inline-block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:2px;color:var(--parch);margin:6px 0 10px}
-aside h3{font-family:var(--f-italic);font-style:italic;font-weight:400;font-size:17px;margin:14px 0 2px;color:var(--ink-soft)}
-aside p,aside ul{margin:0 0 6px}
-aside ul{padding-left:18px}
-aside li{margin:2px 0}
-.hint{font-size:13px;color:var(--ink-soft);margin-top:12px;border-top:1px solid var(--parch-2);padding-top:8px}
-.qs{background:var(--parch);color:var(--ink);border-radius:4px;padding:16px 20px}
-.qs h2{font-family:var(--f-display);font-weight:400;margin:0 0 6px;font-size:24px}
-.qs ol{margin:0;padding-left:20px;display:grid;gap:6px;max-width:95ch}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+html,
+body {
+  background: var(--desk);
+  color: var(--parch);
+}
+body {
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap {
+  max-width: 1500px;
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+header h1 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(26px, 4vw, 40px);
+  margin: 0;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+  color: var(--parch);
+}
+header p {
+  margin: 4px 0 0;
+  max-width: 70ch;
+  color: #cdbd98;
+}
+.main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.chart {
+  background: var(--parch);
+  border-radius: 4px;
+  padding: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  min-width: 0;
+}
+.tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 2px 2px 8px;
+  color: var(--ink);
+  font-size: 13px;
+}
+.tools button {
+  font: inherit;
+  background: var(--parch-2);
+  color: var(--ink);
+  border: 1px solid var(--ink-soft);
+  border-radius: 3px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.tools button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--parch);
+}
+.tools button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.key {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1.5px solid var(--ink);
+}
+.scroller {
+  overflow: auto;
+  max-height: 82vh;
+  border: 1px solid var(--parch-2);
+  touch-action: pan-x pan-y;
+}
+canvas {
+  display: block;
+  width: 100%;
+  cursor: pointer;
+}
+aside {
+  background: var(--parch);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 18px 20px;
+  min-width: 0;
+  position: sticky;
+  top: max(16px, env(safe-area-inset-top, 0px));
+}
+aside h2 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: 26px;
+  margin: 0;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+aside .tag {
+  display: inline-block;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 2px;
+  color: var(--parch);
+  margin: 6px 0 10px;
+}
+aside h3 {
+  font-family: var(--f-italic);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 17px;
+  margin: 14px 0 2px;
+  color: var(--ink-soft);
+}
+aside p,
+aside ul {
+  margin: 0 0 6px;
+}
+aside ul {
+  padding-left: 18px;
+}
+aside li {
+  margin: 2px 0;
+}
+.hint {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 12px;
+  border-top: 1px solid var(--parch-2);
+  padding-top: 8px;
+}
+.qs {
+  background: var(--parch);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 16px 20px;
+}
+.qs h2 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+.qs ol {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  max-width: 95ch;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
 </style>
 
 <div class="wrap">
@@ -85,351 +246,1889 @@ aside li{margin:2px 0}
 </div>
 
 <script>
-(function(){
-// World frame: x -300..3500, y -250..3350. One day by cart = DAY units (Wrenford to Corvanthe is three days).
-const OX=300,OY=250,W=3800,H=3600,S=0.9,DAY=60;
-const cv=document.getElementById('map'),ctx=cv.getContext('2d');
-function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-function rough(pts,depth,amt,r){let p=pts.slice();
-  for(let d=0;d<depth;d++){const q=[];for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;const dx=b[0]-a[0],dy=b[1]-a[1];const len=Math.hypot(dx,dy)||1;const off=(r()-.5)*len*amt;q.push(a,[mx-dy/len*off,my+dx/len*off]);}p=q;}
-  return p;}
-function blob(cx,cy,rx,ry,n,r){const p=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2;const k=.75+r()*.4;p.push([cx+Math.cos(a)*rx*k,cy+Math.sin(a)*ry*k])}return p}
-function pathOf(polys){const P=new Path2D();polys.forEach(p=>{P.moveTo(p[0][0],p[0][1]);p.forEach(q=>P.lineTo(q[0],q[1]));P.closePath();});return P}
-const isl=([x,y])=>[(x-800)*0.5+1180,(y-470)*0.5+330];
-const I=a=>a.map(isl);
-const R=rng(7);
+(function () {
+  // World frame: x -300..3500, y -250..3350. One day by cart = DAY units (Wrenford to Corvanthe is three days).
+  const OX = 300,
+    OY = 250,
+    W = 3800,
+    H = 3600,
+    S = 0.9,
+    DAY = 60;
+  const cv = document.getElementById('map'),
+    ctx = cv.getContext('2d');
+  function rng(seed) {
+    return function () {
+      seed |= 0;
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function rough(pts, depth, amt, r) {
+    let p = pts.slice();
+    for (let d = 0; d < depth; d++) {
+      const q = [];
+      for (let i = 0; i < p.length; i++) {
+        const a = p[i],
+          b = p[(i + 1) % p.length];
+        const mx = (a[0] + b[0]) / 2,
+          my = (a[1] + b[1]) / 2;
+        const dx = b[0] - a[0],
+          dy = b[1] - a[1];
+        const len = Math.hypot(dx, dy) || 1;
+        const off = (r() - 0.5) * len * amt;
+        q.push(a, [mx - (dy / len) * off, my + (dx / len) * off]);
+      }
+      p = q;
+    }
+    return p;
+  }
+  function blob(cx, cy, rx, ry, n, r) {
+    const p = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const k = 0.75 + r() * 0.4;
+      p.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]);
+    }
+    return p;
+  }
+  function pathOf(polys) {
+    const P = new Path2D();
+    polys.forEach(p => {
+      P.moveTo(p[0][0], p[0][1]);
+      p.forEach(q => P.lineTo(q[0], q[1]));
+      P.closePath();
+    });
+    return P;
+  }
+  const isl = ([x, y]) => [(x - 800) * 0.5 + 1180, (y - 470) * 0.5 + 330];
+  const I = a => a.map(isl);
+  const R = rng(7);
 
-const ISLE=I([[270,250],[420,205],[560,220],[700,185],[860,200],[1000,172],[1150,205],[1265,255],[1330,325],[1372,392],[1345,470],[1300,560],[1248,650],[1150,718],[1020,758],[880,770],[740,752],[600,762],[470,732],[360,682],[292,600],[258,500],[240,400],[248,318]]);
-const MAIN=[[100,760],[-60,780],[-160,830],[-150,900],[-40,920],[60,980],[110,1150],[60,1330],[200,1440],[360,1540],[400,1700],[280,1790],[80,1840],[-80,1930],[-160,2080],[-180,2300],[-110,2480],[40,2610],[240,2640],[420,2560],[620,2480],[820,2500],[960,2420],[1080,2430],[1110,2520],[1150,2660],[1190,2800],[1250,2840],[1275,2760],[1310,2600],[1370,2470],[1450,2430],[1540,2490],[1610,2450],[1700,2440],[1760,2470],[1790,2470],[1850,2480],[1920,2520],[1990,2640],[2030,2760],[2110,2740],[2160,2580],[2260,2490],[2420,2530],[2600,2490],[2700,2590],[2780,2730],[2870,2790],[2990,2710],[3090,2530],[3220,2460],[3330,2290],[3360,2050],[3280,1880],[3150,1760],[3300,1600],[3430,1330],[3420,1050],[3330,820],[3360,560],[3240,350],[3080,220],[2880,130],[2680,160],[2480,100],[2300,140],[2150,220],[2050,330],[1950,450],[1850,560],[1700,630],[1560,610],[1450,580],[1300,545],[1150,565],[1000,550],[850,590],[730,620],[700,760],[640,860],[540,840],[480,700],[420,645],[250,625]];
-const SOUTH=[[-310,2900],[-120,2820],[60,2770],[160,2760],[300,2800],[500,2870],[800,2930],[1000,2990],[1080,3060],[1200,3080],[1320,3020],[1500,2950],[1700,2930],[1880,2890],[1960,2875],[2100,2910],[2400,2960],[2700,2910],[2900,2900],[3100,2970],[3300,3010],[3510,2960],[3510,3360],[-310,3360]];
-const LANDS=[ISLE,MAIN,SOUTH,
- ...[[720,330,85,110],[1000,95,30,18],[1100,70,22,14],[1230,90,26,16],[1330,70,16,10],[1720,170,70,40],[1860,110,50,32],[1620,250,30,20],[1960,200,40,28],[2350,2800,60,20],[880,2640,40,22],[3440,2700,40,60]].map(b=>blob(b[0],b[1],b[2],b[3],10,R))];
-const landR=LANDS.map((p,i)=>rough(p,5,i===0?.36:i<3?.32:.3,rng(100+i)));
-const landPath=pathOf(landR);
-// inland waters: the Inner Sea (reached from the Middle Sea through the Narrowgate channel), the Salt Sea, lakes
-const WATERS=[{b:[1900,2030,270,210]},{b:[2650,950,260,130]},{b:[1180,1180,62,36]},{b:[700,1640,40,24]},{b:[2470,1660,46,26]}];
-const CHANNEL=[[1792,2150],[1866,2160],[1858,2300],[1850,2420],[1862,2580],[1786,2580],[1800,2420],[1806,2300]];
-const waterPath=pathOf([...WATERS.map((w,i)=>rough(blob(w.b[0],w.b[1],w.b[2],w.b[3],14,rng(400+i)),3,.25,rng(450+i))),rough(CHANNEL,3,.12,rng(470))]);
-const onLand=(x,y)=>ctx.isPointInPath(landPath,x,y)&&!ctx.isPointInPath(waterPath,x,y);
+  const ISLE = I([
+    [270, 250],
+    [420, 205],
+    [560, 220],
+    [700, 185],
+    [860, 200],
+    [1000, 172],
+    [1150, 205],
+    [1265, 255],
+    [1330, 325],
+    [1372, 392],
+    [1345, 470],
+    [1300, 560],
+    [1248, 650],
+    [1150, 718],
+    [1020, 758],
+    [880, 770],
+    [740, 752],
+    [600, 762],
+    [470, 732],
+    [360, 682],
+    [292, 600],
+    [258, 500],
+    [240, 400],
+    [248, 318]
+  ]);
+  const MAIN = [
+    [100, 760],
+    [-60, 780],
+    [-160, 830],
+    [-150, 900],
+    [-40, 920],
+    [60, 980],
+    [110, 1150],
+    [60, 1330],
+    [200, 1440],
+    [360, 1540],
+    [400, 1700],
+    [280, 1790],
+    [80, 1840],
+    [-80, 1930],
+    [-160, 2080],
+    [-180, 2300],
+    [-110, 2480],
+    [40, 2610],
+    [240, 2640],
+    [420, 2560],
+    [620, 2480],
+    [820, 2500],
+    [960, 2420],
+    [1080, 2430],
+    [1110, 2520],
+    [1150, 2660],
+    [1190, 2800],
+    [1250, 2840],
+    [1275, 2760],
+    [1310, 2600],
+    [1370, 2470],
+    [1450, 2430],
+    [1540, 2490],
+    [1610, 2450],
+    [1700, 2440],
+    [1760, 2470],
+    [1790, 2470],
+    [1850, 2480],
+    [1920, 2520],
+    [1990, 2640],
+    [2030, 2760],
+    [2110, 2740],
+    [2160, 2580],
+    [2260, 2490],
+    [2420, 2530],
+    [2600, 2490],
+    [2700, 2590],
+    [2780, 2730],
+    [2870, 2790],
+    [2990, 2710],
+    [3090, 2530],
+    [3220, 2460],
+    [3330, 2290],
+    [3360, 2050],
+    [3280, 1880],
+    [3150, 1760],
+    [3300, 1600],
+    [3430, 1330],
+    [3420, 1050],
+    [3330, 820],
+    [3360, 560],
+    [3240, 350],
+    [3080, 220],
+    [2880, 130],
+    [2680, 160],
+    [2480, 100],
+    [2300, 140],
+    [2150, 220],
+    [2050, 330],
+    [1950, 450],
+    [1850, 560],
+    [1700, 630],
+    [1560, 610],
+    [1450, 580],
+    [1300, 545],
+    [1150, 565],
+    [1000, 550],
+    [850, 590],
+    [730, 620],
+    [700, 760],
+    [640, 860],
+    [540, 840],
+    [480, 700],
+    [420, 645],
+    [250, 625]
+  ];
+  const SOUTH = [
+    [-310, 2900],
+    [-120, 2820],
+    [60, 2770],
+    [160, 2760],
+    [300, 2800],
+    [500, 2870],
+    [800, 2930],
+    [1000, 2990],
+    [1080, 3060],
+    [1200, 3080],
+    [1320, 3020],
+    [1500, 2950],
+    [1700, 2930],
+    [1880, 2890],
+    [1960, 2875],
+    [2100, 2910],
+    [2400, 2960],
+    [2700, 2910],
+    [2900, 2900],
+    [3100, 2970],
+    [3300, 3010],
+    [3510, 2960],
+    [3510, 3360],
+    [-310, 3360]
+  ];
+  const LANDS = [
+    ISLE,
+    MAIN,
+    SOUTH,
+    ...[
+      [720, 330, 85, 110],
+      [1000, 95, 30, 18],
+      [1100, 70, 22, 14],
+      [1230, 90, 26, 16],
+      [1330, 70, 16, 10],
+      [1720, 170, 70, 40],
+      [1860, 110, 50, 32],
+      [1620, 250, 30, 20],
+      [1960, 200, 40, 28],
+      [2350, 2800, 60, 20],
+      [880, 2640, 40, 22],
+      [3440, 2700, 40, 60]
+    ].map(b => blob(b[0], b[1], b[2], b[3], 10, R))
+  ];
+  const landR = LANDS.map((p, i) => rough(p, 5, i === 0 ? 0.36 : i < 3 ? 0.32 : 0.3, rng(100 + i)));
+  const landPath = pathOf(landR);
+  // inland waters: the Inner Sea (reached from the Middle Sea through the Narrowgate channel), the Salt Sea, lakes
+  const WATERS = [
+    { b: [1900, 2030, 270, 210] },
+    { b: [2650, 950, 260, 130] },
+    { b: [1180, 1180, 62, 36] },
+    { b: [700, 1640, 40, 24] },
+    { b: [2470, 1660, 46, 26] }
+  ];
+  const CHANNEL = [
+    [1792, 2150],
+    [1866, 2160],
+    [1858, 2300],
+    [1850, 2420],
+    [1862, 2580],
+    [1786, 2580],
+    [1800, 2420],
+    [1806, 2300]
+  ];
+  const waterPath = pathOf([
+    ...WATERS.map((w, i) =>
+      rough(blob(w.b[0], w.b[1], w.b[2], w.b[3], 14, rng(400 + i)), 3, 0.25, rng(450 + i))
+    ),
+    rough(CHANNEL, 3, 0.12, rng(470))
+  ]);
+  const onLand = (x, y) => ctx.isPointInPath(landPath, x, y) && !ctx.isPointInPath(waterPath, x, y);
 
-// Borders are shared lines: each edge is roughened from its two end points, so neighbours draw the same line.
-const V={w1:[200,560],ha1:[980,525],ha2:[1290,512],o1:[-350,550],a:[720,560],b:[700,900],c:[680,1150],d:[720,1300],e:[1560,520],f:[1580,720],g:[1500,1000],h:[1480,1280],j:[1760,520],k:[1900,560],l:[2250,850],m:[2300,1280],n:[2560,1340],
- u:[2620,1450],p:[2450,1590],q:[1800,1570],q2:[1680,1580],r:[1300,1590],v1:[1150,1600],s:[820,1620],t:[800,1450],x:[-350,1450],y:[200,1430],y2:[420,1380],z:[740,1720],z2:[400,1760],z3:[-350,1760],
- z4:[700,1950],z5:[640,2700],z6:[-350,2700],v2:[1150,2450],v3:[1000,2520],g1:[1660,2150],g2:[1720,2270],g3:[1700,2650],g4:[1300,3000],g5:[1050,3000],g6:[1950,2290],g7:[2120,2400],g8:[2260,2470],
- g9:[2250,2900],g10:[1850,2900],c1:[2700,1600],c2:[2700,2560],c3:[2750,2950],e1:[3550,1340],e2:[3550,2950],n1:[2200,-50],n2:[3550,-50]};
-function roughEdge(A,B){const fw=A[0]<B[0]||(A[0]===B[0]&&A[1]<B[1]);const P=fw?A:B,Q=fw?B:A;const r=rng(Math.round(P[0]*7+P[1]*13+Q[0]*17+Q[1]*19));
-  let pts=[P,Q];for(let d=0;d<5;d++){const o=[pts[0]];for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];const dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,off=(r()-.5)*len*.42;o.push([(a[0]+b[0])/2-dy/len*off,(a[1]+b[1])/2+dx/len*off],b);}pts=o;}
-  if(!fw)pts.reverse();return pts.slice(0,-1);}
-const COUNTRIES=[
- {id:'westmarch',tint:'150,150,130',v:'o1 w1 a b c d y2 y x'},{id:'hallowmark',tint:'120,120,140',v:'a ha1 ha2 e f g h d c b'},
- {id:'dominion',tint:'170,70,50',v:'e j k l m h g f'},{id:'tusk',tint:'110,140,60',v:'k n1 n2 e1 n m l'},
- {id:'gimbaldry',tint:'200,150,60',v:'x y y2 d t s z z2 z3'},{id:'deep',tint:'90,80,70',v:'d h m n u p q q2 r v1 s t'},
- {id:'necro',tint:'60,70,60',v:'z3 z2 z z4 z5 z6'},{id:'velumbra',tint:'110,60,140',v:'z s v1 v2 v3 z5 z4'},
- {id:'hierarchy',tint:'230,200,90',v:'v1 r q2 g1 g2 g3 g4 g5 v2'},{id:'freeports',tint:'120,160,160',v:'g2 g6 g7 g8 g9 g10 g3'},
- {id:'concord',tint:'70,120,170',v:'q2 q p u c1 c2 g8 g7 g6 g2 g1'},{id:'wyrm',tint:'190,60,40',v:'n e1 e2 c3 c2 c1 u'}
-].map(c=>{const ks=c.v.split(' ');const pts=[];ks.forEach((k,i)=>pts.push(...roughEdge(V[k],V[ks[(i+1)%ks.length]])));return {...c,path:pathOf([pts])}});
-// the Pale of Ferryhythe: Hallowmark's foothold on Albra, round the ferry port
-COUNTRIES.push({id:'pale',tint:'120,120,140',path:pathOf([rough(blob(...isl([880,758]),46,30,12,rng(520)),2,.2,rng(521))])});
+  // Borders are shared lines: each edge is roughened from its two end points, so neighbours draw the same line.
+  const V = {
+    w1: [200, 560],
+    ha1: [980, 525],
+    ha2: [1290, 512],
+    o1: [-350, 550],
+    a: [720, 560],
+    b: [700, 900],
+    c: [680, 1150],
+    d: [720, 1300],
+    e: [1560, 520],
+    f: [1580, 720],
+    g: [1500, 1000],
+    h: [1480, 1280],
+    j: [1760, 520],
+    k: [1900, 560],
+    l: [2250, 850],
+    m: [2300, 1280],
+    n: [2560, 1340],
+    u: [2620, 1450],
+    p: [2450, 1590],
+    q: [1800, 1570],
+    q2: [1680, 1580],
+    r: [1300, 1590],
+    v1: [1150, 1600],
+    s: [820, 1620],
+    t: [800, 1450],
+    x: [-350, 1450],
+    y: [200, 1430],
+    y2: [420, 1380],
+    z: [740, 1720],
+    z2: [400, 1760],
+    z3: [-350, 1760],
+    z4: [700, 1950],
+    z5: [640, 2700],
+    z6: [-350, 2700],
+    v2: [1150, 2450],
+    v3: [1000, 2520],
+    g1: [1660, 2150],
+    g2: [1720, 2270],
+    g3: [1700, 2650],
+    g4: [1300, 3000],
+    g5: [1050, 3000],
+    g6: [1950, 2290],
+    g7: [2120, 2400],
+    g8: [2260, 2470],
+    g9: [2250, 2900],
+    g10: [1850, 2900],
+    c1: [2700, 1600],
+    c2: [2700, 2560],
+    c3: [2750, 2950],
+    e1: [3550, 1340],
+    e2: [3550, 2950],
+    n1: [2200, -50],
+    n2: [3550, -50]
+  };
+  function roughEdge(A, B) {
+    const fw = A[0] < B[0] || (A[0] === B[0] && A[1] < B[1]);
+    const P = fw ? A : B,
+      Q = fw ? B : A;
+    const r = rng(Math.round(P[0] * 7 + P[1] * 13 + Q[0] * 17 + Q[1] * 19));
+    let pts = [P, Q];
+    for (let d = 0; d < 5; d++) {
+      const o = [pts[0]];
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1],
+          b = pts[i];
+        const dx = b[0] - a[0],
+          dy = b[1] - a[1],
+          len = Math.hypot(dx, dy) || 1,
+          off = (r() - 0.5) * len * 0.42;
+        o.push([(a[0] + b[0]) / 2 - (dy / len) * off, (a[1] + b[1]) / 2 + (dx / len) * off], b);
+      }
+      pts = o;
+    }
+    if (!fw) pts.reverse();
+    return pts.slice(0, -1);
+  }
+  const COUNTRIES = [
+    { id: 'westmarch', tint: '150,150,130', v: 'o1 w1 a b c d y2 y x' },
+    { id: 'hallowmark', tint: '120,120,140', v: 'a ha1 ha2 e f g h d c b' },
+    { id: 'dominion', tint: '170,70,50', v: 'e j k l m h g f' },
+    { id: 'tusk', tint: '110,140,60', v: 'k n1 n2 e1 n m l' },
+    { id: 'gimbaldry', tint: '200,150,60', v: 'x y y2 d t s z z2 z3' },
+    { id: 'deep', tint: '90,80,70', v: 'd h m n u p q q2 r v1 s t' },
+    { id: 'necro', tint: '60,70,60', v: 'z3 z2 z z4 z5 z6' },
+    { id: 'velumbra', tint: '110,60,140', v: 'z s v1 v2 v3 z5 z4' },
+    { id: 'hierarchy', tint: '230,200,90', v: 'v1 r q2 g1 g2 g3 g4 g5 v2' },
+    { id: 'freeports', tint: '120,160,160', v: 'g2 g6 g7 g8 g9 g10 g3' },
+    { id: 'concord', tint: '70,120,170', v: 'q2 q p u c1 c2 g8 g7 g6 g2 g1' },
+    { id: 'wyrm', tint: '190,60,40', v: 'n e1 e2 c3 c2 c1 u' }
+  ].map(c => {
+    const ks = c.v.split(' ');
+    const pts = [];
+    ks.forEach((k, i) => pts.push(...roughEdge(V[k], V[ks[(i + 1) % ks.length]])));
+    return { ...c, path: pathOf([pts]) };
+  });
+  // the Pale of Ferryhythe: Hallowmark's foothold on Albra, round the ferry port
+  COUNTRIES.push({
+    id: 'pale',
+    tint: '120,120,140',
+    path: pathOf([rough(blob(...isl([880, 758]), 46, 30, 12, rng(520)), 2, 0.2, rng(521))])
+  });
 
-const RIVERS=[
- {pts:I([[600,650],[680,660],[760,640],[830,620],[900,600],[970,560],[1040,505],[1086,470],[1120,420],[1200,404],[1290,392],[1372,396]]),w:3.4},
- {pts:I([[760,330],[770,420],[790,520],[800,590],[830,620]]),w:2.4},{pts:I([[960,270],[990,360],[1020,440],[1060,490]]),w:2},
- {pts:I([[640,290],[540,330],[440,400],[380,470],[330,520]]),w:2.4},{pts:I([[700,235],[690,195]]),w:1.6},{pts:I([[900,235],[910,190]]),w:1.6},{pts:I([[1060,225],[1075,185]]),w:1.6},{pts:I([[680,680],[780,720],[880,764]]),w:1.8},
- {pts:[[1260,1330],[1210,1230],[1180,1180]],w:2.4},{pts:[[1180,1180],[1220,1000],[1230,950],[1210,760],[1220,565]],w:3.6},
- {pts:[[1900,1330],[1880,1100],[1800,900],[1720,640]],w:3.4},{pts:[[2120,1260],[1990,1100],[1880,1050]],w:2},
- {pts:[[2350,1300],[2450,1150],[2480,1080],[2500,1010]],w:2.6},{pts:[[2900,1300],[2800,1100],[2760,1040]],w:2.4},
- {pts:[[650,1420],[620,1150],[580,860]],w:3},{pts:[[560,1460],[450,1560],[390,1620]],w:2.2},{pts:[[300,1250],[150,1100],[80,1000]],w:2.4},{pts:[[3000,1450],[3150,1500],[3280,1560]],w:2.2},
- {pts:[[1450,1550],[1470,1750],[1430,1950]],w:2.4},{pts:[[1250,1590],[1300,1800],[1430,1950]],w:2.4},
- {pts:[[1430,1950],[1495,2140],[1520,2300],[1535,2400]],w:4},{pts:[[1535,2400],[1500,2470]],w:2.4},{pts:[[1535,2400],[1560,2492]],w:2.4},{pts:[[1535,2400],[1610,2456]],w:2.4},
- {pts:[[1900,1560],[1890,1700],[1880,1830]],w:2.6},
- {pts:[[2350,1580],[2320,1700],[2300,1800],[2200,1900],[2165,1960]],w:3},{pts:[[2550,1560],[2545,1800],[2560,2100],[2560,2500]],w:3},
- {pts:[[740,1560],[700,1660],[560,1880],[420,1960],[150,2050],[-160,2080]],w:3},
- {pts:[[950,1650],[900,1950],[880,2200],[900,2420]],w:2.6},
- {pts:[[2800,1500],[2850,1800],[2800,2100],[2700,2590]],w:3},
- {pts:[[2050,3360],[2000,3100],[1950,2950],[1930,2900]],w:3.6},{pts:[[1930,2900],[1890,2882]],w:2},{pts:[[1930,2900],[1966,2872]],w:2}
-];
-const CANALS=[[[2300,1800],[2545,1800]]];
+  const RIVERS = [
+    {
+      pts: I([
+        [600, 650],
+        [680, 660],
+        [760, 640],
+        [830, 620],
+        [900, 600],
+        [970, 560],
+        [1040, 505],
+        [1086, 470],
+        [1120, 420],
+        [1200, 404],
+        [1290, 392],
+        [1372, 396]
+      ]),
+      w: 3.4
+    },
+    {
+      pts: I([
+        [760, 330],
+        [770, 420],
+        [790, 520],
+        [800, 590],
+        [830, 620]
+      ]),
+      w: 2.4
+    },
+    {
+      pts: I([
+        [960, 270],
+        [990, 360],
+        [1020, 440],
+        [1060, 490]
+      ]),
+      w: 2
+    },
+    {
+      pts: I([
+        [640, 290],
+        [540, 330],
+        [440, 400],
+        [380, 470],
+        [330, 520]
+      ]),
+      w: 2.4
+    },
+    {
+      pts: I([
+        [700, 235],
+        [690, 195]
+      ]),
+      w: 1.6
+    },
+    {
+      pts: I([
+        [900, 235],
+        [910, 190]
+      ]),
+      w: 1.6
+    },
+    {
+      pts: I([
+        [1060, 225],
+        [1075, 185]
+      ]),
+      w: 1.6
+    },
+    {
+      pts: I([
+        [680, 680],
+        [780, 720],
+        [880, 764]
+      ]),
+      w: 1.8
+    },
+    {
+      pts: [
+        [1260, 1330],
+        [1210, 1230],
+        [1180, 1180]
+      ],
+      w: 2.4
+    },
+    {
+      pts: [
+        [1180, 1180],
+        [1220, 1000],
+        [1230, 950],
+        [1210, 760],
+        [1220, 565]
+      ],
+      w: 3.6
+    },
+    {
+      pts: [
+        [1900, 1330],
+        [1880, 1100],
+        [1800, 900],
+        [1720, 640]
+      ],
+      w: 3.4
+    },
+    {
+      pts: [
+        [2120, 1260],
+        [1990, 1100],
+        [1880, 1050]
+      ],
+      w: 2
+    },
+    {
+      pts: [
+        [2350, 1300],
+        [2450, 1150],
+        [2480, 1080],
+        [2500, 1010]
+      ],
+      w: 2.6
+    },
+    {
+      pts: [
+        [2900, 1300],
+        [2800, 1100],
+        [2760, 1040]
+      ],
+      w: 2.4
+    },
+    {
+      pts: [
+        [650, 1420],
+        [620, 1150],
+        [580, 860]
+      ],
+      w: 3
+    },
+    {
+      pts: [
+        [560, 1460],
+        [450, 1560],
+        [390, 1620]
+      ],
+      w: 2.2
+    },
+    {
+      pts: [
+        [300, 1250],
+        [150, 1100],
+        [80, 1000]
+      ],
+      w: 2.4
+    },
+    {
+      pts: [
+        [3000, 1450],
+        [3150, 1500],
+        [3280, 1560]
+      ],
+      w: 2.2
+    },
+    {
+      pts: [
+        [1450, 1550],
+        [1470, 1750],
+        [1430, 1950]
+      ],
+      w: 2.4
+    },
+    {
+      pts: [
+        [1250, 1590],
+        [1300, 1800],
+        [1430, 1950]
+      ],
+      w: 2.4
+    },
+    {
+      pts: [
+        [1430, 1950],
+        [1495, 2140],
+        [1520, 2300],
+        [1535, 2400]
+      ],
+      w: 4
+    },
+    {
+      pts: [
+        [1535, 2400],
+        [1500, 2470]
+      ],
+      w: 2.4
+    },
+    {
+      pts: [
+        [1535, 2400],
+        [1560, 2492]
+      ],
+      w: 2.4
+    },
+    {
+      pts: [
+        [1535, 2400],
+        [1610, 2456]
+      ],
+      w: 2.4
+    },
+    {
+      pts: [
+        [1900, 1560],
+        [1890, 1700],
+        [1880, 1830]
+      ],
+      w: 2.6
+    },
+    {
+      pts: [
+        [2350, 1580],
+        [2320, 1700],
+        [2300, 1800],
+        [2200, 1900],
+        [2165, 1960]
+      ],
+      w: 3
+    },
+    {
+      pts: [
+        [2550, 1560],
+        [2545, 1800],
+        [2560, 2100],
+        [2560, 2500]
+      ],
+      w: 3
+    },
+    {
+      pts: [
+        [740, 1560],
+        [700, 1660],
+        [560, 1880],
+        [420, 1960],
+        [150, 2050],
+        [-160, 2080]
+      ],
+      w: 3
+    },
+    {
+      pts: [
+        [950, 1650],
+        [900, 1950],
+        [880, 2200],
+        [900, 2420]
+      ],
+      w: 2.6
+    },
+    {
+      pts: [
+        [2800, 1500],
+        [2850, 1800],
+        [2800, 2100],
+        [2700, 2590]
+      ],
+      w: 3
+    },
+    {
+      pts: [
+        [2050, 3360],
+        [2000, 3100],
+        [1950, 2950],
+        [1930, 2900]
+      ],
+      w: 3.6
+    },
+    {
+      pts: [
+        [1930, 2900],
+        [1890, 2882]
+      ],
+      w: 2
+    },
+    {
+      pts: [
+        [1930, 2900],
+        [1966, 2872]
+      ],
+      w: 2
+    }
+  ];
+  const CANALS = [
+    [
+      [2300, 1800],
+      [2545, 1800]
+    ]
+  ];
 
-// ── towns: why each stands where it does ──
-const WHY={
-  pale:'Hallowmark\'s foothold on Albra: a walled ferry port its kings have held for two hundred years. Witch-finders search everyone off the boat, and no gnome airship may land.',
-  oremarket:'A big market town on the Ore Road: carts of copper and tin from the Anvilfells come down it to Gilden, gleaners\' quintessence goes the same way, and the money changes hands here.',
-  hold:'A dwarf hold: a great gate in the mountainside, and halls going down further than anyone outside has seen. Outsiders get as far as the gatehouse.',
-  trade:'A rich trading city: where the Mainland\'s goods come ashore and Albra\'s go out, and the merchant houses keep the profit.',
-  varg:'A Varg town on the Wolf coast: longhouses, boat-sheds and smokehouses, where the sea-Varg come home.',
-  port:'A harbour, where the road meets the sea.',
-  ford:'At a ford, where the road wades the river.',
-  bridge:'At a bridge, the only one for miles.',
-  confluence:'Where two rivers meet: boats from both tie up at its quays.',
-  pass:'At the top of a mountain pass: everyone on the road comes through here.',
-  passfoot:'At the foot of a pass, where travellers rest before the climb.',
-  lake:'On a lakeshore, with boats across to the far side.',
-  market:'A market town where roads cross.',
-  fort:'A border fort that grew a town round it.',
-  canal:'At the canal locks, where barges wait their turn.',
-  mill:'A mill town on a fast river.',
-  oasis:'At an oasis, the only water for days.',
-  delta:'In the delta, where the river splits for the sea.',
-  fen:'On a causeway across the fens.',
-  mine:'A mining town in the foothills.',
-  ferry:'At a ferry crossing.',
-  coast:'A fishing town on the coast road.',
-  capital:'A capital.',
-  built:'Built in the game already.',
-};
-const N={
- // Albra (old sketch coordinates, halved)
- saltreach:{n:'Saltreach?',p:isl([330,520]),w:'port',r:'westwood'},thornwick:{n:'Thornwick?',p:isl([465,540]),w:'ford',r:'westwood'},elfhome:{n:'Elfhome',p:isl([600,560]),w:'built',r:'vale'},
- wrenford:{n:'Wrenford',p:isl([800,590]),w:'built',r:'vale'},eynham:{n:'Eynham?',p:isl([950,575]),w:'bridge',r:'vale'},hollowmere:{n:'Hollowmere',p:isl([1086,470]),w:'built',r:'vale'},
- corvanthe:{n:'Corvanthe',p:isl([1120,420]),w:'built',r:'vale'},wolfmouth:{n:'Wolfmouth?',p:isl([1336,395]),w:'port',r:'wolfsea'},wrenhead:{n:'Wrenhead?',p:isl([780,470]),w:'ford',r:'harrow'},
- copperhythe:{n:'Copperhythe?',p:isl([760,350]),w:'mine',r:'mountains'},harrowgate:{n:'Harrowgate?',p:isl([1000,390]),w:'oremarket',r:'harrow',big:1},vargsdelve:{n:'Varg’s Delve?',p:isl([930,335]),w:'mine',r:'mountains'},
- stowe:{n:'Stowe?',p:isl([840,680]),w:'market',r:'vale'},ferryhythe:{n:'Ferryhythe?',p:isl([880,764]),w:'pale',r:'pale'},chepstead:{n:'Chepstead?',p:isl([1150,575]),w:'oremarket',r:'gilden',big:1},
- anvilmoot:{n:'Anvilmoot?',p:isl([860,245]),w:'hold',r:'mountains'},stonedeep:{n:'Stonedeep?',p:isl([700,232]),w:'hold',r:'mountains'},coldforge:{n:'Coldforge?',p:isl([1010,212]),w:'hold',r:'mountains'},tinwell:{n:'Tinwell?',p:isl([1085,300]),w:'mine',r:'mountains'},gilden:{n:'Gilden?',p:isl([1215,668]),w:'trade',r:'gilden',cap:1},ulfvik:{n:'Ulfvik?',p:isl([1295,288]),w:'varg',r:'ulfvik'},reaverhaven:{n:'Reaver haven',p:[1720,170],w:'port',r:'reavers'},skerry:{n:'Skerry steadings',p:[1000,95],w:'coast',r:'skerries'},
- // Hallowmark
- halemouth:{n:'Halemouth?',p:[1222,575],w:'port',r:'hallowmark'},hale:{n:'Hale?',p:[1215,700],w:'capital',r:'hallowmark',cap:1},coldwater:{n:'Coldwater?',p:[1236,880],w:'bridge',r:'hallowmark'},
- bramwell:{n:'Bramwell?',p:[1222,1040],w:'market',r:'hallowmark'},lakemere:{n:'Lakemere?',p:[1220,1232],w:'lake',r:'hallowmark'},
- wickmoor:{n:'Wickmoor?',p:[1420,760],w:'market',r:'hallowmark'},elmbridge:{n:'Elmbridge?',p:[880,770],w:'market',r:'hallowmark'},
- // the Westmarch and Gimbaldry
- gulfhaven:{n:'Gulfhaven?',p:[590,880],w:'port',r:'westmarch'},mossgate:{n:'Mossgate?',p:[300,900],w:'market',r:'westmarch'},wavecrest:{n:'Wavecrest?',p:[-110,860],w:'port',r:'westmarch'},
- rainford:{n:'Rainford?',p:[615,1150],w:'ford',r:'westmarch'},gimbal:{n:'Gimbal?',p:[480,1520],w:'capital',r:'gimbaldry',cap:1},baymouth:{n:'Baymouth?',p:[392,1612],w:'port',r:'gimbaldry'},
- // the Greatspine
- deepgate:{n:'The Deepgate',p:[1250,1390],w:'pass',r:'deep'},underfell:{n:'Underfell?',p:[1290,1600],w:'passfoot',r:'hierarchy'},
- highwatch:{n:'Highwatch?',p:[1950,1400],w:'pass',r:'deep'},marchfield:{n:'Marchfield?',p:[1880,1170],w:'passfoot',r:'dominion'},stonefoot:{n:'Stonefoot?',p:[2010,1620],w:'passfoot',r:'concord'},
- // the Dominion and the Tuskholds
- fenwick:{n:'Fenwick?',p:[1640,850],w:'fen',r:'dominion'},varrow:{n:'Varrow?',p:[1820,950],w:'capital',r:'dominion',cap:1},brassmouth:{n:'Brassmouth?',p:[1735,660],w:'port',r:'dominion'},
- ironford:{n:'Ironford?',p:[2050,1010],w:'ford',r:'dominion'},steppegate:{n:'Steppegate?',p:[2300,1060],w:'fort',r:'tusk'},grukmoot:{n:'Grukmoot?',p:[2480,1080],w:'capital',r:'tusk',cap:1},
- saltmarket:{n:'Saltmarket?',p:[2700,1140],w:'lake',r:'tusk'},redtusk:{n:'Redtusk?',p:[2470,700],w:'market',r:'tusk'},tuskhaven:{n:'Tuskhaven?',p:[2110,320],w:'port',r:'tusk'},
- easthold:{n:'Easthold?',p:[3080,1100],w:'market',r:'tusk'},dawnport:{n:'Dawnport?',p:[3390,1010],w:'port',r:'tusk'},
- // the Concord, the Inner Sea and the Free Ports
- brassgate:{n:'Brassgate?',p:[2300,1800],w:'capital',r:'concord',cap:1},lockford:{n:'Lockford?',p:[2545,1800],w:'canal',r:'concord'},millbrook:{n:'Millbrook?',p:[2562,2120],w:'mill',r:'concord'},
- sunquay:{n:'Sunquay?',p:[2580,2470],w:'port',r:'concord'},easthaven:{n:'Easthaven?',p:[2180,2120],w:'port',r:'concord'},
- narrowgate:{n:'Narrowgate?',p:[1772,2330],w:'port',r:'freeports',cap:1,left:1},eastgate:{n:'Eastgate?',p:[1890,2330],w:'port',r:'freeports'},
- portis:{n:'Portis?',p:[1960,2560],w:'port',r:'freeports'},capewatch:{n:'Capewatch?',p:[2060,2720],w:'port',r:'freeports'},
- // the Hierarchy
- twinwater:{n:'Twinwater?',p:[1430,1950],w:'confluence',r:'hierarchy'},lumen:{n:'Lumen?',p:[1495,2140],w:'capital',r:'hierarchy',cap:1},seaward:{n:'Seaward?',p:[1528,2412],w:'delta',r:'hierarchy'},
- saltmere:{n:'Saltmere?',p:[1650,2230],w:'port',r:'hierarchy'},kestrel:{n:'Kestrel?',p:[1285,2420],w:'market',r:'hierarchy'},lastlight:{n:'Lastlight?',p:[1235,2790],w:'port',r:'hierarchy'},
- vesper:{n:'Vesper?',p:[1250,2150],w:'market',r:'hierarchy'},gulfridge:{n:'Gulfridge?',p:[1880,1840],w:'port',r:'concord'},
- // Velumbra and the Gravemarches
- umbral:{n:'Umbral Hollow?',p:[900,2100],w:'capital',r:'velumbra',cap:1},duskmoor:{n:'Duskmoor?',p:[700,2000],w:'market',r:'velumbra'},
- barrowcourt:{n:'Barrowcourt?',p:[420,1960],w:'capital',r:'necro',cap:1},greyford:{n:'Greyford?',p:[605,1795],w:'ford',r:'necro'},bonefield:{n:'Bonefield?',p:[170,2035],w:'market',r:'necro'},
- mournmouth:{n:'Mournmouth?',p:[-130,2075],w:'port',r:'necro'},bleakhaven:{n:'Bleakhaven?',p:[255,2615],w:'port',r:'necro'},
- // Wyrmreach
- ember:{n:'The Ember Throne?',p:[2950,2250],w:'capital',r:'wyrm',cap:1,left:1},cinderford:{n:'Cinderford?',p:[2810,2050],w:'ford',r:'wyrm'},
- scalegate:{n:'Scalegate?',p:[2850,1600],w:'fort',r:'wyrm'},ashpass:{n:'Ashpass?',p:[2640,1380],w:'pass',r:'wyrm'},
- // the Southlands
- straitwatch:{n:'Straitwatch?',p:[130,2790],w:'port',r:'southlands'},kessa:{n:'Kessa?',p:[500,2920],w:'coast',r:'southlands'},dunegate:{n:'Dunegate?',p:[950,3030],w:'oasis',r:'southlands'},
- ghazzan:{n:'Ghazzan?',p:[1350,3030],w:'oasis',r:'southlands'},sethis:{n:'Sethis?',p:[1680,2965],w:'coast',r:'southlands'},sunmouth:{n:'Sunmouth?',p:[1930,2895],w:'delta',r:'southlands',cap:1},
- reedmarket:{n:'Reedmarket?',p:[1990,3080],w:'market',r:'southlands'},hrakka:{n:'Hrakka clans',p:[1700,3190],w:'market',r:'southlands'},sythrae:{n:'Sythrae temple-cities',p:[2420,3290],w:'market',r:'southlands'}
-};
-const ROUTES=[
- ['saltreach','thornwick','elfhome','wrenford','eynham','hollowmere','corvanthe','wolfmouth'],['wrenford','wrenhead','copperhythe','stonedeep'],['vargsdelve','anvilmoot'],['harrowgate','tinwell','coldforge'],['copperhythe','vargsdelve','harrowgate'],['hollowmere','chepstead','gilden','ferryhythe'],['corvanthe','ulfvik','wolfmouth'],['hollowmere','harrowgate','vargsdelve'],['wrenford','stowe','ferryhythe'],
- ['halemouth','hale','coldwater','bramwell','lakemere','deepgate','underfell','twinwater','lumen','seaward'],
- ['hale','wickmoor','fenwick','varrow','ironford','steppegate','grukmoot','saltmarket','easthold','dawnport'],['varrow','brassmouth'],['grukmoot','redtusk','tuskhaven'],
- ['varrow','marchfield','highwatch','stonefoot','brassgate','lockford','millbrook','sunquay'],['stonefoot','gulfridge'],
- ['brassgate','easthaven','eastgate','portis','capewatch'],['lumen','saltmere','narrowgate'],
- ['millbrook','cinderford','ember'],['ember','scalegate','ashpass','steppegate'],
- ['lumen','vesper','umbral','duskmoor','barrowcourt','bonefield','mournmouth'],['barrowcourt','bleakhaven'],['lumen','kestrel','lastlight'],
- ['barrowcourt','greyford','gimbal','rainford','gulfhaven','mossgate','wavecrest'],['gimbal','baymouth'],['gulfhaven','elmbridge','hale'],
- ['straitwatch','kessa','dunegate','ghazzan','sethis','sunmouth','reedmarket','hrakka'],['reedmarket','sythrae']
-];
-const FERRIES=[['ferryhythe','halemouth'],['narrowgate','eastgate'],['bleakhaven','straitwatch'],['seaward','sunmouth'],['capewatch','sunmouth']];
-// legs longer than a day get inns or hamlets a day apart; work out days between named towns
-const inns=[],links={};
-function addLink(a,b,d,how){(links[a]=links[a]||[]).push([b,d,how]);(links[b]=links[b]||[]).push([a,d,how]);}
-ROUTES.forEach(r=>{for(let i=1;i<r.length;i++){const A=N[r[i-1]].p,B=N[r[i]].p;const len=Math.hypot(B[0]-A[0],B[1]-A[1]);const days=Math.max(1,Math.ceil(len/(DAY*1.08)));
-  for(let k=1;k<days;k++)inns.push([A[0]+(B[0]-A[0])*k/days,A[1]+(B[1]-A[1])*k/days]);addLink(r[i-1],r[i],days,'road');}});
-FERRIES.forEach(([a,b])=>{const A=N[a].p,B=N[b].p;addLink(a,b,Math.max(1,Math.round(Math.hypot(B[0]-A[0],B[1]-A[1])/(DAY*2))),'ship');});
-const PASSES=[N.deepgate.p,N.highwatch.p,N.ashpass.p];
-// Gnome airships never fly over Hallowmark (magic is banned there) and come no further north than Gilden: the
-// northern run crosses the Greatspine to Varrow and Brassmouth, then the Wolf Sea.
-const SKY=[...['lumen','brassgate','ember','hrakka','grukmoot','narrowgate'].map(k=>[N.gimbal.p,N[k].p]),
-  [N.gimbal.p,[1300,1440],N.varrow.p,N.brassmouth.p,N.gilden.p]];
-const SEA_LANES=[[N.saltreach.p,[820,340],[600,400],[-250,450]],[N.wolfmouth.p,[1640,250],[1720,185]],[[1222,568],N.ferryhythe.p],[N.narrowgate.p,N.eastgate.p],[N.bleakhaven.p,N.straitwatch.p],[N.seaward.p,[1700,2700],N.sunmouth.p],[N.capewatch.p,N.sunmouth.p]];
+  // ── towns: why each stands where it does ──
+  const WHY = {
+    pale: "Hallowmark's foothold on Albra: a walled ferry port its kings have held for two hundred years. Witch-finders search everyone off the boat, and no gnome airship may land.",
+    oremarket:
+      "A big market town on the Ore Road: carts of copper and tin from the Anvilfells come down it to Gilden, gleaners' quintessence goes the same way, and the money changes hands here.",
+    hold: 'A dwarf hold: a great gate in the mountainside, and halls going down further than anyone outside has seen. Outsiders get as far as the gatehouse.',
+    trade:
+      "A rich trading city: where the Mainland's goods come ashore and Albra's go out, and the merchant houses keep the profit.",
+    varg: 'A Varg town on the Wolf coast: longhouses, boat-sheds and smokehouses, where the sea-Varg come home.',
+    port: 'A harbour, where the road meets the sea.',
+    ford: 'At a ford, where the road wades the river.',
+    bridge: 'At a bridge, the only one for miles.',
+    confluence: 'Where two rivers meet: boats from both tie up at its quays.',
+    pass: 'At the top of a mountain pass: everyone on the road comes through here.',
+    passfoot: 'At the foot of a pass, where travellers rest before the climb.',
+    lake: 'On a lakeshore, with boats across to the far side.',
+    market: 'A market town where roads cross.',
+    fort: 'A border fort that grew a town round it.',
+    canal: 'At the canal locks, where barges wait their turn.',
+    mill: 'A mill town on a fast river.',
+    oasis: 'At an oasis, the only water for days.',
+    delta: 'In the delta, where the river splits for the sea.',
+    fen: 'On a causeway across the fens.',
+    mine: 'A mining town in the foothills.',
+    ferry: 'At a ferry crossing.',
+    coast: 'A fishing town on the coast road.',
+    capital: 'A capital.',
+    built: 'Built in the game already.'
+  };
+  const N = {
+    // Albra (old sketch coordinates, halved)
+    saltreach: { n: 'Saltreach?', p: isl([330, 520]), w: 'port', r: 'westwood' },
+    thornwick: { n: 'Thornwick?', p: isl([465, 540]), w: 'ford', r: 'westwood' },
+    elfhome: { n: 'Elfhome', p: isl([600, 560]), w: 'built', r: 'vale' },
+    wrenford: { n: 'Wrenford', p: isl([800, 590]), w: 'built', r: 'vale' },
+    eynham: { n: 'Eynham?', p: isl([950, 575]), w: 'bridge', r: 'vale' },
+    hollowmere: { n: 'Hollowmere', p: isl([1086, 470]), w: 'built', r: 'vale' },
+    corvanthe: { n: 'Corvanthe', p: isl([1120, 420]), w: 'built', r: 'vale' },
+    wolfmouth: { n: 'Wolfmouth?', p: isl([1336, 395]), w: 'port', r: 'wolfsea' },
+    wrenhead: { n: 'Wrenhead?', p: isl([780, 470]), w: 'ford', r: 'harrow' },
+    copperhythe: { n: 'Copperhythe?', p: isl([760, 350]), w: 'mine', r: 'mountains' },
+    harrowgate: { n: 'Harrowgate?', p: isl([1000, 390]), w: 'oremarket', r: 'harrow', big: 1 },
+    vargsdelve: { n: 'Varg’s Delve?', p: isl([930, 335]), w: 'mine', r: 'mountains' },
+    stowe: { n: 'Stowe?', p: isl([840, 680]), w: 'market', r: 'vale' },
+    ferryhythe: { n: 'Ferryhythe?', p: isl([880, 764]), w: 'pale', r: 'pale' },
+    chepstead: { n: 'Chepstead?', p: isl([1150, 575]), w: 'oremarket', r: 'gilden', big: 1 },
+    anvilmoot: { n: 'Anvilmoot?', p: isl([860, 245]), w: 'hold', r: 'mountains' },
+    stonedeep: { n: 'Stonedeep?', p: isl([700, 232]), w: 'hold', r: 'mountains' },
+    coldforge: { n: 'Coldforge?', p: isl([1010, 212]), w: 'hold', r: 'mountains' },
+    tinwell: { n: 'Tinwell?', p: isl([1085, 300]), w: 'mine', r: 'mountains' },
+    gilden: { n: 'Gilden?', p: isl([1215, 668]), w: 'trade', r: 'gilden', cap: 1 },
+    ulfvik: { n: 'Ulfvik?', p: isl([1295, 288]), w: 'varg', r: 'ulfvik' },
+    reaverhaven: { n: 'Reaver haven', p: [1720, 170], w: 'port', r: 'reavers' },
+    skerry: { n: 'Skerry steadings', p: [1000, 95], w: 'coast', r: 'skerries' },
+    // Hallowmark
+    halemouth: { n: 'Halemouth?', p: [1222, 575], w: 'port', r: 'hallowmark' },
+    hale: { n: 'Hale?', p: [1215, 700], w: 'capital', r: 'hallowmark', cap: 1 },
+    coldwater: { n: 'Coldwater?', p: [1236, 880], w: 'bridge', r: 'hallowmark' },
+    bramwell: { n: 'Bramwell?', p: [1222, 1040], w: 'market', r: 'hallowmark' },
+    lakemere: { n: 'Lakemere?', p: [1220, 1232], w: 'lake', r: 'hallowmark' },
+    wickmoor: { n: 'Wickmoor?', p: [1420, 760], w: 'market', r: 'hallowmark' },
+    elmbridge: { n: 'Elmbridge?', p: [880, 770], w: 'market', r: 'hallowmark' },
+    // the Westmarch and Gimbaldry
+    gulfhaven: { n: 'Gulfhaven?', p: [590, 880], w: 'port', r: 'westmarch' },
+    mossgate: { n: 'Mossgate?', p: [300, 900], w: 'market', r: 'westmarch' },
+    wavecrest: { n: 'Wavecrest?', p: [-110, 860], w: 'port', r: 'westmarch' },
+    rainford: { n: 'Rainford?', p: [615, 1150], w: 'ford', r: 'westmarch' },
+    gimbal: { n: 'Gimbal?', p: [480, 1520], w: 'capital', r: 'gimbaldry', cap: 1 },
+    baymouth: { n: 'Baymouth?', p: [392, 1612], w: 'port', r: 'gimbaldry' },
+    // the Greatspine
+    deepgate: { n: 'The Deepgate', p: [1250, 1390], w: 'pass', r: 'deep' },
+    underfell: { n: 'Underfell?', p: [1290, 1600], w: 'passfoot', r: 'hierarchy' },
+    highwatch: { n: 'Highwatch?', p: [1950, 1400], w: 'pass', r: 'deep' },
+    marchfield: { n: 'Marchfield?', p: [1880, 1170], w: 'passfoot', r: 'dominion' },
+    stonefoot: { n: 'Stonefoot?', p: [2010, 1620], w: 'passfoot', r: 'concord' },
+    // the Dominion and the Tuskholds
+    fenwick: { n: 'Fenwick?', p: [1640, 850], w: 'fen', r: 'dominion' },
+    varrow: { n: 'Varrow?', p: [1820, 950], w: 'capital', r: 'dominion', cap: 1 },
+    brassmouth: { n: 'Brassmouth?', p: [1735, 660], w: 'port', r: 'dominion' },
+    ironford: { n: 'Ironford?', p: [2050, 1010], w: 'ford', r: 'dominion' },
+    steppegate: { n: 'Steppegate?', p: [2300, 1060], w: 'fort', r: 'tusk' },
+    grukmoot: { n: 'Grukmoot?', p: [2480, 1080], w: 'capital', r: 'tusk', cap: 1 },
+    saltmarket: { n: 'Saltmarket?', p: [2700, 1140], w: 'lake', r: 'tusk' },
+    redtusk: { n: 'Redtusk?', p: [2470, 700], w: 'market', r: 'tusk' },
+    tuskhaven: { n: 'Tuskhaven?', p: [2110, 320], w: 'port', r: 'tusk' },
+    easthold: { n: 'Easthold?', p: [3080, 1100], w: 'market', r: 'tusk' },
+    dawnport: { n: 'Dawnport?', p: [3390, 1010], w: 'port', r: 'tusk' },
+    // the Concord, the Inner Sea and the Free Ports
+    brassgate: { n: 'Brassgate?', p: [2300, 1800], w: 'capital', r: 'concord', cap: 1 },
+    lockford: { n: 'Lockford?', p: [2545, 1800], w: 'canal', r: 'concord' },
+    millbrook: { n: 'Millbrook?', p: [2562, 2120], w: 'mill', r: 'concord' },
+    sunquay: { n: 'Sunquay?', p: [2580, 2470], w: 'port', r: 'concord' },
+    easthaven: { n: 'Easthaven?', p: [2180, 2120], w: 'port', r: 'concord' },
+    narrowgate: { n: 'Narrowgate?', p: [1772, 2330], w: 'port', r: 'freeports', cap: 1, left: 1 },
+    eastgate: { n: 'Eastgate?', p: [1890, 2330], w: 'port', r: 'freeports' },
+    portis: { n: 'Portis?', p: [1960, 2560], w: 'port', r: 'freeports' },
+    capewatch: { n: 'Capewatch?', p: [2060, 2720], w: 'port', r: 'freeports' },
+    // the Hierarchy
+    twinwater: { n: 'Twinwater?', p: [1430, 1950], w: 'confluence', r: 'hierarchy' },
+    lumen: { n: 'Lumen?', p: [1495, 2140], w: 'capital', r: 'hierarchy', cap: 1 },
+    seaward: { n: 'Seaward?', p: [1528, 2412], w: 'delta', r: 'hierarchy' },
+    saltmere: { n: 'Saltmere?', p: [1650, 2230], w: 'port', r: 'hierarchy' },
+    kestrel: { n: 'Kestrel?', p: [1285, 2420], w: 'market', r: 'hierarchy' },
+    lastlight: { n: 'Lastlight?', p: [1235, 2790], w: 'port', r: 'hierarchy' },
+    vesper: { n: 'Vesper?', p: [1250, 2150], w: 'market', r: 'hierarchy' },
+    gulfridge: { n: 'Gulfridge?', p: [1880, 1840], w: 'port', r: 'concord' },
+    // Velumbra and the Gravemarches
+    umbral: { n: 'Umbral Hollow?', p: [900, 2100], w: 'capital', r: 'velumbra', cap: 1 },
+    duskmoor: { n: 'Duskmoor?', p: [700, 2000], w: 'market', r: 'velumbra' },
+    barrowcourt: { n: 'Barrowcourt?', p: [420, 1960], w: 'capital', r: 'necro', cap: 1 },
+    greyford: { n: 'Greyford?', p: [605, 1795], w: 'ford', r: 'necro' },
+    bonefield: { n: 'Bonefield?', p: [170, 2035], w: 'market', r: 'necro' },
+    mournmouth: { n: 'Mournmouth?', p: [-130, 2075], w: 'port', r: 'necro' },
+    bleakhaven: { n: 'Bleakhaven?', p: [255, 2615], w: 'port', r: 'necro' },
+    // Wyrmreach
+    ember: { n: 'The Ember Throne?', p: [2950, 2250], w: 'capital', r: 'wyrm', cap: 1, left: 1 },
+    cinderford: { n: 'Cinderford?', p: [2810, 2050], w: 'ford', r: 'wyrm' },
+    scalegate: { n: 'Scalegate?', p: [2850, 1600], w: 'fort', r: 'wyrm' },
+    ashpass: { n: 'Ashpass?', p: [2640, 1380], w: 'pass', r: 'wyrm' },
+    // the Southlands
+    straitwatch: { n: 'Straitwatch?', p: [130, 2790], w: 'port', r: 'southlands' },
+    kessa: { n: 'Kessa?', p: [500, 2920], w: 'coast', r: 'southlands' },
+    dunegate: { n: 'Dunegate?', p: [950, 3030], w: 'oasis', r: 'southlands' },
+    ghazzan: { n: 'Ghazzan?', p: [1350, 3030], w: 'oasis', r: 'southlands' },
+    sethis: { n: 'Sethis?', p: [1680, 2965], w: 'coast', r: 'southlands' },
+    sunmouth: { n: 'Sunmouth?', p: [1930, 2895], w: 'delta', r: 'southlands', cap: 1 },
+    reedmarket: { n: 'Reedmarket?', p: [1990, 3080], w: 'market', r: 'southlands' },
+    hrakka: { n: 'Hrakka clans', p: [1700, 3190], w: 'market', r: 'southlands' },
+    sythrae: { n: 'Sythrae temple-cities', p: [2420, 3290], w: 'market', r: 'southlands' }
+  };
+  const ROUTES = [
+    ['saltreach', 'thornwick', 'elfhome', 'wrenford', 'eynham', 'hollowmere', 'corvanthe', 'wolfmouth'],
+    ['wrenford', 'wrenhead', 'copperhythe', 'stonedeep'],
+    ['vargsdelve', 'anvilmoot'],
+    ['harrowgate', 'tinwell', 'coldforge'],
+    ['copperhythe', 'vargsdelve', 'harrowgate'],
+    ['hollowmere', 'chepstead', 'gilden', 'ferryhythe'],
+    ['corvanthe', 'ulfvik', 'wolfmouth'],
+    ['hollowmere', 'harrowgate', 'vargsdelve'],
+    ['wrenford', 'stowe', 'ferryhythe'],
+    [
+      'halemouth',
+      'hale',
+      'coldwater',
+      'bramwell',
+      'lakemere',
+      'deepgate',
+      'underfell',
+      'twinwater',
+      'lumen',
+      'seaward'
+    ],
+    [
+      'hale',
+      'wickmoor',
+      'fenwick',
+      'varrow',
+      'ironford',
+      'steppegate',
+      'grukmoot',
+      'saltmarket',
+      'easthold',
+      'dawnport'
+    ],
+    ['varrow', 'brassmouth'],
+    ['grukmoot', 'redtusk', 'tuskhaven'],
+    ['varrow', 'marchfield', 'highwatch', 'stonefoot', 'brassgate', 'lockford', 'millbrook', 'sunquay'],
+    ['stonefoot', 'gulfridge'],
+    ['brassgate', 'easthaven', 'eastgate', 'portis', 'capewatch'],
+    ['lumen', 'saltmere', 'narrowgate'],
+    ['millbrook', 'cinderford', 'ember'],
+    ['ember', 'scalegate', 'ashpass', 'steppegate'],
+    ['lumen', 'vesper', 'umbral', 'duskmoor', 'barrowcourt', 'bonefield', 'mournmouth'],
+    ['barrowcourt', 'bleakhaven'],
+    ['lumen', 'kestrel', 'lastlight'],
+    ['barrowcourt', 'greyford', 'gimbal', 'rainford', 'gulfhaven', 'mossgate', 'wavecrest'],
+    ['gimbal', 'baymouth'],
+    ['gulfhaven', 'elmbridge', 'hale'],
+    ['straitwatch', 'kessa', 'dunegate', 'ghazzan', 'sethis', 'sunmouth', 'reedmarket', 'hrakka'],
+    ['reedmarket', 'sythrae']
+  ];
+  const FERRIES = [
+    ['ferryhythe', 'halemouth'],
+    ['narrowgate', 'eastgate'],
+    ['bleakhaven', 'straitwatch'],
+    ['seaward', 'sunmouth'],
+    ['capewatch', 'sunmouth']
+  ];
+  // legs longer than a day get inns or hamlets a day apart; work out days between named towns
+  const inns = [],
+    links = {};
+  function addLink(a, b, d, how) {
+    (links[a] = links[a] || []).push([b, d, how]);
+    (links[b] = links[b] || []).push([a, d, how]);
+  }
+  ROUTES.forEach(r => {
+    for (let i = 1; i < r.length; i++) {
+      const A = N[r[i - 1]].p,
+        B = N[r[i]].p;
+      const len = Math.hypot(B[0] - A[0], B[1] - A[1]);
+      const days = Math.max(1, Math.ceil(len / (DAY * 1.08)));
+      for (let k = 1; k < days; k++)
+        inns.push([A[0] + ((B[0] - A[0]) * k) / days, A[1] + ((B[1] - A[1]) * k) / days]);
+      addLink(r[i - 1], r[i], days, 'road');
+    }
+  });
+  FERRIES.forEach(([a, b]) => {
+    const A = N[a].p,
+      B = N[b].p;
+    addLink(a, b, Math.max(1, Math.round(Math.hypot(B[0] - A[0], B[1] - A[1]) / (DAY * 2))), 'ship');
+  });
+  const PASSES = [N.deepgate.p, N.highwatch.p, N.ashpass.p];
+  // Gnome airships never fly over Hallowmark (magic is banned there) and come no further north than Gilden: the
+  // northern run crosses the Greatspine to Varrow and Brassmouth, then the Wolf Sea.
+  const SKY = [
+    ...['lumen', 'brassgate', 'ember', 'hrakka', 'grukmoot', 'narrowgate'].map(k => [N.gimbal.p, N[k].p]),
+    [N.gimbal.p, [1300, 1440], N.varrow.p, N.brassmouth.p, N.gilden.p]
+  ];
+  const SEA_LANES = [
+    [N.saltreach.p, [820, 340], [600, 400], [-250, 450]],
+    [N.wolfmouth.p, [1640, 250], [1720, 185]],
+    [[1222, 568], N.ferryhythe.p],
+    [N.narrowgate.p, N.eastgate.p],
+    [N.bleakhaven.p, N.straitwatch.p],
+    [N.seaward.p, [1700, 2700], N.sunmouth.p],
+    [N.capewatch.p, N.sunmouth.p]
+  ];
 
-const ZONES=[
- ...[['mtn',800,265,330,62,45],['mtn',1000,250,140,50,15],['hill',820,380,260,45,14],['tree',450,520,140,120,50],['tree',600,560,50,45,14],['tree',300,430,50,90,12],['hill',650,670,90,40,9],['hill',900,700,140,40,7],['dead',1180,440,60,50,6]].map(z=>{const c=isl([z[1],z[2]]);return [z[0],c[0],c[1],z[3]/2,z[4]/2,z[5],.6]}),
- ['tree',720,330,70,90,22,.7],['snow',1720,170,140,90,14,.7],['snow',1180,80,180,30,6,.6],
- ['tree',200,1000,330,330,120],['tree',-100,860,60,40,10],['hill',150,1350,120,80,10],
- ['plain',1000,850,300,150,35],['tree',1360,880,150,220,50],['hill',900,1150,220,70,15],['tree',700,1000,80,120,15],
- ['hill',1900,1000,250,180,35],['plain',2120,820,150,100,15],
- ['plain',2750,600,450,300,70],['plain',2950,1180,280,120,30],['tree',2330,420,140,200,30],['hill',3100,300,150,100,14],['tree',3250,900,100,250,25],
- ['hill',580,1560,180,110,30],['mtn',680,1450,80,50,8],
- ['mtn',1100,1460,380,90,140],['mtn',1600,1430,300,100,140],['mtn',2150,1440,300,90,120],['mtn',2560,1420,70,55,15],
- ['dead',250,2150,350,350,120],['hill',100,2450,150,80,12],
- ['dark',930,2050,190,350,140],
- ['plain',1450,1850,200,230,35],['olive',1500,2320,100,80,15],['olive',1230,2620,60,170,16],
- ['plain',2400,1850,250,250,30],['olive',2450,2300,180,150,20],
- ['olive',2020,2620,80,110,14],['olive',1720,2380,40,60,5],
- ['volc',2950,1650,200,200,7],['volc',2950,2450,120,150,4],['mtn',3000,2050,250,300,60],['dead',2850,1500,100,100,12],['mtn',3200,1500,100,150,15],
- ['mtn',450,2880,250,30,34],['sand',1600,3060,1800,70,330],['savan',1600,3180,1800,40,200],['jungle',1600,3290,1800,55,360]
-];
-const LABELS=[
- ['THE SUNSET OCEAN?',360,330,'sea'],['THE SUNSET OCEAN?',-235,1550,'sea',-90],['THE GREY SEA?',780,140,'sea'],['THE WOLF SEA?',1690,430,'sea'],['THE NARROWS',1500,530,'seasm'],['THE MIDDLE SEA?',650,2720,'sea'],
- ['THE EASTERN OCEAN?',3465,700,'sea',90],['the Inner Sea?',1900,2030,'river'],['the Salt Sea?',2650,955,'river'],
- ['WESTHOLM?',720,450,'isle'],['ALBRA',...isl([600,705]),'countrysm'],['THE WILDWOOD?',...isl([380,425]),'isle'],['THE ANVILFELLS?',1225,174,'isle'],['THE HARROW',...isl([880,420]),'isle'],['THE REAVER ISLES?',1820,265,'isle'],['THE SKERRIES?',1180,126,'isle'],
- ['THE WESTMARCH?',230,1230,'country'],['HALLOWMARK?',930,1000,'country'],['THE BRAZEN DOMINION?',1960,780,'country'],['THE TUSKHOLDS?',2820,480,'country'],['GIMBALDRY?',590,1700,'country'],
- ['THE GREATSPINE?',1620,1520,'country'],['THE GRAVEMARCHES?',250,2330,'country'],['VELUMBRA?',930,2350,'country'],['THE LUMEN HIERARCHY?',1420,1730,'country'],
- ['THE CONCORD?',2400,1680,'country'],['WYRMREACH?',3030,1440,'country'],['THE FREE PORTS?',2050,2470,'countrysm'],
- ['THE SOUTHLANDS',1100,3130,'big'],['THE SUNWALL?',450,2965,'isle'],['desert',650,3090,'note'],['savannah',2350,3170,'note'],['jungle',800,3310,'note'],['beyond: unknown',-150,380,'note'],
- ['airship routes',760,1290,'sky']
-];
-const REGIONS=[
- {id:'vale',cx:1260,cy:350,rx:130,ry:60},{id:'gilden',cx:1380,cy:425,rx:45,ry:30},{id:'pale',cx:1220,cy:470,rx:40,ry:20},{id:'ulfvik',cx:1425,cy:245,rx:40,ry:30},{id:'westwood',cx:990,cy:350,rx:90,ry:80},{id:'westholm',cx:720,cy:330,rx:100,ry:120},{id:'ocean',cx:-200,cy:1300,rx:120,ry:1600},
- {id:'mountains',cx:1190,cy:228,rx:220,ry:45},{id:'harrow',cx:1205,cy:295,rx:130,ry:28},{id:'skerries',cx:1160,cy:80,rx:200,ry:40},
- {id:'wolfsea',cx:1700,cy:420,rx:220,ry:200},{id:'reavers',cx:1800,cy:180,rx:220,ry:110},{id:'narrows',cx:1180,cy:520,rx:350,ry:40},
- {id:'westmarch',cx:250,cy:1050,rx:380,ry:380},{id:'hallowmark',cx:1000,cy:900,rx:480,ry:330},{id:'dominion',cx:1900,cy:950,rx:380,ry:300},{id:'tusk',cx:2750,cy:700,rx:650,ry:600},
- {id:'saltsea',cx:2650,cy:950,rx:260,ry:130},{id:'innersea',cx:1900,cy:2030,rx:270,ry:210},
- {id:'gimbaldry',cx:560,cy:1560,rx:230,ry:150},{id:'deep',cx:1650,cy:1440,rx:950,ry:120},{id:'necro',cx:250,cy:2200,rx:420,ry:420},
- {id:'velumbra',cx:930,cy:2100,rx:220,ry:420},{id:'hierarchy',cx:1420,cy:2150,rx:300,ry:560},{id:'concord',cx:2400,cy:2000,rx:300,ry:450},
- {id:'freeports',cx:1960,cy:2520,rx:200,ry:220},{id:'wyrm',cx:3000,cy:2050,rx:400,ry:700},
- {id:'middlesea',cx:1500,cy:2700,rx:1800,ry:90},{id:'southlands',cx:1600,cy:3150,rx:1900,ry:200}
-];
-const INFO={
- gilden:{t:'Gilden?',s:'planned',who:'Merchant houses, factors and sailors from every coast; Thessaly’s family.',p:'Albra’s richest city, on the south-east coast where the Narrows meet the Wolf Sea: the Mainland’s trade comes ashore here and Albra’s goes out. Marble on the waterfront, counting-houses, guild halls, hired guards everywhere. This is where you meet Thessaly the Gilded, a daughter of one of the great merchant houses, with her bodyguards. Gilden grew rich on the Unweaving: gleaners’ quintessence comes down the Ore Road with the Anvilfells’ copper and tin, and goes out to the Brazen Dominion (its best customer, paying in silver for its war), on the gnome airships (Gilden is as far north as they fly), overland through the Tuskholds, and on trading ships far and wide. None of it goes to Hallowmark, which would burn it, and the ships give Hallowmark’s Ferryhythe a wide berth.',h:['Thessaly’s quest: her house’s ship to the Concord never arrived.','A rival house selling quintessence to Hallowmark’s witch-finders, to prove magic is too dangerous.','The place to buy what Wrenford won’t sell, at a price.','The skyport: the only place on Albra where you can board a gnome airship.']},
- pale:{t:'The Pale of Ferryhythe',s:'planned',who:'Hallowmark’s garrison, witch-finders, ferrymen.',p:'Hallowmark’s foothold on Albra: the ferry port and a few miles round it, held by its kings for two hundred years, the way a Mainland kingdom might keep a town across the water. Magic is banned inside the Pale as it is in Hallowmark. Everyone off the ferry is searched, and no gnome airship may land, which is why they fly on to Gilden instead.',h:['Getting a wizard across the Narrows means getting past the Pale.','A Pale official who quietly sells passes to mages.']},
- ulfvik:{t:'Ulfvik?',s:'planned',who:'Varg: fishers, boat-builders and sea-raiders home for the winter.',p:'A Varg town on the Wolf coast north of Wolfmouth: longhouses, boat-sheds and smokehouses. Some of its people sail with the pirates, most fish and trade, and the town keeps an uneasy peace with Wolfmouth.',h:['A welcome if you come as a guest, with gifts; otherwise not.','A Varg skald who knows where the pirates winter.','Settled Varg and raider Varg, the same people, living differently, like the miners of Varg’s Delve.']},
- vale:{t:'The Vale of the Hollow',s:'built',who:'Humans, gleaners, the Echoes of Corvanthe.',p:'Everything built so far, in the heart of Albra: Wrenford, Elfhome in the Moriquende, Hollowmere at the gates, the Corvanthe Road and the ruined city. The Hollow rises in the western uplands, gathers the Wren and the Harrowbrook, runs east past Hollowmere into Corvanthe, and widens to an estuary at Wolfmouth, like the Thames from Oxford to London. Wrenford to Corvanthe is three days by cart.',h:['The University Year and the Corvanthe districts stay as they are.','Corvanthe’s harbour faces the Wolf Sea, which is why Varg pirates know the city well.']},
- westwood:{t:'The Wildwood and the West Road',s:'planned',who:'Tribes of Varg, goblins, orcs and elves, as in the Moriquende but nobody holds the balance.',p:'More forest west of the Moriquende, without a Warden. The West Road follows a river down through it, by the ford at Thornwick, to Saltreach on the coast.',h:['A caravan escort down the West Road (Thessaly’s trade run fits here).','Elf tribes who don’t answer to Elfhome, and Varg tribes who do deals with whoever pays.','The Moriquende year’s orcs come from somewhere: their homelands could be here.']},
- westholm:{t:'Westholm?',s:'open',who:'Not decided.',p:'An island west of Albra, the way Ireland lies west of Britain. The first landfall for ships from over the Sunset Ocean.',h:['A wild green island of its own people, or a foreign trading colony.']},
- ocean:{t:'The Sunset Ocean?',s:'open',who:'Unknown.',p:'Whatever lies west across the water is where Saltreach’s trade ships come from. Keep it a mystery for now, as a later expansion or the end of the game.',h:['A sea monster, a ghost ship, or a single far island for a sea quest (Nerissa’s country).']},
- mountains:{t:'The Anvilfells?',s:'planned',who:'Dwarves in three high holds; humans and Varg in the mining towns below.',p:'Mountains along Albra’s north coast. Copperhythe, Varg’s Delve and Tinwell are the mining towns in the foothills; above them stand the dwarf holds, Stonedeep, Anvilmoot (the greatest, which gave the range its name) and Coldforge over the Grey Sea. The dwarves trade with the towns at their gatehouses and keep to themselves.',h:['Durin’s people: a closed gate you have to earn your way through.','Mining-town Varg are miners, not raiders.','Durin’s Deep Cut idea (a mine you dig and shore up) fits a mining town here.']},
- harrow:{t:'The Harrow',s:'planned',who:'Roving orc bands.',p:'The open lowlands between Wrenford and the mountains, plagued by orcs. Wrenhead and Harrowgate are walled; the roads north need escorts.',h:['A road you can’t take alone at first.','Orc warbands that roam the map like the Corvanthe crews.']},
- skerries:{t:'The Grey Sea and the Skerries?',s:'planned',who:'Hardy humans, Varg and dwarves on small islands.',p:'A cold sea north of the Anvilfells. A few small islands have settlements of hardy folk.',h:['A one-off voyage: a lighthouse, a seal-hunters’ steading, a dwarf exile.']},
- wolfsea:{t:'The Wolf Sea?',s:'planned',who:'Varg pirates.',p:'The cold sea east of Albra, closed in by the Mainland’s north-eastern arm. Varg pirate ships raid every coast round it, and Gilden’s merchant houses pay them a yearly sea-toll to leave their ships alone.',h:['Wolfmouth, at the Hollow’s estuary, pays the pirates or fights them.','Sea battles fought on deck (a new arena).']},
- reavers:{t:'The Reaver Isles?',s:'planned',who:'Varg pirates, at home.',p:'Fjord-cut islands north of the Wolf Sea where the pirate ships come from.',h:['A pirate haven you can visit as a guest, if you have the right name to drop.']},
- narrows:{t:'The Narrows',s:'planned',who:'Ferrymen.',p:'The channel between Albra and the Mainland: a day’s sail from Ferryhythe, in Hallowmark’s Pale on Albra’s own coast, to Halemouth, in Hallowmark, where magic is against the law.',h:['Your first step onto the Mainland is into a country where being a wizard is a crime.']},
- westmarch:{t:'The Westmarch?',s:'open',who:'Not decided.',p:'The rainy, wooded west of the Mainland, round a northern gulf (Gulfhaven) and out to the Wavecrest peninsula. Westerly winds make it the wettest country on the map.',h:['Room for something new: a forest realm, clans, a coast of wreckers.']},
- hallowmark:{t:'Hallowmark?',s:'planned',who:'Humans. No mages, by law.',p:'The kingdom across the Narrows, along the river Hale from Halemouth up to Lakemere and the Deepgate pass. Magic is illegal because it is dangerous; witch-finders watch the ferries. It also holds the Pale of Ferryhythe on Albra’s coast. It buys Albra’s wool and metal openly and never its quintessence.',h:['Smuggling mages out, or quintessence in.','A witch-finder who is secretly gifted.','Its long war with the Brazen Dominion: one side hires mages, the other burns them.']},
- dominion:{t:'The Brazen Dominion?',s:'planned',who:'Humans: soldiers, officers and battle-mages.',p:'A warlike country that hires and drafts wizards. Varrow, its capital, stands on the river Brass, which runs north to Brassmouth on the Wolf Sea; the army road climbs to the eastern pass at Highwatch.',h:['Recruiting sergeants at the border, offering gold and a commission.','Battles fought beside a regiment.','Weizan the Bladecaller or Malachar could have served here.']},
- tusk:{t:'The Tuskholds?',s:'planned',who:'Orcs who have settled down, with goblin and human neighbours.',p:'The Mainland’s north-eastern arm and the dry steppe round the Salt Sea, out to Dawnport on the Eastern Ocean: orc clans who farm, herd and trade, in walled towns with markets.',h:['An orc town you can walk into and trade with.','Orc shamans as teachers or rivals.']},
- saltsea:{t:'The Salt Sea?',s:'open',who:'Steppe orcs on its shores.',p:'A great inland sea with no outlet, fed by rivers off the Greatspine, like the Caspian. Saltmarket trades its salt.',h:['Salt pans, reed boats, a drowned city.']},
- innersea:{t:'The Inner Sea?',s:'open',who:'Fishers, traders, the Free Ports.',p:'A sea in the south of the Mainland, reached from the Middle Sea only through the narrow channel at Narrowgate and Eastgate, like the Black Sea and the Bosporus. Lumen’s and Brassgate’s trade both comes and goes through it.',h:['Whoever holds the channel taxes every ship.','A sea-monster that came in through the channel and can’t find the way out.']},
- gimbaldry:{t:'Gimbaldry?',s:'planned',who:'Gnomes.',p:'A gnome country of terraced hills and skyports in the western foothills of the Greatspine, with a harbour at Baymouth on the western bay. Their magical airships fly all over the world (the purple dotted lines), but never over Hallowmark, and no further north than Gilden: the northern run crosses the Greatspine to Varrow, then the Wolf Sea.',h:['The fast way round the whole map, once you can pay the fare.','An airship as a place of its own: a deck, a crew, sky pirates.']},
- deep:{t:'The Greatspine? and the Deepholds?',s:'planned',who:'Deep dwarves, under the mountains.',p:'The great range across the middle of the Mainland and its watershed. Three passes cross it: the Deepgate in the west (the dwarves’ market), Highwatch in the middle, Ashpass at the east end. Deep under it live dwarves who loathe daylight and come up only to trade.',h:['Night markets at the Deepgate.','Whoever holds a pass holds the trade: a war over Highwatch.']},
- necro:{t:'The Gravemarches?',s:'planned',who:'Necromancer-lords and their dead; living peasants who pay tithes in bones.',p:'The Mainland’s great south-western block, along the river Mourne from Greyford to Mournmouth, and down to Bleakhaven on the strait. The dead work the fields and guard the roads.',h:['Daveron’s homeland, or the one that exiled him.','Valdris and Mordant fit here too.']},
- velumbra:{t:'Velumbra?',s:'planned',who:'Drow: dark elves with purple skin and pale hair.',p:'A twilight forest over deep caverns between the Gravemarches and the Hierarchy, running down to the Middle Sea. The drow live below and come up into the dark wood at night.',h:['The Moriquende’s elves and the drow: a quarrel older than Corvanthe.','Drow as a race in the creator later.']},
- hierarchy:{t:'The Lumen Hierarchy?',s:'planned',who:'Priest-mages, pilgrims, the faithful.',p:'A theocracy that worships magic, on the plain of the Holy River, down the long peninsula to Lastlight and along the Inner Sea’s west shore. Lumen stands below Twinwater, where the river’s head-streams meet; the river ends in a delta at Seaward.',h:['Pilgrims travel to Corvanthe’s Wound, which brings them to your door.','Mary (the Devoted) or Aurelia (the Radiant) could come from here.']},
- concord:{t:'The Concord?',s:'planned',who:'Ruling wizards; engineers, clerks, citizens.',p:'A very orderly country ruled by wizards who put magic to work. Brassgate’s canal joins its river to the next one at Lockford, so barges run from the Inner Sea to the Middle Sea; mills line the river at Millbrook.',h:['Brassgate, where quintessence (spill) fetches the best price.','Workshops where your wizard can have things made.']},
- freeports:{t:'The Free Ports?',s:'open',who:'Not decided.',p:'Twin cities on the channel into the Inner Sea, Narrowgate and Eastgate, with Portis and Capewatch down the peninsula beyond.',h:['A trade league, a pirate kingdom, or the toll-takers of the channel.','Where ships cross to the Southlands’ delta.']},
- wyrm:{t:'Wyrmreach?',s:'planned',who:'A dragon king; half-dragon lizardmen nobles like Korvath; human subjects.',p:'A volcanic realm in the south-east. The Ember Throne sits on a living volcano; the road north climbs by Scalegate to Ashpass and down to the steppe.',h:['Korvath the Wyrmlord’s homeland: a noble, an exile or a rebel?','An audience with a dragon.']},
- middlesea:{t:'The Middle Sea?',s:'open',who:'Traders, navies.',p:'A warm sea between the Mainland and the Southlands, entered from the ocean through a strait in the west (Bleakhaven to Straitwatch). Its northern shore is dry country of scrub and olives.',h:['Galleys, corsairs, sea-lanes the airships fly over.']},
- southlands:{t:'The Southlands',s:'planned',who:'The Sythrae (snakemen), humans, and the Hrakka (hyenamen like Gnash).',p:'The Sunwall guards the north-west coast, with desert in its rain shadow, then savannah, then jungle. A caravan road runs from oasis to oasis along the desert’s edge to Sunmouth, the delta city of a great river flowing north.',h:['The Hrakka clans on the savannah: Gnash’s people.','Sythrae temple-cities in the jungle.']}
-};
+  const ZONES = [
+    ...[
+      ['mtn', 800, 265, 330, 62, 45],
+      ['mtn', 1000, 250, 140, 50, 15],
+      ['hill', 820, 380, 260, 45, 14],
+      ['tree', 450, 520, 140, 120, 50],
+      ['tree', 600, 560, 50, 45, 14],
+      ['tree', 300, 430, 50, 90, 12],
+      ['hill', 650, 670, 90, 40, 9],
+      ['hill', 900, 700, 140, 40, 7],
+      ['dead', 1180, 440, 60, 50, 6]
+    ].map(z => {
+      const c = isl([z[1], z[2]]);
+      return [z[0], c[0], c[1], z[3] / 2, z[4] / 2, z[5], 0.6];
+    }),
+    ['tree', 720, 330, 70, 90, 22, 0.7],
+    ['snow', 1720, 170, 140, 90, 14, 0.7],
+    ['snow', 1180, 80, 180, 30, 6, 0.6],
+    ['tree', 200, 1000, 330, 330, 120],
+    ['tree', -100, 860, 60, 40, 10],
+    ['hill', 150, 1350, 120, 80, 10],
+    ['plain', 1000, 850, 300, 150, 35],
+    ['tree', 1360, 880, 150, 220, 50],
+    ['hill', 900, 1150, 220, 70, 15],
+    ['tree', 700, 1000, 80, 120, 15],
+    ['hill', 1900, 1000, 250, 180, 35],
+    ['plain', 2120, 820, 150, 100, 15],
+    ['plain', 2750, 600, 450, 300, 70],
+    ['plain', 2950, 1180, 280, 120, 30],
+    ['tree', 2330, 420, 140, 200, 30],
+    ['hill', 3100, 300, 150, 100, 14],
+    ['tree', 3250, 900, 100, 250, 25],
+    ['hill', 580, 1560, 180, 110, 30],
+    ['mtn', 680, 1450, 80, 50, 8],
+    ['mtn', 1100, 1460, 380, 90, 140],
+    ['mtn', 1600, 1430, 300, 100, 140],
+    ['mtn', 2150, 1440, 300, 90, 120],
+    ['mtn', 2560, 1420, 70, 55, 15],
+    ['dead', 250, 2150, 350, 350, 120],
+    ['hill', 100, 2450, 150, 80, 12],
+    ['dark', 930, 2050, 190, 350, 140],
+    ['plain', 1450, 1850, 200, 230, 35],
+    ['olive', 1500, 2320, 100, 80, 15],
+    ['olive', 1230, 2620, 60, 170, 16],
+    ['plain', 2400, 1850, 250, 250, 30],
+    ['olive', 2450, 2300, 180, 150, 20],
+    ['olive', 2020, 2620, 80, 110, 14],
+    ['olive', 1720, 2380, 40, 60, 5],
+    ['volc', 2950, 1650, 200, 200, 7],
+    ['volc', 2950, 2450, 120, 150, 4],
+    ['mtn', 3000, 2050, 250, 300, 60],
+    ['dead', 2850, 1500, 100, 100, 12],
+    ['mtn', 3200, 1500, 100, 150, 15],
+    ['mtn', 450, 2880, 250, 30, 34],
+    ['sand', 1600, 3060, 1800, 70, 330],
+    ['savan', 1600, 3180, 1800, 40, 200],
+    ['jungle', 1600, 3290, 1800, 55, 360]
+  ];
+  const LABELS = [
+    ['THE SUNSET OCEAN?', 360, 330, 'sea'],
+    ['THE SUNSET OCEAN?', -235, 1550, 'sea', -90],
+    ['THE GREY SEA?', 780, 140, 'sea'],
+    ['THE WOLF SEA?', 1690, 430, 'sea'],
+    ['THE NARROWS', 1500, 530, 'seasm'],
+    ['THE MIDDLE SEA?', 650, 2720, 'sea'],
+    ['THE EASTERN OCEAN?', 3465, 700, 'sea', 90],
+    ['the Inner Sea?', 1900, 2030, 'river'],
+    ['the Salt Sea?', 2650, 955, 'river'],
+    ['WESTHOLM?', 720, 450, 'isle'],
+    ['ALBRA', ...isl([600, 705]), 'countrysm'],
+    ['THE WILDWOOD?', ...isl([380, 425]), 'isle'],
+    ['THE ANVILFELLS?', 1225, 174, 'isle'],
+    ['THE HARROW', ...isl([880, 420]), 'isle'],
+    ['THE REAVER ISLES?', 1820, 265, 'isle'],
+    ['THE SKERRIES?', 1180, 126, 'isle'],
+    ['THE WESTMARCH?', 230, 1230, 'country'],
+    ['HALLOWMARK?', 930, 1000, 'country'],
+    ['THE BRAZEN DOMINION?', 1960, 780, 'country'],
+    ['THE TUSKHOLDS?', 2820, 480, 'country'],
+    ['GIMBALDRY?', 590, 1700, 'country'],
+    ['THE GREATSPINE?', 1620, 1520, 'country'],
+    ['THE GRAVEMARCHES?', 250, 2330, 'country'],
+    ['VELUMBRA?', 930, 2350, 'country'],
+    ['THE LUMEN HIERARCHY?', 1420, 1730, 'country'],
+    ['THE CONCORD?', 2400, 1680, 'country'],
+    ['WYRMREACH?', 3030, 1440, 'country'],
+    ['THE FREE PORTS?', 2050, 2470, 'countrysm'],
+    ['THE SOUTHLANDS', 1100, 3130, 'big'],
+    ['THE SUNWALL?', 450, 2965, 'isle'],
+    ['desert', 650, 3090, 'note'],
+    ['savannah', 2350, 3170, 'note'],
+    ['jungle', 800, 3310, 'note'],
+    ['beyond: unknown', -150, 380, 'note'],
+    ['airship routes', 760, 1290, 'sky']
+  ];
+  const REGIONS = [
+    { id: 'vale', cx: 1260, cy: 350, rx: 130, ry: 60 },
+    { id: 'gilden', cx: 1380, cy: 425, rx: 45, ry: 30 },
+    { id: 'pale', cx: 1220, cy: 470, rx: 40, ry: 20 },
+    { id: 'ulfvik', cx: 1425, cy: 245, rx: 40, ry: 30 },
+    { id: 'westwood', cx: 990, cy: 350, rx: 90, ry: 80 },
+    { id: 'westholm', cx: 720, cy: 330, rx: 100, ry: 120 },
+    { id: 'ocean', cx: -200, cy: 1300, rx: 120, ry: 1600 },
+    { id: 'mountains', cx: 1190, cy: 228, rx: 220, ry: 45 },
+    { id: 'harrow', cx: 1205, cy: 295, rx: 130, ry: 28 },
+    { id: 'skerries', cx: 1160, cy: 80, rx: 200, ry: 40 },
+    { id: 'wolfsea', cx: 1700, cy: 420, rx: 220, ry: 200 },
+    { id: 'reavers', cx: 1800, cy: 180, rx: 220, ry: 110 },
+    { id: 'narrows', cx: 1180, cy: 520, rx: 350, ry: 40 },
+    { id: 'westmarch', cx: 250, cy: 1050, rx: 380, ry: 380 },
+    { id: 'hallowmark', cx: 1000, cy: 900, rx: 480, ry: 330 },
+    { id: 'dominion', cx: 1900, cy: 950, rx: 380, ry: 300 },
+    { id: 'tusk', cx: 2750, cy: 700, rx: 650, ry: 600 },
+    { id: 'saltsea', cx: 2650, cy: 950, rx: 260, ry: 130 },
+    { id: 'innersea', cx: 1900, cy: 2030, rx: 270, ry: 210 },
+    { id: 'gimbaldry', cx: 560, cy: 1560, rx: 230, ry: 150 },
+    { id: 'deep', cx: 1650, cy: 1440, rx: 950, ry: 120 },
+    { id: 'necro', cx: 250, cy: 2200, rx: 420, ry: 420 },
+    { id: 'velumbra', cx: 930, cy: 2100, rx: 220, ry: 420 },
+    { id: 'hierarchy', cx: 1420, cy: 2150, rx: 300, ry: 560 },
+    { id: 'concord', cx: 2400, cy: 2000, rx: 300, ry: 450 },
+    { id: 'freeports', cx: 1960, cy: 2520, rx: 200, ry: 220 },
+    { id: 'wyrm', cx: 3000, cy: 2050, rx: 400, ry: 700 },
+    { id: 'middlesea', cx: 1500, cy: 2700, rx: 1800, ry: 90 },
+    { id: 'southlands', cx: 1600, cy: 3150, rx: 1900, ry: 200 }
+  ];
+  const INFO = {
+    gilden: {
+      t: 'Gilden?',
+      s: 'planned',
+      who: 'Merchant houses, factors and sailors from every coast; Thessaly’s family.',
+      p: 'Albra’s richest city, on the south-east coast where the Narrows meet the Wolf Sea: the Mainland’s trade comes ashore here and Albra’s goes out. Marble on the waterfront, counting-houses, guild halls, hired guards everywhere. This is where you meet Thessaly the Gilded, a daughter of one of the great merchant houses, with her bodyguards. Gilden grew rich on the Unweaving: gleaners’ quintessence comes down the Ore Road with the Anvilfells’ copper and tin, and goes out to the Brazen Dominion (its best customer, paying in silver for its war), on the gnome airships (Gilden is as far north as they fly), overland through the Tuskholds, and on trading ships far and wide. None of it goes to Hallowmark, which would burn it, and the ships give Hallowmark’s Ferryhythe a wide berth.',
+      h: [
+        'Thessaly’s quest: her house’s ship to the Concord never arrived.',
+        'A rival house selling quintessence to Hallowmark’s witch-finders, to prove magic is too dangerous.',
+        'The place to buy what Wrenford won’t sell, at a price.',
+        'The skyport: the only place on Albra where you can board a gnome airship.'
+      ]
+    },
+    pale: {
+      t: 'The Pale of Ferryhythe',
+      s: 'planned',
+      who: 'Hallowmark’s garrison, witch-finders, ferrymen.',
+      p: 'Hallowmark’s foothold on Albra: the ferry port and a few miles round it, held by its kings for two hundred years, the way a Mainland kingdom might keep a town across the water. Magic is banned inside the Pale as it is in Hallowmark. Everyone off the ferry is searched, and no gnome airship may land, which is why they fly on to Gilden instead.',
+      h: [
+        'Getting a wizard across the Narrows means getting past the Pale.',
+        'A Pale official who quietly sells passes to mages.'
+      ]
+    },
+    ulfvik: {
+      t: 'Ulfvik?',
+      s: 'planned',
+      who: 'Varg: fishers, boat-builders and sea-raiders home for the winter.',
+      p: 'A Varg town on the Wolf coast north of Wolfmouth: longhouses, boat-sheds and smokehouses. Some of its people sail with the pirates, most fish and trade, and the town keeps an uneasy peace with Wolfmouth.',
+      h: [
+        'A welcome if you come as a guest, with gifts; otherwise not.',
+        'A Varg skald who knows where the pirates winter.',
+        'Settled Varg and raider Varg, the same people, living differently, like the miners of Varg’s Delve.'
+      ]
+    },
+    vale: {
+      t: 'The Vale of the Hollow',
+      s: 'built',
+      who: 'Humans, gleaners, the Echoes of Corvanthe.',
+      p: 'Everything built so far, in the heart of Albra: Wrenford, Elfhome in the Moriquende, Hollowmere at the gates, the Corvanthe Road and the ruined city. The Hollow rises in the western uplands, gathers the Wren and the Harrowbrook, runs east past Hollowmere into Corvanthe, and widens to an estuary at Wolfmouth, like the Thames from Oxford to London. Wrenford to Corvanthe is three days by cart.',
+      h: [
+        'The University Year and the Corvanthe districts stay as they are.',
+        'Corvanthe’s harbour faces the Wolf Sea, which is why Varg pirates know the city well.'
+      ]
+    },
+    westwood: {
+      t: 'The Wildwood and the West Road',
+      s: 'planned',
+      who: 'Tribes of Varg, goblins, orcs and elves, as in the Moriquende but nobody holds the balance.',
+      p: 'More forest west of the Moriquende, without a Warden. The West Road follows a river down through it, by the ford at Thornwick, to Saltreach on the coast.',
+      h: [
+        'A caravan escort down the West Road (Thessaly’s trade run fits here).',
+        'Elf tribes who don’t answer to Elfhome, and Varg tribes who do deals with whoever pays.',
+        'The Moriquende year’s orcs come from somewhere: their homelands could be here.'
+      ]
+    },
+    westholm: {
+      t: 'Westholm?',
+      s: 'open',
+      who: 'Not decided.',
+      p: 'An island west of Albra, the way Ireland lies west of Britain. The first landfall for ships from over the Sunset Ocean.',
+      h: ['A wild green island of its own people, or a foreign trading colony.']
+    },
+    ocean: {
+      t: 'The Sunset Ocean?',
+      s: 'open',
+      who: 'Unknown.',
+      p: 'Whatever lies west across the water is where Saltreach’s trade ships come from. Keep it a mystery for now, as a later expansion or the end of the game.',
+      h: ['A sea monster, a ghost ship, or a single far island for a sea quest (Nerissa’s country).']
+    },
+    mountains: {
+      t: 'The Anvilfells?',
+      s: 'planned',
+      who: 'Dwarves in three high holds; humans and Varg in the mining towns below.',
+      p: 'Mountains along Albra’s north coast. Copperhythe, Varg’s Delve and Tinwell are the mining towns in the foothills; above them stand the dwarf holds, Stonedeep, Anvilmoot (the greatest, which gave the range its name) and Coldforge over the Grey Sea. The dwarves trade with the towns at their gatehouses and keep to themselves.',
+      h: [
+        'Durin’s people: a closed gate you have to earn your way through.',
+        'Mining-town Varg are miners, not raiders.',
+        'Durin’s Deep Cut idea (a mine you dig and shore up) fits a mining town here.'
+      ]
+    },
+    harrow: {
+      t: 'The Harrow',
+      s: 'planned',
+      who: 'Roving orc bands.',
+      p: 'The open lowlands between Wrenford and the mountains, plagued by orcs. Wrenhead and Harrowgate are walled; the roads north need escorts.',
+      h: ['A road you can’t take alone at first.', 'Orc warbands that roam the map like the Corvanthe crews.']
+    },
+    skerries: {
+      t: 'The Grey Sea and the Skerries?',
+      s: 'planned',
+      who: 'Hardy humans, Varg and dwarves on small islands.',
+      p: 'A cold sea north of the Anvilfells. A few small islands have settlements of hardy folk.',
+      h: ['A one-off voyage: a lighthouse, a seal-hunters’ steading, a dwarf exile.']
+    },
+    wolfsea: {
+      t: 'The Wolf Sea?',
+      s: 'planned',
+      who: 'Varg pirates.',
+      p: 'The cold sea east of Albra, closed in by the Mainland’s north-eastern arm. Varg pirate ships raid every coast round it, and Gilden’s merchant houses pay them a yearly sea-toll to leave their ships alone.',
+      h: [
+        'Wolfmouth, at the Hollow’s estuary, pays the pirates or fights them.',
+        'Sea battles fought on deck (a new arena).'
+      ]
+    },
+    reavers: {
+      t: 'The Reaver Isles?',
+      s: 'planned',
+      who: 'Varg pirates, at home.',
+      p: 'Fjord-cut islands north of the Wolf Sea where the pirate ships come from.',
+      h: ['A pirate haven you can visit as a guest, if you have the right name to drop.']
+    },
+    narrows: {
+      t: 'The Narrows',
+      s: 'planned',
+      who: 'Ferrymen.',
+      p: 'The channel between Albra and the Mainland: a day’s sail from Ferryhythe, in Hallowmark’s Pale on Albra’s own coast, to Halemouth, in Hallowmark, where magic is against the law.',
+      h: ['Your first step onto the Mainland is into a country where being a wizard is a crime.']
+    },
+    westmarch: {
+      t: 'The Westmarch?',
+      s: 'open',
+      who: 'Not decided.',
+      p: 'The rainy, wooded west of the Mainland, round a northern gulf (Gulfhaven) and out to the Wavecrest peninsula. Westerly winds make it the wettest country on the map.',
+      h: ['Room for something new: a forest realm, clans, a coast of wreckers.']
+    },
+    hallowmark: {
+      t: 'Hallowmark?',
+      s: 'planned',
+      who: 'Humans. No mages, by law.',
+      p: 'The kingdom across the Narrows, along the river Hale from Halemouth up to Lakemere and the Deepgate pass. Magic is illegal because it is dangerous; witch-finders watch the ferries. It also holds the Pale of Ferryhythe on Albra’s coast. It buys Albra’s wool and metal openly and never its quintessence.',
+      h: [
+        'Smuggling mages out, or quintessence in.',
+        'A witch-finder who is secretly gifted.',
+        'Its long war with the Brazen Dominion: one side hires mages, the other burns them.'
+      ]
+    },
+    dominion: {
+      t: 'The Brazen Dominion?',
+      s: 'planned',
+      who: 'Humans: soldiers, officers and battle-mages.',
+      p: 'A warlike country that hires and drafts wizards. Varrow, its capital, stands on the river Brass, which runs north to Brassmouth on the Wolf Sea; the army road climbs to the eastern pass at Highwatch.',
+      h: [
+        'Recruiting sergeants at the border, offering gold and a commission.',
+        'Battles fought beside a regiment.',
+        'Weizan the Bladecaller or Malachar could have served here.'
+      ]
+    },
+    tusk: {
+      t: 'The Tuskholds?',
+      s: 'planned',
+      who: 'Orcs who have settled down, with goblin and human neighbours.',
+      p: 'The Mainland’s north-eastern arm and the dry steppe round the Salt Sea, out to Dawnport on the Eastern Ocean: orc clans who farm, herd and trade, in walled towns with markets.',
+      h: ['An orc town you can walk into and trade with.', 'Orc shamans as teachers or rivals.']
+    },
+    saltsea: {
+      t: 'The Salt Sea?',
+      s: 'open',
+      who: 'Steppe orcs on its shores.',
+      p: 'A great inland sea with no outlet, fed by rivers off the Greatspine, like the Caspian. Saltmarket trades its salt.',
+      h: ['Salt pans, reed boats, a drowned city.']
+    },
+    innersea: {
+      t: 'The Inner Sea?',
+      s: 'open',
+      who: 'Fishers, traders, the Free Ports.',
+      p: 'A sea in the south of the Mainland, reached from the Middle Sea only through the narrow channel at Narrowgate and Eastgate, like the Black Sea and the Bosporus. Lumen’s and Brassgate’s trade both comes and goes through it.',
+      h: [
+        'Whoever holds the channel taxes every ship.',
+        'A sea-monster that came in through the channel and can’t find the way out.'
+      ]
+    },
+    gimbaldry: {
+      t: 'Gimbaldry?',
+      s: 'planned',
+      who: 'Gnomes.',
+      p: 'A gnome country of terraced hills and skyports in the western foothills of the Greatspine, with a harbour at Baymouth on the western bay. Their magical airships fly all over the world (the purple dotted lines), but never over Hallowmark, and no further north than Gilden: the northern run crosses the Greatspine to Varrow, then the Wolf Sea.',
+      h: [
+        'The fast way round the whole map, once you can pay the fare.',
+        'An airship as a place of its own: a deck, a crew, sky pirates.'
+      ]
+    },
+    deep: {
+      t: 'The Greatspine? and the Deepholds?',
+      s: 'planned',
+      who: 'Deep dwarves, under the mountains.',
+      p: 'The great range across the middle of the Mainland and its watershed. Three passes cross it: the Deepgate in the west (the dwarves’ market), Highwatch in the middle, Ashpass at the east end. Deep under it live dwarves who loathe daylight and come up only to trade.',
+      h: ['Night markets at the Deepgate.', 'Whoever holds a pass holds the trade: a war over Highwatch.']
+    },
+    necro: {
+      t: 'The Gravemarches?',
+      s: 'planned',
+      who: 'Necromancer-lords and their dead; living peasants who pay tithes in bones.',
+      p: 'The Mainland’s great south-western block, along the river Mourne from Greyford to Mournmouth, and down to Bleakhaven on the strait. The dead work the fields and guard the roads.',
+      h: ['Daveron’s homeland, or the one that exiled him.', 'Valdris and Mordant fit here too.']
+    },
+    velumbra: {
+      t: 'Velumbra?',
+      s: 'planned',
+      who: 'Drow: dark elves with purple skin and pale hair.',
+      p: 'A twilight forest over deep caverns between the Gravemarches and the Hierarchy, running down to the Middle Sea. The drow live below and come up into the dark wood at night.',
+      h: [
+        'The Moriquende’s elves and the drow: a quarrel older than Corvanthe.',
+        'Drow as a race in the creator later.'
+      ]
+    },
+    hierarchy: {
+      t: 'The Lumen Hierarchy?',
+      s: 'planned',
+      who: 'Priest-mages, pilgrims, the faithful.',
+      p: 'A theocracy that worships magic, on the plain of the Holy River, down the long peninsula to Lastlight and along the Inner Sea’s west shore. Lumen stands below Twinwater, where the river’s head-streams meet; the river ends in a delta at Seaward.',
+      h: [
+        'Pilgrims travel to Corvanthe’s Wound, which brings them to your door.',
+        'Mary (the Devoted) or Aurelia (the Radiant) could come from here.'
+      ]
+    },
+    concord: {
+      t: 'The Concord?',
+      s: 'planned',
+      who: 'Ruling wizards; engineers, clerks, citizens.',
+      p: 'A very orderly country ruled by wizards who put magic to work. Brassgate’s canal joins its river to the next one at Lockford, so barges run from the Inner Sea to the Middle Sea; mills line the river at Millbrook.',
+      h: [
+        'Brassgate, where quintessence (spill) fetches the best price.',
+        'Workshops where your wizard can have things made.'
+      ]
+    },
+    freeports: {
+      t: 'The Free Ports?',
+      s: 'open',
+      who: 'Not decided.',
+      p: 'Twin cities on the channel into the Inner Sea, Narrowgate and Eastgate, with Portis and Capewatch down the peninsula beyond.',
+      h: [
+        'A trade league, a pirate kingdom, or the toll-takers of the channel.',
+        'Where ships cross to the Southlands’ delta.'
+      ]
+    },
+    wyrm: {
+      t: 'Wyrmreach?',
+      s: 'planned',
+      who: 'A dragon king; half-dragon lizardmen nobles like Korvath; human subjects.',
+      p: 'A volcanic realm in the south-east. The Ember Throne sits on a living volcano; the road north climbs by Scalegate to Ashpass and down to the steppe.',
+      h: ['Korvath the Wyrmlord’s homeland: a noble, an exile or a rebel?', 'An audience with a dragon.']
+    },
+    middlesea: {
+      t: 'The Middle Sea?',
+      s: 'open',
+      who: 'Traders, navies.',
+      p: 'A warm sea between the Mainland and the Southlands, entered from the ocean through a strait in the west (Bleakhaven to Straitwatch). Its northern shore is dry country of scrub and olives.',
+      h: ['Galleys, corsairs, sea-lanes the airships fly over.']
+    },
+    southlands: {
+      t: 'The Southlands',
+      s: 'planned',
+      who: 'The Sythrae (snakemen), humans, and the Hrakka (hyenamen like Gnash).',
+      p: 'The Sunwall guards the north-west coast, with desert in its rain shadow, then savannah, then jungle. A caravan road runs from oasis to oasis along the desert’s edge to Sunmouth, the delta city of a great river flowing north.',
+      h: ['The Hrakka clans on the savannah: Gnash’s people.', 'Sythrae temple-cities in the jungle.']
+    }
+  };
 
-function getCss(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
-const COL={built:getCss('--built'),planned:getCss('--planned'),open:getCss('--open')};
-const INK='#3b2a1a',INK2='#6b5236',SEA='#aebdb3',LAND='#e6d6ae';
-const syms=[];const SR=rng(42);
-ZONES.forEach(z=>{let tries=0,made=0;while(made<z[5]&&tries<z[5]*10){tries++;const a=SR()*Math.PI*2,d=Math.sqrt(SR());const x=z[1]+Math.cos(a)*z[3]*d,y=z[2]+Math.sin(a)*z[4]*d;if(!onLand(x,y))continue;syms.push({t:z[0],x,y,k:(.75+SR()*.5)*(z[6]||1)});made++;}});
-syms.sort((a,b)=>a.y-b.y);
-const waves=[];{const wr=rng(9);for(let i=0;i<1100;i++){const x=wr()*W-OX,y=wr()*H-OY;if(!ctx.isPointInPath(landPath,x,y))waves.push([x,y]);}}
+  function getCss(n) {
+    return getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  }
+  const COL = { built: getCss('--built'), planned: getCss('--planned'), open: getCss('--open') };
+  const INK = '#3b2a1a',
+    INK2 = '#6b5236',
+    SEA = '#aebdb3',
+    LAND = '#e6d6ae';
+  const syms = [];
+  const SR = rng(42);
+  ZONES.forEach(z => {
+    let tries = 0,
+      made = 0;
+    while (made < z[5] && tries < z[5] * 10) {
+      tries++;
+      const a = SR() * Math.PI * 2,
+        d = Math.sqrt(SR());
+      const x = z[1] + Math.cos(a) * z[3] * d,
+        y = z[2] + Math.sin(a) * z[4] * d;
+      if (!onLand(x, y)) continue;
+      syms.push({ t: z[0], x, y, k: (0.75 + SR() * 0.5) * (z[6] || 1) });
+      made++;
+    }
+  });
+  syms.sort((a, b) => a.y - b.y);
+  const waves = [];
+  {
+    const wr = rng(9);
+    for (let i = 0; i < 1100; i++) {
+      const x = wr() * W - OX,
+        y = wr() * H - OY;
+      if (!ctx.isPointInPath(landPath, x, y)) waves.push([x, y]);
+    }
+  }
 
-let sel='vale',selTown=null;
-function line(pts){ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();}
-function draw(){
-  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=SEA;ctx.fillRect(0,0,cv.width,cv.height);
-  ctx.setTransform(S,0,0,S,OX*S,OY*S);ctx.lineJoin='round';ctx.lineCap='round';
-  ctx.strokeStyle='rgba(60,80,70,.18)';ctx.lineWidth=1.6;waves.forEach(([x,y])=>{ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+8,y-6,x+16,y);ctx.quadraticCurveTo(x+24,y-6,x+32,y);ctx.stroke();});
-  [[44,.10],[28,.16],[14,.24]].forEach(([w,a])=>{ctx.strokeStyle=`rgba(50,70,60,${a})`;ctx.lineWidth=w;ctx.stroke(landPath)});
-  ctx.fillStyle=LAND;ctx.fill(landPath);
-  ctx.save();ctx.clip(landPath);COUNTRIES.forEach(c=>{ctx.fillStyle=`rgba(${c.tint},${c.id===sel?.32:.15})`;ctx.fill(c.path);});ctx.setLineDash([16,7,3,7]);ctx.strokeStyle='rgba(59,42,26,.6)';ctx.lineWidth=2.6;COUNTRIES.forEach(c=>ctx.stroke(c.path));ctx.restore();
-  ctx.strokeStyle=INK;ctx.lineWidth=2.6;ctx.stroke(landPath);
-  ctx.save();ctx.clip(landPath);ctx.strokeStyle='rgba(50,70,60,.2)';ctx.lineWidth=12;ctx.stroke(waterPath);ctx.restore();ctx.fillStyle=SEA;ctx.fill(waterPath);
-  ctx.save();ctx.clip(landPath);ctx.strokeStyle=INK;ctx.lineWidth=4.4;ctx.stroke(waterPath);ctx.fillStyle=SEA;ctx.fill(waterPath);ctx.restore();
-  const rg=REGIONS.find(r=>r.id===sel);
-  if(rg&&!COUNTRIES.some(c=>c.id===sel)){ctx.save();ctx.beginPath();ctx.ellipse(rg.cx,rg.cy,rg.rx,rg.ry,0,0,Math.PI*2);ctx.fillStyle='rgba(154,106,28,.13)';ctx.fill();ctx.setLineDash([12,9]);ctx.strokeStyle='rgba(120,80,20,.75)';ctx.lineWidth=3;ctx.stroke();ctx.restore();}
-  ctx.save();ctx.beginPath();const bc=isl([880,505]);ctx.ellipse(bc[0],bc[1],165,62,-.18,0,Math.PI*2);ctx.setLineDash([4,6]);ctx.strokeStyle='rgba(47,107,58,.9)';ctx.lineWidth=3;ctx.stroke();ctx.restore();
-  RIVERS.forEach(r=>{ctx.strokeStyle='#5f8090';ctx.lineWidth=r.w||2.4;line(r.pts);});
-  ctx.strokeStyle='#6f93a3';ctx.lineWidth=2;CANALS.forEach(line);
-  ctx.save();ctx.setLineDash([10,8]);ctx.strokeStyle='rgba(110,70,30,.85)';ctx.lineWidth=2.6;ROUTES.forEach(r=>line(r.map(k=>N[k].p)));
-  ctx.strokeStyle='rgba(60,60,80,.55)';ctx.setLineDash([3,8]);ctx.lineWidth=2.4;SEA_LANES.forEach(line);ctx.restore();
-  syms.forEach(drawSym);
-  PASSES.forEach(([x,y])=>{ctx.save();ctx.strokeStyle=INK;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-18,y-14);ctx.quadraticCurveTo(x,y+4,x+18,y-14);ctx.moveTo(x-18,y+14);ctx.quadraticCurveTo(x,y-4,x+18,y+14);ctx.stroke();ctx.restore();});
-  ctx.save();ctx.setLineDash([2,10]);ctx.strokeStyle='rgba(110,60,140,.7)';ctx.lineWidth=3.4;
-  SKY.forEach(pts=>{ if(pts.length===2){ const [a,b]=pts; const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2-Math.hypot(b[0]-a[0],b[1]-a[1])*.12;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.quadraticCurveTo(mx,my,b[0],b[1]);ctx.stroke();
-      airship(.25*a[0]+.5*mx+.25*b[0],.25*a[1]+.5*my+.25*b[1],b[0]<a[0]); return; }
-    ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);
-    for(let i=1;i<pts.length-1;i++){ const m=[(pts[i][0]+pts[i+1][0])/2,(pts[i][1]+pts[i+1][1])/2]; ctx.quadraticCurveTo(pts[i][0],pts[i][1],m[0],m[1]); }
-    const L=pts[pts.length-1]; ctx.lineTo(L[0],L[1]); ctx.stroke();
-    const k=Math.floor(pts.length/2), a=pts[k-1], b=pts[k]; airship((a[0]+b[0])/2,(a[1]+b[1])/2,b[0]<a[0]); });
-  ctx.restore();
-  // inns and hamlets, a day apart
-  inns.forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,4.2,0,7);ctx.fillStyle=LAND;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='rgba(110,70,30,.95)';ctx.stroke();});
-  // towns
-  Object.entries(N).forEach(([k,t])=>{const isl_=t.p[1]<520&&t.p[0]>880&&t.p[0]<1480&&t.p[1]>150;const st=t.w==='built'?'built':(INFO[t.r]&&INFO[t.r].s==='open'?'open':'planned');
-    const big=t.cap||t.big||k==='corvanthe';const r=isl_?(big?8:5.5):(big?12:7);
-    ctx.beginPath();ctx.arc(t.p[0],t.p[1],r,0,Math.PI*2);ctx.fillStyle=big||t.w==='built'?COL[st]:LAND;ctx.fill();ctx.lineWidth=2.2;ctx.strokeStyle=INK;ctx.stroke();
-    if(big&&!isl_){ctx.beginPath();ctx.arc(t.p[0],t.p[1],r+5,0,7);ctx.lineWidth=1.5;ctx.stroke();}
-    if(k===selTown){ctx.beginPath();ctx.arc(t.p[0],t.p[1],r+12,0,7);ctx.lineWidth=3;ctx.strokeStyle='#9a2a1a';ctx.stroke();}
-    ctx.font=`${isl_?(big?20:16):(big?34:22)}px "IM Fell English SC", Georgia, serif`;ctx.textBaseline='middle';ctx.textAlign=t.left?'right':'left';halo(t.n,t.left?t.p[0]-r-5:t.p[0]+r+5,t.p[1]-2);});
-  LABELS.forEach(([t,x,y,k,rot])=>{ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot*Math.PI/180);ctx.textAlign='center';ctx.textBaseline='middle';
-    if(k==='sea'){ctx.font='italic 46px "IM Fell English", Georgia, serif';spaced(t,'#3e5a55',6,false);}
-    else if(k==='seasm'){ctx.font='italic 28px "IM Fell English", Georgia, serif';spaced(t,'#3e5a55',3,false);}
-    else if(k==='big'){ctx.font='72px "IM Fell English SC", Georgia, serif';spaced(t,INK,14,true);}
-    else if(k==='country'){ctx.font='46px "IM Fell English SC", Georgia, serif';spaced(t,INK,5,true);}
-    else if(k==='countrysm'){ctx.font='32px "IM Fell English SC", Georgia, serif';spaced(t,INK,3,true);}
-    else if(k==='isle'){ctx.font='22px "IM Fell English SC", Georgia, serif';spaced(t,INK,2,true);}
-    else if(k==='river'){ctx.font='italic 34px "IM Fell English", Georgia, serif';ctx.fillStyle='#3f6070';ctx.fillText(t,0,0);}
-    else if(k==='sky'){ctx.font='italic 30px "IM Fell English", Georgia, serif';ctx.fillStyle='#6e3c8c';ctx.fillText(t,0,0);}
-    else {ctx.font='italic 28px "IM Fell English", Georgia, serif';ctx.fillStyle=INK2;ctx.fillText(t,0,0);}
-    ctx.restore();});
-  scaleBar(-240,-170);compass(3380,3020);
-  ctx.setTransform(1,0,0,1,0,0);ctx.strokeStyle=INK;ctx.lineWidth=7;ctx.strokeRect(7,7,cv.width-14,cv.height-14);ctx.lineWidth=2;ctx.strokeRect(20,20,cv.width-40,cv.height-40);
-}
-function scaleBar(x,y){ctx.save();ctx.strokeStyle=INK;ctx.fillStyle=INK;ctx.lineWidth=2.4;
-  for(let i=0;i<5;i++){ctx.fillStyle=i%2?LAND:INK;ctx.fillRect(x+i*DAY,y,DAY,10);ctx.strokeRect(x+i*DAY,y,DAY,10);}
-  ctx.fillStyle=INK;ctx.font='24px "IM Fell English SC", Georgia, serif';ctx.textAlign='center';ctx.textBaseline='top';for(let i=0;i<=5;i++)ctx.fillText(String(i),x+i*DAY,y+16);
-  ctx.textAlign='left';ctx.font='italic 26px "IM Fell English", Georgia, serif';ctx.textBaseline='bottom';ctx.fillText('Days by cart (a day is about thirty miles)',x,y-6);
-  ctx.beginPath();ctx.arc(x+330,y+5,4.2,0,7);ctx.fillStyle=LAND;ctx.fill();ctx.strokeStyle='rgba(110,70,30,.95)';ctx.stroke();ctx.fillStyle=INK;ctx.textBaseline='middle';ctx.font='italic 24px "IM Fell English", Georgia, serif';ctx.fillText('an inn or hamlet',x+342,y+5);
-  ctx.restore();}
-function halo(t,x,y){ctx.lineWidth=6;ctx.strokeStyle=LAND;ctx.strokeText(t,x,y);ctx.fillStyle=INK;ctx.fillText(t,x,y);}
-function spaced(t,col,sp,h){const cs=[...t];const w=cs.reduce((s,c)=>s+ctx.measureText(c).width+sp,0)-sp;let x=-w/2;ctx.textAlign='left';cs.forEach(c=>{if(h){ctx.lineWidth=7;ctx.strokeStyle=LAND;ctx.strokeText(c,x,0);}ctx.fillStyle=col;ctx.fillText(c,x,0);x+=ctx.measureText(c).width+sp});}
-function airship(x,y,flip){ctx.save();ctx.translate(x,y);if(flip)ctx.scale(-1,1);ctx.setLineDash([]);ctx.lineWidth=2;ctx.strokeStyle=INK;
-  ctx.beginPath();ctx.ellipse(0,0,26,11,0,0,7);ctx.fillStyle='#c9a2d6';ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.moveTo(-9,10);ctx.lineTo(-7,18);ctx.moveTo(9,10);ctx.lineTo(7,18);ctx.stroke();
-  ctx.fillStyle='#8a6a3a';ctx.fillRect(-11,17,22,7);ctx.strokeRect(-11,17,22,7);
-  ctx.beginPath();ctx.moveTo(-26,0);ctx.lineTo(-35,-7);ctx.lineTo(-35,7);ctx.closePath();ctx.fillStyle='#c9a2d6';ctx.fill();ctx.stroke();ctx.restore();}
-function drawSym(s){const x=s.x,y=s.y,k=s.k;ctx.lineWidth=1.6;ctx.strokeStyle=INK;
-  switch(s.t){
-  case 'mtn':{const w=26*k,h=28*k;ctx.beginPath();ctx.moveTo(x-w,y);ctx.lineTo(x,y-h);ctx.lineTo(x+w,y);ctx.fillStyle=LAND;ctx.fill();ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x+w,y);ctx.lineTo(x+w*.2,y);ctx.closePath();ctx.fillStyle='rgba(90,65,40,.35)';ctx.fill();ctx.beginPath();ctx.moveTo(x-w,y);ctx.lineTo(x,y-h);ctx.lineTo(x+w,y);ctx.stroke();break;}
-  case 'volc':{const w=32*k,h=36*k;ctx.beginPath();ctx.moveTo(x-w,y);ctx.lineTo(x-6,y-h);ctx.lineTo(x+6,y-h);ctx.lineTo(x+w,y);ctx.fillStyle='#b89a7a';ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(x-6,y-h);ctx.lineTo(x-3,y-h+12);ctx.lineTo(x+3,y-h+8);ctx.lineTo(x+6,y-h);ctx.fillStyle='#c0392b';ctx.fill();ctx.strokeStyle='rgba(80,70,60,.5)';ctx.beginPath();ctx.arc(x+4,y-h-12,7,0,7);ctx.arc(x+12,y-h-24,9,0,7);ctx.stroke();break;}
-  case 'hill':{ctx.beginPath();ctx.arc(x,y,15*k,Math.PI*1.1,Math.PI*1.9);ctx.stroke();break;}
-  case 'tree':case 'jungle':{const r=(s.t==='jungle'?10:8.5)*k;ctx.beginPath();ctx.arc(x,y-r,r,0,Math.PI*2);ctx.fillStyle=s.t==='jungle'?'#6f8a4a':'#9aa56a';ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+5*k);ctx.stroke();break;}
-  case 'olive':{ctx.beginPath();ctx.arc(x,y-5*k,5*k,0,Math.PI*2);ctx.fillStyle='#a8a27a';ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+3*k);ctx.stroke();break;}
-  case 'dark':{const r=8*k;ctx.beginPath();ctx.moveTo(x,y-2.4*r);ctx.lineTo(x+r,y);ctx.lineTo(x-r,y);ctx.closePath();ctx.fillStyle='#6a5578';ctx.fill();ctx.stroke();break;}
-  case 'dead':{ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-15*k);ctx.moveTo(x,y-8*k);ctx.lineTo(x-6*k,y-13*k);ctx.moveTo(x,y-10*k);ctx.lineTo(x+5*k,y-16*k);ctx.stroke();break;}
-  case 'snow':{ctx.beginPath();ctx.moveTo(x-15*k,y);ctx.lineTo(x,y-15*k);ctx.lineTo(x+15*k,y);ctx.fillStyle='#f4efe3';ctx.fill();ctx.stroke();break;}
-  case 'plain':{ctx.beginPath();for(let i=-1;i<=1;i++){ctx.moveTo(x+i*4,y);ctx.lineTo(x+i*6,y-8*k);}ctx.strokeStyle=INK2;ctx.stroke();break;}
-  case 'sand':{ctx.fillStyle='rgba(150,110,50,.55)';ctx.beginPath();ctx.arc(x,y,2,0,7);ctx.fill();ctx.beginPath();ctx.arc(x+10,y+4,17*k,Math.PI*1.15,Math.PI*1.85);ctx.strokeStyle='rgba(120,85,40,.6)';ctx.stroke();break;}
-  case 'savan':{ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-14*k);ctx.stroke();ctx.beginPath();ctx.ellipse(x,y-15*k,13*k,4*k,0,0,7);ctx.fillStyle='#9aa56a';ctx.fill();ctx.stroke();break;}
-  }}
-function compass(x,y){ctx.save();ctx.translate(x,y);ctx.strokeStyle=INK;ctx.fillStyle=INK;ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(0,0,58,0,7);ctx.stroke();
-  for(let i=0;i<4;i++){ctx.save();ctx.rotate(i*Math.PI/2);ctx.beginPath();ctx.moveTo(0,-78);ctx.lineTo(11,0);ctx.lineTo(-11,0);ctx.closePath();i===0?ctx.fill():ctx.stroke();ctx.restore();}
-  ctx.font='36px "IM Fell English SC", Georgia, serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText('N',0,-92);ctx.restore();}
+  let sel = 'vale',
+    selTown = null;
+  function line(pts) {
+    ctx.beginPath();
+    pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+    ctx.stroke();
+  }
+  function draw() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = SEA;
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.setTransform(S, 0, 0, S, OX * S, OY * S);
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(60,80,70,.18)';
+    ctx.lineWidth = 1.6;
+    waves.forEach(([x, y]) => {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x + 8, y - 6, x + 16, y);
+      ctx.quadraticCurveTo(x + 24, y - 6, x + 32, y);
+      ctx.stroke();
+    });
+    [
+      [44, 0.1],
+      [28, 0.16],
+      [14, 0.24]
+    ].forEach(([w, a]) => {
+      ctx.strokeStyle = `rgba(50,70,60,${a})`;
+      ctx.lineWidth = w;
+      ctx.stroke(landPath);
+    });
+    ctx.fillStyle = LAND;
+    ctx.fill(landPath);
+    ctx.save();
+    ctx.clip(landPath);
+    COUNTRIES.forEach(c => {
+      ctx.fillStyle = `rgba(${c.tint},${c.id === sel ? 0.32 : 0.15})`;
+      ctx.fill(c.path);
+    });
+    ctx.setLineDash([16, 7, 3, 7]);
+    ctx.strokeStyle = 'rgba(59,42,26,.6)';
+    ctx.lineWidth = 2.6;
+    COUNTRIES.forEach(c => ctx.stroke(c.path));
+    ctx.restore();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.6;
+    ctx.stroke(landPath);
+    ctx.save();
+    ctx.clip(landPath);
+    ctx.strokeStyle = 'rgba(50,70,60,.2)';
+    ctx.lineWidth = 12;
+    ctx.stroke(waterPath);
+    ctx.restore();
+    ctx.fillStyle = SEA;
+    ctx.fill(waterPath);
+    ctx.save();
+    ctx.clip(landPath);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 4.4;
+    ctx.stroke(waterPath);
+    ctx.fillStyle = SEA;
+    ctx.fill(waterPath);
+    ctx.restore();
+    const rg = REGIONS.find(r => r.id === sel);
+    if (rg && !COUNTRIES.some(c => c.id === sel)) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(rg.cx, rg.cy, rg.rx, rg.ry, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(154,106,28,.13)';
+      ctx.fill();
+      ctx.setLineDash([12, 9]);
+      ctx.strokeStyle = 'rgba(120,80,20,.75)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.beginPath();
+    const bc = isl([880, 505]);
+    ctx.ellipse(bc[0], bc[1], 165, 62, -0.18, 0, Math.PI * 2);
+    ctx.setLineDash([4, 6]);
+    ctx.strokeStyle = 'rgba(47,107,58,.9)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+    RIVERS.forEach(r => {
+      ctx.strokeStyle = '#5f8090';
+      ctx.lineWidth = r.w || 2.4;
+      line(r.pts);
+    });
+    ctx.strokeStyle = '#6f93a3';
+    ctx.lineWidth = 2;
+    CANALS.forEach(line);
+    ctx.save();
+    ctx.setLineDash([10, 8]);
+    ctx.strokeStyle = 'rgba(110,70,30,.85)';
+    ctx.lineWidth = 2.6;
+    ROUTES.forEach(r => line(r.map(k => N[k].p)));
+    ctx.strokeStyle = 'rgba(60,60,80,.55)';
+    ctx.setLineDash([3, 8]);
+    ctx.lineWidth = 2.4;
+    SEA_LANES.forEach(line);
+    ctx.restore();
+    syms.forEach(drawSym);
+    PASSES.forEach(([x, y]) => {
+      ctx.save();
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x - 18, y - 14);
+      ctx.quadraticCurveTo(x, y + 4, x + 18, y - 14);
+      ctx.moveTo(x - 18, y + 14);
+      ctx.quadraticCurveTo(x, y - 4, x + 18, y + 14);
+      ctx.stroke();
+      ctx.restore();
+    });
+    ctx.save();
+    ctx.setLineDash([2, 10]);
+    ctx.strokeStyle = 'rgba(110,60,140,.7)';
+    ctx.lineWidth = 3.4;
+    SKY.forEach(pts => {
+      if (pts.length === 2) {
+        const [a, b] = pts;
+        const mx = (a[0] + b[0]) / 2,
+          my = (a[1] + b[1]) / 2 - Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.12;
+        ctx.beginPath();
+        ctx.moveTo(a[0], a[1]);
+        ctx.quadraticCurveTo(mx, my, b[0], b[1]);
+        ctx.stroke();
+        airship(0.25 * a[0] + 0.5 * mx + 0.25 * b[0], 0.25 * a[1] + 0.5 * my + 0.25 * b[1], b[0] < a[0]);
+        return;
+      }
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length - 1; i++) {
+        const m = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2];
+        ctx.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]);
+      }
+      const L = pts[pts.length - 1];
+      ctx.lineTo(L[0], L[1]);
+      ctx.stroke();
+      const k = Math.floor(pts.length / 2),
+        a = pts[k - 1],
+        b = pts[k];
+      airship((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, b[0] < a[0]);
+    });
+    ctx.restore();
+    // inns and hamlets, a day apart
+    inns.forEach(([x, y]) => {
+      ctx.beginPath();
+      ctx.arc(x, y, 4.2, 0, 7);
+      ctx.fillStyle = LAND;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(110,70,30,.95)';
+      ctx.stroke();
+    });
+    // towns
+    Object.entries(N).forEach(([k, t]) => {
+      const isl_ = t.p[1] < 520 && t.p[0] > 880 && t.p[0] < 1480 && t.p[1] > 150;
+      const st = t.w === 'built' ? 'built' : INFO[t.r] && INFO[t.r].s === 'open' ? 'open' : 'planned';
+      const big = t.cap || t.big || k === 'corvanthe';
+      const r = isl_ ? (big ? 8 : 5.5) : big ? 12 : 7;
+      ctx.beginPath();
+      ctx.arc(t.p[0], t.p[1], r, 0, Math.PI * 2);
+      ctx.fillStyle = big || t.w === 'built' ? COL[st] : LAND;
+      ctx.fill();
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = INK;
+      ctx.stroke();
+      if (big && !isl_) {
+        ctx.beginPath();
+        ctx.arc(t.p[0], t.p[1], r + 5, 0, 7);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+      if (k === selTown) {
+        ctx.beginPath();
+        ctx.arc(t.p[0], t.p[1], r + 12, 0, 7);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#9a2a1a';
+        ctx.stroke();
+      }
+      ctx.font = `${isl_ ? (big ? 20 : 16) : big ? 34 : 22}px "IM Fell English SC", Georgia, serif`;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = t.left ? 'right' : 'left';
+      halo(t.n, t.left ? t.p[0] - r - 5 : t.p[0] + r + 5, t.p[1] - 2);
+    });
+    LABELS.forEach(([t, x, y, k, rot]) => {
+      ctx.save();
+      ctx.translate(x, y);
+      if (rot) ctx.rotate((rot * Math.PI) / 180);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      if (k === 'sea') {
+        ctx.font = 'italic 46px "IM Fell English", Georgia, serif';
+        spaced(t, '#3e5a55', 6, false);
+      } else if (k === 'seasm') {
+        ctx.font = 'italic 28px "IM Fell English", Georgia, serif';
+        spaced(t, '#3e5a55', 3, false);
+      } else if (k === 'big') {
+        ctx.font = '72px "IM Fell English SC", Georgia, serif';
+        spaced(t, INK, 14, true);
+      } else if (k === 'country') {
+        ctx.font = '46px "IM Fell English SC", Georgia, serif';
+        spaced(t, INK, 5, true);
+      } else if (k === 'countrysm') {
+        ctx.font = '32px "IM Fell English SC", Georgia, serif';
+        spaced(t, INK, 3, true);
+      } else if (k === 'isle') {
+        ctx.font = '22px "IM Fell English SC", Georgia, serif';
+        spaced(t, INK, 2, true);
+      } else if (k === 'river') {
+        ctx.font = 'italic 34px "IM Fell English", Georgia, serif';
+        ctx.fillStyle = '#3f6070';
+        ctx.fillText(t, 0, 0);
+      } else if (k === 'sky') {
+        ctx.font = 'italic 30px "IM Fell English", Georgia, serif';
+        ctx.fillStyle = '#6e3c8c';
+        ctx.fillText(t, 0, 0);
+      } else {
+        ctx.font = 'italic 28px "IM Fell English", Georgia, serif';
+        ctx.fillStyle = INK2;
+        ctx.fillText(t, 0, 0);
+      }
+      ctx.restore();
+    });
+    scaleBar(-240, -170);
+    compass(3380, 3020);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 7;
+    ctx.strokeRect(7, 7, cv.width - 14, cv.height - 14);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(20, 20, cv.width - 40, cv.height - 40);
+  }
+  function scaleBar(x, y) {
+    ctx.save();
+    ctx.strokeStyle = INK;
+    ctx.fillStyle = INK;
+    ctx.lineWidth = 2.4;
+    for (let i = 0; i < 5; i++) {
+      ctx.fillStyle = i % 2 ? LAND : INK;
+      ctx.fillRect(x + i * DAY, y, DAY, 10);
+      ctx.strokeRect(x + i * DAY, y, DAY, 10);
+    }
+    ctx.fillStyle = INK;
+    ctx.font = '24px "IM Fell English SC", Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i <= 5; i++) ctx.fillText(String(i), x + i * DAY, y + 16);
+    ctx.textAlign = 'left';
+    ctx.font = 'italic 26px "IM Fell English", Georgia, serif';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Days by cart (a day is about thirty miles)', x, y - 6);
+    ctx.beginPath();
+    ctx.arc(x + 330, y + 5, 4.2, 0, 7);
+    ctx.fillStyle = LAND;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(110,70,30,.95)';
+    ctx.stroke();
+    ctx.fillStyle = INK;
+    ctx.textBaseline = 'middle';
+    ctx.font = 'italic 24px "IM Fell English", Georgia, serif';
+    ctx.fillText('an inn or hamlet', x + 342, y + 5);
+    ctx.restore();
+  }
+  function halo(t, x, y) {
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = LAND;
+    ctx.strokeText(t, x, y);
+    ctx.fillStyle = INK;
+    ctx.fillText(t, x, y);
+  }
+  function spaced(t, col, sp, h) {
+    const cs = [...t];
+    const w = cs.reduce((s, c) => s + ctx.measureText(c).width + sp, 0) - sp;
+    let x = -w / 2;
+    ctx.textAlign = 'left';
+    cs.forEach(c => {
+      if (h) {
+        ctx.lineWidth = 7;
+        ctx.strokeStyle = LAND;
+        ctx.strokeText(c, x, 0);
+      }
+      ctx.fillStyle = col;
+      ctx.fillText(c, x, 0);
+      x += ctx.measureText(c).width + sp;
+    });
+  }
+  function airship(x, y, flip) {
+    ctx.save();
+    ctx.translate(x, y);
+    if (flip) ctx.scale(-1, 1);
+    ctx.setLineDash([]);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = INK;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 26, 11, 0, 0, 7);
+    ctx.fillStyle = '#c9a2d6';
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-9, 10);
+    ctx.lineTo(-7, 18);
+    ctx.moveTo(9, 10);
+    ctx.lineTo(7, 18);
+    ctx.stroke();
+    ctx.fillStyle = '#8a6a3a';
+    ctx.fillRect(-11, 17, 22, 7);
+    ctx.strokeRect(-11, 17, 22, 7);
+    ctx.beginPath();
+    ctx.moveTo(-26, 0);
+    ctx.lineTo(-35, -7);
+    ctx.lineTo(-35, 7);
+    ctx.closePath();
+    ctx.fillStyle = '#c9a2d6';
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawSym(s) {
+    const x = s.x,
+      y = s.y,
+      k = s.k;
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = INK;
+    switch (s.t) {
+      case 'mtn': {
+        const w = 26 * k,
+          h = 28 * k;
+        ctx.beginPath();
+        ctx.moveTo(x - w, y);
+        ctx.lineTo(x, y - h);
+        ctx.lineTo(x + w, y);
+        ctx.fillStyle = LAND;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x, y - h);
+        ctx.lineTo(x + w, y);
+        ctx.lineTo(x + w * 0.2, y);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(90,65,40,.35)';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x - w, y);
+        ctx.lineTo(x, y - h);
+        ctx.lineTo(x + w, y);
+        ctx.stroke();
+        break;
+      }
+      case 'volc': {
+        const w = 32 * k,
+          h = 36 * k;
+        ctx.beginPath();
+        ctx.moveTo(x - w, y);
+        ctx.lineTo(x - 6, y - h);
+        ctx.lineTo(x + 6, y - h);
+        ctx.lineTo(x + w, y);
+        ctx.fillStyle = '#b89a7a';
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - 6, y - h);
+        ctx.lineTo(x - 3, y - h + 12);
+        ctx.lineTo(x + 3, y - h + 8);
+        ctx.lineTo(x + 6, y - h);
+        ctx.fillStyle = '#c0392b';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(80,70,60,.5)';
+        ctx.beginPath();
+        ctx.arc(x + 4, y - h - 12, 7, 0, 7);
+        ctx.arc(x + 12, y - h - 24, 9, 0, 7);
+        ctx.stroke();
+        break;
+      }
+      case 'hill': {
+        ctx.beginPath();
+        ctx.arc(x, y, 15 * k, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.stroke();
+        break;
+      }
+      case 'tree':
+      case 'jungle': {
+        const r = (s.t === 'jungle' ? 10 : 8.5) * k;
+        ctx.beginPath();
+        ctx.arc(x, y - r, r, 0, Math.PI * 2);
+        ctx.fillStyle = s.t === 'jungle' ? '#6f8a4a' : '#9aa56a';
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + 5 * k);
+        ctx.stroke();
+        break;
+      }
+      case 'olive': {
+        ctx.beginPath();
+        ctx.arc(x, y - 5 * k, 5 * k, 0, Math.PI * 2);
+        ctx.fillStyle = '#a8a27a';
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + 3 * k);
+        ctx.stroke();
+        break;
+      }
+      case 'dark': {
+        const r = 8 * k;
+        ctx.beginPath();
+        ctx.moveTo(x, y - 2.4 * r);
+        ctx.lineTo(x + r, y);
+        ctx.lineTo(x - r, y);
+        ctx.closePath();
+        ctx.fillStyle = '#6a5578';
+        ctx.fill();
+        ctx.stroke();
+        break;
+      }
+      case 'dead': {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y - 15 * k);
+        ctx.moveTo(x, y - 8 * k);
+        ctx.lineTo(x - 6 * k, y - 13 * k);
+        ctx.moveTo(x, y - 10 * k);
+        ctx.lineTo(x + 5 * k, y - 16 * k);
+        ctx.stroke();
+        break;
+      }
+      case 'snow': {
+        ctx.beginPath();
+        ctx.moveTo(x - 15 * k, y);
+        ctx.lineTo(x, y - 15 * k);
+        ctx.lineTo(x + 15 * k, y);
+        ctx.fillStyle = '#f4efe3';
+        ctx.fill();
+        ctx.stroke();
+        break;
+      }
+      case 'plain': {
+        ctx.beginPath();
+        for (let i = -1; i <= 1; i++) {
+          ctx.moveTo(x + i * 4, y);
+          ctx.lineTo(x + i * 6, y - 8 * k);
+        }
+        ctx.strokeStyle = INK2;
+        ctx.stroke();
+        break;
+      }
+      case 'sand': {
+        ctx.fillStyle = 'rgba(150,110,50,.55)';
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, 7);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 10, y + 4, 17 * k, Math.PI * 1.15, Math.PI * 1.85);
+        ctx.strokeStyle = 'rgba(120,85,40,.6)';
+        ctx.stroke();
+        break;
+      }
+      case 'savan': {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y - 14 * k);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(x, y - 15 * k, 13 * k, 4 * k, 0, 0, 7);
+        ctx.fillStyle = '#9aa56a';
+        ctx.fill();
+        ctx.stroke();
+        break;
+      }
+    }
+  }
+  function compass(x, y) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = INK;
+    ctx.fillStyle = INK;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, 58, 0, 7);
+    ctx.stroke();
+    for (let i = 0; i < 4; i++) {
+      ctx.save();
+      ctx.rotate((i * Math.PI) / 2);
+      ctx.beginPath();
+      ctx.moveTo(0, -78);
+      ctx.lineTo(11, 0);
+      ctx.lineTo(-11, 0);
+      ctx.closePath();
+      i === 0 ? ctx.fill() : ctx.stroke();
+      ctx.restore();
+    }
+    ctx.font = '36px "IM Fell English SC", Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('N', 0, -92);
+    ctx.restore();
+  }
 
-function hit(ev){const b=cv.getBoundingClientRect();const x=(ev.clientX-b.left)/b.width*W-OX,y=(ev.clientY-b.top)/b.height*H-OY;
-  let tk=null,td=1e9;Object.entries(N).forEach(([k,t])=>{const d=Math.hypot(t.p[0]-x,t.p[1]-y);if(d<td){td=d;tk=k}});if(td<20)return {town:tk};
-  let best=null,bd=9;REGIONS.forEach(r=>{const d=((x-r.cx)/r.rx)**2+((y-r.cy)/r.ry)**2;if(d<1&&d<bd){bd=d;best=r.id}});return best&&{region:best};}
-cv.addEventListener('click',e=>{const h=hit(e);if(!h)return;h.town?showTown(h.town):show(h.region)});
-const panel=document.getElementById('panel');
-const TAG={built:['Built','--built'],planned:['From your notes','--planned'],open:['Open, to fill in','--open']};
-const dayText=d=>d===1?'1 day':d+' days';
-function show(id){const info=INFO[id];sel=id;selTown=null;draw();const t=TAG[info.s];
-  panel.innerHTML=`<h2>${info.t}</h2><span class="tag" style="background:var(${t[1]})">${t[0]}</span>
-  <h3>Who lives here</h3><p>${info.who}</p><h3>The idea</h3><p>${info.p}</p><h3>Things that could happen</h3><ul>${info.h.map(h=>`<li>${h}</li>`).join('')}</ul>
-  <p class="hint">Tap another region, or any town for its roads.</p>`;}
-function showTown(k){const t=N[k];sel=t.r;selTown=k;draw();const reg=INFO[t.r];const st=t.w==='built'?'built':(reg.s==='open'?'open':'planned');const tg=TAG[st];
-  const ls=(links[k]||[]).map(([o,d,how])=>`<li>${N[o].n.replace('?','')}: ${dayText(d)} by ${how==='ship'?'ship':'road'}</li>`).join('');
-  panel.innerHTML=`<h2>${t.n}</h2><span class="tag" style="background:var(${tg[1]})">${t.cap?'Capital · ':''}${reg.t.replace('?','')}</span>
-  <h3>Why it’s here</h3><p>${WHY[t.w]}</p><h3>Next towns</h3><ul>${ls||'<li>No roads yet.</li>'}</ul>
-  <p class="hint">On longer roads an inn or a hamlet stands every day’s ride. Tap the region round it for its story.</p>`;}
-const zbtn=[1,2,3].map(n=>document.getElementById('z'+n));
-const ZW=[100,250,450];
-zbtn.forEach((b,i)=>b.addEventListener('click',()=>{const sc=document.getElementById('scroller');
-  cv.style.width=ZW[i]+'%';zbtn.forEach((o,j)=>o.setAttribute('aria-pressed',String(i===j)));
-  const f=selTown?N[selTown].p:(()=>{const r=REGIONS.find(r=>r.id===sel);return r?[r.cx,r.cy]:[1600,1500]})();
-  if(i===0){sc.scrollLeft=0;sc.scrollTop=0;}else{sc.scrollLeft=(f[0]+OX)/W*sc.scrollWidth-sc.clientWidth/2;sc.scrollTop=(f[1]+OY)/H*sc.scrollHeight-sc.clientHeight/2;}}));
-draw();show('vale');
-if(document.fonts&&document.fonts.ready)document.fonts.ready.then(draw);
+  function hit(ev) {
+    const b = cv.getBoundingClientRect();
+    const x = ((ev.clientX - b.left) / b.width) * W - OX,
+      y = ((ev.clientY - b.top) / b.height) * H - OY;
+    let tk = null,
+      td = 1e9;
+    Object.entries(N).forEach(([k, t]) => {
+      const d = Math.hypot(t.p[0] - x, t.p[1] - y);
+      if (d < td) {
+        td = d;
+        tk = k;
+      }
+    });
+    if (td < 20) return { town: tk };
+    let best = null,
+      bd = 9;
+    REGIONS.forEach(r => {
+      const d = ((x - r.cx) / r.rx) ** 2 + ((y - r.cy) / r.ry) ** 2;
+      if (d < 1 && d < bd) {
+        bd = d;
+        best = r.id;
+      }
+    });
+    return best && { region: best };
+  }
+  cv.addEventListener('click', e => {
+    const h = hit(e);
+    if (!h) return;
+    h.town ? showTown(h.town) : show(h.region);
+  });
+  const panel = document.getElementById('panel');
+  const TAG = {
+    built: ['Built', '--built'],
+    planned: ['From your notes', '--planned'],
+    open: ['Open, to fill in', '--open']
+  };
+  const dayText = d => (d === 1 ? '1 day' : d + ' days');
+  function show(id) {
+    const info = INFO[id];
+    sel = id;
+    selTown = null;
+    draw();
+    const t = TAG[info.s];
+    panel.innerHTML = `<h2>${info.t}</h2><span class="tag" style="background:var(${t[1]})">${t[0]}</span>
+  <h3>Who lives here</h3><p>${info.who}</p><h3>The idea</h3><p>${info.p}</p><h3>Things that could happen</h3><ul>${info.h.map(h => `<li>${h}</li>`).join('')}</ul>
+  <p class="hint">Tap another region, or any town for its roads.</p>`;
+  }
+  function showTown(k) {
+    const t = N[k];
+    sel = t.r;
+    selTown = k;
+    draw();
+    const reg = INFO[t.r];
+    const st = t.w === 'built' ? 'built' : reg.s === 'open' ? 'open' : 'planned';
+    const tg = TAG[st];
+    const ls = (links[k] || [])
+      .map(
+        ([o, d, how]) =>
+          `<li>${N[o].n.replace('?', '')}: ${dayText(d)} by ${how === 'ship' ? 'ship' : 'road'}</li>`
+      )
+      .join('');
+    panel.innerHTML = `<h2>${t.n}</h2><span class="tag" style="background:var(${tg[1]})">${t.cap ? 'Capital · ' : ''}${reg.t.replace('?', '')}</span>
+  <h3>Why it’s here</h3><p>${WHY[t.w]}</p><h3>Next towns</h3><ul>${ls || '<li>No roads yet.</li>'}</ul>
+  <p class="hint">On longer roads an inn or a hamlet stands every day’s ride. Tap the region round it for its story.</p>`;
+  }
+  const zbtn = [1, 2, 3].map(n => document.getElementById('z' + n));
+  const ZW = [100, 250, 450];
+  zbtn.forEach((b, i) =>
+    b.addEventListener('click', () => {
+      const sc = document.getElementById('scroller');
+      cv.style.width = ZW[i] + '%';
+      zbtn.forEach((o, j) => o.setAttribute('aria-pressed', String(i === j)));
+      const f = selTown
+        ? N[selTown].p
+        : (() => {
+            const r = REGIONS.find(r => r.id === sel);
+            return r ? [r.cx, r.cy] : [1600, 1500];
+          })();
+      if (i === 0) {
+        sc.scrollLeft = 0;
+        sc.scrollTop = 0;
+      } else {
+        sc.scrollLeft = ((f[0] + OX) / W) * sc.scrollWidth - sc.clientWidth / 2;
+        sc.scrollTop = ((f[1] + OY) / H) * sc.scrollHeight - sc.clientHeight / 2;
+      }
+    })
+  );
+  draw();
+  show('vale');
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
 })();
 </script>

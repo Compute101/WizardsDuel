@@ -1,7 +1,7 @@
 # WizardsDuel — Notes for Claude
 
 ## What this is
-A browser-based 1v1 wizard duel game. Each round both wizards secretly pick a Damage, Protection or Dispel spell (rock-paper-scissors), cast it via a short glyph minigame, then the picks are revealed and play out together. Built with vanilla JS/Canvas, no framework. Main logic lives in `js/game.js` (~5700 lines). Character stats and each character's three signature spells are in `characters.json`.
+A browser-based 1v1 wizard duel game. Each round both wizards secretly pick a Damage, Protection or Dispel spell (rock-paper-scissors), cast it via a short glyph minigame, then the picks are revealed and play out together. Built with vanilla JS/Canvas, no framework. Main logic lives in `js/game.js` (~18,000 lines since the code was formatted for reading; see Code style). Character stats and each character's three signature spells are in `characters.json`.
 
 ---
 
@@ -363,20 +363,20 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 
 | Thing | File | Approx. lines |
 |-------|------|---------------|
-| All game logic | `js/game.js` | ~5700 |
-| VFX library | `js/game.js` | ~1500 |
-| Round flow (pick → reveal → resolve) | `js/game.js` | ~1740 |
-| Elemental rules, wheel, AI | `js/game.js` | ~1915 |
-| Tile-match (wards / buffs) minigame | `js/game.js` | ~2840 |
-| Inferno minigame (Fire) | `js/game.js` | ~3600 |
-| Rockfall minigame (Physical) | `js/game.js` | ~3885 |
-| Lightning minigame | `js/game.js` | ~3380 |
-| Shadow Circle minigame (Dark) | `js/game.js` | ~4570 |
-| Ice minigame | `js/game.js` | ~4035 |
-| Arcane minigame | `js/game.js` | ~4335 |
-| Dispel minigame | `js/game.js` | ~4630 |
-| Gale (Air) / Tide (Water) minigames, `mgGlyphGame` | `js/game.js` | ~6620 |
-| Tutorial text | `js/game.js` | ~5160 |
+| All game logic | `js/game.js` | ~18000 |
+| VFX library | `js/game.js` | ~3800 |
+| Round flow (pick → reveal → resolve) | `js/game.js` | ~6510 |
+| Elemental rules, wheel, AI | `js/game.js` | ~7030 |
+| Tile-match (wards / buffs) minigame | `js/game.js` | ~12410 |
+| Inferno minigame (Fire) | `js/game.js` | ~12810 |
+| Rockfall minigame (Earth) | `js/game.js` | ~13680 |
+| Lightning minigame | `js/game.js` | ~14180 |
+| Shadow Circle minigame (Dark) | `js/game.js` | ~14610 |
+| Ice minigame | `js/game.js` | ~15090 |
+| Arcane minigame | `js/game.js` | ~15470 |
+| Dispel minigame | `js/game.js` | ~15840 |
+| Gale (Air) / Tide (Water) minigames, `mgGlyphGame` | `js/game.js` | ~13185–13680 |
+| Tutorial text | `js/game.js` | ~16750 |
 | Characters and signature spells | `characters.json` | whole file |
 | Archived Classic spell code (not loaded) | `js/legacy/classic_spells.js` | whole file |
 | Balance simulator (AI-vs-AI win rates) | `tools/balance.html`, `simMatch` in `js/game.js` | whole file |
@@ -386,10 +386,16 @@ Keep VFX: when changing or removing a spell, keep its look. Every spell's visual
 | Lectures (the theatre scene, scripts, VFX) | `js/explore_lecture.js`, `theatre()` in `js/explore_rooms.js` | whole file |
 | The Moriquende (forest strategy year): engine, screen, sims | `js/forest_engine.js`, `js/forest.js`, `css/forest.css`, `tools/forest_sim.js`, `tools/forest_duel_sim.js` | whole files |
 | Explore: game, pieces, rooms, townsfolk, maps, map generators, tileset cutter | `js/explore.js`, `js/explore_pieces.js`, `js/explore_rooms.js`, `js/explore_folk.js`, `maps/`, `tools/mapgen/`, `tools/build_maps.js`, `tools/cut_ruins_tileset.py`, `sprites/ruins/` | whole files |
-| Puzzle screen HTML | `index.html` | ~242 |
-| Canvas styling | `css/style.css` | ~530–560 |
+| Puzzle screen HTML | `index.html` | ~271 |
+| Canvas styling (`#bcanvas`) | `css/style.css` | ~800 |
 
 ---
+
+## Code style
+All the code was put through formatters in November 2026 so it reads one statement to a line (the user asked for it to be human readable; it used to be packed several statements to a line). Nothing about what it does changed, and that was checked: every JS file's parse tree and comments, every Python file's parse tree and comments, every stylesheet as a browser parses it, and the inline scripts and styles of the HTML pages, all matched the old code; the simulators gave the same results with the same random seed; seven screens looked pixel-identical, and Explore started a Random Graduate in Wrenford without an error. Keep new code in the same style:
+- **JS and CSS:** Prettier with `.prettierrc.json` (110 wide, single quotes, `quoteProps: preserve` so quoted keys stay quoted, embedded HTML in template strings left alone). `.prettierignore` keeps it off the JSON data and generated maps.
+- **HTML:** only the inline `<script>` and `<style>` blocks are formatted; the markup is left as written (reformatting markup can change the spacing between inline elements).
+- **Python:** Black, 110 wide, quotes left as they are (`[tool.black]` in `pyproject.toml`).
 
 ## Cache-busting
 Every script and the stylesheet in `index.html` carry a `?v=` number. **Bump a file's number whenever you change the file** (and on a merge, bump every file either side touched): a browser that cached the old copy under the same number runs it against newer code, which broke New Game after the University Year merge ("Couldn't load the map", a stale `explore_pieces.js` without `scaleOf`). Explore's JSON data (maps, atlases, figures, toppers, characters, fighters) is fetched with `NC` / `{cache:'no-cache'}` so it revalidates. The map loader's error now shows the underlying message.
