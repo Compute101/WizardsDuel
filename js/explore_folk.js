@@ -94,6 +94,36 @@ const FOLK = {
     lines:['A bald old man with a beard to his belt leans on a punt-pole by the water. "Punts by the hour, a penny a time, and the river does the rest." He squints at you. "The Wren runs east, you know. Down to the Hollow, and the Hollow runs through Corvanthe. Everything in this town floats that way in the end."',
       '"Fished the Hollow sixty years. Since the white day, the fish come up shining." He shakes his head. "I throw them back. Seems polite."',
       '"Students fall in twice a term, regular. I keep a pole for it."']},
+  // Hollowmere's west bank, the boom town before Corvanthe (tools/mapgen/hollowmere.js places them)
+  hm_factor:{kind:'local', title:'A Factor of House Ashcombe', name:'Master Orme', sprite:'sprites/folk/peasant_man_3.png', face:'peasant_man'},
+  hm_carter:{kind:'local', title:'An Ore Carter', name:'Dunnock', sprite:'sprites/folk/peasant_man_2.png', face:'peasant_man',
+    lines:['A carter with a face full of copper dust sits on the tail of his cart. "Down from Varg\'s Delve, three days, on to Gilden, two more. Ore one way, salt and silver back. Hollowmere\'s the halfway house." He spits. "Halfway to everywhere, and nobody\'s home on the far bank."',
+      '"See the east bank? My gran was born over there. Nobody\'s slept on that side since the white day. You can hear them walking, nights. The Echoes."',
+      '"The gleaners buy everything, and the factors buy everything the gleaners bring back. And the inn charges like it\'s a palace. Boom town, they call it. Boom for some."']},
+  hm_pies:{kind:'local', title:'A Pie-Seller', name:'Bessie Hesketh', sprite:'sprites/folk/peasant_woman_2.png', face:'peasant_woman',
+    lines:['A broad woman with a tray of pies on a strap round her neck. "Mutton or eel? Hot! Gleaners going in eat like they won\'t eat again." A look. "Some of them won\'t. Mutton, then."',
+      '"Hollowmere was a dead town, after. Then the gleaners came, and the factors after the gleaners, and the carts after the factors. Now look at it. Can\'t move for money, this side of the water."',
+      '"Don\'t cross the bridges after dark, love. Not the east bank. The town stops at the river."']},
+  // traders from the north at Hollowmere's market: dwarves of the Hammerfells holds, Varg from Ulfvik
+  // (scale: drawn at that share of a person's height; dwarves stand as short as Durin, Varg a head taller)
+  hm_smith:{kind:'local', title:'A Hammerhall Smith', name:'Torvi Anvilson', scale:0.72,
+    look:{name:'Torvi', sex:'m', age:'middle', fig:'dwarf_mid_man_2', robe:'Russet', trim:'Copper', hair:'Black', skin:'Tan', eyes:'Brown', elem:'earth', staff:'Blackthorn', topper:''},
+    lines:['A dwarf stands over a table of knives, hinges, lamp-brackets and crowbars, every one of them better made than it needs to be. "Hammerhall work. Price is on the tag." He doesn\'t look up. "Tag doesn\'t move."',
+      '"Gleaners buy crowbars. Then they come back and buy more crowbars." A grunt that might be a laugh. "The city eats iron."',
+      '"You want to see Hammerhall? Nobody sees Hammerhall. You see the gatehouse, and you see it from outside." He turns a hinge over in his hands. "It\'s a good gatehouse."']},
+  hm_tin:{kind:'local', title:'A Coldforge Factor', name:'Grimma', scale:0.72,
+    look:{name:'Grimma', sex:'f', age:'old', fig:'dwarf_old_woman_1', robe:'Midnight', trim:'Silver', hair:'White', skin:'Fair', eyes:'Grey', elem:'ice', staff:'Ash', topper:''},
+    lines:['An old dwarf woman sits on a strongbox, counting ingots of tin into rows with a stick, and keeping the stick between the rows and you. "Coldforge tin. Bound for Gilden, by the Ore Road, by the end of the week. Not for sale here. I am only resting."',
+      '"Hammerhall sends smiths down to sell. Coldforge sends me, to count." She taps an ingot. "Smiths can\'t count."',
+      '"The Varg at the other end of the square sell fish. We do not speak of the fish." She sniffs. "But their furs are good."']},
+  hm_furs:{kind:'local', title:'A Varg Furrier from Ulfvik', name:'Gunnulf', sprite:'sprites/forest/varg_alpha.png', face:'varg_alpha', scale:1.12,
+    lines:['A great grey wolfman sits on a handcart piled with pelts, ears turning at every voice in the square. "Furs from the Wolf coast. Bear, seal, white fox. Warm for the city at night." His lip lifts over a fang: a smile, probably. "Warmer than the Echoes are."',
+      '"Not all Varg sail with the black ships. Most of us fish, and trap, and come down the coast road to sell. The pirates are cousins." A shrug that ripples the fur on his shoulders. "Everyone has cousins."',
+      '"The dwarf woman counts her tin and does not look at me. I count my furs and do not look at her. We get on very well."']},
+  hm_fish:{kind:'local', title:'A Varg Fishwife from Ulfvik', name:'Hrafna', sprite:'sprites/forest/varg.png', face:'varg', scale:1.08,
+    lines:['A Varg with a salt-stiff apron and a voice that carries across the whole square: "Smoked herring! Wolf-coast cod! Eels from the Hollow mouth, caught this morning, two days ago!"',
+      '"Gleaners going in want something that keeps. Smoked fish keeps. Gleaners do not." She wraps a fish in a leaf for someone and takes his coin. "That is the trade."',
+      '"Ulfvik is four days up the coast road, past Wolfmouth. Come with gifts, if you come. And not with a sword out. We remember."']},
   // the ostler by the East Road: sells you a horse (api.buyHorse), which halves your time on the world map's roads
   ostler:{kind:'local', title:'The Ostler', name:'Abel Coppin', sprite:'sprites/folk/peasant_man_4.png', face:'peasant_man'},
   // townsfolk who stand about by day and point the way (guide): the place you need next comes first;
@@ -272,6 +302,7 @@ function journal(api){
 }
 
 // ── what they say ──
+const HM_SPILL_PRICE=5, HM_POTION=9;   // Hollowmere's factor pays better than Widow Coyle and charges more
 const HORSE_PRICE=40, STABLE_FEE_SAY=3;   // STABLE_FEE in js/explore.js
 function talk(n, api){
   const s=q(api), me=api.wizName(), say=(_,x,ch)=>api.dialog(title(n,api),x,ch||[]);
@@ -294,6 +325,15 @@ function talk(n, api){
     else if(s.stage===1){ const left=tasksLeft(api);
       say(0,'"Getting on all right, '+me+'? '+(left.length?'You\'ve still to see to: '+left.map(t=>t[0]==='schools'?'the Schools':t[0]==='library'?'the Library':'the Laboratory').join(', ')+'."':'That\'s the lot, is it? Back to the Senior Tutor with you, then."')+' He taps the side of his nose. "And keep off the grass."',where); }
     else say(0,'"Morning, '+me+'." The Porter almost smiles. "Most of the Porters here held the Wardgate at Corvanthe, you know. We held it from the wrong side, as it turned out. Mind how you go out there."',where);
+    return;
+  }
+
+  case 'hm_factor': {
+    const n0=api.spillTotal(), P=HM_SPILL_PRICE;
+    say(0,'A sharp man in a good coat that has seen too much mud, with a ledger, a strongbox and two hired guards leaning on the wall behind him. "Orme, factor to House Ashcombe of Gilden. Quintessence, any element, any quantity, '+P+' gold a piece. Better than the University\'s licensed lot pay, and no questions about where it came from." He taps the strongbox. "It goes to Gilden by the Ore Road and from there to people who pay in silver. Where it goes after that is none of yours, nor mine."',[
+      {label:'Sell your spill ('+n0+' × '+P+' = '+n0*P+' gold)', disabled:n0<1, fn:()=>{ const g=api.sellSpill(P); api.save(); api.toast('+'+g+' gold. Orme writes it in the ledger without looking up.'); }},
+      {label:'Buy a potion ('+HM_POTION+' gold)', disabled:api.gold()<HM_POTION, fn:()=>{ api.addGold(-HM_POTION); api.addPotions(1); api.save(); api.toast('A potion, Gilden-made, the seal a gold coin stamped in wax.'); }},
+      {label:'Not today'}]);
     return;
   }
 

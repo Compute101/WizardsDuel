@@ -135,7 +135,7 @@ republish it to change the map). **It stays a design map for now:** the game kee
 Vale (`maps/world.json`); later this chart could become the top level (long roads, sea voyages and
 airships between regions), each region with its own walking map at today's scale.
 
-**Decided:** home is an island, across **the Narrows** from the Mainland (a ferry from Ferryhythe?
+**Decided:** the home island is **Albra** (the user's choice, November 2026). Home is an island, across **the Narrows** from the Mainland (a ferry from Ferryhythe?
 lands in Hallowmark?). The Hollow was reversed (see "The Hollow"). The snakemen are **the Sythrae**,
 Gnash's hyena people **the Hrakka**.
 
@@ -173,7 +173,31 @@ Borders wander and neighbours share them.
   Velumbra to Barrowcourt and Mournmouth; Barrowcourt north through Gimbal to the Westmarch; Wyrmreach
   north over **Ashpass**; and the Southlands' caravan road from Straitwatch, oasis to oasis, to Sunmouth.
 
-### The home isle and its seas
+### Albra and its seas
+
+**Albra's towns** (added November 2026): **Gilden?**, Albra's richest city, a trading port on the
+south-east coast where the Narrows meet the Wolf Sea (the Mainland's trade comes ashore there), home of
+Thessaly's merchant house, where you meet her; a road north to Hollowmere and a coast road west to
+Ferryhythe. **Mining towns** in the Hammerfells' foothills: Copperhythe?, Varg's Delve? and **Tinwell?**.
+**Ulfvik?**, a Varg town on the Wolf coast north of Wolfmouth (longhouses, boat-sheds, smokehouses;
+settled Varg, some of whom sail with the pirates), on a road from Corvanthe. Three **dwarf holds** high in
+the Hammerfells, each with a mountain path up from a mining town: **Stonedeep?** (above Copperhythe),
+**Hammerhall?** (the greatest, which named the range; above Varg's Delve) and **Coldforge?** (over the Grey
+Sea, above Tinwell). Outsiders get as far as their gatehouses.
+
+**Gilden's trade** (the user's call): Albra's great export is **quintessence**, gleaned from Corvanthe; it comes
+down **the Ore Road** with the Hammerfells' copper and tin (Copperhythe → Varg's Delve → **Harrowgate?**, now a
+big walled ore market → Hollowmere → **Chepstead?**, a big market town where the ore road and the spill road
+meet → Gilden), and goes out to **the Brazen Dominion** (the best customer, paying in silver for its war), on
+**the gnome airships**, overland **through the Tuskholds**, and on **trading ships far and wide**. Never to
+Hallowmark, which would burn it. Gilden pays the Varg pirates a yearly sea-toll.
+- **The gnome airships** never fly over Hallowmark and come **no further north than Gilden**, Albra's only
+  skyport (too dangerous for Wrenford): their northern run crosses the Greatspine to Varrow and Brassmouth, then
+  the Wolf Sea.
+- **The Pale of Ferryhythe:** Hallowmark holds Ferryhythe and a few miles round it, on Albra's own coast, as a
+  foothold (for two hundred years). Magic is banned inside the Pale, everyone off the ferry is searched, and no
+  airship may land there, which is why they fly on to Gilden.
+
 
 | Where | Who lives there | Notes |
 |---|---|---|

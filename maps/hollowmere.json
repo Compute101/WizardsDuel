@@ -90,6 +90,15 @@
   ["barrel",1178,1334],
   ["crate2",1218,1336],
   ["crate1",1618,872],
+  ["cratesProduce",1145.6,915.2,{"lore":"market"}],
+  ["sacksGrain",1241.6,902.4],
+  ["cartLoaded",1574.4,921.6],
+  ["basketApples",1305.6,1260.8],
+  ["handcartSacks",1120,1152],
+  ["anvilBlock",1574.4,1132.8,{"scale":0.26}],
+  ["barrelsTrio",1529.6,1273.6],
+  ["noticeBoard",1619.2,870.4,{"lore":"notices"}],
+  ["oreCart",1657.6,1203.2],
   ["lamppost",270,1020,{"lore":"lamppost"}],
   ["lamppost",990,1020,{"lore":"lamppost"}],
   ["lamppost",2226,1020,{"lore":"lamppost"}],
@@ -864,7 +873,7 @@
   ],
   "banner": [
    "Town Banner",
-   "A gold cross on crimson, the arms of Hollowmere. The town is dead, yet someone keeps the banner raised."
+   "A gold cross on crimson, the arms of Hollowmere. Someone kept it raised through the empty years after the Unweaving, when the town all but died. Now there are crowds under it again."
   ],
   "deadtree": [
    "Scarred Oak",
@@ -888,7 +897,7 @@
   ],
   "lamppost": [
    "Lantern",
-   "Still burning. No one in Hollowmere admits to lighting them."
+   "Still burning. The lamplighter does the west bank. The lamps across the river burn too, and nobody admits to lighting those."
   ],
   "crane": [
    "Dock Crane",
@@ -896,7 +905,7 @@
   ],
   "gallows": [
    "The Gallows",
-   "The town has been empty for years. The rope is new."
+   "Nobody has lived on this bank for years. The rope is new."
   ],
   "wagon": [
    "Covered Wagon",
@@ -928,7 +937,7 @@
   ],
   "tavern": [
    "The Drowned Crow",
-   "The last tavern in Hollowmere. The fire is lit, the tankards are clean, and the chairs are all turned to face the door."
+   "The tavern that never closed, not even in the empty years. Now every bench is full of gleaners and carters, and still the old regulars sit with their chairs turned to face the door."
   ],
   "chapel": [
    "Chapel of the Watcher",
@@ -941,6 +950,14 @@
   "pond": [
    "Mill Pond",
    "Fat carp circle in the shallows, unafraid. Someone still comes down here to feed them."
+  ],
+  "notices": [
+   "The Market Board",
+   "Carters wanted for Gilden, two days, good pay. Gleaners wanted, Cindergate, ask at the Crow. House Ashcombe buys quintessence. LOST: one crew, four men, went in by the Wardgate a week since. Under it, in a different hand: not lost."
+  ],
+  "market": [
+   "Hollowmere Market",
+   "Crates and carts where the stalls used to stand, and everything for sale: rope, lamps, salt pork, crowbars, charms of very doubtful use. Prices are what the gleaners will pay, which is a great deal."
   ],
   "river": [
    "The Hollow",
@@ -985,5 +1002,56 @@
  "blocks": [],
  "glows": [],
  "echoes": [],
- "walk": []
+ "walk": [],
+ "npcs": [
+  {
+   "role": "hm_factor",
+   "x": 1235.2,
+   "y": 1036.8
+  },
+  {
+   "role": "hm_carter",
+   "x": 1561.6,
+   "y": 985.6
+  },
+  {
+   "role": "hm_pies",
+   "x": 1190.4,
+   "y": 1248
+  },
+  {
+   "role": "hm_smith",
+   "x": 1600,
+   "y": 1171.2
+  },
+  {
+   "role": "hm_tin",
+   "x": 1548.8,
+   "y": 1235.2
+  },
+  {
+   "role": "hm_furs",
+   "x": 1113.6,
+   "y": 1081.6
+  },
+  {
+   "role": "hm_fish",
+   "x": 1171.2,
+   "y": 985.6
+  }
+ ],
+ "stroll": {
+  "maxX": 1768,
+  "n": 14
+ },
+ "greet": [
+  "Mind the cart!",
+  "Pies, hot pies!",
+  "Going in? Good luck to you.",
+  "Ore for Gilden, out the way!",
+  "Ashcombe pays best, tell your crew.",
+  "Don't cross after dark.",
+  "Spill? Ask at the Crow.",
+  "Another one for the Wardgate."
+ ]
 }

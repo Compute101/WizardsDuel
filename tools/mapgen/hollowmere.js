@@ -14,15 +14,15 @@ const LORE = {
   statue:      ['The Hooded Watcher', 'Rain has worn its face away. Someone still leaves candle stubs at its feet, and the wax is fresh.'],
   shrine:      ['Wayside Shrine', 'The offering bowl is cracked, but it holds a single copper coin and a sprig of rosemary. Somebody here still prays.'],
   brokenStatue:['Fallen Hero', 'Only the boots remain. The plaque reads: "…ER THE BOLD, WHO HELD THE BRIDGE UNTIL THE LAST."'],
-  banner:      ['Town Banner', 'A gold cross on crimson, the arms of Hollowmere. The town is dead, yet someone keeps the banner raised.'],
+  banner:      ['Town Banner', 'A gold cross on crimson, the arms of Hollowmere. Someone kept it raised through the empty years after the Unweaving, when the town all but died. Now there are crowds under it again.'],
   deadtree:    ['Scarred Oak', 'A rune is cut deep into the bark: Ω, the sign of endings. The sap still weeps from it.'],
   wheel:       ['Cart Wheel', 'Splintered, the iron rim gone. Whoever fled with that cart did not get far.'],
   arch:        ['North Gate', 'The gate itself is long gone. Scorch marks lick up both pillars, higher than any torch could reach.'],
   well:        ['Old Well', 'Your voice comes back from the dark, a moment too late, and not quite in your own words.'],
   house1:      ['The Lit House', 'Locked. Warm light behind the shutters, and someone inside is humming an old duelling song.'],
-  lamppost:    ['Lantern', 'Still burning. No one in Hollowmere admits to lighting them.'],
+  lamppost:    ['Lantern', 'Still burning. The lamplighter does the west bank. The lamps across the river burn too, and nobody admits to lighting those.'],
   crane:       ['Dock Crane', 'A crate still hangs from the hook, swaying though there is no wind. You decide not to open it.'],
-  gallows:     ['The Gallows', 'The town has been empty for years. The rope is new.'],
+  gallows:     ['The Gallows', 'Nobody has lived on this bank for years. The rope is new.'],
   wagon:       ['Covered Wagon', 'Packed for a journey: blankets, salt pork, a lute with no strings. Whoever owned it left on foot.'],
   sacks:       ['Grain Sacks', 'Rye, gone to black mould. Something has been nibbling at the corner of one, and it wasn\'t a rat.'],
   bridgeBanner:['Banner Bridge', 'Purple and gold: the colours of the old duelling college that stood across the river. Duels were fought on this bridge at midsummer.'],
@@ -30,10 +30,12 @@ const LORE = {
   bridgeWood:  ['Mill Bridge', 'The planks flex under you. Far below, something pale turns over in the water and is gone.'],
   bridgeStone: ['Old Stone Bridge', 'Older than the town. The mason\'s marks on the parapet are Arcana glyphs: θ Φ ☽ ∞, the Ice word.'],
   bridgeWoodBroken:['Broken Footbridge', 'Snapped in the middle. The far half still creaks as though someone were crossing it.'],
-  tavern:      ['The Drowned Crow', 'The last tavern in Hollowmere. The fire is lit, the tankards are clean, and the chairs are all turned to face the door.'],
+  tavern:      ['The Drowned Crow', 'The tavern that never closed, not even in the empty years. Now every bench is full of gleaners and carters, and still the old regulars sit with their chairs turned to face the door.'],
   chapel:      ['Chapel of the Watcher', 'The hooded figure in the niche matches the statue in the plaza. The pews are dusty, all but the front one.'],
   tower:       ['The College Tower', 'All that stands of the duelling college. The brass orrery on its roof still turns, tracking stars that are not in the sky.'],
   pond:        ['Mill Pond', 'Fat carp circle in the shallows, unafraid. Someone still comes down here to feed them.'],
+  notices:     ['The Market Board', 'Carters wanted for Gilden, two days, good pay. Gleaners wanted, Cindergate, ask at the Crow. House Ashcombe buys quintessence. LOST: one crew, four men, went in by the Wardgate a week since. Under it, in a different hand: not lost.'],
+  market:      ['Hollowmere Market', 'Crates and carts where the stalls used to stand, and everything for sale: rope, lamps, salt pork, crowbars, charms of very doubtful use. Prices are what the gleaners will pay, which is a great deal.'],
   river:       ['The Hollow', 'Black water, slow and cold. It runs north to Corvanthe, and the townsfolk said it ran the other way at night.'],
 };
 // these kinds only carry lore where it's placed by hand
@@ -93,6 +95,15 @@ module.exports = function hollowmere(rects){
   place('banner',17*T+40,13*T+70); place('banner',27*T-24,13*T+70);
   for(const [x,y] of [[17*T+18,21*T-6],[27*T-46,21*T-6]]) place('lamppost',x,y);
   place('barrel',17*T+90,21*T-10); place('crate2',17*T+130,21*T-8); place('crate1',27*T-110,13*T+40);
+  // the boom town: the plaza is a market again, crates and carts where the stalls stood, and the ore carts on their way
+  // from the Hammerfells to Gilden stop here (no stall art yet: docs/art-prompts.md)
+  for(const [k,x,y,o] of [['cratesProduce',17.9*T,14.3*T,{lore:'market'}],['sacksGrain',19.4*T,14.1*T],['cartLoaded',24.6*T,14.4*T],
+    ['basketApples',20.4*T,19.7*T],['handcartSacks',17.5*T,18.0*T],['anvilBlock',24.6*T,17.7*T,{scale:0.26}],['barrelsTrio',23.9*T,19.9*T],['noticeBoard',25.3*T,13.6*T,{lore:'notices'}],['oreCart',25.9*T,18.8*T]]) place(k,x,y,o);
+  // its people: townsfolk walk the west bank's streets by day, never the east (map.stroll), and a few stand to talk
+  m.stroll={maxX:RIVER.c0*T-24, n:14};
+  m.greet=['Mind the cart!','Pies, hot pies!','Going in? Good luck to you.','Ore for Gilden, out the way!','Ashcombe pays best, tell your crew.','Don\'t cross after dark.','Spill? Ask at the Crow.','Another one for the Wardgate.'];
+  m.npcs=[{role:'hm_factor',x:19.3*T,y:16.2*T},{role:'hm_carter',x:24.4*T,y:15.4*T},{role:'hm_pies',x:18.6*T,y:19.5*T},
+    {role:'hm_smith',x:25.0*T,y:18.3*T},{role:'hm_tin',x:24.2*T,y:19.3*T},{role:'hm_furs',x:17.4*T,y:16.9*T},{role:'hm_fish',x:18.3*T,y:15.4*T}];
   // lanterns down the main street
   for(const x of [270,990,2226,2786]) place('lamppost',x,STREET_N+2);
 
