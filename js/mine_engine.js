@@ -221,6 +221,7 @@
   const HEAL_COT = DAY * 0.25; // abed in an infirmary cot
   const HEAL_WALK = DAY * 1.5; // walking it off with no cot
   const TAVERN_SETTLE = 0.4; // a drink at the tavern's keg strikes out a grudge this often
+  const TAPROOM_SETTLE = 0.2; // a taproom's, half as often
   const GREAT_HALL_MIN = 40; // tiles of floor a Great Hall needs
   const EYE_MIN_FLOOR = 30; // the Mason's Eye judges once there's this much worked floor
 
@@ -258,8 +259,16 @@
       col: '#b05a7a',
       furn: 'keg',
       count: a => Math.max(1, Math.ceil(a / 8)),
-      good: 9,
-      open: true // a taproom: no door
+      good: 9
+    },
+    // a taproom: kegs in an open room, no door wanted, but never as good as a tavern
+    taproom: {
+      name: 'Taproom',
+      col: '#8a5a6a',
+      furn: 'keg',
+      count: a => Math.max(1, Math.ceil(a / 8)),
+      good: 6,
+      open: true
     },
     infirmary: {
       name: 'Infirmary',
@@ -797,7 +806,8 @@
   }
   // the ways into a room with no door: floor outside it beside its floor, where neither tile is a built door
   // (a door can hang on the room's edge or just outside it). Rooms marked `open` don't need doors: the
-  // stockpile, the farm and the workshops (mason's workshop, brewery, kitchen, forge), which are open places of work.
+  // stockpile, the farm, the workshops (mason's workshop, brewery, kitchen, forge), which are open places of work,
+  // and the taproom (a tavern needs its doors).
   function roomOpenings(S, r) {
     if (ROOMS[r.type].open) return [];
     const T = S.tiles,
@@ -1577,8 +1587,11 @@
             if (t.fu === 'table') {
               const r = roomById(S, t.r);
               c = dm.dist[i] - (r && r.type === 'greathall' ? 30 : 0);
-            } else if (t.fu === 'keg' && j.type === 'drink') c = dm.dist[i] - 40;
-            else return;
+            } else if (t.fu === 'keg' && j.type === 'drink') {
+              // a tavern's keg before a taproom's
+              const r = roomById(S, t.r);
+              c = dm.dist[i] - (r && r.type === 'tavern' ? 40 : 25);
+            } else return;
             if (c < bd) {
               bd = c;
               seat = i;
@@ -1604,7 +1617,10 @@
           } else if (r && r.type === 'greathall') settleGrudge(S, d, 'a feast in the Great Hall');
           else if (r && rnd(S) < (roomStars(S, r) >= 2 ? 0.5 : 0) + (meal ? 0.4 : 0))
             settleGrudge(S, d, meal ? 'a hot meal at a good table' : 'a good meal in a fine hall');
-        } else if (r && r.type === 'tavern' && rnd(S) < TAVERN_SETTLE)
+        } else if (
+          r &&
+          rnd(S) < (r.type === 'tavern' ? TAVERN_SETTLE : r.type === 'taproom' ? TAPROOM_SETTLE : 0)
+        )
           settleGrudge(S, d, 'a pint with friends in the tavern');
         return;
       }

@@ -477,7 +477,11 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
     *"Do workshops have that? They're generally quite open."* No longer: the mason's workshop, brewery, kitchen
     and forge are `open` too, like the stockpile and farms. Rooms to live, eat, drink, heal and muster in still
     need their doors.
-    *"No taverns should have doors."* The tavern hall is `open` too, a taproom.
+    *"No, taverns should have doors too. Although I guess you could have a taproom, but they won't be as
+    good!"* (I'd first misread it as "no taverns should have doors".) The tavern hall needs its doors again,
+    and there's a new room, the **Taproom** (`ROOMS.taproom`: kegs, `open`, so no door wanted, `good` 6), which
+    is never as good: a pint there strikes out a grudge 20% of the time (`TAPROOM_SETTLE`) against the
+    tavern's 40%, and the crew go to a tavern's keg before a taproom's.
     The sim's Great Hall was only 40 tiles (10 × 4), the minimum, so it never earned a second star; there was
     room for 10 × 6 (rows 1–6), so it's 60 tiles now and reaches 2★ on seeds 7 and 9 in 10 days.
 

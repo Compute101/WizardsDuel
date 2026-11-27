@@ -109,7 +109,9 @@
     forge:
       'One anvil. The smith smelts a copper, a tin and a coal into 2 bronze, and forges a bronze pick from 1 bronze. The old iron picks wear out, and a miner with none digs at half pace.',
     tavern:
-      'A keg for every 8 tiles. The crew drink here before anywhere else, and a pint with friends strikes out a grudge now and then.',
+      'A keg for every 8 tiles. The crew drink here before anywhere else, and a pint with friends strikes out a grudge now and then. A proper hall: it wants a door on every way in.',
+    taproom:
+      'Kegs in an open room: no door needed, but not as good as a tavern. A pint here strikes out a grudge half as often, and the crew go to a tavern first.',
     infirmary:
       'A cot for every 4 tiles. Hard rock and ore sometimes hurt a dwarf, who works at half pace until mended: a quarter of a day in a cot, a day and a half walking it off.',
     barracks:
@@ -850,8 +852,8 @@
       <li><b>⛏ Dig</b>: drag over rock. Miners dig the nearest marked stone they can reach. Ore and rough stone are hauled to a stockpile.</li>
       <li><b>🧱 Build</b> opens a menu: <b>Wall</b> or <b>Door</b> on dug floor, or a <b>Pillar</b> (on rock, rock you keep; on dug floor, the mason builds one). A dressed block each; built walls count as worked stone, and pillars will soon hold the roof up.</li>
       <li><b>Put a mistake right</b>: dug too much? Wall it back up. A built wall or pillar can be dug out again (you get the stone back); ✖ Clear takes out a door and any mark.</li>
-      <li><b>🏠 Room</b> opens a menu of rooms; pick one, then drag over dug floor. Bedrooms, a dining hall, a mushroom farm on soil, a brewery, a stockpile, the <b>mason's workshop</b>, a kitchen, a forge, a tavern hall, an infirmary, a barracks and, once you've room for it, the Great Hall.</li>
-      <li><b>Stars</b>: a room earns its second star once it's furnished, big enough and has a door on every way in (wall up any others); its third once its walls are smoothed. Tap a room to see what it lacks: ways in with no door show in red. Stockpiles, farms, the workshops (mason's workshop, brewery, kitchen and forge) and the tavern, a taproom, need no door.</li>
+      <li><b>🏠 Room</b> opens a menu of rooms; pick one, then drag over dug floor. Bedrooms, a dining hall, a mushroom farm on soil, a brewery, a stockpile, the <b>mason's workshop</b>, a kitchen, a forge, a tavern hall (or a plainer taproom), an infirmary, a barracks and, once you've room for it, the Great Hall.</li>
+      <li><b>Stars</b>: a room earns its second star once it's furnished, big enough and has a door on every way in (wall up any others); its third once its walls are smoothed. Tap a room to see what it lacks: ways in with no door show in red. Stockpiles, farms, the workshops (mason's workshop, brewery, kitchen and forge) and the taproom need no door; a tavern does.</li>
       <li><b>The mason's workshop comes first</b>: its bench is roughed out of rough stone, and there the mason cuts rough stone into <b>dressed blocks</b> (🧱 in the stock). Every bed, table, still, wall, pillar and door takes a block, and he cuts only as many as your building needs.</li>
       <li><b>The trades</b>: the farmer and brewer cook meals at a kitchen's hearth; the smith smelts copper, tin and coal into bronze at a forge's anvil and forges picks, for the old iron ones wear out. Hard rock sometimes hurts a dwarf: an infirmary mends them.</li>
       <li><b>Water</b>: the brewer needs a bucket of water for every brew. Until there's a well he fetches meltwater from outside the gate, which is slow. Damp stone shows as a blue shimmer in the dark: dig it out, then 🧱 Build ▴ → Well. A well never runs dry.</li>
