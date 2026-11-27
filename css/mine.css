@@ -378,3 +378,165 @@
     height: 34%;
   }
 }
+
+/* the tool in hand, in a line over the tool bar */
+.mn-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 74px;
+  transform: translateX(-50%);
+  max-width: min(620px, 92%);
+  background: rgba(12, 10, 14, 0.82);
+  border: 1px solid #6b5630;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: #e8dcc0;
+  text-align: center;
+  pointer-events: none;
+}
+.mn-hint[hidden] {
+  display: none;
+}
+/* a toast can be tapped away */
+.mn-toast.on {
+  pointer-events: auto;
+  cursor: pointer;
+}
+/* the Delve-book */
+.mn-bookent {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-top: 1px solid #4a3c28;
+  padding: 8px 0;
+}
+.mn-bookent p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+.mn-bookent.got b {
+  color: #f3dc8c;
+}
+.mn-plan {
+  display: grid;
+  gap: 1px;
+  flex-shrink: 0;
+}
+.mn-plan i,
+.mn-key i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+}
+.mn-plan i.pil,
+.mn-key i.pil {
+  background-image: radial-gradient(circle, #e8dcc6 0 45%, transparent 50%) !important;
+}
+.mn-key i {
+  vertical-align: middle;
+  margin: 0 2px 0 8px;
+}
+@media (max-width: 760px) {
+  .mn-hint {
+    bottom: 58px;
+    font-size: 12px;
+  }
+  .mn-bookent {
+    flex-direction: column;
+  }
+}
+
+/* the Build and Room menus: big buttons over the tool bar, easy to hit with a thumb */
+.mn-menu {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: calc(100% - 16px);
+  background: rgba(24, 20, 26, 0.95);
+  border: 1px solid #c9a050;
+  border-radius: 10px;
+  padding: 6px;
+  z-index: 2;
+}
+.mn-menu[hidden] {
+  display: none;
+}
+.mn-menu .mn-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 70px;
+  min-height: 52px;
+  font-size: 22px;
+  padding: 5px 8px;
+}
+.mn-menu .mn-btn small {
+  font-size: 12px;
+}
+.mn-swatch {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+}
+@media (max-width: 760px) {
+  .mn-menu {
+    gap: 4px;
+    padding: 4px;
+    width: calc(100% - 16px);
+    box-sizing: border-box;
+  }
+  /* thirteen rooms: four across, so the menu leaves room for the hint above it */
+  .mn-menu .mn-btn {
+    min-width: 0;
+    flex: 1 1 22%;
+    min-height: 44px;
+    font-size: 18px;
+    padding: 4px 3px;
+  }
+  .mn-menu .mn-btn small {
+    font-size: 11px;
+  }
+}
+
+/* the layer on screen: ▲ / ▼ under the zoom buttons, and its name over the map's top-left */
+.mn-layers {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+.mn-layers[hidden] {
+  display: none;
+}
+.mn-lz {
+  font-size: 16px;
+  color: #f0d890;
+  background: rgba(12, 10, 14, 0.78);
+  border: 1px solid #6b5630;
+  border-radius: 6px;
+  min-width: 30px;
+  text-align: center;
+}
+.mn-lzname {
+  position: absolute;
+  left: 56px;
+  top: 10px;
+  font-size: 13px;
+  color: #f0d890;
+  background: rgba(12, 10, 14, 0.7);
+  border: 1px solid #6b5630;
+  border-radius: 6px;
+  padding: 2px 8px;
+  pointer-events: none;
+}
