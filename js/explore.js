@@ -82,10 +82,11 @@ const REST = {hollowmere:{tavern:[1,'You take a room at the Drowned Crow and sle
   wrenford:{inn:[1,'You take a room at the Wren\'s Nest and sleep. Somewhere a bell is ringing, a long time, for the Absent.']}};
 function maxHp(key){ return (chars[key]&&chars[key].hp)||50; }
 // ── tiredness: you're awake whenever the clock runs (walking, fighting, travelling). After AWAKE.tired
-//    minutes you're too tired to cast (you fight with the Actions alone), after AWAKE.drain you lose
+//    minutes you're too tired to cast (you fight with the Actions alone), after AWAKE.drain (a whole day, so a
+//    night's quest doesn't hurt you) you lose
 //    drainPerHour of your HP every hour you stay up (never below 1). Sleeping (an inn, a camp, the Healing
 //    House) takes AWAKE.sleep minutes, or on till 07:00 if you'd wake before it, and clears it.
-const AWAKE={warn:14*60, tired:16*60, drain:18*60, drainPerHour:0.05, sleep:8*60, canSleep:8*60};
+const AWAKE={warn:14*60, tired:16*60, drain:24*60, drainPerHour:0.05, sleep:8*60, canSleep:8*60};
 let awake=2*60, drainAcc=0;
 const tired=()=>awake>=AWAKE.tired;
 function passAwake(min){
@@ -111,7 +112,7 @@ function renderTired(){
   const h=Math.floor(awake/60), st=awake>=AWAKE.drain?'drain':awake>=AWAKE.tired?'tired':awake>=AWAKE.warn?'warn':'';
   t.hidden=!st; t.className='ex-tired '+st;
   t.textContent=st==='drain'?'Exhausted':st==='tired'?'Too tired to cast':'Weary';
-  t.title='Awake '+h+' hours. '+(st==='drain'?'You lose HP every hour until you sleep.':st==='tired'?'No spells until you sleep; past 18 hours you start to lose HP.':'At 16 hours you\'ll be too tired to cast.')+' Sleep at an inn or a camp.';
+  t.title='Awake '+h+' hours. '+(st==='drain'?'You lose HP every hour until you sleep.':st==='tired'?'No spells until you sleep; past 24 hours you start to lose HP.':'At 16 hours you\'ll be too tired to cast.')+' Sleep at an inn or a camp.';
 }
 function hpOf(key){ return vit[key]==null?maxHp(key):vit[key]; }
 let el={}, ctx=null, dark=null, dctx=null;
