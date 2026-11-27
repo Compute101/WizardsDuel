@@ -123,7 +123,7 @@ let PAL='', fighters={};
 // ── what you carry (saved): gold, potions, allies who follow you, rescues to report, rooms you changed, books read
 let gold=0, potions=0, allies=[], rescues=[], rooms={}, booksRead=[], roomSpec=null, doors=[], npcs=[], nearDoor=null, quests={};
 const POTION_HEAL=0.3, POTION_PRICE={shop:8, safehouse:10}, MAX_ALLIES=2;
-let found=new Set(), spill={}, cleared={}, actors=[], grace=0, crews=[], bandState={}, parley=null, clashes=[], visited=new Set(), saveOwner=null, saveKey=null, lastPlace='', hero=null, magic=null, yearT=0, creating=false, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
+let found=new Set(), inked=null, inkStart=new Map(), spill={}, cleared={}, actors=[], grace=0, crews=[], bandState={}, parley=null, clashes=[], visited=new Set(), saveOwner=null, saveKey=null, lastPlace='', hero=null, magic=null, yearT=0, creating=false, bagOpen=false, bagTab='pack', bagRead=null, bagConfirm=null;
 const imgCache={};
 function imgOf(src){ if(!imgCache[src]){ const i=new Image(); i.src=src; imgCache[src]=i; } return imgCache[src]; }
 
@@ -1379,7 +1379,7 @@ function unstick(){
 function save(){
   if(!MAP||!saveKey||!hero) return;                // nothing is kept until the wizard has been made
   if(!MAP.interior&&MAP.name) lastPlace=MAP.name;    // a room is listed under the town it's in
-  try{ localStorage.setItem(saveKey,JSON.stringify({v:2, t:Date.now(), place:lastPlace, map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),awake:Math.round(awake),road:roadAt,horse,lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,hero,magic,toppers,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
+  try{ localStorage.setItem(saveKey,JSON.stringify({v:2, t:Date.now(), place:lastPlace, map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],inked:inked?[...inked]:undefined,visited:[...visited],spill,cleared,clock:Math.round(clock),awake:Math.round(awake),road:roadAt,horse,lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,hero,magic,toppers,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
 }
 function loadSave(key){
   try{ return key?JSON.parse(localStorage.getItem(key)||'null'):null; }catch(e){ return null; }
@@ -1387,7 +1387,7 @@ function loadSave(key){
 // everything a save holds, from a save (or a fresh start with none)
 function applySave(s){
   s=s||{};
-  found=new Set(s.found||[]); visited=new Set(s.visited||[]); spill=s.spill||{}; cleared=s.cleared||{};
+  found=new Set(s.found||[]); inked=s.inked?new Set(s.inked):s.t?null:new Set(); inkStart=new Map(); visited=new Set(s.visited||[]); spill=s.spill||{}; cleared=s.cleared||{};
   clock=s.clock!=null?s.clock:9*60; lightMode=s.lightMode||'auto'; vit=s.vit||{};
   awake=s.awake!=null?s.awake:(clock>=7*60?clock-7*60:clock+17*60); drainAcc=0; roadAt=s.road||null; horse=s.horse||null;   // older saves: up since 07:00
   gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; quests=s.quests||{}; hero=s.hero||null; magic=hero?(s.magic||fullMagic(hero.elem)):freshMagic(); roomSpec=s.roomSpec||null; bandState=s.bands||{}; lastPlace=s.place||''; toppers=s.toppers||[];
@@ -1447,7 +1447,7 @@ const arriveText=(h)=>{ const t=(clock+h*60)%1440, a=Math.floor(t/60), m=Math.fl
 function reachable(l){ return !l.locked && (found.has(l.id) || (l.seenFrom||[]).some(id=>found.has(id))); }
 function visible(l){ return l.known || found.has(l.id) || (l.seenFrom||[]).some(id=>found.has(id)); }
 function openWorld(mode){
-  worldMode=mode; worldOpen=true; keys.clear(); target=null; hideSay();
+  worldMode=mode; worldOpen=true; inkStart=new Map();   // a drawing cut short starts again keys.clear(); target=null; hideSay();
   const here=hereLoc(), [WW,WH]=worldDims();
   worldSel=here||null;
   worldView=here?{cx:here.x, cy:here.y}:{cx:WW/2, cy:WH/2};
@@ -1585,6 +1585,26 @@ function drawWorldLoop(t){
   drawWorld(t);
   requestAnimationFrame(drawWorldLoop);
 }
+// ── inking in what you find ──
+// `inked` (saved) holds the places already drawn on your map. A place that has come into view since
+// is drawn in the next time the map is open: its country clears, its road is drawn out to it with the
+// quill, then its mark and name. One after another, nearest first. Older saves start with everything inked.
+const INK_MS=2400, INK_GAP=750, INK_WAIT=400;
+const INK_REACH={city:360, town:330, university:350, forest:340, inn:240, road:180};   // how much country a place clears
+function inkProgress(shown,here,t){
+  if(!inked) inked=new Set(shown.map(l=>l.id));
+  const fresh=shown.filter(l=>!inked.has(l.id)&&!inkStart.has(l.id));
+  if(fresh.length){
+    const from=here||shown.find(l=>inked.has(l.id))||{x:(world.w||1000)/2,y:(world.h||700)/2};
+    fresh.sort((a,b)=>Math.hypot(a.x-from.x,a.y-from.y)-Math.hypot(b.x-from.x,b.y-from.y));
+    let at=Math.max(t+INK_WAIT,...[...inkStart.values()].map(v=>v+INK_GAP));
+    for(const l of fresh){ inkStart.set(l.id,at); at+=INK_GAP; }
+  }
+  let done=false;
+  for(const [id,st] of inkStart) if(t-st>=INK_MS){ inked.add(id); inkStart.delete(id); done=true; }
+  if(done) save();
+  return l=>inked.has(l.id)?1:inkStart.has(l.id)?Math.max(0,Math.min(1,(t-inkStart.get(l.id))/INK_MS)):0;
+}
 function drawWorld(t){
   const cv=el.worldCv, d=Math.min(window.devicePixelRatio||1,2);
   const W=cv.clientWidth, H=cv.clientHeight;
@@ -1595,15 +1615,24 @@ function drawWorld(t){
   // the parchment and the land, inked once and cached (js/world_ink.js), then the names over it
   WorldInk.loadFonts();
   WorldInk.drawBase(g,world,f.s*d);
-  WorldInk.drawLetters(g,world);
+  // the unfinished map: what you know is inked, the rest only pencilled in; new places ink themselves in
+  const here=hereLoc(), shown=world.locations.filter(visible), P=inkProgress(shown,here,t);
+  const L=id=>world.locations.find(l=>l.id===id), routes=[];
+  for(const [a,b] of world.roads){ const A=L(a), B=L(b); if(!visible(A)||!visible(B)) continue;
+    // a new road is drawn out from the end you already know
+    const pa=P(A), pb=P(B), [S,E,pr]=pa>=1?[A,B,pb]:pb>=1?[B,A,pa]:[A,B,Math.min(pa,pb)]; routes.push([S,E,pr]); }
+  const holes=[];
+  for(const l of shown){ const p=P(l); if(p>0) holes.push({x:l.x,y:l.y,r:(INK_REACH[l.kind]||300)*(0.25+0.75*p)}); }
+  for(const [S,E,pr] of routes){ if(pr<=0) continue; const n=Math.max(1,Math.round(Math.hypot(E.x-S.x,E.y-S.y)/45));
+    for(let i=0;i<=n*pr;i++) holes.push({x:S.x+(E.x-S.x)*i/n, y:S.y+(E.y-S.y)*i/n, r:150}); }
+  WorldInk.drawFog(g,world,holes,holes.map(h=>Math.round(h.x)+','+Math.round(h.y)+','+Math.round(h.r/12)).join(';'));
+  WorldInk.drawLetters(g,world,holes);
   WorldInk.drawMoon(g,world,darkness(),t);
-  // roads you know
-  const L=id=>world.locations.find(l=>l.id===id);
-  for(const [a,b] of world.roads){ const A=L(a), B=L(b); if(!visible(A)||!visible(B)) continue; WorldInk.road(g,A,B); }
+  for(const [S,E,pr] of routes) WorldInk.road(g,S,E,pr);
   // places
-  const here=hereLoc();
-  for(const l of world.locations){
-    if(!visible(l)) continue;
+  for(const l of shown){
+    const ink=P(l); if(ink<=0) continue;
+    g.save(); g.globalAlpha=Math.min(1,ink*1.6);
     if(l.kind==='city'){
       // the Wound's light over the dead city
       const pulse=0.75+0.25*Math.sin(t/700);
@@ -1641,10 +1670,15 @@ function drawWorld(t){
     }
     // names in an old hand: towns upright, inns small italic, the ruined city in red capitals
     const ly=l.y+(l.labelDy!=null?l.labelDy:l.kind==='city'?60:30), lx=l.x+(l.labelDx||0);
-    if(l.kind==='city') WorldInk.label(g,{text:l.name,x:lx,y:ly,style:'danger',size:22});
-    else { g.font=l.kind==='inn'?`italic 15px ${WorldInk.FELL}`:`20px ${WorldInk.FELL}`; g.textAlign='center';
-      g.strokeStyle='rgba(228,212,168,0.85)'; g.lineWidth=3.5; g.lineJoin='round'; g.strokeText(l.name,lx,ly);
-      g.fillStyle=l.locked?'rgba(58,40,16,0.7)':'#2a1c08'; g.fillText(l.name,lx,ly); }
+    // while it inks in, the name is lettered in from the left (laid out as if whole, so it doesn't slide)
+    const name=ink>=1?l.name:l.name.slice(0,Math.floor(l.name.length*Math.max(0,(ink-0.35)/0.65)));
+    if(l.kind==='city'){ if(name) WorldInk.label(g,{text:l.name,x:lx,y:ly,style:'danger',size:22,upto:name.length}); }
+    else if(name){ g.font=l.kind==='inn'?`italic 15px ${WorldInk.FELL}`:`20px ${WorldInk.FELL}`; g.textAlign='left';
+      const x0=lx-g.measureText(l.name).width/2;
+      g.strokeStyle='rgba(228,212,168,0.85)'; g.lineWidth=3.5; g.lineJoin='round'; g.strokeText(name,x0,ly);
+      g.fillStyle=l.locked?'rgba(58,40,16,0.7)':'#2a1c08'; g.fillText(name,x0,ly); g.textAlign='center'; }
+    g.restore();
+    if(ink<1) continue;
     if(worldSel===l){ g.strokeStyle='#9a2a1a'; g.lineWidth=2; g.beginPath(); g.arc(l.x,l.y,l.kind==='city'?48:22,0,Math.PI*2); g.stroke(); }
     if(here===l){
       const pr=16+4*Math.sin(t/250);

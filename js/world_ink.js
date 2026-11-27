@@ -50,7 +50,7 @@ function inPoly(x,y,poly){ let c=false; for(let i=0,j=poly.length-1;i<poly.lengt
 // ── lettering ──
 // text laid along a polyline, a letter at a time (so it can curve and be spaced: canvas letterSpacing
 // isn't everywhere yet). `sp` is extra space between letters, in units.
-function textAlong(g,text,pts,sp=0){
+function textAlong(g,text,pts,sp=0,upto=Infinity){
   const line=densify(pts,2), seg=[]; let total=0;
   for(let i=1;i<line.length;i++){ const d=Math.hypot(line[i][0]-line[i-1][0],line[i][1]-line[i-1][1]); seg.push(d); total+=d; }
   const ws=[...text].map(c=>g.measureText(c).width), tw=ws.reduce((a,b)=>a+b,0)+sp*(ws.length-1);
@@ -58,14 +58,14 @@ function textAlong(g,text,pts,sp=0){
   const pointAt=d=>{ while(i<seg.length-1&&run+seg[i]<d){ run+=seg[i]; i++; } const t=seg[i]?(d-run)/seg[i]:0, a=line[i], b=line[i+1]||a;
     return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, Math.atan2(b[1]-a[1],b[0]-a[0])]; };
   const al=g.textAlign; g.textAlign='center';
-  [...text].forEach((c,k)=>{ const [x,y,ang]=pointAt(Math.max(0,at+ws[k]/2)); g.save(); g.translate(x,y); g.rotate(ang);
+  [...text].forEach((c,k)=>{ if(k>=upto) return; const [x,y,ang]=pointAt(Math.max(0,at+ws[k]/2)); g.save(); g.translate(x,y); g.rotate(ang);
     if(halo){ g.strokeStyle=HALO; g.lineWidth=3.2; g.lineJoin='round'; g.strokeText(c,0,0); } g.fillText(c,0,0); g.restore(); at+=ws[k]+sp; });
   g.textAlign=al;
 }
 // a straight label centred on x,y, turned by rot degrees, letters spaced
-function spaced(g,text,x,y,sp=0,rot=0){
+function spaced(g,text,x,y,sp=0,rot=0,upto){
   const a=rot*Math.PI/180, w=[...text].reduce((s,c)=>s+g.measureText(c).width,0)+sp*([...text].length-1), c=Math.cos(a)*w/2, s=Math.sin(a)*w/2;
-  textAlong(g,text,[[x-c,y-s],[x+c,y+s]],sp);
+  textAlong(g,text,[[x-c,y-s],[x+c,y+s]],sp,upto);
 }
 const LABEL={
   region:{font:s=>`${s||19}px ${FELL_SC}`, col:'rgba(59,42,20,0.82)', sp:0.42, caps:true},
@@ -82,7 +82,7 @@ function label(g,L){
   g.font=st.font(size); g.fillStyle=st.col; g.textBaseline='middle';
   const fs=parseFloat(g.font)||16, sp=st.sp*fs, txt=st.caps?L.text.toUpperCase():L.text;
   if(L.path){ textAlong(g,txt,L.path,sp); }
-  else { const lines=txt.split('\n'); lines.forEach((ln,i)=>spaced(g,ln,L.x,L.y+(i-(lines.length-1)/2)*fs*1.15,sp,L.rot||0)); }
+  else { const lines=txt.split('\n'); lines.forEach((ln,i)=>spaced(g,ln,L.x,L.y+(i-(lines.length-1)/2)*fs*1.15,sp,L.rot||0,L.upto)); }
   g.textBaseline='alphabetic';
 }
 
@@ -167,6 +167,10 @@ function buildBase(world,scale){
   for(const [x0,y0,x1,y1] of [[W*0.5,0,W*0.5,H],[0,H*0.5,W,H*0.5]]){
     g.strokeStyle='rgba(255,248,225,0.35)'; g.lineWidth=2; g.beginPath(); g.moveTo(x0+1,y0+1); g.lineTo(x1+1,y1+1); g.stroke();
     g.strokeStyle='rgba(90,60,30,0.14)'; g.lineWidth=1; g.beginPath(); g.moveTo(x0,y0); g.lineTo(x1,y1); g.stroke(); }
+  // a plain copy of the parchment at map scale, darkened at the edge like the base: what fog is painted with
+  paperLow=document.createElement('canvas'); paperLow.width=W; paperLow.height=H;
+  { const q=paperLow.getContext('2d'); q.drawImage(pc,0,0,W,H); const e=q.createRadialGradient(W/2,H/2,R*0.36,W/2,H/2,R*0.66);
+    e.addColorStop(0,'rgba(70,40,15,0)'); e.addColorStop(1,'rgba(70,40,15,0.42)'); q.fillStyle=e; q.fillRect(0,0,W,H); }
   const main=cv.getContext('2d'); main.drawImage(pc,0,0);
   const pat=main.createPattern(pc,'no-repeat'); if(pat.setTransform) pat.setTransform(new DOMMatrix([1/scale,0,0,1/scale,0,0])); PAPER=pat;
   g=main; g.scale(scale,scale); g.lineCap='round'; g.lineJoin='round';
@@ -258,7 +262,52 @@ function buildBase(world,scale){
   edge.addColorStop(0,'rgba(70,40,15,0)'); edge.addColorStop(1,'rgba(70,40,15,0.42)'); g.fillStyle=edge; g.fillRect(0,0,W,H);
   PAPER='#dcc898'; return cv;
 }
-let base=null, baseScale=0, baseFor=null;
+let base=null, baseScale=0, baseFor=null, paperLow=null;
+
+// ── the unfinished map ──
+// Country far from anywhere you know is only pencilled in: fog is the plain parchment laid back over the
+// inked land, up to FOG thick. A hole is {x, y, r}: clear within 45% of r, fading out to r. The frame, the
+// cartouche, the compass and the scale are never fogged, nor the mountains (seen from anywhere).
+const FOG=0.8;
+function holeAt(h,x,y){ if(Math.abs(x-h.x)>=h.r||Math.abs(y-h.y)>=h.r) return 0; const d=Math.hypot(x-h.x,y-h.y)/h.r; if(d<=0.45) return 1; if(d>=1) return 0; const u=(d-0.45)/0.55; return 1-u*u*(3-2*u); }
+function furniture(world,x,y){
+  const F=world.features||{}, W=world.w||1000, H=world.h||700;
+  if(x<30||y<30||x>W-30||y>H-30) return true;
+  const T=F.title; if(T&&x>T.x-14&&x<T.x+T.w+14&&y>T.y-6&&y<T.y+T.h+6) return true;
+  if(F.compass){ const [cx,cy,cr]=F.compass; if(Math.hypot(x-cx,y-cy)<(cr||40)*1.6) return true; }
+  const S=F.scale; if(S&&x>S.x-14&&x<S.x+S.league*S.n+14&&y>S.y-22&&y<S.y+26) return true;
+  return false;
+}
+function fogAt(world,holes,x,y){
+  if(furniture(world,x,y)) return 0;
+  let clear=1; for(const h of holes){ clear*=1-holeAt(h,x,y); if(clear<=0) return 0; }
+  return FOG*clear;
+}
+// the holes every map has: along the mountain ranges
+let fixedFor=null, fixedList=null;
+function fixedHoles(world){ if(fixedFor===world) return fixedList; const out=[]; fixedFor=world; fixedList=out; for(const rg of (world.features||{}).ranges||[]) for(const [x,y] of densify(rg.spine,50)) out.push({x,y:y+20,r:230}); return out; }
+const fogCv={mask:null, comp:null, key:''};
+function drawFog(g,world,holes,key){
+  const W=world.w||1000, H=world.h||700;
+  if(!paperLow) return;
+  if(fogCv.key!==key){
+    // a coarse mask (the holes are wide and soft): what the mountains and furniture leave is worked out once
+    const K=8, MW=Math.ceil(W/K), MH=Math.ceil(H/K);
+    if(!fogCv.mask){ fogCv.mask=document.createElement('canvas'); fogCv.comp=document.createElement('canvas'); }
+    if(fogCv.fixedFor!==world){ const fx=new Float32Array(MW*MH), fh=fixedHoles(world);
+      for(let j=0;j<MH;j++) for(let i=0;i<MW;i++) fx[j*MW+i]=fogAt(world,fh,i*K+K/2,j*K+K/2)/FOG;
+      fogCv.fixed=fx; fogCv.fixedFor=world; }
+    const m=fogCv.mask; m.width=MW; m.height=MH; const mg=m.getContext('2d'), img=mg.createImageData(MW,MH), fx=fogCv.fixed;
+    for(let j=0;j<MH;j++) for(let i=0;i<MW;i++){ let c=fx[j*MW+i]; const x=i*K+K/2, y=j*K+K/2;
+      for(let h=0;h<holes.length&&c>0;h++) c*=1-holeAt(holes[h],x,y);
+      img.data[(j*MW+i)*4+3]=Math.round(255*FOG*c); }
+    mg.putImageData(img,0,0);
+    const c=fogCv.comp; c.width=W; c.height=H; const cg=c.getContext('2d');
+    cg.drawImage(paperLow,0,0); cg.globalCompositeOperation='destination-in'; cg.imageSmoothingEnabled=true; cg.drawImage(m,0,0,W,H); cg.globalCompositeOperation='source-over';
+    fogCv.key=key;
+  }
+  g.drawImage(fogCv.comp,0,0,W,H);
+}
 function drawBase(g,world,need){   // need: device px per map unit; rebuilt sharper when it's wanted (capped for phones' memory)
   const s=Math.min(2.5,Math.max(1,Math.ceil(need*2)/2));
   if(!base||baseFor!==world||s>baseScale){ base=buildBase(world,s); baseScale=s; baseFor=world; }
@@ -266,9 +315,11 @@ function drawBase(g,world,need){   // need: device px per map unit; rebuilt shar
 }
 
 // ── drawn every frame ──
-function drawLetters(g,world){
-  const F=world.features||{};
-  for(const L of F.labels||[]) label(g,L);
+function drawLetters(g,world,holes){
+  const F=world.features||{}, all=holes?holes.concat(fixedHoles(world)):null;
+  for(const L of F.labels||[]){
+    const at=Array.isArray(L)?[L[1],L[2]]:L.path?L.path[Math.floor(L.path.length/2)]:[L.x,L.y];
+    g.save(); if(all) g.globalAlpha=Math.max(0.12,1-fogAt(world,all,at[0],at[1])*1.1); label(g,L); g.restore(); }
   const T=F.title;
   if(T){ g.textAlign='center'; const cx=T.x+T.w/2;
     (T.lines||[]).forEach(([txt,style,size,dy])=>label(g,{text:txt,x:cx,y:T.y+dy,style,size})); }
@@ -291,14 +342,18 @@ function drawMoon(g,world,dark,t){
 }
 function moonAt(world,x,y){ const M=(world.features||{}).moon; return M&&Math.abs(x-M.x)<(M.w||120)&&Math.abs(y-M.y)<(M.h||35)?M:null; }
 // a road between two places: a hand-drawn dotted line in red-brown, bowed a little, the same bow every time
-function road(g,A,B){
+function road(g,A,B,prog=1){
   const r=rng(hashStr(A.id+'>'+B.id)), mx=(A.x+B.x)/2, my=(A.y+B.y)/2, dx=B.x-A.x, dy=B.y-A.y, L=Math.hypot(dx,dy)||1, bow=(r()-0.5)*0.16*L;
   const line=wobble(smooth([[A.x,A.y],[mx-dy/L*bow,my+dx/L*bow],[B.x,B.y]],4),hashStr(A.id+B.id),1.1);
-  g.save(); g.strokeStyle='rgba(122,42,24,0.85)'; g.lineWidth=2; g.lineCap='round'; g.setLineDash([1.5,5]); path(g,line); g.stroke(); g.restore();
+  if(prog<=0) return;
+  const part=prog>=1?line:line.slice(0,Math.max(2,Math.ceil(line.length*prog)));
+  g.save(); g.strokeStyle='rgba(122,42,24,0.85)'; g.lineWidth=2; g.lineCap='round'; g.setLineDash([1.5,5]); path(g,part); g.stroke();
+  if(prog<1){ const [x,y]=part[part.length-1]; g.setLineDash([]); g.fillStyle='rgba(60,25,12,0.9)'; g.beginPath(); g.arc(x,y,2.6,0,Math.PI*2); g.fill(); }   // the quill's wet tip
+  g.restore();
 }
 let fontsAsked=false;
 function loadFonts(){ if(fontsAsked||!document.fonts||!document.fonts.load) return; fontsAsked=true;
   ['16px "IM Fell English"','italic 16px "IM Fell English"','16px "IM Fell English SC"'].forEach(f=>document.fonts.load(f).catch(()=>{})); }
-return {drawBase, drawLetters, drawMoon, moonAt, road, label, spaced, loadFonts, INK, RED, FELL, FELL_SC, _base:()=>base};
+return {drawBase, drawFog, fogAt, drawLetters, drawMoon, moonAt, road, label, spaced, loadFonts, INK, RED, FELL, FELL_SC, _base:()=>base};
 })();
 if(typeof module!=='undefined') module.exports=WorldInk;
