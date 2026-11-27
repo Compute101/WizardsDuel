@@ -477,4 +477,5 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
     *"Do workshops have that? They're generally quite open."* No longer: the mason's workshop, brewery, kitchen
     and forge are `open` too, like the stockpile and farms. Rooms to live, eat, drink, heal and muster in still
     need their doors.
+    *"No taverns should have doors."* The tavern hall is `open` too, a taproom.
 - **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.

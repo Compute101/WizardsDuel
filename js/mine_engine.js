@@ -153,7 +153,8 @@
       col: '#b05a7a',
       furn: 'keg',
       count: a => Math.max(1, Math.ceil(a / 8)),
-      good: 9
+      good: 9,
+      open: true // a taproom: no door
     },
     infirmary: {
       name: 'Infirmary',
