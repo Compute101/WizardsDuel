@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════════
 // GILDEN: Albra's merchant city (maps/gilden.json, tools/mapgen/gilden.js; design in docs/gilden-design.md).
 // Three great houses at each other's throats (Ashcombe: the Ore Road; Varenne: the fleet; Quarrender: the
-// banks and the gnome airships), each with a powerful house wizard (a roster wizard) and lesser hired mages,
+// banks and the gnome airships), each with a powerful house wizard (Ashcombe's and Varenne's are Gilden's own, MAGI; Quarrender's is Korvath)
+// and lesser hired mages,
 // and a fourth, fallen house: Thessaly's Vellacourts.
 // What's built (step 1):
 // - standing with each house (quests.gilden.st, -10..10, TIERS), shown by the fishwife and in the journal;
@@ -35,7 +36,7 @@
       name: 'House Ashcombe',
       short: 'Ashcombe',
       head: 'gd_ashcombe',
-      magus: 'frederick',
+      magus: null, // its house wizard: still to come (MAGI)
       mark: 'a flame over a hammer',
       trade: 'copper, tin and quintessence down the Ore Road',
       rival: 'varenne',
@@ -59,7 +60,7 @@
       name: 'House Varenne',
       short: 'Varenne',
       head: 'gd_varenne',
-      magus: 'mal',
+      magus: null, // its house wizard: still to come (MAGI)
       mark: 'a silver anchor',
       trade: 'the fleet, the sea-toll and the southern run',
       rival: 'quarrender',
@@ -183,6 +184,13 @@
     return s.st[h];
   }
 
+  // ── the house wizards of Gilden's own: Ashcombe's and Varenne's are still to come (the user is designing them;
+  // docs/gilden-design.md, "House wizards"). Each goes here as a full character entry in characters.json's format
+  // ({name, title, col, hp, phys, forbidden, look (a stand-in painted from a hero figure), spells}) under the key
+  // in its house's `magus`; prep registers it, and a PEOPLE entry {magus, house, title} puts them on the Hill.
+  // Until then a house with no magus sends only its hired mage, and no house wizard rides with you.
+  const MAGI = {};
+
   // ── people ──
   const PEOPLE = {
     gd_charter: {
@@ -260,8 +268,6 @@
         topper: 'crescent'
       }
     },
-    gd_ashmagus: { roster: 'frederick', house: 'ashcombe', title: 'House Wizard to Ashcombe' },
-    gd_varmagus: { roster: 'mal', house: 'varenne', title: 'House Wizard to Varenne' },
     gd_quarmagus: { roster: 'korvath', house: 'quarrender', title: 'On the Board of Quarrender' },
     thessaly: { roster: 'thessaly', title: 'The Last of the Vellacourts' },
     gd_guard1: { fighter: 'halberdier', name: 'Brask', title: "Thessaly's Bodyguard" },
@@ -330,9 +336,11 @@
   function title(n, api) {
     const P = PEOPLE[n.role];
     if (!P) return null;
-    if (P.roster) {
-      const c = api && api.chars[P.roster];
-      const nm = c ? c.name.charAt(0) + c.name.slice(1).toLowerCase() : P.roster;
+    if (P.roster || P.magus) {
+      const c = api && api.chars[P.roster || P.magus];
+      const nm = c
+        ? c.name.toLowerCase().replace(/\b\w/g, m => m.toUpperCase())
+        : P.roster || MAGI[P.magus].look.name;
       return P.title + ' (' + nm + ')';
     }
     return P.title + ' (' + P.name + ')';
@@ -340,23 +348,25 @@
   function sprite(n, api) {
     const P = PEOPLE[n.role];
     if (!P) return null;
-    if (P.roster) {
-      const c = api.chars[P.roster];
+    if (P.roster || P.magus) {
+      const c = api.chars[P.roster || P.magus];
       return (c && c.sprite) || null;
     }
     if (P.fighter) return PH().real(n.role) || (api.fighters[P.fighter] || {}).sprite || null;
     return P._sprite || null;
   }
-  function face(n) {
+  function face(n, api) {
     const P = PEOPLE[n.role];
     if (!P) return null;
     if (P.roster) return 'portraits/small/' + P.roster + '.jpg';
+    if (P.magus) return (api && api.chars[P.magus] && api.chars[P.magus].face) || null;
     if (P.fighter) return PH().realFace(n.role) || 'portraits/small/' + P.fighter + '.jpg';
     return P._face || null;
   }
   // still a stand-in? (js/placeholders.js: the real art goes to the file it names; the roster's are real)
   function placeholder(n) {
-    return !!PEOPLE[n.role] && PH().standing(n.role);
+    const P = PEOPLE[n.role];
+    return !!P && PH().standing(P.magus || n.role);
   }
   // a roster wizard isn't here if you're playing them
   function absent(n, api) {
@@ -368,7 +378,7 @@
   // Every stand-in here is listed in js/placeholders.js under its role's id; when the real file is at the
   // path it names, it's used instead of the painted look (and the face crop likewise).
   async function prep(api) {
-    await PH().probe(Object.keys(PEOPLE).concat(HKEYS.map(hireKey), ['arena_gilden']));
+    await PH().probe(Object.keys(PEOPLE).concat(HKEYS.map(hireKey), Object.keys(MAGI), ['arena_gilden']));
     const jobs = Object.entries(PEOPLE)
       .filter(([, P]) => P.look && !P._sprite)
       .map(async ([role, P]) => {
@@ -416,6 +426,28 @@
             } catch (e) {}
           })()
         );
+    for (const [key, M] of Object.entries(MAGI))
+      if (!api.chars[key])
+        jobs.push(
+          (async () => {
+            try {
+              const real = PH().real(key),
+                realFace = PH().realFace(key);
+              const d = await api.heroDef(M.look);
+              if (!d) return;
+              const { look, ...rest } = M;
+              api.registerChar(
+                key,
+                Object.assign({}, d, rest, {
+                  sprite: real || d.sprite,
+                  face: realFace || d.face,
+                  hero: false,
+                  arena: 'road'
+                })
+              );
+            } catch (e) {}
+          })()
+        );
     await Promise.all(jobs);
   }
 
@@ -429,8 +461,8 @@
     const P = PEOPLE[n.role],
       me = api.wizName();
     const say = (x, ch) => api.dialog(title(n, api), x, ch || []);
-    if (P.house && !P.roster) return headTalk(n, api, P.house);
-    if (P.roster && P.house) return magusTalk(n, api, P.house);
+    if ((P.roster || P.magus) && P.house) return magusTalk(n, api, P.house);
+    if (P.house) return headTalk(n, api, P.house);
     switch (n.role) {
       case 'gd_charter':
         return charterTalk(n, api);
@@ -496,20 +528,12 @@
       v = stand(api, h);
     const say = (x, ch) => api.dialog(title(n, api), x, ch || []);
     const line = {
-      ashcombe: [
-        'Frederick the Black looks at you the way a furnace looks at ore. "Ashcombe pays me to keep its wagons whole. Bandits on the Ore Road have learned what that costs them." His fingers smoke. "So have one or two people who hired them."',
-        'Frederick the Black doesn\'t look at you at all. "Dame Constance has mentioned your name. Twice. I am hoping for a third time, wizard, because the third time she won\'t be asking me to wait."'
-      ],
-      varenne: [
-        'Malachar leans on his staff like a man at a graveside. "Varenne hired me for the sea-toll: someone has to stand on the deck when the Varg come for their money, and look as if he might not hand it over." His eyes are very still. "They always take the money."',
-        'Malachar smiles, which is worse. "Gaspard keeps a list. I keep a shorter one. You\'re on both, wizard."'
-      ],
       quarrender: [
         'A half-dragon noble in Wyrmreach silks, scaled and patient. "Korvath, of the Ember Throne. I bought a seat on the Quarrender board with my own gold, because the gnome sky-roads are the future, and I like to own the future before it arrives." He looks you over. "Wizards are an investment too."',
         'Korvath doesn\'t turn his head. "In Wyrmreach, wizard, we would have settled this already. Perpetua prefers ledgers. I am being patient. I am very rarely patient for long."'
       ]
     }[h];
-    say(line[v <= -3 ? 1 : 0]);
+    if (line) say(line[v <= -3 ? 1 : 0]);
   }
 
   function housesExplain(n, api) {
@@ -699,6 +723,8 @@
       stand(api, o.house) >= 6 &&
       foes.length < 3 &&
       !o.magusRode &&
+      HOUSES[o.house].magus &&
+      api.chars[HOUSES[o.house].magus] &&
       api.wizKey() !== HOUSES[o.house].magus
     ) {
       o.magusRode = true;
@@ -1089,6 +1115,7 @@
     journal,
     PEOPLE,
     HOUSES,
+    MAGI,
     CHARTER,
     // for tests
     _stand: (api, h, v) => (g(api).st[h] = v)

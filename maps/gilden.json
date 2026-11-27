@@ -713,11 +713,6 @@
    "y": 697.6
   },
   {
-   "role": "gd_ashmagus",
-   "x": 1350.4,
-   "y": 665.6
-  },
-  {
    "role": "thessaly",
    "x": 1817.6,
    "y": 838.4
@@ -736,11 +731,6 @@
    "role": "gd_varenne",
    "x": 2534.4,
    "y": 697.6
-  },
-  {
-   "role": "gd_varmagus",
-   "x": 2624,
-   "y": 672
   },
   {
    "role": "gd_quarrender",

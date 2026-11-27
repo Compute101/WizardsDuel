@@ -37,20 +37,41 @@ anchor, a gold glow), and the sea now has a southern coast with **the Narrows**;
 
 ## The houses
 
-Three great houses and a fallen fourth. Each great house has a head, a **house wizard** (a roster wizard, its
-"powerful wizard") and a **hired mage** of its own (a painted wizard, `gd_hire_<house>`, the "lesser wizards"
+Three great houses and a fallen fourth. Each great house has a head, a **house wizard** (its "powerful
+wizard"; see House wizards below) and a **hired mage** of its own (a painted wizard, `gd_hire_<house>`, the "lesser wizards"
 that ride with bandits for it). Each feuds hardest with one other (a cycle):
 
 | House | Mark | Trade | Head | House wizard | Feuds hardest with |
 |---|---|---|---|---|---|
-| **Ashcombe** | a flame over a hammer (red) | copper, tin and quintessence down the Ore Road | Dame Constance Ashcombe | **Frederick the Black** | Varenne (who toll every cart that reaches the quay) |
-| **Varenne** | a silver anchor (blue) | the fleet, the Varg sea-toll, the southern run | Gaspard Varenne | **Malachar the Relentless** | Quarrender (airships against ships) |
+| **Ashcombe** | a flame over a hammer (red) | copper, tin and quintessence down the Ore Road | Dame Constance Ashcombe | *to come (the user is designing them)* | Varenne (who toll every cart that reaches the quay) |
+| **Varenne** | a silver anchor (blue) | the fleet, the Varg sea-toll, the southern run | Gaspard Varenne | *to come (the user is designing them)* | Quarrender (airships against ships) |
 | **Quarrender** | a winged scale (purple) | banking; agents of the gnome airships | Perpetua Quarrender | **Korvath the Wyrmlord** (bought a seat on its board) | Ashcombe (both want the quintessence) |
 | **Vellacourt** (fallen) | a gold coin | none now | **Thessaly** | herself | all three |
 
 House Ashcombe was already in the game: Master Orme in Hollowmere is its factor. The Remnant Library's book
 *Gilden: the Golden Ledger* has a chapter on "the House of the Gilded Daughter" cut out with a razor; that is
 the Vellacourts.
+
+### House wizards
+
+**Ashcombe's and Varenne's are original wizards the user is designing** (November 2026). Frederick the Black
+and Malachar the Relentless were the first idea; the user moved them to the Brazen Dominion's service on the
+Mainland instead (`docs/world-design.md`). Korvath stays on Quarrender's board.
+
+What each slot does in the game, for the design:
+- stands on the Hill outside the house's palace, and talks (its lines move with your standing: friendly, then
+  cold below −3);
+- rides with the bandits against your caravan when the house's standing with you is −8 or worse (at −6 and −7
+  it sends its hired mage instead);
+- rides with your caravan as an ally, once a run, when the house is Favoured (+6);
+- fights in the Explore battle engine as a full wizard: HP, Attack, banned elements, a colour and three
+  signature spells (one Damage, one Protection, one Dispel, like the roster), in `characters.json`'s format,
+  so either could join the duel roster later.
+
+Until they're designed (`MAGI` in `js/explore_gilden.js` is empty), those two houses send only their hired mage
+at −8, no house wizard rides with you when they're Favoured, and nobody stands outside Ashcombe Hall or Varenne
+House but the head. A suggestion for each, to take or leave: Ashcombe's mining-and-smelting trade fits Earth and
+Fire; Varenne's fleet and the sea-toll fits Water and Lightning (storms).
 
 ### Standing
 
@@ -116,7 +137,7 @@ of hers (her duel rival line: "Thief! Hand back what you pocketed.").
 
 1. **The Drowned Fleet (an investigation):** charters and Trusted standing get you into each house's
    counting-room; each holds one piece (a ledger page, a bill of sale, a salvage licence). The fleet was sunk by
-   a sea-mage (Malachar? a Varenne hireling?) paid with Quarrender credit, on Ashcombe's information. Ends with a
+   a sea-mage (Varenne's house wizard? a hireling?) paid with Quarrender credit, on Ashcombe's information. Ends with a
    choice: give the proof to the Exchange (all three houses fall a tier and Vellacourt reopens), sell it to one
    house, or burn it.
 2. **The Pocketed Seal (with Ponder):** what Ponder pocketed was the Vellacourt seal, which proves the house's

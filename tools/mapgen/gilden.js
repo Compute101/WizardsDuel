@@ -572,12 +572,10 @@ module.exports = function gilden(rects) {
   m.npcs = [
     { role: 'gd_charter', x: 5.3 * T, y: 7.6 * T }, // the Master of the Charterhouse, at the charter board
     { role: 'gd_ashcombe', x: 19.6 * T, y: 10.9 * T }, // Dame Ottoline, on the drive of Ashcombe Hall
-    { role: 'gd_ashmagus', x: 21.1 * T, y: 10.4 * T }, // Frederick the Black, her house wizard
     { role: 'thessaly', x: 28.4 * T, y: 13.1 * T }, // Thessaly, outside her chained gate
     { role: 'gd_guard1', x: 26.6 * T, y: 12.8 * T }, // her two hired bodyguards
     { role: 'gd_guard2', x: 30.2 * T, y: 12.8 * T },
     { role: 'gd_varenne', x: 39.6 * T, y: 10.9 * T }, // Gaspard Varenne
-    { role: 'gd_varmagus', x: 41 * T, y: 10.5 * T }, // Malachar the Relentless
     { role: 'gd_quarrender', x: 49.9 * T, y: 10.9 * T }, // Perpetua Quarrender
     { role: 'gd_quarmagus', x: 47.1 * T, y: 10.6 * T }, // Korvath the Wyrmlord, on her board
     { role: 'gd_harbour', x: 39.2 * T, y: (QUAY + 1.6) * T }, // the Harbourmaster, on the quay by the Customs House
