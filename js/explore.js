@@ -1376,7 +1376,7 @@
   };
   const ARENA_MAPS = {
     hollowmere: 'hollowmere',
-    gilden: 'hollowmere', // a stand-in until Gilden's own painting (docs/art-prompts.md)
+    gilden: 'hollowmere', // a stand-in until backgrounds/gilden.jpg arrives (placeholder arena_gilden, js/placeholders.js)
     corvanthe_road: 'road',
     elfhome: 'forest',
     spirewatch: 'spirewatch',
@@ -1400,7 +1400,8 @@
     if (MAP.interior && ARENA_ROOMS[MAP.type]) return ARENA_ROOMS[MAP.type];
     const id = MAP.id.startsWith('room:') ? MAP.id.slice(5).split('#')[0] : MAP.id;
     if (id === 'wrenford') return darkness() > 0.5 ? 'wren_quad' : 'wren_schools';
-    return ARENA_MAPS[id] || 'ruins';
+    // a backdrop still standing in (js/placeholders.js) gives way once its own painting is in
+    return (window.Placeholders && Placeholders.arena(id)) || ARENA_MAPS[id] || 'ruins';
   }
   // walk into an Echo: the battle plays on the duel screen, then we come back here
   function fight(a) {
@@ -2685,6 +2686,19 @@
     if (sheet) ctx.imageSmoothingEnabled = false;
     ctx.drawImage(img, 0, 0, sw, sh, -w / 2, -h, w, h);
     ctx.restore();
+    // ?placeholders (or localStorage wd-show-ph = 1): tag people still drawn with stand-in art
+    if (window.Placeholders && Placeholders.show() && Folk && Folk.placeholder && Folk.placeholder(n)) {
+      ctx.save();
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      const lab = 'PH ' + n.role;
+      const tw = ctx.measureText(lab).width + 8;
+      ctx.fillStyle = 'rgba(255,40,160,0.88)';
+      ctx.fillRect(n.x - tw / 2, n.y - h - 20, tw, 17);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(lab, n.x, n.y - h - 7);
+      ctx.restore();
+    }
   }
 
   // ── the satchel: what you carry, who's with you, what you've found ──

@@ -74,7 +74,7 @@
   ["lowwall",1440,764.8],
   ["bush",972.8,409.6],
   ["tree",1382.4,435.2],
-  ["house3_dusk",1760,614.4,{"lore":"orlay","scale":1.45}],
+  ["house3_dusk",1760,614.4,{"lore":"vellacourt","scale":1.45}],
   ["post",1587.2,761.6,{"lore":"bravo"}],
   ["post",1932.8,761.6,{"lore":"bravo"}],
   ["lowwall",1568,764.8],
@@ -585,8 +585,8 @@
    "Quarrender House",
    "The seat of House Quarrender, the newest of the great houses: bankers, and agents to the gnomes of Gimbaldry, whose airships moor on Beacon Hill. A winged scale on the banners. Their money is younger than the others', and they are the only house that doesn't mind saying so."
   ],
-  "orlay": [
-   "Orlay House",
+  "vellacourt": [
+   "Vellacourt House",
    "A palace with its banners taken down. The gate is chained, the garden gone to seed, and the gilt on the shutters has been scraped off by somebody with a knife. A gold coin is carved over the door; someone has tried to chisel it out and given up."
   ],
   "garden": [

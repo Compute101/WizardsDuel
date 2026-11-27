@@ -408,6 +408,7 @@ Every script and the stylesheet in `index.html` carry a `?v=` number. **Bump a f
 
 ## Placeholder art
 When new content uses stand-in art (another character's sprite, a recolour, a borrowed tileset), add a row to `docs/art-prompts.md`: what stands in now, the file the real art goes to, the code that points at it, and a ready-to-paste prompt.
+- **Register it in `js/placeholders.js`** too (id, kind `person` / `arena` / `piece`, the exact `file` and `face` the real art goes to, what stands in, what uses it), and have the code ask the registry first: `Placeholders.probe(ids)` (a HEAD request per file), then `real(id)` / `realFace(id)` (the real file once it's there, else null: use the stand-in), `arena(mapId)` for backdrops (read by `arenaHere`); a map generator checks for a `piece`'s name in the atlases at build time. Then swapping in real art is dropping the file at its path. `node tools/placeholders.js [todo]` reports what's still standing in; `?placeholders` on the URL (or localStorage `wd-show-ph` = 1) tags stand-in people on the map (`Folk.placeholder`, drawn in `drawNpc`). Gilden is the first to use it; older placeholders (Wrenford's, the Year's) are still only in the doc.
 
 ## Symbol safety rule
 Before adding any new Unicode symbol to the game, check it is **not** in the emoji presentation set. Risky blocks: U+2600–U+26FF. Safe blocks: Greek (U+0370–U+03FF), Mathematical Operators (U+2200–U+22FF), Dingbats (U+2700–U+27BF, mostly safe). When in doubt, append U+FE0E (text variation selector) or pick a different symbol.

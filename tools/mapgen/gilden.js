@@ -1,7 +1,7 @@
 // Gilden: Albra's richest city, on the south-east coast where the Narrows meet the Wolf Sea. The Ore Road
 // comes in at the Ore Gate (north-west) through the Caravanserai, where the merchant houses' caravans load
 // and the Charterhouse hires escorts; the Hill along the north holds the four great houses' palaces
-// (Ashcombe, Orlay, Varenne, Quarrender); the Exchange sits in the middle of the city; and the whole south
+// (Ashcombe, Vellacourt, Varenne, Quarrender); the Exchange sits in the middle of the city; and the whole south
 // half is the Docks: the Ropewalk, the Fish Market, the Customs House, the Long Quay and five piers out
 // into the harbour, the Harbour Light on its mole. The Skyport on Beacon Hill (north-east) is the only
 // place on Albra where a gnome airship may moor. Design: docs/gilden-design.md. People: js/explore_gilden.js.
@@ -9,6 +9,8 @@
 'use strict';
 const { MapBuilder, T, P } = require('./builder');
 const { City } = require('./city');
+// stand-in art (js/placeholders.js): a piece named there is used once it's been cut into an atlas
+const PH = require('../../js/placeholders.js');
 
 const COLS = 64,
   ROWS = 50;
@@ -126,8 +128,8 @@ const LORE = {
     'Quarrender House',
     "The seat of House Quarrender, the newest of the great houses: bankers, and agents to the gnomes of Gimbaldry, whose airships moor on Beacon Hill. A winged scale on the banners. Their money is younger than the others', and they are the only house that doesn't mind saying so."
   ],
-  orlay: [
-    'Orlay House',
+  vellacourt: [
+    'Vellacourt House',
     'A palace with its banners taken down. The gate is chained, the garden gone to seed, and the gilt on the shutters has been scraped off by somebody with a knife. A gold coin is carved over the door; someone has tried to chisel it out and given up.'
   ],
   garden: [
@@ -373,7 +375,11 @@ module.exports = function gilden(rects) {
 
   // ── landmarks ──
   // the Hill: four palaces north of Hill Street, each in its gardens
-  const palace = (kind, tx, lore, sc, banners, x0, x1) => {
+  const realPiece = id => (rects[PH.get(id).piece] ? PH.get(id).piece : null);
+  // the great houses' palaces: a townhouse / the hall stand in (placeholder piece_palace)
+  const palace = (kind0, tx, lore, sc0, banners, x0, x1) => {
+    const kind = lore !== 'vellacourt' && realPiece('piece_palace') ? 'palace' : kind0,
+      sc = kind === kind0 ? sc0 : 1;
     m.fill(x0, 3, x1, 11, 'G');
     m.fill(Math.floor(tx), 10, Math.floor(tx) + 1, 11, 'P'); // the drive
     put(kind, tx, 9.6, lore, { scale: sc });
@@ -393,7 +399,7 @@ module.exports = function gilden(rects) {
     RES(x0, x1 + 1, 2, 12);
   };
   palace('hall', 18, 'ashcombe', 1.0, 'bannerAnvil', 14, 22);
-  palace('house3_dusk', 27.5, 'orlay', 1.45, 'post', 24, 30);
+  palace('house3_dusk', 27.5, 'vellacourt', 1.45, 'post', 24, 30);
   palace('townhouse', 38, 'varenne', 1.15, 'bannerFrame', 34, 42);
   palace('townhouse', 48.4, 'quarrender', 1.1, 'bannerP', 45, 51);
   put('tower', 51.2, 8.6, 'quarrender', { scale: 0.55 });
@@ -443,6 +449,7 @@ module.exports = function gilden(rects) {
 
   // the Skyport on Beacon Hill: the mast, the Sky Office, kites, the porters' cargo
   put('spireTower', 58.4, 7.6, 'mast', { scale: 1.05 });
+  if (realPiece('piece_airship')) put('airship', 57.2, 5.2, 'mast'); // placeholder piece_airship: the mast stands empty till then
   put('watchTower', 54.2, 9.4, 'skyOffice', { scale: 0.62 });
   for (const [k, x, y] of [
     ['kite1', 56.2, 4.2],
@@ -539,6 +546,9 @@ module.exports = function gilden(rects) {
 
   // the docks' landmarks and the town's houses: terraces along every street, warehouses on the quay
   city.landmark('tavern', 13, 29, 'saltpurse');
+  // warehouses facing the quay (placeholder piece_warehouse: ordinary houses line it till then)
+  if (realPiece('piece_warehouse'))
+    for (const x of [8, 26, 48]) city.landmark('warehouse', x, QUAY - 1, 'cargo');
   const ship = city.landmark('townhouse', 46, 36, 'shipping');
   m.place('noticeBoard', ship.cx + 120, ship.base + 30, { lore: 'shipping', scale: 0.8 });
   city.landmark('tower', 48, 30, 'pier');

@@ -802,7 +802,11 @@
       sprite: (n, a) => Elf().of(n.role).sprite(n, a),
       face: (n, a) => Elf().of(n.role).face(n, a),
       talk: (n, a) => Elf().of(n.role).talk(n, a),
-      inspect: (o, a) => xs.some(x => x.inspect && x.inspect(o, a))
+      inspect: (o, a) => xs.some(x => x.inspect && x.inspect(o, a)),
+      placeholder: n => {
+        const x = Elf().of(n.role);
+        return !!(x && x.placeholder && x.placeholder(n));
+      }
     };
   };
   function title(n, api) {
@@ -2113,7 +2117,10 @@
     return o.lore === 'q:satchel' && (s.satchel || s.satchelDone);
   }
 
+  // is this person still drawn with stand-in art? (js/placeholders.js; only the extension modules say so yet)
+  const placeholder = n => !FOLK[n.role] && Elf().placeholder(n);
   window.ExploreFolk = {
+    placeholder,
     knows,
     title,
     sprite,

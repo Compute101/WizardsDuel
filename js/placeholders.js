@@ -1,0 +1,146 @@
+// ═══════════════════════════════════════════════════════════════════════
+// PLACEHOLDERS: every piece of art the game is standing in for, in one list.
+// Each entry names the file the real art goes to (`file`, and `face` for a dialog / HUD face). The game
+// looks for that file (`probe`, a HEAD request) and uses it when it's there; until then it uses the stand-in
+// the entry describes. So swapping in real art is: drop the file at its path, reload. Nothing else to edit.
+//   node tools/placeholders.js          what's still a stand-in, and where each real file goes
+//   ?placeholders on the URL (or localStorage wd-show-ph = 1) tags stand-ins on the map in pink
+// kinds: 'person' (a map figure; also its battle sprite when it fights), 'arena' (a battle backdrop,
+// backgrounds/<name>.jpg), 'piece' (a map piece from a tileset sheet: the generator checks for the piece
+// name in the atlases, `piece`, at build time; re-run tools/build_maps.js after cutting the sheet).
+// Prompts for each are in docs/art-prompts.md (the row names the placeholder's id).
+// Loaded by index.html before the Explore scripts; also require()-able from Node.
+// ═══════════════════════════════════════════════════════════════════════
+(function (root) {
+  'use strict';
+  const LIST = [
+    // ── Gilden (docs/gilden-design.md) ──
+    // people: real art is a full figure facing the viewer (or right), feet on the bottom edge, transparent
+    // background, about 768 px tall, plus a 256×256 face crop
+    ...[
+      ['gd_charter', 'Ezra Pollock, Master of the Charterhouse'],
+      ['gd_ashcombe', 'Dame Constance Ashcombe, head of House Ashcombe'],
+      ['gd_varenne', 'Gaspard Varenne, head of House Varenne'],
+      ['gd_quarrender', 'Perpetua Quarrender, head of House Quarrender'],
+      ['gd_harbour', 'Captain Morwen Hask, Harbourmaster of Gilden'],
+      ['gd_fishwife', 'Mag Thrush, a fishwife on the quay'],
+      ['gd_sky', 'Tibbet Quillaby, the gnome at the Sky Office (drawn at scale 0.6 on the map)']
+    ].map(([id, what]) => ({
+      id,
+      kind: 'person',
+      what,
+      file: 'sprites/gilden/' + id + '.png',
+      face: 'portraits/small/' + id + '.jpg',
+      standIn: 'painted from the hero figures (`look` in PEOPLE, js/explore_gilden.js)',
+      usedBy: 'PEOPLE.' + id + ' in js/explore_gilden.js'
+    })),
+    {
+      id: 'gd_guard1',
+      kind: 'person',
+      what: "Brask, Thessaly's Varg bodyguard",
+      file: 'sprites/gilden/gd_guard1.png',
+      face: 'portraits/small/gd_guard1.jpg',
+      standIn: 'the halberdier (sprites/halberdier.png)',
+      usedBy: 'PEOPLE.gd_guard1 in js/explore_gilden.js'
+    },
+    {
+      id: 'gd_guard2',
+      kind: 'person',
+      what: "Oddny, Thessaly's bodyguard",
+      file: 'sprites/gilden/gd_guard2.png',
+      face: 'portraits/small/gd_guard2.jpg',
+      standIn: 'the halberdier (sprites/halberdier.png)',
+      usedBy: 'PEOPLE.gd_guard2 in js/explore_gilden.js'
+    },
+    // the houses' hired mages: battle sprites (facing right, feet on the bottom edge, like the roster's stills)
+    ...['ashcombe', 'varenne', 'quarrender'].map(h => ({
+      id: 'gd_hire_' + h,
+      kind: 'person',
+      what: 'the hired mage of House ' + h.charAt(0).toUpperCase() + h.slice(1) + ' (fights for it)',
+      file: 'sprites/gilden/gd_hire_' + h + '.png',
+      face: 'portraits/small/gd_hire_' + h + '.jpg',
+      standIn: 'painted from the hero figures (`hire` in HOUSES, js/explore_gilden.js)',
+      usedBy: 'prep() in js/explore_gilden.js'
+    })),
+    {
+      id: 'arena_gilden',
+      kind: 'arena',
+      map: 'gilden',
+      name: 'gilden',
+      what: "Gilden's battle backdrop (1672×941 JPEG)",
+      file: 'backgrounds/gilden.jpg',
+      standIn: "Hollowmere's painting (ARENA_MAPS.gilden in js/explore.js)",
+      usedBy: 'arenaHere() in js/explore.js'
+    },
+    {
+      id: 'piece_airship',
+      kind: 'piece',
+      piece: 'airship',
+      what: 'a gnome airship moored at the Skyport mast',
+      file: 'sprites/ruins/tileset29_source.png (cut as piece `airship`)',
+      standIn: 'nothing: the Mooring Mast stands empty',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_palace',
+      kind: 'piece',
+      piece: 'palace',
+      what: "a merchant palace (the Hill's great houses)",
+      file: 'sprites/ruins/tileset29_source.png (cut as piece `palace`)',
+      standIn: 'the townhouse and the hall',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_warehouse',
+      kind: 'piece',
+      piece: 'warehouse',
+      what: 'a dockside warehouse with a hoist beam',
+      file: 'sprites/ruins/tileset29_source.png (cut as piece `warehouse`)',
+      standIn: 'ordinary houses along the quay',
+      usedBy: 'tools/mapgen/gilden.js'
+    }
+  ];
+  const BY = Object.fromEntries(LIST.map(e => [e.id, e]));
+  const found = {}; // url → true / false once probed
+  async function exists(url) {
+    if (url in found) return found[url];
+    try {
+      const r = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
+      found[url] = r.ok;
+    } catch (e) {
+      found[url] = false;
+    }
+    return found[url];
+  }
+  const Placeholders = {
+    LIST,
+    get: id => BY[id] || null,
+    // look for the real files of these placeholders (all of them if none given)
+    probe: ids =>
+      Promise.all(
+        (ids || LIST.map(e => e.id))
+          .map(id => BY[id])
+          .filter(e => e && e.kind !== 'piece')
+          .flatMap(e => [exists(e.file), e.face ? exists(e.face) : null])
+      ),
+    // the real sprite / face once it's there (after probe), else null: use the stand-in
+    real: id => (BY[id] && found[BY[id].file] ? BY[id].file : null),
+    realFace: id => (BY[id] && BY[id].face && found[BY[id].face] ? BY[id].face : null),
+    // a map's backdrop name when its real painting is in
+    arena: mapId => {
+      const e = LIST.find(x => x.kind === 'arena' && x.map === mapId);
+      return e && found[e.file] ? e.name : null;
+    },
+    // is the stand-in still being used? (probed placeholders only)
+    standing: id => !!(BY[id] && BY[id].file in found && !found[BY[id].file]),
+    show: () => {
+      try {
+        return /[?&]placeholders\b/.test(location.search) || localStorage.getItem('wd-show-ph') === '1';
+      } catch (e) {
+        return false;
+      }
+    }
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = Placeholders;
+  else root.Placeholders = Placeholders;
+})(typeof window !== 'undefined' ? window : this);

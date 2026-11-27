@@ -144,6 +144,10 @@ of hers (her duel rival line: "Thief! Hand back what you pocketed.").
 
 ## Art wanted (`docs/art-prompts.md`, "Placeholders")
 
+Every stand-in here is registered in `js/placeholders.js` with the exact path its real art goes to: drop the
+file there and the game uses it (pieces: cut the sheet and re-run `node tools/build_maps.js gilden`).
+`node tools/placeholders.js todo` lists what's left.
+
 A Gilden battle backdrop (the city fights on Hollowmere's), a moored gnome airship (the mast has nothing on
 it), a merchant palace and a warehouse (a townhouse, the hall and a damaged house stand in), market stalls,
 a gnome (a dwarf figure drawn small stands in for the Sky Office clerk), and Thessaly's two bodyguards

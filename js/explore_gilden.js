@@ -19,6 +19,15 @@
 (function () {
   'use strict';
 
+  // the placeholder registry (js/placeholders.js); a do-nothing stand-in if it isn't loaded
+  const PH = () =>
+    window.Placeholders || {
+      probe: async () => {},
+      real: () => null,
+      realFace: () => null,
+      standing: () => false
+    };
+
   // ── the houses ──
   // rival: the house whose trade it fights hardest for (a job for X lowers rival-of-X most)
   const HOUSES = {
@@ -335,15 +344,19 @@
       const c = api.chars[P.roster];
       return (c && c.sprite) || null;
     }
-    if (P.fighter) return (api.fighters[P.fighter] || {}).sprite || null;
+    if (P.fighter) return PH().real(n.role) || (api.fighters[P.fighter] || {}).sprite || null;
     return P._sprite || null;
   }
   function face(n) {
     const P = PEOPLE[n.role];
     if (!P) return null;
     if (P.roster) return 'portraits/small/' + P.roster + '.jpg';
-    if (P.fighter) return 'portraits/small/' + P.fighter + '.jpg';
+    if (P.fighter) return PH().realFace(n.role) || 'portraits/small/' + P.fighter + '.jpg';
     return P._face || null;
+  }
+  // still a stand-in? (js/placeholders.js: the real art goes to the file it names; the roster's are real)
+  function placeholder(n) {
+    return !!PEOPLE[n.role] && PH().standing(n.role);
   }
   // a roster wizard isn't here if you're playing them
   function absent(n, api) {
@@ -352,15 +365,25 @@
   }
 
   // paint the people and register the houses' hired mages before Gilden's first draw
+  // Every stand-in here is listed in js/placeholders.js under its role's id; when the real file is at the
+  // path it names, it's used instead of the painted look (and the face crop likewise).
   async function prep(api) {
-    const jobs = Object.values(PEOPLE)
-      .filter(P => P.look && !P._sprite)
-      .map(async P => {
+    await PH().probe(Object.keys(PEOPLE).concat(HKEYS.map(hireKey), ['arena_gilden']));
+    const jobs = Object.entries(PEOPLE)
+      .filter(([, P]) => P.look && !P._sprite)
+      .map(async ([role, P]) => {
+        const real = PH().real(role),
+          realFace = PH().realFace(role);
+        if (real && realFace) {
+          P._sprite = real;
+          P._face = realFace;
+          return;
+        }
         try {
           const d = await api.heroDef(P.look);
           if (d) {
-            P._sprite = d.sprite;
-            P._face = d.face;
+            P._sprite = real || d.sprite;
+            P._face = realFace || d.face;
           }
         } catch (e) {}
       });
@@ -374,15 +397,21 @@
               if (d)
                 api.registerChar(
                   hireKey(h),
-                  Object.assign({}, d, {
-                    name: H.hire.name.toUpperCase(),
-                    title: 'Hired Mage of ' + H.name,
-                    hp: 52,
-                    phys: { atk: 4 },
-                    hero: false,
-                    bandit: true,
-                    arena: 'road'
-                  })
+                  Object.assign(
+                    {},
+                    d,
+                    PH().real(hireKey(h)) ? { sprite: PH().real(hireKey(h)) } : {},
+                    PH().realFace(hireKey(h)) ? { face: PH().realFace(hireKey(h)) } : {},
+                    {
+                      name: H.hire.name.toUpperCase(),
+                      title: 'Hired Mage of ' + H.name,
+                      hp: 52,
+                      phys: { atk: 4 },
+                      hero: false,
+                      bandit: true,
+                      arena: 'road'
+                    }
+                  )
                 );
             } catch (e) {}
           })()
@@ -1054,6 +1083,7 @@
     talk,
     inspect,
     absent,
+    placeholder,
     prep,
     onMap,
     journal,
