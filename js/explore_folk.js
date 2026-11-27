@@ -104,17 +104,17 @@ const FOLK = {
     lines:['A broad woman with a tray of pies on a strap round her neck. "Mutton or eel? Hot! Gleaners going in eat like they won\'t eat again." A look. "Some of them won\'t. Mutton, then."',
       '"Hollowmere was a dead town, after. Then the gleaners came, and the factors after the gleaners, and the carts after the factors. Now look at it. Can\'t move for money, this side of the water."',
       '"Don\'t cross the bridges after dark, love. Not the east bank. The town stops at the river."']},
-  // traders from the north at Hollowmere's market: dwarves of the Hammerfells holds, Varg from Ulfvik
+  // traders from the north at Hollowmere's market: dwarves of the Anvilfells holds, Varg from Ulfvik
   // (scale: drawn at that share of a person's height; dwarves stand as short as Durin, Varg a head taller)
-  hm_smith:{kind:'local', title:'A Hammerhall Smith', name:'Torvi Anvilson', scale:0.72,
+  hm_smith:{kind:'local', title:'An Anvilmoot Smith', name:'Torvi Anvilson', scale:0.72,
     look:{name:'Torvi', sex:'m', age:'middle', fig:'dwarf_mid_man_2', robe:'Russet', trim:'Copper', hair:'Black', skin:'Tan', eyes:'Brown', elem:'earth', staff:'Blackthorn', topper:''},
-    lines:['A dwarf stands over a table of knives, hinges, lamp-brackets and crowbars, every one of them better made than it needs to be. "Hammerhall work. Price is on the tag." He doesn\'t look up. "Tag doesn\'t move."',
+    lines:['A dwarf stands over a table of knives, hinges, lamp-brackets and crowbars, every one of them better made than it needs to be. "Anvilmoot work. Price is on the tag." He doesn\'t look up. "Tag doesn\'t move."',
       '"Gleaners buy crowbars. Then they come back and buy more crowbars." A grunt that might be a laugh. "The city eats iron."',
-      '"You want to see Hammerhall? Nobody sees Hammerhall. You see the gatehouse, and you see it from outside." He turns a hinge over in his hands. "It\'s a good gatehouse."']},
+      '"You want to see Anvilmoot? Nobody sees Anvilmoot. You see the gatehouse, and you see it from outside." He turns a hinge over in his hands. "It\'s a good gatehouse."']},
   hm_tin:{kind:'local', title:'A Coldforge Factor', name:'Grimma', scale:0.72,
     look:{name:'Grimma', sex:'f', age:'old', fig:'dwarf_old_woman_1', robe:'Midnight', trim:'Silver', hair:'White', skin:'Fair', eyes:'Grey', elem:'ice', staff:'Ash', topper:''},
     lines:['An old dwarf woman sits on a strongbox, counting ingots of tin into rows with a stick, and keeping the stick between the rows and you. "Coldforge tin. Bound for Gilden, by the Ore Road, by the end of the week. Not for sale here. I am only resting."',
-      '"Hammerhall sends smiths down to sell. Coldforge sends me, to count." She taps an ingot. "Smiths can\'t count."',
+      '"Anvilmoot sends smiths down to sell. Coldforge sends me, to count." She taps an ingot. "Smiths can\'t count."',
       '"The Varg at the other end of the square sell fish. We do not speak of the fish." She sniffs. "But their furs are good."']},
   hm_furs:{kind:'local', title:'A Varg Furrier from Ulfvik', name:'Gunnulf', sprite:'sprites/forest/varg_alpha.png', face:'varg_alpha', scale:1.12,
     lines:['A great grey wolfman sits on a handcart piled with pelts, ears turning at every voice in the square. "Furs from the Wolf coast. Bear, seal, white fox. Warm for the city at night." His lip lifts over a fang: a smile, probably. "Warmer than the Echoes are."',

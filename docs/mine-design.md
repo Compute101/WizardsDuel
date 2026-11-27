@@ -27,19 +27,19 @@ stone — and make it *look* like dwarves built it.
 
 ## Where it sits in the world
 
-- **Place:** one of the three holds in the Hammerfells (which one is still open, see "The three holds"),
-  called **the hold** below. Outsiders get only as far as the gatehouse — you're
+- **Place:** **Stonedeep?**, the oldest and deepest of the three holds in the Anvilfells, above
+  Copperhythe in copper country: the delvers' hold, Durin's home (called **the hold** below). Outsiders get only as far as the gatehouse — you're
   the exception, because Durin asks for you.
-- **The mountain:** a peak the hold has never worked, called **the Greyhorn?** (or **Old Anvil?**). The
+- **The mountain:** a peak the hold has never worked, called **the Greyhorn?**. The
   mine is **the Stoneheart Delve** after Durin's title.
 - **Lore hook:** since the Unweaving, spilt magic has seeped down through the deep stone, and the earth
-  elementals that slept in the roots of the mountains are waking (*stonewakes*). The hold's old
-  workings are overrun. The Thane wants a new delve dug, and the hold's runesmiths are too few to
+  elementals that slept in the roots of the mountains are waking (*stonewakes*). Stonedeep's old
+  workings were the first the stonewakes overran, so Durin is digging to win his hold back. The Thane wants a new delve dug, and the hold's runesmiths are too few to
   hold the elementals off. Durin, the Stoneheart, has the Thane's leave to dig it and wants a wizard
   beside him: someone who can fight with elements the stone doesn't shrug off.
-- **How you get there:** Torvi Anvilson, the dwarf smith who trades in Hollowmere's market, carries
-  Durin's letter once you've graduated (like Mother Agathe and Sylvara's letter). The hold goes on the
-  world map, up the mountain path from its mining town.
+- **How you get there:** Torvi Anvilson, the Anvilmoot smith who trades in Hollowmere's market, carries
+  Durin's letter (the holds' traders all pass through Hollowmere) once you've graduated (like Mother Agathe and Sylvara's letter). The hold goes on the
+  world map, up the mountain path from Copperhythe.
 - **Your part and Durin's:** you're the **Delve-planner** (Durin's "you've a straight eye for a
   wizard"). Durin is the mine's master on the map, a piece like Sylvara: he walks the workings,
   prospects, and fights. At the end, if the Delve does him proud, he joins your companions
@@ -334,16 +334,17 @@ Until then the map is drawn in canvas (as the forest was at first).
 
 1. **Real time** (with pause and speed buttons).
 2. **A top-down grid** for each layer.
-3. **Which hold:** still open. The user doesn't like *Hammerhall* (too close to Age of Sigmar's
-   Hammerhal), so that name goes whichever hold is chosen (it's in `docs/world-design.md` and Torvi's
-   lines in `js/explore_folk.js`).
+3. **Stonedeep.** The great hold was renamed **Anvilmoot** (the user didn't like *Hammerhall*, too
+   close to Age of Sigmar's Hammerhal) and the range **the Anvilfells** (*the Hammerfells* was too close
+   to the Elder Scrolls' Hammerfell), everywhere.
 4. **You plan the Delve; Durin is a piece** on the map, and he's the one who binds elementals.
 5. **Durin binds** (see "Durin's binding").
 
-## The three holds (to choose from)
+## The three holds
 
-- **Stonedeep?** (above Copperhythe; copper): the oldest and deepest hold, the delvers' hold.
-- **The great hold** (above Varg's Delve; the Thane's seat; needs a new name): the biggest and the
+- **Stonedeep?** (above Copperhythe; copper): the oldest and deepest hold, the delvers' hold. **The
+  Delve's hold**, and Durin's.
+- **Anvilmoot** (above Varg's Delve; the greatest, where the holds meet, which named the range): the biggest and the
   proudest, its smiths sell in Hollowmere (Torvi).
 - **Coldforge?** (above Tinwell, over the Grey Sea; tin): cold, sea-facing and mercantile, its
   factors count the Ore Road's trade (Grimma).
