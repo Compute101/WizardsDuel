@@ -686,8 +686,8 @@
       plan: ['#########', '#RRRRRRR#', '#RoRoRoR#', '#RRRRRRR#', '#RoRoRoR#', '#RRRRRRR#', '#########']
     },
     ninefold: {
-      how: 'Nine rooms of the same size (2 × 2 or bigger) laid out three by three, evenly spaced, with rock between them.',
-      plan: ['RR#RR#RR', 'RR#RR#RR', '########', 'RR#RR#RR', 'RR#RR#RR', '########', 'RR#RR#RR', 'RR#RR#RR']
+      how: 'Nine rooms of the same size (2 × 2 or bigger), three by three, evenly spaced, with at least one tile between neighbours. They can be any kind of room. The gaps are yours: rock, doorways or passages, so long as the marked rooms themselves line up. Here, a passage runs along each row.',
+      plan: ['RR#RR#RR', 'RR#RR#RR', '........', 'RR#RR#RR', 'RR#RR#RR', '........', 'RR#RR#RR', 'RR#RR#RR']
     },
     cloister: {
       how: 'A court: a room whose pillars stand in a full, even grid, with another room on each of its four sides, no more than three tiles away.',
