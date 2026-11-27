@@ -791,7 +791,20 @@
     return !!api.quest('met')[key];
   }
   const Year = () => window.ExploreYear || null; // the University Year's own people (js/explore_year.js)
-  const Elf = () => window.ExploreElfhome || null; // Elfhome's people (js/explore_elfhome.js)
+  // Elfhome's people (js/explore_elfhome.js) and Gilden's (js/explore_gilden.js): whichever knows the role
+  const Elf = () => {
+    const xs = [window.ExploreElfhome, window.ExploreGilden].filter(Boolean);
+    return {
+      knows: r => xs.some(x => x.knows(r)),
+      of: r => xs.find(x => x.knows(r)),
+      absent: (n, a) => Elf().of(n.role).absent(n, a),
+      title: (n, a) => Elf().of(n.role).title(n, a),
+      sprite: (n, a) => Elf().of(n.role).sprite(n, a),
+      face: (n, a) => Elf().of(n.role).face(n, a),
+      talk: (n, a) => Elf().of(n.role).talk(n, a),
+      inspect: (o, a) => xs.some(x => x.inspect && x.inspect(o, a))
+    };
+  };
   function title(n, api) {
     const F = FOLK[n.role];
     if (!F) return Elf() && Elf().knows(n.role) ? Elf().title(n, api) : Year() ? Year().title(n, api) : null;
@@ -918,6 +931,8 @@
       out.push(
         "The Moriquende: take Mother Agathe's letter to Sylvara in Elfhome. The West Road out of Wrenford, then on past where it stops."
       );
+    const gj = window.ExploreGilden ? window.ExploreGilden.journal(api) : '';
+    if (gj) out.push(gj);
     return out.join('\n');
   }
 

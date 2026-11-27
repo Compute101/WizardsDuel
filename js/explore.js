@@ -142,6 +142,12 @@
     },
     corvanthe_road: { camp: [0.6, "You sleep by the gleaners' cold firepit, one eye open."] },
     cindergate: { camp: [0.6, "You rest in the gate's shadow. The pot on the fire is still warm."] },
+    gilden: {
+      saltpurse: [
+        1,
+        'You take a bed above the Salt Purse and sleep to the creak of rigging. Someone below is singing about a drowned purser, every verse.'
+      ]
+    },
     wrenford: {
       inn: [
         1,
@@ -1370,6 +1376,7 @@
   };
   const ARENA_MAPS = {
     hollowmere: 'hollowmere',
+    gilden: 'hollowmere', // a stand-in until Gilden's own painting (docs/art-prompts.md)
     corvanthe_road: 'road',
     elfhome: 'forest',
     spirewatch: 'spirewatch',
@@ -2220,7 +2227,7 @@
 
   // a real fight from a story or an incident (not a spar): wounds carry, as in any fight on the map; a loss
   // leaves you at a quarter of your HP where you stand (Wrenford is safe), and the clock moves on
-  function battle({ foes, allies: al, text, onWin, onLose, fists }) {
+  function battle({ foes, allies: al, text, onWin, onLose, fists, arena }) {
     if (busy || typeof window.startExploreBattle !== 'function') return;
     if (tired() && !(arguments[0] && arguments[0].fists))
       toast('Too tired to cast: you fight with your fists.');
@@ -2243,7 +2250,7 @@
         allies: al || [],
         text,
         fists: fists || tired(),
-        arena: arenaHere(),
+        arena: arena || arenaHere(),
         onEnd: (won, low) => {
           el.root.classList.add('active');
           running = true;
@@ -2661,7 +2668,7 @@
     const sheet = img.naturalWidth === 192 && img.naturalHeight === 320,
       sw = sheet ? 48 : img.naturalWidth,
       sh = sheet ? 64 : img.naturalHeight;
-    const fs = (Folk && Folk.FOLK && Folk.FOLK[n.role] && Folk.FOLK[n.role].scale) || 1; // dwarves stand short, Varg tall
+    const fs = (Folk && Folk.FOLK && Folk.FOLK[n.role] && Folk.FOLK[n.role].scale) || n.scale || 1; // dwarves stand short, Varg tall
     const h = WIZ_H * (n.role === 'wounded' ? 0.8 : 1.05) * fs * (MAP.people || 1),
       w = (h * sw) / sh;
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
@@ -3148,6 +3155,7 @@
     if (id === 'wrenford') return Math.random() < 0.75 ? 'wrenford' : 'library';
     if (id === 'old_schools') return 'library';
     if (id === 'hollowmere' || id === 'corvanthe_road') return 'corvanthe';
+    if (id === 'gilden') return Math.random() < 0.5 ? 'tabletop' : 'duel';
     if (INNER_MAPS.includes(id)) return 'wound';
     return Math.random() < 0.6 ? 'gleaners' : 'corvanthe'; // the outer sectors
   }
@@ -3254,6 +3262,7 @@
       if (data.interior && roomSpec && roomSpec.outside) await getMap(roomSpec.outside.map).catch(() => {}); // a room plays its town's theme
       await Promise.all([loadPalette(data.palette), atlasesFor(data)]); // this map's sheets, before anything draws from them
       if (id === 'elfhome' && window.ExploreElfhome) await window.ExploreElfhome.prep(folkApi); // paint Elfhome's people
+      if (id === 'gilden' && window.ExploreGilden) await window.ExploreGilden.prep(folkApi); // and Gilden's
       setupMap(data);
       prefetchAround(data);
       {
@@ -3274,6 +3283,7 @@
       if (!id.startsWith('room:')) visited.add(id);
       if (Year) Year.onMap(folkApi);
       if (window.ExploreElfhome) window.ExploreElfhome.onMap(folkApi);
+      if (window.ExploreGilden) window.ExploreGilden.onMap(folkApi);
       save();
       syncMusic();
     } catch (err) {
@@ -3817,7 +3827,7 @@
   const INK_MS = 2400,
     INK_GAP = 750,
     INK_WAIT = 400;
-  const INK_REACH = { city: 360, town: 330, university: 350, forest: 340, inn: 240, road: 180 }; // how much country a place clears
+  const INK_REACH = { city: 360, port: 340, town: 330, university: 350, forest: 340, inn: 240, road: 180 }; // how much country a place clears
   function inkProgress(shown, here, t) {
     if (!inked) inked = new Set(shown.map(l => l.id));
     const fresh = shown.filter(l => !inked.has(l.id) && !inkStart.has(l.id));
@@ -3985,6 +3995,40 @@
           g.lineTo(l.x + dx + 7, l.y + dy - 3);
           g.fill();
         }
+      } else if (l.kind === 'port') {
+        // a rich harbour city: a ring wall, towers and a dome, an anchor on the water side, a golden glow
+        const gl = g.createRadialGradient(l.x, l.y, 4, l.x, l.y, 64);
+        gl.addColorStop(0, 'rgba(255,205,90,0.42)');
+        gl.addColorStop(1, 'rgba(255,205,90,0)');
+        g.fillStyle = gl;
+        g.fillRect(l.x - 64, l.y - 64, 128, 128);
+        g.strokeStyle = '#3a2810';
+        g.fillStyle = '#3a2810';
+        g.lineWidth = 2.5;
+        g.beginPath();
+        g.arc(l.x, l.y, 22, Math.PI * 0.95, Math.PI * 2.05);
+        g.stroke();
+        for (const [dx, h] of [
+          [-15, 12],
+          [-6, 18],
+          [6, 15],
+          [15, 10]
+        ])
+          g.fillRect(l.x + dx - 3, l.y + 2 - h, 6, h);
+        g.beginPath();
+        g.arc(l.x, l.y - 16, 6, Math.PI, 0);
+        g.fill();
+        g.fillRect(l.x - 22, l.y + 1, 44, 4);
+        // the anchor below the quay line
+        g.lineWidth = 2;
+        g.beginPath();
+        g.moveTo(l.x, l.y + 8);
+        g.lineTo(l.x, l.y + 22);
+        g.moveTo(l.x - 5, l.y + 11);
+        g.lineTo(l.x + 5, l.y + 11);
+        g.moveTo(l.x - 7, l.y + 17);
+        g.quadraticCurveTo(l.x, l.y + 26, l.x + 7, l.y + 17);
+        g.stroke();
       } else if (l.kind === 'inn') {
         // a wayside inn: one house, a hanging sign and a lit lantern
         g.fillStyle = '#3a2810';
@@ -4022,7 +4066,12 @@
         if (name)
           WorldInk.label(g, { text: l.name, x: lx, y: ly, style: 'danger', size: 22, upto: name.length });
       } else if (name) {
-        g.font = l.kind === 'inn' ? `italic 15px ${WorldInk.FELL}` : `20px ${WorldInk.FELL}`;
+        g.font =
+          l.kind === 'inn'
+            ? `italic 15px ${WorldInk.FELL}`
+            : l.kind === 'port'
+              ? `23px ${WorldInk.FELL}`
+              : `20px ${WorldInk.FELL}`;
         g.textAlign = 'left';
         const x0 = lx - g.measureText(l.name).width / 2;
         g.strokeStyle = 'rgba(228,212,168,0.85)';
