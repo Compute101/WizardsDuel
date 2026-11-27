@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 // GILDEN: Albra's merchant city (maps/gilden.json, tools/mapgen/gilden.js; design in docs/gilden-design.md).
 // Three great houses at each other's throats (Ashcombe: the Ore Road; Varenne: the fleet; Quarrender: the
-// banks and the gnome airships), each with a powerful house wizard (Ashcombe's and Varenne's are Gilden's own, MAGI; Quarrender's is Korvath)
+// banks and the gnome airships), each with a powerful house wizard (Gilden's own, never roster wizards: they don't join you; MAGI)
 // and lesser hired mages,
 // and a fourth, fallen house: Thessaly's Vellacourts.
 // What's built (step 1):
@@ -84,7 +84,7 @@
       name: 'House Quarrender',
       short: 'Quarrender',
       head: 'gd_quarrender',
-      magus: 'korvath',
+      magus: null, // its house wizard (a gnome): still to come (MAGI)
       mark: 'a winged scale',
       trade: 'banking, and the gnome airships',
       rival: 'ashcombe',
@@ -184,7 +184,7 @@
     return s.st[h];
   }
 
-  // ── the house wizards of Gilden's own: Ashcombe's and Varenne's are still to come (the user is designing them;
+  // ── the house wizards, Gilden's own (never roster wizards: a house wizard never joins you): all three are still to come (the user is designing them;
   // docs/gilden-design.md, "House wizards"). Each goes here as a full character entry in characters.json's format
   // ({name, title, col, hp, phys, forbidden, look (a stand-in painted from a hero figure), spells}) under the key
   // in its house's `magus`; prep registers it, and a PEOPLE entry {magus, house, title} puts them on the Hill.
@@ -268,7 +268,6 @@
         topper: 'crescent'
       }
     },
-    gd_quarmagus: { roster: 'korvath', house: 'quarrender', title: 'On the Board of Quarrender' },
     thessaly: { roster: 'thessaly', title: 'The Last of the Vellacourts' },
     gd_guard1: { fighter: 'halberdier', name: 'Brask', title: "Thessaly's Bodyguard" },
     gd_guard2: { fighter: 'halberdier', name: 'Oddny', title: "Thessaly's Bodyguard" },
@@ -527,12 +526,7 @@
     const H = HOUSES[h],
       v = stand(api, h);
     const say = (x, ch) => api.dialog(title(n, api), x, ch || []);
-    const line = {
-      quarrender: [
-        'A half-dragon noble in Wyrmreach silks, scaled and patient. "Korvath, of the Ember Throne. I bought a seat on the Quarrender board with my own gold, because the gnome sky-roads are the future, and I like to own the future before it arrives." He looks you over. "Wizards are an investment too."',
-        'Korvath doesn\'t turn his head. "In Wyrmreach, wizard, we would have settled this already. Perpetua prefers ledgers. I am being patient. I am very rarely patient for long."'
-      ]
-    }[h];
+    const line = {}[h];
     if (line) say(line[v <= -3 ? 1 : 0]);
   }
 

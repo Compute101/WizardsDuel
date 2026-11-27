@@ -577,7 +577,6 @@ module.exports = function gilden(rects) {
     { role: 'gd_guard2', x: 30.2 * T, y: 12.8 * T },
     { role: 'gd_varenne', x: 39.6 * T, y: 10.9 * T }, // Gaspard Varenne
     { role: 'gd_quarrender', x: 49.9 * T, y: 10.9 * T }, // Perpetua Quarrender
-    { role: 'gd_quarmagus', x: 47.1 * T, y: 10.6 * T }, // Korvath the Wyrmlord, on her board
     { role: 'gd_harbour', x: 39.2 * T, y: (QUAY + 1.6) * T }, // the Harbourmaster, on the quay by the Customs House
     { role: 'gd_sky', x: 55.6 * T, y: 10.4 * T, scale: 0.6 }, // the gnome at the Sky Office
     { role: 'gd_fishwife', x: 22.2 * T, y: 34.3 * T } // a fishwife who hears everything

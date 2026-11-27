@@ -45,7 +45,7 @@ that ride with bandits for it). Each feuds hardest with one other (a cycle):
 |---|---|---|---|---|---|
 | **Ashcombe** | a flame over a hammer (red) | copper, tin and quintessence down the Ore Road | Dame Constance Ashcombe | *to come (the user is designing them)* | Varenne (who toll every cart that reaches the quay) |
 | **Varenne** | a silver anchor (blue) | the fleet, the Varg sea-toll, the southern run | Gaspard Varenne | *to come (the user is designing them)* | Quarrender (airships against ships) |
-| **Quarrender** | a winged scale (purple) | banking; agents of the gnome airships | Perpetua Quarrender | **Korvath the Wyrmlord** (bought a seat on its board) | Ashcombe (both want the quintessence) |
+| **Quarrender** | a winged scale (purple) | banking; agents of the gnome airships | Perpetua Quarrender | *to come: a gnome (the user is designing them)* | Ashcombe (both want the quintessence) |
 | **Vellacourt** (fallen) | a gold coin | none now | **Thessaly** | herself | all three |
 
 House Ashcombe was already in the game: Master Orme in Hollowmere is its factor. The Remnant Library's book
@@ -54,9 +54,15 @@ the Vellacourts.
 
 ### House wizards
 
-**Ashcombe's and Varenne's are original wizards the user is designing** (November 2026). Frederick the Black
+**All three are original wizards the user is designing** (November 2026). Frederick the Black
 and Malachar the Relentless were the first idea; the user moved them to the Brazen Dominion's service on the
-Mainland instead (`docs/world-design.md`). Korvath stays on Quarrender's board.
+Mainland instead (`docs/world-design.md`). Korvath was on Quarrender's board at first; the user replaced him too.
+
+**The rule (the user's):** house wizards are Gilden's own characters, never roster wizards, because the roster
+are wizards you can play or recruit and a house wizard never joins you (riding with one caravan isn't joining).
+They live only in Explore, like the bandit mages: not on the character screen, not in balance runs, no tabletop
+cards. Planned: Quarrender's is a **gnome** (the gnome airships), Varenne's a **Varg** (the sea-toll), Ashcombe's
+still open.
 
 What each slot does in the game, for the design:
 - stands on the Hill outside the house's palace, and talks (its lines move with your standing: friendly, then
@@ -65,12 +71,11 @@ What each slot does in the game, for the design:
   it sends its hired mage instead);
 - rides with your caravan as an ally, once a run, when the house is Favoured (+6);
 - fights in the Explore battle engine as a full wizard: HP, Attack, banned elements, a colour and three
-  signature spells (one Damage, one Protection, one Dispel, like the roster), in `characters.json`'s format,
-  so either could join the duel roster later.
+  signature spells (one Damage, one Protection, one Dispel, like the roster), in `characters.json`'s format
+  (only because that's what the battle engine reads).
 
-Until they're designed (`MAGI` in `js/explore_gilden.js` is empty), those two houses send only their hired mage
-at −8, no house wizard rides with you when they're Favoured, and nobody stands outside Ashcombe Hall or Varenne
-House but the head. A suggestion for each, to take or leave: Ashcombe's mining-and-smelting trade fits Earth and
+Until they're designed (`MAGI` in `js/explore_gilden.js` is empty), the houses send only their hired mage
+at −8, no house wizard rides with you when they're Favoured, and nobody stands outside the palaces but the heads. A suggestion for each, to take or leave: Ashcombe's mining-and-smelting trade fits Earth and
 Fire; Varenne's fleet and the sea-toll fits Water and Lightning (storms).
 
 ### Standing
