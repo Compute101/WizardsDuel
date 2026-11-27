@@ -103,7 +103,7 @@ function talk(n, api){
   }
   case 'elf_healer': {
     const intro='A calm elf with stained hands and a sprig of woundwort behind one ear. "The Healing House. Lie down, wizard. Everyone who walks through that door thinks they\'re fine."';
-    const ch=[{label:'🛏 Rest in the Healing House ('+api.hp()+' → '+api.maxHp()+' HP)', disabled:api.hp()>=api.maxHp()&&!woundsToMend(S), fn:()=>rest(n,api)}];
+    const ch=[{label:'🛏 Sleep in the Healing House ('+api.hp()+' → '+api.maxHp()+' HP)', disabled:api.hp()>=api.maxHp()&&!woundsToMend(S)&&!(api.sleepy&&api.sleepy()), fn:()=>rest(n,api)}];
     if(S&&!S.over) ch.push(watch);
     const hurt=S&&!S.over?S.elves.filter(e=>e.wounded).length:0;
     say(intro+(hurt?' "'+hurt+' in my beds this week. I\'m doing what I can."':''),ch);
@@ -144,7 +144,7 @@ function counsel(n, api, from){
 function woundsToMend(S){ return !!(S&&!S.over&&S.healedWeek!==S.turn&&S.elves.some(e=>e.wounded>1)); }
 function rest(n, api){
   const S=yearOf(api); const out=[];
-  api.healFull(); out.push('You sleep among the herbs and wake whole.');
+  const t=api.sleep?api.sleep(1):(api.healFull(),null); out.push('You sleep among the herbs and wake whole'+(t?' at '+t:'')+'.');
   if(woundsToMend(S)){
     S.healedWeek=S.turn; let k=0;
     for(const e of S.elves) if(e.wounded>1){ e.wounded=Math.max(1,e.wounded-HEAL_WEEKS); k++; }

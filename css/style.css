@@ -1813,6 +1813,11 @@ canvas:focus, button:focus:not(:focus-visible) { outline:none; }
 #explore-screen .ex-hp { position:relative; display:block; width:76px; height:11px; background:rgba(0,0,0,0.55); border:1px solid rgba(201,168,76,0.45); border-radius:3px; overflow:hidden; }
 #explore-screen .ex-hp i { position:absolute; left:0; top:0; bottom:0; display:block; }
 #explore-screen .ex-hp b { position:relative; display:block; font:600 9px/11px 'Cinzel', serif; color:#fff; text-align:center; text-shadow:0 1px 2px #000; }
+#explore-screen .ex-tired { display:block; margin-top:2px; font:600 9px/12px 'Cinzel', serif; letter-spacing:.5px; color:#f0e0b0; background:rgba(120,90,30,0.75); border-radius:3px; padding:0 5px; width:max-content; cursor:pointer; }
+#explore-screen .ex-tired.tired { background:rgba(140,70,20,0.85); }
+#explore-screen .ex-tired.drain { background:rgba(150,30,30,0.9); animation:ex-tired-pulse 1.6s ease-in-out infinite; }
+@keyframes ex-tired-pulse { 50% { opacity:.6; } }
+@media (prefers-reduced-motion:reduce){ #explore-screen .ex-tired.drain { animation:none; } }
 #explore-screen .ex-rest { margin-top:10px; font-size:13px; padding:7px 14px; }
 #explore-screen .ex-rest:disabled { opacity:0.5; cursor:default; }
 #explore-screen #ex-night { min-width:68px; white-space:nowrap; }
