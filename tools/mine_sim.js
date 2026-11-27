@@ -5,10 +5,14 @@ const days = +process.argv[2] || 6,
   seed = +process.argv[3] || 7;
 const S = M.newGame(seed),
   gy = Math.floor(M.H / 2);
-// a main gallery east from the gate, a hall north of it with a pillar lattice, bedrooms south
-M.designate(S, 'dig', 3, gy - 1, 30, gy);
-M.designate(S, 'dig', 6, gy - 7, 14, gy - 3);
-M.designate(S, 'dig', 10, gy - 2, 10, gy - 2);
+// A main gallery east from the gate, with every room set back from it behind a one-tile doorway (where the
+// script hangs its doors): north, a pillared dining hall, a kitchen, a forge and a tavern, the Great Hall and
+// the barracks behind them; south, four bedrooms and a dormitory, a stockpile, a brewery, the mason's
+// workshop and an infirmary.
+const dig = (x0, y0, x1 = x0, y1 = y0) => M.designate(S, 'dig', x0, y0, x1, y1);
+dig(3, gy - 1, 31, gy);
+dig(6, gy - 7, 14, gy - 3); // dining hall
+dig(10, gy - 2, 10, gy - 2);
 for (const [x, y] of [
   [8, gy - 6],
   [12, gy - 6],
@@ -16,38 +20,44 @@ for (const [x, y] of [
   [12, gy - 4]
 ])
   M.designate(S, 'pillar', x, y, x, y);
+dig(16, gy - 4, 18, gy - 3); // kitchen
+dig(17, gy - 2);
+dig(22, gy - 4, 25, gy - 3); // forge
+dig(23, gy - 2);
+dig(27, gy - 4, 31, gy - 3); // tavern
+dig(29, gy - 2);
+dig(17, gy - 10, 26, gy - 7); // the Great Hall, up a passage from the gallery
+dig(20, gy - 6, 20, gy - 2);
+dig(28, gy - 10, 30, gy - 7); // barracks, through a door from the Great Hall
+dig(27, gy - 8);
 for (let k = 0; k < 4; k++) {
-  const x = 6 + k * 4;
-  M.designate(S, 'dig', x, gy + 2, x + 2, gy + 3);
-  M.designate(S, 'dig', x + 1, gy + 1, x + 1, gy + 1);
+  const x = 3 + k * 4;
+  dig(x, gy + 2, x + 2, gy + 3); // bedrooms
+  dig(x + 1, gy + 1);
 }
-M.designate(S, 'dig', 18, gy + 1, 26, gy + 6);
-// north of the gallery: kitchen, forge and tavern, the Great Hall and barracks behind them; an infirmary south-east
-M.designate(S, 'dig', 16, gy - 3, 18, gy - 2);
-M.designate(S, 'dig', 20, gy - 3, 23, gy - 2);
-M.designate(S, 'dig', 25, gy - 3, 29, gy - 2);
-M.designate(S, 'dig', 19, gy - 5, 19, gy - 2);
-M.designate(S, 'dig', 17, gy - 9, 26, gy - 6);
-M.designate(S, 'dig', 29, gy - 5, 29, gy - 4);
-M.designate(S, 'dig', 28, gy - 9, 30, gy - 6);
-M.designate(S, 'dig', 28, gy + 1, 30, gy + 3);
-// a dormitory behind the bedrooms for the rest of the crew
-M.designate(S, 'dig', 7, gy + 4, 7, gy + 4);
-M.designate(S, 'dig', 6, gy + 5, 14, gy + 6);
+dig(4, gy + 4); // the dormitory, behind the first bedroom
+dig(3, gy + 5, 13, gy + 6);
+dig(19, gy + 1, 22, gy + 6); // stockpile (open to the gallery: it needs no door)
+dig(24, gy + 2, 27, gy + 3); // brewery
+dig(25, gy + 1);
+dig(24, gy + 5, 27, gy + 7); // workshop, through a door from the stockpile
+dig(23, gy + 6);
+dig(29, gy + 2, 31, gy + 4); // infirmary
+dig(30, gy + 1);
 const plan = [
-  [0.4, () => M.designate(S, 'room:workshop', 23, gy + 4, 26, gy + 6)],
-  [0.6, () => M.designate(S, 'room:stockpile', 18, gy + 1, 22, gy + 6)],
-  ...[0, 1, 2, 3].map(k => [0.9, () => M.designate(S, 'room:bedroom', 6 + k * 4, gy + 2, 8 + k * 4, gy + 3)]),
-  [1.0, () => M.designate(S, 'room:dorm', 6, gy + 5, 14, gy + 6)],
+  [0.4, () => M.designate(S, 'room:workshop', 24, gy + 5, 27, gy + 7)],
+  [0.6, () => M.designate(S, 'room:stockpile', 19, gy + 1, 22, gy + 6)],
+  ...[0, 1, 2, 3].map(k => [0.9, () => M.designate(S, 'room:bedroom', 3 + k * 4, gy + 2, 5 + k * 4, gy + 3)]),
+  [1.0, () => M.designate(S, 'room:dorm', 3, gy + 5, 13, gy + 6)],
   [1.1, () => M.designate(S, 'room:dining', 6, gy - 7, 14, gy - 3)],
   [1.2, () => M.designate(S, 'smooth', 5, gy - 8, 15, gy - 2)],
-  [1.3, () => M.designate(S, 'room:brewery', 23, gy + 1, 26, gy + 3)],
-  [1.4, () => M.designate(S, 'room:kitchen', 16, gy - 3, 18, gy - 2)],
-  [1.5, () => M.designate(S, 'room:forge', 20, gy - 3, 23, gy - 2)],
-  [1.6, () => M.designate(S, 'room:tavern', 25, gy - 3, 29, gy - 2)],
-  [1.7, () => M.designate(S, 'room:infirmary', 28, gy + 1, 30, gy + 3)],
-  [2.0, () => M.designate(S, 'room:greathall', 17, gy - 9, 26, gy - 6)],
-  [2.2, () => M.designate(S, 'room:barracks', 28, gy - 9, 30, gy - 6)]
+  [1.3, () => M.designate(S, 'room:brewery', 24, gy + 2, 27, gy + 3)],
+  [1.4, () => M.designate(S, 'room:kitchen', 16, gy - 4, 18, gy - 3)],
+  [1.5, () => M.designate(S, 'room:forge', 22, gy - 4, 25, gy - 3)],
+  [1.6, () => M.designate(S, 'room:tavern', 27, gy - 4, 31, gy - 3)],
+  [1.7, () => M.designate(S, 'room:infirmary', 29, gy + 2, 31, gy + 4)],
+  [2.0, () => M.designate(S, 'room:greathall', 17, gy - 10, 26, gy - 7)],
+  [2.2, () => M.designate(S, 'room:barracks', 28, gy - 10, 30, gy - 7)]
 ];
 // every room the plan will make, read back from its calls, so the farms keep off them
 const planned = [];
@@ -55,7 +65,7 @@ for (const p of plan) {
   const m = /room:\w+', ([^)]*)\)/.exec(p[1].toString());
   if (m) planned.push(m[1].split(',').map(v => eval(v.replace(/k/g, '0'))));
 }
-for (let k = 0; k < 4; k++) planned.push([6 + k * 4, gy + 2, 8 + k * 4, gy + 3]);
+for (let k = 0; k < 4; k++) planned.push([3 + k * 4, gy + 2, 5 + k * 4, gy + 3]);
 let logged = 0;
 for (let s = 0; s < days * M.DAY; s += 1) {
   for (const p of plan)
@@ -63,6 +73,11 @@ for (let s = 0; s < days * M.DAY; s += 1) {
       const r = p[1]();
       if (!r || r.ok !== false) p.done = 1;
     }
+  // a door on every way into a room (the way a player would, before it can earn a second star)
+  if (s % 30 === 15)
+    for (const r of S.rooms)
+      for (const i of M.roomOpenings(S, r))
+        M.designate(S, 'build:door', i % M.W, (i / M.W) | 0, i % M.W, (i / M.W) | 0);
   // a farm wherever soil got dug out, and a brewery once there's room
   if (s % 30 === 0) {
     S.tiles.forEach((t, i) => {
@@ -83,6 +98,12 @@ const dug = S.tiles.filter(t => t.k === 'f').length,
 console.log(`day ${M.dayOf(S)}: dug ${dug}, still marked ${left}, items lying ${S.items.length}`);
 console.log('stock', JSON.stringify(S.stock));
 console.log('rooms', S.rooms.map(r => r.type + ':' + M.roomStars(S, r) + '★').join(' '));
+console.log(
+  'doors',
+  S.tiles.filter(t => t.dr).length,
+  'open ways in',
+  S.rooms.reduce((n, r) => n + M.roomOpenings(S, r).length, 0)
+);
 console.log(
   'eye',
   eye.score,

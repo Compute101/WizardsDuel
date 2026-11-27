@@ -571,6 +571,14 @@
         );
       if (R.good && M.roomArea(S, r) < R.good)
         tips.push('it wants ' + R.good + ' tiles of floor for a second star');
+      const open = M.roomOpenings(S, r);
+      if (open.length)
+        tips.push(
+          'hang a door on every way in, or wall it up, for a second star (' +
+            open.length +
+            (open.length > 1 ? ' ways' : ' way') +
+            ' in with no door, marked in red)'
+        );
       if (walls.length && wk / walls.length < 0.8)
         tips.push('smooth its walls for a third star (' + wk + ' / ' + walls.length + ' worked)');
       return `${x}<b>${R.name}</b> <small>${'★'.repeat(st)}${'☆'.repeat(3 - st)} · ${M.roomArea(S, r)} tiles${fu.length ? ' · ' + done + '/' + fu.length + ' ' + R.furn + 's' : ''}</small>
@@ -689,6 +697,7 @@
       <li><b>🧱 Build</b> opens a menu: <b>Wall</b> or <b>Door</b> on dug floor, or a <b>Pillar</b> (on rock, rock you keep; on dug floor, the mason builds one). A dressed block each; built walls count as worked stone, and pillars will soon hold the roof up.</li>
       <li><b>Put a mistake right</b>: dug too much? Wall it back up. A built wall or pillar can be dug out again (you get the stone back); ✖ Clear takes out a door and any mark.</li>
       <li><b>🏠 Room</b> opens a menu of rooms; pick one, then drag over dug floor. Bedrooms, a dining hall, a mushroom farm on soil, a brewery, a stockpile, the <b>mason's workshop</b>, a kitchen, a forge, a tavern hall, an infirmary, a barracks and, once you've room for it, the Great Hall.</li>
+      <li><b>Stars</b>: a room earns its second star once it's furnished, big enough and has a door on every way in (wall up any others); its third once its walls are smoothed. Tap a room to see what it lacks: ways in with no door show in red. Stockpiles and farms need no door.</li>
       <li><b>The mason's workshop comes first</b>: its bench is roughed out of rough stone, and there the mason cuts rough stone into <b>dressed blocks</b> (🧱 in the stock). Every bed, table, still, wall, pillar and door takes a block, and he cuts only as many as your building needs.</li>
       <li><b>The trades</b>: the farmer and brewer cook meals at a kitchen's hearth; the smith smelts copper, tin and coal into bronze at a forge's anvil and forges picks, for the old iron ones wear out. Hard rock sometimes hurts a dwarf: an infirmary mends them.</li>
       <li><b>✨ Smooth</b>: the mason smooths walls and pillars. Finer rooms, and worked stone will keep elementals out.</li>
@@ -1171,6 +1180,18 @@
         c.strokeStyle = '#fff3b0';
         c.lineWidth = 2;
         c.strokeRect(X - 1, Y - 1, w + 2, h + 2);
+        // the ways in that still want a door
+        c.save();
+        c.setLineDash([s * 0.15, s * 0.1]);
+        c.strokeStyle = '#ff6050';
+        c.fillStyle = 'rgba(255,80,60,.18)';
+        for (const i of M.roomOpenings(S, r)) {
+          const ox = (i % W) * s,
+            oy = ((i / W) | 0) * s;
+          c.fillRect(ox + 2, oy + 2, s - 4, s - 4);
+          c.strokeRect(ox + 2, oy + 2, s - 4, s - 4);
+        }
+        c.restore();
       }
     }
     // items lying about
@@ -1745,5 +1766,15 @@
     const b = $('btn-mine');
     if (b) b.addEventListener('click', open);
   });
-  window.Mine = { open, close, _state: () => S, _speed: setSpeed };
+  // _select({kind:'room', id}) etc. is for tests
+  window.Mine = {
+    open,
+    close,
+    _state: () => S,
+    _speed: setSpeed,
+    _select: sel => {
+      ui.sel = sel;
+      renderSide(true);
+    }
+  };
 })();

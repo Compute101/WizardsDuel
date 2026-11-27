@@ -463,4 +463,15 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
       (prospect for it). Wounds come mostly in the first days, while the hard rock is dug, so in the sim they
       are walked off before an infirmary is furnished; a dwarf hurt later goes to a cot and is mended
       (checked). Seed 3 runs out of food by day 8, as before: its loam lies where the script never farms.
+  - *"If rooms don't have a door they shouldn't be considered good."* A room's second star now also needs
+    a door on every way in (`roomOpenings`: floor outside the room beside its floor, where neither tile is a
+    built door; a door can hang on the room's edge or just outside it). Anything else must be walled up or
+    left undug. Stockpiles and farms (`open` on the room type) need no door. Tapping a room marks its open
+    ways in red on the map and its panel counts them. Since bed choice and grudge-settling go by stars, an
+    open-sided bedroom or hall is now worth less to the crew too. The sim was relaid out the way a player
+    would build: every room set back from the gallery behind a one-tile doorway, where it orders a door
+    (14 doors; with the old layout, rooms open along whole sides of the gallery wanted 54). 10 days, seed 7:
+    every room 2★ (the dining hall 3★), but the Great Hall, at 40 tiles short of its 60; seeds 1, 2 and 5
+    run short of food (their loam is outside the script's farms), seed 2 so badly that the grudging crew
+    built only one door.
 - **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.

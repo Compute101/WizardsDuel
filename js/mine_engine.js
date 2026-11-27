@@ -120,7 +120,7 @@
   const EYE_MIN_FLOOR = 30; // the Mason's Eye judges once there's this much worked floor
 
   const ROOMS = {
-    stockpile: { name: 'Stockpile', col: '#c9a04a', furn: null },
+    stockpile: { name: 'Stockpile', col: '#c9a04a', furn: null, open: true },
     bedroom: { name: 'Bedroom', col: '#6f8fd0', furn: 'bed', count: () => 1, good: 4 },
     workshop: { name: "Mason's workshop", col: '#a8a098', furn: 'bench', count: () => 1, good: 6 },
     dorm: {
@@ -137,7 +137,7 @@
       count: a => Math.max(1, Math.ceil(a / 6)),
       good: 12
     },
-    farm: { name: 'Mushroom farm', col: '#6aa84f', furn: null, good: 6 },
+    farm: { name: 'Mushroom farm', col: '#6aa84f', furn: null, good: 6, open: true },
     brewery: { name: 'Brewery', col: '#a0702a', furn: 'still', count: () => 1, good: 4 },
     kitchen: { name: 'Kitchen', col: '#d0a060', furn: 'hearth', count: () => 1, good: 4 },
     forge: { name: 'Forge', col: '#c05030', furn: 'anvil', count: () => 1, good: 6 },
@@ -573,14 +573,34 @@
     const t = inB(x, y) && S.tiles[idx(x, y)];
     return t && t.r ? roomById(S, t.r) : null;
   }
-  // stars (1–3): a clean rectangle of the right size with its furniture in, then worked walls
+  // the ways into a room with no door: floor outside it beside its floor, where neither tile is a built door
+  // (a door can hang on the room's edge or just outside it). Stockpiles and farms don't need doors.
+  function roomOpenings(S, r) {
+    if (ROOMS[r.type].open) return [];
+    const T = S.tiles,
+      out = new Set();
+    for (const i of roomTiles(S, r)) {
+      if (T[i].k !== 'f' || T[i].dr) continue;
+      const x = i % W,
+        y = (i / W) | 0;
+      for (const [dx, dy] of D4) {
+        const a = x + dx,
+          b = y + dy;
+        if (!isFloor(S, a, b) || (a >= r.x0 && a <= r.x1 && b >= r.y0 && b <= r.y1)) continue;
+        if (!T[idx(a, b)].dr) out.add(idx(a, b));
+      }
+    }
+    return [...out];
+  }
+  // stars (1–3): a clean rectangle of the right size with its furniture in and a door on every way in,
+  // then worked walls
   function roomStars(S, r) {
     const R = ROOMS[r.type],
       ts = roomTiles(S, r);
     let stars = 1;
     const furnDone = ts.every(i => !S.tiles[i].fu || S.tiles[i].fb),
       area = roomArea(S, r);
-    if (furnDone && area >= (R.good || 1)) stars++;
+    if (furnDone && area >= (R.good || 1) && !roomOpenings(S, r).length) stars++;
     const walls = roomWalls(S, r);
     if (walls.length && walls.filter(i => S.tiles[i].w).length / walls.length >= 0.8 && stars >= 2) stars++;
     return stars;
@@ -1782,6 +1802,7 @@
     removeRoom,
     roomAt,
     roomStars,
+    roomOpenings,
     roomArea,
     roomWalls,
     durinMove,
