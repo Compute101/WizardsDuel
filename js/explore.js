@@ -76,11 +76,44 @@ function clockLabel(){ const h=Math.floor(clock/60), m=Math.floor(clock%60); ret
 // ── wounds: each wizard's HP carries from fight to fight; healing in battle only buys time (after a
 //    win you keep the lowest you fell to). Rest at a safe place to recover (REST).
 let vit={};                                   // key → hp
-const REST = {hollowmere:{tavern:[1,'You take a room at the Drowned Crow and sleep till morning. The chairs still face the door.']},
-  corvanthe_road:{camp:[0.6,'You sleep a few hours by the gleaners\' cold firepit, one eye open.']},
+const REST = {hollowmere:{tavern:[1,'You take a room at the Drowned Crow and sleep. The chairs still face the door.']},
+  corvanthe_road:{camp:[0.6,'You sleep by the gleaners\' cold firepit, one eye open.']},
   cindergate:{camp:[0.6,'You rest in the gate\'s shadow. The pot on the fire is still warm.']},
-  wrenford:{inn:[1,'You take a room at the Wren\'s Nest and sleep till morning. Somewhere a bell is ringing, a long time, for the Absent.']}};
+  wrenford:{inn:[1,'You take a room at the Wren\'s Nest and sleep. Somewhere a bell is ringing, a long time, for the Absent.']}};
 function maxHp(key){ return (chars[key]&&chars[key].hp)||50; }
+// ── tiredness: you're awake whenever the clock runs (walking, fighting, travelling). After AWAKE.tired
+//    minutes you're too tired to cast (you fight with the Actions alone), after AWAKE.drain (a whole day, so a
+//    night's quest doesn't hurt you) you lose
+//    drainPerHour of your HP every hour you stay up (never below 1). Sleeping (an inn, a camp, the Healing
+//    House) takes AWAKE.sleep minutes, or on till 07:00 if you'd wake before it, and clears it.
+const AWAKE={warn:14*60, tired:16*60, drain:24*60, drainPerHour:0.05, sleep:8*60, canSleep:8*60};
+let awake=2*60, drainAcc=0;
+const tired=()=>awake>=AWAKE.tired;
+function passAwake(min){
+  const before=awake; awake+=min;
+  if(before<AWAKE.warn&&awake>=AWAKE.warn&&awake<AWAKE.tired) toast('You\'re growing weary. Find a bed before long.');
+  if(before<AWAKE.tired&&awake>=AWAKE.tired) toast('You\'re too tired to cast. Your spells won\'t come until you\'ve slept: find an inn.');
+  if(before<AWAKE.drain&&awake>=AWAKE.drain) toast('Exhaustion is wearing you down: you lose strength every hour you stay awake.');
+  const over=Math.min(min,Math.max(0,awake-AWAKE.drain));
+  if(over>0&&chars){ const key=wizKeys[wizIdx]; drainAcc+=over/60*AWAKE.drainPerHour*maxHp(key); const n=Math.floor(drainAcc);
+    if(n>0){ drainAcc-=n; vit[key]=Math.max(1,hpOf(key)-n); } }
+  renderTired();
+}
+function addTime(min){ clock=(clock+min)%1440; passAwake(min); renderClock(); renderHp(); }
+// sleep: HP back to at least frac of full; returns the time you wake
+function sleep(frac){
+  const key=wizKeys[wizIdx]; vit[key]=Math.max(hpOf(key),Math.ceil(maxHp(key)*frac)); if(frac>=1) allies.forEach(a=>a.hp=null);
+  let mins=AWAKE.sleep; const wake=(clock+mins)%1440; if(wake<7*60) mins+=7*60-wake;
+  clock=(clock+mins)%1440; awake=0; drainAcc=0; renderHp(); renderClock(); renderTired(); return clockLabel();
+}
+const sleepy=()=>awake>=AWAKE.canSleep;
+function renderTired(){
+  const t=el.tired; if(!t) return;
+  const h=Math.floor(awake/60), st=awake>=AWAKE.drain?'drain':awake>=AWAKE.tired?'tired':awake>=AWAKE.warn?'warn':'';
+  t.hidden=!st; t.className='ex-tired '+st;
+  t.textContent=st==='drain'?'Exhausted':st==='tired'?'Too tired to cast':'Weary';
+  t.title='Awake '+h+' hours. '+(st==='drain'?'You lose HP every hour until you sleep.':st==='tired'?'No spells until you sleep; past 24 hours you start to lose HP.':'At 16 hours you\'ll be too tired to cast.')+' Sleep at an inn or a camp.';
+}
 function hpOf(key){ return vit[key]==null?maxHp(key):vit[key]; }
 let el={}, ctx=null, dark=null, dctx=null;
 const wiz={x:0,y:0,face:1,walk:0,moving:false};
@@ -582,6 +615,7 @@ function arenaHere(){
 // walk into an Echo: the battle plays on the duel screen, then we come back here
 function fight(a){
   if(busy||typeof window.startExploreBattle!=='function') return;
+  if(tired()&&!(arguments[0]&&arguments[0].fists)) toast('Too tired to cast: you fight with your fists.');
   busy=true; keys.clear(); target=null; hideSay(); save();
   const foes=(a.e.wizard?[{key:a.e.wizard,wizard:true}]:[]).concat(a.e.foes.map(([key,level])=>({key,level})));
   const fighting=allies.slice();
@@ -591,14 +625,14 @@ function fight(a){
     running=false; el.root.classList.remove('active'); fade(false); syncMusic();
     const key=wizKeys[wizIdx];
     if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
-    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:fighting.map(x=>({key:x.key,level:x.level,name:x.name,hp:x.hp,wizard:x.wizard,known:x.wizard&&Year?Year.allyKnown(x,folkApi):undefined})), text, arena:arenaHere(),
+    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), fists:tired(), allies:fighting.map(x=>({key:x.key,level:x.level,name:x.name,hp:x.hp,wizard:x.wizard,known:x.wizard&&Year?Year.allyKnown(x,folkApi):undefined})), text, arena:arenaHere(),
       onEnd:(won,low,allyHp)=>afterFight(a,won,low,key,fighting,allyHp)});
   });
 }
 function afterFight(a,won,low,key,fighting,allyHp){
   el.root.classList.add('active'); running=true; busy=false; resize(); syncMusic();
   navGrid=null;                                // the door may have just opened
-  clock=(clock+20)%1440;                       // a fight takes a while
+  addTime(20);                                 // a fight takes a while
   if(won) vit[key]=Math.max(1,Math.round(Math.min(isFinite(low)?low:hpOf(key),hpOf(key))));
   else vit[key]=Math.max(1,Math.round(maxHp(key)*0.25));
   renderHp();
@@ -781,7 +815,7 @@ function showSayPage(n){
 function sayNext(){ if(sayPages&&sayPage<sayPages.length-1){ showSayPage(sayPage+1); return; } hideSay(); }
 const heal=(key,amt)=>{ vit[key]=Math.min(maxHp(key),hpOf(key)+amt); };
 function drinkPotion(){ if(potions<1) return; const key=wizKeys[wizIdx]; potions--; heal(key,Math.ceil(maxHp(key)*POTION_HEAL)); toast('You drink the potion. Warmth spreads through you.'); }
-function restFull(morning){ const key=wizKeys[wizIdx]; vit[key]=maxHp(key); allies.forEach(a=>a.hp=null); if(morning) clock=7*60; renderClock(); }
+function restFull(){ const key=wizKeys[wizIdx]; vit[key]=maxHp(key); allies.forEach(a=>a.hp=null); }
 const buyPotion=price=>({label:'Buy a potion ('+price+' gold)', disabled:gold<price, fn:()=>{ gold-=price; potions++; toast('A potion, wrapped in a rag.'); }});
 
 // ── townsfolk (js/explore_folk.js): what they need to act on the world ──
@@ -799,7 +833,7 @@ const folkApi = {
   dialog:(t,x,ch)=>showDialog(t,x,ch), toast:m=>toast(m), save:()=>{ renderSpill(); renderHp(); save(); },
   quest:id=>quests[id]||(quests[id]={}), booksRead:()=>booksRead, lore:k=>(MAP.lore||{})[k],
   gold:()=>gold, addGold:n=>{ gold=Math.max(0,gold+n); }, addPotions:n=>{ potions+=n; },
-  hp:()=>hpOf(wizKeys[wizIdx]), maxHp:()=>maxHp(wizKeys[wizIdx]), healFull:()=>{ restFull(false); renderHp(); save(); },
+  hp:()=>hpOf(wizKeys[wizIdx]), maxHp:()=>maxHp(wizKeys[wizIdx]), healFull:()=>{ restFull(); renderHp(); save(); },
   spillTotal:()=>Object.values(spill).reduce((a,n)=>a+n,0),
   addSpill:(e,n)=>{ spill[e]=(spill[e]||0)+n; },
   takeSpill:n=>{ for(const k of Object.keys(spill).sort((a,b)=>spill[b]-spill[a])){ const t=Math.min(n,spill[k]); spill[k]-=t; n-=t; if(!n) break; } },
@@ -813,7 +847,9 @@ const folkApi = {
   primer:id=>primerTest(id), practise:o=>practise(o),
   // the Year's own needs (js/explore_year.js)
   battle:o=>battle(o), mapId:()=>MAP&&MAP.id, interior:()=>!!(MAP&&MAP.interior), clock:()=>clock, night:()=>darkness()>0.5,
-  setClock:m=>{ clock=((m%1440)+1440)%1440; renderClock(); },
+  // a story sets the clock (the night watch, the finale at 22:00): a quest night, so it counts as if you'd
+  // rested in the day: no hours awake are added, and you start it fresh
+  setClock:m=>{ clock=((m%1440)+1440)%1440; awake=Math.min(awake,2*60); drainAcc=0; renderClock(); renderTired(); },
   addNpc:n=>{ if(!npcs.some(x=>x.role===n.role&&!x.gone)) npcs.push(Object.assign({},n)); },
   dropNpc:role=>{ npcs.forEach(n=>{ if(n.role===role) n.gone=true; }); },
   spawnEcho:e=>spawnIncidentEcho(e),
@@ -831,7 +867,7 @@ const folkApi = {
   seat:(x,y,face,lift,scale,crop)=>{ wiz.x=x; wiz.y=y; wiz.face=face||1; wiz.seated=true; wiz.seatLift=lift||0; wiz.seatScale=scale||1; wiz.seatCrop=crop||SEAT_CROP; wiz.moving=false; },
   stand:(x,y)=>{ wiz.seated=false; if(x!=null){ wiz.x=x; wiz.y=y; } },
   wizPos:()=>({x:wiz.x, y:wiz.y, face:wiz.face, glow:wizGlow}),
-  passTime:m=>{ clock=(clock+m)%1440; renderClock(); },
+  passTime:m=>addTime(m), sleep:f=>{ const t=sleep(f==null?1:f); save(); return t; }, tired:()=>tired(), sleepy:()=>sleepy(), horse:()=>horse, feedHorse:()=>{ if(horse) horse.hungry=false; }, buyHorse:h=>{ horse=Object.assign({},h); },
   // asking the way (js/explore_folk.js guides): where someone or a fixed room's door is, and the gold trail there
   npcPos:role=>{ const n=npcs.find(x=>x.role===role&&present(x)); return n?{x:n.x,y:n.y}:null; },
   doorPos:type=>{ const d=doors.find(x=>x.spec&&x.spec.fixed===type); return d?{x:d.x,y:d.y}:null; },
@@ -841,15 +877,16 @@ const folkApi = {
 // in (the University's healers see to that); nothing is lost on a defeat
 function spar({foes, text, onWin, onLose, fists, allies:al}){
   if(busy||typeof window.startExploreBattle!=='function') return;
+  if(tired()&&!(arguments[0]&&arguments[0].fists)) toast('Too tired to cast: you fight with your fists.');
   busy=true; keys.clear(); target=null; hideSay(); save();
   const key=wizKeys[wizIdx], before=hpOf(key);
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false); syncMusic();
     if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
-    window.startExploreBattle({wizKey:key, foes, hp:maxHp(key), allies:al||[], text, fists, arena:arenaHere(),
+    window.startExploreBattle({wizKey:key, foes, hp:maxHp(key), allies:al||[], text, fists:fists||tired(), arena:arenaHere(),
       onEnd:won=>{
         el.root.classList.add('active'); running=true; busy=false; resize(); syncMusic();
-        clock=(clock+20)%1440; vit[key]=Math.max(before,1);
+        vit[key]=Math.max(before,1); addTime(20);
         if(won){ onWin&&onWin(); } else { onLose&&onLose(); }
         renderHp(); renderSpill(); save(); grace=1.5;
         last=performance.now(); requestAnimationFrame(frame);
@@ -867,6 +904,7 @@ async function primerTest(id){
 // a Laboratory practical: one cast's minigame, outside any battle (game.js practiseCast); resolves ok
 function practise(o){
   if(busy||typeof window.practiseCast!=='function') return Promise.resolve(false);
+  if(tired()){ toast('You\'re too tired to cast. Sleep first.'); return Promise.resolve(false); }
   busy=true; keys.clear(); target=null; hideSay();
   return new Promise(res=>{
     fade(true).then(()=>{
@@ -884,15 +922,16 @@ function practise(o){
 // leaves you at a quarter of your HP where you stand (Wrenford is safe), and the clock moves on
 function battle({foes, allies:al, text, onWin, onLose, fists}){
   if(busy||typeof window.startExploreBattle!=='function') return;
+  if(tired()&&!(arguments[0]&&arguments[0].fists)) toast('Too tired to cast: you fight with your fists.');
   busy=true; keys.clear(); target=null; hideSay(); save();
   const key=wizKeys[wizIdx];
   fade(true).then(()=>{
     running=false; el.root.classList.remove('active'); fade(false); syncMusic();
     if(key==='hero'&&typeof CHAR_DEFS!=='undefined') CHAR_DEFS.hero=chars.hero;
-    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:al||[], text, fists, arena:arenaHere(),
+    window.startExploreBattle({wizKey:key, foes, hp:hpOf(key), allies:al||[], text, fists:fists||tired(), arena:arenaHere(),
       onEnd:(won,low)=>{
         el.root.classList.add('active'); running=true; busy=false; resize(); syncMusic();
-        clock=(clock+20)%1440; navGrid=null;
+        addTime(20); navGrid=null;
         if(won) vit[key]=Math.max(1,Math.round(Math.min(isFinite(low)?low:hpOf(key),hpOf(key))));
         else vit[key]=Math.max(1,Math.round(maxHp(key)*0.25));
         if(won){ onWin&&onWin(); } else { onLose&&onLose(); }
@@ -932,7 +971,7 @@ function roomAct(o){
   }
   if(o.lore==='shop'){ showDialog(MAP.lore.shop[0],MAP.lore.shop[1],[buyPotion(POTION_PRICE.shop)]); return true; }
   if(o.lore==='rest'){
-    const L=MAP.lore.rest, ch=[{label:'🛏 Rest till morning ('+hpOf(key)+' → '+maxHp(key)+' HP)', disabled:hpOf(key)>=maxHp(key)&&allies.every(a=>a.hp==null), fn:()=>{ restFull(true); toast(MAP.type==='safehouse'?'You sleep by Marda\'s fire. Nothing comes to the door.':'You sleep in a real bed. It is morning.'); }}];
+    const L=MAP.lore.rest, full=hpOf(key)>=maxHp(key)&&allies.every(a=>a.hp==null), ch=[{label:'🛏 Sleep'+(full?' (8 hours)':' ('+hpOf(key)+' → '+maxHp(key)+' HP)')+stableTag(), disabled:full&&!sleepy(), fn:()=>{ const st=stabling(), t=sleep(1); toast((MAP.type==='safehouse'?'You sleep by Marda\'s fire. Nothing comes to the door.':'You sleep in a real bed.')+' You wake at '+t+'.'+st); }}];
     if(MAP.type==='wrenInn') ch.push(buyPotion(POTION_PRICE.shop));
     if(MAP.type==='safehouse'){
       ch.push(buyPotion(POTION_PRICE.safehouse));
@@ -1035,6 +1074,7 @@ function renderBag(){
     h+=`<div class="ex-bag-row"><span class="ex-bag-coin"></span><b>${gold}</b> gold</div>`;
     h+=`<div class="ex-bag-row"><span class="ex-bag-ico">🧪</span><b>${potions}</b> potion${potions===1?'':'s'}<span class="ex-bag-sp"></span>`+
        `<button class="ex-btn" data-act="drink" type="button"${potions<1||hpOf(key)>=maxHp(key)?' disabled':''}>Drink (+${Math.round(POTION_HEAL*100)}% HP)</button></div>`;
+    if(horse) h+=`<div class="ex-bag-row"><span class="ex-bag-ico">🐎</span><b>${esc(horse.name)}</b>, your horse<span class="ex-bag-sp"></span><small>${horse.hungry?'hungry: no faster than walking until stabled':'half the time on the roads; stabling '+STABLE_FEE+' gold a night at inns'}</small></div>`;
     h+=`<div class="ex-bag-sec">Quintessence</div><div class="ex-bag-grid">`+RING_ELS.map(e=>{ const n=spill[e]||0;
       return `<div class="ex-bag-q${n?'':' none'}"><img src="${crystalSrc(e)}" alt=""><b>${n}</b><small style="color:${SPILL[e][1]}">${SPILL[e][0]}</small></div>`; }).join('')+`</div>`;
     h+=`<div class="ex-bag-note">Spill from broken Echoes. Wenna in Cindergate bakes with cinderglass; the Lamplighter in Gloamside trades for nightglass.</div>`;
@@ -1333,7 +1373,7 @@ function unstick(){
 function save(){
   if(!MAP||!saveKey||!hero) return;                // nothing is kept until the wizard has been made
   if(!MAP.interior&&MAP.name) lastPlace=MAP.name;    // a room is listed under the town it's in
-  try{ localStorage.setItem(saveKey,JSON.stringify({v:2, t:Date.now(), place:lastPlace, map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,hero,magic,toppers,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
+  try{ localStorage.setItem(saveKey,JSON.stringify({v:2, t:Date.now(), place:lastPlace, map:MAP.id,x:Math.round(wiz.x),y:Math.round(wiz.y),found:[...found],visited:[...visited],spill,cleared,clock:Math.round(clock),awake:Math.round(awake),road:roadAt,horse,lightMode,vit,gold,potions,allies,rescues,rooms,booksRead,quests,bands:bandState,hero,magic,toppers,roomSpec:MAP.interior?roomSpec:null,wiz:wizKeys[wizIdx]})); }catch(e){}
 }
 function loadSave(key){
   try{ return key?JSON.parse(localStorage.getItem(key)||'null'):null; }catch(e){ return null; }
@@ -1343,6 +1383,7 @@ function applySave(s){
   s=s||{};
   found=new Set(s.found||[]); visited=new Set(s.visited||[]); spill=s.spill||{}; cleared=s.cleared||{};
   clock=s.clock!=null?s.clock:9*60; lightMode=s.lightMode||'auto'; vit=s.vit||{};
+  awake=s.awake!=null?s.awake:(clock>=7*60?clock-7*60:clock+17*60); drainAcc=0; roadAt=s.road||null; horse=s.horse||null;   // older saves: up since 07:00
   gold=s.gold||0; potions=s.potions||0; allies=s.allies||[]; rescues=s.rescues||[]; rooms=s.rooms||{}; booksRead=s.booksRead||[]; quests=s.quests||{}; hero=s.hero||null; magic=hero?(s.magic||fullMagic(hero.elem)):freshMagic(); roomSpec=s.roomSpec||null; bandState=s.bands||{}; lastPlace=s.place||''; toppers=s.toppers||[];
   if(s.map&&!s.map.startsWith('room:')) visited.add(s.map);
   for(const id of found){ const l=world&&world.locations.find(x=>x.id===id); if(l&&l.map) visited.add(l.map); }   // older saves knew only world-map places
@@ -1358,11 +1399,50 @@ function takeExit(x){
 // Drawn on a 1000 x 700 parchment. From an exit ('travel') you can travel to a place
 // you know; from the 🗺 button ('view') you can only look.
 let worldMode='view', worldSel=null, worldOpen=false;
+// Travel takes time: WORLD_SPEED parchment units an hour on the road, and a journey stops at the first wayside
+// inn on its way (kind 'inn' in maps/world.json: no map of its own), where you can sleep before going on.
+// roadAt is the inn you're at (saved): while it's set the world map stays open.
+const WORLD_SPEED=25, HORSE_SPEED=2;   // a horse (bought from the ostler in Wrenford) halves the hours
+// Stabling: every night you sleep at an inn (a town's, a wayside one, Marda's safe house) your horse costs
+// STABLE_FEE gold. Can't pay, and she goes hungry (horse.hungry): no faster than walking until she's stabled
+// or has grazed at a camp (free). The Healing House's elves see to her for nothing.
+const STABLE_FEE=3;
+const stableTag=()=>horse?' · stabling '+STABLE_FEE+' gold':'';
+function stabling(){
+  if(!horse) return '';
+  if(gold>=STABLE_FEE){ gold-=STABLE_FEE; horse.hungry=false; renderSpill(); return ' '+horse.name+' is stabled, fed and watered: '+STABLE_FEE+' gold.'; }
+  horse.hungry=true; return ' You can\'t pay for '+horse.name+'\'s stabling. She goes hungry, and will be no faster than you on foot until she\'s fed.';
+}
+function graze(){ if(!horse) return ''; const was=horse.hungry; horse.hungry=false; return ' '+horse.name+' grazes by the camp'+(was?' and is fit to ride again.':'.'); }
+let roadAt=null, horse=null;
+const locById=id=>world.locations.find(l=>l.id===id);
+function hereLoc(){ return roadAt?locById(roadAt):(MAP&&locationOfMap(MAP.id)); }
+const hoursFmt=h=>{ const m=Math.round(h*60); return Math.floor(m/60)+' h'+(m%60?' '+(m%60)+' min':''); };
+// the shortest way by road (each place on it must be on the map), cut at the first inn after the start
+function journey(from,to){
+  if(!from||!to) return null;
+  const dist={[from.id]:0}, prev={}, todo=new Set([from.id]);
+  while(todo.size){
+    let u=null; for(const id of todo) if(u==null||dist[id]<dist[u]) u=id; todo.delete(u);
+    if(u===to.id) break;
+    for(const [a,b] of world.roads){ const v=a===u?b:b===u?a:null; if(!v) continue; const V=locById(v); if(!V||!visible(V)) continue;
+      const d=dist[u]+Math.hypot(V.x-locById(u).x,V.y-locById(u).y); if(dist[v]==null||d<dist[v]){ dist[v]=d; prev[v]=u; todo.add(v); } }
+  }
+  if(dist[to.id]==null) return null;
+  const path=[to.id]; while(path[0]!==from.id) path.unshift(prev[path[0]]);
+  const speed=WORLD_SPEED*(horse&&!horse.hungry?HORSE_SPEED:1);
+  let units=0, inn=null;
+  for(let i=1;i<path.length;i++){ const A=locById(path[i-1]), B=locById(path[i]); units+=Math.hypot(B.x-A.x,B.y-A.y);
+    if(!inn&&B.kind==='inn'&&i<path.length-1) inn={stop:B, hours:units/speed}; }
+  return {stop:to, hours:units/speed, inn};
+}
+const arriveText=(h)=>{ const t=(clock+h*60)%1440, a=Math.floor(t/60), m=Math.floor(t%60), up=awake+h*60;
+  return 'about '+(a<10?'0':'')+a+':'+(m<10?'0':'')+m+(up>=AWAKE.drain?', exhausted: it will cost you HP':up>=AWAKE.tired?', too tired to cast':''); };
 function reachable(l){ return !l.locked && (found.has(l.id) || (l.seenFrom||[]).some(id=>found.has(id))); }
 function visible(l){ return l.known || found.has(l.id) || (l.seenFrom||[]).some(id=>found.has(id)); }
 function openWorld(mode){
   worldMode=mode; worldOpen=true; keys.clear(); target=null; hideSay();
-  const here=locationOfMap(MAP.id), [WW,WH]=worldDims();
+  const here=hereLoc(), [WW,WH]=worldDims();
   worldSel=here||null;
   worldView=here?{cx:here.x, cy:here.y}:{cx:WW/2, cy:WH/2};
   el.world.hidden=false; worldPan(0,0);
@@ -1370,28 +1450,54 @@ function openWorld(mode){
   showWorldPanel();
   requestAnimationFrame(drawWorldLoop);
 }
-function closeWorld(){ worldOpen=false; el.world.hidden=true; exitArmed=false; }
+function closeWorld(){
+  if(roadAt){ toast('You\'re on the road: travel on, or back the way you came.'); return; }
+  worldOpen=false; el.world.hidden=true; exitArmed=false;
+}
 function showWorldPanel(){
-  const l=worldSel, here=locationOfMap(MAP.id);
+  const l=worldSel, here=hereLoc();
   el.wpName.textContent=l?l.name:world.name;
-  el.wpText.textContent=l?l.blurb:'';
+  let text=l?l.blurb:'';
   const isHere=l&&here&&l.id===here.id;
-  let can=false, label='Travel';
+  let can=false, label='Travel', inn=null;
   if(!l){ label='Travel'; }
+  else if(isHere&&l.kind==='inn'){ const full=hpOf(wizKeys[wizIdx])>=maxHp(wizKeys[wizIdx]);
+    label=sleepy()||!full?'🛏 Sleep here'+stableTag():'Not tired yet'; can=sleepy()||!full;
+    text+=' You\'ve been awake '+Math.floor(awake/60)+' hours.'; }
   else if(isHere){ label=worldMode==='travel'?'Stay here':'You are here'; can=worldMode==='travel'; }
   else if(l.locked){ label='Not yet'; }
   else if(!reachable(l)){ label='Unknown'; }
   else if(worldMode!=='travel'){ label='Walk to a road out to travel'; }
-  else { can=true; }
+  else { const j=journey(here,l);
+    if(!j){ label='No road there'; }
+    else { can=true; inn=j.inn; label=(horse?'Ride':'Travel')+' ('+hoursFmt(j.hours)+')';
+      if(horse&&horse.hungry) text+=' '+horse.name+' is hungry: she\'ll go no faster than you walk until she\'s stabled.';
+      text+=' '+(horse?'On '+horse.name+', you':'You')+'\'d arrive '+arriveText(j.hours)+'.'+(j.inn?' Or stop on the way at '+j.inn.stop.name+', arriving '+arriveText(j.inn.hours)+'.':''); } }
+  el.wpText.textContent=text;
   el.wpGo.textContent=label; el.wpGo.disabled=!can;
+  el.wpInn.hidden=!inn; if(inn) el.wpInn.textContent='Stop at '+inn.stop.name+' ('+hoursFmt(inn.hours)+')';
 }
-function worldGo(){
-  const l=worldSel; if(!l) return;
-  const here=locationOfMap(MAP.id);
-  closeWorld();
-  if(here&&l.id===here.id) return;
-  enterMap(l.map,l.spawn);
+function worldGo(toInn){
+  const l=worldSel; if(!l||worldBusy) return;
+  const here=hereLoc();
+  if(here&&l.id===here.id){
+    if(l.kind==='inn'){ const st=stabling(), t=sleep(1); save(); toast('You take a bed at '+l.name+'. You wake at '+t+'.'+st); showWorldPanel(); }
+    else closeWorld();
+    return;
+  }
+  let j=journey(here,l); if(!j) return;
+  if(toInn===true&&j.inn) j=j.inn;
+  worldBusy=true;
+  fade(true).then(()=>{
+    addTime(j.hours*60); found.add(j.stop.id);
+    worldBusy=false;
+    if(j.stop.kind==='inn'){
+      roadAt=j.stop.id; worldSel=j.stop; worldView={cx:j.stop.x, cy:j.stop.y}; worldPan(0,0); save(); fade(false);
+      toast('After '+hoursFmt(j.hours)+' on the road you reach '+j.stop.name+'. It\'s '+clockLabel()+'.'); showWorldPanel();
+    } else { roadAt=null; closeWorld(); fade(false); enterMap(j.stop.map,j.stop.spawn); }
+  });
 }
+let worldBusy=false;
 
 // ═══ THE MORIQUENDE ═════════════════════════════════════════════════
 // Mother Agathe's errand (js/explore_folk.js, after Finals) leads to Elfhome (maps/elfhome.json; its people
@@ -1507,7 +1613,7 @@ function drawWorld(t){
   for(const [a,b] of world.roads){ const A=L(a), B=L(b); if(!visible(A)||!visible(B)) continue; g.beginPath(); g.moveTo(A.x,A.y); g.lineTo(B.x,B.y); g.stroke(); }
   g.setLineDash([]);
   // places
-  const here=locationOfMap(MAP.id);
+  const here=hereLoc();
   for(const l of world.locations){
     if(!visible(l)) continue;
     if(l.kind==='city'){
@@ -1536,10 +1642,16 @@ function drawWorld(t){
     } else if(l.kind==='town'){
       g.fillStyle='#3a2810';
       for(const [dx,dy] of [[-10,4],[2,-6],[12,6]]){ g.fillRect(l.x+dx-5,l.y+dy-3,10,8); g.beginPath(); g.moveTo(l.x+dx-7,l.y+dy-3); g.lineTo(l.x+dx,l.y+dy-10); g.lineTo(l.x+dx+7,l.y+dy-3); g.fill(); }
+    } else if(l.kind==='inn'){
+      // a wayside inn: one house, a hanging sign and a lit lantern
+      g.fillStyle='#3a2810'; g.fillRect(l.x-7,l.y-3,14,10); g.beginPath(); g.moveTo(l.x-9,l.y-3); g.lineTo(l.x,l.y-11); g.lineTo(l.x+9,l.y-3); g.fill();
+      g.strokeStyle='#3a2810'; g.lineWidth=1.5; g.beginPath(); g.moveTo(l.x+9,l.y-1); g.lineTo(l.x+15,l.y-1); g.stroke(); g.fillRect(l.x+12,l.y,5,5);
+      const gl=g.createRadialGradient(l.x-3,l.y+2,1,l.x-3,l.y+2,14); gl.addColorStop(0,'rgba(255,200,110,0.7)'); gl.addColorStop(1,'rgba(255,200,110,0)');
+      g.fillStyle=gl; g.fillRect(l.x-17,l.y-12,28,28);
     } else {
       g.fillStyle='#3a2810'; g.beginPath(); g.arc(l.x,l.y,6,0,Math.PI*2); g.fill();
     }
-    g.font='bold 17px Cinzel, serif'; g.textAlign='center';
+    g.font=l.kind==='inn'?'bold 13px Cinzel, serif':'bold 17px Cinzel, serif'; g.textAlign='center';
     g.fillStyle=l.locked?'rgba(58,40,16,0.7)':'#2a1c08';
     g.fillText(l.name,l.x+(l.labelDx||0),l.y+(l.labelDy!=null?l.labelDy:l.kind==='city'?60:30));
     if(worldSel===l){ g.strokeStyle='#9a2a1a'; g.lineWidth=2; g.beginPath(); g.arc(l.x,l.y,l.kind==='city'?48:22,0,Math.PI*2); g.stroke(); }
@@ -1565,7 +1677,7 @@ function buildDom(){
       <div class="ex-title" id="ex-title"></div>
       <div class="ex-wiz">
         <button class="ex-btn ex-arrow" id="ex-prev" type="button" aria-label="Previous wizard">◀</button>
-        <img id="ex-face" alt=""><span class="ex-who"><span id="ex-name"></span><span class="ex-hp" id="ex-hp"><i></i><b></b></span></span>
+        <img id="ex-face" alt=""><span class="ex-who"><span id="ex-name"></span><span class="ex-hp" id="ex-hp"><i></i><b></b></span><span class="ex-tired" id="ex-tired" hidden></span></span>
         <button class="ex-btn ex-arrow" id="ex-next" type="button" aria-label="Next wizard">▶</button>
       </div>
       <div class="ex-spill" id="ex-spill" hidden></div>
@@ -1584,7 +1696,7 @@ function buildDom(){
       <div class="ex-world-head"><span id="ex-world-title"></span><button class="ex-btn" id="ex-world-close" type="button">✕ Close</button></div>
       <canvas id="ex-world-cv"></canvas>
       <div class="ex-world-panel"><div class="ex-wp-name" id="ex-wp-name"></div><div class="ex-wp-text" id="ex-wp-text"></div>
-        <button class="ex-btn ex-wp-go" id="ex-wp-go" type="button">Travel</button></div>
+        <div class="ex-wp-btns"><button class="ex-btn ex-wp-go" id="ex-wp-go" type="button">Travel</button><button class="ex-btn ex-wp-inn" id="ex-wp-inn" type="button" hidden></button></div></div>
     </div>
     <div class="ex-bag" id="ex-bag" hidden>
       <div class="ex-bag-box">
@@ -1602,7 +1714,7 @@ function buildDom(){
   el={root:d, cv:$('#ex-canvas'), mini:$('#ex-mini'), say:$('#ex-say'), act:$('#ex-act'), look:$('#ex-look'), hint:$('#ex-hint'),
       face:$('#ex-face'), name:$('#ex-name'), night:$('#ex-night'), zoom:$('#ex-zoom'), loading:$('#ex-loading'), lPic:$('#exl-pic'), lName:$('#exl-name'), lFill:$('#exl-fill'), lTip:$('#exl-tip'), title:$('#ex-title'),
       fade:$('#ex-fade'), toast:$('#ex-toast'), world:$('#ex-world'), worldCv:$('#ex-world-cv'), worldTitle:$('#ex-world-title'),
-      hp:$('#ex-hp'), spill:$('#ex-spill'), bag:$('#ex-bag'), bagBody:$('#ex-bag-body'), bagTabs:$('#ex-bag-tabs'), bagWho:$('#ex-bag-who'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go')};
+      hp:$('#ex-hp'), tired:$('#ex-tired'), spill:$('#ex-spill'), bag:$('#ex-bag'), bagBody:$('#ex-bag-body'), bagTabs:$('#ex-bag-tabs'), bagWho:$('#ex-bag-who'), wpName:$('#ex-wp-name'), wpText:$('#ex-wp-text'), wpGo:$('#ex-wp-go'), wpInn:$('#ex-wp-inn')};
   ctx=el.cv.getContext('2d');
   dark=document.createElement('canvas'); dctx=dark.getContext('2d');
   $('#ex-back').onclick=close;
@@ -1611,7 +1723,9 @@ function buildDom(){
   $('#ex-next').onclick=()=>setWizard(wizIdx+1);
   $('#ex-mapbtn').onclick=()=>{ if(!busy&&MAP) openWorld('view'); };
   $('#ex-world-close').onclick=closeWorld;
-  el.wpGo.onclick=worldGo;
+  el.wpGo.onclick=()=>worldGo(false);
+  el.wpInn.onclick=()=>worldGo(true);
+  el.tired.onclick=e=>{ e.stopPropagation(); toast(el.tired.title); };
   el.worldCv.addEventListener('pointerdown',worldDown);
   el.worldCv.addEventListener('pointermove',worldMove);
   el.worldCv.addEventListener('pointerup',worldUp);
@@ -1664,7 +1778,7 @@ function onKey(e){
   if(bagOpen){ if(k==='escape'||k==='i'){ closeBag(); e.preventDefault(); } return; }
   if(worldOpen){
     if(k==='escape'){ closeWorld(); e.preventDefault(); }
-    else if(k==='enter'&&!el.wpGo.disabled){ worldGo(); e.preventDefault(); }
+    else if(k==='enter'&&!el.wpGo.disabled){ worldGo(false); e.preventDefault(); }
     return;
   }
   if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)){ keys.add(k); target=null; hideSay(); e.preventDefault(); }
@@ -1921,9 +2035,9 @@ function showSay(o){
   if(R){
     btn=document.createElement('button'); btn.className='ex-btn ex-rest'; btn.type='button';
     const to=Math.max(hpOf(key),Math.ceil(maxHp(key)*R[0]));
-    btn.textContent=to>hpOf(key)?'🛏 Rest ('+hpOf(key)+' → '+to+' HP)':'🛏 Rested';
-    btn.disabled=to<=hpOf(key);
-    btn.onclick=ev=>{ ev.stopPropagation(); vit[key]=to; clock=R[0]>=1?7*60:(clock+240)%1440; renderHp(); renderClock(); save(); hideSay(); toast(R[1]); };
+    btn.textContent=(to>hpOf(key)?'🛏 Sleep ('+hpOf(key)+' → '+to+' HP)':sleepy()?'🛏 Sleep (8 hours)':'🛏 Not tired yet')+(R[0]>=1&&(to>hpOf(key)||sleepy())?stableTag():'');
+    btn.disabled=to<=hpOf(key)&&!sleepy();
+    btn.onclick=ev=>{ ev.stopPropagation(); const st=R[0]>=1?stabling():graze(), t=sleep(R[0]); save(); hideSay(); toast(R[1]+' You wake at '+t+'.'+st); };
     el.say.appendChild(btn);
   }
   el.say.hidden=false; el.hint.classList.add('fade');  paginateSay(L[1]);
@@ -2396,7 +2510,7 @@ let clockT=0;
 function frame(now){
   if(!running) return;
   const dt=Math.min(0.05,(now-last)/1000||0); last=now;
-  if(MAP){ if(!busy&&!worldOpen) clock=(clock+dt*1000*1440/DAY_MS)%1440; update(dt); draw(now); }
+  if(MAP){ if(!busy&&!worldOpen){ const m=dt*1000*1440/DAY_MS; clock=(clock+m)%1440; passAwake(m); } update(dt); draw(now); }
   if((clockT+=dt)>1){ clockT=0; renderClock(); }
   requestAnimationFrame(frame);
 }
@@ -2487,10 +2601,11 @@ async function open(opts){
   await hideLoading();
   sizeMini();
   let saved=s&&s.wiz; if(!saved) try{ saved=localStorage.getItem('wd-explore-wiz'); }catch(e){}
-  setWizard(Math.max(0,wizKeys.indexOf(saved||'eldrin'))); renderClock();
+  setWizard(Math.max(0,wizKeys.indexOf(saved||'eldrin'))); renderClock(); renderTired();
   if(!hero&&window.ExploreHero&&opts.random) await randomGraduate();
   else if(!hero&&window.ExploreHero) await createHero(false); else { stopTheme(); await useHero(); }
   last=performance.now(); requestAnimationFrame(frame);
+  if(roadAt&&locById(roadAt)) openWorld('travel'); else roadAt=null;
   el.hint.classList.remove('fade');
   setTimeout(()=>{ if(el.hint) el.hint.classList.add('fade'); },7000);
 }
@@ -2579,6 +2694,8 @@ window.Explore={open, close, refreshTitle, titleMusic:()=>titleMusic(),
   _talk:n=>talkTo(n), _magic:()=>magic, _folk:()=>folkApi,
   _worldPt:id=>{ const l=world.locations.find(x=>x.id===id), f=worldFit(), b=el.worldCv.getBoundingClientRect(); return [b.left+f.ox+l.x*f.s, b.top+f.oy+l.y*f.s]; },   // tests: a place on screen
   _setClock:m=>folkApi.setClock(m),
+  _awake:m=>{ if(m!=null){ awake=m; renderTired(); } return {awake, tired:tired(), road:roadAt, clock, hp:hpOf(wizKeys[wizIdx]), max:maxHp(wizKeys[wizIdx]), chip:el.tired&&!el.tired.hidden?el.tired.textContent:''}; }, _pass:m=>addTime(m),
+  _travel:(id,inn)=>{ if(!worldOpen) openWorld('travel'); worldSel=locById(id); showWorldPanel(); const lab=el.wpGo.textContent, txt=el.wpText.textContent, innLab=el.wpInn.hidden?'':el.wpInn.textContent; worldGo(!!inn); return {lab, innLab, txt}; }, _horse:h=>{ if(h!==undefined) horse=h; return horse; }, _gold:n=>{ if(n!=null) gold=n; return gold; },
   _fightActor:id=>{ const a=actors.find(x=>x.e.incident===id||x.e.id===id); if(a) fight(a); return !!a; }, _actorIds:()=>actors.map(a=>a.e.incident||a.e.id), _quests:()=>quests, _allies:()=>allies, _tick:()=>Year&&Year.tick(folkApi),
   knowAll:()=>{ if(!hero) return false; magic=fullMagic(hero.elem); applyMagic(); save(); return true; },   // testing: the whole Year at once
   enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _strollers:()=>strollers, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
