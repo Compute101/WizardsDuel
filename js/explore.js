@@ -1497,7 +1497,7 @@ function worldGo(toInn){
     } else { roadAt=null; closeWorld(); fade(false); enterMap(j.stop.map,j.stop.spawn); }
   });
 }
-let worldBusy=false;
+let worldBusy=false, worldSyms=null;   // the world map's land symbols, placed once
 
 // ═══ THE MORIQUENDE ═════════════════════════════════════════════════
 // Mother Agathe's errand (js/explore_folk.js, after Finals) leads to Elfhome (maps/elfhome.json; its people
@@ -1593,20 +1593,44 @@ function drawWorld(t){
   g.fillStyle='rgba(90,60,30,0.08)';
   for(let i=0;i<900*area;i++){ g.fillRect(r()*WW,r()*WH,1+r()*2,1+r()*2); }
   const wound=world.locations.find(l=>l.kind==='city')||{x:-999,y:-999};
-  // woods and hills, in ink
-  g.strokeStyle='rgba(70,50,25,0.55)'; g.fillStyle='rgba(70,90,40,0.35)'; g.lineWidth=1.2;
-  for(let i=0;i<150*area;i++){
-    const x=r()*WW, y=r()*WH;
-    if(Math.hypot(x-wound.x,y-wound.y)<130) continue;               // nothing grows near the Wound
-    if(world.locations.some(l=>Math.hypot(l.x-x,l.y-y)<45)) continue;
-    if(r()<0.7){ g.beginPath(); g.moveTo(x,y-9); g.lineTo(x-6,y+4); g.lineTo(x+6,y+4); g.closePath(); g.fill(); g.stroke(); }
-    else { g.beginPath(); g.arc(x,y+6,12,Math.PI*1.1,Math.PI*1.9); g.stroke(); }
-  }
-  // the river
+  // the land's features (world.features): the sea, then mountains, hills, woods and moor in seeded zones
+  const F=world.features||{}, zones=F.zones||[];
+  const inZone=(x,y)=>zones.some(z=>((x-z.x)/z.rx)**2+((y-z.y)/z.ry)**2<1);
+  let seaPath=null;
+  if(F.sea){ seaPath=new Path2D(); F.sea.forEach(([x,y],i)=>i?seaPath.lineTo(x,y):seaPath.moveTo(x,y)); seaPath.closePath();
+    g.fillStyle='rgba(70,110,130,0.42)'; g.fill(seaPath);
+    g.save(); g.clip(seaPath); g.strokeStyle='rgba(230,240,240,0.35)'; g.lineWidth=1.2;
+    for(let i=0;i<40;i++){ const x=1480+r()*130, y=r()*WH; g.beginPath(); g.moveTo(x,y); g.quadraticCurveTo(x+5,y-4,x+10,y); g.quadraticCurveTo(x+15,y-4,x+20,y); g.stroke(); }
+    g.restore(); g.strokeStyle='rgba(40,60,70,0.75)'; g.lineWidth=2; g.stroke(seaPath); }
+  const onSea=(x,y)=>seaPath&&g.isPointInPath(seaPath,x*f.s*d+f.ox*d,y*f.s*d+f.oy*d);
+  const clear=(x,y,rad)=>!world.locations.some(l=>Math.hypot(l.x-x,l.y-y)<rad)&&Math.hypot(x-wound.x,y-wound.y)>=130&&!onSea(x,y);
+  const tree=(x,y,k)=>{ g.beginPath(); g.moveTo(x,y-9*k); g.lineTo(x-6*k,y+4*k); g.lineTo(x+6*k,y+4*k); g.closePath(); g.fill(); g.stroke(); };
+  const hill=(x,y,k)=>{ g.beginPath(); g.arc(x,y+6,12*k,Math.PI*1.1,Math.PI*1.9); g.stroke(); };
+  const mtn=(x,y,k)=>{ const w=15*k,h=17*k; g.fillStyle='rgba(225,205,160,0.9)'; g.beginPath(); g.moveTo(x-w,y); g.lineTo(x,y-h); g.lineTo(x+w,y); g.closePath(); g.fill();
+    g.fillStyle='rgba(90,65,40,0.3)'; g.beginPath(); g.moveTo(x,y-h); g.lineTo(x+w,y); g.lineTo(x+w*0.2,y); g.closePath(); g.fill(); g.beginPath(); g.moveTo(x-w,y); g.lineTo(x,y-h); g.lineTo(x+w,y); g.stroke(); };
+  const grass=(x,y)=>{ g.beginPath(); for(let i=-1;i<=1;i++){ g.moveTo(x+i*3,y); g.lineTo(x+i*4.5,y-7); } g.stroke(); };
+  g.strokeStyle='rgba(70,50,25,0.6)'; g.lineWidth=1.2;
+  if(!worldSyms){ const zr=P.rng(91), syms=[];
+  for(const z of zones) for(let i=0,tries=0;i<z.n&&tries<z.n*6;tries++){ const a=zr()*Math.PI*2, q=Math.sqrt(zr()), x=z.x+Math.cos(a)*z.rx*q, y=z.y+Math.sin(a)*z.ry*q;
+    if(x<0||x>WW||y<0||y>WH||!clear(x,y,z.t==='tree'?34:42)) continue; syms.push([z.t,x,y,0.8+zr()*0.5]); i++; }
+  // a sprinkling over the open country between them
+  for(let i=0;i<90*area;i++){ const x=r()*WW, y=r()*WH; if(inZone(x,y)||!clear(x,y,45)) continue; syms.push([r()<0.6?'tree':'hill',x,y,0.9]); }
+  syms.sort((a,b)=>a[2]-b[2]); worldSyms=syms; }
+  const syms=worldSyms;
+  for(const [t,x,y,k] of syms){ g.fillStyle='rgba(70,90,40,0.38)';
+    if(t==='mtn') mtn(x,y,k); else if(t==='hill') hill(x,y,k); else if(t==='grass') grass(x,y); else tree(x,y,k); }
+  // side rivers, then the Hollow: thin at its spring in the Downs, widening downstream
+  g.strokeStyle='#58779a'; g.lineCap='round'; g.lineWidth=2.2;
+  for(const rv of F.rivers||[]){ g.beginPath(); rv.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y)); g.stroke(); }
   if(world.river){
-    g.strokeStyle='rgba(40,80,120,0.75)'; g.lineWidth=4; g.lineCap='round';
-    g.beginPath(); world.river.forEach(([x,y],i)=>{ if(!i) g.moveTo(x,y); else { const [px,py]=world.river[i-1]; g.quadraticCurveTo(px+(x-px)*0.5+12,py+(y-py)*0.5,x,y); } }); g.stroke();
+    const R2=world.river; g.strokeStyle='#4d6f93';
+    for(let i=1;i<R2.length;i++){ const [px,py]=R2[i-1], [x,y]=R2[i];
+      g.lineWidth=Math.min(4.2,1.2+i*0.6); g.beginPath(); g.moveTo(px,py); g.quadraticCurveTo(px+(x-px)*0.5+6,py+(y-py)*0.5,x,y); g.stroke(); }
+    const [sx,sy]=R2[0]; g.fillStyle='#4d6f93'; g.beginPath(); g.arc(sx,sy,3,0,Math.PI*2); g.fill();   // the spring
   }
+  // area names, in italic ink
+  g.fillStyle='rgba(60,40,20,0.75)'; g.textAlign='center'; g.font='italic 16px Georgia, serif';
+  for(const [txt,x,y,rot] of F.labels||[]){ g.save(); g.translate(x,y); if(rot) g.rotate(rot*Math.PI/180); g.fillText(txt,0,0); g.restore(); }
   // roads you know
   const L=id=>world.locations.find(l=>l.id===id);
   g.strokeStyle='rgba(95,60,25,0.85)'; g.lineWidth=2.5; g.setLineDash([7,6]);
