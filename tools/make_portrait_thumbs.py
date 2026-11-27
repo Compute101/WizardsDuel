@@ -15,6 +15,7 @@ crop with:  python3 tools/make_portrait_thumbs.py --preview out.png
 
 Re-run after adding or changing a portrait:  python3 tools/make_portrait_thumbs.py
 """
+
 import glob, os, sys
 from PIL import Image, ImageDraw
 
@@ -23,29 +24,29 @@ SMALL = 256
 MEDIUM = 720
 
 FACES = {
-    'aurelia':   (0.475, 0.21, 0.34),
-    'cinder':    (0.52, 0.21, 0.32),
-    'daveron':   (0.52, 0.24, 0.34),
-    'durin':     (0.47, 0.24, 0.36),
-    'eldrin':    (0.47, 0.25, 0.32),
-    'emberic':   (0.44, 0.22, 0.32),
-    'fizzwick':  (0.455, 0.28, 0.34),
+    'aurelia': (0.475, 0.21, 0.34),
+    'cinder': (0.52, 0.21, 0.32),
+    'daveron': (0.52, 0.24, 0.34),
+    'durin': (0.47, 0.24, 0.36),
+    'eldrin': (0.47, 0.25, 0.32),
+    'emberic': (0.44, 0.22, 0.32),
+    'fizzwick': (0.455, 0.28, 0.34),
     'frederick': (0.55, 0.27, 0.38),
-    'gnash':     (0.51, 0.33, 0.38),
-    'gretch':    (0.52, 0.25, 0.48),
-    'korvath':   (0.48, 0.20, 0.36),
-    'mal':       (0.47, 0.30, 0.36),
-    'mary':      (0.45, 0.27, 0.32),
-    'mirel':     (0.56, 0.23, 0.32),
-    'mordant':   (0.40, 0.21, 0.32),
-    'nerissa':   (0.42, 0.255, 0.28),
-    'nyxara':    (0.52, 0.19, 0.30),
-    'ponder':    (0.53, 0.28, 0.34),
-    'skadi':     (0.43, 0.22, 0.34),
-    'sylvara':   (0.48, 0.25, 0.34),
-    'thessaly':  (0.49, 0.18, 0.30),
-    'valdris':   (0.43, 0.17, 0.32),
-    'weizan':    (0.48, 0.19, 0.30),
+    'gnash': (0.51, 0.33, 0.38),
+    'gretch': (0.52, 0.25, 0.48),
+    'korvath': (0.48, 0.20, 0.36),
+    'mal': (0.47, 0.30, 0.36),
+    'mary': (0.45, 0.27, 0.32),
+    'mirel': (0.56, 0.23, 0.32),
+    'mordant': (0.40, 0.21, 0.32),
+    'nerissa': (0.42, 0.255, 0.28),
+    'nyxara': (0.52, 0.19, 0.30),
+    'ponder': (0.53, 0.28, 0.34),
+    'skadi': (0.43, 0.22, 0.34),
+    'sylvara': (0.48, 0.25, 0.34),
+    'thessaly': (0.49, 0.18, 0.30),
+    'valdris': (0.43, 0.17, 0.32),
+    'weizan': (0.48, 0.19, 0.30),
     'zakkit': (0.58, 0.38, 0.46),
 }
 
@@ -80,7 +81,9 @@ def build():
         im = Image.open(src).convert('RGB')
         save(small_icon(key, im), 'small', key)
         scale = MEDIUM / min(im.size)
-        med = im.resize((round(im.width * scale), round(im.height * scale)), Image.LANCZOS) if scale < 1 else im
+        med = (
+            im.resize((round(im.width * scale), round(im.height * scale)), Image.LANCZOS) if scale < 1 else im
+        )
         save(med, 'medium', key)
         print(key)
 

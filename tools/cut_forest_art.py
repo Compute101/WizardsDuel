@@ -12,6 +12,7 @@ sprites/forest/tok_<kind>.png.
 
     python3 tools/cut_forest_art.py [--preview out.png]
 """
+
 import os, sys
 import numpy as np
 from PIL import Image, ImageDraw
@@ -21,36 +22,57 @@ ROOT = os.path.join(os.path.dirname(__file__), '..')
 SRC = os.path.join(ROOT, 'sprites', 'forest', 'source')
 OUT = os.path.join(ROOT, 'sprites', 'forest')
 # in reading order on each sheet
-HEXES = ['old', 'wood', 'glade', 'hill', 'marsh', 'crag', 'lake', 'felled', 'burnt', 'home', 'hamlet', 'talan', 'ancient']
+HEXES = [
+    'old',
+    'wood',
+    'glade',
+    'hill',
+    'marsh',
+    'crag',
+    'lake',
+    'felled',
+    'burnt',
+    'home',
+    'hamlet',
+    'talan',
+    'ancient',
+]
 TOKENS = ['goblin', 'shaman', 'varg', 'orc', 'totem', 'deer', 'seer', 'talon', 'charm', 'guild']
-HEX_W, HEX_H = 240, 277          # a regular pointy-top hexagon: w = h * sqrt(3)/2
-INSET = 2                        # px (in the source) the mask sits inside the tile's own edge
+HEX_W, HEX_H = 240, 277  # a regular pointy-top hexagon: w = h * sqrt(3)/2
+INSET = 2  # px (in the source) the mask sits inside the tile's own edge
 TOK_H = 256
-BG_DARK = 26                     # a token's background: max channel at or below this, joined to the edge
-HOLE_DARK = 14                   # an enclosed patch this dark and HOLE px or more is background too
+BG_DARK = 26  # a token's background: max channel at or below this, joined to the edge
+HOLE_DARK = 14  # an enclosed patch this dark and HOLE px or more is background too
 HOLE = 120
 
+
 # 256 colours (like the Explore atlases): a fraction of the size, no visible loss at map scale
-def small(img): return img.quantize(256, method=Image.Quantize.FASTOCTREE)
+def small(img):
+    return img.quantize(256, method=Image.Quantize.FASTOCTREE)
+
 
 def pieces(im, thresh, min_px):
     fg = im.max(axis=2) > thresh
     lab, _ = ndimage.label(ndimage.binary_closing(fg, iterations=3))
     out = []
     for i, sl in enumerate(ndimage.find_objects(lab)):
-        if (lab[sl] == i + 1).sum() < min_px: continue
+        if (lab[sl] == i + 1).sum() < min_px:
+            continue
         out.append((sl[1].start, sl[0].start, sl[1].stop, sl[0].stop))
     return out
+
 
 def reading_order(boxes, rows):
     boxes = sorted(boxes, key=lambda b: b[1])
     # split into rows by the biggest gaps in y
     ys = [b[1] for b in boxes]
-    cuts = sorted(range(1, len(ys)), key=lambda i: ys[i] - ys[i - 1], reverse=True)[:rows - 1]
+    cuts = sorted(range(1, len(ys)), key=lambda i: ys[i] - ys[i - 1], reverse=True)[: rows - 1]
     out, start = [], 0
     for c in sorted(cuts) + [len(boxes)]:
-        out += sorted(boxes[start:c], key=lambda b: b[0]); start = c
+        out += sorted(boxes[start:c], key=lambda b: b[0])
+        start = c
     return out
+
 
 def cut_hexes():
     im = Image.open(os.path.join(SRC, 'hexes_source.png')).convert('RGB')
@@ -61,10 +83,14 @@ def cut_hexes():
         tile = im.crop((x0, y0, x1, y1)).convert('RGBA').resize((HEX_W, HEX_H), Image.LANCZOS)
         w, h, i = HEX_W, HEX_H, INSET
         mask = Image.new('L', (w, h), 0)
-        ImageDraw.Draw(mask).polygon([(w / 2, i), (w - i, h / 4), (w - i, 3 * h / 4), (w / 2, h - i), (i, 3 * h / 4), (i, h / 4)], fill=255)
+        ImageDraw.Draw(mask).polygon(
+            [(w / 2, i), (w - i, h / 4), (w - i, 3 * h / 4), (w / 2, h - i), (i, 3 * h / 4), (i, h / 4)],
+            fill=255,
+        )
         tile.putalpha(mask)
         small(tile).save(os.path.join(OUT, 'hex_' + kind + '.png'), optimize=True)
         print('hex_' + kind, (x1 - x0, y1 - y0))
+
 
 def cut_tokens():
     im = Image.open(os.path.join(SRC, 'tokens_source.png')).convert('RGB')
@@ -81,7 +107,8 @@ def cut_tokens():
         bg = np.isin(lab, list(edge))
         holes, n = ndimage.label((c.max(axis=2) <= HOLE_DARK) & ~bg)
         for j in range(1, n + 1):
-            if (holes == j).sum() >= HOLE: bg |= holes == j
+            if (holes == j).sum() >= HOLE:
+                bg |= holes == j
         rgba = np.dstack([c, np.where(bg, 0, 255)]).astype(np.uint8)
         tok = Image.fromarray(rgba, 'RGBA')
         tok = tok.crop(tok.getchannel('A').getbbox())
@@ -90,17 +117,25 @@ def cut_tokens():
         small(tok).save(os.path.join(OUT, 'tok_' + kind + '.png'), optimize=True)
         print('tok_' + kind, tok.size)
 
+
 def preview(path):
     tiles = [Image.open(os.path.join(OUT, 'hex_' + k + '.png')).convert('RGBA') for k in HEXES]
     toks = [Image.open(os.path.join(OUT, 'tok_' + k + '.png')).convert('RGBA') for k in TOKENS]
     W = 130 * 7
     sheet = Image.new('RGBA', (W, 150 * 2 + 140 * 2), (40, 60, 40, 255))
     for i, t in enumerate(tiles):
-        t = t.resize((120, 139)); sheet.alpha_composite(t, ((i % 7) * 130, (i // 7) * 150))
+        t = t.resize((120, 139))
+        sheet.alpha_composite(t, ((i % 7) * 130, (i // 7) * 150))
     for i, t in enumerate(toks):
-        t = t.copy(); t.thumbnail((120, 130)); sheet.alpha_composite(t, ((i % 7) * 130, 300 + (i // 7) * 140))
-    sheet.save(path); print('preview', path)
+        t = t.copy()
+        t.thumbnail((120, 130))
+        sheet.alpha_composite(t, ((i % 7) * 130, 300 + (i // 7) * 140))
+    sheet.save(path)
+    print('preview', path)
+
 
 if __name__ == '__main__':
-    cut_hexes(); cut_tokens()
-    if '--preview' in sys.argv: preview(sys.argv[sys.argv.index('--preview') + 1])
+    cut_hexes()
+    cut_tokens()
+    if '--preview' in sys.argv:
+        preview(sys.argv[sys.argv.index('--preview') + 1])
