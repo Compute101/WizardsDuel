@@ -97,6 +97,15 @@ const WALLS = {plaster:['wallPlaster','wallPlasterWin'], stone:['wallStone','wal
 const SIDES = {plaster:'sidePlaster', stone:'sideStone', panel:'sidePlaster', sewer:'sewerSide'};
 const FRONTS = {plaster:'frontPlaster', stone:'frontStone', panel:'frontPlaster2', sewer:'frontStone'};
 
+// ── the Remnant Library's wall charts: pinned up and chained, so you can look but not take ──
+const CHART_SCALE = 0.34;
+const CHARTS = [
+  {id:'albra', title:'A Chart of Albra', text:'The Isle, its Vale and its Fells, copied from the old survey. Somebody has pencilled notes all over it.'},
+  {id:'mainland', title:'A Chart of the Mainland', text:'The Kingdoms over the Narrows, from a gnomish sky-chart, much folded. The pencilled notes carry on here.'},
+  {id:'southlands', title:'A Chart of the Southlands', text:'Over the Middle Sea, as the sailors tell it. The coast is drawn carefully; the rest less so.'},
+  {id:'world', title:'A Chart of the Known World', text:'A gnome sky-chart, Gimbal press. Albra is a small island near the top.'},
+];
+
 // ── lore books: short stories found in rooms. lib:true ones only in the Collegium library,
 //    lib:'wren' ones only in Wrenford's Remnant Library (three of them count toward Matriculation) ──
 const BOOKS = [
@@ -126,6 +135,26 @@ const BOOKS = [
   {id:'W5', lib:'wren', title:'Roll of the Absent (vol. III of IX)', text:'Page after page of names, each with a college, a subject and a line: "Collegium, Natural Philosophy; was working on the tides." "Spirewatch Observatory; had just been married." "Third year, Arcane; owed the Inkwell four crowns, which the Inkwell has asked us to forgive." The volume ends mid-page, as if the clerk had to stop.'},
   {id:'W6', lib:'wren', title:'On Echoes, for the Gentle Reader', text:'The Echoes of Corvanthe are not ghosts and not monsters. They are workings that will not finish, wearing the shape of whoever stood in them. You may fight them; you will have to. But you are, in the strict sense, interrupting someone. Be quick, and be sorry.'},
   {id:'W7', lib:'wren', title:'A Letter from Magister Orrin', text:'Found folded in a borrowed book, years after: "If they vote for it, I will stay with my students, because they will be frightened, and frightened students make mistakes. If I am wrong, I will buy everyone a drink at the Inkwell. If I am right, then whoever reads this: be careful. Be so careful it bores you. — O."'},
+  // lib:'geo': the Remnant Library's Geography shelf, about the world beyond the Vale (read before you go)
+  {id:'G1', lib:'geo', title:'A Gazetteer of Albra, for Scholars in Exile', text:'Albra is an island, a fact its people forget until they want to leave it. The Hollow runs west to east through its heart: rising in the uplands past the Moriquende, gathering the Wren at Wrenford, passing Hollowmere, through what was Corvanthe and out to the Wolf Sea at Wolfmouth. North stand the Hammerfells; between them and us lies the Harrow, which is to say, orcs. West is the Wildwood and the West Road to Saltreach. South-east is Gilden, which is to say, money. South is Ferryhythe, which is not, strictly, Albra at all.'},
+  {id:'G2', lib:'geo', title:'The Ore Road: a Carter\'s Guide', text:'Copper from Copperhythe, tin from Tinwell, both down through Varg\'s Delve to Harrowgate, where it is weighed, taxed and weighed again. Do not cross the Harrow without a wagon-train; the orcs count carts and go for the last one. From Harrowgate south to Hollowmere, where the gleaners\' spill joins the ore in the same wagons, then to Chepstead market and down to Gilden. Pencilled beneath: "Cheapest beer, Chepstead. Honest scales, nowhere. Never sleep at Harrowgate with your boots off."'},
+  {id:'G3', lib:'geo', title:'Gilden: the Golden Ledger', text:'A history of the great merchant houses, written by one of them, which explains its tone. Gilden lies where the Narrows meet the Wolf Sea; what the Mainland sells comes ashore there and what Albra sells goes out. Since the Unweaving, what Albra sells is chiefly Corvanthe, a crystal at a time. The gnome sky-ships moor at Gilden and fly no further north. The houses pay the Varg a yearly sea-toll and call it insurance. One chapter, on "the House of the Gilded Daughter", has been cut out with a razor.'},
+  {id:'G4', lib:'geo', title:'Under the Hammer: the Three Holds', text:'Stonedeep above Copperhythe, Hammerhall above Varg\'s Delve (the greatest, which named the range), Coldforge over the Grey Sea above Tinwell. The author, a dwarf, says the holds go "down further than you are owed to know". Outsiders may trade at the gatehouses. Outsiders may not ask what is behind the gatehouses. Outsiders may not, the author adds, write books about the gatehouses either, and he hopes we have enjoyed this one, as he will not be allowed home.'},
+  {id:'G5', lib:'geo', title:'The Wolf Sea, its Coasts and its Wolves', text:'The Varg of Ulfvik fish, build boats and smoke herring; the Varg of the Reaver Isles do much the same, except that the herring is sometimes your ship. They are one people, living two ways, and a Varg will not thank you for confusing them. North beyond the Hammerfells lies the Grey Sea, where a few hard folk keep steadings on the Skerries. "A cold sea," says the author, "and not meant for travel beyond it." A second hand has added: "Then why is there a beyond?"'},
+  {id:'G6', lib:'geo', title:'West of the Moriquende', text:'Past the elves\' wood the forest goes on, and nobody keeps its balance. Varg, goblins, orcs and elves who do not answer to Elfhome all live in the Wildwood, and the West Road follows a river down through it, by the ford at Thornwick, to Saltreach on the Sunset Ocean. Ships come into Saltreach from the west. The harbourmaster records their cargoes faithfully. He does not record where they come from, because, as he wrote in the margin of his own ledger, "they will not say."'},
+  {id:'G7', lib:'geo', title:'The Pale of Ferryhythe (a pamphlet, much handled)', text:'For two hundred years the kings of Hallowmark have held Ferryhythe and a few miles round it, on Albra\'s own coast: the Pale. Inside it, magic is a crime. Everyone off the ferry is searched, and every staff is broken on the quay. No sky-ship may land. The pamphlet ends: "A wizard wishing to cross the Narrows is advised not to." Under that, in pencil: "Ask for Corporal Fennimore. Bring silver. Do not bring the staff."'},
+  {id:'G8', lib:'geo', title:'Hallowmark, for the Traveller Who Values His Neck', text:'Across the Narrows, up the river Hale from Halemouth to the capital at Hale and on to the lakes under the Deepgate pass, lies a kingdom that has made magic illegal, on the grounds that it is dangerous. The author, a wizard from Corvanthe, writes that he found this unreasonable. The next edition, printed after the Unweaving, has a new preface: "I find it less unreasonable now." Witch-finders watch every ferry. Hallowmark buys Albra\'s wool and copper; it would burn our quintessence, and us with it.'},
+  {id:'G9', lib:'geo', title:'A Recruiting Bill of the Brazen Dominion', text:'A broadsheet, pasted into a scrapbook. "WIZARDS WANTED. The Dominion pays in SILVER and in RANK. Bounty on enlisting, pension on survival. Report to any sergeant from Varrow to Brassmouth." Beneath, smaller: "Gifted subjects of the Dominion are reminded that service is not optional." Someone in Corvanthe has written across it: "Hallowmark burns us. The Dominion buys us by the barrel. And they have been at war with each other for forty years. Think on what that means for anyone gifted at the border."'},
+  {id:'G10', lib:'geo', title:'The Tuskholds: a Correction', text:'A letter to the editor of an atlas, in a careful, heavy hand. "Sir. Your map marks the land round the Salt Sea HERE BE ORCS. Here be farms. Here be herds, walls, markets, a moot at Grukmoot and a road to Dawnport on the Eastern Ocean. The orcs who trouble your Harrow are not us; we call them savages, as you would. We buy your spill when the Dominion\'s silver is late, and we pay on time. Kindly correct the next edition. Yours, a Factor of Redtusk."'},
+  {id:'G11', lib:'geo', title:'The Gnomes of Gimbaldry and their Ships', text:'In the western foothills of the Greatspine, on terraced hills round the skyport of Gimbal, the gnomes build ships that sail on air. Their routes cross the whole known world: to Lumen, to Brassgate, over the mountains to the Ember Throne and far south to the Hrakka. Two rules they keep without exception: they never fly over Hallowmark, and they never fly further north than Gilden. The author asked a captain why. "Wrenford?" said the captain. "Have you seen what they did to the last city?"'},
+  {id:'G12', lib:'geo', title:'Deepholds and the Deepgate', text:'The Greatspine runs across the Mainland like a wall, and only three passes cross it: the Deepgate in the west, Highwatch in the middle, Ashpass at the east end. Under it live dwarves who loathe the sun. They are not Hammerfells dwarves, and both kinds will tell you so at length. Once a month, after dark, the Deepgate holds its night market: lanterns, no torches, everything priced in whispers, and the strangest goods in the world for anyone who can bear the dark long enough to haggle.'},
+  {id:'G13', lib:'geo', title:'A Tithe Receipt from the Gravemarches', text:'"Received of the farm at Bonefield, for the Lord of Barrowcourt: one tenth of the harvest; one tenth of the herd; and, the tenant being lately deceased, the tenant. With thanks." The fields of the Gravemarches are worked by the dead, and the dead keep its roads, which are the safest in the world, provided you are polite to them. A gloss below: "The lords here are not cruel, exactly. They are thrifty. The Gravelord on our duelling rolls is said to be one of them. Whether they sent him, or sent him away, the rolls do not say."'},
+  {id:'G14', lib:'geo', title:'Velumbra: Notes from a Twilight Wood', text:'Between the Gravemarches and the Hierarchy runs a forest where it is always evening, and under it, caverns that go down for days. The drow live below, purple-skinned and pale-haired, and come up into the dark wood at night. The author, a Moriquende elf, is very polite about them for three pages and then writes: "We do not speak of the quarrel. It is older than Corvanthe. Ask Sylvara, if you dare; she will change the subject, and the subject will stay changed."'},
+  {id:'G15', lib:'geo', title:'The Lumen Hierarchy: a Pilgrim\'s Psalter', text:'"Blessed is the Weave, and blessed are they who touch it." In the Hierarchy, on the plain of the Holy River, magic is not a crime but a sacrament, and its priests are mages. The holy city of Lumen stands below Twinwater; the river ends at Seaward in a delta. The last page is a prayer added in a newer hand: "For the city of Corvanthe, which touched the Weave too deeply, and was taken up into it." Pilgrims, the librarian notes, have begun to walk to the Wound. Some of them arrive.'},
+  {id:'G16', lib:'geo', title:'Regulations for Visiting Practitioners (the Concord)', text:'"1. All workings within the Concord shall be licensed, metered and recorded. 2. No working shall be performed on a canal without a lock-keeper present. 3. Practitioners shall not interfere with the lightning lamps, the rune-mills, or the canal at Lockford, which runs uphill by design and is not to be corrected." The Concord is ruled by wizards who put magic to work: Brassgate, Millbrook, Sunquay, all orderly, all lit. The same book lists what quintessence fetches in Brassgate. Someone has circled the figure and written "!!!".'},
+  {id:'G17', lib:'geo', title:'Wyrmreach and the Ember Throne', text:'In the volcanic south-east, a dragon is king. His throne sits on a living mountain; his nobles are half-dragon lizardfolk, every one of them a mage; his subjects are human and mostly content, because dragons are excellent at keeping other people\'s armies out. The road north climbs by Scalegate to Ashpass. The author was granted an audience. The chapter describing it is one sentence long: "He was much larger than I had prepared for." The duelling rolls name one of those nobles, a long way from home. They do not say why.'},
+  {id:'G18', lib:'geo', title:'The Channel and the Free Ports', text:'Between the Middle Sea and the Inner Sea runs a channel so narrow a strong man could throw a stone across it, and on either bank stand the twin cities of Narrowgate and Eastgate. Every ship bound for Lumen or Brassgate passes between them, and pays. Who they pay is the question. The author says a trade league. An older book on the same shelf says a pirate king. A sailor\'s note tucked in both says: "Same thing. Smaller hats."'},
+  {id:'G19', lib:'geo', title:'Over the Middle Sea', text:'South of the Mainland, past a warm sea of galleys and corsairs, lie the Southlands. Behind the Sunwall the coast is desert, crossed by a caravan road from oasis to oasis to Sunmouth, a delta city on a river that flows north. Further in, savannah, where the Hrakka hunt in laughing clans; further still, jungle, where the Sythrae, who are serpents and men at once, keep temple-cities older than writing. "Of the land beyond the jungle," the author concludes, "I can tell you nothing. Nobody I asked had been there, and nobody who had been there was available to ask."'},
   {id:'L6', lib:true, title:'Catalogue Card', text:'"Hollowmere and its River: a History." Shelved: Aisle 9. Status: Missing. Borrower: Magister Orrin. Due back: the day after the Unweaving.'},
 ];
 
@@ -393,11 +422,31 @@ function build(spec,rects){
   const nBooks=type==='library'?6:type==='remnant'?7:type==='study'?2:(r()<0.38?1:0);
   const pool=BOOKS.filter(b=>type==='library'?b.lib===true:type==='remnant'?b.lib==='wren':!b.lib);
   for(let n=0;n<nBooks;n++){
-    const b=pool[(hash(spec.id+':'+n)+n*7)%pool.length]; if(books.includes(b.id)) continue;
+    const b=type==='remnant'?pool[n]:pool[(hash(spec.id+':'+n)+n*7)%pool.length]; if(!b||books.includes(b.id)) continue;   // the Remnant has all seven (Mr Quill's prize is for reading every one)
     const k=pick(['bookOpen','bookClosed','scroll','letter','journal']), p=spot(50,40,8);
     if(!p) continue;
     put(k,p[0],p[1],{lore:'book:'+b.id}); books.push(b.id);
     lore['book:'+b.id]=[b.title,b.text];
+  }
+  // the Remnant Library's Geography shelf (every lib:'geo' book) and its wall charts, which you can
+  // look at but not take (CHARTS; explore.js shows them, the pictures are tools/render_lore_maps.js's)
+  if(type==='remnant'){
+    for(const b of BOOKS.filter(b=>b.lib==='geo')){
+      const p=spot(50,40,8,200); if(!p) continue;
+      put(pick(['bookOpen','bookClosed','journal','scroll']),p[0],p[1],{lore:'book:'+b.id}); books.push(b.id);
+      lore['book:'+b.id]=[b.title,b.text];
+    }
+    // pinned on the back wall, in the gaps between what stands against it
+    const taken=objects.filter(o=>o[2]===Y0+34).map(o=>{ const w=sz(o[0]).w; return [o[1]-w/2,o[1]+w/2]; });
+    const cw=rects.scrollPinned?rects.scrollPinned[2]*CHART_SCALE:50;
+    let n=0;
+    for(let x=X0+cw/2+16;x<X1-cw/2-16&&n<CHARTS.length;x+=8){
+      if(taken.some(([a,b])=>x+cw/2+10>a&&x-cw/2-10<b)) continue;
+      const c=CHARTS[n++];
+      objects.push(['scrollPinned',Math.round(x),Y0+16,{scale:CHART_SCALE,lore:'chart:'+c.id}]);
+      lore['chart:'+c.id]=[c.title,c.text];
+      x+=cw+30;
+    }
   }
   // clutter, last, so it fits round everything else (the encounter, books, people) and never moves them
   const CL=CLUTTER[type];
@@ -430,5 +479,5 @@ function build(spec,rects){
     interior:true, type, ev, npcs, flow:'S', theatre:theatreInfo, people:theatreInfo?1.4:undefined, fitTall:!!theatreInfo};   // the theatre's furniture is drawn big, so its people are too
 }
 
-window.ExploreRooms={build, BOOKS, TYPES, RS, FS, ITEM_SCALE, hash};
+window.ExploreRooms={build, BOOKS, CHARTS, TYPES, RS, FS, ITEM_SCALE, hash};
 })();

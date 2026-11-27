@@ -953,10 +953,57 @@ function spawnIncidentEcho(e){
     strong, img:imgOf('sprites/echoes/'+e.el+'_'+(strong?'strong':'weak')+'.png'), n:e.foes.length});
 }
 
+// ── the Remnant Library's wall charts: a parchment you can pan and zoom, pinned up, never taken
+//    (pictures from tools/render_lore_maps.js in backgrounds/charts/, the list is ExploreRooms.CHARTS) ──
+let chart=null;
+function openChart(id){
+  const C=(window.ExploreRooms.CHARTS||[]).find(c=>c.id===id); if(!C) return;
+  closeChart(); hideSay();
+  const box=document.createElement('div'); box.id='ex-chart';
+  box.innerHTML='<div class="exc-top"><div class="exc-title"></div><button class="ex-btn exc-out" type="button" aria-label="Zoom out">−</button><button class="ex-btn exc-in" type="button" aria-label="Zoom in">+</button><button class="ex-btn exc-x" type="button" aria-label="Close">✕</button></div>'+
+    '<div class="exc-view"><img alt="" draggable="false"></div><div class="exc-note"></div>';
+  box.querySelector('.exc-title').textContent=C.title;
+  box.querySelector('.exc-note').textContent=C.text+' It is pinned and chained to the panelling: you can study it, but it stays here.';
+  const view=box.querySelector('.exc-view'), img=box.querySelector('img');
+  const ch={id, box, view, img, z:1, ptrs:new Map(), pinch:null, drag:null};
+  chart=ch; el.root.appendChild(box);
+  // zoom about a point of the view (vx, vy), keeping what's under it in place
+  const fit=()=>{ const w=img.naturalWidth||1, h=img.naturalHeight||1; return Math.min(view.clientWidth/w, view.clientHeight/h); };
+  const setZ=(z,vx,vy)=>{
+    z=Math.max(1,Math.min(5,z)); if(vx==null){ vx=view.clientWidth/2; vy=view.clientHeight/2; }
+    const k=z/ch.z, px=view.scrollLeft+vx, py=view.scrollTop+vy;
+    ch.z=z; img.style.width=Math.round((img.naturalWidth||1)*fit()*z)+'px';
+    view.scrollLeft=px*k-vx; view.scrollTop=py*k-vy;
+    box.classList.toggle('zoomed',z>1);
+  };
+  ch.setZ=setZ;
+  img.onload=()=>setZ(1);
+  img.onerror=()=>{ box.querySelector('.exc-note').textContent='(The chart has faded past reading.)'; };
+  img.src='backgrounds/charts/'+id+'.jpg';
+  box.querySelector('.exc-x').onclick=closeChart;
+  box.querySelector('.exc-in').onclick=()=>setZ(ch.z*1.5);
+  box.querySelector('.exc-out').onclick=()=>setZ(ch.z/1.5);
+  view.addEventListener('wheel',e=>{ e.preventDefault(); const r=view.getBoundingClientRect(); setZ(ch.z*(e.deltaY<0?1.2:1/1.2),e.clientX-r.left,e.clientY-r.top); },{passive:false});
+  view.addEventListener('dblclick',e=>{ const r=view.getBoundingClientRect(); setZ(ch.z>1.5?1:2.5,e.clientX-r.left,e.clientY-r.top); });
+  // a mouse drags the parchment about; two fingers pinch (one finger scrolls natively)
+  view.addEventListener('pointerdown',e=>{ ch.ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+    if(e.pointerType==='mouse'){ ch.drag=[e.clientX,e.clientY,view.scrollLeft,view.scrollTop]; view.setPointerCapture(e.pointerId); }
+    if(ch.ptrs.size===2){ const [a,b]=[...ch.ptrs.values()]; ch.pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1]), z:ch.z}; } });
+  view.addEventListener('pointermove',e=>{ if(!ch.ptrs.has(e.pointerId)) return; ch.ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+    if(ch.drag){ view.scrollLeft=ch.drag[2]-(e.clientX-ch.drag[0]); view.scrollTop=ch.drag[3]-(e.clientY-ch.drag[1]); }
+    if(ch.pinch&&ch.ptrs.size===2){ const [a,b]=[...ch.ptrs.values()], r=view.getBoundingClientRect();
+      setZ(ch.pinch.z*Math.hypot(a[0]-b[0],a[1]-b[1])/ch.pinch.d,(a[0]+b[0])/2-r.left,(a[1]+b[1])/2-r.top); } });
+  const up=e=>{ ch.ptrs.delete(e.pointerId); if(ch.ptrs.size<2) ch.pinch=null; if(!ch.ptrs.size) ch.drag=null; };
+  view.addEventListener('pointerup',up); view.addEventListener('pointercancel',up);
+  view.style.touchAction='pan-x pan-y';
+}
+function closeChart(){ if(chart){ chart.box.remove(); chart=null; } }
+
 // things in rooms: returns true if it handled the inspect
 function roomAct(o){
   if(!MAP.interior) return false;
   const ev=MAP.ev||{}, st=roomState(), key=wizKeys[wizIdx];
+  if(o.lore&&o.lore.startsWith('chart:')){ openChart(o.lore.slice(6)); return true; }
   if(o.lore&&o.lore.startsWith('book:')){
     const id=o.lore.slice(5), L=MAP.lore[o.lore], fresh=!booksRead.includes(id);
     if(fresh) booksRead.push(id);
@@ -1333,6 +1380,7 @@ async function hideLoading(){
 })();
 // go to a map; at = a spawn name or [x, y]
 async function enterMap(id,at,instant){
+  closeChart();
   if(busy) return; busy=true;
   keys.clear(); target=null; hideSay();
   // a map that isn't cached (or is slow) gets a loading painting over the fade; rooms are built at once
@@ -1805,6 +1853,7 @@ function onKey(e){
   if(creating) return;
   if(scene){ if(k==='e'||k===' '||k==='enter'){ if(el.say.hidden&&scene.tap) scene.tap(); else return; e.preventDefault(); }
     else if(k==='escape'){ if(scene.skip) scene.skip(); e.preventDefault(); } return; }
+  if(chart){ if(k==='escape'||k==='e'){ closeChart(); e.preventDefault(); } else if(k==='+'||k==='='){ chart.setZ(chart.z*1.5); } else if(k==='-'){ chart.setZ(chart.z/1.5); } return; }
   if(bagOpen){ if(k==='escape'||k==='i'){ closeBag(); e.preventDefault(); } return; }
   if(worldOpen){
     if(k==='escape'){ closeWorld(); e.preventDefault(); }
@@ -2640,6 +2689,7 @@ async function open(opts){
   setTimeout(()=>{ if(el.hint) el.hint.classList.add('fade'); },7000);
 }
 function close(){
+  closeChart();
   save(); stopTheme();
   running=false; keys.clear(); target=null; hideSay(); closeWorld(); syncMusic();
   el.root.classList.remove('active');
@@ -2728,7 +2778,7 @@ window.Explore={open, close, refreshTitle, titleMusic:()=>titleMusic(),
   _travel:(id,inn)=>{ if(!worldOpen) openWorld('travel'); worldSel=locById(id); showWorldPanel(); const lab=el.wpGo.textContent, txt=el.wpText.textContent, innLab=el.wpInn.hidden?'':el.wpInn.textContent; worldGo(!!inn); return {lab, innLab, txt}; }, _horse:h=>{ if(h!==undefined) horse=h; return horse; }, _gold:n=>{ if(n!=null) gold=n; return gold; },
   _fightActor:id=>{ const a=actors.find(x=>x.e.incident===id||x.e.id===id); if(a) fight(a); return !!a; }, _actorIds:()=>actors.map(a=>a.e.incident||a.e.id), _quests:()=>quests, _allies:()=>allies, _tick:()=>Year&&Year.tick(folkApi),
   knowAll:()=>{ if(!hero) return false; magic=fullMagic(hero.elem); applyMagic(); save(); return true; },   // testing: the whole Year at once
-  enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _strollers:()=>strollers, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
+  enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _chart:id=>openChart(id), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _strollers:()=>strollers, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],
   _actors:()=>actors.map(a=>({x:Math.round(a.x),y:Math.round(a.y)})), _wiz:()=>({x:Math.round(wiz.x),y:Math.round(wiz.y)}), _place:(x,y)=>{ wiz.x=x; wiz.y=y; target=null; }, _blocked:(x,y)=>blocked(x,y), _crews:()=>crews, _hero:()=>hero, _bands:()=>bandState, _echoes:()=>actors,
   // cells of the room you can't reach from the door; the doorway out (barred while foes remain) doesn't count
   _reach:()=>{ const {nc,nr,g}=navOpen(), sp=MAP.spawns.door||MAP.spawns.start, s=Math.floor(sp[1]/NAV)*nc+Math.floor(sp[0]/NAV), seen=new Uint8Array(nc*nr), q=[s]; seen[s]=1;
