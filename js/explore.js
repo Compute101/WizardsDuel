@@ -1365,7 +1365,8 @@
     undercroft2: 'wren_orrery',
     lectures: 'wren_schools',
     library: 'library',
-    remnant: 'library'
+    remnant: 'library',
+    cabinet: 'library'
   };
   const ARENA_MAPS = {
     hollowmere: 'hollowmere',
@@ -1701,6 +1702,20 @@
       };
       doors.push({ x: o.x, y: o.y + 14, spec, obj: o, label: f ? FIXED_LABEL[f] : 'Enter' });
     }
+  }
+  // a room's stair (js/explore_rooms.js: the Remnant Library's up to the Geological Cabinet): the floor
+  // above is a room of its own, built from a spec that keeps the one below, so the way down and a load find it
+  function climb(dir) {
+    if (dir === 'up')
+      roomSpec = Object.assign({}, roomSpec, {
+        id: roomSpec.id + '/up',
+        fixed: 'cabinet',
+        label: null,
+        below: roomSpec
+      });
+    else if (roomSpec && roomSpec.below) roomSpec = roomSpec.below;
+    else return;
+    enterMap(roomSpec.id, dir === 'up' ? 'door' : 'stairs');
   }
   function enterDoor(dr) {
     roomSpec = Object.assign({}, dr.spec, {
@@ -3378,6 +3393,10 @@
         toast(no);
         return;
       }
+    }
+    if (x.to && x.to.stairs) {
+      climb(x.to.stairs);
+      return;
     }
     if (x.to === 'out') {
       const o = roomSpec.outside;
@@ -6195,6 +6214,7 @@
     _rects: () => rects,
     _enterDoor: d => enterDoor(d),
     _chart: id => openChart(id),
+    _climb: d => climb(d),
     _state: () => ({ gold, potions, allies, rescues, spill, booksRead, vit }),
     _objs: () => objs,
     _npcs: () => npcs,

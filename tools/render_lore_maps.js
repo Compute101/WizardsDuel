@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Renders the Remnant Library's wall charts (the maps you can look at but not take) from the design
+// Renders the Geological Cabinet's wall charts (up the Remnant Library's stair) (the maps you can look at but not take) from the design
 // sketch of the known world, docs/world-map.html, so the charts always match the world as planned.
 //
 //   node tools/render_lore_maps.js [id ...]      → backgrounds/charts/<id>.jpg
@@ -8,7 +8,8 @@
 // built / planned colours), no green ring round the Vale; then each chart is a crop of it, aged
 // (parchment wash, foxing, a fold, a vignette), with a title cartouche, a compass, the library's stamp
 // and a reader's notes pencilled in the margins. CHARTS below: what each crop is and what's written on
-// it. Chromium via Playwright (preinstalled); the sketch's Google fonts are fetched if the network allows.
+// it. `greyhorn` is no crop: a section of the Stoneheart Delve's mountain drawn by drawSection.
+// Chromium via Playwright (preinstalled); the sketch's Google fonts are fetched if the network allows.
 const fs = require('fs'),
   path = require('path');
 const { chromium } = require('playwright');
@@ -76,6 +77,20 @@ const CHARTS = {
       [2380, 2770, 'beyond the jungle: no one has come back to say', -2]
     ],
     stamp: [3200, 3150]
+  },
+  greyhorn: {
+    section: true,
+    w: 2000,
+    h: 1300,
+    title: 'The Greyhorn, in Section',
+    sub: 'from the bores of the Stonedeep survey · the depths as guessed',
+    notes: [
+      [1470, 1125, 'the borer came back warm, and humming', -3],
+      [680, 470, 'silent since the stonewakes', 4],
+      [1530, 660, 'water: mind your picks', 2],
+      [700, 1235, 'do not wake it', -2]
+    ],
+    stamp: [1830, 300]
   }
 };
 
@@ -107,6 +122,185 @@ function sketchSource() {
 
 // runs in the page: draws the sketch as a chart, then one aged crop
 function renderChart(spec) {
+  // the Greyhorn in section (the Stoneheart Delve's five layers, docs/mine-design.md), drawn as a surveyor
+  // would: the peak above Stonedeep, banded strata with their ores, the bores, and question marks at the foot
+  function drawSection(g, w, h, r) {
+    const INK = '#3b2a1a',
+      FELL = '"IM Fell English SC", Georgia, serif',
+      ITAL = 'italic 26px "IM Fell English", Georgia, serif';
+    g.fillStyle = '#e9dcbc';
+    g.fillRect(0, 0, w, h);
+    const L = 90,
+      R = w - 90,
+      SURF = 470; // the ground at the mountain's feet
+    // the peak: a ragged profile, Stonedeep's gate on its western shoulder
+    const prof = [];
+    for (let x = L; x <= R; x += 20) {
+      const t = (x - L) / (R - L),
+        peak = 1 - Math.abs(t - 0.56) / 0.56;
+      prof.push([x, SURF - Math.max(0, peak) ** 1.4 * 300 - (r() - 0.5) * 16 * Math.max(0, peak)]);
+    }
+    const band = y => x => y + Math.sin(x / 140 + y) * 10; // a gently wavy stratum line
+    const LAYERS = [
+      ['The Topstone', 'granite', 'copper · tin · coal', '#c9b8a2', '#b0703a'],
+      ['The Ironroots', 'black basalt', 'iron · limestone · a stream', '#7f7a74', '#5a3a2a'],
+      ['The Glimmerdark', 'quartz-shot stone', 'silver · gems · galestone', '#b2b0c4', '#ece8ff'],
+      ['The Emberdeep', 'hot stone', 'gold · veins of fire', '#bf7b58', '#f0b030'],
+      ['The Heartstone', 'living rock', '?', '#86667a', '#d8c8ff']
+    ];
+    const TOPS = [null, 640, 790, 930, 1060],
+      FOOT = h - 70;
+    const lineAt = (i, x) => (i === 0 ? null : band(TOPS[i])(x));
+    for (let i = 0; i < LAYERS.length; i++) {
+      g.beginPath();
+      if (i === 0) {
+        g.moveTo(L, SURF);
+        prof.forEach(([x, y]) => g.lineTo(x, y));
+        g.lineTo(R, SURF);
+      } else for (let x = L; x <= R; x += 10) g.lineTo(x, lineAt(i, x));
+      const next = i + 1 < LAYERS.length ? i + 1 : null;
+      for (let x = R; x >= L; x -= 10) g.lineTo(x, next ? lineAt(next, x) : FOOT);
+      g.closePath();
+      g.fillStyle = LAYERS[i][3];
+      g.fill();
+      // hatching and ore specks, clipped to the band
+      g.save();
+      g.clip();
+      g.strokeStyle = 'rgba(40,25,15,.18)';
+      g.lineWidth = 1.4;
+      for (let n = 0; n < 260; n++) {
+        const x = L + r() * (R - L),
+          y = 150 + r() * (FOOT - 150),
+          d = 8 + r() * 14;
+        g.beginPath();
+        g.moveTo(x, y);
+        g.lineTo(x + d, y + (i === 2 ? -d : d * 0.3));
+        g.stroke();
+      }
+      g.fillStyle = LAYERS[i][4];
+      for (let n = 0; n < 70; n++) {
+        g.beginPath();
+        g.arc(L + r() * (R - L), 150 + r() * (FOOT - 150), 2 + r() * 3, 0, 7);
+        g.fill();
+      }
+      g.restore();
+      g.strokeStyle = INK;
+      g.lineWidth = 2.4;
+      g.stroke();
+    }
+    // the stream in the Ironroots, geodes in the Glimmerdark, fire veins in the Emberdeep
+    const wig = (x0, y0, len, amp, col, lw) => {
+      g.strokeStyle = col;
+      g.lineWidth = lw;
+      g.beginPath();
+      for (let t = 0; t <= len; t += 8) g.lineTo(x0 + t, y0 + Math.sin(t / 30) * amp + (r() - 0.5) * 3);
+      g.stroke();
+    };
+    wig(1180, 715, 520, 9, '#4f7f96', 7);
+    wig(260, 1000, 300, 14, '#d0461e', 5);
+    wig(1300, 1020, 380, 18, '#d0461e', 4);
+    for (const [gx, gy, gr] of [
+      [520, 860, 34],
+      [1490, 870, 26],
+      [980, 890, 20]
+    ]) {
+      g.fillStyle = '#3a3450';
+      g.beginPath();
+      g.ellipse(gx, gy, gr * 1.4, gr, 0, 0, 7);
+      g.fill();
+      g.strokeStyle = '#ece8ff';
+      g.lineWidth = 2;
+      for (let a = 0; a < 12; a++) {
+        const an = (a / 12) * Math.PI * 2;
+        g.beginPath();
+        g.moveTo(gx + Math.cos(an) * gr * 1.3, gy + Math.sin(an) * gr * 0.9);
+        g.lineTo(gx + Math.cos(an) * gr * 0.5, gy + Math.sin(an) * gr * 0.35);
+        g.stroke();
+      }
+    }
+    // what sleeps at the foot: a curled shape in faint ink, and a question mark
+    g.save();
+    g.strokeStyle = 'rgba(30,15,30,.55)';
+    g.lineWidth = 4;
+    g.setLineDash([10, 8]);
+    g.beginPath();
+    g.ellipse(1030, 1160, 210, 52, -0.04, 0, 7);
+    g.stroke();
+    g.beginPath();
+    g.ellipse(1150, 1152, 60, 26, 0.2, 0, 7);
+    g.stroke();
+    g.setLineDash([]);
+    g.font = '120px ' + FELL;
+    g.fillStyle = 'rgba(30,15,30,.5)';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText('?', 1030, 1160);
+    g.restore();
+    // Stonedeep's old workings (silent) and its gate on the shoulder
+    const gate = prof[Math.round(prof.length * 0.2)];
+    g.strokeStyle = INK;
+    g.lineWidth = 3;
+    g.fillStyle = '#3b2a1a';
+    g.beginPath();
+    g.moveTo(gate[0] - 14, gate[1]);
+    g.lineTo(gate[0] - 14, gate[1] - 26);
+    g.arc(gate[0], gate[1] - 26, 14, Math.PI, 0);
+    g.lineTo(gate[0] + 14, gate[1]);
+    g.fill();
+    g.strokeStyle = 'rgba(40,25,15,.75)';
+    g.lineWidth = 9;
+    g.beginPath();
+    g.moveTo(gate[0], gate[1]);
+    g.lineTo(gate[0] + 10, 560);
+    g.lineTo(gate[0] - 120, 600);
+    g.lineTo(gate[0] - 140, 700);
+    g.moveTo(gate[0] + 10, 560);
+    g.lineTo(gate[0] + 160, 590);
+    g.stroke();
+    g.font = '28px ' + FELL;
+    g.fillStyle = INK;
+    g.textAlign = 'left';
+    g.fillText('Stonedeep', gate[0] - 150, gate[1] - 52);
+    // the bores: dashed lines from the summit, the deepest reaching the Heartstone
+    g.setLineDash([12, 9]);
+    g.lineWidth = 2.5;
+    g.strokeStyle = INK;
+    const top = prof.reduce((a, b) => (b[1] < a[1] ? b : a));
+    for (const [bx, by] of [
+      [top[0] - 160, 760],
+      [top[0] + 10, 1100],
+      [top[0] + 190, 900]
+    ]) {
+      const sy = prof.reduce((a, b) => (Math.abs(b[0] - bx) < Math.abs(a[0] - bx) ? b : a))[1];
+      g.beginPath();
+      g.moveTo(bx, sy);
+      g.lineTo(bx, by);
+      g.stroke();
+    }
+    g.setLineDash([]);
+    g.font = '40px ' + FELL;
+    g.textAlign = 'center';
+    g.fillText('The Greyhorn', top[0], top[1] - 34);
+    // the bands' names on the left, their ores on the right
+    for (let i = 0; i < LAYERS.length; i++) {
+      const yTop = i === 0 ? SURF + 30 : TOPS[i] + 24,
+        yBot = i + 1 < LAYERS.length ? TOPS[i + 1] : FOOT,
+        y = (yTop + yBot) / 2;
+      g.textAlign = 'left';
+      g.font = '32px ' + FELL;
+      g.fillStyle = INK;
+      g.lineWidth = 6;
+      g.strokeStyle = 'rgba(233,220,188,.85)';
+      g.strokeText(LAYERS[i][0], L + 24, y - 12);
+      g.fillText(LAYERS[i][0], L + 24, y - 12);
+      g.font = ITAL;
+      g.strokeText(LAYERS[i][1], L + 24, y + 20);
+      g.fillText(LAYERS[i][1], L + 24, y + 20);
+      g.textAlign = 'right';
+      g.strokeText(LAYERS[i][2], R - 24, y + 4);
+      g.fillText(LAYERS[i][2], R - 24, y + 4);
+    }
+  }
   const C = window.__C;
   if (!C.__inked) {
     for (const t of Object.values(C.N)) t.n = t.n.replace(/\?/g, '');
@@ -115,20 +309,22 @@ function renderChart(spec) {
     C.draw();
     C.__inked = true;
   }
-  const [x0, y0, x1, y1] = spec.box,
+  // a map chart is a crop of the sketch; a section (the Greyhorn) is drawn here, in its own px (k = 1)
+  const [x0, y0, x1, y1] = spec.section ? [0, 0, spec.w, spec.h] : spec.box,
     S = C.S;
   const sx = (x0 + C.OX) * S,
     sy = (y0 + C.OY) * S,
     sw = (x1 - x0) * S,
     sh = (y1 - y0) * S;
   const w = spec.w,
-    h = Math.round((w * sh) / sw),
+    h = spec.section ? spec.h : Math.round((w * sh) / sw),
     k = w / (x1 - x0); // k: output px per world unit
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
   const g = c.getContext('2d');
-  g.drawImage(C.cv, sx, sy, sw, sh, 0, 0, w, h);
+  if (spec.section) drawSection(g, w, h, C.rng(31));
+  else g.drawImage(C.cv, sx, sy, sw, sh, 0, 0, w, h);
   const P = (x, y) => [(x - x0) * k, (y - y0) * k];
   const r = C.rng(w * 7 + h);
   const u = Math.max(w, h) / 2000; // a size unit for the decoration
@@ -237,30 +433,32 @@ function renderChart(spec) {
   g.font = `italic ${sf}px "IM Fell English", Georgia, serif`;
   g.fillStyle = '#6b5236';
   g.fillText(spec.sub, cx + cw / 2, cy + 40 * u + tf + sf / 2);
-  // a compass, top right
-  g.save();
-  g.translate(w - 110 * u, 130 * u);
-  g.strokeStyle = g.fillStyle = '#3b2a1a';
-  g.lineWidth = 2.4 * u;
-  g.beginPath();
-  g.arc(0, 0, 48 * u, 0, 7);
-  g.stroke();
-  for (let i = 0; i < 8; i++) {
+  // a compass, top right (a section has none)
+  if (!spec.section) {
     g.save();
-    g.rotate((i * Math.PI) / 4);
-    const L = i % 2 ? 40 * u : 68 * u;
+    g.translate(w - 110 * u, 130 * u);
+    g.strokeStyle = g.fillStyle = '#3b2a1a';
+    g.lineWidth = 2.4 * u;
     g.beginPath();
-    g.moveTo(0, -L);
-    g.lineTo(9 * u, 0);
-    g.lineTo(-9 * u, 0);
-    g.closePath();
-    i === 0 ? g.fill() : g.stroke();
+    g.arc(0, 0, 48 * u, 0, 7);
+    g.stroke();
+    for (let i = 0; i < 8; i++) {
+      g.save();
+      g.rotate((i * Math.PI) / 4);
+      const L = i % 2 ? 40 * u : 68 * u;
+      g.beginPath();
+      g.moveTo(0, -L);
+      g.lineTo(9 * u, 0);
+      g.lineTo(-9 * u, 0);
+      g.closePath();
+      i === 0 ? g.fill() : g.stroke();
+      g.restore();
+    }
+    g.font = `${Math.round(32 * u)}px "IM Fell English SC", Georgia, serif`;
+    g.textAlign = 'center';
+    g.fillText('N', 0, -84 * u);
     g.restore();
   }
-  g.font = `${Math.round(32 * u)}px "IM Fell English SC", Georgia, serif`;
-  g.textAlign = 'center';
-  g.fillText('N', 0, -84 * u);
-  g.restore();
   // the library's stamp
   {
     const [px, py] = P(...spec.stamp);

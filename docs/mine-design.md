@@ -330,6 +330,14 @@ Until then the map is drawn in canvas (as the forest was at first).
   sprites in the Echo style).
 - **A battle backdrop:** a pillared dwarf hall underground.
 
+## Foreshadowing in Wrenford
+
+The Geological Cabinet, up the Remnant Library's stair, teases the Delve before Torvi's letter: the
+Geology shelf (`lib:'stone'` books S1–S9 in `js/explore_rooms.js`: the Greyhorn's five depths, stonewakes,
+spans, the Mason's Eye, the dwarves' needs, the Ledger of Grudges, galestone and why the Stoneheart needs a
+wizard who can cast Air, heartsilver), the specimen cases (ores, the Greyhorn bores, soils) and a wall chart
+of the Greyhorn in section (`tools/render_lore_maps.js`, `drawSection`). Keep them in step with this doc.
+
 ## Decided (the user's answers)
 
 1. **Real time** (with pause and speed buttons).

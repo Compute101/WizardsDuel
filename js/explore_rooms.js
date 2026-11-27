@@ -203,6 +203,19 @@
       shelves: true,
       open: true
     },
+    // up the Remnant's stair (to:{stairs:'up'}, climb() in js/explore.js): the Geological Cabinet, the
+    // Geography and Geology shelves, the wall charts and the specimen cases (built by the cabinet branch below)
+    cabinet: {
+      name: 'The Geological Cabinet',
+      floor: 'w',
+      wall: 'panel',
+      back: [],
+      floor_: [],
+      big: true,
+      size: [13, 9],
+      open: true,
+      cabinet: true
+    },
     // the University Year (js/explore_year.js): the lecture theatre and examination hall; the Undercroft
     // a real lecture theatre (theatre: tiers of benches looking down on a stage; the stage is at the front,
     // the south, so the seated students face it as their sprites do): built by `theatre` below
@@ -372,7 +385,8 @@
     sewer: 'frontStone'
   };
 
-  // ── the Remnant Library's wall charts: pinned up and chained, so you can look but not take ──
+  // ── the Geological Cabinet's wall charts (up the Remnant Library's stair): pinned up and chained, so you
+  //    can look but not take ──
   const CHART_SCALE = 0.34;
   const CHARTS = [
     {
@@ -394,8 +408,57 @@
       id: 'world',
       title: 'A Chart of the Known World',
       text: 'A gnome sky-chart, Gimbal press. Albra is a small island near the top.'
+    },
+    {
+      id: 'greyhorn',
+      title: 'A Section of the Greyhorn',
+      text: "A surveyor's cross-section of the peak above Stonedeep, drawn from the bores. The bottom of it is mostly question marks."
     }
   ];
+  // the Cabinet's specimen cases (lore 'spec:<id>'): look, don't take
+  const CABINET_LORE = {
+    ores: [
+      'Ores of the Anvilfells',
+      'A glass case, each lump on a card in a careful hand. Copper and tin from Copperhythe and Tinwell; coal; iron, "from the second depth"; silver; a smoky gem; and one pale grey stone with a card that says only GALESTONE, which is cold to look at and stirs the dust inside the glass. The last card is blank. Someone has pencilled on it: "heartsilver?"'
+    ],
+    cores: [
+      'The Greyhorn Bores',
+      'An iron box of stone cores, each as long as your arm, laid in order of depth: grey granite, black basalt, quartz-shot stone that glitters, a red core scorched along one side. The deepest is shorter than the rest and wrapped in felt. It is warm. A note in the lid: "Do not leave the box open overnight. It hums."'
+    ],
+    soils: [
+      'Soils and Samples',
+      'Jars of earth from all over Albra, labelled by the road they came from. The jar from the Corvanthe Road glitters faintly, and the one from under Stonedeep has a hairline crack running round it, as if something inside had pushed.'
+    ],
+    fire: [
+      'Cinderglass',
+      'A specimen of Fire\'s spill from Cindergate, on a stone plinth. Its card: "Settles where a working burned. Keep away from paper." The card is singed.'
+    ],
+    air: [
+      'Galesilk',
+      "Air's spill from the Heights, under a bell jar so it won't drift off. It looks like spun glass and weighs almost nothing."
+    ],
+    lightning: [
+      'Stormglass',
+      "Lightning's spill from Spirewatch. Your hair stands up as you lean close. Its card has been replaced four times; the old ones are scorched."
+    ],
+    arcane: [
+      'Aether',
+      'The Arcane spill from the Collegium: a crystal that is never quite the colour you remember it being.'
+    ],
+    water: [
+      'Tideglass',
+      "Water's spill from the Drowned Quarter. It sweats on the plinth, and the dish under it fills and empties with no tide to drive it."
+    ],
+    earth: [
+      'Lodestone',
+      'Earth\'s spill from the Quarry Ward. Its card: "Settles deep. Seeps deeper. Since the Unweaving, found further under Albra every year; the holds\' delvers report it in seams that were dry stone a lifetime ago."'
+    ],
+    ice: ['Rimeheart', "Ice's spill from Frostmarket, frosting the case around it on the warmest day."],
+    dark: [
+      'Nightglass',
+      'The Dark spill from Gloamside. The candle beside it gives less light than a candle should.'
+    ]
+  };
 
   // ── lore books: short stories found in rooms. lib:true ones only in the Collegium library,
   //    lib:'wren' ones only in Wrenford's Remnant Library (three of them count toward Matriculation) ──
@@ -583,7 +646,7 @@
       id: 'G7',
       lib: 'geo',
       title: 'The Pale of Ferryhythe (a pamphlet, much handled)',
-      text: 'For two hundred years the kings of Hallowmark have held Ferryhythe and a few miles round it, on Albra\'s own coast: the Pale. Inside it, magic is a crime. Everyone off the ferry is searched, and every staff is broken on the quay. No sky-ship may land. The pamphlet ends: "A wizard wishing to cross the Narrows is advised not to." Under that, in pencil: "Ask for Corporal Fennimore. Bring silver. Do not bring the staff."'
+      text: 'For two hundred years the kings of Hallowmark have held Ferryhythe and a few miles round it, on Albra\'s own coast: the Pale. Inside it, magic is a crime. Everyone off the ferry is searched, and every staff is broken on the quay. No sky-ship may land. The pamphlet ends: "A wizard wishing to cross the Narrows is advised not to." Under that, in pencil: "Ask for Corporal Pruett. Bring silver. Do not bring the staff."'
     },
     {
       id: 'G8',
@@ -656,6 +719,61 @@
       lib: 'geo',
       title: 'Over the Middle Sea',
       text: 'South of the Mainland, past a warm sea of galleys and corsairs, lie the Southlands. Behind the Sunwall the coast is desert, crossed by a caravan road from oasis to oasis to Sunmouth, a delta city on a river that flows north. Further in, savannah, where the Hrakka hunt in laughing clans; further still, jungle, where the Sythrae, who are serpents and men at once, keep temple-cities older than writing. "Of the land beyond the jungle," the author concludes, "I can tell you nothing. Nobody I asked had been there, and nobody who had been there was available to ask."'
+    },
+    // lib:'stone': the Geological Cabinet's Geology shelf, the stone of the Anvilfells (read before the Delve)
+    {
+      id: 'S1',
+      lib: 'stone',
+      title: 'Stone and Spill: a Primer of Albran Geology',
+      text: 'Albra stands on granite, and the Anvilfells are the granite showing through. Under the granite lies basalt; under the basalt, the cabinet\'s keeper admits, "nobody has been, except dwarves, and dwarves do not publish." Since the Unweaving the spill of Corvanthe has seeped downward like water into chalk. The holds report it in seams that were plain stone a lifetime ago, and with it something they will not name in print.'
+    },
+    {
+      id: 'S2',
+      lib: 'stone',
+      title: 'The Greyhorn, Surveyed from Outside',
+      text: 'A peak above Stonedeep that the hold has never worked. From the bores the surveyor guesses five depths: the Topstone (granite; copper, tin, coal); the Ironroots (black basalt; iron, limestone, and running water somewhere); the Glimmerdark (quartz-shot; silver, gems, galestone, and hollow places that ring when struck); the Emberdeep (hot stone; gold, and veins of fire); and the Heartstone. Of the Heartstone he writes one line: "The borer came back warm, and humming."'
+    },
+    {
+      id: 'S3',
+      lib: 'stone',
+      title: 'On Stonewakes',
+      text: 'The earth elementals that sleep in the roots of mountains are waking; the dwarves call them stonewakes. They swim through raw rock as a fish swims through water, but they cannot pass worked stone: a smoothed wall, a built wall, a pillar stops them. "So the old delvers smoothed their halls," the author writes, "and we thought it vanity." You hear them before you see them, in the floor and in your teeth.'
+    },
+    {
+      id: 'S4',
+      lib: 'stone',
+      title: "Spans and Pillars: a Mason's Table",
+      text: 'How far a roof may run unpropped: granite, five paces; basalt, six; quartz-shot stone, four; hot stone, three. A note in the margin: "A dwarf will tell you granite holds six. A living dwarf will tell you five." The richest ore, the author warns, always runs exactly where the pillar ought to be.'
+    },
+    {
+      id: 'S5',
+      lib: 'stone',
+      title: "The Mason's Eye",
+      text: "Dwarves judge a mine as we judge a cathedral. They want true lines and right-angled turns; square rooms, not blobs; a hall mirrored about its axis; pillars in rhythm; walls smoothed or engraved; and no tunnel that leads nowhere, unless it found ore. The great patterns have names, which the author lists without explaining, as a dwarf would: the Thane's Cross, the Long Gallery, the Colonnade, the Cloister, the Ninefold Hall, the Spiral Stair, the Vein-follower."
+    },
+    {
+      id: 'S6',
+      lib: 'stone',
+      title: 'Deepcaps and Cave Barley',
+      text: 'Underground farming wants soil, which is rare, and water near it, which is rarer. Deepcaps feed a hold; cave barley gives it ale. A dwarf has four needs: food, ale, sleep in a bed, and a hall to eat in with the others. "Ale is not a luxury," the author notes. "Ask any dwarf. Then ask him again after a day without, from a safe distance."'
+    },
+    {
+      id: 'S7',
+      lib: 'stone',
+      title: 'The Ledger of Grudges (a translation, abridged)',
+      text: '"Olgrim Coalhand, against the Thane\'s steward: a meal missed, the third this month. Against the stone of the east gallery: a cave-in, his brother\'s leg. Against the stone again: the same. Struck out at the feast of the Long Gallery." The translator adds that a dwarf with three open grudges works slowly, and one with five puts down his pick altogether.'
+    },
+    {
+      id: 'S8',
+      lib: 'stone',
+      title: 'Galestone',
+      text: 'An ore that should not exist: stone touched by Air, found in the Glimmerdark. Runesmiths set it in steel, and a galestone-runed hammer strikes as the wind strikes. Air is Earth\'s opposite, and a stonewake struck by it comes apart. The author closes with a puzzle: the greatest earthshaper of Stonedeep, the one they call the Stoneheart, cannot touch Air at all. "Whoever goes down after the stonewakes with him," he writes, "had best bring someone who can."'
+    },
+    {
+      id: 'S9',
+      lib: 'stone',
+      title: 'Heartsilver, a Rumour',
+      text: 'Three pages of hearsay about the best metal in the world, found only at the bottom of the deepest mountains, under something that sleeps. No specimen has ever reached Wrenford. The case in this room that is meant for it has stood empty for forty years, with its card already written.'
     },
     {
       id: 'L6',
@@ -1171,6 +1289,36 @@
         }
       }
       yMin = 0; // books may lie anywhere, aisles included
+    } else if (D.cabinet) {
+      // stacks either side, the specimen cases down the middle, the eight spills on the floor at the front
+      for (const y of [Y0 + T * 2.4, Y0 + T * 4.3])
+        for (const [a, b] of [
+          [X0 + T * 0.3, DX - T * 1.7],
+          [DX + T * 1.7, X1 - T * 0.3]
+        ]) {
+          let x = a;
+          while (true) {
+            const k = r() < 0.15 ? 'bookLadder' : r() < 0.5 ? 'bookcase2' : 'bookcase',
+              w = sz(k).w;
+            if (x + w > b) break;
+            put(k, x + w / 2, y);
+            x += w - 2;
+          }
+        }
+      put('crystalDisplay', DX, Y0 + T * 2.4, { lore: 'spec:ores' });
+      put('strongbox', DX, Y0 + T * 4.3, { lore: 'spec:cores' });
+      put('jarShelf', X0 + T * 1.6, Y1 - T * 0.35, { lore: 'spec:soils' });
+      const els = ['fire', 'air', 'lightning', 'arcane', 'water', 'earth', 'ice', 'dark'];
+      els.forEach((el, i) => {
+        const left = i < 4,
+          j = i % 4,
+          a = left ? X0 + T * 3.6 : DX + T * 1.7,
+          b = left ? DX - T * 1.7 : X1 - T * 0.8;
+        const x = a + ((b - a) * (j + 0.5)) / 4;
+        if (rects['q_' + el])
+          put('q_' + el, x, Y0 + T * 6.2 + (j % 2) * T * 0.5, { scale: 0.22, lore: 'spec:' + el });
+      });
+      for (const [k, L] of Object.entries(CABINET_LORE)) lore['spec:' + k] = L;
     } else if (D.theatre) {
       theatreInfo = theatre();
     } else if (D.rows) {
@@ -1206,6 +1354,27 @@
         const p = spot(60, 30, 6);
         if (p) put('crockery', p[0], p[1]);
       }
+    // the Remnant's stair up to the Geological Cabinet, against the back wall on the right
+    let stairsUp = null;
+    if (type === 'remnant' && rects.lt_steps) {
+      const sx = X1 - T * 2.2;
+      objects.push(['lt_steps', Math.round(sx), Math.round(Y0 + T * 1.1), { scale: 0.5, decal: 1 }]);
+      boxes.push({ x: sx - T, y: Y0, w: 2 * T, h: T * 1.9 });
+      stairsUp = {
+        exit: {
+          x: sx - T * 0.75,
+          y: Y0 + 14,
+          w: T * 1.5,
+          h: T * 0.6,
+          dir: 'N',
+          label: 'Upstairs: the Geological Cabinet',
+          to: { stairs: 'up' }
+        },
+        spawn: [sx, Y0 + T * 1.5]
+      };
+    }
+    if (D.cabinet && rects.lt_steps)
+      objects.push(['lt_steps', Math.round(DX), Math.round(Y1 + T * 0.9), { scale: 0.5, decal: 1 }]); // the way down
     // the encounter's pieces
     const centre = spot(50, 60, 16) || [DX, Y1 - T * 1.5];
     const echoes = [];
@@ -1253,7 +1422,17 @@
     // lore books
     const books = [];
     const nBooks =
-      type === 'library' ? 6 : type === 'remnant' ? 7 : type === 'study' ? 2 : r() < 0.38 ? 1 : 0;
+      type === 'library'
+        ? 6
+        : type === 'remnant'
+          ? 7
+          : type === 'study'
+            ? 2
+            : D.cabinet
+              ? 0
+              : r() < 0.38
+                ? 1
+                : 0;
     const pool = BOOKS.filter(b =>
       type === 'library' ? b.lib === true : type === 'remnant' ? b.lib === 'wren' : !b.lib
     );
@@ -1267,32 +1446,21 @@
       books.push(b.id);
       lore['book:' + b.id] = [b.title, b.text];
     }
-    // the Remnant Library's Geography shelf (every lib:'geo' book) and its wall charts, which you can
-    // look at but not take (CHARTS; explore.js shows them, the pictures are tools/render_lore_maps.js's)
-    if (type === 'remnant') {
-      for (const b of BOOKS.filter(b => b.lib === 'geo')) {
+    // the Geological Cabinet's shelves (every lib:'geo' and lib:'stone' book) and its wall charts, which you
+    // can look at but not take (CHARTS; explore.js shows them, the pictures are tools/render_lore_maps.js's)
+    if (D.cabinet) {
+      for (const b of BOOKS.filter(b => b.lib === 'geo' || b.lib === 'stone')) {
         const p = spot(50, 40, 8, 200);
         if (!p) continue;
         put(pick(['bookOpen', 'bookClosed', 'journal', 'scroll']), p[0], p[1], { lore: 'book:' + b.id });
         books.push(b.id);
         lore['book:' + b.id] = [b.title, b.text];
       }
-      // pinned on the back wall, in the gaps between what stands against it
-      const taken = objects
-        .filter(o => o[2] === Y0 + 34)
-        .map(o => {
-          const w = sz(o[0]).w;
-          return [o[1] - w / 2, o[1] + w / 2];
-        });
-      const cw = rects.scrollPinned ? rects.scrollPinned[2] * CHART_SCALE : 50;
-      let n = 0;
-      for (let x = X0 + cw / 2 + 16; x < X1 - cw / 2 - 16 && n < CHARTS.length; x += 8) {
-        if (taken.some(([a, b]) => x + cw / 2 + 10 > a && x - cw / 2 - 10 < b)) continue;
-        const c = CHARTS[n++];
+      CHARTS.forEach((c, n) => {
+        const x = X0 + (C * T * (n + 0.5)) / CHARTS.length;
         objects.push(['scrollPinned', Math.round(x), Y0 + 16, { scale: CHART_SCALE, lore: 'chart:' + c.id }]);
         lore['chart:' + c.id] = [c.title, c.text];
-        x += cw + 30;
-      }
+      });
     }
     // clutter, last, so it fits round everything else (the encounter, books, people) and never moves them
     const CL = CLUTTER[type];
@@ -1368,8 +1536,21 @@
       glows: [],
       echoes,
       walk: [],
-      spawns: { door: [DX, Y1 - 12] },
-      exits: [{ x: DX - T, y: Y1 + 8, w: 2 * T, h: T * 0.8, dir: 'S', label: 'Outside', to: 'out' }],
+      spawns: Object.assign({ door: [DX, Y1 - 12] }, stairsUp ? { stairs: stairsUp.spawn } : {}),
+      exits: [
+        D.cabinet
+          ? {
+              x: DX - T,
+              y: Y1 + 8,
+              w: 2 * T,
+              h: T * 0.8,
+              dir: 'S',
+              label: 'Downstairs: the Remnant Library',
+              to: { stairs: 'down' }
+            }
+          : { x: DX - T, y: Y1 + 8, w: 2 * T, h: T * 0.8, dir: 'S', label: 'Outside', to: 'out' },
+        ...(stairsUp ? [stairsUp.exit] : [])
+      ],
       interior: true,
       type,
       ev,
