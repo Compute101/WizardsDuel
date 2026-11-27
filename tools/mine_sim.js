@@ -26,9 +26,9 @@ dig(22, gy - 4, 25, gy - 3); // forge
 dig(23, gy - 2);
 dig(27, gy - 4, 31, gy - 3); // tavern
 dig(29, gy - 2);
-dig(17, gy - 10, 26, gy - 7); // the Great Hall, up a passage from the gallery
+dig(17, gy - 12, 26, gy - 7); // the Great Hall (10 × 6, 60 tiles, enough for its second star), up a passage from the gallery
 dig(20, gy - 6, 20, gy - 2);
-dig(28, gy - 10, 30, gy - 7); // barracks, through a door from the Great Hall
+dig(28, gy - 12, 30, gy - 7); // barracks, through a door from the Great Hall
 dig(27, gy - 8);
 for (let k = 0; k < 4; k++) {
   const x = 3 + k * 4;
@@ -56,8 +56,8 @@ const plan = [
   [1.5, () => M.designate(S, 'room:forge', 22, gy - 4, 25, gy - 3)],
   [1.6, () => M.designate(S, 'room:tavern', 27, gy - 4, 31, gy - 3)],
   [1.7, () => M.designate(S, 'room:infirmary', 29, gy + 2, 31, gy + 4)],
-  [2.0, () => M.designate(S, 'room:greathall', 17, gy - 10, 26, gy - 7)],
-  [2.2, () => M.designate(S, 'room:barracks', 28, gy - 10, 30, gy - 7)]
+  [2.0, () => M.designate(S, 'room:greathall', 17, gy - 12, 26, gy - 7)],
+  [2.2, () => M.designate(S, 'room:barracks', 28, gy - 12, 30, gy - 7)]
 ];
 // every room the plan will make, read back from its calls, so the farms keep off them
 const planned = [];

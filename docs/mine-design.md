@@ -478,4 +478,6 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
     and forge are `open` too, like the stockpile and farms. Rooms to live, eat, drink, heal and muster in still
     need their doors.
     *"No taverns should have doors."* The tavern hall is `open` too, a taproom.
+    The sim's Great Hall was only 40 tiles (10 × 4), the minimum, so it never earned a second star; there was
+    room for 10 × 6 (rows 1–6), so it's 60 tiles now and reaches 2★ on seeds 7 and 9 in 10 days.
 - **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.
