@@ -271,6 +271,8 @@
     POTION_PRICE = { shop: 8, safehouse: 10 },
     MAX_ALLIES = 2;
   let found = new Set(),
+    inked = null,
+    inkStart = new Map(),
     spill = {},
     cleared = {},
     actors = [],
@@ -3186,6 +3188,7 @@
           x: Math.round(wiz.x),
           y: Math.round(wiz.y),
           found: [...found],
+          inked: inked ? [...inked] : undefined,
           visited: [...visited],
           spill,
           cleared,
@@ -3223,6 +3226,8 @@
   function applySave(s) {
     s = s || {};
     found = new Set(s.found || []);
+    inked = s.inked ? new Set(s.inked) : s.t ? null : new Set();
+    inkStart = new Map();
     visited = new Set(s.visited || []);
     spill = s.spill || {};
     cleared = s.cleared || {};
@@ -3382,9 +3387,7 @@
   function openWorld(mode) {
     worldMode = mode;
     worldOpen = true;
-    keys.clear();
-    target = null;
-    hideSay();
+    inkStart = new Map(); // a drawing cut short starts again keys.clear(); target=null; hideSay();
     const here = hereLoc(),
       [WW, WH] = worldDims();
     worldSel = here || null;
@@ -3503,8 +3506,7 @@
       }
     });
   }
-  let worldBusy = false,
-    worldSyms = null; // the world map's land symbols, placed once
+  let worldBusy = false;
 
   // ═══ THE MORIQUENDE ═════════════════════════════════════════════════
   // Mother Agathe's errand (js/explore_folk.js, after Finals) leads to Elfhome (maps/elfhome.json; its people
@@ -3665,12 +3667,51 @@
     if (best) {
       worldSel = best;
       showWorldPanel();
+      return;
     }
+    const M = WorldInk.moonAt(world, p.x, p.y);
+    if (M && darkness() > 0.5) toast(M.tap || 'Moon-letters: Arcana glyphs that show only by moonlight.');
   }
   function drawWorldLoop(t) {
     if (!worldOpen) return;
     drawWorld(t);
     requestAnimationFrame(drawWorldLoop);
+  }
+  // ── inking in what you find ──
+  // `inked` (saved) holds the places already drawn on your map. A place that has come into view since
+  // is drawn in the next time the map is open: its country clears, its road is drawn out to it with the
+  // quill, then its mark and name. One after another, nearest first. Older saves start with everything inked.
+  const INK_MS = 2400,
+    INK_GAP = 750,
+    INK_WAIT = 400;
+  const INK_REACH = { city: 360, town: 330, university: 350, forest: 340, inn: 240, road: 180 }; // how much country a place clears
+  function inkProgress(shown, here, t) {
+    if (!inked) inked = new Set(shown.map(l => l.id));
+    const fresh = shown.filter(l => !inked.has(l.id) && !inkStart.has(l.id));
+    if (fresh.length) {
+      const from = here ||
+        shown.find(l => inked.has(l.id)) || { x: (world.w || 1000) / 2, y: (world.h || 700) / 2 };
+      fresh.sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y));
+      let at = Math.max(t + INK_WAIT, ...[...inkStart.values()].map(v => v + INK_GAP));
+      for (const l of fresh) {
+        inkStart.set(l.id, at);
+        at += INK_GAP;
+      }
+    }
+    let done = false;
+    for (const [id, st] of inkStart)
+      if (t - st >= INK_MS) {
+        inked.add(id);
+        inkStart.delete(id);
+        done = true;
+      }
+    if (done) save();
+    return l =>
+      inked.has(l.id)
+        ? 1
+        : inkStart.has(l.id)
+          ? Math.max(0, Math.min(1, (t - inkStart.get(l.id)) / INK_MS))
+          : 0;
   }
   function drawWorld(t) {
     const cv = el.worldCv,
@@ -3687,192 +3728,51 @@
     g.fillStyle = '#120e08';
     g.fillRect(0, 0, W, H);
     g.setTransform(d * f.s, 0, 0, d * f.s, d * f.ox, d * f.oy);
-    // parchment
-    const [WW, WH] = worldDims(),
-      area = (WW * WH) / 700000,
-      R = Math.max(WW, WH);
-    const bg = g.createRadialGradient(WW / 2, WH / 2, 80, WW / 2, WH / 2, R * 0.62);
-    bg.addColorStop(0, '#e4d2a6');
-    bg.addColorStop(0.7, '#cdb27c');
-    bg.addColorStop(1, '#8c7448');
-    g.fillStyle = bg;
-    g.fillRect(0, 0, WW, WH);
-    const r = P.rng(77);
-    g.fillStyle = 'rgba(90,60,30,0.08)';
-    for (let i = 0; i < 900 * area; i++) {
-      g.fillRect(r() * WW, r() * WH, 1 + r() * 2, 1 + r() * 2);
-    }
-    const wound = world.locations.find(l => l.kind === 'city') || { x: -999, y: -999 };
-    // the land's features (world.features): the sea, then mountains, hills, woods and moor in seeded zones
-    const F = world.features || {},
-      zones = F.zones || [];
-    const inZone = (x, y) => zones.some(z => ((x - z.x) / z.rx) ** 2 + ((y - z.y) / z.ry) ** 2 < 1);
-    let seaPath = null;
-    if (F.sea) {
-      seaPath = new Path2D();
-      F.sea.forEach(([x, y], i) => (i ? seaPath.lineTo(x, y) : seaPath.moveTo(x, y)));
-      seaPath.closePath();
-      g.fillStyle = 'rgba(70,110,130,0.42)';
-      g.fill(seaPath);
-      g.save();
-      g.clip(seaPath);
-      g.strokeStyle = 'rgba(230,240,240,0.35)';
-      g.lineWidth = 1.2;
-      for (let i = 0; i < 40; i++) {
-        const x = 1480 + r() * 130,
-          y = r() * WH;
-        g.beginPath();
-        g.moveTo(x, y);
-        g.quadraticCurveTo(x + 5, y - 4, x + 10, y);
-        g.quadraticCurveTo(x + 15, y - 4, x + 20, y);
-        g.stroke();
-      }
-      g.restore();
-      g.strokeStyle = 'rgba(40,60,70,0.75)';
-      g.lineWidth = 2;
-      g.stroke(seaPath);
-    }
-    const onSea = (x, y) =>
-      seaPath && g.isPointInPath(seaPath, x * f.s * d + f.ox * d, y * f.s * d + f.oy * d);
-    const clear = (x, y, rad) =>
-      !world.locations.some(l => Math.hypot(l.x - x, l.y - y) < rad) &&
-      Math.hypot(x - wound.x, y - wound.y) >= 130 &&
-      !onSea(x, y);
-    const tree = (x, y, k) => {
-      g.beginPath();
-      g.moveTo(x, y - 9 * k);
-      g.lineTo(x - 6 * k, y + 4 * k);
-      g.lineTo(x + 6 * k, y + 4 * k);
-      g.closePath();
-      g.fill();
-      g.stroke();
-    };
-    const hill = (x, y, k) => {
-      g.beginPath();
-      g.arc(x, y + 6, 12 * k, Math.PI * 1.1, Math.PI * 1.9);
-      g.stroke();
-    };
-    const mtn = (x, y, k) => {
-      const w = 15 * k,
-        h = 17 * k;
-      g.fillStyle = 'rgba(225,205,160,0.9)';
-      g.beginPath();
-      g.moveTo(x - w, y);
-      g.lineTo(x, y - h);
-      g.lineTo(x + w, y);
-      g.closePath();
-      g.fill();
-      g.fillStyle = 'rgba(90,65,40,0.3)';
-      g.beginPath();
-      g.moveTo(x, y - h);
-      g.lineTo(x + w, y);
-      g.lineTo(x + w * 0.2, y);
-      g.closePath();
-      g.fill();
-      g.beginPath();
-      g.moveTo(x - w, y);
-      g.lineTo(x, y - h);
-      g.lineTo(x + w, y);
-      g.stroke();
-    };
-    const grass = (x, y) => {
-      g.beginPath();
-      for (let i = -1; i <= 1; i++) {
-        g.moveTo(x + i * 3, y);
-        g.lineTo(x + i * 4.5, y - 7);
-      }
-      g.stroke();
-    };
-    g.strokeStyle = 'rgba(70,50,25,0.6)';
-    g.lineWidth = 1.2;
-    if (!worldSyms) {
-      const zr = P.rng(91),
-        syms = [];
-      for (const z of zones)
-        for (let i = 0, tries = 0; i < z.n && tries < z.n * 6; tries++) {
-          const a = zr() * Math.PI * 2,
-            q = Math.sqrt(zr()),
-            x = z.x + Math.cos(a) * z.rx * q,
-            y = z.y + Math.sin(a) * z.ry * q;
-          if (x < 0 || x > WW || y < 0 || y > WH || !clear(x, y, z.t === 'tree' ? 34 : 42)) continue;
-          syms.push([z.t, x, y, 0.8 + zr() * 0.5]);
-          i++;
-        }
-      // a sprinkling over the open country between them
-      for (let i = 0; i < 90 * area; i++) {
-        const x = r() * WW,
-          y = r() * WH;
-        if (inZone(x, y) || !clear(x, y, 45)) continue;
-        syms.push([r() < 0.6 ? 'tree' : 'hill', x, y, 0.9]);
-      }
-      syms.sort((a, b) => a[2] - b[2]);
-      worldSyms = syms;
-    }
-    const syms = worldSyms;
-    for (const [t, x, y, k] of syms) {
-      g.fillStyle = 'rgba(70,90,40,0.38)';
-      if (t === 'mtn') mtn(x, y, k);
-      else if (t === 'hill') hill(x, y, k);
-      else if (t === 'grass') grass(x, y);
-      else tree(x, y, k);
-    }
-    // side rivers, then the Hollow: thin at its spring in the Downs, widening downstream
-    g.strokeStyle = '#58779a';
-    g.lineCap = 'round';
-    g.lineWidth = 2.2;
-    for (const rv of F.rivers || []) {
-      g.beginPath();
-      rv.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
-      g.stroke();
-    }
-    if (world.river) {
-      const R2 = world.river;
-      g.strokeStyle = '#4d6f93';
-      for (let i = 1; i < R2.length; i++) {
-        const [px, py] = R2[i - 1],
-          [x, y] = R2[i];
-        g.lineWidth = Math.min(4.2, 1.2 + i * 0.6);
-        g.beginPath();
-        g.moveTo(px, py);
-        g.quadraticCurveTo(px + (x - px) * 0.5 + 6, py + (y - py) * 0.5, x, y);
-        g.stroke();
-      }
-      const [sx, sy] = R2[0];
-      g.fillStyle = '#4d6f93';
-      g.beginPath();
-      g.arc(sx, sy, 3, 0, Math.PI * 2);
-      g.fill(); // the spring
-    }
-    // area names, in italic ink
-    g.fillStyle = 'rgba(60,40,20,0.75)';
-    g.textAlign = 'center';
-    g.font = 'italic 16px Georgia, serif';
-    for (const [txt, x, y, rot] of F.labels || []) {
-      g.save();
-      g.translate(x, y);
-      if (rot) g.rotate((rot * Math.PI) / 180);
-      g.fillText(txt, 0, 0);
-      g.restore();
-    }
-    // roads you know
-    const L = id => world.locations.find(l => l.id === id);
-    g.strokeStyle = 'rgba(95,60,25,0.85)';
-    g.lineWidth = 2.5;
-    g.setLineDash([7, 6]);
+    // the parchment and the land, inked once and cached (js/world_ink.js), then the names over it
+    WorldInk.loadFonts();
+    WorldInk.drawBase(g, world, f.s * d);
+    // the unfinished map: what you know is inked, the rest only pencilled in; new places ink themselves in
+    const here = hereLoc(),
+      shown = world.locations.filter(visible),
+      P = inkProgress(shown, here, t);
+    const L = id => world.locations.find(l => l.id === id),
+      routes = [];
     for (const [a, b] of world.roads) {
       const A = L(a),
         B = L(b);
       if (!visible(A) || !visible(B)) continue;
-      g.beginPath();
-      g.moveTo(A.x, A.y);
-      g.lineTo(B.x, B.y);
-      g.stroke();
+      // a new road is drawn out from the end you already know
+      const pa = P(A),
+        pb = P(B),
+        [S, E, pr] = pa >= 1 ? [A, B, pb] : pb >= 1 ? [B, A, pa] : [A, B, Math.min(pa, pb)];
+      routes.push([S, E, pr]);
     }
-    g.setLineDash([]);
+    const holes = [];
+    for (const l of shown) {
+      const p = P(l);
+      if (p > 0) holes.push({ x: l.x, y: l.y, r: (INK_REACH[l.kind] || 300) * (0.25 + 0.75 * p) });
+    }
+    for (const [S, E, pr] of routes) {
+      if (pr <= 0) continue;
+      const n = Math.max(1, Math.round(Math.hypot(E.x - S.x, E.y - S.y) / 45));
+      for (let i = 0; i <= n * pr; i++)
+        holes.push({ x: S.x + ((E.x - S.x) * i) / n, y: S.y + ((E.y - S.y) * i) / n, r: 150 });
+    }
+    WorldInk.drawFog(
+      g,
+      world,
+      holes,
+      holes.map(h => Math.round(h.x) + ',' + Math.round(h.y) + ',' + Math.round(h.r / 12)).join(';')
+    );
+    WorldInk.drawLetters(g, world, holes);
+    WorldInk.drawMoon(g, world, darkness(), t);
+    for (const [S, E, pr] of routes) WorldInk.road(g, S, E, pr);
     // places
-    const here = hereLoc();
-    for (const l of world.locations) {
-      if (!visible(l)) continue;
+    for (const l of shown) {
+      const ink = P(l);
+      if (ink <= 0) continue;
+      g.save();
+      g.globalAlpha = Math.min(1, ink * 1.6);
       if (l.kind === 'city') {
         // the Wound's light over the dead city
         const pulse = 0.75 + 0.25 * Math.sin(t / 700);
@@ -3979,14 +3879,29 @@
         g.arc(l.x, l.y, 6, 0, Math.PI * 2);
         g.fill();
       }
-      g.font = l.kind === 'inn' ? 'bold 13px Cinzel, serif' : 'bold 17px Cinzel, serif';
-      g.textAlign = 'center';
-      g.fillStyle = l.locked ? 'rgba(58,40,16,0.7)' : '#2a1c08';
-      g.fillText(
-        l.name,
-        l.x + (l.labelDx || 0),
-        l.y + (l.labelDy != null ? l.labelDy : l.kind === 'city' ? 60 : 30)
-      );
+      // names in an old hand: towns upright, inns small italic, the ruined city in red capitals
+      const ly = l.y + (l.labelDy != null ? l.labelDy : l.kind === 'city' ? 60 : 30),
+        lx = l.x + (l.labelDx || 0);
+      // while it inks in, the name is lettered in from the left (laid out as if whole, so it doesn't slide)
+      const name =
+        ink >= 1 ? l.name : l.name.slice(0, Math.floor(l.name.length * Math.max(0, (ink - 0.35) / 0.65)));
+      if (l.kind === 'city') {
+        if (name)
+          WorldInk.label(g, { text: l.name, x: lx, y: ly, style: 'danger', size: 22, upto: name.length });
+      } else if (name) {
+        g.font = l.kind === 'inn' ? `italic 15px ${WorldInk.FELL}` : `20px ${WorldInk.FELL}`;
+        g.textAlign = 'left';
+        const x0 = lx - g.measureText(l.name).width / 2;
+        g.strokeStyle = 'rgba(228,212,168,0.85)';
+        g.lineWidth = 3.5;
+        g.lineJoin = 'round';
+        g.strokeText(name, x0, ly);
+        g.fillStyle = l.locked ? 'rgba(58,40,16,0.7)' : '#2a1c08';
+        g.fillText(name, x0, ly);
+        g.textAlign = 'center';
+      }
+      g.restore();
+      if (ink < 1) continue;
       if (worldSel === l) {
         g.strokeStyle = '#9a2a1a';
         g.lineWidth = 2;
@@ -4003,12 +3918,6 @@
         g.stroke();
       }
     }
-    // edges fade into the unknown
-    const fog = g.createRadialGradient(WW / 2, WH / 2, R * 0.3, WW / 2, WH / 2, R * 0.64);
-    fog.addColorStop(0, 'rgba(18,14,8,0)');
-    fog.addColorStop(1, 'rgba(18,14,8,0.85)');
-    g.fillStyle = fog;
-    g.fillRect(0, 0, WW, WH);
   }
 
   // ═══ UI ════════════════════════════════════════════════════════════
