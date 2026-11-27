@@ -312,7 +312,7 @@ Targets get written here once the first numbers are in.
 5. **Grudges, renown, caravans, the Assay.**
 6. **The story:** Torvi's letter, the hold on the world map (gatehouse map), Durin, the Heart, the
    endings; one HP pool and gold with Explore (`quests.mine`).
-7. Art, music (a dwarf variation of the Corvanthe theme? low brass and anvils), sound.
+7. Art, sound. (Music is done: see "Music" under As built.)
 
 Files (planned): `js/mine_engine.js`, `js/mine.js`, `css/mine.css`, `tools/mine_sim.js`; a gatehouse map
 `tools/mapgen/hammerhall.js` later.
@@ -395,4 +395,18 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
   the Spiral Stair and the Vein-follower are names only.
 - **Last sim** (8 days, seed 7): every marked tile dug, 85 food and 91 ale in store, 3 / 3 dining hall,
   2★ bedrooms, Mason's Eye 69–81, the Long Gallery and the Colonnade.
+- **Music** (ahead of step 7, the user asked for it): three loops from `python3 tools/music/delve.py
+  [work|deep|halls] [--check] [--x3]` (FluidR3 like the other music) into `audio/delve/<name>.mid / .mp3`:
+  **Pick and Lantern** (`work`, D minor, 96 bpm, 80 s: picks on 1 and 3 over a tuba ostinato, bassoons,
+  then the men's chorus sings the Corvanthe theme over trombones, horn calls answered by bassoons, and the
+  theme tutti with the anvil), **Lamplight in the Deep** (`deep`, A minor, 66 bpm, 116 s, the quiet one: a
+  low drone, kalimba and celesta drips, a far-off pick, cor anglais over the men humming, a glint of
+  C major on clarinet and harp, the cello's tune), **Halls of the Stoneheart** (`halls`, C minor, 80 bpm,
+  96 s, the grand one: the Corvanthe theme down a tone on trombones and tubas over the forge rhythm 3+3+2,
+  an E♭ major horn tune, the choir over tremolo strings and a timpani roll, the theme tutti). `Music` in
+  `js/mine.js` plays each twice round (a gapless Web Audio loop), then crossfades into the next, in that
+  order, while the Delve is open; ♪ in the top bar turns it off (`localStorage` `wd-mine-music`), and the
+  title theme makes way (`titleMusic` in `js/explore.js` checks `#mn-screen`). Each builds from a quiet
+  start to a loud end, so the loop point drops back down by about 7 dB. Not heard yet: listen before
+  trusting it.
 - **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.
