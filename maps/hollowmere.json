@@ -90,6 +90,13 @@
   ["barrel",1178,1334],
   ["crate2",1218,1336],
   ["crate1",1618,872],
+  ["cratesProduce",1145.6,915.2,{"lore":"market"}],
+  ["sacksGrain",1241.6,902.4],
+  ["cartLoaded",1574.4,921.6],
+  ["basketApples",1305.6,1260.8],
+  ["barrelsTrio",1529.6,1273.6],
+  ["noticeBoard",1619.2,870.4,{"lore":"notices"}],
+  ["oreCart",1657.6,1203.2],
   ["lamppost",270,1020,{"lore":"lamppost"}],
   ["lamppost",990,1020,{"lore":"lamppost"}],
   ["lamppost",2226,1020,{"lore":"lamppost"}],
@@ -942,6 +949,14 @@
    "Mill Pond",
    "Fat carp circle in the shallows, unafraid. Someone still comes down here to feed them."
   ],
+  "notices": [
+   "The Market Board",
+   "Carters wanted for Gilden, two days, good pay. Gleaners wanted, Cindergate, ask at the Crow. House Ashcombe buys quintessence. LOST: one crew, four men, went in by the Wardgate a week since. Under it, in a different hand: not lost."
+  ],
+  "market": [
+   "Hollowmere Market",
+   "Crates and carts where the stalls used to stand, and everything for sale: rope, lamps, salt pork, crowbars, charms of very doubtful use. Prices are what the gleaners will pay, which is a great deal."
+  ],
   "river": [
    "The Hollow",
    "Black water, slow and cold. It runs north to Corvanthe, and the townsfolk said it ran the other way at night."
@@ -985,5 +1000,36 @@
  "blocks": [],
  "glows": [],
  "echoes": [],
- "walk": []
+ "walk": [],
+ "npcs": [
+  {
+   "role": "hm_factor",
+   "x": 1235.2,
+   "y": 1036.8
+  },
+  {
+   "role": "hm_carter",
+   "x": 1561.6,
+   "y": 985.6
+  },
+  {
+   "role": "hm_pies",
+   "x": 1190.4,
+   "y": 1248
+  }
+ ],
+ "stroll": {
+  "maxX": 1768,
+  "n": 14
+ },
+ "greet": [
+  "Mind the cart!",
+  "Pies, hot pies!",
+  "Going in? Good luck to you.",
+  "Ore for Gilden, out the way!",
+  "Ashcombe pays best, tell your crew.",
+  "Don't cross after dark.",
+  "Spill? Ask at the Crow.",
+  "Another one for the Wardgate."
+ ]
 }

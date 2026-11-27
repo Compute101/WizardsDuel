@@ -429,11 +429,16 @@ const STROLL_SPRITES = ['man_1','man_2','man_3','man_4','woman_1','woman_2','wom
 const GREET = ['Morning!','Good day.','Afternoon.','Lovely day.','Mind your step.'];   // a map's own `greet` lines replace these
 let strollers=[], strollT=0;
 function nearestRoad(x,y){ let best=null, bd=1e9; for(const r of roadList){ const d=Math.hypot((r%COLS)*T+T/2-x,Math.floor(r/COLS)*T+T/2-y); if(d<bd){ bd=d; best=r; } } return best; }
-function strollDoors(){ return doors.filter(d=>!d.spec||!d.spec.fixed); }
+// strollers walk a safe town's streets, or any map with stroll:{maxX, n} (Hollowmere: only its busy west bank)
+const strolls=()=>(MAP.safe||MAP.stroll)&&!MAP.interior&&!MAP.noStroll;
+const strollMax=()=>MAP.stroll&&MAP.stroll.maxX!=null?MAP.stroll.maxX:Infinity;
+const strollN=()=>(MAP.stroll&&MAP.stroll.n)||STROLL.n;
+let strollRoads=[];
+function strollDoors(){ const mx=strollMax(); return doors.filter(d=>(!d.spec||!d.spec.fixed)&&d.x<mx); }
 function newStroller(atDoor){
   const ds=strollDoors(); let x, y, door=null;
   if(atDoor&&ds.length){ door=ds[Math.floor(Math.random()*ds.length)]; x=door.x; y=door.y; }
-  else { const r=roadList[Math.floor(Math.random()*roadList.length)]; x=(r%COLS)*T+T/2+(Math.random()-0.5)*30; y=Math.floor(r/COLS)*T+T/2+(Math.random()-0.5)*20; }
+  else { const r=strollRoads[Math.floor(Math.random()*strollRoads.length)]; x=(r%COLS)*T+T/2+(Math.random()-0.5)*30; y=Math.floor(r/COLS)*T+T/2+(Math.random()-0.5)*20; }
   const s={x, y, img:imgOf(STROLL_SPRITES[Math.floor(Math.random()*STROLL_SPRITES.length)]), face:Math.random()<0.5?1:-1, walk:Math.random()*6,
     moving:false, path:null, wait:Math.random()*2, speed:STROLL.speed[0]+Math.random()*(STROLL.speed[1]-STROLL.speed[0]),
     h:WIZ_H*(0.92+Math.random()*0.1), home:null, fade:atDoor?0:1, greet:null, greetAt:0};
@@ -442,18 +447,18 @@ function newStroller(atDoor){
 }
 function spawnStrollers(){
   strollers=[];
-  if(!MAP.safe||MAP.interior||MAP.noStroll) return;   // (Elfhome has its own people, not Wrenford's peasants)
-  roadsOf(); if(!roadList.length) return;
-  const n=Math.round(STROLL.n*(1-darkness()));
+  if(!strolls()) return;   // (Elfhome has its own people, not Wrenford's peasants)
+  roadsOf(); const mx=strollMax(); strollRoads=roadList.filter(r=>(r%COLS)*T+T/2<mx); if(!strollRoads.length) return;
+  const n=Math.round(strollN()*(1-darkness()));
   for(let i=0;i<n;i++) strollers.push(newStroller(false));
 }
 function updateStrollers(dt){
-  if(!MAP.safe||MAP.interior||MAP.noStroll||!roadList.length){ strollers=[]; return; }
+  if(!strolls()||!strollRoads.length){ strollers=[]; return; }
   // how many should be out: fewer as the light goes; the extra ones head home, new ones come out of doors
   strollT-=dt;
   if(strollT<=0){
     strollT=1.5+Math.random()*2;
-    const want=Math.round(STROLL.n*(1-darkness())), out=strollers.filter(s=>!s.home);
+    const want=Math.round(strollN()*(1-darkness())), out=strollers.filter(s=>!s.home);
     if(out.length>want){ const s=out[Math.floor(Math.random()*out.length)], ds=strollDoors();
       if(ds.length){ const d=ds.sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y))[0]; s.home=d;
         const from=roadIdx(s.x,s.y), to=nearestRoad(d.x,d.y); s.path=(roadSet.has(from)&&to!=null&&roadPath(from,to))||[]; s.path.push({x:d.x,y:d.y}); s.wait=0; }
@@ -472,7 +477,7 @@ function updateStrollers(dt){
       s.moving=false; s.wait-=dt; if(s.wait>0) continue;
       s.wait=Math.random()<0.35?2+Math.random()*5:0.3+Math.random();   // now and then a longer stop, to look about
       const from=roadIdx(s.x,s.y);
-      const near=roadList.filter(r=>{ const d=Math.hypot((r%COLS)*T-s.x,Math.floor(r/COLS)*T-s.y); return d>T*4&&d<T*16; });
+      const near=strollRoads.filter(r=>{ const d=Math.hypot((r%COLS)*T-s.x,Math.floor(r/COLS)*T-s.y); return d>T*4&&d<T*16; });
       const to=near[Math.floor(Math.random()*near.length)];
       s.path=roadSet.has(from)&&to!=null?roadPath(from,to):null;
       if(!s.path){ const r=nearestRoad(s.x,s.y); s.path=r==null?[]:[{x:(r%COLS)*T+T/2,y:Math.floor(r/COLS)*T+T/2}]; }

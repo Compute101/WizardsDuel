@@ -34,6 +34,8 @@ const LORE = {
   chapel:      ['Chapel of the Watcher', 'The hooded figure in the niche matches the statue in the plaza. The pews are dusty, all but the front one.'],
   tower:       ['The College Tower', 'All that stands of the duelling college. The brass orrery on its roof still turns, tracking stars that are not in the sky.'],
   pond:        ['Mill Pond', 'Fat carp circle in the shallows, unafraid. Someone still comes down here to feed them.'],
+  notices:     ['The Market Board', 'Carters wanted for Gilden, two days, good pay. Gleaners wanted, Cindergate, ask at the Crow. House Ashcombe buys quintessence. LOST: one crew, four men, went in by the Wardgate a week since. Under it, in a different hand: not lost.'],
+  market:      ['Hollowmere Market', 'Crates and carts where the stalls used to stand, and everything for sale: rope, lamps, salt pork, crowbars, charms of very doubtful use. Prices are what the gleaners will pay, which is a great deal.'],
   river:       ['The Hollow', 'Black water, slow and cold. It runs north to Corvanthe, and the townsfolk said it ran the other way at night.'],
 };
 // these kinds only carry lore where it's placed by hand
@@ -93,6 +95,14 @@ module.exports = function hollowmere(rects){
   place('banner',17*T+40,13*T+70); place('banner',27*T-24,13*T+70);
   for(const [x,y] of [[17*T+18,21*T-6],[27*T-46,21*T-6]]) place('lamppost',x,y);
   place('barrel',17*T+90,21*T-10); place('crate2',17*T+130,21*T-8); place('crate1',27*T-110,13*T+40);
+  // the boom town: the plaza is a market again, crates and carts where the stalls stood, and the ore carts on their way
+  // from the Hammerfells to Gilden stop here (no stall art yet: docs/art-prompts.md)
+  for(const [k,x,y,o] of [['cratesProduce',17.9*T,14.3*T,{lore:'market'}],['sacksGrain',19.4*T,14.1*T],['cartLoaded',24.6*T,14.4*T],
+    ['basketApples',20.4*T,19.7*T],['barrelsTrio',23.9*T,19.9*T],['noticeBoard',25.3*T,13.6*T,{lore:'notices'}],['oreCart',25.9*T,18.8*T]]) place(k,x,y,o);
+  // its people: townsfolk walk the west bank's streets by day, never the east (map.stroll), and a few stand to talk
+  m.stroll={maxX:RIVER.c0*T-24, n:14};
+  m.greet=['Mind the cart!','Pies, hot pies!','Going in? Good luck to you.','Ore for Gilden, out the way!','Ashcombe pays best, tell your crew.','Don\'t cross after dark.','Spill? Ask at the Crow.','Another one for the Wardgate.'];
+  m.npcs=[{role:'hm_factor',x:19.3*T,y:16.2*T},{role:'hm_carter',x:24.4*T,y:15.4*T},{role:'hm_pies',x:18.6*T,y:19.5*T}];
   // lanterns down the main street
   for(const x of [270,990,2226,2786]) place('lamppost',x,STREET_N+2);
 

@@ -105,7 +105,8 @@ class MapBuilder {
        city:   1 = a Corvanthe district not in CITY_MAPS (the inner districts): its rooms hold the city's encounters
        depth:  [lo, hi] how near the Wound the map's south and north edges are, for rooms' encounters (default [0, 1])
        music:  a theme that loops while you're on the map or in its rooms ('audio/wrenford_theme.mp3')
-       greet:  what the townsfolk strolling a safe town's streets say as you pass (else a few generic lines) } */
+       greet:  what the townsfolk strolling a safe town's streets say as you pass (else a few generic lines)
+       stroll: {maxX, n}: townsfolk stroll this map though it isn't safe, on streets west of maxX (Hollowmere's west bank) } */
   toJSON(){
     const round=v=>Math.round(v*10)/10;
     return {
@@ -116,7 +117,7 @@ class MapBuilder {
         return Object.keys(e).length?[o.kind,round(o.x),round(o.y),e]:[o.kind,round(o.x),round(o.y)];
       }),
       lore:this.lore, spawns:this.spawns, exits:this.exits, blocks:this.blocks, glows:this.glows, echoes:this.echoes, walk:this.walk,
-      ...(this.npcs?{npcs:this.npcs.map(n=>Object.assign({},n,{x:round(n.x),y:round(n.y)}))}:{}), ...(this.safe?{safe:1}:{}), ...(this.noStroll?{noStroll:1}:{}), ...(this.arena?{arena:this.arena}:{}), ...(this.music?{music:this.music}:{}), ...(this.greet?{greet:this.greet}:{}), ...(this.city?{city:1}:{}), ...(this.depth?{depth:this.depth}:{}),
+      ...(this.npcs?{npcs:this.npcs.map(n=>Object.assign({},n,{x:round(n.x),y:round(n.y)}))}:{}), ...(this.safe?{safe:1}:{}), ...(this.noStroll?{noStroll:1}:{}), ...(this.stroll?{stroll:this.stroll}:{}), ...(this.arena?{arena:this.arena}:{}), ...(this.music?{music:this.music}:{}), ...(this.greet?{greet:this.greet}:{}), ...(this.city?{city:1}:{}), ...(this.depth?{depth:this.depth}:{}),
     };
   }
 }
