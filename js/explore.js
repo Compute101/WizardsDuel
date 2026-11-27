@@ -847,7 +847,9 @@ const folkApi = {
   primer:id=>primerTest(id), practise:o=>practise(o),
   // the Year's own needs (js/explore_year.js)
   battle:o=>battle(o), mapId:()=>MAP&&MAP.id, interior:()=>!!(MAP&&MAP.interior), clock:()=>clock, night:()=>darkness()>0.5,
-  setClock:m=>{ addTime((((m-clock)%1440)+1440)%1440); },
+  // a story sets the clock (the night watch, the finale at 22:00): a quest night, so it counts as if you'd
+  // rested in the day: no hours awake are added, and you start it fresh
+  setClock:m=>{ clock=((m%1440)+1440)%1440; awake=Math.min(awake,2*60); drainAcc=0; renderClock(); renderTired(); },
   addNpc:n=>{ if(!npcs.some(x=>x.role===n.role&&!x.gone)) npcs.push(Object.assign({},n)); },
   dropNpc:role=>{ npcs.forEach(n=>{ if(n.role===role) n.gone=true; }); },
   spawnEcho:e=>spawnIncidentEcho(e),
