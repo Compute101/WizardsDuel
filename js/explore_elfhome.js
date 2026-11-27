@@ -144,7 +144,7 @@ function counsel(n, api, from){
 function woundsToMend(S){ return !!(S&&!S.over&&S.healedWeek!==S.turn&&S.elves.some(e=>e.wounded>1)); }
 function rest(n, api){
   const S=yearOf(api); const out=[];
-  const t=api.sleep?api.sleep(1):(api.healFull(),null); out.push('You sleep among the herbs and wake whole'+(t?' at '+t:'')+'.');
+  if(api.feedHorse) api.feedHorse(); const t=api.sleep?api.sleep(1):(api.healFull(),null); out.push('You sleep among the herbs and wake whole'+(t?' at '+t:'')+'.');
   if(woundsToMend(S)){
     S.healedWeek=S.turn; let k=0;
     for(const e of S.elves) if(e.wounded>1){ e.wounded=Math.max(1,e.wounded-HEAL_WEEKS); k++; }

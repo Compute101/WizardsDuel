@@ -867,7 +867,7 @@ const folkApi = {
   seat:(x,y,face,lift,scale,crop)=>{ wiz.x=x; wiz.y=y; wiz.face=face||1; wiz.seated=true; wiz.seatLift=lift||0; wiz.seatScale=scale||1; wiz.seatCrop=crop||SEAT_CROP; wiz.moving=false; },
   stand:(x,y)=>{ wiz.seated=false; if(x!=null){ wiz.x=x; wiz.y=y; } },
   wizPos:()=>({x:wiz.x, y:wiz.y, face:wiz.face, glow:wizGlow}),
-  passTime:m=>addTime(m), sleep:f=>{ const t=sleep(f==null?1:f); save(); return t; }, tired:()=>tired(), sleepy:()=>sleepy(), horse:()=>horse, buyHorse:h=>{ horse=Object.assign({},h); },
+  passTime:m=>addTime(m), sleep:f=>{ const t=sleep(f==null?1:f); save(); return t; }, tired:()=>tired(), sleepy:()=>sleepy(), horse:()=>horse, feedHorse:()=>{ if(horse) horse.hungry=false; }, buyHorse:h=>{ horse=Object.assign({},h); },
   // asking the way (js/explore_folk.js guides): where someone or a fixed room's door is, and the gold trail there
   npcPos:role=>{ const n=npcs.find(x=>x.role===role&&present(x)); return n?{x:n.x,y:n.y}:null; },
   doorPos:type=>{ const d=doors.find(x=>x.spec&&x.spec.fixed===type); return d?{x:d.x,y:d.y}:null; },
@@ -971,7 +971,7 @@ function roomAct(o){
   }
   if(o.lore==='shop'){ showDialog(MAP.lore.shop[0],MAP.lore.shop[1],[buyPotion(POTION_PRICE.shop)]); return true; }
   if(o.lore==='rest'){
-    const L=MAP.lore.rest, full=hpOf(key)>=maxHp(key)&&allies.every(a=>a.hp==null), ch=[{label:'🛏 Sleep'+(full?' (8 hours)':' ('+hpOf(key)+' → '+maxHp(key)+' HP)'), disabled:full&&!sleepy(), fn:()=>{ const t=sleep(1); toast((MAP.type==='safehouse'?'You sleep by Marda\'s fire. Nothing comes to the door.':'You sleep in a real bed.')+' You wake at '+t+'.'); }}];
+    const L=MAP.lore.rest, full=hpOf(key)>=maxHp(key)&&allies.every(a=>a.hp==null), ch=[{label:'🛏 Sleep'+(full?' (8 hours)':' ('+hpOf(key)+' → '+maxHp(key)+' HP)')+stableTag(), disabled:full&&!sleepy(), fn:()=>{ const st=stabling(), t=sleep(1); toast((MAP.type==='safehouse'?'You sleep by Marda\'s fire. Nothing comes to the door.':'You sleep in a real bed.')+' You wake at '+t+'.'+st); }}];
     if(MAP.type==='wrenInn') ch.push(buyPotion(POTION_PRICE.shop));
     if(MAP.type==='safehouse'){
       ch.push(buyPotion(POTION_PRICE.safehouse));
@@ -1074,7 +1074,7 @@ function renderBag(){
     h+=`<div class="ex-bag-row"><span class="ex-bag-coin"></span><b>${gold}</b> gold</div>`;
     h+=`<div class="ex-bag-row"><span class="ex-bag-ico">🧪</span><b>${potions}</b> potion${potions===1?'':'s'}<span class="ex-bag-sp"></span>`+
        `<button class="ex-btn" data-act="drink" type="button"${potions<1||hpOf(key)>=maxHp(key)?' disabled':''}>Drink (+${Math.round(POTION_HEAL*100)}% HP)</button></div>`;
-    if(horse) h+=`<div class="ex-bag-row"><span class="ex-bag-ico">🐎</span><b>${esc(horse.name)}</b>, your horse<span class="ex-bag-sp"></span><small>half the time on the roads</small></div>`;
+    if(horse) h+=`<div class="ex-bag-row"><span class="ex-bag-ico">🐎</span><b>${esc(horse.name)}</b>, your horse<span class="ex-bag-sp"></span><small>${horse.hungry?'hungry: no faster than walking until stabled':'half the time on the roads; stabling '+STABLE_FEE+' gold a night at inns'}</small></div>`;
     h+=`<div class="ex-bag-sec">Quintessence</div><div class="ex-bag-grid">`+RING_ELS.map(e=>{ const n=spill[e]||0;
       return `<div class="ex-bag-q${n?'':' none'}"><img src="${crystalSrc(e)}" alt=""><b>${n}</b><small style="color:${SPILL[e][1]}">${SPILL[e][0]}</small></div>`; }).join('')+`</div>`;
     h+=`<div class="ex-bag-note">Spill from broken Echoes. Wenna in Cindergate bakes with cinderglass; the Lamplighter in Gloamside trades for nightglass.</div>`;
@@ -1403,6 +1403,17 @@ let worldMode='view', worldSel=null, worldOpen=false;
 // inn on its way (kind 'inn' in maps/world.json: no map of its own), where you can sleep before going on.
 // roadAt is the inn you're at (saved): while it's set the world map stays open.
 const WORLD_SPEED=25, HORSE_SPEED=2;   // a horse (bought from the ostler in Wrenford) halves the hours
+// Stabling: every night you sleep at an inn (a town's, a wayside one, Marda's safe house) your horse costs
+// STABLE_FEE gold. Can't pay, and she goes hungry (horse.hungry): no faster than walking until she's stabled
+// or has grazed at a camp (free). The Healing House's elves see to her for nothing.
+const STABLE_FEE=3;
+const stableTag=()=>horse?' · stabling '+STABLE_FEE+' gold':'';
+function stabling(){
+  if(!horse) return '';
+  if(gold>=STABLE_FEE){ gold-=STABLE_FEE; horse.hungry=false; renderSpill(); return ' '+horse.name+' is stabled, fed and watered: '+STABLE_FEE+' gold.'; }
+  horse.hungry=true; return ' You can\'t pay for '+horse.name+'\'s stabling. She goes hungry, and will be no faster than you on foot until she\'s fed.';
+}
+function graze(){ if(!horse) return ''; const was=horse.hungry; horse.hungry=false; return ' '+horse.name+' grazes by the camp'+(was?' and is fit to ride again.':'.'); }
 let roadAt=null, horse=null;
 const locById=id=>world.locations.find(l=>l.id===id);
 function hereLoc(){ return roadAt?locById(roadAt):(MAP&&locationOfMap(MAP.id)); }
@@ -1419,7 +1430,7 @@ function journey(from,to){
   }
   if(dist[to.id]==null) return null;
   const path=[to.id]; while(path[0]!==from.id) path.unshift(prev[path[0]]);
-  const speed=WORLD_SPEED*(horse?HORSE_SPEED:1);
+  const speed=WORLD_SPEED*(horse&&!horse.hungry?HORSE_SPEED:1);
   let units=0, inn=null;
   for(let i=1;i<path.length;i++){ const A=locById(path[i-1]), B=locById(path[i]); units+=Math.hypot(B.x-A.x,B.y-A.y);
     if(!inn&&B.kind==='inn'&&i<path.length-1) inn={stop:B, hours:units/speed}; }
@@ -1451,7 +1462,7 @@ function showWorldPanel(){
   let can=false, label='Travel', inn=null;
   if(!l){ label='Travel'; }
   else if(isHere&&l.kind==='inn'){ const full=hpOf(wizKeys[wizIdx])>=maxHp(wizKeys[wizIdx]);
-    label=sleepy()||!full?'🛏 Sleep here':'Not tired yet'; can=sleepy()||!full;
+    label=sleepy()||!full?'🛏 Sleep here'+stableTag():'Not tired yet'; can=sleepy()||!full;
     text+=' You\'ve been awake '+Math.floor(awake/60)+' hours.'; }
   else if(isHere){ label=worldMode==='travel'?'Stay here':'You are here'; can=worldMode==='travel'; }
   else if(l.locked){ label='Not yet'; }
@@ -1460,6 +1471,7 @@ function showWorldPanel(){
   else { const j=journey(here,l);
     if(!j){ label='No road there'; }
     else { can=true; inn=j.inn; label=(horse?'Ride':'Travel')+' ('+hoursFmt(j.hours)+')';
+      if(horse&&horse.hungry) text+=' '+horse.name+' is hungry: she\'ll go no faster than you walk until she\'s stabled.';
       text+=' '+(horse?'On '+horse.name+', you':'You')+'\'d arrive '+arriveText(j.hours)+'.'+(j.inn?' Or stop on the way at '+j.inn.stop.name+', arriving '+arriveText(j.inn.hours)+'.':''); } }
   el.wpText.textContent=text;
   el.wpGo.textContent=label; el.wpGo.disabled=!can;
@@ -1469,7 +1481,7 @@ function worldGo(toInn){
   const l=worldSel; if(!l||worldBusy) return;
   const here=hereLoc();
   if(here&&l.id===here.id){
-    if(l.kind==='inn'){ const t=sleep(1); save(); toast('You take a bed at '+l.name+'. You wake at '+t+'.'); showWorldPanel(); }
+    if(l.kind==='inn'){ const st=stabling(), t=sleep(1); save(); toast('You take a bed at '+l.name+'. You wake at '+t+'.'+st); showWorldPanel(); }
     else closeWorld();
     return;
   }
@@ -2023,9 +2035,9 @@ function showSay(o){
   if(R){
     btn=document.createElement('button'); btn.className='ex-btn ex-rest'; btn.type='button';
     const to=Math.max(hpOf(key),Math.ceil(maxHp(key)*R[0]));
-    btn.textContent=to>hpOf(key)?'🛏 Sleep ('+hpOf(key)+' → '+to+' HP)':sleepy()?'🛏 Sleep (8 hours)':'🛏 Not tired yet';
+    btn.textContent=(to>hpOf(key)?'🛏 Sleep ('+hpOf(key)+' → '+to+' HP)':sleepy()?'🛏 Sleep (8 hours)':'🛏 Not tired yet')+(R[0]>=1&&(to>hpOf(key)||sleepy())?stableTag():'');
     btn.disabled=to<=hpOf(key)&&!sleepy();
-    btn.onclick=ev=>{ ev.stopPropagation(); const t=sleep(R[0]); save(); hideSay(); toast(R[1]+' You wake at '+t+'.'); };
+    btn.onclick=ev=>{ ev.stopPropagation(); const st=R[0]>=1?stabling():graze(), t=sleep(R[0]); save(); hideSay(); toast(R[1]+' You wake at '+t+'.'+st); };
     el.say.appendChild(btn);
   }
   el.say.hidden=false; el.hint.classList.add('fade');  paginateSay(L[1]);
@@ -2683,7 +2695,7 @@ window.Explore={open, close, refreshTitle, titleMusic:()=>titleMusic(),
   _worldPt:id=>{ const l=world.locations.find(x=>x.id===id), f=worldFit(), b=el.worldCv.getBoundingClientRect(); return [b.left+f.ox+l.x*f.s, b.top+f.oy+l.y*f.s]; },   // tests: a place on screen
   _setClock:m=>folkApi.setClock(m),
   _awake:m=>{ if(m!=null){ awake=m; renderTired(); } return {awake, tired:tired(), road:roadAt, clock, hp:hpOf(wizKeys[wizIdx]), max:maxHp(wizKeys[wizIdx]), chip:el.tired&&!el.tired.hidden?el.tired.textContent:''}; }, _pass:m=>addTime(m),
-  _travel:(id,inn)=>{ if(!worldOpen) openWorld('travel'); worldSel=locById(id); showWorldPanel(); const lab=el.wpGo.textContent, txt=el.wpText.textContent, innLab=el.wpInn.hidden?'':el.wpInn.textContent; worldGo(!!inn); return {lab, innLab, txt}; }, _horse:h=>{ if(h!==undefined) horse=h; return horse; },
+  _travel:(id,inn)=>{ if(!worldOpen) openWorld('travel'); worldSel=locById(id); showWorldPanel(); const lab=el.wpGo.textContent, txt=el.wpText.textContent, innLab=el.wpInn.hidden?'':el.wpInn.textContent; worldGo(!!inn); return {lab, innLab, txt}; }, _horse:h=>{ if(h!==undefined) horse=h; return horse; }, _gold:n=>{ if(n!=null) gold=n; return gold; },
   _fightActor:id=>{ const a=actors.find(x=>x.e.incident===id||x.e.id===id); if(a) fight(a); return !!a; }, _actorIds:()=>actors.map(a=>a.e.incident||a.e.id), _quests:()=>quests, _allies:()=>allies, _tick:()=>Year&&Year.tick(folkApi),
   knowAll:()=>{ if(!hero) return false; magic=fullMagic(hero.elem); applyMagic(); save(); return true; },   // testing: the whole Year at once
   enterMap:(id,at)=>enterMap(id,at||'start'), _doors:()=>doors, _rects:()=>rects, _enterDoor:d=>enterDoor(d), _state:()=>({gold,potions,allies,rescues,spill,booksRead,vit}), _objs:()=>objs, _npcs:()=>npcs, _strollers:()=>strollers, _present:n=>present(n), _mapId:()=>MAP.id, _exit:()=>MAP.exits[0],

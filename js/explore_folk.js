@@ -272,7 +272,7 @@ function journal(api){
 }
 
 // ── what they say ──
-const HORSE_PRICE=40;
+const HORSE_PRICE=40, STABLE_FEE_SAY=3;   // STABLE_FEE in js/explore.js
 function talk(n, api){
   const s=q(api), me=api.wizName(), say=(_,x,ch)=>api.dialog(title(n,api),x,ch||[]);
   const nm=r=>nameOf(r,api), F_=FOLK[n.role], home0=()=>mg(api)&&api.homeElem();
@@ -300,7 +300,7 @@ function talk(n, api){
   case 'ostler': {
     const H=api.horse(), price=HORSE_PRICE;
     if(H) say(0,'"'+H.name+' doing all right by you?" Abel runs a hand down her neck. "Feed her, water her, don\'t let the gleaners talk you into the Corvanthe Road after dark. She\'s got more sense than they have."');
-    else say(0,'A wiry man in a leather apron, with straw in his hair and a mare\'s nose resting on his shoulder. "Going far? You\'ll want legs better than your own. Bramble here: sound in wind and limb, steady on a road, and she doesn\'t mind a spell going off, which is more than I can say for most." He names his price. "'+price+' gold, saddle and all. Halves your time on the road, near enough."',
+    else say(0,'A wiry man in a leather apron, with straw in his hair and a mare\'s nose resting on his shoulder. "Going far? You\'ll want legs better than your own. Bramble here: sound in wind and limb, steady on a road, and she doesn\'t mind a spell going off, which is more than I can say for most." He names his price. "'+price+' gold, saddle and all. Halves your time on the road, near enough. Mind, every inn will want '+STABLE_FEE_SAY+' gold a night to stable her, and a hungry horse is no quicker than your own feet."',
       [{label:'Buy Bramble ('+price+' gold)', disabled:api.gold()<price, fn:()=>{ api.addGold(-price); api.buyHorse({name:'Bramble'}); api.save();
           api.toast('Bramble is yours. Your journeys on the roads take about half the time.'); }},
        {label:api.gold()<price?'Not enough gold':'Not today'}]);
