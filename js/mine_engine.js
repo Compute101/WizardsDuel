@@ -1,0 +1,1333 @@
+// ═══════════════════════════════════════════════════════════════════════
+// THE STONEHEART DELVE: Durin's mine at Stonedeep (rules; the screen is js/mine.js).
+// Design: docs/mine-design.md. Pure: no DOM, runs in Node (tools/mine_sim.js).
+// Build step 1: one layer, digging, dwarves walking and hauling, stockpiles, rooms and furniture,
+// food / ale / sleep, the Ledger of Grudges, the Mason's Eye. No cave-ins, quotas or elementals yet.
+// Every number is at the top.
+// ═══════════════════════════════════════════════════════════════════════
+(function (root) {
+  'use strict';
+
+  const W = 36,
+    H = 26;
+  const STEP = 0.1; // game seconds a simulation step
+  const DAY = 240; // game seconds in a day at ×1 (four minutes)
+  const START_HOUR = 6; // the first day starts at 06:00
+  const WALK = 3.2; // tiles a second
+  const DIG_S = [0, 2.5, 4, 6]; // seconds to dig rock of hardness 1 / 2 / 3 (a novice)
+  const ORE_DIG = 1.5; // ore takes this much longer
+  const SMOOTH_S = 3.5,
+    BUILD_S = 4,
+    PLANT_S = 2.5,
+    HARVEST_S = 2,
+    BREW_S = 6,
+    EAT_S = 4,
+    DRINK_S = 3;
+  const SLEEP_S = DAY * 0.22; // a night's sleep
+  const GROW_S = DAY * 0.45; // planted to ripe
+  const HARVEST = { cap: 2, barley: 2 }; // what a ripe soil tile gives (they alternate)
+  const BREW_ALE = 3; // ale from one barley
+  const STONE_CHANCE = 0.35; // a dug rock tile leaves a stone block this often (ore always leaves ore)
+  const NEED = { food: DAY * 1.0, ale: DAY * 1.4, sleep: DAY * 1.2 }; // seconds for a need to fall from 100 to 0
+  const LOW = { food: 35, ale: 35, sleep: 25 }; // a dwarf sees to a need below this
+  const GRACE = DAY * 1.5; // no grudges for floor meals or floor beds before this (time to build)
+  const GRUDGE_DAYS = 3; // an unsettled grudge fades after this many days
+  const GRUMBLE = 3,
+    DOWN_TOOLS = 5; // open grudges at which a dwarf works slowly / stops working
+  const GRUMBLE_SPEED = 0.6;
+  const LEVELS = [
+    { name: 'Novice', xp: 0, speed: 1 },
+    { name: 'Journeyman', xp: 40, speed: 1.3 },
+    { name: 'Master', xp: 140, speed: 1.6 }
+  ];
+  const PROSPECT_R = 5; // Durin's prospecting reveals this radius, once a day
+  const START_STOCK = { food: 36, ale: 28, stone: 4, copper: 0, tin: 0, coal: 0, barley: 0 };
+  const EYE_MIN_FLOOR = 30; // the Mason's Eye judges once there's this much worked floor
+
+  const ROOMS = {
+    stockpile: { name: 'Stockpile', col: '#c9a04a', furn: null },
+    bedroom: { name: 'Bedroom', col: '#6f8fd0', furn: 'bed', count: () => 1, good: 4 },
+    dorm: {
+      name: 'Dormitory',
+      col: '#5a78b0',
+      furn: 'bed',
+      count: a => Math.max(1, Math.ceil(a / 3)),
+      good: 9
+    },
+    dining: {
+      name: 'Dining hall',
+      col: '#d07a4a',
+      furn: 'table',
+      count: a => Math.max(1, Math.ceil(a / 6)),
+      good: 12
+    },
+    farm: { name: 'Mushroom farm', col: '#6aa84f', furn: null, good: 6 },
+    brewery: { name: 'Brewery', col: '#a0702a', furn: 'still', count: () => 1, good: 4 }
+  };
+  const TRADES = {
+    miner: { name: 'Miner', col: '#c8c8c8', icon: '⛏' },
+    mason: { name: 'Mason', col: '#d8b070', icon: '🧱' },
+    farmer: { name: 'Farmer', col: '#7cc060', icon: '🍄' },
+    brewer: { name: 'Brewer', col: '#d0a040', icon: '🍺' }
+  };
+  // no name shared with the hero creator's dwarf names (js/explore_hero.js DWARF_NAMES), the roster or townsfolk
+  const NAMES = {
+    m: ['Odric', 'Fennick', 'Varrin', 'Tobbe', 'Ambrin', 'Esko', 'Grell', 'Hobb', 'Dunmar', 'Ottar'],
+    f: ['Mabbet', 'Wenneth', 'Agga', 'Fridda', 'Osla', 'Tamsa', 'Berrit', 'Hesk', 'Ulla', 'Merra']
+  };
+  const SURNAMES = [
+    'Flintbrow',
+    'Cragmantle',
+    'Copperbraid',
+    'Coalbuckle',
+    'Tinwhistle',
+    'Gravelbeard',
+    'Slatefoot',
+    'Orebright',
+    'Lampwick',
+    'Deepbuckle',
+    'Ironcask',
+    'Seamfinder'
+  ];
+  const START_CREW = ['miner', 'miner', 'miner', 'mason', 'farmer', 'brewer'];
+  const ORES = {
+    cu: { name: 'copper', col: '#d0783a' },
+    sn: { name: 'tin', col: '#a8b8c8' },
+    c: { name: 'coal', col: '#1a1a1a' }
+  };
+
+  // The Mason's Eye: weights of its parts (0–1 each; a part with nothing to judge drops out)
+  const EYE_W = { lines: 0.25, order: 0.2, sym: 0.2, rhythm: 0.15, worked: 0.2 };
+  const EYE_WASTE = 3,
+    EYE_WASTE_MAX = 15; // points off a dead end that found nothing
+  const PATTERNS = {
+    gallery: { name: 'The Long Gallery', desc: 'a straight passage twenty long' },
+    cross: { name: "The Thane's Cross", desc: 'four equal arms from one hub' },
+    colonnade: { name: 'The Colonnade', desc: 'a hall with its pillars in a true lattice, mirrored' },
+    ninefold: { name: 'The Ninefold Hall', desc: 'nine rooms alike, three by three' },
+    cloister: { name: 'The Cloister', desc: '?' },
+    spiral: { name: 'The Spiral Stair', desc: '?' },
+    vein: { name: 'The Vein-follower', desc: '?' }
+  };
+
+  // ── seeded random (the state lives in S so a save carries on the same) ──
+  function rnd(S) {
+    let t = (S.rs = (S.rs + 0x6d2b79f5) >>> 0);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  const ri = (S, a, b) => a + Math.floor(rnd(S) * (b - a + 1));
+  const pick = (S, a) => a[Math.floor(rnd(S) * a.length)];
+
+  const idx = (x, y) => y * W + x;
+  const inB = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+  const D4 = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1]
+  ];
+  const D8 = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+    [1, 1],
+    [1, -1],
+    [-1, 1],
+    [-1, -1]
+  ];
+  const isFloor = (S, x, y) => inB(x, y) && S.tiles[idx(x, y)].k === 'f';
+
+  // ── a new Delve ───────────────────────────────────────────────────
+  function newGame(seed) {
+    seed = (seed == null ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
+    const S = {
+      v: 1,
+      seed,
+      rs: seed,
+      layer: 1,
+      W,
+      H,
+      t: 0,
+      nextId: 1,
+      tiles: [],
+      dwarves: [],
+      items: [],
+      rooms: [],
+      stock: Object.assign({}, START_STOCK),
+      log: [],
+      found: {},
+      prospectDay: 0,
+      gate: []
+    };
+    // rock hardness from a coarse value noise: soft beds near the gate, harder further in
+    const cs = 6,
+      gw = Math.ceil(W / cs) + 2,
+      gh = Math.ceil(H / cs) + 2,
+      grid = [];
+    for (let i = 0; i < gw * gh; i++) grid.push(rnd(S));
+    const noise = (x, y) => {
+      const gx = x / cs,
+        gy = y / cs,
+        x0 = Math.floor(gx),
+        y0 = Math.floor(gy),
+        fx = gx - x0,
+        fy = gy - y0;
+      const g = (a, b) => grid[b * gw + a],
+        sm = v => v * v * (3 - 2 * v),
+        u = sm(fx),
+        w = sm(fy);
+      return (
+        (g(x0, y0) * (1 - u) + g(x0 + 1, y0) * u) * (1 - w) +
+        (g(x0, y0 + 1) * (1 - u) + g(x0 + 1, y0 + 1) * u) * w
+      );
+    };
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const n = noise(x, y) + (x / W) * 0.35;
+        S.tiles.push({
+          k: 'r',
+          h: n < 0.5 ? 1 : n < 0.85 ? 2 : 3,
+          o: '',
+          s: false,
+          d: false,
+          p: false,
+          m: false,
+          w: false,
+          r: 0,
+          fu: '',
+          fb: false,
+          g: 0,
+          gt: 0,
+          cl: 0,
+          wo: false
+        });
+      }
+    const gy = Math.floor(H / 2);
+    const vein = (o, n, len) => {
+      for (let v = 0; v < n; v++) {
+        let x = ri(S, 6, W - 2),
+          y = ri(S, 1, H - 2),
+          dx = pick(S, [-1, 1]),
+          dy = 0;
+        if (rnd(S) < 0.5) {
+          dy = dx;
+          dx = 0;
+        }
+        for (let k = 0; k < len; k++) {
+          if (inB(x, y) && x > 3) S.tiles[idx(x, y)].o = o;
+          if (rnd(S) < 0.25) {
+            const t = dx;
+            dx = dy;
+            dy = t;
+            if (rnd(S) < 0.5) {
+              dx = -dx;
+              dy = -dy;
+            }
+          }
+          if (rnd(S) < 0.3) {
+            if (dx) y += pick(S, [-1, 1]);
+            else x += pick(S, [-1, 1]);
+          }
+          x += dx;
+          y += dy;
+          if (!inB(x, y)) {
+            x = Math.max(1, Math.min(W - 2, x));
+            y = Math.max(1, Math.min(H - 2, y));
+            dx = -dx;
+            dy = -dy;
+          }
+        }
+      }
+    };
+    const blob = (o, n, r0, r1, near) => {
+      for (let b = 0; b < n; b++) {
+        const cx = near && !b ? ri(S, 8, 15) : ri(S, 7, W - 3),
+          cy = near && !b ? gy + pick(S, [-1, 1]) * ri(S, 4, 6) : ri(S, 2, H - 3),
+          r = r0 + rnd(S) * (r1 - r0);
+        for (let y = 0; y < H; y++)
+          for (let x = 0; x < W; x++) {
+            const dd = Math.hypot(x - cx, (y - cy) * 1.2) + rnd(S) * 0.9;
+            if (dd < r) S.tiles[idx(x, y)].o = o;
+          }
+      }
+    };
+    blob('soil', 2, 1.8, 2.8, true); // the first loam pocket always lies within reach of the gate, so a farm is always possible
+    vein('cu', 4, ri(S, 10, 16));
+    vein('sn', 3, ri(S, 8, 13));
+    blob('c', 3, 1.2, 2.0);
+    // the gate: a short tunnel in from the mountainside, the wagon's supplies stacked there
+    for (let x = 0; x < 3; x++)
+      for (let y = gy - 1; y <= gy; y++) {
+        const t = S.tiles[idx(x, y)];
+        t.k = 'f';
+        t.o = '';
+        S.gate.push(idx(x, y));
+      }
+    for (const i of S.gate) reveal(S, i % W, (i / W) | 0);
+    // the crew
+    const used = {};
+    START_CREW.forEach((trade, n) => {
+      const sex = n % 2 ? 'f' : 'm';
+      let nm;
+      do {
+        nm = pick(S, NAMES[sex]) + ' ' + pick(S, SURNAMES);
+      } while (used[nm]);
+      used[nm] = 1;
+      S.dwarves.push(newDwarf(S, nm, sex, trade, 1 + (n % 3), gy - 1 + (n % 2)));
+    });
+    S.durin = { x: 1, y: gy, path: [], act: 'At the gate' };
+    logMsg(S, 'Durin: "Here we cut the Stoneheart Delve. Mark me some good straight passages, planner."');
+    return S;
+  }
+  function newDwarf(S, name, sex, trade, x, y) {
+    return {
+      id: S.nextId++,
+      name,
+      sex,
+      trade,
+      x,
+      y,
+      path: [],
+      job: null,
+      needs: { food: 80 + rnd(S) * 20, ale: 75 + rnd(S) * 25, sleep: 70 + rnd(S) * 30 },
+      grudges: [],
+      xp: 0,
+      bed: -1,
+      act: 'Arriving',
+      lack: {}
+    };
+  }
+  function logMsg(S, msg) {
+    S.log.push({ t: S.t, msg });
+    if (S.log.length > 80) S.log.shift();
+  }
+
+  function reveal(S, x, y) {
+    for (const [dx, dy] of D8.concat([[0, 0]])) {
+      const a = x + dx,
+        b = y + dy;
+      if (inB(a, b)) S.tiles[idx(a, b)].s = true;
+    }
+  }
+
+  // ── time ──
+  const dayOf = S => Math.floor(S.t / DAY) + 1;
+  const clockOf = S => {
+    const h = (START_HOUR + ((S.t % DAY) / DAY) * 24) % 24;
+    return { h: Math.floor(h), m: Math.floor((h % 1) * 60) };
+  };
+
+  // ── paths: a breadth-first search over floor (pillars and furniture: pillars block, furniture doesn't) ──
+  function distMap(S, sx, sy) {
+    const N = W * H,
+      dist = new Int32Array(N).fill(-1),
+      prev = new Int32Array(N).fill(-1),
+      q = new Int32Array(N);
+    sx = Math.round(sx);
+    sy = Math.round(sy);
+    if (!isFloor(S, sx, sy)) return { dist, prev };
+    let h = 0,
+      tl = 0;
+    const s0 = idx(sx, sy);
+    dist[s0] = 0;
+    q[tl++] = s0;
+    while (h < tl) {
+      const c = q[h++],
+        cx = c % W,
+        cy = (c / W) | 0;
+      for (const [dx, dy] of D4) {
+        const nx = cx + dx,
+          ny = cy + dy;
+        if (!isFloor(S, nx, ny)) continue;
+        const n = idx(nx, ny);
+        if (dist[n] < 0) {
+          dist[n] = dist[c] + 1;
+          prev[n] = c;
+          q[tl++] = n;
+        }
+      }
+    }
+    return { dist, prev };
+  }
+  function pathTo(dm, i) {
+    const p = [];
+    if (dm.dist[i] < 0) return null;
+    while (i >= 0 && dm.dist[i] > 0) {
+      p.unshift(i);
+      i = dm.prev[i];
+    }
+    return p;
+  }
+  // the nearest reachable floor tile next to rock tile i (to stand on while working it)
+  function standBy(S, dm, i) {
+    const x = i % W,
+      y = (i / W) | 0;
+    let best = -1,
+      bd = 1e9;
+    for (const [dx, dy] of D4) {
+      const a = x + dx,
+        b = y + dy;
+      if (!isFloor(S, a, b)) continue;
+      const n = idx(a, b);
+      const d = dm.dist[n];
+      if (d >= 0 && d < bd) {
+        bd = d;
+        best = n;
+      }
+    }
+    return best;
+  }
+
+  // ── rooms ─────────────────────────────────────────────────────────
+  function roomTiles(S, r) {
+    const out = [];
+    for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) out.push(idx(x, y));
+    return out;
+  }
+  const roomById = (S, id) => S.rooms.find(r => r.id === id);
+  function roomArea(S, r) {
+    return roomTiles(S, r).filter(i => S.tiles[i].k === 'f').length;
+  }
+  function makeRoom(S, type, x0, y0, x1, y1) {
+    if (!ROOMS[type]) return { ok: false, why: 'No such room.' };
+    [x0, x1] = [Math.min(x0, x1), Math.max(x0, x1)];
+    [y0, y1] = [Math.min(y0, y1), Math.max(y0, y1)];
+    const r = { id: S.nextId++, type, x0, y0, x1, y1 },
+      ts = roomTiles(S, r);
+    let floor = 0,
+      soil = 0;
+    for (const i of ts) {
+      const t = S.tiles[i];
+      if (t.r) return { ok: false, why: 'That overlaps another room.' };
+      if (S.gate.includes(i)) return { ok: false, why: 'Keep the gate clear.' };
+      if (t.k === 'f') {
+        floor++;
+        if (t.o === 'soil') soil++;
+      } else if (!t.p)
+        return { ok: false, why: 'Dig it out first: a room can hold only dug floor and pillars.' };
+    }
+    if (!floor) return { ok: false, why: 'Dig it out first.' };
+    if (type === 'farm' && !soil)
+      return { ok: false, why: 'A farm needs soil: dig out a loam pocket (the brown stone) first.' };
+    for (const i of ts) S.tiles[i].r = r.id;
+    const R = ROOMS[type];
+    if (R.furn) {
+      const need = R.count(floor),
+        floors = ts.filter(i => S.tiles[i].k === 'f');
+      const grid = floors.filter(i => ((i % W) - x0) % 2 === 0 && (((i / W) | 0) - y0) % 2 === 0),
+        rest = floors.filter(i => !grid.includes(i));
+      grid
+        .concat(rest)
+        .slice(0, need)
+        .forEach(i => {
+          S.tiles[i].fu = R.furn;
+          S.tiles[i].fb = false;
+        });
+    }
+    S.rooms.push(r);
+    return { ok: true, room: r };
+  }
+  function removeRoom(S, id) {
+    const r = roomById(S, id);
+    if (!r) return;
+    for (const i of roomTiles(S, r)) {
+      const t = S.tiles[i];
+      if (t.fb) S.stock.stone++;
+      t.r = 0;
+      t.fu = '';
+      t.fb = false;
+      t.g = 0;
+      t.gt = 0;
+    }
+    for (const d of S.dwarves) if (d.bed >= 0 && !S.tiles[d.bed].fu) d.bed = -1;
+    S.rooms = S.rooms.filter(x => x !== r);
+  }
+  function roomAt(S, x, y) {
+    const t = inB(x, y) && S.tiles[idx(x, y)];
+    return t && t.r ? roomById(S, t.r) : null;
+  }
+  // stars (1–3): a clean rectangle of the right size with its furniture in, then worked walls
+  function roomStars(S, r) {
+    const R = ROOMS[r.type],
+      ts = roomTiles(S, r);
+    let stars = 1;
+    const furnDone = ts.every(i => !S.tiles[i].fu || S.tiles[i].fb),
+      area = roomArea(S, r);
+    if (furnDone && area >= (R.good || 1)) stars++;
+    const walls = roomWalls(S, r);
+    if (walls.length && walls.filter(i => S.tiles[i].w).length / walls.length >= 0.8 && stars >= 2) stars++;
+    return stars;
+  }
+  // the rock tiles round a room's edge and its pillars: what a mason smooths
+  function roomWalls(S, r) {
+    const set = new Set();
+    for (const i of roomTiles(S, r)) {
+      const t = S.tiles[i];
+      if (t.k === 'r') {
+        set.add(i);
+        continue;
+      }
+      const x = i % W,
+        y = (i / W) | 0;
+      for (const [dx, dy] of D4) {
+        const a = x + dx,
+          b = y + dy;
+        if (inB(a, b) && S.tiles[idx(a, b)].k === 'r') set.add(idx(a, b));
+      }
+    }
+    return [...set];
+  }
+
+  // ── designations (drag a rectangle) ───────────────────────────────
+  function designate(S, tool, x0, y0, x1, y1) {
+    [x0, x1] = [Math.max(0, Math.min(x0, x1)), Math.min(W - 1, Math.max(x0, x1))];
+    [y0, y1] = [Math.max(0, Math.min(y0, y1)), Math.min(H - 1, Math.max(y0, y1))];
+    if (tool.startsWith('room:')) return makeRoom(S, tool.slice(5), x0, y0, x1, y1);
+    let n = 0;
+    for (let y = y0; y <= y1; y++)
+      for (let x = x0; x <= x1; x++) {
+        const i = idx(x, y),
+          t = S.tiles[i];
+        if (tool === 'dig') {
+          if (t.k === 'r' && !t.p && !t.d) {
+            t.d = true;
+            t.m = false;
+            n++;
+          }
+        } else if (tool === 'pillar') {
+          if (t.k === 'r' && !t.p) {
+            t.p = true;
+            t.d = false;
+            release(S, i);
+            n++;
+          }
+        } else if (tool === 'smooth') {
+          if (t.k === 'r' && !t.d && !t.w && !t.m) {
+            t.m = true;
+            n++;
+          }
+        } else if (tool === 'cancel') {
+          if (t.d || t.p || t.m) {
+            t.d = false;
+            t.p = false;
+            t.m = false;
+            release(S, i);
+            n++;
+          }
+        }
+      }
+    return { ok: true, n };
+  }
+  // a job's claim is dropped when its tile's designation goes
+  function release(S, i) {
+    const t = S.tiles[i];
+    if (!t.cl) return;
+    const d = S.dwarves.find(w => w.id === t.cl);
+    if (d && d.job && d.job.tile === i) {
+      d.job = null;
+      d.path = [];
+    }
+    t.cl = 0;
+  }
+
+  // ── stock and stockpiles ──
+  function stockTiles(S) {
+    const out = S.gate.slice();
+    for (const r of S.rooms)
+      if (r.type === 'stockpile') for (const i of roomTiles(S, r)) if (S.tiles[i].k === 'f') out.push(i);
+    return out;
+  }
+  function nearest(dm, list) {
+    let best = -1,
+      bd = 1e9;
+    for (const i of list) {
+      const d = dm.dist[i];
+      if (d >= 0 && d < bd) {
+        bd = d;
+        best = i;
+      }
+    }
+    return best;
+  }
+  function addItem(S, i, kind, n) {
+    S.items.push({ id: S.nextId++, i, kind, n: n || 1, cl: 0 });
+  }
+
+  // ── skill ──
+  function levelOf(d) {
+    let L = LEVELS[0];
+    for (const l of LEVELS) if (d.xp >= l.xp) L = l;
+    return L;
+  }
+  function speedOf(d) {
+    return levelOf(d).speed * (openGrudges(d) >= GRUMBLE ? GRUMBLE_SPEED : 1);
+  }
+  const openGrudges = d => d.grudges.length;
+  function addGrudge(S, d, why) {
+    if (d.grudges.some(g => g.why === why && S.t - g.t < DAY)) return;
+    d.grudges.push({ why, t: S.t });
+    logMsg(S, '📕 ' + d.name.split(' ')[0] + ': "' + why + '." (in the Ledger)');
+  }
+  function settleGrudge(S, d, how) {
+    if (!d.grudges.length) return;
+    const g = d.grudges.shift();
+    logMsg(S, '✔ ' + d.name.split(' ')[0] + ' struck out "' + g.why + '": ' + how + '.');
+  }
+
+  // ── choosing work ────────────────────────────────────────────────
+  function chooseJob(S, d) {
+    const tx = Math.round(d.x),
+      ty = Math.round(d.y),
+      dm = distMap(S, tx, ty);
+    const go = (job, dest) => {
+      const p = dest === idx(tx, ty) ? [] : pathTo(dm, dest);
+      if (!p) return false;
+      d.job = job;
+      d.path = p;
+      return true;
+    };
+    const stocks = stockTiles(S);
+    // needs first
+    if (d.needs.sleep < LOW.sleep) {
+      let bed = d.bed >= 0 && S.tiles[d.bed].fu === 'bed' && S.tiles[d.bed].fb ? d.bed : -1;
+      if (bed < 0) {
+        const taken = new Set(S.dwarves.map(w => w.bed));
+        bed = -1;
+        let bd = 1e9;
+        S.tiles.forEach((t, i) => {
+          if (t.fu === 'bed' && t.fb && !taken.has(i) && dm.dist[i] >= 0 && dm.dist[i] < bd) {
+            bd = dm.dist[i];
+            bed = i;
+          }
+        });
+        if (bed >= 0) d.bed = bed;
+      }
+      if (bed >= 0 && go({ type: 'sleep', tile: bed, ph: 1, w: SLEEP_S }, bed)) return;
+      d.job = { type: 'sleep', tile: -1, ph: 1, w: SLEEP_S, floor: true };
+      d.path = [];
+      return;
+    }
+    for (const need of ['food', 'ale']) {
+      const item = need === 'food' ? 'food' : 'ale';
+      if (d.needs[need] < LOW[need]) {
+        if (S.stock[item] > 0) {
+          const st = nearest(dm, stocks);
+          if (st >= 0 && go({ type: need === 'food' ? 'eat' : 'drink', ph: 0, tile: st }, st)) return;
+        } else d.lack[need] = true;
+      }
+    }
+    if (openGrudges(d) >= DOWN_TOOLS) {
+      d.act = 'Has downed tools';
+      idle(S, d, dm);
+      return;
+    }
+    const order = {
+      miner: ['dig', 'haul'],
+      mason: ['build', 'smooth', 'haul', 'dig'],
+      farmer: ['harvest', 'plant', 'haul', 'dig'],
+      brewer: ['brew', 'haul', 'dig']
+    }[d.trade];
+    for (const kind of order) if (findWork(S, d, dm, kind, stocks, go)) return;
+    idle(S, d, dm);
+  }
+  function idle(S, d, dm) {
+    d.job = { type: 'idle', ph: 1, w: 3 + rnd(S) * 4 };
+    d.path = [];
+    if (!/downed/.test(d.act)) d.act = 'Idle';
+  }
+  function findWork(S, d, dm, kind, stocks, go) {
+    const T = S.tiles;
+    if (kind === 'dig' || kind === 'smooth') {
+      let best = -1,
+        stand = -1,
+        bd = 1e9;
+      for (let i = 0; i < T.length; i++) {
+        const t = T[i];
+        if (t.cl || t.k !== 'r') continue;
+        if (kind === 'dig' ? !t.d : !t.m || t.w) continue;
+        const s = standBy(S, dm, i);
+        if (s < 0) continue;
+        const c = dm.dist[s];
+        if (c < bd) {
+          bd = c;
+          best = i;
+          stand = s;
+        }
+      }
+      if (best < 0) return false;
+      const t = T[best],
+        w = kind === 'dig' ? DIG_S[t.h] * (t.o && t.o !== 'soil' ? ORE_DIG : 1) : SMOOTH_S;
+      if (!go({ type: kind, tile: best, ph: 1, w }, stand)) return false;
+      t.cl = d.id;
+      return true;
+    }
+    if (kind === 'haul') {
+      let best = null,
+        bd = 1e9;
+      for (const it of S.items) {
+        if (it.cl) continue;
+        const c = dm.dist[it.i];
+        if (c >= 0 && c < bd) {
+          bd = c;
+          best = it;
+        }
+      }
+      if (!best || !stocks.length) return false;
+      if (!go({ type: 'haul', item: best.id, ph: 0, tile: best.i }, best.i)) return false;
+      best.cl = d.id;
+      return true;
+    }
+    if (kind === 'build') {
+      if (S.stock.stone < 1) return false;
+      let best = -1,
+        bd = 1e9;
+      T.forEach((t, i) => {
+        if (t.fu && !t.fb && !t.cl && dm.dist[i] >= 0 && dm.dist[i] < bd) {
+          bd = dm.dist[i];
+          best = i;
+        }
+      });
+      if (best < 0) return false;
+      const st = nearest(dm, stocks);
+      if (st < 0) return false;
+      if (!go({ type: 'build', tile: best, ph: 0, st }, st)) return false;
+      T[best].cl = d.id;
+      return true;
+    }
+    if (kind === 'harvest' || kind === 'plant') {
+      let best = -1,
+        bd = 1e9;
+      T.forEach((t, i) => {
+        if (!t.r || t.cl || t.k !== 'f' || t.o !== 'soil') return;
+        const r = roomById(S, t.r);
+        if (!r || r.type !== 'farm') return;
+        if (kind === 'harvest' ? t.g !== 2 : t.g !== 0) return;
+        const c = dm.dist[i];
+        if (c >= 0 && c < bd) {
+          bd = c;
+          best = i;
+        }
+      });
+      if (best < 0) return false;
+      if (!go({ type: kind, tile: best, ph: 1, w: kind === 'harvest' ? HARVEST_S : PLANT_S }, best))
+        return false;
+      T[best].cl = d.id;
+      return true;
+    }
+    if (kind === 'brew') {
+      if (S.stock.barley < 1) return false;
+      let best = -1,
+        bd = 1e9;
+      T.forEach((t, i) => {
+        if (t.fu === 'still' && t.fb && !t.cl && dm.dist[i] >= 0 && dm.dist[i] < bd) {
+          bd = dm.dist[i];
+          best = i;
+        }
+      });
+      if (best < 0) return false;
+      const st = nearest(dm, stocks);
+      if (st < 0) return false;
+      if (!go({ type: 'brew', tile: best, ph: 0, st }, st)) return false;
+      T[best].cl = d.id;
+      return true;
+    }
+    return false;
+  }
+
+  // ── doing it ─────────────────────────────────────────────────────
+  function walk(S, d, dt) {
+    let left = dt * WALK;
+    while (d.path.length && left > 0) {
+      const n = d.path[0],
+        nx = n % W,
+        ny = (n / W) | 0;
+      if (!isFloor(S, nx, ny)) {
+        d.path = [];
+        break;
+      }
+      const dx = nx - d.x,
+        dy = ny - d.y,
+        dist = Math.hypot(dx, dy);
+      if (dist <= left) {
+        d.x = nx;
+        d.y = ny;
+        left -= dist;
+        d.path.shift();
+      } else {
+        d.x += (dx / dist) * left;
+        d.y += (dy / dist) * left;
+        left = 0;
+      }
+    }
+    return !d.path.length;
+  }
+  const ACT = {
+    dig: 'Digging',
+    smooth: 'Smoothing a wall',
+    haul: 'Hauling',
+    build: 'Building',
+    plant: 'Planting deepcaps',
+    harvest: 'Harvesting',
+    brew: 'Brewing',
+    eat: 'Eating',
+    drink: 'Drinking',
+    sleep: 'Sleeping'
+  };
+  function work(S, d, dt) {
+    const j = d.job,
+      T = S.tiles;
+    if (!walk(S, d, dt)) {
+      d.act = (ACT[j.type] || 'Walking') + '…';
+      return;
+    }
+    const here = idx(Math.round(d.x), Math.round(d.y)),
+      stocks = stockTiles(S);
+    const goTo = dest => {
+      const dm = distMap(S, d.x, d.y),
+        p = pathTo(dm, dest);
+      if (!p) {
+        drop(S, d);
+        return false;
+      }
+      d.path = p;
+      return true;
+    };
+    switch (j.type) {
+      case 'idle':
+        j.w -= dt;
+        if (j.w <= 0) d.job = null;
+        return;
+      case 'dig':
+      case 'smooth': {
+        const t = T[j.tile];
+        if (!t || t.k !== 'r' || (j.type === 'dig' ? !t.d : !t.m)) {
+          drop(S, d);
+          return;
+        }
+        d.act = ACT[j.type];
+        j.w -= dt * (j.type === 'dig' && d.trade !== 'miner' ? 0.6 : 1) * speedOf(d);
+        if (j.w > 0) return;
+        t.cl = 0;
+        d.job = null;
+        d.xp += j.type === 'dig' ? 2 : 3;
+        if (j.type === 'smooth') {
+          t.m = false;
+          t.w = true;
+          return;
+        }
+        dig(S, j.tile);
+        return;
+      }
+      case 'haul': {
+        const it = S.items.find(x => x.id === j.item);
+        if (j.ph === 0) {
+          if (!it) {
+            drop(S, d);
+            return;
+          }
+          S.items = S.items.filter(x => x !== it);
+          d.carry = { kind: it.kind, n: it.n };
+          j.ph = 1;
+          const dm = distMap(S, d.x, d.y),
+            st = nearest(dm, stocks);
+          if (st < 0) {
+            addItem(S, here, it.kind, it.n);
+            d.carry = null;
+            drop(S, d);
+            return;
+          }
+          d.path = pathTo(dm, st) || [];
+          return;
+        }
+        if (d.carry) {
+          S.stock[d.carry.kind] = (S.stock[d.carry.kind] || 0) + d.carry.n;
+          d.carry = null;
+        }
+        d.job = null;
+        return;
+      }
+      case 'build':
+      case 'brew': {
+        const t = T[j.tile];
+        const want = j.type === 'build' ? 'stone' : 'barley',
+          ok = j.type === 'build' ? t && t.fu && !t.fb : t && t.fu === 'still' && t.fb;
+        if (!ok) {
+          if (d.carry) {
+            S.stock[d.carry.kind]++;
+            d.carry = null;
+          }
+          drop(S, d);
+          return;
+        }
+        if (j.ph === 0) {
+          if (S.stock[want] < 1) {
+            drop(S, d);
+            return;
+          }
+          S.stock[want]--;
+          d.carry = { kind: want, n: 1 };
+          j.ph = 1;
+          j.w = j.type === 'build' ? BUILD_S : BREW_S;
+          goTo(j.tile);
+          return;
+        }
+        d.act = ACT[j.type];
+        j.w -= dt * speedOf(d);
+        if (j.w > 0) return;
+        d.carry = null;
+        t.cl = 0;
+        d.job = null;
+        d.xp += 3;
+        if (j.type === 'build') {
+          t.fb = true;
+          const r = roomById(S, t.r);
+          if (r && roomTiles(S, r).every(i => !T[i].fu || T[i].fb))
+            logMsg(S, '🏠 ' + ROOMS[r.type].name + ' is furnished.');
+        } else addItem(S, j.tile, 'ale', BREW_ALE);
+        return;
+      }
+      case 'plant':
+      case 'harvest': {
+        const t = T[j.tile];
+        d.act = ACT[j.type];
+        j.w -= dt * speedOf(d);
+        if (j.w > 0) return;
+        t.cl = 0;
+        d.job = null;
+        d.xp += 2;
+        if (j.type === 'plant') {
+          t.g = 1;
+          t.gt = 0;
+          t.crop = t.crop === 'cap' ? 'barley' : 'cap';
+        } else {
+          const c = t.crop || 'cap';
+          addItem(S, j.tile, c === 'cap' ? 'food' : 'barley', HARVEST[c]);
+          t.g = 0;
+        }
+        return;
+      }
+      case 'eat':
+      case 'drink': {
+        const item = j.type === 'eat' ? 'food' : 'ale',
+          need = j.type === 'eat' ? 'food' : 'ale';
+        if (j.ph === 0) {
+          if (S.stock[item] < 1) {
+            d.lack[need] = true;
+            d.job = null;
+            return;
+          }
+          S.stock[item]--;
+          d.carry = { kind: item, n: 1 };
+          j.ph = 1;
+          // to the dining hall if there is one with a table
+          const dm = distMap(S, d.x, d.y);
+          let seat = -1,
+            bd = 1e9;
+          T.forEach((t, i) => {
+            if (t.fu === 'table' && t.fb && dm.dist[i] >= 0 && dm.dist[i] < bd) {
+              bd = dm.dist[i];
+              seat = i;
+            }
+          });
+          j.hall = seat >= 0;
+          j.w = j.type === 'eat' ? EAT_S : DRINK_S;
+          if (seat >= 0) d.path = pathTo(dm, seat) || [];
+          return;
+        }
+        d.act = ACT[j.type];
+        j.w -= dt;
+        if (j.w > 0) return;
+        d.carry = null;
+        d.needs[need] = 100;
+        d.lack[need] = false;
+        d.job = null;
+        if (j.type === 'eat') {
+          const r = roomAt(S, Math.round(d.x), Math.round(d.y));
+          if (!j.hall) {
+            if (S.t > GRACE) addGrudge(S, d, 'Ate off the floor like a goblin');
+          } else if (r && roomStars(S, r) >= 2 && d.grudges.length && rnd(S) < 0.5)
+            settleGrudge(S, d, 'a good meal in a fine hall');
+        }
+        return;
+      }
+      case 'sleep': {
+        d.act = j.floor ? 'Sleeping on the floor' : 'Sleeping';
+        j.w -= dt;
+        d.needs.sleep = Math.min(100, d.needs.sleep + (dt / SLEEP_S) * 100);
+        if (j.w > 0) return;
+        d.job = null;
+        if (j.floor) {
+          if (S.t > GRACE) addGrudge(S, d, 'Slept on the cold floor');
+          return;
+        }
+        const r = roomAt(S, Math.round(d.x), Math.round(d.y));
+        if (r && r.type === 'bedroom' && roomStars(S, r) >= 2)
+          settleGrudge(S, d, 'a night in a fine bedroom');
+        return;
+      }
+    }
+  }
+  function drop(S, d) {
+    const j = d.job;
+    if (j && j.tile >= 0 && S.tiles[j.tile] && S.tiles[j.tile].cl === d.id) S.tiles[j.tile].cl = 0;
+    if (j && j.item) {
+      const it = S.items.find(x => x.id === j.item);
+      if (it) it.cl = 0;
+    }
+    if (d.carry) {
+      S.stock[d.carry.kind] = (S.stock[d.carry.kind] || 0) + d.carry.n;
+      d.carry = null;
+    }
+    d.job = null;
+    d.path = [];
+  }
+  function dig(S, i) {
+    const t = S.tiles[i],
+      x = i % W,
+      y = (i / W) | 0;
+    t.k = 'f';
+    t.d = false;
+    t.m = false;
+    t.w = false;
+    if (t.o === 'cu' || t.o === 'sn' || t.o === 'c') {
+      addItem(S, i, ORES[t.o].name, 1);
+      t.wo = true;
+      t.o = '';
+    } else if (t.o !== 'soil' && rnd(S) < STONE_CHANCE) addItem(S, i, 'stone', 1);
+    reveal(S, x, y);
+  }
+
+  // ── Durin (a piece you move; he prospects once a day) ──
+  function durinMove(S, x, y) {
+    const dm = distMap(S, S.durin.x, S.durin.y),
+      p = pathTo(dm, idx(x, y));
+    if (!p) return false;
+    S.durin.path = p;
+    S.durin.act = 'Walking';
+    return true;
+  }
+  function canProspect(S) {
+    return S.prospectDay < dayOf(S);
+  }
+  function prospect(S) {
+    if (!canProspect(S)) return { ok: false, why: 'Durin has prospected today. He can again tomorrow.' };
+    const cx = Math.round(S.durin.x),
+      cy = Math.round(S.durin.y);
+    let ore = 0;
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++)
+        if (Math.hypot(x - cx, y - cy) <= PROSPECT_R) {
+          const t = S.tiles[idx(x, y)];
+          if (!t.s && t.o && t.o !== 'soil') ore++;
+          t.s = true;
+        }
+    S.prospectDay = dayOf(S);
+    S.durin.act = 'Prospecting';
+    logMsg(
+      S,
+      ore
+        ? '🔍 Durin taps the stone and listens: "' + ore + ' seams of ore hereabouts."'
+        : '🔍 Durin taps the stone: "Nothing but rock this way."'
+    );
+    return { ok: true, ore };
+  }
+
+  // ── a tick ───────────────────────────────────────────────────────
+  function tick(S, dt) {
+    let left = dt;
+    while (left > 1e-6) {
+      const s = Math.min(STEP, left);
+      left -= s;
+      step(S, s);
+    }
+  }
+  function step(S, dt) {
+    S.t += dt;
+    for (const t of S.tiles)
+      if (t.g === 1) {
+        t.gt += dt;
+        if (t.gt >= GROW_S) t.g = 2;
+      }
+    walk(S, S.durin, dt);
+    if (!S.durin.path.length && S.durin.act === 'Walking') S.durin.act = 'Watching the work';
+    for (const d of S.dwarves) {
+      for (const k of ['food', 'ale', 'sleep'])
+        if (!(d.job && d.job.type === 'sleep' && k === 'sleep'))
+          d.needs[k] = Math.max(0, d.needs[k] - (dt / NEED[k]) * 100);
+      if (d.needs.food <= 0) addGrudge(S, d, 'Went hungry');
+      if (d.needs.ale <= 0) addGrudge(S, d, 'Not a drop of ale in the hold');
+      d.grudges = d.grudges.filter(g => S.t - g.t < GRUDGE_DAYS * DAY);
+      if (!d.job) {
+        chooseJob(S, d);
+        if (!d.job) continue;
+      }
+      work(S, d, dt);
+    }
+  }
+
+  // ── the Mason's Eye ──────────────────────────────────────────────
+  function masonEye(S) {
+    const T = S.tiles,
+      gate = new Set(S.gate);
+    const floor = [],
+      passage = [];
+    T.forEach((t, i) => {
+      if (t.k !== 'f') return;
+      floor.push(i);
+      if (!t.r && !gate.has(i)) passage.push(i);
+    });
+    const isPass = (x, y) => {
+      if (!inB(x, y)) return false;
+      const i = idx(x, y),
+        t = T[i];
+      return t.k === 'f' && !t.r && !gate.has(i);
+    };
+    const marks = { jag: [], blob: [], dead: [] };
+    // true lines: corners where a passage turns (a staircase tunnel is all corners)
+    let corners = 0;
+    for (const i of passage) {
+      const x = i % W,
+        y = (i / W) | 0,
+        n = D4.map(([dx, dy]) => isFloor(S, x + dx, y + dy));
+      const cnt = n.filter(Boolean).length;
+      if (cnt === 2 && !(n[0] && n[1]) && !(n[2] && n[3])) {
+        corners++;
+        marks.jag.push(i);
+      }
+    }
+    // order: passage that isn't a corridor but a shapeless hole (in a 3×3 of open passage)
+    const blob = new Set();
+    for (const i of passage) {
+      const x = i % W,
+        y = (i / W) | 0;
+      for (let oy = -2; oy <= 0; oy++)
+        for (let ox = -2; ox <= 0; ox++) {
+          let all = true;
+          for (let b = 0; b < 3 && all; b++)
+            for (let a = 0; a < 3 && all; a++) if (!isPass(x + ox + a, y + oy + b)) all = false;
+          if (all)
+            for (let b = 0; b < 3; b++) for (let a = 0; a < 3; a++) blob.add(idx(x + ox + a, y + oy + b));
+        }
+    }
+    marks.blob = [...blob];
+    // dead ends that found nothing (no ore dug or seen beside them)
+    let waste = 0;
+    for (const i of passage) {
+      const x = i % W,
+        y = (i / W) | 0;
+      if (D4.filter(([dx, dy]) => isFloor(S, x + dx, y + dy)).length !== 1) continue;
+      let ore = false;
+      for (const [dx, dy] of D8.concat([[0, 0]])) {
+        const a = x + dx,
+          b = y + dy;
+        if (!inB(a, b)) continue;
+        const t = T[idx(a, b)];
+        if (t.wo || (t.s && t.o && t.o !== 'soil')) ore = true;
+      }
+      if (!ore && !T[i].d) {
+        waste++;
+        marks.dead.push(i);
+      }
+    }
+    // symmetry, pillars and worked walls, room by room
+    let symA = 0,
+      symW = 0,
+      rhyA = 0,
+      rhyW = 0,
+      wk = 0,
+      wkN = 0;
+    for (const r of S.rooms) {
+      const w = r.x1 - r.x0 + 1,
+        h = r.y1 - r.y0 + 1,
+        area = w * h;
+      const cell = (x, y) => {
+        const t = T[idx(x, y)];
+        return t.k === 'f' ? 0 : t.p ? 1 : 2;
+      };
+      let mh = 0,
+        mv = 0;
+      for (let y = r.y0; y <= r.y1; y++)
+        for (let x = r.x0; x <= r.x1; x++) {
+          const c = cell(x, y);
+          if (c === cell(r.x1 - (x - r.x0), y)) mh++;
+          if (c === cell(x, r.y1 - (y - r.y0))) mv++;
+        }
+      symA += (Math.max(mh, mv) / area) * area;
+      symW += area;
+      const pil = roomTiles(S, r).filter(i => T[i].k === 'r' && T[i].p);
+      if (pil.length >= 2) {
+        rhyA += lattice(pil) * area;
+        rhyW += area;
+      }
+      for (const i of roomWalls(S, r)) {
+        wkN++;
+        if (T[i].w) wk++;
+      }
+    }
+    const parts = {};
+    if (passage.length >= 4) parts.lines = Math.max(0, Math.min(1, 1 - (3 * corners) / passage.length));
+    if (floor.length) parts.order = 1 - blob.size / floor.length;
+    if (symW) parts.sym = symA / symW;
+    if (rhyW) parts.rhythm = rhyA / rhyW;
+    if (wkN) parts.worked = wk / wkN;
+    let sw = 0,
+      sv = 0;
+    for (const k in parts) {
+      sw += EYE_W[k];
+      sv += EYE_W[k] * parts[k];
+    }
+    const penalty = Math.min(EYE_WASTE_MAX, waste * EYE_WASTE);
+    const ready = floor.length >= EYE_MIN_FLOOR;
+    const score = ready && sw ? Math.max(0, Math.round((sv / sw) * 100 - penalty)) : null;
+    return { score, parts, waste, penalty, marks, ready, patterns: findPatterns(S, isPass) };
+  }
+  // pillars in a true lattice: every crossing of their columns and rows filled, at even spacing
+  function lattice(pil) {
+    const xs = [...new Set(pil.map(i => i % W))].sort((a, b) => a - b),
+      ys = [...new Set(pil.map(i => (i / W) | 0))].sort((a, b) => a - b);
+    const even = a => a.length < 3 || a.slice(1).every((v, k) => v - a[k] === a[1] - a[0]);
+    const full = pil.length === xs.length * ys.length;
+    return (full ? 0.6 : 0.2) + (even(xs) ? 0.2 : 0) + (even(ys) ? 0.2 : 0);
+  }
+  function findPatterns(S, isPass) {
+    const T = S.tiles,
+      got = [];
+    // the Long Gallery: twenty passage tiles in a straight line
+    let gal = false;
+    for (let y = 0; y < H && !gal; y++) {
+      let run = 0;
+      for (let x = 0; x < W; x++) {
+        run = isPass(x, y) ? run + 1 : 0;
+        if (run >= 20) gal = true;
+      }
+    }
+    for (let x = 0; x < W && !gal; x++) {
+      let run = 0;
+      for (let y = 0; y < H; y++) {
+        run = isPass(x, y) ? run + 1 : 0;
+        if (run >= 20) gal = true;
+      }
+    }
+    if (gal) got.push('gallery');
+    // the Thane's Cross: a hub with four one-wide arms of the same length, four or more
+    outer: for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        if (!isPass(x, y)) continue;
+        const arms = D4.map(([dx, dy]) => {
+          let n = 0;
+          while (isPass(x + dx * (n + 1), y + dy * (n + 1))) n++;
+          return n;
+        });
+        if (Math.min(...arms) < 4 || Math.max(...arms) !== Math.min(...arms)) continue;
+        let narrow = true;
+        D4.forEach(([dx, dy]) => {
+          for (let k = 2; k <= 3; k++) {
+            const ax = x + dx * k,
+              ay = y + dy * k;
+            if (isFloor(S, ax + dy, ay + dx) || isFloor(S, ax - dy, ay - dx)) narrow = false;
+          }
+        });
+        if (narrow) {
+          got.push('cross');
+          break outer;
+        }
+      }
+    // the Colonnade: a mirrored hall with four or more pillars in a full, even lattice
+    for (const r of S.rooms) {
+      const pil = roomTiles(S, r).filter(i => T[i].k === 'r' && T[i].p);
+      if (pil.length < 4 || lattice(pil) < 0.99) continue;
+      let ok = true;
+      for (const i of pil) {
+        const x = i % W,
+          y = (i / W) | 0,
+          mx = r.x1 - (x - r.x0),
+          my = r.y1 - (y - r.y0);
+        if (!T[idx(mx, y)].p || !T[idx(x, my)].p) ok = false;
+      }
+      if (ok) {
+        got.push('colonnade');
+        break;
+      }
+    }
+    // the Ninefold Hall: nine rooms the same size, three by three at even spacing
+    nine: for (const a of S.rooms) {
+      const w = a.x1 - a.x0,
+        h = a.y1 - a.y0;
+      if (w < 1 || h < 1) continue; // rooms of 2×2 and up, a wall between
+      const same = S.rooms.filter(r => r.x1 - r.x0 === w && r.y1 - r.y0 === h);
+      if (same.length < 9) continue;
+      const at = (x, y) => same.some(r => r.x0 === x && r.y0 === y);
+      for (const b of same) {
+        const sx = b.x0 - a.x0;
+        if (b.y0 !== a.y0 || sx <= w + 1) continue;
+        for (const c of same) {
+          const sy = c.y0 - a.y0;
+          if (c.x0 !== a.x0 || sy <= h + 1) continue;
+          let all = true;
+          for (let j = 0; j < 3; j++)
+            for (let k = 0; k < 3; k++) if (!at(a.x0 + k * sx, a.y0 + j * sy)) all = false;
+          if (all) {
+            got.push('ninefold');
+            break nine;
+          }
+        }
+      }
+    }
+    return got;
+  }
+  // call now and then: names any pattern found for the first time (for Durin to remark on)
+  function notePatterns(S) {
+    const eye = masonEye(S),
+      fresh = [];
+    for (const p of eye.patterns)
+      if (!S.found[p]) {
+        S.found[p] = dayOf(S);
+        fresh.push(p);
+        logMsg(S, '✨ Durin: "That\'s ' + PATTERNS[p].name + '! I\'ll have it written in the Delve-book."');
+      }
+    return { eye, fresh };
+  }
+
+  const API = {
+    W,
+    H,
+    DAY,
+    STEP,
+    ROOMS,
+    TRADES,
+    ORES,
+    PATTERNS,
+    LEVELS,
+    EYE_W,
+    GRUMBLE,
+    DOWN_TOOLS,
+    PROSPECT_R,
+    newGame,
+    tick,
+    designate,
+    makeRoom,
+    removeRoom,
+    roomAt,
+    roomStars,
+    roomArea,
+    roomWalls,
+    durinMove,
+    prospect,
+    canProspect,
+    masonEye,
+    notePatterns,
+    dayOf,
+    clockOf,
+    levelOf,
+    idx,
+    inB,
+    isFloor,
+    distMap,
+    stockTiles
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  else root.MineEngine = API;
+})(typeof window !== 'undefined' ? window : globalThis);

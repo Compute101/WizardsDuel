@@ -141,7 +141,7 @@ Gnash's hyena people **the Hrakka**.
 
 **Scale and geography (the second sketch):** the home isle is half its first size and the Mainland
 about twice, roughly Britain beside Europe, so most of the world is the Mainland. Drawn by real
-geography: rivers rise in high ground (the Hammerfells, the Greatspine, the Sunwall?, the isle's
+geography: rivers rise in high ground (the Anvilfells, the Greatspine, the Sunwall?, the isle's
 western uplands), join into trees and end in estuaries or deltas; the Greatspine is the Mainland's
 watershed (north to the Narrows, the Wolf Sea and the inland **Salt Sea?**, south to the Middle Sea),
 crossed by two passes (the Deepgate on the western one); capitals sit on rivers, harbours and passes,
@@ -178,15 +178,15 @@ Borders wander and neighbours share them.
 **Albra's towns** (added November 2026): **Gilden?**, Albra's richest city, a trading port on the
 south-east coast where the Narrows meet the Wolf Sea (the Mainland's trade comes ashore there), home of
 Thessaly's merchant house, where you meet her; a road north to Hollowmere and a coast road west to
-Ferryhythe. **Mining towns** in the Hammerfells' foothills: Copperhythe?, Varg's Delve? and **Tinwell?**.
+Ferryhythe. **Mining towns** in the Anvilfells' foothills: Copperhythe?, Varg's Delve? and **Tinwell?**.
 **Ulfvik?**, a Varg town on the Wolf coast north of Wolfmouth (longhouses, boat-sheds, smokehouses;
 settled Varg, some of whom sail with the pirates), on a road from Corvanthe. Three **dwarf holds** high in
-the Hammerfells, each with a mountain path up from a mining town: **Stonedeep?** (above Copperhythe),
-**Hammerhall?** (the greatest, which named the range; above Varg's Delve) and **Coldforge?** (over the Grey
+the Anvilfells, each with a mountain path up from a mining town: **Stonedeep?** (above Copperhythe),
+**Anvilmoot?** (the greatest, which named the range; above Varg's Delve) and **Coldforge?** (over the Grey
 Sea, above Tinwell). Outsiders get as far as their gatehouses.
 
 **Gilden's trade** (the user's call): Albra's great export is **quintessence**, gleaned from Corvanthe; it comes
-down **the Ore Road** with the Hammerfells' copper and tin (Copperhythe → Varg's Delve → **Harrowgate?**, now a
+down **the Ore Road** with the Anvilfells' copper and tin (Copperhythe → Varg's Delve → **Harrowgate?**, now a
 big walled ore market → Hollowmere → **Chepstead?**, a big market town where the ore road and the spill road
 meet → Gilden), and goes out to **the Brazen Dominion** (the best customer, paying in silver for its war), on
 **the gnome airships**, overland **through the Tuskholds**, and on **trading ships far and wide**. Never to
@@ -203,7 +203,7 @@ Hallowmark, which would burn it. Gilden pays the Varg pirates a yearly sea-toll.
 |---|---|---|
 | **The Wildwood?** (west of the Moriquende) | tribes of Varg, goblins, orcs and elves | more forest with no Warden; the West Road runs through it |
 | **Saltreach?** (the West Road's end) | fisherfolk and traders | a port on **the Sunset Ocean?**; ships come from the west, from whoever lives over the water (not yet known) |
-| **The Hammerfells?** (north of Wrenford) | dwarves in closed holds; humans and Varg in mining towns below | the dwarves trade with the towns and don't welcome outsiders |
+| **The Anvilfells?** (north of Wrenford) | dwarves in closed holds; humans and Varg in mining towns below | the dwarves trade with the towns and don't welcome outsiders |
 | **The Harrow** (lowlands between Wrenford and the mountains) | roving orc bands | the lowlands are plagued with orcs |
 | **The Grey Sea? and the Skerries?** (north of the mountains) | hardy humans, Varg and dwarves on small islands | a cold sea; not meant for travel beyond it |
 | **The Wolf Sea?** (east of Corvanthe) | Varg pirates | cold; the Hollow reaches it east of the city (**Wolfmouth?** at the mouth); **the Reaver Isles?** to its north |

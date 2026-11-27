@@ -33,48 +33,56 @@ rnd = random.Random(11)
 
 # track -> (GM program, volume, pan, reverb, playable range)
 PARTS = {
-    'clar':  (71, 112, 54, 85, (50, 91)),
-    'oboe':  (68, 100, 72, 85, (52, 91)),    # cor anglais (program 69) in the Memory section
+    'clar': (71, 112, 54, 85, (50, 91)),
+    'oboe': (68, 100, 72, 85, (52, 91)),  # cor anglais (program 69) in the Memory section
     'flute': (73, 96, 58, 90, (60, 96)),
-    'bsn':   (70, 100, 78, 80, (34, 72)),
-    'horn':  (60, 100, 44, 95, (41, 77)),
-    'vln':   (48, 120, 38, 90, (55, 100)),
-    'inner': (48, 100, 60, 90, (48, 84)),    # violins II / violas
+    'bsn': (70, 100, 78, 80, (34, 72)),
+    'horn': (60, 100, 44, 95, (41, 77)),
+    'vln': (48, 120, 38, 90, (55, 100)),
+    'inner': (48, 100, 60, 90, (48, 84)),  # violins II / violas
     'cello': (42, 114, 84, 80, (36, 76)),
-    'bass':  (43, 104, 92, 70, (24, 55)),
-    'pizz':  (45, 116, 70, 70, (28, 79)),    # plucked strings: the walking bass and off-beat chords
-    'harp':  (46, 108, 30, 80, (24, 103)),
-    'cel':   (8, 100, 82, 95, (60, 108)),    # celesta
+    'bass': (43, 104, 92, 70, (24, 55)),
+    'pizz': (45, 116, 70, 70, (28, 79)),  # plucked strings: the walking bass and off-beat chords
+    'harp': (46, 108, 30, 80, (24, 103)),
+    'cel': (8, 100, 82, 95, (60, 108)),  # celesta
     'glock': (9, 110, 48, 95, (72, 103)),
-    'bells': (14, 110, 44, 100, (60, 77)),    # tubular bell: the bell rung for the dead
+    'bells': (14, 110, 44, 100, (60, 77)),  # tubular bell: the bell rung for the dead
 }
 ev, chans, LEVEL = {}, {}, {}
-TOP, BOT = [], []                             # outer voices, for the parallels check
+TOP, BOT = [], []  # outer voices, for the parallels check
 
 
 def ch(tr):
     if tr not in chans:
         c = len(chans)
-        c = c + 1 if c >= 9 else c            # skip the drum channel
+        c = c + 1 if c >= 9 else c  # skip the drum channel
         chans[tr] = c
         prog, vol, pan, rev, _ = PARTS[tr]
         LEVEL[tr] = 100
-        ev[tr] = [(0, mido.Message('program_change', channel=c, program=prog)),
-                  (0, mido.Message('control_change', channel=c, control=7, value=vol)),
-                  (0, mido.Message('control_change', channel=c, control=10, value=pan)),
-                  (0, mido.Message('control_change', channel=c, control=11, value=100)),
-                  (0, mido.Message('control_change', channel=c, control=91, value=rev))]
+        ev[tr] = [
+            (0, mido.Message('program_change', channel=c, program=prog)),
+            (0, mido.Message('control_change', channel=c, control=7, value=vol)),
+            (0, mido.Message('control_change', channel=c, control=10, value=pan)),
+            (0, mido.Message('control_change', channel=c, control=11, value=100)),
+            (0, mido.Message('control_change', channel=c, control=91, value=rev)),
+        ]
     return chans[tr]
 
 
 def cc(tr, beat, val, ctl=11):
-    ev[tr].append((int(beat * TPB), mido.Message('control_change', channel=ch(tr), control=ctl,
-                                                 value=max(0, min(127, int(val))))))
+    ev[tr].append(
+        (
+            int(beat * TPB),
+            mido.Message('control_change', channel=ch(tr), control=ctl, value=max(0, min(127, int(val)))),
+        )
+    )
 
 
 def dyn(tr, beat, val):
     """Set a part's expression level from here on."""
-    ch(tr); LEVEL[tr] = val; cc(tr, beat, val)
+    ch(tr)
+    LEVEL[tr] = val
+    cc(tr, beat, val)
 
 
 def cresc(tr, b0, b1, v0, v1):
@@ -95,7 +103,7 @@ def note(tr, n, start, dur, vel, jitter=3, art=None):
     vel = max(1, min(127, int(vel + rnd.randint(-jitter, jitter))))
     s = int(start * TPB)
     e = int((start + dur * art) * TPB) if art else int((start + dur) * TPB) - 8
-    e = min(e, END_BEATS * TPB - 8)                 # nothing is held past the loop point
+    e = min(e, END_BEATS * TPB - 8)  # nothing is held past the loop point
     ev[tr].append((s, mido.Message('note_on', channel=c, note=int(n), velocity=vel)))
     ev[tr].append((max(s + 10, e), mido.Message('note_off', channel=c, note=int(n), velocity=0)))
 
@@ -121,17 +129,17 @@ def seq(s, start):
     return out
 
 
-def play(tr, notes, vel, shift=0, art=.96, swell=0, top=False):
+def play(tr, notes, vel, shift=0, art=0.96, swell=0, top=False):
     """A melodic line. swell: long notes bloom by that much expression and settle back."""
     ch(tr)
     for n, s, d in notes:
-        a = art if d >= .5 else min(art, .8)
+        a = art if d >= 0.5 else min(art, 0.8)
         note(tr, n + shift, s, d, vel + (3 if d >= 2 else 0), art=a)
         if swell and d >= 1.5:
             L = LEVEL[tr]
             for k in range(9):
                 x = k / 8
-                cc(tr, s + d * x, L + swell * (x / .5 if x < .5 else 1 - (x - .5) * 1.2))
+                cc(tr, s + d * x, L + swell * (x / 0.5 if x < 0.5 else 1 - (x - 0.5) * 1.2))
             cc(tr, s + d, L)
         if top:
             TOP.append((s, n + shift))
@@ -150,14 +158,14 @@ class Chord:
         root = main[:2] if len(main) > 1 and main[1] in '#b' else main[:1]
         self.name = nm
         self.root = cv.NAMES[root]
-        self.iv = self.QUAL[main[len(root):]]
+        self.iv = self.QUAL[main[len(root) :]]
         self.bass = cv.NAMES[slash] if slash else self.root
         self.pcs = [(self.root + i) % 12 for i in self.iv]
 
-    def low(self, lo=33):                       # the bass note, A1 .. G#2 by default
+    def low(self, lo=33):  # the bass note, A1 .. G#2 by default
         return lo + (self.bass - lo) % 12
 
-    def tone(self, k, lo):                      # k-th triad tone above the root placed at or over lo
+    def tone(self, k, lo):  # k-th triad tone above the root placed at or over lo
         return lo + (self.root - lo) % 12 + self.iv[k % 3] + 12 * (k // 3)
 
 
@@ -176,7 +184,7 @@ for key, _, names in SECTIONS:
 NBARS = len(HARM)
 END_BEATS = NBARS * 4
 
-TEMPO = [(0, BPM), (END_BEATS - 2, BPM - 3), (END_BEATS - 1, BPM - 6)]   # the last bar eases a little
+TEMPO = [(0, BPM), (END_BEATS - 2, BPM - 3), (END_BEATS - 1, BPM - 6)]  # the last bar eases a little
 
 
 def seconds(beat):
@@ -215,7 +223,7 @@ def voice(prev, c, lo, hi, n):
     return list(best)
 
 
-def pad(tr, b0, b1, lo, hi, n, vel, prev=None, art=.99):
+def pad(tr, b0, b1, lo, hi, n, vel, prev=None, art=0.99):
     """Sustained chords, a bar at a time (or a half where the harmony changes mid-bar)."""
     for b in range(b0, b1):
         for h in ((0, 1) if split(b) else (0,)):
@@ -232,7 +240,7 @@ ARP = [0, 2, 3, 4, 5, 4, 3, 2]
 def harp8(b, vel, lo=50, pat=ARP):
     """Rocking quaver arpeggios."""
     for i, k in enumerate(pat):
-        beat = b * 4 + i * .5
+        beat = b * 4 + i * 0.5
         note('harp', at(beat).tone(k, lo), beat, 1.2, vel + (9 if i % 4 == 0 else 3 if i % 2 == 0 else 0))
 
 
@@ -248,13 +256,13 @@ def stroll(b, vel, pv, chords=True):
         n = c.low() if h == 0 or split(b) else c.tone(2, 33 + (c.root - 33) % 12 - 12 + 12) - 12
         if n < 31:
             n += 12
-        note('pizz', n, b * 4 + h, 1, vel + (8 if h == 0 else 0), art=.9)
+        note('pizz', n, b * 4 + h, 1, vel + (8 if h == 0 else 0), art=0.9)
         if h == 0:
             BOT.append((b * 4, c.low()))
         if chords:
             pv = voice(pv, c, 57, 72, 2)
             for p in pv:
-                note('pizz', p, b * 4 + h + 1, .5, vel - 22, art=.8)
+                note('pizz', p, b * 4 + h + 1, 0.5, vel - 22, art=0.8)
     return pv
 
 
@@ -264,20 +272,22 @@ def sustain_bass(b, vel, trs=('cello', 'bass')):
         d = 2 if split(b) else 4
         for tr in trs:
             n = c.low() + (12 if tr in ('cello', 'bsn') else 0)
-            note(tr, n, b * 4 + h * 2, d, vel, art=.98)
+            note(tr, n, b * 4 + h * 2, d, vel, art=0.98)
         BOT.append((b * 4 + h * 2, c.low()))
 
 
 def gliss(start, end, pcs, lo, hi, v0, v1):
     ns = [n for n in range(lo, hi + 1) if n % 12 in pcs]
     for k, n in enumerate(ns):
-        note('harp', n, start + (end - start) * k / len(ns), .8, v0 + (v1 - v0) * k / len(ns), 2)
+        note('harp', n, start + (end - start) * k / len(ns), 0.8, v0 + (v1 - v0) * k / len(ns), 2)
 
 
 # The Wrenford tune. Bars 1 and 3 open with Corvanthe's rising triad (in quavers, in the major), bars
 # 2 and 4 answer with its dotted fall (by step, not by thirds); bar 7's Bb is the Phrygian shadow.
-TUNE = ('D4:.5 F#4:.5 A4:1 B4:1.5 A4:.5  F#4:1.5 E4:.5 D4:2  D4:.5 G4:.5 B4:1 D5:1.5 B4:.5  A4:1.5 G4:.5 E4:2  '
-        'D4:.5 F#4:.5 A4:1 D5:1.5 E5:.5  F#5:1.5 E5:.5 D5:1 B4:1  E5:1 D5:.5 B4:.5 Bb4:1.5 G4:.5  A4:1 F#4:1 D4:2')
+TUNE = (
+    'D4:.5 F#4:.5 A4:1 B4:1.5 A4:.5  F#4:1.5 E4:.5 D4:2  D4:.5 G4:.5 B4:1 D5:1.5 B4:.5  A4:1.5 G4:.5 E4:2  '
+    'D4:.5 F#4:.5 A4:1 D5:1.5 E5:.5  F#5:1.5 E5:.5 D5:1 B4:1  E5:1 D5:.5 B4:.5 Bb4:1.5 G4:.5  A4:1 F#4:1 D4:2'
+)
 D_MAJOR = {2, 4, 6, 7, 9, 11, 1}
 
 # ============================================================================
@@ -285,17 +295,28 @@ D_MAJOR = {2, 4, 6, 7, 9, 11, 1}
 # ============================================================================
 b = SEC['A']
 t = b * 4
-dyn('clar', t, 108); dyn('harp', t, 104); dyn('pizz', t, 104); dyn('cel', t, 100)
-dyn('inner', t, 76); dyn('flute', t, 92); dyn('horn', t, 80); dyn('cello', t, 86); dyn('bass', t, 84)
+dyn('clar', t, 108)
+dyn('harp', t, 104)
+dyn('pizz', t, 104)
+dyn('cel', t, 100)
+dyn('inner', t, 76)
+dyn('flute', t, 92)
+dyn('horn', t, 80)
+dyn('cello', t, 86)
+dyn('bass', t, 84)
 line('clar', t, TUNE, 92, swell=10, top=True)
-line('flute', t + 16, ' '.join(TUNE.split()[18:31]), 66, shift=12, swell=8)       # the second phrase, an octave above
+line(
+    'flute', t + 16, ' '.join(TUNE.split()[18:31]), 66, shift=12, swell=8
+)  # the second phrase, an octave above
 pv = None
 for lb in range(8):
     harp8(b + lb, 66 + (4 if lb >= 4 else 0))
     pv = stroll(b + lb, 84, pv)
 p_in = pad('inner', b, b + 8, 55, 72, 3, 50)
 p_hn = pad('horn', b + 4, b + 8, 53, 67, 2, 46)
-note('cello', 50, t, 8, 52, art=1); note('cello', 43, t + 8, 4, 52, art=1); note('cello', 45, t + 12, 4, 52, art=1)
+note('cello', 50, t, 8, 52, art=1)
+note('cello', 43, t + 8, 4, 52, art=1)
+note('cello', 45, t + 12, 4, 52, art=1)
 # celesta: the rising triad again, an echo up in the rafters, where the tune holds
 line('cel', t + 6, 'B5:.5 D6:.5 F#6:1.5', 86)
 line('cel', t + 14, 'A5:.5 C#6:.5 E6:1.5', 86)
@@ -308,17 +329,32 @@ note('glock', 86, t + 16, 2, 74)
 b = SEC['B']
 t = b * 4
 prog_at('oboe', t, 69)
-dyn('oboe', t, 120); dyn('vln', t, 104); dyn('inner', t, 96); dyn('cello', t, 104); dyn('bass', t, 96)
-dyn('horn', t, 84); dyn('flute', t, 92); dyn('clar', t, 88)
-note('bells', 66, t, 6, 92); note('bells', 66, t + 16, 6, 84)
-line('oboe', t, 'B4:1 D5:1 F#5:2  G5:1.5 E5:.5 C5:2', 104, swell=14, top=True)     # the theme's first two bars
+dyn('oboe', t, 120)
+dyn('vln', t, 104)
+dyn('inner', t, 96)
+dyn('cello', t, 104)
+dyn('bass', t, 96)
+dyn('horn', t, 84)
+dyn('flute', t, 92)
+dyn('clar', t, 88)
+note('bells', 66, t, 6, 92)
+note('bells', 66, t + 16, 6, 84)
+line('oboe', t, 'B4:1 D5:1 F#5:2  G5:1.5 E5:.5 C5:2', 104, swell=14, top=True)  # the theme's first two bars
 line('clar', t + 4, 'r:2 E4:1 G4:1', 60)
 line('vln', t + 8, 'B4:.5 D5:.5 G5:1 F#5:1.5 E5:.5  E5:1.5 D5:.5 C#5:2', 90, swell=12, top=True)
 line('flute', t + 8, 'B4:.5 D5:.5 G5:1 F#5:1.5 E5:.5  E5:1.5 D5:.5 C#5:2', 62, shift=12)
 cresc('vln', t + 15, t + 16, 104, 108)
-line('vln', t + 16, 'D5:1 F#5:1 B5:2  A5:1.5 G5:.5 E5:2  B4:.5 D5:.5 G5:1 B5:1.5 A5:.5  A5:2 G5:1 E5:1', 86,
-     swell=12, top=True)
-line('oboe', t + 16, 'B4:2 F#4:2  G4:2 B4:2  D5:3 B4:1  D5:2 C#5:2', 76, swell=10)   # cor anglais, a third voice
+line(
+    'vln',
+    t + 16,
+    'D5:1 F#5:1 B5:2  A5:1.5 G5:.5 E5:2  B4:.5 D5:.5 G5:1 B5:1.5 A5:.5  A5:2 G5:1 E5:1',
+    86,
+    swell=12,
+    top=True,
+)
+line(
+    'oboe', t + 16, 'B4:2 F#4:2  G4:2 B4:2  D5:3 B4:1  D5:2 C#5:2', 76, swell=10
+)  # cor anglais, a third voice
 line('flute', t + 24, 'B4:.5 D5:.5 G5:1 B5:1.5 A5:.5  A5:2 G5:1 E5:1', 70, shift=12)
 p_in = pad('inner', b, b + 8, 55, 74, 3, 72, p_in)
 p_hn = pad('horn', b + 4, b + 8, 53, 67, 2, 52, p_hn)
@@ -338,15 +374,31 @@ gliss(t + 31, t + 32, D_MAJOR, 57, 86, 50, 78)
 b = SEC['Q']
 t = b * 4
 prog_at('oboe', t, 68)
-for tr, v in (('vln', 108), ('flute', 100), ('oboe', 96), ('cello', 106), ('bass', 96), ('inner', 92), ('horn', 92),
-              ('clar', 90), ('harp', 108), ('pizz', 104)):
+for tr, v in (
+    ('vln', 108),
+    ('flute', 100),
+    ('oboe', 96),
+    ('cello', 106),
+    ('bass', 96),
+    ('inner', 92),
+    ('horn', 92),
+    ('clar', 90),
+    ('harp', 108),
+    ('pizz', 104),
+):
     dyn(tr, t, v)
 line('vln', t, TUNE, 96, shift=12, swell=10, top=True)
 line('flute', t + 16, ' '.join(TUNE.split()[18:]), 78, shift=12, swell=8)
 line('oboe', t + 16, ' '.join(TUNE.split()[18:]), 72, swell=8)
-line('cello', t, 'F#3:2 A3:1 D4:1  C#4:2 B3:1 D4:1  B3:2 D4:1 G4:1  E4:2 C#4:1 A3:1  '
-     'A3:2 D4:1 F#4:1  B3:2 D4:1 G4:1  B3:2 Bb3:2  A3:2 F#3:2', 74, swell=12)
-line('clar', t, 'A4:4  A4:2 F#4:2  G4:4  G4:2 E4:2', 62)                          # a held inner voice in the first phrase
+line(
+    'cello',
+    t,
+    'F#3:2 A3:1 D4:1  C#4:2 B3:1 D4:1  B3:2 D4:1 G4:1  E4:2 C#4:1 A3:1  '
+    'A3:2 D4:1 F#4:1  B3:2 D4:1 G4:1  B3:2 Bb3:2  A3:2 F#3:2',
+    74,
+    swell=12,
+)
+line('clar', t, 'A4:4  A4:2 F#4:2  G4:4  G4:2 E4:2', 62)  # a held inner voice in the first phrase
 p_in = pad('inner', b, b + 8, 57, 76, 3, 68, p_in)
 p_hn = pad('horn', b, b + 8, 53, 67, 2, 60, p_hn)
 pv = None
@@ -354,10 +406,12 @@ for lb in range(8):
     harp8(b + lb, 72)
     sustain_bass(b + lb, 72, ('bass',))
     pv = stroll(b + lb, 80, pv, chords=False)
-    note('bsn', at((b + lb) * 4).low() + 12, (b + lb) * 4, 4 if not split(b + lb) else 2, 60, art=.97)
+    note('bsn', at((b + lb) * 4).low() + 12, (b + lb) * 4, 4 if not split(b + lb) else 2, 60, art=0.97)
     if split(b + lb):
-        note('bsn', at((b + lb) * 4 + 2).low() + 12, (b + lb) * 4 + 2, 2, 60, art=.97)
-note('glock', 86, t, 2, 82); note('glock', 81, t + 16, 2, 80); note('glock', 90, t + 20, 2, 78)
+        note('bsn', at((b + lb) * 4 + 2).low() + 12, (b + lb) * 4 + 2, 2, 60, art=0.97)
+note('glock', 86, t, 2, 82)
+note('glock', 81, t + 16, 2, 80)
+note('glock', 90, t + 20, 2, 78)
 line('cel', t + 6, 'F#5:.5 B5:.5 D6:1.5', 88)
 line('cel', t + 14, 'A5:.5 C#6:.5 E6:1.5', 88)
 
@@ -366,10 +420,28 @@ line('cel', t + 14, 'A5:.5 C#6:.5 E6:1.5', 88)
 # ============================================================================
 b = SEC['C']
 t = b * 4
-for tr, v in (('clar', 110), ('horn', 100), ('bsn', 104), ('vln', 104), ('inner', 88), ('cello', 100), ('bass', 94),
-              ('flute', 96), ('oboe', 92), ('cel', 104), ('harp', 104)):
+for tr, v in (
+    ('clar', 110),
+    ('horn', 100),
+    ('bsn', 104),
+    ('vln', 104),
+    ('inner', 88),
+    ('cello', 100),
+    ('bass', 94),
+    ('flute', 96),
+    ('oboe', 92),
+    ('cel', 104),
+    ('harp', 104),
+):
     dyn(tr, t, v)
-line('clar', t, 'B4:1 D5:1 G5:2  F#5:1.5 E5:.5 D5:2  G4:1 B4:1 E5:2  D5:1.5 C#5:.5 B4:2', 94, swell=12, top=True)
+line(
+    'clar',
+    t,
+    'B4:1 D5:1 G5:2  F#5:1.5 E5:.5 D5:2  G4:1 B4:1 E5:2  D5:1.5 C#5:.5 B4:2',
+    94,
+    swell=12,
+    top=True,
+)
 line('oboe', t + 8, 'r:2 B4:2  B4:2 F#4:2', 66, swell=8)
 line('vln', t + 16, 'C5:1 E5:1 G5:2  G5:1.5 F#5:.5 D5:2  G5:1 E5:1 D5:2  E5:3.5', 98, swell=12, top=True)
 line('flute', t + 16, 'C5:1 E5:1 G5:2  G5:1.5 F#5:.5 D5:2  G5:1 E5:1 D5:2', 74, shift=12, swell=8)
@@ -381,22 +453,24 @@ for lb in range(8):
     bar = b + lb
     sustain_bass(bar, 70, ('bsn',) if lb < 4 else ('cello', 'bass'))
     if lb < 4:
-        note('pizz', at(bar * 4).low(), bar * 4, 1, 80, art=.9)
+        note('pizz', at(bar * 4).low(), bar * 4, 1, 80, art=0.9)
     else:
-        note('bsn', at(bar * 4).low() + 12, bar * 4, 2 if split(bar) else 4, 56, art=.97)
+        note('bsn', at(bar * 4).low() + 12, bar * 4, 2 if split(bar) else 4, 56, art=0.97)
         if split(bar):
-            note('bsn', at(bar * 4 + 2).low() + 12, bar * 4 + 2, 2, 56, art=.97)
+            note('bsn', at(bar * 4 + 2).low() + 12, bar * 4 + 2, 2, 56, art=0.97)
     harp4(bar, 62)
     # celesta: falling broken chords, like change-ringing heard across the meadow
     for i, k in enumerate([6, 5, 4, 3, 5, 4, 3, 2]):
-        beat = bar * 4 + i * .5
+        beat = bar * 4 + i * 0.5
         if lb == 7 and i >= 4:
             break
         note('cel', at(beat).tone(k, 67), beat, 1, 68 + (8 if i % 4 == 0 else 0) + (4 if lb >= 4 else 0))
-note('bells', 62, t, 6, 84); note('bells', 62, t + 16, 6, 84); note('bells', 69, t + 28, 4, 78)
+note('bells', 62, t, 6, 84)
+note('bells', 62, t + 16, 6, 84)
+note('bells', 69, t + 28, 4, 78)
 # the way home: a harp arpeggio up the dominant seventh into bar 0
 for k, n in enumerate([45, 52, 57, 61, 64, 67, 69, 73]):
-    note('harp', n, t + 30 + k * .25, 1.2, 60 + k * 3)
+    note('harp', n, t + 30 + k * 0.25, 1.2, 60 + k * 3)
 for tr in ('vln', 'inner', 'cello', 'bass', 'horn', 'bsn', 'clar'):
     cresc(tr, t + 28, t + 31.9, LEVEL[tr], LEVEL[tr] - 10)
 
@@ -407,26 +481,34 @@ ORDER = {'program_change': 0, 'control_change': 0, 'note_off': 1, 'note_on': 2}
 
 def save(path, tail=0):
     mid = mido.MidiFile(ticks_per_beat=TPB)
-    tr = mido.MidiTrack(); mid.tracks.append(tr)
+    tr = mido.MidiTrack()
+    mid.tracks.append(tr)
     tr.append(mido.MetaMessage('track_name', name='Wrenford (Fable)'))
     last = 0
     for beat, bpm in sorted(TEMPO):
         at_ = int(beat * TPB)
-        tr.append(mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=at_ - last)); last = at_
+        tr.append(mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=at_ - last))
+        last = at_
     for name, lst in ev.items():
-        tr = mido.MidiTrack(); mid.tracks.append(tr)
+        tr = mido.MidiTrack()
+        mid.tracks.append(tr)
         tr.append(mido.MetaMessage('track_name', name=name))
         last = 0
         for at_, msg in sorted(lst, key=lambda x: (max(0, x[0]), ORDER[x[1].type])):
             at_ = max(0, at_)
-            tr.append(msg.copy(time=at_ - last)); last = at_
+            tr.append(msg.copy(time=at_ - last))
+            last = at_
         tr.append(mido.MetaMessage('end_of_track', time=max(0, int((END_BEATS + tail) * TPB) - last)))
     mid.save(path)
 
 
 def write_wav(path, a, sr):
-    o = wave.open(path, 'wb'); o.setnchannels(a.shape[1]); o.setsampwidth(2); o.setframerate(sr)
-    o.writeframes(a.astype(np.int16).tobytes()); o.close()
+    o = wave.open(path, 'wb')
+    o.setnchannels(a.shape[1])
+    o.setsampwidth(2)
+    o.setframerate(sr)
+    o.writeframes(a.astype(np.int16).tobytes())
+    o.close()
 
 
 def render(mp3_path, x3=False):
@@ -434,28 +516,37 @@ def render(mp3_path, x3=False):
     tmp = tempfile.mkdtemp()
     mpath, raw, loop = (os.path.join(tmp, f) for f in ('t.mid', 'raw.wav', 'loop.wav'))
     save(mpath, TAIL_BEATS)
-    gain = .6
-    while True:                                           # fluidsynth writes 16 bits: back off until nothing clips
-        subprocess.run(['fluidsynth', '-ni', '-g', str(gain), '-r', '44100', '-F', raw, SF2, mpath],
-                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        w = wave.open(raw); chn, sr = w.getnchannels(), w.getframerate()
+    gain = 0.6
+    while True:  # fluidsynth writes 16 bits: back off until nothing clips
+        subprocess.run(
+            ['fluidsynth', '-ni', '-g', str(gain), '-r', '44100', '-F', raw, SF2, mpath],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        w = wave.open(raw)
+        chn, sr = w.getnchannels(), w.getframerate()
         a = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).reshape(-1, chn).astype(np.float32)
         if np.abs(a).max() < 32000:
             break
-        gain *= .75
+        gain *= 0.75
     L = int(round(seconds(END_BEATS) * sr))
     out = a[:L].copy()
     tail = a[L:][:L]
-    out[:len(tail)] += tail
+    out[: len(tail)] += tail
     tail_db = 20 * np.log10(max(1e-6, np.sqrt((tail[:sr] ** 2).mean()) / 32767))
-    out *= .89 * 32767 / np.abs(out).max()
+    out *= 0.89 * 32767 / np.abs(out).max()
     write_wav(loop, out, sr)
     ff = ['ffmpeg', '-y', '-loglevel', 'error']
     subprocess.run(ff + ['-i', loop, '-b:a', '128k', mp3_path], check=True)
     if x3:
-        subprocess.run(ff + ['-stream_loop', '2', '-i', loop, '-b:a', '128k', mp3_path[:-4] + '_x3.mp3'], check=True)
-    print('Wrenford (Fable) loop %.1f s, %d bars at %d bpm; synth gain %.2f; folded tail (first second) %.1f dB' % (
-        L / sr, NBARS, BPM, gain, tail_db))
+        subprocess.run(
+            ff + ['-stream_loop', '2', '-i', loop, '-b:a', '128k', mp3_path[:-4] + '_x3.mp3'], check=True
+        )
+    print(
+        'Wrenford (Fable) loop %.1f s, %d bars at %d bpm; synth gain %.2f; folded tail (first second) %.1f dB'
+        % (L / sr, NBARS, BPM, gain, tail_db)
+    )
     return out, sr
 
 
@@ -475,51 +566,75 @@ def check(a, sr):
         late = max(s for s, m in lst if m.type == 'note_off')
         if late > END_BEATS * TPB:
             flag += '   <-- HELD PAST THE LOOP POINT'
-        print('  %-6s %-4s - %-4s (%s - %s)  %4d notes%s' % (tr, nm(min(ns)), nm(max(ns)), nm(lo), nm(hi), len(ns), flag))
+        print(
+            '  %-6s %-4s - %-4s (%s - %s)  %4d notes%s'
+            % (tr, nm(min(ns)), nm(max(ns)), nm(lo), nm(hi), len(ns), flag)
+        )
     print('  channels used: %d melodic, no drums' % len(chans))
     # parallel fifths / octaves between the tune and the bass, at each bass change (the loop's seam included)
-    top = sorted(set(TOP)); bot = sorted(set(BOT))
-    top += [(s + END_BEATS, n) for s, n in top[:1]]; bot += [(s + END_BEATS, n) for s, n in bot[:1]]
+    top = sorted(set(TOP))
+    bot = sorted(set(BOT))
+    top += [(s + END_BEATS, n) for s, n in top[:1]]
+    bot += [(s + END_BEATS, n) for s, n in bot[:1]]
+
     def top_at(beat):
         c = [n for s, n in top if s <= beat + 1e-6]
         return c[-1] if c else None
+
     found = []
     for (s0, b0), (s1, b1) in zip(bot, bot[1:]):
-        t0, t1 = top_at(s1 - .01), top_at(s1)
+        t0, t1 = top_at(s1 - 0.01), top_at(s1)
         if t0 is None or t1 is None or b0 == b1 or t0 == t1:
             continue
         i0, i1 = (t0 - b0) % 12, (t1 - b1) % 12
         if i0 == i1 and i0 in (0, 7) and (t1 - t0) * (b1 - b0) > 0:
-            found.append('bar %d (%s/%s -> %s/%s, %s)' % (s1 // 4, nm(t0), nm(b0), nm(t1), nm(b1),
-                                                         'octaves' if i0 == 0 else 'fifths'))
+            found.append(
+                'bar %d (%s/%s -> %s/%s, %s)'
+                % (s1 // 4, nm(t0), nm(b0), nm(t1), nm(b1), 'octaves' if i0 == 0 else 'fifths')
+            )
     print('\nParallel fifths/octaves, tune against bass: %s' % ('; '.join(found) if found else 'none'))
     m = a.mean(axis=1) / 32767
-    rms = lambda seg: 20 * np.log10(max(1e-6, np.sqrt((seg ** 2).mean())))
+    rms = lambda seg: 20 * np.log10(max(1e-6, np.sqrt((seg**2).mean())))
     win = 5 * sr
     print('\nLoudness, RMS per 5 s (dBFS)')
     dbs = []
     for i in range(0, len(m), win):
-        seg = m[i:i + win]
+        seg = m[i : i + win]
         if len(seg) < sr:
             break
         dbs.append(rms(seg))
-        print('  %3d-%3d s %6.1f dB  %s' % (i / sr, min(len(m), i + win) / sr, dbs[-1], '#' * max(0, int((dbs[-1] + 48) * 1.2))))
-    print('  peak %.3f, overall RMS %.1f dB, range %.1f dB, samples at full scale: %d' % (
-        np.abs(a).max() / 32767, rms(m), max(dbs) - min(dbs), int((np.abs(a) >= 32766).sum())))
-    q = np.sqrt(np.convolve(m ** 2, np.ones(sr // 4) / (sr // 4), 'same'))
+        print(
+            '  %3d-%3d s %6.1f dB  %s'
+            % (i / sr, min(len(m), i + win) / sr, dbs[-1], '#' * max(0, int((dbs[-1] + 48) * 1.2)))
+        )
+    print(
+        '  peak %.3f, overall RMS %.1f dB, range %.1f dB, samples at full scale: %d'
+        % (np.abs(a).max() / 32767, rms(m), max(dbs) - min(dbs), int((np.abs(a) >= 32766).sum()))
+    )
+    q = np.sqrt(np.convolve(m**2, np.ones(sr // 4) / (sr // 4), 'same'))
     quiet = np.nonzero(q < 10 ** (-50 / 20))[0]
-    print('  quiet stretches (below -50 dB): %s' % ('none' if not len(quiet) else '%.1f s in all, first at %.1f s' % (
-        len(quiet) / sr, quiet[0] / sr)))
+    print(
+        '  quiet stretches (below -50 dB): %s'
+        % ('none' if not len(quiet) else '%.1f s in all, first at %.1f s' % (len(quiet) / sr, quiet[0] / sr))
+    )
     print('\nSeam (the end joined to the start)')
-    print('  last 5 s %.1f dB, first 5 s %.1f dB; last 1 s %.1f dB, first 1 s %.1f dB' % (
-        rms(m[-win:]), rms(m[:win]), rms(m[-sr:]), rms(m[:sr])))
+    print(
+        '  last 5 s %.1f dB, first 5 s %.1f dB; last 1 s %.1f dB, first 1 s %.1f dB'
+        % (rms(m[-win:]), rms(m[:win]), rms(m[-sr:]), rms(m[:sr]))
+    )
     d = np.abs(np.diff(m))
-    print('  sample step across the seam %.4f (largest step anywhere %.4f, typical %.4f)' % (
-        abs(m[0] - m[-1]), d.max(), np.percentile(d, 99)))
+    print(
+        '  sample step across the seam %.4f (largest step anywhere %.4f, typical %.4f)'
+        % (abs(m[0] - m[-1]), d.max(), np.percentile(d, 99))
+    )
     j = np.concatenate([m[-sr:], m[:sr]])
-    e = np.sqrt(np.convolve(j ** 2, np.ones(sr // 10) / (sr // 10), 'valid')[::sr // 10])
-    print('  100 ms levels across the seam (1 s before | 1 s after): %s' % ' '.join(
-        ('| ' if k == 10 else '') + '%.0f' % (20 * np.log10(max(1e-6, x))) for k, x in enumerate(e[:20])))
+    e = np.sqrt(np.convolve(j**2, np.ones(sr // 10) / (sr // 10), 'valid')[:: sr // 10])
+    print(
+        '  100 ms levels across the seam (1 s before | 1 s after): %s'
+        % ' '.join(
+            ('| ' if k == 10 else '') + '%.0f' % (20 * np.log10(max(1e-6, x))) for k, x in enumerate(e[:20])
+        )
+    )
 
 
 if __name__ == '__main__':

@@ -191,37 +191,29 @@
   ]
  ],
  "features": {
-  "note": "Drawn by drawWorld under the roads: zones of symbols (seeded), side rivers, the sea, and area labels. The main river is drawn thin at its source and widens.",
+  "note": "Drawn by js/world_ink.js (WorldInk), cached under the roads and places: mountain ranges along a spine (`ranges`), zones of symbols (`wood` massed crowns, `hill`, `grass` moor tufts, `marsh`, `tree` lone trees), side rivers, the Wolf Sea with ripple lines off its coast, `ruins`, the rune frame, the `title` cartouche, the `compass` rose and the `scale` in leagues (a league is an hour's walk, WORLD_SPEED units). `labels` are [text,x,y,rot] (a region) or {text,x,y,rot,style,size,path}: styles region / danger (red capitals) / sea / river / note / rednote, `path` to letter along a line. `moon` holds moon-letters, Arcana glyphs shown only by night.",
   "zones": [
-   {
-    "t": "mtn",
-    "x": 800,
-    "y": 70,
-    "rx": 540,
-    "ry": 55,
-    "n": 80
-   },
    {
     "t": "hill",
     "x": 800,
-    "y": 175,
+    "y": 208,
     "rx": 520,
-    "ry": 45,
-    "n": 32
+    "ry": 38,
+    "n": 34
    },
    {
-    "t": "tree",
+    "t": "wood",
     "x": 180,
     "y": 610,
     "rx": 175,
     "ry": 200,
-    "n": 120
+    "gap": 11
    },
    {
     "t": "hill",
-    "x": 370,
+    "x": 420,
     "y": 835,
-    "rx": 150,
+    "rx": 120,
     "ry": 75,
     "n": 30
    },
@@ -231,23 +223,31 @@
     "y": 320,
     "rx": 240,
     "ry": 90,
-    "n": 30
+    "n": 40
    },
    {
-    "t": "tree",
+    "t": "marsh",
+    "x": 965,
+    "y": 665,
+    "rx": 75,
+    "ry": 30,
+    "n": 16
+   },
+   {
+    "t": "wood",
     "x": 600,
     "y": 895,
     "rx": 120,
     "ry": 55,
-    "n": 22
+    "gap": 11
    },
    {
-    "t": "tree",
+    "t": "wood",
     "x": 1300,
     "y": 760,
     "rx": 150,
     "ry": 90,
-    "n": 30
+    "gap": 11
    }
   ],
   "rivers": [
@@ -331,36 +331,218 @@
    ]
   ],
   "labels": [
+   {
+    "text": "the Anvilfells",
+    "style": "region",
+    "size": 22,
+    "path": [
+     [
+      560,
+      262
+     ],
+     [
+      800,
+      250
+     ],
+     [
+      1040,
+      262
+     ]
+    ]
+   },
+   {
+    "text": "the Harrow",
+    "style": "region",
+    "x": 880,
+    "y": 372
+   },
+   {
+    "text": "the Wildwood",
+    "style": "region",
+    "x": 175,
+    "y": 848
+   },
+   {
+    "text": "the Hollow Downs",
+    "style": "region",
+    "x": 330,
+    "y": 960
+   },
+   {
+    "text": "the Wolf Sea",
+    "style": "sea",
+    "x": 1556,
+    "y": 640,
+    "rot": 90
+   },
+   {
+    "text": "the Hollow",
+    "style": "river",
+    "path": [
+     [
+      728,
+      676
+     ],
+     [
+      814,
+      643
+     ]
+    ]
+   },
+   {
+    "text": "the Hollow",
+    "style": "river",
+    "path": [
+     [
+      1292,
+      336
+     ],
+     [
+      1396,
+      317
+     ]
+    ]
+   },
+   {
+    "text": "the Wren",
+    "style": "river",
+    "path": [
+     [
+      718,
+      300
+     ],
+     [
+      694,
+      420
+     ]
+    ]
+   },
+   {
+    "text": "a broken tower",
+    "style": "note",
+    "size": 12,
+    "x": 930,
+    "y": 352
+   },
+   {
+    "text": "the dwarf-holds lie\nhigh in these fells",
+    "style": "note",
+    "x": 1250,
+    "y": 262
+   },
+   {
+    "text": "Here stood Corvanthe the Fair,\nunwoven in a single day",
+    "style": "rednote",
+    "size": 14,
+    "x": 1340,
+    "y": 548
+   },
+   {
+    "text": "the Ore Road runs south\nto Gilden on the Narrows",
+    "style": "note",
+    "x": 1130,
+    "y": 895
+   },
+   {
+    "text": "marshes",
+    "style": "note",
+    "size": 12,
+    "x": 965,
+    "y": 706
+   }
+  ],
+  "ranges": [
+   {
+    "name": "the Anvilfells",
+    "spine": [
+     [
+      360,
+      128
+     ],
+     [
+      560,
+      112
+     ],
+     [
+      760,
+      104
+     ],
+     [
+      960,
+      106
+     ],
+     [
+      1160,
+      116
+     ],
+     [
+      1370,
+      134
+     ]
+    ],
+    "h": 50,
+    "band": 34,
+    "gap": 15
+   }
+  ],
+  "ruins": [
    [
-    "the Hammerfells",
-    800,
-    150,
-    0
-   ],
-   [
-    "the Harrow",
-    880,
-    360,
-    0
-   ],
-   [
-    "the Wildwood",
-    175,
-    850,
-    0
-   ],
-   [
-    "the Hollow Downs",
-    370,
-    955,
-    0
-   ],
-   [
-    "the Wolf Sea",
-    1556,
-    640,
-    90
+    930,
+    330
    ]
-  ]
+  ],
+  "title": {
+   "x": 44,
+   "y": 42,
+   "w": 290,
+   "h": 104,
+   "lines": [
+    [
+     "A Part of the Isle of",
+     "note",
+     15,
+     24
+    ],
+    [
+     "Albra",
+     "region",
+     36,
+     56
+    ],
+    [
+     "wherein lieth the Vale of the Hollow",
+     "note",
+     14,
+     86
+    ]
+   ]
+  },
+  "compass": [
+   1415,
+   885,
+   36
+  ],
+  "scale": {
+   "x": 1060,
+   "y": 945,
+   "league": 25,
+   "n": 10,
+   "marks": 5,
+   "numbers": 2,
+   "label": "Leagues  (a league is an hour's walk)"
+  },
+  "moon": {
+   "x": 470,
+   "y": 312,
+   "rot": -4,
+   "size": 17,
+   "w": 160,
+   "h": 32,
+   "lines": [
+    "☽ ⊗ ∇ Ω · θ Φ ✸",
+    "∞ ⊕ ∇ θ · Δ Ψ"
+   ],
+   "tap": "Moon-letters: Arcana glyphs that show only by moonlight. You can't read them yet. Someone at the University might."
+  }
  }
 }
