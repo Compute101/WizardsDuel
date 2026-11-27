@@ -1,5 +1,5 @@
-# The Stoneheart Delve: three pieces of mining music for Durin's mine, each a seamless loop.
-#   python3 tools/music/delve.py [work|deep|halls ...]   -> audio/delve/<name>.mid / .mp3 (all three if none named)
+# The Stoneheart Delve: six pieces of mining music for Durin's mine, each a seamless loop.
+#   python3 tools/music/delve.py [work|deep|halls|hammer|jig|ale ...] -> audio/delve/<name>.mid / .mp3 (all if none named)
 #   python3 tools/music/delve.py --check                 -> also print ranges, loudness and the seam
 #   python3 tools/music/delve.py --x3                    -> also <name>_x3.mp3 (the loop three times, to hear the join)
 #
@@ -17,7 +17,15 @@
 #                                trombones and tubas, the forge rhythm 3+3+2 in the low strings), Hall (E-flat
 #                                major, the horns), Deep (the choir over tremolo strings, a timpani roll),
 #                                Grand (the theme tutti, the anvil on 4), falling back to the quiet Gate.
+# The second three are original tunes (no Corvanthe theme), upbeat, with the dwarves singing:
+# hammer "Hammer and Hold"       G major, 116 bpm. Picks on 2 and 4 like a backbeat, tuba oom-pah; the horn's
+#                                tune, a sung verse with trombone answers, a two-part chorus, a trumpet descant.
+# jig    "The Deep Seam Jig"     A minor, 12/8 at 112. Flute and bassoon, tambourine on every triplet, the
+#                                dwarves shouting "Hey!", a C major turn on the horn, then all of them sing it.
+# ale    "Ale at the Shift's End" B-flat major, 100 bpm. Stamp, clap, tankard clink; one dwarf starts the song,
+#                                all join in two parts, a quieter tale in G minor on bassoon, the last round tutti.
 import os, random, subprocess, sys, tempfile, wave
+from fractions import Fraction
 import numpy as np
 import mido
 
@@ -52,6 +60,8 @@ PARTS = {
     'pad': (89, 76, 64, 105, (36, 76)),
     'timp': (47, 104, 64, 75, (38, 55)),
     'anvil': (14, 66, 34, 70, (74, 86)),
+    'choir2': (52, 86, 76, 105, (45, 79)),  # the second part of the dwarves' singing
+    'flute': (73, 94, 44, 90, (60, 96)),
     'drums': (0, 104, 64, 70, (27, 87)),
 }
 NAMES = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
@@ -66,6 +76,7 @@ QUAL = {
 }
 # drum notes (GM): a pick on stone is claves over a low tom; far off it's the wood block alone
 CLAVES, WOOD, LOTOM, BD, SHAKER = 75, 77, 41, 35, 70
+CLAP, SNARE, TAMB, CRASH = 39, 38, 54, 49
 
 
 def N(s):
@@ -194,7 +205,7 @@ class Song:
         t = bar * 4
         for tok in s.split():
             nm, d = tok.split(':')
-            d = float(d)
+            d = float(Fraction(d))  # '1.5', '.5' or '2/3' (a triplet's long note)
             if nm != 'r':
                 self.note(
                     tr,
@@ -747,7 +758,368 @@ def halls():
     return s
 
 
-SONGS = {'work': work, 'deep': deep, 'halls': halls}
+# ── 4. Hammer and Hold: a cheerful work song the dwarves sing ───────────────
+# Original (no Corvanthe theme). G major, 116 bpm; the picks land on 2 and 4 like a backbeat.
+def hammer():
+    s = Song(
+        'hammer',
+        'Hammer and Hold',
+        116,
+        [
+            ('A', 'Strike Up', ['G', 'C', 'G', 'D', 'G', 'C', 'D', 'G']),
+            ('B', 'Verse', ['G', 'Em', 'C', 'D', 'G', 'Em', 'Am', 'D']),
+            ('C', 'Chorus', ['C', 'G', 'D', 'G', 'C', 'G', 'Am|D', 'G']),
+            ('D', 'Chorus Again', ['C', 'G', 'D', 'G', 'C', 'G', 'Am|D', 'D7']),
+        ],
+        seed=2207,
+        target_db=-19.5,
+    )
+    A, B, C, D = (s.SEC[k] for k in 'ABCD')
+    for b in range(s.NBARS):
+        big = 10 if b >= C else 0
+        s.drum(BD, b * 4, 62 + big)
+        s.drum(BD, b * 4 + 2, 56 + big)
+        for beat in (1, 3):  # the picks: the backbeat
+            s.drum(CLAVES, b * 4 + beat, 72 + big)
+            s.drum(LOTOM, b * 4 + beat, 54 + big)
+        if b >= C:
+            s.drum(CLAP, b * 4 + 1, 58)
+            s.drum(CLAP, b * 4 + 3, 62)
+            s.note('anvil', 79, b * 4 + 3.5, 0.3, 54, art=0.8)
+        if b >= B:
+            for k in range(8):
+                s.drum(SHAKER, b * 4 + k * 0.5, 34 if k % 2 else 24)
+        if b in (C - 1, s.NBARS - 1):  # a fill into the chorus and back to the top
+            for k in range(4):
+                s.drum(SNARE, b * 4 + 3 + k * 0.25, 50 + k * 8)
+    # tuba oom-pah: root on 1, fifth on 3; pizzicato chords on the offbeats
+    s.dyn('tuba', 0, 90)
+    s.dyn('pizz', 0, 80)
+    for b in range(s.NBARS):
+        for half in (0, 1):
+            c = s.HARM[b][half]
+            r = c.rootlow(31)
+            s.note(
+                'tuba',
+                r if half == 0 else (r + 7 if r + 7 <= 50 else r - 5),
+                b * 4 + half * 2,
+                1,
+                70,
+                art=0.7,
+            )
+            for k in (0.5, 1.5):
+                for x in voicing(c, 55, 67, 3):
+                    s.note('pizz', x, b * 4 + half * 2 + k, 0.4, 50, jitter=2, art=0.5)
+    # A Strike Up: the horn plays the tune
+    TUNE = [
+        'D4:.5 G4:.5 G4:.5 A4:.5 B4:1 G4:1',
+        'C5:.5 B4:.5 A4:.5 G4:.5 E4:1 G4:1',
+        'B4:.5 A4:.5 G4:.5 B4:.5 D5:1 B4:1',
+        'A4:1.5 G4:.5 F#4:2',
+        'D4:.5 G4:.5 G4:.5 A4:.5 B4:1 G4:1',
+        'E5:.5 D5:.5 C5:.5 B4:.5 A4:1 C5:1',
+        'B4:.5 A4:.5 G4:.5 F#4:.5 A4:1 F#4:1',
+        'G4:2 r:2',
+    ]
+    s.dyn('horn', 0, 86)
+    s.dyn('bsn', 0, 80)
+    for k, ln in enumerate(TUNE):
+        s.line('horn', A + k, ln, 72, art=0.85)
+        if k >= 4:
+            s.line('bsn', A + k, ln, 58, shift=-12, art=0.8)
+    # B Verse: the dwarves sing, the trombones answer at the ends of the lines
+    VERSE = [
+        'G4:1 G4:.5 G4:.5 B4:1 G4:1',
+        'E4:1 G4:.5 E4:.5 B3:2',
+        'C5:1 B4:.5 A4:.5 G4:1 E4:1',
+        'D4:1.5 E4:.5 F#4:1 r:1',
+        'G4:1 G4:.5 A4:.5 B4:1 D5:1',
+        'E5:1 D5:.5 B4:.5 G4:2',
+        'A4:1 C5:.5 B4:.5 A4:1 F#4:1',
+        'D4:2 r:1 D4:.5 D4:.5',
+    ]
+    s.dyn('choir', B * 4, 90)
+    s.dyn('tbn', B * 4, 82)
+    for k, ln in enumerate(VERSE):
+        s.line('choir', B + k, ln, 74, shift=-12, art=0.9)
+    s.line('tbn', B + 3, 'r:3 D3:.25 E3:.25 F#3:.5', 70, art=0.8)
+    s.line('tbn', B + 1, 'r:3 B2:.5 D3:.5', 64, art=0.8)
+    s.line('tbn', B + 5, 'r:3 B2:.5 D3:.5', 64, art=0.8)
+    s.dyn('strs', B * 4, 64)
+    s.held('strs', range(B, s.NBARS), 50, 67, 3, 42)
+    # C Chorus: the dwarves in two parts, the horns with the tune
+    MEL = [
+        'G4:1 E4:1 G4:1 C5:1',
+        'B4:1.5 A4:.5 G4:2',
+        'A4:1 F#4:1 A4:1 D5:1',
+        'B4:2 G4:2',
+        'C5:1 C5:.5 C5:.5 E5:1 C5:1',
+        'D5:1 B4:.5 B4:.5 G4:2',
+        'C5:1 A4:1 D5:1 C5:1',
+        'B4:3 r:1',
+    ]
+    HAR = [
+        'E4:1 C4:1 E4:1 G4:1',
+        'G4:1.5 F#4:.5 D4:2',
+        'F#4:1 D4:1 F#4:1 A4:1',
+        'G4:2 D4:2',
+        'G4:1 G4:.5 G4:.5 C5:1 G4:1',
+        'B4:1 G4:.5 G4:.5 D4:2',
+        'A4:1 E4:1 F#4:1 A4:1',
+        'G4:3 r:1',
+    ]
+    s.dyn('choir', C * 4, 100)
+    s.dyn('choir2', C * 4, 88)
+    s.dyn('horn2', C * 4, 76)
+    for sec in (C, D):
+        mel, har = MEL[:], HAR[:]
+        if sec == D:
+            mel[7], har[7] = 'A4:1 F#4:1 D4:1 r:1', 'F#4:1 D4:1 C4:1 r:1'
+        for k in range(8):
+            s.line('choir', sec + k, mel[k], 78, shift=-12, art=0.92)
+            s.line('choir2', sec + k, har[k], 68, shift=-12, art=0.92)
+            s.line('horn', sec + k, mel[k], 70 if sec == C else 76, art=0.88)
+            s.line('horn2', sec + k, har[k], 60, art=0.88)
+    # D: a trumpet descant over the second chorus
+    s.dyn('tpt', D * 4, 74)
+    for k, ln in enumerate(
+        [
+            'E5:2 G5:2',
+            'D5:2 B4:2',
+            'F#5:2 A5:2',
+            'G5:4',
+            'G5:2 E5:2',
+            'D5:2 G5:2',
+            'E5:2 F#5:2',
+            'A5:2 F#5:1 r:1',
+        ]
+    ):
+        s.line('tpt', D + k, ln, 58, swell=6)
+    for tr in ('choir', 'choir2', 'horn', 'horn2', 'tpt', 'strs'):
+        s.cresc(tr, s.END - 2, s.END - 0.1, s.LEVEL[tr], s.LEVEL[tr] - 14)
+    return s
+
+
+# ── 5. The Deep Seam Jig: a quick 12/8 dance down the shaft ─────────────────
+# Original. A minor, 112 dotted-quarter beats a minute (a bar is 4 beats of three triplet quavers).
+def jig():
+    s = Song(
+        'jig',
+        'The Deep Seam Jig',
+        112,
+        [
+            ('A', 'Tune', ['Am', 'G', 'Am', 'Em', 'Am', 'G', 'F', 'E']),
+            ('B', 'Tune and Shouts', ['Am', 'G', 'Am', 'Em', 'Am', 'G', 'F', 'E']),
+            ('C', 'The Turn', ['C', 'G', 'Am', 'Em', 'F', 'C', 'Dm', 'E']),
+            ('D', 'All Sing', ['Am', 'G', 'Am', 'Em', 'Am', 'G', 'F', 'E']),
+        ],
+        seed=6118,
+        target_db=-19.5,
+    )
+    A, B, C, D = (s.SEC[k] for k in 'ABCD')
+    T, Q = 1 / 3, 2 / 3
+    for b in range(s.NBARS):
+        big = 8 if b >= D else 0
+        for beat in (0, 2):  # the picks on the strong beats
+            s.drum(CLAVES, b * 4 + beat, 72 + big)
+            s.drum(LOTOM, b * 4 + beat, 58 + big)
+        s.drum(BD, b * 4, 58 + big)
+        for beat in range(4):  # the tambourine on every triplet, the first one leaning
+            for k in range(3):
+                if b >= B or k == 0:
+                    s.drum(TAMB, b * 4 + beat + k * T, (44 if k == 0 else 26) + big)
+        s.note('anvil', 79, b * 4 + 3 + Q, 0.25, 46 + big, art=0.8)
+    # tuba root and fifth, pizzicato "um-cha" on the off-triplets
+    s.dyn('tuba', 0, 88)
+    s.dyn('pizz', 0, 78)
+    for b in range(s.NBARS):
+        c = s.HARM[b][0]
+        r = c.rootlow(31)
+        f = r + 7 if r + 7 <= 50 else r - 5
+        for beat, n in ((0, r), (1, f), (2, r), (3, f)):
+            s.note('tuba', n, b * 4 + beat, Q, 66 if beat % 2 == 0 else 56, art=0.7)
+            for x in voicing(c, 55, 67, 3):
+                s.note('pizz', x, b * 4 + beat + Q, T, 46, jitter=2, art=0.6)
+    TUNE = [
+        'A4:2/3 C5:1/3 E5:2/3 C5:1/3 A4:2/3 C5:1/3 E5:2/3 A5:1/3',
+        'G5:2/3 E5:1/3 D5:2/3 B4:1/3 G4:2/3 B4:1/3 D5:2/3 B4:1/3',
+        'A4:2/3 C5:1/3 E5:2/3 C5:1/3 A4:2/3 B4:1/3 C5:2/3 D5:1/3',
+        'E5:1 D5:2/3 B4:1/3 G4:2/3 E4:1/3 B4:1',
+        'A4:2/3 C5:1/3 E5:2/3 A5:1/3 G5:2/3 E5:1/3 D5:2/3 C5:1/3',
+        'B4:2/3 D5:1/3 G5:2/3 D5:1/3 B4:2/3 A4:1/3 G4:2/3 B4:1/3',
+        'A4:2/3 C5:1/3 F5:2/3 E5:1/3 D5:2/3 C5:1/3 A4:2/3 C5:1/3',
+        'B4:1 G#4:2/3 E4:1/3 B4:1 r:1',
+    ]
+    # A Tune: flute and bassoon an octave apart
+    s.dyn('flute', 0, 86)
+    s.dyn('bsn', 0, 82)
+    for k, ln in enumerate(TUNE):
+        s.line('flute', A + k, ln, 70, art=0.8)
+        s.line('bsn', A + k, ln, 62, shift=-12, art=0.8)
+    # B: again, the horns under it in sixths, and the dwarves shout "Hey!" at the top of every other bar
+    s.dyn('horn', B * 4, 74)
+    s.dyn('choir', B * 4, 100)
+    for k, ln in enumerate(TUNE):
+        s.line('flute', B + k, ln, 72, art=0.8)
+        s.line('bsn', B + k, ln, 62, shift=-12, art=0.8)
+    for k in range(8):
+        c = s.HARM[B + k][0]
+        s.held('horn', [B + k], 53, 64, 2, 54, halves=False)
+        if k % 2 == 1:
+            for x in voicing(c, 50, 62, 3):
+                s.note('choir', x, (B + k) * 4 + 3, 0.3, 92, jitter=2, art=0.9)
+    # C The Turn: C major, the horn leads, the dwarves hum chords under it
+    TURN = [
+        'E5:2/3 D5:1/3 C5:2/3 G4:1/3 E4:2/3 G4:1/3 C5:1',
+        'D5:2/3 B4:1/3 G4:2/3 B4:1/3 D5:1 B4:1',
+        'C5:2/3 B4:1/3 A4:2/3 E4:1/3 A4:2/3 B4:1/3 C5:2/3 E5:1/3',
+        'B4:2 G4:1 r:1',
+        'A4:2/3 C5:1/3 F5:2/3 C5:1/3 A4:2/3 F4:1/3 A4:2/3 C5:1/3',
+        'G4:2/3 C5:1/3 E5:2/3 C5:1/3 G4:1 E4:1',
+        'F4:2/3 A4:1/3 D5:2/3 A4:1/3 F5:2/3 E5:1/3 D5:2/3 C5:1/3',
+        'B4:1 E5:1 G#4:1 E4:1',
+    ]
+    s.dyn('horn', C * 4, 88)
+    s.dyn('hum', C * 4, 70)
+    for k, ln in enumerate(TURN):
+        s.line('horn', C + k, ln, 72, art=0.85)
+        s.line('flute', C + k, ln, 50, shift=12, art=0.8) if k >= 4 else None
+    s.held('hum', range(C, D), 50, 64, 3, 50)
+    # D All Sing: the dwarves take the tune, low and in unison, flute and horn with them
+    s.dyn('choir', D * 4, 100)
+    s.dyn('choir2', D * 4, 90)
+    s.dyn('horn', D * 4, 84)
+    for k, ln in enumerate(TUNE):
+        s.line('choir', D + k, ln, 80, shift=-12, art=0.85)
+        s.line('choir2', D + k, ln, 66, shift=-24, art=0.85) if k % 4 != 3 else None
+        s.line('flute', D + k, ln, 70, art=0.8)
+        s.line('horn', D + k, ln, 64, shift=-12, art=0.8)
+    for x in voicing(s.HARM[s.NBARS - 1][0], 50, 62, 3):
+        s.note('choir', x, s.END - 1, 0.3, 96, jitter=2, art=0.9)  # a last "Hey!" into the top
+    for tr in ('flute', 'bsn', 'horn', 'choir', 'choir2'):
+        s.cresc(tr, s.END - 1.5, s.END - 0.1, s.LEVEL[tr], s.LEVEL[tr] - 10)
+    return s
+
+
+# ── 6. Ale at the Shift's End: a stomping drinking song ─────────────────────
+# Original. B-flat major, 100 bpm: stamp on 1 and 3, clap on 2 and 4, a tankard clink on the & of 4.
+def ale():
+    s = Song(
+        'ale',
+        "Ale at the Shift's End",
+        100,
+        [
+            ('A', 'Tankards', ['Bb', 'F', 'Gm', 'Eb', 'Bb', 'F', 'Eb|F', 'Bb']),
+            ('B', 'All Together', ['Bb', 'F', 'Gm', 'Eb', 'Bb', 'F', 'Eb|F', 'Bb']),
+            ('C', 'The Tale', ['Gm', 'Dm', 'Eb', 'Bb', 'Gm', 'Cm', 'Eb', 'F']),
+            ('D', 'Last Round', ['Bb', 'F', 'Gm', 'Eb', 'Bb', 'F', 'Eb', 'F7']),
+        ],
+        seed=8830,
+        target_db=-19.5,
+    )
+    A, B, C, D = (s.SEC[k] for k in 'ABCD')
+    for b in range(s.NBARS):
+        tale = C <= b < D
+        big = 10 if b >= D else 0
+        s.drum(BD, b * 4, (48 if tale else 70) + big)
+        s.drum(BD, b * 4 + 2, (42 if tale else 64) + big)
+        if not tale:
+            s.drum(LOTOM, b * 4, 50 + big)
+            s.drum(LOTOM, b * 4 + 2, 46 + big)
+            s.drum(CLAP, b * 4 + 1, 66 + big)
+            s.drum(CLAP, b * 4 + 3, 70 + big)
+            s.drum(CLAVES, b * 4 + 3.5, 50 + big)
+        if b == D - 1:  # the room joins back in
+            for k in range(8):
+                s.drum(SNARE, b * 4 + 2 + k * 0.25, 40 + k * 6)
+            s.drum(CRASH, D * 4, 70)
+    s.drum(CRASH, B * 4, 60)
+    # tuba on the roots, walking up into each change; strings and accordion-like held chords
+    s.dyn('tuba', 0, 88)
+    for b in range(s.NBARS):
+        for half in (0, 1):
+            c = s.HARM[b][half]
+            r = c.rootlow(31)
+            s.note('tuba', r, b * 4 + half * 2, 1, 70, art=0.75)
+            s.note('tuba', r + 7 if r + 7 <= 50 else r - 5, b * 4 + half * 2 + 1, 1, 58, art=0.6)
+    s.dyn('strs', 0, 58)
+    s.held('strs', range(B, s.NBARS), 50, 67, 3, 44)
+    MEL = [
+        'F4:1 Bb4:1 Bb4:1 D5:1',
+        'C5:1.5 Bb4:.5 A4:2',
+        'G4:1 Bb4:1 D5:1 G5:1',
+        'Eb5:1.5 D5:.5 Bb4:2',
+        'F4:1 Bb4:1 D5:1 F5:1',
+        'Eb5:1 D5:1 C5:2',
+        'Bb4:1 G4:1 A4:1 C5:1',
+        'Bb4:3 r:1',
+    ]
+    HAR = [
+        'D4:1 F4:1 F4:1 Bb4:1',
+        'A4:1.5 F4:.5 F4:2',
+        'D4:1 G4:1 Bb4:1 D5:1',
+        'G4:1.5 F4:.5 G4:2',
+        'D4:1 F4:1 Bb4:1 D5:1',
+        'C5:1 Bb4:1 A4:2',
+        'G4:1 Eb4:1 F4:1 A4:1',
+        'D4:3 r:1',
+    ]
+    # A Tankards: one dwarf starts the song, the others hum along
+    s.dyn('choir', 0, 82)
+    s.dyn('hum', 0, 52)
+    for k, ln in enumerate(MEL):
+        s.line('choir', A + k, ln, 70, shift=-12, art=0.92)
+    s.held('hum', range(A + 4, B), 48, 60, 2, 46)
+    # B All Together: in two parts, trombones and horns with them
+    s.dyn('choir', B * 4, 100)
+    s.dyn('choir2', B * 4, 90)
+    s.dyn('tbn', B * 4, 80)
+    s.dyn('horn', B * 4, 80)
+    for sec in (B, D):
+        for k in range(8):
+            mel, har = MEL[k], HAR[k]
+            if sec == D and k == 7:
+                mel, har = 'A4:1 C5:1 Eb5:1 r:1', 'F4:1 A4:1 C5:1 r:1'
+            s.line('choir', sec + k, mel, 80, shift=-12, art=0.92)
+            s.line('choir2', sec + k, har, 70, shift=-12, art=0.92)
+            s.line('horn', sec + k, mel, 66, art=0.9)
+            s.line('tbn', sec + k, har, 64, shift=-12, art=0.9)
+    # C The Tale: G minor, softer; the bassoon tells it over the dwarves' hum, a horn behind
+    s.dyn('bsn', C * 4, 90)
+    s.dyn('hum', C * 4, 72)
+    s.dyn('horn', C * 4, 62)
+    for k, ln in enumerate(
+        [
+            'D4:1 G4:1 Bb4:1.5 A4:.5',
+            'A4:2 F4:1 D4:1',
+            'Eb4:1 G4:1 Bb4:1 G4:1',
+            'F4:3 r:1',
+            'G4:1 Bb4:1 D5:1.5 C5:.5',
+            'Eb5:2 C5:1 G4:1',
+            'Bb4:1 G4:1 Eb4:1 G4:1',
+            'A4:2 C5:1 r:1',
+        ]
+    ):
+        s.line('bsn', C + k, ln, 70, swell=6)
+    s.held('hum', range(C, D), 48, 62, 3, 52)
+    s.held('horn', range(C + 4, D), 53, 62, 2, 46)
+    s.cresc('hum', D * 4 - 4, D * 4, 72, 40)
+    # D Last Round: the whole hall, with a trumpet over the top
+    for tr, v in (('choir', 106), ('choir2', 96), ('tbn', 88), ('horn', 88), ('tuba', 96), ('strs', 72)):
+        s.dyn(tr, D * 4, v)
+    s.dyn('tpt', D * 4, 76)
+    for k, ln in enumerate(
+        ['D5:2 F5:2', 'F5:2 C5:2', 'D5:2 G5:2', 'G5:4', 'F5:2 D5:2', 'G5:2 F5:2', 'Eb5:2 G5:2', 'F5:3 r:1']
+    ):
+        s.line('tpt', D + k, ln, 60, swell=6)
+    for tr in ('choir', 'choir2', 'tbn', 'horn', 'tpt', 'strs', 'tuba'):
+        s.cresc(tr, s.END - 2, s.END - 0.1, s.LEVEL[tr], s.LEVEL[tr] - 18)
+    for tr, v in (('choir', 82), ('tuba', 88)):
+        s.dyn(tr, 0, v)
+    return s
+
+
+SONGS = {'work': work, 'deep': deep, 'halls': halls, 'hammer': hammer, 'jig': jig, 'ale': ale}
 
 if __name__ == '__main__':
     os.makedirs(OUTDIR, exist_ok=True)

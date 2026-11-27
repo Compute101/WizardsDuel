@@ -409,4 +409,12 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
   title theme makes way (`titleMusic` in `js/explore.js` checks `#mn-screen`). Each builds from a quiet
   start to a loud end, so the loop point drops back down by about 7 dB. Not heard yet: listen before
   trusting it.
+  Three more, original (the user asked for tunes without the Corvanthe theme, upbeat, with dwarves
+  singing as they mine): **Hammer and Hold** (`hammer`, G major, 116 bpm, 66 s: picks on 2 and 4 like a
+  backbeat, tuba oom-pah, the horn's tune, a sung verse with trombone answers, a two-part chorus, a trumpet
+  descant), **The Deep Seam Jig** (`jig`, A minor, 12/8 at 112, 69 s: flute and bassoon, tambourine
+  triplets, "Hey!" shouts, a C major turn on the horn, then the dwarves sing the tune), **Ale at the
+  Shift's End** (`ale`, B♭ major, 100 bpm, 77 s: stamp, clap and tankard clink, one dwarf starts and all
+  join in two parts, a quiet tale in G minor on bassoon, the last round tutti). The playlist alternates
+  upbeat and calm: Hammer and Hold, Pick and Lantern, the Jig, Lamplight, Ale, Halls.
 - **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.

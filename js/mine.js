@@ -179,11 +179,11 @@
   }
 
   // ── Mining music ───────────────────────────────────────────
-  // Three loops from tools/music/delve.py (audio/delve/): Pick and Lantern (the work song), Lamplight in
-  // the Deep (the quiet one) and Halls of the Stoneheart (the grand one). Each plays twice round (a gapless
+  // Six loops from tools/music/delve.py (audio/delve/): Hammer and Hold, Pick and Lantern, The Deep Seam
+  // Jig, Lamplight in the Deep, Ale at the Shift's End and Halls of the Stoneheart, upbeat and calm in turn. Each plays twice round (a gapless
   // Web Audio loop), then crossfades into the next, in that order. ♪ turns it off (localStorage wd-mine-music).
   // It starts from the tap that opened the Delve, so phones allow it; a blocked start retries on the next tap.
-  const DELVE_TUNES = ['work', 'deep', 'halls'],
+  const DELVE_TUNES = ['hammer', 'work', 'jig', 'deep', 'ale', 'halls'],
     DELVE_VOL = 0.6,
     DELVE_TIMES = 2,
     DELVE_FADE = 3;
