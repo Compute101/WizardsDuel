@@ -525,4 +525,19 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
   stair when it can): 14 days, seed 7 reaches layer 3 with silver met; seeds 1–9 reach layers 1–3. It
   stalls at iron on layer 2 on most seeds: it only digs to the deep spot and follows ore it already sees, so
   it rarely finds a vein (a player would explore). No cave-ins in its halls.
+- **Water and wells** (the user asked where the brewer's water comes from, and didn't want Dwarf Fortress's
+  well that freezes in winter and kills everyone of thirst): brewing now takes a barley **and a bucket of
+  water** (`RECIPES.brew`). Water never fails: the Delve has no winter, and the crew drink ale, not water, so
+  a dry spell only slows the brewery. Sources: the wagon's 6 buckets (`START_STOCK.water`); **meltwater**
+  fetched from outside the gate (`RECIPES.melt`, 30 s a bucket, only while there's no well); and a **well**
+  (`RECIPES.draw`, 2 buckets in 3 s), which the mason sinks on dug **damp** floor (🧱 Build ▴ → 💧 Well,
+  `BUILDS.well` with `damp`, a dressed block; ✖ Clear takes it out; a cave-in buries it). Each layer has
+  `DAMP` (4) small damp patches (`t.dm`, `damp`): blue flecks on the map, a faint blue shimmer one tile into
+  the dark (stone-sense), and Durin's prospecting shows them. Water is drawn only while the brewery has fewer
+  than 4 buckets (`waterWanted`). A recipe with nothing to carry goes straight to its tile (`atTile`). New
+  named pattern: **the Wellhead Court** (a room odd-sized both ways, 3 × 3 or more, a well on its middle
+  tile). Sim (10 days): seed 7 makes 143 ale with a well and 77 without (barley piles up waiting for water);
+  at 9 s a meltwater bucket the well made no difference, so it's 30 s. Older saves get damp patches in stone
+  not yet dug, and the 6 buckets (`migrate`, v4). The Ironroots' stream (a free well along its bank, floods
+  if broken into badly) is still to come.
 - **Next (step 3):** the elementals.

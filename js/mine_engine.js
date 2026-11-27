@@ -88,6 +88,7 @@
   const CAVE = { check: 10, grace: DAY * 0.5, chance: 0.08, start: DAY * 0.75, kill: 0.3 };
   const STAIR_STEPS = 6; // a stair counts as this many tiles of walking (it's a long way down)
   const RUBBLE_DIG = 0.6; // rubble digs this fraction of soft rock's time
+  const DAMP = 4; // damp patches on each layer
   const MOURN_S = 5; // a mourning dwarf's visit to the Wall of Remembrance
   const START_HOUR = 6; // the first day starts at 06:00
   const WALK = 3.2; // tiles a second
@@ -96,7 +97,8 @@
   const BUILDS = {
     wall: { name: 'wall', inRoom: false },
     pillar: { name: 'pillar', inRoom: true },
-    door: { name: 'door', inRoom: true }
+    door: { name: 'door', inRoom: true },
+    well: { name: 'well', inRoom: true, damp: true } // only on a damp spot
   };
   const SMOOTH_S = 3.5,
     BUILD_S = 4,
@@ -137,7 +139,8 @@
     barley: 0,
     meal: 0,
     bronze: 0,
-    pick: 0
+    pick: 0,
+    water: 6 // the wagon's water barrels, enough for the first brews
   };
   // Rough stone (from digging) is cut into dressed blocks at a mason's workshop; everything built takes a
   // block, except the workshop's own bench, which is roughed out of rough stone (or there'd be no first bench)
@@ -154,7 +157,32 @@
       act: 'Cutting stone blocks',
       want: S => blocksWanted(S) > 0
     },
-    brew: { at: 'still', takes: { barley: 1 }, makes: { ale: 3 }, s: 6, act: 'Brewing', want: () => true },
+    brew: {
+      at: 'still',
+      takes: { barley: 1, water: 1 },
+      makes: { ale: 3 },
+      s: 6,
+      act: 'Brewing',
+      want: () => true
+    },
+    // water: drawn from a well (dug on a damp spot), or, with no well, meltwater fetched from outside the
+    // gate, slowly. Wells never freeze or fail: the Delve has no winter, and the crew drink ale, not water.
+    draw: {
+      atTile: (S, i, t) => t.wl,
+      takes: {},
+      makes: { water: 2 },
+      s: 3,
+      act: 'Drawing water at the well',
+      want: S => waterWanted(S)
+    },
+    melt: {
+      atTile: (S, i) => S.gate.includes(i),
+      takes: {},
+      makes: { water: 1 },
+      s: 30, // out of the gate and down to the beck and back
+      act: 'Fetching meltwater from outside',
+      want: S => waterWanted(S) && !S.tiles.some(t => t.wl)
+    },
     // two deepcaps make three meals: a kitchen stretches the food as well as pleasing the crew
     cook: {
       at: 'hearth',
@@ -317,7 +345,8 @@
     ninefold: { name: 'The Ninefold Hall', desc: 'nine rooms alike, three by three' },
     cloister: { name: 'The Cloister', desc: 'a pillared court with a room on each of its four sides' },
     spiral: { name: 'The Spiral Stair', desc: 'the stair down cut as a spiral (comes with the stair)' },
-    vein: { name: 'The Vein-follower', desc: 'a straight passage eight long, cut along a vein of ore' }
+    vein: { name: 'The Vein-follower', desc: 'a straight passage eight long, cut along a vein of ore' },
+    wellhead: { name: 'The Wellhead Court', desc: 'a well at the very heart of a room' }
   };
 
   // ── seeded random (the state lives in S so a save carries on the same) ──
@@ -354,7 +383,7 @@
   function newGame(seed) {
     seed = (seed == null ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
     const S = {
-      v: 3,
+      v: 4,
       seed,
       rs: seed,
       layer: 1,
@@ -410,6 +439,10 @@
     logMsg(S, 'Durin: "And a mason\'s workshop early on: nothing gets built without dressed stone."');
     logMsg(
       S,
+      'Durin: "The water barrels won\'t last either: find damp stone (a blue shimmer) and sink a well."'
+    );
+    logMsg(
+      S,
       'Durin: "Those old iron picks won\'t last. Find copper, tin and coal, and give the smith a forge."'
     );
     return S;
@@ -433,7 +466,9 @@
       wo: false,
       cr: 0, // seconds this floor's roof has been unsound
       rb: false, // rubble from a cave-in
-      sr: '' // a stair: 'down' on the layer above, 'up' on the one below
+      sr: '', // a stair: 'down' on the layer above, 'up' on the one below
+      dm: false, // damp stone: a well can be sunk here once it's dug
+      wl: false // a well
     };
   }
   // one layer's stone and ore, from the seed: rock hardness from a coarse value noise (soft near the gate,
@@ -524,6 +559,21 @@
     };
     // (the first loam pocket on the Topstone always lies within reach of the gate, so a farm is always possible)
     for (const [kind, o, ...a] of L.gen) (kind === 'vein' ? vein : blob)(o, ...a);
+    damp(S, z);
+  }
+  // damp spots: a few small patches of wet stone on each layer, where a well can be sunk (DAMP per layer)
+  function damp(S, z) {
+    const y0 = topOf(z);
+    for (let b = 0; b < DAMP; b++) {
+      const cx = ri(S, 5, W - 3),
+        cy = ri(S, 2, LH - 3);
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          if (Math.abs(dx) + Math.abs(dy) > 1 && rnd(S) < 0.6) continue;
+          const t = S.tiles[idx(cx + dx, y0 + cy + dy)];
+          if (t.k === 'r' && !t.bt) t.dm = true;
+        }
+    }
   }
   // a layer's deep spot: a 3 × 3 of undug rock, away from the gate, where the stone thins
   function placeDeep(S, z) {
@@ -835,14 +885,16 @@
           }
         } else if (tool.startsWith('build:')) {
           const what = tool.slice(6);
-          if (!BUILDS[what] || t.k !== 'f' || t.b || t.dr || t.fu || S.gate.includes(i)) continue;
+          if (!BUILDS[what] || t.k !== 'f' || t.b || t.dr || t.wl || t.fu || S.gate.includes(i)) continue;
+          if (BUILDS[what].damp && !t.dm) continue;
           if (t.r && !BUILDS[what].inRoom) continue; // a wall would cut a room in two
           t.b = what;
           n++;
         } else if (tool === 'cancel') {
-          if (t.dr) {
-            // a built door comes out again, its stone back in the stock
+          if (t.dr || t.wl) {
+            // a built door or well comes out again, its stone back in the stock
             t.dr = false;
+            t.wl = false;
             S.stock.block = have(S, 'block') + 1;
             n++;
           }
@@ -1002,7 +1054,7 @@
       miner: ['getpick', 'dig', 'haul'],
       mason: ['build', 'construct', 'cut', 'smooth', 'haul', 'dig'],
       farmer: ['harvest', 'plant', 'cook', 'haul', 'dig'],
-      brewer: ['brew', 'cook', 'haul', 'dig'],
+      brewer: ['brew', 'draw', 'melt', 'cook', 'haul', 'dig'],
       smith: ['forge', 'smelt', 'haul', 'dig']
     }[d.trade] || ['haul'];
     for (const kind of order) if (findWork(S, d, dm, kind, stocks, go)) return;
@@ -1012,6 +1064,12 @@
   const matOf = t => (t.fu === 'bench' ? 'stone' : 'block');
   const have = (S, k) => S.stock[k] || 0;
   const stockOf = have;
+  // water's wanted while the brewery could use it: under four buckets in store or lying about
+  function waterWanted(S) {
+    if (!S.tiles.some(t => t.fu === 'still' && t.fb)) return false;
+    const lying = S.items.filter(it => it.kind === 'water').reduce((n, it) => n + it.n, 0);
+    return have(S, 'water') + lying < 4;
+  }
   // blocks still wanted: unbuilt furniture and building orders, and a few spare, less what's cut already
   function blocksWanted(S) {
     let want = BLOCK_SPARE;
@@ -1123,8 +1181,9 @@
       for (const k in R.takes) if (have(S, k) < R.takes[k]) return false;
       let best = -1,
         bd = 1e9;
+      const atOk = (t, i) => (R.atTile ? R.atTile(S, i, t) : t.fu === R.at && t.fb);
       T.forEach((t, i) => {
-        if (t.fu === R.at && t.fb && !t.cl && dm.dist[i] >= 0 && dm.dist[i] < bd) {
+        if (atOk(t, i) && !t.cl && dm.dist[i] >= 0 && dm.dist[i] < bd) {
           bd = dm.dist[i];
           best = i;
         }
@@ -1132,6 +1191,12 @@
       if (best < 0) return false;
       const st = nearest(dm, stocks);
       if (st < 0) return false;
+      // nothing to carry: straight to the well (or the gate)
+      if (!Object.keys(R.takes).length) {
+        if (!go({ type: 'craft', rec: kind, tile: best, ph: 1, w: R.s, st }, best)) return false;
+        T[best].cl = d.id;
+        return true;
+      }
       if (!go({ type: 'craft', rec: kind, tile: best, ph: 0, st }, st)) return false;
       T[best].cl = d.id;
       return true;
@@ -1389,7 +1454,7 @@
       case 'craft': {
         const t = T[j.tile],
           R = RECIPES[j.rec];
-        if (!R || !t || t.fu !== R.at || !t.fb) {
+        if (!R || !t || !(R.atTile ? R.atTile(S, j.tile, t) : t.fu === R.at && t.fb)) {
           drop(S, d);
           return;
         }
@@ -1601,6 +1666,10 @@
     t.b = '';
     if (what === 'door') {
       t.dr = true;
+      return;
+    }
+    if (what === 'well') {
+      t.wl = true;
       return;
     }
     // whatever lies there goes into the stock, and anyone standing there steps aside to the builder's tile
@@ -1841,6 +1910,7 @@
       t.fb = false;
       t.b = '';
       t.dr = false;
+      t.wl = false;
       t.g = 0;
       t.cr = 0;
       t.d = false;
@@ -2248,6 +2318,15 @@
     for (let y = 0; y < H && !vein; y++) vein = oreRun(Array.from({ length: W }, (_, x) => [x, y]));
     for (let x = 0; x < W && !vein; x++) vein = oreRun(Array.from({ length: H }, (_, y) => [x, y]));
     if (vein) got.push('vein');
+    // the Wellhead Court: a room of 3 × 3 or more, odd both ways, with a well on its very middle tile
+    if (
+      S.rooms.some(r => {
+        const w = r.x1 - r.x0 + 1,
+          h = r.y1 - r.y0 + 1;
+        return w >= 3 && h >= 3 && w % 2 && h % 2 && T[idx((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2)].wl;
+      })
+    )
+      got.push('wellhead');
     return got;
   }
   // call now and then: names any pattern found for the first time (for Durin to remark on)
@@ -2268,7 +2347,16 @@
 
   // an older save: the new stock, picks and wounds, and the smith who came with the new rooms
   function migrate(S) {
-    if (!S || S.v >= 3) return S;
+    if (!S || S.v >= 4) return S;
+    if (S.v < 3) migrate3(S);
+    // wells: damp spots on every layer (in stone not yet dug), and the wagon's water
+    for (let z = 0; z < LAYERS.length; z++) damp(S, z);
+    if (S.stock.water == null) S.stock.water = START_STOCK.water;
+    S.v = 4;
+    logMsg(S, '💧 Durin: "The brewer wants water. Look for damp stone and sink a well there."');
+    return S;
+  }
+  function migrate3(S) {
     if (S.v < 2) migrate2(S);
     // step 2: the layers below, the quota and the stair, cave-ins and the dead
     for (const t of S.tiles) Object.assign(t, { cr: t.cr || 0, rb: !!t.rb, sr: t.sr || '' });
@@ -2294,7 +2382,6 @@
       '📜 A letter from the Thane: the Delve is to go five layers deep. Durin: "Mind the roofs, planner."'
     );
     quotaCheck(S);
-    return S;
   }
   function migrate2(S) {
     for (const k in START_STOCK) if (S.stock[k] == null) S.stock[k] = k === 'pick' ? 0 : START_STOCK[k];

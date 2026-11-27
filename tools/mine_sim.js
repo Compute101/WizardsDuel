@@ -67,6 +67,7 @@ for (const p of plan) {
 }
 for (let k = 0; k < 4; k++) planned.push([3 + k * 4, gy + 2, 5 + k * 4, gy + 3]);
 const deepCut = {};
+const noWell = process.env.NOWELL === '1'; // NOWELL=1: never sink a well (meltwater only)
 let logged = 0;
 for (let s = 0; s < days * M.DAY; s += 1) {
   for (const p of plan)
@@ -93,6 +94,30 @@ for (let s = 0; s < days * M.DAY; s += 1) {
           M.designate(S, 'dig', x, y, x, y);
       }
     });
+    // a well: dig out damp stone in sight beside the workings, then sink one on the first damp floor
+    if (!noWell && !S.tiles.some(t => t.wl || t.b === 'well')) {
+      const wet = S.tiles.findIndex((t, i) => t.k === 'f' && t.dm && !t.r && !S.gate.includes(i));
+      if (wet >= 0) M.designate(S, 'build:well', wet % M.W, (wet / M.W) | 0, wet % M.W, (wet / M.W) | 0);
+      else
+        S.tiles.forEach((t, i) => {
+          const x = i % M.W,
+            y = (i / M.W) | 0;
+          if (
+            t.s &&
+            t.k === 'r' &&
+            t.dm &&
+            !t.d &&
+            !t.sr &&
+            [
+              [1, 0],
+              [-1, 0],
+              [0, 1],
+              [0, -1]
+            ].some(([a, b]) => M.isFloor(S, x + a, y + b))
+          )
+            M.designate(S, 'dig', x, y, x, y);
+        });
+    }
     const dc = S.deep[z];
     if (dc != null && !deepCut[z] && (z > 0 || s > M.DAY * 2.5)) {
       deepCut[z] = 1;
@@ -139,6 +164,8 @@ console.log(
   M.quotaOf(S, S.depth)
     .map(q => q.kind + ' ' + q.got + '/' + q.need)
     .join(', '),
+  'well',
+  S.tiles.some(t => t.wl),
   'cave-ins',
   S.caveIns || 0,
   'dead',

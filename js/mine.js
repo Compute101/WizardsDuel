@@ -86,6 +86,12 @@
       '🚪',
       'Door',
       'Drag over dug floor for the mason to hang a door (a dressed block each). Clear takes one out.'
+    ],
+    [
+      'well',
+      '💧',
+      'Well',
+      'Tap dug damp floor (the blue-flecked stone) for the mason to sink a well (a dressed block). The brewer draws water there.'
     ]
   ];
   const ROOM_HELP = {
@@ -94,7 +100,8 @@
     dorm: 'A bed for every 3 tiles. Cheaper than bedrooms, never as good.',
     dining: 'A table for every 6 tiles. Eating anywhere else is a grudge after the first day and a half.',
     farm: 'Needs soil (the brown loam you dig out). The farmer grows deepcaps (food) and cave barley (for ale), turn about.',
-    brewery: 'One still. The brewer turns a barley into ' + 3 + ' ale.',
+    brewery:
+      'One still. The brewer turns a barley and a bucket of water into 3 ale. Water comes from a well on damp stone, or, slowly, as meltwater from outside the gate.',
     workshop:
       "One mason's bench, roughed out of rough stone. Here the mason cuts rough stone into dressed blocks, and every bed, table, still, wall, pillar and door takes a block: make this first.",
     kitchen:
@@ -121,6 +128,7 @@
     ['tin', '⚪', 'Tin ore'],
     ['coal', '⚫', 'Coal'],
     ['barley', '🌾', 'Cave barley'],
+    ['water', '💧', 'Water, in buckets (from a well, or meltwater from outside the gate)'],
     ['meal', '🍲', 'Meals (cooked at the kitchen; eaten before raw deepcaps)'],
     ['bronze', '🟫', 'Bronze (smelted at the forge)'],
     ['pick', '⛏', 'Bronze picks in the stock (forged at the forge)'],
@@ -132,7 +140,7 @@
     ['gold', '🟡', 'Gold ore'],
     ['heartsilver', '✨', 'Heartsilver']
   ];
-  const STOCK_ALWAYS = new Set(['food', 'ale', 'stone', 'block']); // the rest show once there's some
+  const STOCK_ALWAYS = new Set(['food', 'ale', 'water', 'stone', 'block']); // the rest show once there's some
 
   // ── Save ──
   function save() {
@@ -143,7 +151,7 @@
   function loadSave() {
     try {
       const s = JSON.parse(localStorage.getItem(SAVE) || 'null');
-      return s && s.v >= 1 && s.v <= 3 ? M.migrate(s) : null;
+      return s && s.v >= 1 ? M.migrate(s) : null; // any version: migrate brings it up to date
     } catch (e) {
       return null;
     }
@@ -409,7 +417,7 @@
   }
 
   // ── tools ──
-  const isBuild = t => t === 'wall' || t === 'pillar' || t === 'door';
+  const isBuild = t => t === 'wall' || t === 'pillar' || t === 'door' || t === 'well';
   // the tool bar button a tool belongs to
   const barOf = t => (isBuild(t) ? 'build' : t.startsWith('room') ? 'room' : t);
   function pickTool(t) {
@@ -675,6 +683,15 @@
                       : ['', 'Soft', 'Firm', 'Hard'][t.h] + ' rock') + (t.w ? ', smoothed' : '');
       const roof = M.LAYERS[M.layerOf(s.y)].roof;
       const extra =
+        (t.wl
+          ? '<p class="mn-note">💧 A well. The brewer draws water here. ✖ Clear takes it out.</p>'
+          : t.dm
+            ? '<p class="mn-note">💧 Damp stone: ' +
+              (t.k === 'f'
+                ? 'a well can be sunk here (Build ▴ → Well).'
+                : 'dig it out, and a well can be sunk here.') +
+              '</p>'
+            : '') +
         (t.sr ? '<p class="mn-note">🪜 The stair ' + (t.sr === 'down' ? 'down' : 'up') + '.</p>' : '') +
         (t.rb
           ? '<p class="mn-note">Rubble from a cave-in: quick to dig, all rough stone. Dig it out and the roof is open again.</p>'
@@ -837,6 +854,7 @@
       <li><b>Stars</b>: a room earns its second star once it's furnished, big enough and has a door on every way in (wall up any others); its third once its walls are smoothed. Tap a room to see what it lacks: ways in with no door show in red. Stockpiles, farms, the workshops (mason's workshop, brewery, kitchen and forge) and the tavern, a taproom, need no door.</li>
       <li><b>The mason's workshop comes first</b>: its bench is roughed out of rough stone, and there the mason cuts rough stone into <b>dressed blocks</b> (🧱 in the stock). Every bed, table, still, wall, pillar and door takes a block, and he cuts only as many as your building needs.</li>
       <li><b>The trades</b>: the farmer and brewer cook meals at a kitchen's hearth; the smith smelts copper, tin and coal into bronze at a forge's anvil and forges picks, for the old iron ones wear out. Hard rock sometimes hurts a dwarf: an infirmary mends them.</li>
+      <li><b>Water</b>: the brewer needs a bucket of water for every brew. Until there's a well he fetches meltwater from outside the gate, which is slow. Damp stone shows as a blue shimmer in the dark: dig it out, then 🧱 Build ▴ → Well. A well never runs dry.</li>
       <li><b>Mind the roof</b>: each stone spans only so far. Floor more than 3 tiles from rock, a wall or a pillar (on the Topstone) is unsound: red hairline cracks show, and after a while it comes down. Rubble is quick to dig out, but anyone under it may die, and the crew mourn. A Wall of Remembrance eases that.</li>
       <li><b>Going deeper</b>: the Thane sets each layer a quota of ore (the Quota tab). Meet it, find the layer's deep spot (Durin's prospecting, or digging nearby), and cut the stair down. Five layers, each harder stone. ▲ ▼ by the map, or [ and ], change the layer you see.</li>
       <li><b>✨ Smooth</b>: the mason smooths walls and pillars. Finer rooms, and worked stone will keep elementals out.</li>
@@ -901,8 +919,12 @@
       how: 'Follow a vein of ore with a straight passage: eight tiles in a line, six or more of them cut out of ore.',
       plan: ['##########', '$$$$$$$$..', '##########']
     },
+    wellhead: {
+      how: 'A room three tiles or more each way, an odd number both ways, with a well sunk on its very middle tile. Any room will do, so long as the well is dead centre. Look for damp stone where you want the court.',
+      plan: ['#######', '#RRRRR#', '#RRRRR#', '#RRwRR#', '#RRRRR#', '#RRRRR#', '#######']
+    },
     spiral: {
-      how: 'Cut the stair down to the next layer as a spiral. It comes with the stair, which isn\u2019t built yet.',
+      how: 'Cut the stair down to the next layer as a spiral. Durin can\u2019t judge a spiral stair yet.',
       plan: ['#####', '#~~~#', '#~#~#', '#~~##', '#####']
     }
   };
@@ -912,7 +934,8 @@
     o: '#cfc2ad',
     R: '#b98c5e',
     $: '#d0783a',
-    '~': '#7a8fb0'
+    '~': '#7a8fb0',
+    w: '#3a6aa8'
   };
   function planHtml(rows) {
     const w = Math.max(...rows.map(r => r.length));
@@ -1064,16 +1087,19 @@
     ui.drag = null;
     if (!g || pts.size) return;
     if (g.mark) {
-      const tool = ui.tool === 'wall' || ui.tool === 'door' ? 'build:' + ui.tool : ui.tool;
+      const tool = /^(wall|door|well)$/.test(ui.tool) ? 'build:' + ui.tool : ui.tool;
       const r = M.designate(S, tool, g.x0, g.y0, g.x1, g.y1);
       if (r && r.ok === false) say(r.why);
-      else if (r && r.n === 0 && (ui.tool === 'wall' || ui.tool === 'door'))
+      else if (r && r.n === 0 && /^(wall|door|well)$/.test(ui.tool))
         say(
           ui.tool === 'wall'
             ? 'Walls go on dug floor, outside rooms and clear of furniture and the gate.'
-            : 'Doors go on dug floor, clear of furniture and the gate.'
+            : ui.tool === 'well'
+              ? 'A well goes on dug damp floor: dig out stone with a blue shimmer first.'
+              : 'Doors go on dug floor, clear of furniture and the gate.'
         );
-      else if (r && r.n && /^(wall|door|pillar)$/.test(ui.tool) && !(S.stock.block > 0)) say(blockNews());
+      else if (r && r.n && /^(wall|door|pillar|well)$/.test(ui.tool) && !(S.stock.block > 0))
+        say(blockNews());
       else if (r && r.room) {
         const R = M.ROOMS[r.room.type];
         say(
@@ -1188,6 +1214,13 @@
           c.fillStyle = '#0d0c10';
           c.fillRect(X, Y, s + 0.5, s + 0.5);
           // stone-sense: a faint shimmer of ore one tile into the dark
+          if (t.dm && nearSeen(x, y)) {
+            c.fillStyle = 'rgba(110,170,255,.22)';
+            c.beginPath();
+            c.arc(X + s * 0.35, Y + s * 0.6, s * 0.12, 0, 7);
+            c.arc(X + s * 0.65, Y + s * 0.4, s * 0.1, 0, 7);
+            c.fill();
+          }
           if (t.o && t.o !== 'soil' && nearSeen(x, y)) {
             c.fillStyle = M.ORES[t.o].col;
             c.globalAlpha = 0.18;
@@ -1320,6 +1353,8 @@
         if (t.cr && t.k === 'f') drawCrack(c, t, X, Y, s, x, y);
         drawMarks(c, t, X, Y, s);
         if (t.fu) drawFurn(c, t, X, Y, s);
+        if (t.dm && !t.wl) drawDamp(c, t, X, Y, s, x, y);
+        if (t.wl) drawWell(c, X, Y, s);
         if (t.dr) drawDoor(c, X, Y, s, x, y, 1);
         if (t.g) drawCrop(c, t, X, Y, s, x, y);
       }
@@ -1539,6 +1574,53 @@
     c.stroke();
     c.restore();
   }
+  // damp stone: blue flecks and a sheen of wet, on rock and on dug floor alike
+  function drawDamp(c, t, X, Y, s, x, y) {
+    c.fillStyle = t.k === 'f' ? 'rgba(70,120,190,.18)' : 'rgba(80,140,220,.14)';
+    c.fillRect(X, Y, s + 0.5, s + 0.5);
+    c.fillStyle = 'rgba(150,200,255,.7)';
+    for (let k = 0; k < 3; k++) {
+      c.beginPath();
+      c.arc(
+        X + (0.2 + hash(x, y, k + 20) * 0.6) * s,
+        Y + (0.2 + hash(x, y, k + 30) * 0.6) * s,
+        s * 0.05,
+        0,
+        7
+      );
+      c.fill();
+    }
+  }
+  // a well: a ring of dressed stone round dark water, a little winch over it
+  function drawWell(c, X, Y, s) {
+    const cx = X + s / 2,
+      cy = Y + s / 2;
+    c.fillStyle = '#8a7f74';
+    c.beginPath();
+    c.arc(cx, cy, s * 0.42, 0, 7);
+    c.fill();
+    c.strokeStyle = '#d8ccb6';
+    c.lineWidth = Math.max(1, s * 0.05);
+    c.stroke();
+    const g = c.createRadialGradient(cx, cy, s * 0.02, cx, cy, s * 0.28);
+    g.addColorStop(0, '#3a6aa8');
+    g.addColorStop(1, '#14243a');
+    c.fillStyle = g;
+    c.beginPath();
+    c.arc(cx, cy, s * 0.28, 0, 7);
+    c.fill();
+    c.strokeStyle = 'rgba(190,220,255,.6)';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.arc(cx, cy, s * (0.1 + 0.08 * ((performance.now() / 900) % 1)), 0, 7);
+    c.stroke();
+    c.strokeStyle = '#6a4a2c';
+    c.lineWidth = Math.max(1.5, s * 0.06);
+    c.beginPath();
+    c.moveTo(X + s * 0.12, cy);
+    c.lineTo(X + s * 0.88, cy);
+    c.stroke();
+  }
   // a door: planks in a stone frame, turned to run across the passage it stands in
   function drawDoor(c, X, Y, s, x, y, alpha) {
     const across = M.isFloor(S, x - 1, y) || M.isFloor(S, x + 1, y); // the passage runs east–west, so the door runs north–south
@@ -1580,6 +1662,13 @@
     } else if (t.b === 'pillar') {
       c.beginPath();
       c.arc(X + s / 2, Y + s / 2, s * 0.36, 0, 7);
+      c.stroke();
+    } else if (t.b === 'well') {
+      c.beginPath();
+      c.arc(X + s / 2, Y + s / 2, s * 0.4, 0, 7);
+      c.stroke();
+      c.beginPath();
+      c.arc(X + s / 2, Y + s / 2, s * 0.26, 0, 7);
       c.stroke();
     } else if (t.b === 'door') {
       c.restore();
@@ -1895,6 +1984,7 @@
         meal: '#c87840',
         bronze: '#b07a3a',
         pick: '#9aa0a8',
+        water: '#5a9ae0',
         iron: '#a0583c',
         limestone: '#e0dcc8',
         silver: '#e8eef4',
