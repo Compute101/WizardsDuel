@@ -8,10 +8,87 @@
 (function (root) {
   'use strict';
 
+  // Five layers, stacked in one tall grid: each layer is LH rows, with a row of bedrock between layers
+  // (never dug, never shown), so a tile's x and y mean the same on every layer and a layer is a band of rows.
+  // Stairs link the layers (S.links), so paths and hauls run through them.
   const W = 36,
-    H = 26;
+    LH = 26,
+    STRIDE = LH + 1;
+  // roof: the roof holds this many tiles from rock, a pillar or a wall (an open span of twice that is safe)
+  const LAYERS = [
+    {
+      name: 'The Topstone',
+      stone: 'granite',
+      roof: 3,
+      hard: 0,
+      quota: { copper: 8, tin: 6 },
+      gen: [
+        ['blob', 'soil', 2, 1.8, 2.8, true],
+        ['vein', 'cu', 4, 10, 16],
+        ['vein', 'sn', 3, 8, 13],
+        ['blob', 'c', 3, 1.2, 2.0]
+      ]
+    },
+    {
+      name: 'The Ironroots',
+      stone: 'basalt',
+      roof: 4,
+      hard: 0.15,
+      quota: { iron: 10 },
+      gen: [
+        ['blob', 'soil', 2, 1.5, 2.4],
+        ['vein', 'fe', 4, 10, 16],
+        ['blob', 'c', 3, 1.2, 2.0],
+        ['blob', 'li', 2, 1.5, 2.5]
+      ]
+    },
+    {
+      name: 'The Glimmerdark',
+      stone: 'quartz-shot stone',
+      roof: 2,
+      hard: 0.25,
+      quota: { silver: 6, gems: 3 },
+      gen: [
+        ['vein', 'ag', 3, 8, 12],
+        ['blob', 'gm', 3, 0.9, 1.5],
+        ['vein', 'ga', 2, 6, 10]
+      ]
+    },
+    {
+      name: 'The Emberdeep',
+      stone: 'hot stone',
+      roof: 2,
+      hard: 0.35,
+      quota: { gold: 6 },
+      gen: [
+        ['vein', 'au', 3, 8, 12],
+        ['blob', 'c', 2, 1.2, 2.0]
+      ]
+    },
+    {
+      name: 'The Heartstone',
+      stone: 'living rock',
+      roof: 3,
+      hard: 0.45,
+      quota: { heartsilver: 3 },
+      gen: [
+        ['blob', 'hs', 2, 1.0, 1.6],
+        ['vein', 'au', 1, 8, 8]
+      ]
+    }
+  ];
+  const H = LAYERS.length * STRIDE - 1;
+  const layerOf = y => Math.max(0, Math.min(LAYERS.length - 1, Math.floor(y / STRIDE)));
+  const topOf = z => z * STRIDE;
+
   const STEP = 0.1; // game seconds a simulation step
   const DAY = 240; // game seconds in a day at ×1 (four minutes)
+  // Cave-ins: every CAVE.check seconds the roof is looked over; a span unsound for CAVE.grace may come down
+  // (CAVE.chance a look), never before CAVE.start. Anyone under it dies CAVE.kill of the time, else is hurt.
+  const CAVE = { check: 10, grace: DAY * 0.5, chance: 0.08, start: DAY * 0.75, kill: 0.3 };
+  const STAIR_STEPS = 6; // a stair counts as this many tiles of walking (it's a long way down)
+  const RUBBLE_DIG = 0.6; // rubble digs this fraction of soft rock's time
+  const MOURN_S = 5; // a mourning dwarf's visit to the Wall of Remembrance
   const START_HOUR = 6; // the first day starts at 06:00
   const WALK = 3.2; // tiles a second
   const DIG_S = [0, 2.5, 4, 6]; // seconds to dig rock of hardness 1 / 2 / 3 (a novice)
@@ -170,6 +247,14 @@
       count: a => Math.max(1, Math.ceil(a / 4)),
       good: 12
     },
+    memorial: {
+      name: 'Wall of Remembrance',
+      col: '#9aa8c0',
+      furn: 'plaque',
+      count: () => 1,
+      good: 4,
+      open: true
+    },
     greathall: {
       name: 'Great Hall',
       col: '#e8c050',
@@ -210,8 +295,16 @@
   const ORES = {
     cu: { name: 'copper', col: '#d0783a' },
     sn: { name: 'tin', col: '#a8b8c8' },
-    c: { name: 'coal', col: '#1a1a1a' }
+    c: { name: 'coal', col: '#1a1a1a' },
+    fe: { name: 'iron', col: '#a0583c' },
+    li: { name: 'limestone', col: '#e0dcc8' },
+    ag: { name: 'silver', col: '#e8eef4' },
+    gm: { name: 'gems', col: '#4ad0a0' },
+    ga: { name: 'galestone', col: '#a0e0ff' },
+    au: { name: 'gold', col: '#f0c838' },
+    hs: { name: 'heartsilver', col: '#c8a0ff' }
   };
+  const ORE_ITEMS = new Set(Object.values(ORES).map(o => o.name));
 
   // The Mason's Eye: weights of its parts (0–1 each; a part with nothing to judge drops out)
   const EYE_W = { lines: 0.25, order: 0.2, sym: 0.2, rhythm: 0.15, worked: 0.2 };
@@ -261,7 +354,7 @@
   function newGame(seed) {
     seed = (seed == null ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
     const S = {
-      v: 2,
+      v: 3,
       seed,
       rs: seed,
       layer: 1,
@@ -277,104 +370,20 @@
       log: [],
       found: {},
       prospectDay: 0,
-      gate: []
+      gate: [],
+      depth: 0, // the deepest layer reached
+      deep: [], // each layer's deep spot (the middle of its 3 × 3), where the stair down must go
+      deepSeen: {},
+      links: [], // stairs: pairs of tiles a dwarf steps between
+      stairs: [], // {z, c, done}
+      got: {}, // ore carried to the stock, all told (the Thane's quota counts this)
+      quotaDone: {},
+      dead: [], // the fallen: {name, trade, day, how}
+      caveT: 0
     };
-    // rock hardness from a coarse value noise: soft beds near the gate, harder further in
-    const cs = 6,
-      gw = Math.ceil(W / cs) + 2,
-      gh = Math.ceil(H / cs) + 2,
-      grid = [];
-    for (let i = 0; i < gw * gh; i++) grid.push(rnd(S));
-    const noise = (x, y) => {
-      const gx = x / cs,
-        gy = y / cs,
-        x0 = Math.floor(gx),
-        y0 = Math.floor(gy),
-        fx = gx - x0,
-        fy = gy - y0;
-      const g = (a, b) => grid[b * gw + a],
-        sm = v => v * v * (3 - 2 * v),
-        u = sm(fx),
-        w = sm(fy);
-      return (
-        (g(x0, y0) * (1 - u) + g(x0 + 1, y0) * u) * (1 - w) +
-        (g(x0, y0 + 1) * (1 - u) + g(x0 + 1, y0 + 1) * u) * w
-      );
-    };
-    for (let y = 0; y < H; y++)
-      for (let x = 0; x < W; x++) {
-        const n = noise(x, y) + (x / W) * 0.35;
-        S.tiles.push({
-          k: 'r',
-          h: n < 0.5 ? 1 : n < 0.85 ? 2 : 3,
-          o: '',
-          s: false,
-          d: false,
-          p: false,
-          m: false,
-          w: false,
-          r: 0,
-          fu: '',
-          fb: false,
-          g: 0,
-          gt: 0,
-          cl: 0,
-          wo: false
-        });
-      }
-    const gy = Math.floor(H / 2);
-    const vein = (o, n, len) => {
-      for (let v = 0; v < n; v++) {
-        let x = ri(S, 6, W - 2),
-          y = ri(S, 1, H - 2),
-          dx = pick(S, [-1, 1]),
-          dy = 0;
-        if (rnd(S) < 0.5) {
-          dy = dx;
-          dx = 0;
-        }
-        for (let k = 0; k < len; k++) {
-          if (inB(x, y) && x > 3) S.tiles[idx(x, y)].o = o;
-          if (rnd(S) < 0.25) {
-            const t = dx;
-            dx = dy;
-            dy = t;
-            if (rnd(S) < 0.5) {
-              dx = -dx;
-              dy = -dy;
-            }
-          }
-          if (rnd(S) < 0.3) {
-            if (dx) y += pick(S, [-1, 1]);
-            else x += pick(S, [-1, 1]);
-          }
-          x += dx;
-          y += dy;
-          if (!inB(x, y)) {
-            x = Math.max(1, Math.min(W - 2, x));
-            y = Math.max(1, Math.min(H - 2, y));
-            dx = -dx;
-            dy = -dy;
-          }
-        }
-      }
-    };
-    const blob = (o, n, r0, r1, near) => {
-      for (let b = 0; b < n; b++) {
-        const cx = near && !b ? ri(S, 8, 15) : ri(S, 7, W - 3),
-          cy = near && !b ? gy + pick(S, [-1, 1]) * ri(S, 4, 6) : ri(S, 2, H - 3),
-          r = r0 + rnd(S) * (r1 - r0);
-        for (let y = 0; y < H; y++)
-          for (let x = 0; x < W; x++) {
-            const dd = Math.hypot(x - cx, (y - cy) * 1.2) + rnd(S) * 0.9;
-            if (dd < r) S.tiles[idx(x, y)].o = o;
-          }
-      }
-    };
-    blob('soil', 2, 1.8, 2.8, true); // the first loam pocket always lies within reach of the gate, so a farm is always possible
-    vein('cu', 4, ri(S, 10, 16));
-    vein('sn', 3, ri(S, 8, 13));
-    blob('c', 3, 1.2, 2.0);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) S.tiles.push(newTile(y % STRIDE === LH));
+    for (let z = 0; z < LAYERS.length; z++) genLayer(S, z);
+    const gy = Math.floor(LH / 2);
     // the gate: a short tunnel in from the mountainside, the wagon's supplies stacked there
     for (let x = 0; x < 3; x++)
       for (let y = gy - 1; y <= gy; y++) {
@@ -383,6 +392,7 @@
         t.o = '';
         S.gate.push(idx(x, y));
       }
+    for (let z = 0; z < LAYERS.length - 1; z++) placeDeep(S, z);
     for (const i of S.gate) reveal(S, i % W, (i / W) | 0);
     // the crew
     const used = {};
@@ -403,6 +413,136 @@
       'Durin: "Those old iron picks won\'t last. Find copper, tin and coal, and give the smith a forge."'
     );
     return S;
+  }
+  function newTile(bedrock) {
+    return {
+      k: bedrock ? 'x' : 'r',
+      h: 1,
+      o: '',
+      s: false,
+      d: false,
+      p: false,
+      m: false,
+      w: false,
+      r: 0,
+      fu: '',
+      fb: false,
+      g: 0,
+      gt: 0,
+      cl: 0,
+      wo: false,
+      cr: 0, // seconds this floor's roof has been unsound
+      rb: false, // rubble from a cave-in
+      sr: '' // a stair: 'down' on the layer above, 'up' on the one below
+    };
+  }
+  // one layer's stone and ore, from the seed: rock hardness from a coarse value noise (soft near the gate,
+  // harder further in and further down), then its veins and blobs
+  function genLayer(S, z) {
+    const L = LAYERS[z],
+      y0 = topOf(z),
+      gy = Math.floor(LH / 2);
+    const cs = 6,
+      gw = Math.ceil(W / cs) + 2,
+      gh = Math.ceil(LH / cs) + 2,
+      grid = [];
+    for (let i = 0; i < gw * gh; i++) grid.push(rnd(S));
+    const noise = (x, y) => {
+      const gx = x / cs,
+        gy2 = y / cs,
+        x0 = Math.floor(gx),
+        yy0 = Math.floor(gy2),
+        fx = gx - x0,
+        fy = gy2 - yy0;
+      const g = (a, b) => grid[b * gw + a],
+        sm = v => v * v * (3 - 2 * v),
+        u = sm(fx),
+        w = sm(fy);
+      return (
+        (g(x0, yy0) * (1 - u) + g(x0 + 1, yy0) * u) * (1 - w) +
+        (g(x0, yy0 + 1) * (1 - u) + g(x0 + 1, yy0 + 1) * u) * w
+      );
+    };
+    for (let y = 0; y < LH; y++)
+      for (let x = 0; x < W; x++) {
+        const n = noise(x, y) + (x / W) * 0.35 + L.hard,
+          t = S.tiles[idx(x, y0 + y)];
+        t.h = n < 0.5 ? 1 : n < 0.85 ? 2 : 3;
+      }
+    const inL = (x, y) => x >= 0 && y >= 0 && x < W && y < LH;
+    const setO = (x, y, o) => {
+      if (inL(x, y) && x > 3) S.tiles[idx(x, y0 + y)].o = o;
+    };
+    const vein = (o, n, l0, l1) => {
+      const len = ri(S, l0, l1);
+      for (let v = 0; v < n; v++) {
+        let x = ri(S, 6, W - 2),
+          y = ri(S, 1, LH - 2),
+          dx = pick(S, [-1, 1]),
+          dy = 0;
+        if (rnd(S) < 0.5) {
+          dy = dx;
+          dx = 0;
+        }
+        for (let k = 0; k < len; k++) {
+          setO(x, y, o);
+          if (rnd(S) < 0.25) {
+            const t = dx;
+            dx = dy;
+            dy = t;
+            if (rnd(S) < 0.5) {
+              dx = -dx;
+              dy = -dy;
+            }
+          }
+          if (rnd(S) < 0.3) {
+            if (dx) y += pick(S, [-1, 1]);
+            else x += pick(S, [-1, 1]);
+          }
+          x += dx;
+          y += dy;
+          if (!inL(x, y)) {
+            x = Math.max(1, Math.min(W - 2, x));
+            y = Math.max(1, Math.min(LH - 2, y));
+            dx = -dx;
+            dy = -dy;
+          }
+        }
+      }
+    };
+    const blob = (o, n, r0, r1, near) => {
+      for (let b = 0; b < n; b++) {
+        const cx = near && !b ? ri(S, 8, 15) : ri(S, 7, W - 3),
+          cy = near && !b ? gy + pick(S, [-1, 1]) * ri(S, 4, 6) : ri(S, 2, LH - 3),
+          r = r0 + rnd(S) * (r1 - r0);
+        for (let y = 0; y < LH; y++)
+          for (let x = 0; x < W; x++) {
+            const dd = Math.hypot(x - cx, (y - cy) * 1.2) + rnd(S) * 0.9;
+            if (dd < r) setO(x, y, o);
+          }
+      }
+    };
+    // (the first loam pocket on the Topstone always lies within reach of the gate, so a farm is always possible)
+    for (const [kind, o, ...a] of L.gen) (kind === 'vein' ? vein : blob)(o, ...a);
+  }
+  // a layer's deep spot: a 3 × 3 of undug rock, away from the gate, where the stone thins
+  function placeDeep(S, z) {
+    const y0 = topOf(z);
+    for (let tries = 0; tries < 400; tries++) {
+      const cx = ri(S, z ? 6 : 14, W - 4),
+        cy = ri(S, 3, LH - 4);
+      let ok = true;
+      for (let dy = -1; dy <= 1 && ok; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          const t = S.tiles[idx(cx + dx, y0 + cy + dy)];
+          if (t.k !== 'r' || t.r || t.p || t.bt) ok = false;
+        }
+      if (ok) {
+        S.deep[z] = idx(cx, y0 + cy);
+        return;
+      }
+    }
+    S.deep[z] = idx(W - 6, y0 + Math.floor(LH / 2));
   }
   function newDwarf(S, name, sex, trade, x, y) {
     return {
@@ -458,6 +598,7 @@
     const s0 = idx(sx, sy);
     dist[s0] = 0;
     q[tl++] = s0;
+    const lm = linkMap(S);
     while (h < tl) {
       const c = q[h++],
         cx = c % W,
@@ -473,8 +614,30 @@
           q[tl++] = n;
         }
       }
+      // a stair: one step down (or up) to the layer beyond
+      const o = lm.get(c);
+      if (o !== undefined && dist[o] < 0 && S.tiles[o].k === 'f') {
+        dist[o] = dist[c] + STAIR_STEPS;
+        prev[o] = c;
+        q[tl++] = o;
+      }
     }
     return { dist, prev };
+  }
+  // the stairs as a map from each end to the other (rebuilt only when a stair is added)
+  const LINKS = new WeakMap();
+  function linkMap(S) {
+    let m = LINKS.get(S);
+    if (!m || m.n !== S.links.length) {
+      m = new Map();
+      for (const [a, b] of S.links) {
+        m.set(a, b);
+        m.set(b, a);
+      }
+      m.n = S.links.length;
+      LINKS.set(S, m);
+    }
+    return m;
   }
   function pathTo(dm, i) {
     const p = [];
@@ -526,6 +689,7 @@
     for (const i of ts) {
       const t = S.tiles[i];
       if (t.r) return { ok: false, why: 'That overlaps another room.' };
+      if (t.sr) return { ok: false, why: 'Keep the stair clear.' };
       if (S.gate.includes(i)) return { ok: false, why: 'Keep the gate clear.' };
       if (t.k === 'f') {
         floor++;
@@ -644,6 +808,7 @@
       for (let x = x0; x <= x1; x++) {
         const i = idx(x, y),
           t = S.tiles[i];
+        if (t.k === 'x' || t.sr) continue; // bedrock between layers; the stair
         if (tool === 'dig') {
           if (t.k === 'r' && !t.p && !t.d) {
             t.d = true;
@@ -818,6 +983,16 @@
         return;
       }
     }
+    // mourning: to the Wall of Remembrance, if there is one, to carve a word for the fallen
+    const grief = d.grudges.find(g => /^Mourning /.test(g.why));
+    if (grief) {
+      const wall = nearest(
+        dm,
+        S.tiles.map((t, i) => (t.fu === 'plaque' && t.fb ? i : -1)).filter(i => i >= 0)
+      );
+      if (wall >= 0 && go({ type: 'mourn', tile: -1, at: wall, ph: 1, w: MOURN_S, why: grief.why }, wall))
+        return;
+    }
     if (openGrudges(d) >= DOWN_TOOLS) {
       d.act = 'Has downed tools';
       idle(S, d, dm);
@@ -877,7 +1052,12 @@
       }
       if (best < 0) return false;
       const t = T[best],
-        w = kind === 'dig' ? DIG_S[t.h] * (t.o && t.o !== 'soil' ? ORE_DIG : 1) : SMOOTH_S;
+        w =
+          kind !== 'dig'
+            ? SMOOTH_S
+            : t.rb
+              ? DIG_S[1] * RUBBLE_DIG
+              : DIG_S[t.h] * (t.o && t.o !== 'soil' ? ORE_DIG : 1);
       if (!go({ type: kind, tile: best, ph: 1, w }, stand)) return false;
       t.cl = d.id;
       return true;
@@ -1000,6 +1180,17 @@
       const dx = nx - d.x,
         dy = ny - d.y,
         dist = Math.hypot(dx, dy);
+      if (Math.abs(dy) > 2) {
+        // down (or up) the stair: STAIR_STEPS tiles' walk on the steps, then out on the other layer
+        d.stairT = (d.stairT || 0) + left;
+        left = 0;
+        if (d.stairT < STAIR_STEPS) break;
+        d.stairT = 0;
+        d.x = nx;
+        d.y = ny;
+        d.path.shift();
+        break;
+      }
       if (dist <= left) {
         d.x = nx;
         d.y = ny;
@@ -1027,6 +1218,7 @@
     drink: 'Drinking',
     sleep: 'Sleeping',
     getpick: 'Fetching a bronze pick',
+    mourn: 'At the Wall of Remembrance',
     heal: 'Abed in the infirmary'
   };
   const actOf = j => (j.type === 'craft' ? RECIPES[j.rec].act : ACT[j.type]);
@@ -1109,7 +1301,7 @@
           return;
         }
         if (d.carry) {
-          S.stock[d.carry.kind] = (S.stock[d.carry.kind] || 0) + d.carry.n;
+          addStock(S, d.carry.kind, d.carry.n);
           d.carry = null;
         }
         d.job = null;
@@ -1238,6 +1430,25 @@
             d.name.split(' ')[0] +
             (was ? ' trades the old iron pick for a bronze one.' : ' takes up a new bronze pick.')
         );
+        return;
+      }
+      case 'mourn': {
+        d.act = ACT.mourn;
+        j.w -= dt;
+        if (j.w > 0) return;
+        d.job = null;
+        const k = d.grudges.findIndex(g => g.why === j.why);
+        if (k >= 0) {
+          d.grudges.splice(k, 1);
+          logMsg(
+            S,
+            '🕯 ' +
+              d.name.split(' ')[0] +
+              ' carves a word for ' +
+              j.why.slice(9) +
+              ' on the Wall of Remembrance, and is the easier for it.'
+          );
+        }
         return;
       }
       case 'heal': {
@@ -1393,7 +1604,7 @@
       return;
     }
     // whatever lies there goes into the stock, and anyone standing there steps aside to the builder's tile
-    for (const it of S.items.filter(it => it.i === i)) S.stock[it.kind] = (S.stock[it.kind] || 0) + it.n;
+    for (const it of S.items.filter(it => it.i === i)) addStock(S, it.kind, it.n);
     S.items = S.items.filter(it => it.i !== i);
     for (const who of S.dwarves.concat([S.durin]))
       if (Math.round(who.x) === i % W && Math.round(who.y) === ((i / W) | 0)) {
@@ -1413,20 +1624,293 @@
     const t = S.tiles[i],
       x = i % W,
       y = (i / W) | 0;
-    const built = t.bt;
+    const built = t.bt,
+      rubble = t.rb;
     t.k = 'f';
     t.d = false;
     t.m = false;
     t.w = false;
     t.bt = false;
+    t.rb = false;
+    t.cr = 0;
     if (built)
       addItem(S, i, 'block', 1); // a built wall or pillar gives its dressed block back
-    else if (t.o === 'cu' || t.o === 'sn' || t.o === 'c') {
+    else if (rubble)
+      addItem(S, i, 'stone', 1); // cave-in rubble is all rough stone
+    else if (t.o && ORES[t.o]) {
       addItem(S, i, ORES[t.o].name, 1);
       t.wo = true;
       t.o = '';
     } else if (t.o !== 'soil' && rnd(S) < STONE_CHANCE) addItem(S, i, 'stone', 1);
     reveal(S, x, y);
+    if (t.sr === 'down') stairCheck(S);
+  }
+
+  // ── stock, the Thane's quota and the stair down ──────────────────
+  // anything carried into the stock; ore also counts toward the quota
+  function addStock(S, kind, n) {
+    S.stock[kind] = have(S, kind) + n;
+    if (ORE_ITEMS.has(kind)) {
+      S.got[kind] = (S.got[kind] || 0) + n;
+      quotaCheck(S);
+    }
+  }
+  function quotaOf(S, z) {
+    const q = LAYERS[z].quota;
+    return Object.keys(q).map(k => ({ kind: k, need: q[k], got: Math.min(q[k], S.got[k] || 0) }));
+  }
+  const quotaMet = (S, z) => quotaOf(S, z).every(q => q.got >= q.need);
+  function quotaCheck(S) {
+    const z = S.depth;
+    if (S.quotaDone[z] || !quotaMet(S, z)) return;
+    S.quotaDone[z] = true;
+    logMsg(
+      S,
+      z < LAYERS.length - 1
+        ? '📜 Durin: "The Thane\'s quota for ' +
+            LAYERS[z].name +
+            ' is met! Now we may cut the stair down, at the deep spot."'
+        : '📜 Durin: "The heartsilver is won. The Mountain\'s Heart lies below us… but that\'s a tale for another day."'
+    );
+  }
+  // the deep spot's nine tiles
+  function deepTiles(S, z) {
+    const c = S.deep[z];
+    if (c == null) return [];
+    const x = c % W,
+      y = (c / W) | 0,
+      out = [];
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) out.push(idx(x + dx, y + dy));
+    return out;
+  }
+  // found once Durin has prospected near it, or anyone has dug beside it
+  const deepKnown = (S, z) => !!S.deepSeen[z] || deepTiles(S, z).some(i => S.tiles[i].s);
+  function stairOf(S, z) {
+    return S.stairs.find(s => s.z === z) || null;
+  }
+  // why the stair down from layer z can't be cut yet, or '' if it can
+  function stairWhy(S, z) {
+    if (z >= LAYERS.length - 1) return "This is the deepest layer: below lies the Mountain's Heart.";
+    if (stairOf(S, z)) return '';
+    if (z !== S.depth) return 'Only the deepest layer reached can be cut deeper.';
+    if (!quotaMet(S, z)) return "The Thane's quota for this layer isn't met yet.";
+    if (!deepKnown(S, z)) return "The deep spot isn't found yet: have Durin prospect, or dig about.";
+    if (deepTiles(S, z).some(i => S.tiles[i].r)) return 'A room lies over the deep spot: remove it first.';
+    return '';
+  }
+  function cutStair(S, z) {
+    const why = stairWhy(S, z);
+    if (why) return { ok: false, why };
+    if (stairOf(S, z)) return { ok: false, why: 'The stair is already marked.' };
+    for (const i of deepTiles(S, z)) {
+      const t = S.tiles[i];
+      release(S, i);
+      t.sr = 'down';
+      t.b = '';
+      t.m = false;
+      t.p = false;
+      if (t.k === 'r') t.d = true;
+    }
+    S.stairs.push({ z, c: S.deep[z], done: false });
+    logMsg(S, '🪜 Durin: "Cut the stair here, lads: three by three, down to ' + LAYERS[z + 1].name + '."');
+    stairCheck(S);
+    return { ok: true };
+  }
+  function stairCheck(S) {
+    for (const st of S.stairs) {
+      if (st.done || !deepTiles(S, st.z).every(i => S.tiles[i].k === 'f')) continue;
+      st.done = true;
+      // the landing on the layer below: dug out, with a stair back up
+      const below = st.c + STRIDE * W,
+        bx = below % W,
+        by = (below / W) | 0;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          const t = S.tiles[idx(bx + dx, by + dy)];
+          t.k = 'f';
+          t.o = '';
+          t.d = false;
+          t.sr = 'up';
+          reveal(S, bx + dx, by + dy);
+        }
+      S.links.push([st.c, below]);
+      S.depth = Math.max(S.depth, st.z + 1);
+      logMsg(
+        S,
+        '🪜 The stair is cut! ' +
+          LAYERS[st.z + 1].name +
+          ' lies open below (' +
+          LAYERS[st.z + 1].stone +
+          '). Durin: "Mind the roof down there: it holds ' +
+          LAYERS[st.z + 1].roof +
+          ' tiles from rock or a pillar."'
+      );
+      quotaCheck(S);
+    }
+  }
+
+  // ── cave-ins ──────────────────────────────────────────────────────
+  // how far each floor tile is from anything holding the roof up (rock, a pillar, a wall, the stair, the
+  // map's edge), counted in king's moves
+  function roofDist(S) {
+    const N = W * H,
+      dist = new Int32Array(N).fill(-1),
+      q = new Int32Array(N);
+    let h = 0,
+      tl = 0;
+    S.tiles.forEach((t, i) => {
+      if (t.k !== 'f' || t.sr) {
+        dist[i] = 0;
+        q[tl++] = i;
+      } else {
+        const x = i % W;
+        if (x === 0 || x === W - 1) {
+          dist[i] = 1;
+          q[tl++] = i;
+        }
+      }
+    });
+    while (h < tl) {
+      const c = q[h++],
+        cx = c % W,
+        cy = (c / W) | 0;
+      for (const [dx, dy] of D8) {
+        const nx = cx + dx,
+          ny = cy + dy;
+        if (!inB(nx, ny)) continue;
+        const n = idx(nx, ny);
+        if (dist[n] < 0) {
+          dist[n] = dist[c] + 1;
+          q[tl++] = n;
+        }
+      }
+    }
+    return dist;
+  }
+  const unsound = (S, dist, i) => S.tiles[i].k === 'f' && dist[i] > LAYERS[layerOf((i / W) | 0)].roof;
+  function roofCheck(S) {
+    const dist = roofDist(S),
+      T = S.tiles;
+    T.forEach((t, i) => {
+      if (t.k !== 'f') return;
+      if (unsound(S, dist, i)) t.cr += CAVE.check;
+      else t.cr = 0;
+    });
+    if (S.t < CAVE.start) return;
+    // each unsound span, as one piece (tiles touching), may come down once it has been unsound long enough
+    const seen = new Set();
+    T.forEach((t, i) => {
+      if (!t.cr || seen.has(i)) return;
+      const cells = [i];
+      seen.add(i);
+      for (let k = 0; k < cells.length; k++) {
+        const c = cells[k],
+          cx = c % W,
+          cy = (c / W) | 0;
+        for (const [dx, dy] of D4) {
+          const nx = cx + dx,
+            ny = cy + dy;
+          if (!inB(nx, ny)) continue;
+          const n = idx(nx, ny);
+          if (!seen.has(n) && T[n].cr) {
+            seen.add(n);
+            cells.push(n);
+          }
+        }
+      }
+      if (Math.max(...cells.map(c => T[c].cr)) >= CAVE.grace && rnd(S) < CAVE.chance) caveIn(S, cells);
+    });
+  }
+  function caveIn(S, cells) {
+    const T = S.tiles,
+      set = new Set(cells),
+      z = layerOf((cells[0] / W) | 0);
+    const rooms = new Set(cells.map(i => T[i].r).filter(Boolean)),
+      where = rooms.size
+        ? 'the ' + ROOMS[roomById(S, [...rooms][0]).type].name.toLowerCase()
+        : 'the workings';
+    for (const i of cells) {
+      const t = T[i];
+      release(S, i);
+      t.k = 'r';
+      t.h = 1;
+      t.rb = true;
+      t.o = '';
+      t.w = false;
+      t.fu = '';
+      t.fb = false;
+      t.b = '';
+      t.dr = false;
+      t.g = 0;
+      t.cr = 0;
+      t.d = false;
+      t.m = false;
+    }
+    const lost = S.items.filter(it => set.has(it.i)).length;
+    S.items = S.items.filter(it => !set.has(it.i));
+    for (const d of S.dwarves) if (d.bed >= 0 && set.has(d.bed)) d.bed = -1;
+    // whoever was under it
+    const here = who => set.has(idx(Math.round(who.x), Math.round(who.y)));
+    const out = who => {
+      let best = -1,
+        bd = 1e9;
+      for (const i of cells) {
+        const x = i % W,
+          y = (i / W) | 0;
+        for (const [dx, dy] of D8) {
+          const n = idx(x + dx, y + dy);
+          if (inB(x + dx, y + dy) && T[n].k === 'f' && !set.has(n)) {
+            const dd = Math.hypot(x + dx - who.x, y + dy - who.y);
+            if (dd < bd) {
+              bd = dd;
+              best = n;
+            }
+          }
+        }
+      }
+      if (best < 0) best = S.gate[0];
+      who.x = best % W;
+      who.y = (best / W) | 0;
+      who.path = [];
+    };
+    const killed = [];
+    for (const d of S.dwarves.slice()) {
+      if (d.path.some(i => set.has(i))) drop(S, d);
+      if (!here(d)) continue;
+      if (rnd(S) < CAVE.kill) {
+        killed.push(d);
+        continue;
+      }
+      drop(S, d);
+      out(d);
+      d.hurt = S.t || 1;
+    }
+    if (here(S.durin)) out(S.durin);
+    logMsg(
+      S,
+      '💥 Cave-in! The roof came down in ' +
+        where +
+        ' on ' +
+        LAYERS[z].name +
+        ' (' +
+        cells.length +
+        ' tile' +
+        (cells.length > 1 ? 's' : '') +
+        (lost ? ', ' + lost + ' load' + (lost > 1 ? 's' : '') + ' buried' : '') +
+        '). Durin: "A span too wide. Pillars, planner!"'
+    );
+    for (const d of killed) killDwarf(S, d, 'crushed in a cave-in on ' + LAYERS[z].name);
+    for (const d of S.dwarves) addGrudge(S, d, 'The roof came down');
+    S.caveIns = (S.caveIns || 0) + 1;
+  }
+  function killDwarf(S, d, how) {
+    drop(S, d);
+    S.dwarves = S.dwarves.filter(w => w !== d);
+    S.dead.push({ name: d.name, trade: d.trade, day: dayOf(S), how });
+    const first = d.name.split(' ')[0];
+    logMsg(S, '🕯 ' + d.name + ' was ' + how + '.');
+    for (const o of S.dwarves) addGrudge(S, o, 'Mourning ' + first);
+    if (!S.dwarves.length) logMsg(S, '🕯 The Delve is silent. Not one of the crew is left.');
   }
 
   // ── Durin (a piece you move; he prospects once a day) ──
@@ -1455,6 +1939,15 @@
         }
     S.prospectDay = dayOf(S);
     S.durin.act = 'Prospecting';
+    const z = layerOf(cy),
+      dc = S.deep[z];
+    if (dc != null && !S.deepSeen[z] && Math.hypot((dc % W) - cx, ((dc / W) | 0) - cy) <= PROSPECT_R + 2) {
+      S.deepSeen[z] = true;
+      logMsg(
+        S,
+        '🔍 Durin: "Hear that? The stone thins here. This is where the stair goes down." (the deep spot)'
+      );
+    }
     logMsg(
       S,
       ore
@@ -1482,7 +1975,12 @@
       }
     walk(S, S.durin, dt);
     if (!S.durin.path.length && S.durin.act === 'Walking') S.durin.act = 'Watching the work';
-    for (const d of S.dwarves) {
+    S.caveT = (S.caveT || 0) + dt;
+    if (S.caveT >= CAVE.check) {
+      S.caveT -= CAVE.check;
+      roofCheck(S);
+    }
+    for (const d of S.dwarves.slice()) {
       for (const k of ['food', 'ale', 'sleep'])
         if (!(d.job && d.job.type === 'sleep' && k === 'sleep'))
           d.needs[k] = Math.max(0, d.needs[k] - (dt / NEED[k]) * 100);
@@ -1504,21 +2002,24 @@
   }
 
   // ── the Mason's Eye ──────────────────────────────────────────────
-  function masonEye(S) {
+  // judged a layer at a time (z); its named patterns are looked for on every layer
+  function masonEye(S, z) {
+    z = z || 0;
     const T = S.tiles,
-      gate = new Set(S.gate);
+      gate = new Set(S.gate),
+      onZ = i => layerOf((i / W) | 0) === z;
     const floor = [],
       passage = [];
     T.forEach((t, i) => {
-      if (t.k !== 'f') return;
+      if (t.k !== 'f' || !onZ(i)) return;
       floor.push(i);
-      if (!t.r && !gate.has(i)) passage.push(i);
+      if (!t.r && !gate.has(i) && !t.sr) passage.push(i);
     });
     const isPass = (x, y) => {
       if (!inB(x, y)) return false;
       const i = idx(x, y),
         t = T[i];
-      return t.k === 'f' && !t.r && !gate.has(i);
+      return t.k === 'f' && !t.r && !gate.has(i) && !t.sr;
     };
     const marks = { jag: [], blob: [], dead: [] };
     // true lines: corners where a passage turns (a staircase tunnel is all corners)
@@ -1575,6 +2076,7 @@
       wk = 0,
       wkN = 0;
     for (const r of S.rooms) {
+      if (layerOf(r.y0) !== z) continue;
       const w = r.x1 - r.x0 + 1,
         h = r.y1 - r.y0 + 1,
         area = w * h;
@@ -1749,10 +2251,13 @@
     return got;
   }
   // call now and then: names any pattern found for the first time (for Durin to remark on)
-  function notePatterns(S) {
-    const eye = masonEye(S),
-      fresh = [];
-    for (const p of eye.patterns)
+  function notePatterns(S, z) {
+    const eye = masonEye(S, z),
+      fresh = [],
+      all = new Set(eye.patterns);
+    for (let k = 0; k <= S.depth; k++)
+      if (k !== (z || 0)) for (const p of masonEye(S, k).patterns) all.add(p);
+    for (const p of all)
       if (!S.found[p]) {
         S.found[p] = dayOf(S);
         fresh.push(p);
@@ -1763,7 +2268,35 @@
 
   // an older save: the new stock, picks and wounds, and the smith who came with the new rooms
   function migrate(S) {
-    if (!S || S.v >= 2) return S;
+    if (!S || S.v >= 3) return S;
+    if (S.v < 2) migrate2(S);
+    // step 2: the layers below, the quota and the stair, cave-ins and the dead
+    for (const t of S.tiles) Object.assign(t, { cr: t.cr || 0, rb: !!t.rb, sr: t.sr || '' });
+    for (let y = S.tiles.length / W; y < H; y++)
+      for (let x = 0; x < W; x++) S.tiles.push(newTile(y % STRIDE === LH));
+    for (let z = 1; z < LAYERS.length; z++) genLayer(S, z);
+    Object.assign(S, {
+      depth: 0,
+      deep: [],
+      deepSeen: {},
+      links: [],
+      stairs: [],
+      got: {},
+      quotaDone: {},
+      dead: []
+    });
+    S.caveT = 0;
+    for (const k of ORE_ITEMS) if (S.stock[k]) S.got[k] = S.stock[k];
+    for (let z = 0; z < LAYERS.length - 1; z++) placeDeep(S, z);
+    S.v = 3;
+    logMsg(
+      S,
+      '📜 A letter from the Thane: the Delve is to go five layers deep. Durin: "Mind the roofs, planner."'
+    );
+    quotaCheck(S);
+    return S;
+  }
+  function migrate2(S) {
     for (const k in START_STOCK) if (S.stock[k] == null) S.stock[k] = k === 'pick' ? 0 : START_STOCK[k];
     for (const d of S.dwarves) {
       // jobs of the old kinds (brew, cut) are dropped, their stock given back
@@ -1782,7 +2315,6 @@
       logMsg(S, '🔨 ' + nm + ', a smith, comes up the road to the gate. Give him a forge.');
     }
     S.v = 2;
-    return S;
   }
 
   const API = {
@@ -1801,6 +2333,20 @@
     PROSPECT_R,
     RECIPES,
     PICKS,
+    LH,
+    STRIDE,
+    LAYERS,
+    CAVE,
+    layerOf,
+    topOf,
+    quotaOf,
+    quotaMet,
+    deepTiles,
+    deepKnown,
+    stairOf,
+    stairWhy,
+    cutStair,
+    roofDist,
     NO_PICK,
     GREAT_HALL_MIN,
     newGame,

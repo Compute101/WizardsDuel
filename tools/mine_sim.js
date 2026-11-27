@@ -4,7 +4,7 @@ const M = require('../js/mine_engine.js');
 const days = +process.argv[2] || 6,
   seed = +process.argv[3] || 7;
 const S = M.newGame(seed),
-  gy = Math.floor(M.H / 2);
+  gy = Math.floor(M.LH / 2);
 // A main gallery east from the gate, with every room set back from it behind a one-tile doorway (where the
 // script hangs its doors): north, a pillared dining hall, a kitchen, a forge and a tavern, the Great Hall and
 // the barracks behind them; south, four bedrooms and a dormitory, a stockpile, a brewery, the mason's
@@ -66,6 +66,7 @@ for (const p of plan) {
   if (m) planned.push(m[1].split(',').map(v => eval(v.replace(/k/g, '0'))));
 }
 for (let k = 0; k < 4; k++) planned.push([3 + k * 4, gy + 2, 5 + k * 4, gy + 3]);
+const deepCut = {};
 let logged = 0;
 for (let s = 0; s < days * M.DAY; s += 1) {
   for (const p of plan)
@@ -73,6 +74,39 @@ for (let s = 0; s < days * M.DAY; s += 1) {
       const r = p[1]();
       if (!r || r.ok !== false) p.done = 1;
     }
+  // like a player: follow any ore in sight, cut a passage to the deep spot once it's known (or to where
+  // Durin will find it), and the stair down as soon as the quota allows; then the same on the next layer
+  if (s % 30 === 5) {
+    const z = S.depth;
+    S.tiles.forEach((t, i) => {
+      if (t.s && t.k === 'r' && t.o && t.o !== 'soil' && !t.d && !t.sr && M.layerOf((i / M.W) | 0) >= 0) {
+        const x = i % M.W,
+          y = (i / M.W) | 0;
+        if (
+          [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1]
+          ].some(([a, b]) => M.isFloor(S, x + a, y + b))
+        )
+          M.designate(S, 'dig', x, y, x, y);
+      }
+    });
+    const dc = S.deep[z];
+    if (dc != null && !deepCut[z] && (z > 0 || s > M.DAY * 2.5)) {
+      deepCut[z] = 1;
+      const dx = dc % M.W,
+        dy = (dc / M.W) | 0,
+        from = z ? S.links[z - 1][1] : M.idx(3, gy),
+        fx = from % M.W,
+        fy = (from / M.W) | 0;
+      // an L: along the row, then up or down to the spot's side
+      M.designate(S, 'dig', Math.min(fx, dx), fy, Math.max(fx, dx), fy);
+      M.designate(S, 'dig', dx, Math.min(fy, dy + 2), dx, Math.max(fy, dy + 2));
+    }
+    if (!M.stairWhy(S, z) && !M.stairOf(S, z)) M.cutStair(S, z);
+  }
   // a door on every way into a room (the way a player would, before it can earn a second star)
   if (s % 30 === 15)
     for (const r of S.rooms)
@@ -98,6 +132,18 @@ const dug = S.tiles.filter(t => t.k === 'f').length,
 console.log(`day ${M.dayOf(S)}: dug ${dug}, still marked ${left}, items lying ${S.items.length}`);
 console.log('stock', JSON.stringify(S.stock));
 console.log('rooms', S.rooms.map(r => r.type + ':' + M.roomStars(S, r) + '★').join(' '));
+console.log(
+  'depth',
+  S.depth + 1,
+  'quota',
+  M.quotaOf(S, S.depth)
+    .map(q => q.kind + ' ' + q.got + '/' + q.need)
+    .join(', '),
+  'cave-ins',
+  S.caveIns || 0,
+  'dead',
+  S.dead.map(d => d.name).join(', ') || 'none'
+);
 console.log(
   'doors',
   S.tiles.filter(t => t.dr).length,

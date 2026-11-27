@@ -480,4 +480,49 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
     *"No taverns should have doors."* The tavern hall is `open` too, a taproom.
     The sim's Great Hall was only 40 tiles (10 × 4), the minimum, so it never earned a second star; there was
     room for 10 × 6 (rows 1–6), so it's 60 tiles now and reaches 2★ on seeds 7 and 9 in 10 days.
-- **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.
+
+## As built (step 2: the layers, the quota and the stair, cave-ins)
+
+- **Five layers in one grid:** each layer is 36 × 26 (`LH`), stacked in one tall grid with a row of bedrock
+  between layers (`STRIDE` 27; bedrock is tile kind `x`, never dug, never shown), so a tile's x and y mean
+  the same everywhere and a layer is a band of rows (`layerOf`, `topOf`). All five are made from the seed at
+  the start (`genLayer`, from `LAYERS[z].gen`); you see one at a time (▲ ▼ by the map, or [ ]; the layer's
+  name over the map). Older saves get layers 2–5 appended below (`migrate`, v3), so nothing on the first
+  layer moves.
+- **`LAYERS`:** the Topstone (granite, roof 3, copper, tin, coal, loam; quota copper 8, tin 6), the
+  Ironroots (basalt, roof 4, harder, iron, coal, limestone, a little loam; iron 10), the Glimmerdark
+  (quartz-shot, roof 2, silver, gems, galestone; silver 6, gems 3), the Emberdeep (hot stone, roof 2, gold,
+  coal; gold 6) and the Heartstone (living rock, roof 3, heartsilver, a little gold; heartsilver 3). Deeper
+  is harder rock (`hard`). Each has its own stone colours on the map (`ROCKS` in `js/mine.js`).
+- **The quota:** ore carried into the stock counts, all told (`S.got`, `addStock`), so the smith using
+  copper doesn't set you back. The Quota tab shows the deepest layer's bars.
+- **The deep spot and the stair:** each layer but the last has a 3 × 3 deep spot of undug rock
+  (`placeDeep`, `S.deep`). It's found when Durin prospects within 7 tiles of it, or anyone digs beside it
+  (`deepKnown`), and then shows on the map as a pulsing dashed square. With the quota met, 🪜 Cut the stair
+  down (Quota tab; `cutStair`, `stairWhy` says what's missing) marks the nine tiles; once the miners have
+  dug them all (`stairCheck`), the landing below is carved out, the two middles are linked (`S.links`) and
+  the next layer opens (`S.depth`). Paths and hauls run through stairs (`distMap`, a stair is
+  `STAIR_STEPS` 6 tiles of walking), so the crew still go up to eat, drink and sleep, and long hauls start
+  to tell. Stair tiles take no rooms, building or marks.
+- **Cave-ins:** the roof holds `roof` tiles (king's moves) from anything that isn't floor: rock, a pillar, a
+  wall, the stair, bedrock (`roofDist`). Floor further than that is unsound. Every 10 s (`CAVE.check`) the
+  roof is looked over: unsound floor shows red hairline cracks that darken as its timer runs (`t.cr`), and
+  a span unsound for half a day (`CAVE.grace`) comes down 8% of each look (`CAVE.chance`), never before
+  three quarters of the first day. It becomes rubble (`t.rb`: quick to dig, all rough stone; dig it out and
+  the span is open again), burying what lay there (items, furniture, a door, a crop); anyone under it dies
+  30% of the time (`CAVE.kill`), else is hurt and thrown clear; everyone holds a grudge ("The roof came
+  down"). A 9 × 9 hall comes down at its middle in about a day; five pillars hold it. The long, narrow
+  halls of the sim never do (a hall six wide on the Topstone is sound however long).
+- **The fallen and the Wall of Remembrance:** a dwarf who dies is gone for good (`killDwarf`, `S.dead`,
+  listed under 🕯 The fallen in the Ledger); every other dwarf mourns ("Mourning X", a grudge). The **Wall
+  of Remembrance** (`ROOMS.memorial`, one carved plaque, open) is where a mourner goes to carve a word for
+  the dead (`mourn`, 5 s), striking that grudge out. No new dwarves come yet (renown and migrants are
+  step 5).
+- **The Mason's Eye** judges the layer on screen (`masonEye(S, z)`); named patterns count on any layer.
+- **Not built (later steps):** water (the Ironroots' stream, floods, channels) and magma, shoring with timber,
+  the Thane's Assay of each layer, the Mountain's Heart.
+- **Sim** (`tools/mine_sim.js` now follows any ore it can see, cuts a passage to the deep spot, and cuts the
+  stair when it can): 14 days, seed 7 reaches layer 3 with silver met; seeds 1–9 reach layers 1–3. It
+  stalls at iron on layer 2 on most seeds: it only digs to the deep spot and follows ore it already sees, so
+  it rarely finds a vein (a player would explore). No cave-ins in its halls.
+- **Next (step 3):** the elementals.

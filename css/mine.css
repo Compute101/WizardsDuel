@@ -507,3 +507,36 @@
     font-size: 11px;
   }
 }
+
+/* the layer on screen: ▲ / ▼ under the zoom buttons, and its name over the map's top-left */
+.mn-layers {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+.mn-layers[hidden] {
+  display: none;
+}
+.mn-lz {
+  font-size: 16px;
+  color: #f0d890;
+  background: rgba(12, 10, 14, 0.78);
+  border: 1px solid #6b5630;
+  border-radius: 6px;
+  min-width: 30px;
+  text-align: center;
+}
+.mn-lzname {
+  position: absolute;
+  left: 56px;
+  top: 10px;
+  font-size: 13px;
+  color: #f0d890;
+  background: rgba(12, 10, 14, 0.7);
+  border: 1px solid #6b5630;
+  border-radius: 6px;
+  padding: 2px 8px;
+  pointer-events: none;
+}

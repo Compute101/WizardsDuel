@@ -9,7 +9,7 @@
   const $ = id => document.getElementById(id);
   const SAVE = 'wd-mine-save';
   const W = M.W,
-    H = M.H;
+    LH = M.LH; // one layer's rows; the layers are stacked in one tall grid, and the map shows one at a time
 
   let S = null,
     raf = 0,
@@ -19,7 +19,27 @@
     eyeAt = 0,
     saveAt = 0,
     logSeen = 0;
-  const ui = { tool: 'look', sel: null, tab: 'crew', overlay: false, menu: null, drag: null };
+  const ui = { tool: 'look', sel: null, tab: 'crew', overlay: false, menu: null, drag: null, lz: 0 };
+  const Y0 = () => M.topOf(ui.lz); // the first row of the layer on screen
+  const onView = y => M.layerOf(Math.round(y)) === ui.lz;
+  function showLayer(z) {
+    z = Math.max(0, Math.min(S.depth, z));
+    if (z === ui.lz) return;
+    ui.lz = z;
+    eye = null;
+    eyeAt = 0;
+    renderLayer();
+    renderSide(true);
+  }
+  function renderLayer() {
+    const L = M.LAYERS[ui.lz];
+    $('mn-lz').textContent = ui.lz + 1;
+    $('mn-lz').title = L.name + ' (' + L.stone + ')';
+    $('mn-up').disabled = ui.lz === 0;
+    $('mn-down').disabled = ui.lz >= S.depth;
+    $('mn-lzname').textContent = 'Layer ' + (ui.lz + 1) + ' · ' + L.name;
+    $('mn-layers').hidden = !S.depth;
+  }
   const view = { zoom: 1, ox: 0, oy: 0 };
   let cv,
     cx,
@@ -59,7 +79,7 @@
       'pillar',
       '🏛',
       'Pillar',
-      'Drag over rock to keep it as pillars, or over dug floor to have the mason build one (a dressed block each).'
+      'Drag over rock to keep it as pillars, or over dug floor to have the mason build one (a dressed block each). Pillars hold the roof up: on the Topstone no floor may lie more than 3 tiles from rock or a pillar.'
     ],
     [
       'door',
@@ -87,6 +107,8 @@
       'A cot for every 4 tiles. Hard rock and ore sometimes hurt a dwarf, who works at half pace until mended: a quarter of a day in a cot, a day and a half walking it off.',
     barracks:
       'A weapon rack for every 4 tiles. Nothing to guard against yet: the warriors who stand here come with the earth elementals.',
+    memorial:
+      'A carved plaque. When a dwarf falls, the rest mourn: here they carve a word for the dead and are the easier for it. Needs no door.',
     greathall:
       'The pride of the Delve: one only, at least 40 tiles (60 for its second star), a table for every 6. The crew eat here before anywhere else, and every meal in it strikes out a grudge.'
   };
@@ -101,8 +123,16 @@
     ['barley', '🌾', 'Cave barley'],
     ['meal', '🍲', 'Meals (cooked at the kitchen; eaten before raw deepcaps)'],
     ['bronze', '🟫', 'Bronze (smelted at the forge)'],
-    ['pick', '⛏', 'Bronze picks in the stock (forged at the forge)']
+    ['pick', '⛏', 'Bronze picks in the stock (forged at the forge)'],
+    ['iron', '🟤', 'Iron ore'],
+    ['limestone', '⬜', 'Limestone'],
+    ['silver', '🥈', 'Silver ore'],
+    ['gems', '💎', 'Gems'],
+    ['galestone', '🌀', 'Galestone (air-touched ore)'],
+    ['gold', '🟡', 'Gold ore'],
+    ['heartsilver', '✨', 'Heartsilver']
   ];
+  const STOCK_ALWAYS = new Set(['food', 'ale', 'stone', 'block']); // the rest show once there's some
 
   // ── Save ──
   function save() {
@@ -113,7 +143,7 @@
   function loadSave() {
     try {
       const s = JSON.parse(localStorage.getItem(SAVE) || 'null');
-      return s && (s.v === 1 || s.v === 2) ? M.migrate(s) : null;
+      return s && s.v >= 1 && s.v <= 3 ? M.migrate(s) : null;
     } catch (e) {
       return null;
     }
@@ -138,7 +168,9 @@
     <div class="mn-main">
       <div class="mn-map" id="mn-map"><canvas id="mn-cv"></canvas>
         <div class="mn-zoom"><button class="mn-btn" id="mn-zin" type="button">+</button><button class="mn-btn" id="mn-zout" type="button">−</button>
-          <button class="mn-btn" id="mn-eye" type="button" title="Show what the Mason's Eye dislikes">👁</button></div>
+          <button class="mn-btn" id="mn-eye" type="button" title="Show what the Mason's Eye dislikes">👁</button>
+          <span class="mn-layers" id="mn-layers" hidden><button class="mn-btn" id="mn-up" type="button" title="The layer above">▲</button><span class="mn-lz" id="mn-lz">1</span><button class="mn-btn" id="mn-down" type="button" title="The layer below">▼</button></span></div>
+        <div class="mn-lzname" id="mn-lzname"></div>
         <div class="mn-tools" id="mn-tools"></div>
         <div class="mn-toast" id="mn-toast" title="Tap to dismiss"></div>
         <div class="mn-hint" id="mn-hint"></div>
@@ -169,6 +201,8 @@
     $('mn-zin').onclick = () => zoomBy(1.4);
     $('mn-zout').onclick = () => zoomBy(1 / 1.4);
     $('mn-toast').onclick = dismissToast;
+    $('mn-up').onclick = () => showLayer(ui.lz - 1);
+    $('mn-down').onclick = () => showLayer(ui.lz + 1);
     $('mn-eye').onclick = () => {
       ui.overlay = !ui.overlay;
       $('mn-eye').classList.toggle('on', ui.overlay);
@@ -205,7 +239,9 @@
         ui.sel = null;
         renderTools();
         renderSide(true);
-      } else {
+      } else if (e.key === '[' || e.key === 'PageUp') showLayer(ui.lz - 1);
+      else if (e.key === ']' || e.key === 'PageDown') showLayer(ui.lz + 1);
+      else {
         const k = {
           d: 'dig',
           p: 'pillar',
@@ -252,9 +288,11 @@
     ui.sel = null;
     ui.tool = 'look';
     ui.menu = null;
+    ui.lz = 0;
     eye = null;
     if (fresh) save();
     fitCanvas(true);
+    renderLayer();
     renderTools();
     renderSpeed();
     renderSide(true);
@@ -274,8 +312,9 @@
     if (speed && $('mn-modal').hidden) M.tick(S, real * speed);
     if (now - eyeAt > 1500) {
       eyeAt = now;
-      const r = M.notePatterns(S);
+      const r = M.notePatterns(S, ui.lz);
       eye = r.eye;
+      if ($('mn-layers').hidden === !!S.depth) renderLayer();
     }
     if (now - saveAt > 5000) {
       saveAt = now;
@@ -310,7 +349,9 @@
   function renderTop() {
     const c = M.clockOf(S),
       s = `Day ${M.dayOf(S)} · ${String(c.h).padStart(2, '0')}:${String(c.m).padStart(2, '0')}`;
-    const st = STOCK_ICON.map(([k, i, n]) => `<span title="${n}">${i} ${S.stock[k] || 0}</span>`).join('');
+    const st = STOCK_ICON.filter(([k]) => STOCK_ALWAYS.has(k) || S.stock[k] > 0)
+      .map(([k, i, n]) => `<span title="${n}">${i} ${S.stock[k] || 0}</span>`)
+      .join('');
     const key = s + st;
     if (key === topLast) return;
     topLast = key;
@@ -450,10 +491,13 @@
       tabs = [
         ['crew', 'Crew'],
         ['ledger', 'Ledger'],
+        ['quota', 'Quota'],
         ['eye', "Mason's Eye"],
         ['log', 'Log']
       ];
-    const body = { crew: crewHtml, ledger: ledgerHtml, eye: eyeHtml, log: logHtml }[ui.tab]();
+    const body = { crew: crewHtml, ledger: ledgerHtml, quota: quotaHtml, eye: eyeHtml, log: logHtml }[
+      ui.tab
+    ]();
     const key = sel + '|' + ui.tab + '|' + body;
     if (!force && key === sideLast) return;
     sideLast = key;
@@ -481,11 +525,32 @@
         b =>
           (b.onclick = () => {
             ui.sel = { kind: 'dwarf', id: +b.dataset.dw };
+            const d = S.dwarves.find(w => w.id === ui.sel.id);
+            if (d) showLayer(M.layerOf(Math.round(d.y)));
             renderSide(true);
           })
       );
     const bk = $('mn-book');
     if (bk) bk.onclick = delveBook;
+    const sc = $('mn-stair');
+    if (sc)
+      sc.onclick = () => {
+        const r = M.cutStair(S, S.depth);
+        if (!r.ok) say(r.why);
+        renderSide(true);
+      };
+    const gd = $('mn-godeep');
+    if (gd)
+      gd.onclick = () => {
+        showLayer(+gd.dataset.z);
+        const c0 = S.deep[+gd.dataset.z];
+        if (c0 != null) {
+          const s2 = ts();
+          view.ox = cw / 2 - ((c0 % W) + 0.5) * s2;
+          view.oy = ch / 2 - (((c0 / W) | 0) - Y0() + 0.5) * s2;
+          clampView();
+        }
+      };
     const pr = $('mn-prospect');
     if (pr)
       pr.onclick = () => {
@@ -544,7 +609,8 @@
       const hurt = d.hurt
         ? '<p class="mn-note mn-warn">🩹 Hurt: working at half pace until mended (an infirmary cot heals quickest).</p>'
         : '';
-      return `${x}<b>${d.name}</b> <small>${T.icon} ${M.levelOf(d).name} ${T.name.toLowerCase()}</small><p>${d.act}${d.act.endsWith('…') ? '' : '.'} Mood: ${mood}.</p>${kit}${hurt}
+      const where = S.depth ? ' <small>(layer ' + (M.layerOf(Math.round(d.y)) + 1) + ')</small>' : '';
+      return `${x}<b>${d.name}</b> <small>${T.icon} ${M.levelOf(d).name} ${T.name.toLowerCase()}</small>${where}<p>${d.act}${d.act.endsWith('…') ? '' : '.'} Mood: ${mood}.</p>${kit}${hurt}
       <div class="mn-needs"><span>🍄 Food</span>${bar(d.needs.food, needCol(d.needs.food))}<span>🍺 Ale</span>${bar(d.needs.ale, needCol(d.needs.ale))}<span>💤 Sleep</span>${bar(d.needs.sleep, needCol(d.needs.sleep))}</div>
       ${g ? '<p class="mn-note">📕 ' + d.grudges.map(x => x.why).join('; ') + '</p>' : ''}`;
     }
@@ -600,12 +666,28 @@
             ? (t.p ? 'A built pillar' : 'A built wall') + ' (dig it out to undo; you get the stone back)'
             : t.p
               ? 'A pillar' + (t.w ? ', smoothed' : '')
-              : (t.o === 'soil'
-                  ? 'Loam (soft; leaves soil to farm)'
-                  : t.o
-                    ? M.ORES[t.o].name[0].toUpperCase() + M.ORES[t.o].name.slice(1) + ' ore'
-                    : ['', 'Soft', 'Firm', 'Hard'][t.h] + ' rock') + (t.w ? ', smoothed' : '');
-      return `${x}<b>${what}</b>${t.d ? '<p class="mn-note">Marked for digging.</p>' : ''}${t.m ? '<p class="mn-note">Marked for smoothing.</p>' : ''}${t.b ? '<p class="mn-note">The mason is to build a ' + t.b + ' here (a dressed block).</p>' : ''}`;
+              : t.rb
+                ? 'Rubble'
+                : (t.o === 'soil'
+                    ? 'Loam (soft; leaves soil to farm)'
+                    : t.o
+                      ? M.ORES[t.o].name[0].toUpperCase() + M.ORES[t.o].name.slice(1) + ' ore'
+                      : ['', 'Soft', 'Firm', 'Hard'][t.h] + ' rock') + (t.w ? ', smoothed' : '');
+      const roof = M.LAYERS[M.layerOf(s.y)].roof;
+      const extra =
+        (t.sr ? '<p class="mn-note">🪜 The stair ' + (t.sr === 'down' ? 'down' : 'up') + '.</p>' : '') +
+        (t.rb
+          ? '<p class="mn-note">Rubble from a cave-in: quick to dig, all rough stone. Dig it out and the roof is open again.</p>'
+          : '') +
+        (t.cr && t.k === 'f'
+          ? `<p class="mn-note mn-bad">⚠ Unsound roof: nothing holds it within ${roof} tiles. Keep rock, or build a pillar, nearer, or it will come down.</p>`
+          : '') +
+        (S.deep[M.layerOf(s.y)] != null &&
+        M.deepTiles(S, M.layerOf(s.y)).includes(M.idx(s.x, s.y)) &&
+        M.deepKnown(S, M.layerOf(s.y))
+          ? '<p class="mn-note">The deep spot: the stair down goes here.</p>'
+          : '');
+      return `${x}<b>${what}</b>${extra}${t.d ? '<p class="mn-note">Marked for digging.</p>' : ''}${t.m ? '<p class="mn-note">Marked for smoothing.</p>' : ''}${t.b ? '<p class="mn-note">The mason is to build a ' + t.b + ' here (a dressed block).</p>' : ''}`;
     }
     return '';
   }
@@ -616,7 +698,7 @@
         .map(d => {
           const T = M.TRADES[d.trade],
             g = d.grudges.length;
-          return `<button class="mn-item${ui.sel && ui.sel.id === d.id ? ' on' : ''}" data-dw="${d.id}" type="button">${T.icon} <b>${d.name}</b> <small>${M.levelOf(d).name} ${T.name.toLowerCase()}</small><br><small>${d.act}${g ? ' · 📕' + g : ''}</small></button>`;
+          return `<button class="mn-item${ui.sel && ui.sel.id === d.id ? ' on' : ''}" data-dw="${d.id}" type="button">${T.icon} <b>${d.name}</b> <small>${M.levelOf(d).name} ${T.name.toLowerCase()}</small><br><small>${S.depth ? 'L' + (M.layerOf(Math.round(d.y)) + 1) + ' · ' : ''}${d.act}${g ? ' · 📕' + g : ''}</small></button>`;
         })
         .join('') +
       '</div>' +
@@ -636,8 +718,63 @@
       `<p class="mn-note">Durin's Ledger of Grudges. ${M.GRUMBLE} open grudges and a dwarf grumbles (works slowly); ${M.DOWN_TOOLS} and they down tools. A grudge fades after 3 days, or is struck out by a good meal in a fine hall or a night in a fine bedroom.</p>` +
       (rows.length
         ? '<ul class="mn-ledger">' + rows.join('') + '</ul>'
-        : '<p>The Ledger is clean. Long may it last.</p>')
+        : '<p>The Ledger is clean. Long may it last.</p>') +
+      (S.dead.length
+        ? '<p><b>🕯 The fallen</b></p><ul class="mn-ledger">' +
+          S.dead
+            .map(
+              f =>
+                `<li><b>${f.name}</b>, ${M.TRADES[f.trade].name.toLowerCase()}: ${f.how} <small>(day ${f.day})</small></li>`
+            )
+            .join('') +
+          '</ul>' +
+          (S.tiles.some(t => t.fu === 'plaque' && t.fb)
+            ? ''
+            : '<p class="mn-note">A Wall of Remembrance would ease the mourning.</p>')
+        : '')
     );
+  }
+  // the Thane's quota for the deepest layer, the deep spot and the stair down; then the layers so far
+  function quotaHtml() {
+    const z = S.depth,
+      L = M.LAYERS[z],
+      last = z >= M.LAYERS.length - 1;
+    const bars = M.quotaOf(S, z)
+      .map(q => {
+        const ic = (STOCK_ICON.find(r => r[0] === q.kind) || [0, ''])[1];
+        return `<span>${ic} ${q.kind}</span><span>${bar((q.got / q.need) * 100, q.got >= q.need ? '#7cc060' : '#e2b84c')} <small>${q.got} / ${q.need}</small></span>`;
+      })
+      .join('');
+    const st = M.stairOf(S, z),
+      why = M.stairWhy(S, z);
+    let stair = '';
+    if (last)
+      stair = `<p class="mn-note">${M.quotaMet(S, z) ? "The Mountain's Heart lies below. That descent comes later." : "This is the deepest layer. Below it lies the Mountain's Heart."}</p>`;
+    else if (st && !st.done) {
+      const dug = M.deepTiles(S, z).filter(i => S.tiles[i].k === 'f').length;
+      stair = `<p>🪜 The stair is being cut: ${dug} / 9.</p>`;
+    } else if (!st)
+      stair =
+        `<button class="mn-btn" id="mn-stair" type="button"${why ? ' disabled' : ''}>🪜 Cut the stair down</button>` +
+        (why
+          ? `<p class="mn-note">${why}</p>`
+          : '<p class="mn-note">The miners will dig a 3 × 3 stair at the deep spot.</p>');
+    const deep = last
+      ? ''
+      : M.deepKnown(S, z)
+        ? `<p class="mn-note">The deep spot is found. <button class="mn-btn sm" id="mn-godeep" data-z="${z}" type="button">Show me</button></p>`
+        : `<p class="mn-note">Somewhere on this layer the stone thins: that's the deep spot, where the stair must go. Durin's prospecting finds it if he's near, or a miner digging beside it.</p>`;
+    const layers = M.LAYERS.slice(0, z + 1)
+      .map(
+        (l, k) =>
+          `<li><b>${k + 1}. ${l.name}</b> <small>${l.stone}; the roof holds ${l.roof} tiles from rock or a pillar (an open span of ${l.roof * 2})</small></li>`
+      )
+      .join('');
+    return `<p><b>Layer ${z + 1}: ${L.name}</b></p>
+    <p class="mn-note">The Thane's quota: ore carried to the stockpile. Meet it to cut the stair down.</p>
+    <div class="mn-needs">${bars}</div>${deep}${stair}
+    <p><b>The layers so far</b></p><ul class="mn-ledger">${layers}</ul>
+    <p class="mn-note">Cave-ins: a roof left open wider than its stone can span cracks (red hairlines), and after a while comes down, burying what's under it. Pillars, walls or rock left standing hold it.</p>`;
   }
   function eyeHtml() {
     const e = eye || M.masonEye(S);
@@ -700,12 +837,14 @@
       <li><b>Stars</b>: a room earns its second star once it's furnished, big enough and has a door on every way in (wall up any others); its third once its walls are smoothed. Tap a room to see what it lacks: ways in with no door show in red. Stockpiles, farms, the workshops (mason's workshop, brewery, kitchen and forge) and the tavern, a taproom, need no door.</li>
       <li><b>The mason's workshop comes first</b>: its bench is roughed out of rough stone, and there the mason cuts rough stone into <b>dressed blocks</b> (🧱 in the stock). Every bed, table, still, wall, pillar and door takes a block, and he cuts only as many as your building needs.</li>
       <li><b>The trades</b>: the farmer and brewer cook meals at a kitchen's hearth; the smith smelts copper, tin and coal into bronze at a forge's anvil and forges picks, for the old iron ones wear out. Hard rock sometimes hurts a dwarf: an infirmary mends them.</li>
+      <li><b>Mind the roof</b>: each stone spans only so far. Floor more than 3 tiles from rock, a wall or a pillar (on the Topstone) is unsound: red hairline cracks show, and after a while it comes down. Rubble is quick to dig out, but anyone under it may die, and the crew mourn. A Wall of Remembrance eases that.</li>
+      <li><b>Going deeper</b>: the Thane sets each layer a quota of ore (the Quota tab). Meet it, find the layer's deep spot (Durin's prospecting, or digging nearby), and cut the stair down. Five layers, each harder stone. ▲ ▼ by the map, or [ and ], change the layer you see.</li>
       <li><b>✨ Smooth</b>: the mason smooths walls and pillars. Finer rooms, and worked stone will keep elementals out.</li>
       <li><b>Durin</b>: tap him, then tap floor to send him there; he prospects the stone round him once a day.</li>
       <li><b>The Ledger</b>: hungry, dry or floor-sleeping dwarves hold grudges. Too many and they slow down, then stop.</li>
       <li><b>The Mason's Eye</b>: Durin scores the look of the Delve, and names fine patterns when he sees them. The Delve-book (on the Mason's Eye tab) shows what each one is.</li>
     </ul>
-    <p class="mn-note">Space pauses. Keys: D dig, B build menu (W wall, P pillar, O door), S smooth, R room menu, C clear, L look. This is the first layer only: cave-ins, quotas, the stair down and the elementals come next.</p>
+    <p class="mn-note">Space pauses. Keys: D dig, B build menu (W wall, P pillar, O door), S smooth, R room menu, C clear, L look. The earth elementals, and the Mountain's Heart below the fifth layer, come next.</p>
     <div class="mn-row"><button class="mn-btn" id="mn-ok" type="button">To work</button></div>`,
       () => {
         $('mn-ok').onclick = closeModal;
@@ -825,13 +964,13 @@
     cv.height = h * dpr;
     cv.style.width = w + 'px';
     cv.style.height = h + 'px';
-    base = Math.min(w / W, (h - 8) / H);
+    base = Math.min(w / W, (h - 8) / LH);
     if (reset) {
       view.zoom = Math.max(1, Math.min(4, MIN_TILE / base));
       const s = ts(),
-        gy = Math.floor(H / 2);
+        gy = Math.floor(LH / 2);
       view.ox = (w - W * s) / 2;
-      view.oy = (h - H * s) / 2;
+      view.oy = (h - LH * s) / 2;
       if (view.zoom > 1) {
         view.ox = 20;
         view.oy = h / 2 - gy * s;
@@ -843,7 +982,7 @@
   function clampView() {
     const s = ts(),
       mw = W * s,
-      mh = H * s;
+      mh = LH * s;
     view.ox = mw < cw ? (cw - mw) / 2 : Math.min(40, Math.max(cw - mw - 40, view.ox));
     view.oy = mh < ch ? (ch - mh) / 2 : Math.min(40, Math.max(ch - mh - 40, view.oy));
   }
@@ -859,7 +998,11 @@
     view.zoom = z;
     clampView();
   }
-  const toTile = (px, py) => ({ x: Math.floor((px - view.ox) / ts()), y: Math.floor((py - view.oy) / ts()) });
+  // screen to tile, on the layer on screen (a drag can't run off it into another layer)
+  const toTile = (px, py) => ({
+    x: Math.floor((px - view.ox) / ts()),
+    y: Y0() + Math.max(0, Math.min(LH - 1, Math.floor((py - view.oy) / ts())))
+  });
 
   const pts = new Map();
   let pinch = null;
@@ -951,7 +1094,7 @@
   function tap(x, y, px, py) {
     if (!M.inB(x, y)) return;
     const fx = (px - view.ox) / ts() - 0.5,
-      fy = (py - view.oy) / ts() - 0.5;
+      fy = (py - view.oy) / ts() - 0.5 + Y0();
     // Durin selected: a tap on floor sends him
     if (
       ui.sel &&
@@ -962,7 +1105,7 @@
       if (!M.durinMove(S, x, y)) say('Durin can’t get there.');
       return;
     }
-    if (Math.hypot(fx - S.durin.x, fy - S.durin.y) < 0.75) {
+    if (onView(S.durin.y) && Math.hypot(fx - S.durin.x, fy - S.durin.y) < 0.75) {
       ui.sel = { kind: 'durin' };
       renderSide(true);
       return;
@@ -970,6 +1113,7 @@
     let best = null,
       bd = 0.7;
     for (const d of S.dwarves) {
+      if (!onView(d.y)) continue;
       const dd = Math.hypot(fx - d.x, fy - d.y);
       if (dd < bd) {
         bd = dd;
@@ -997,8 +1141,31 @@
     h = Math.imul(h ^ (h >>> 13), 1274126177);
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   };
-  const ROCK = ['', '#6e6056', '#5a5359', '#46414b'],
-    ROCK_W = ['', '#8d7d70', '#787078', '#625b68'];
+  // each layer's stone, soft / firm / hard, and smoothed: granite, basalt, quartz-shot, hot stone, living rock
+  const ROCKS = [
+    [
+      ['', '#6e6056', '#5a5359', '#46414b'],
+      ['', '#8d7d70', '#787078', '#625b68']
+    ],
+    [
+      ['', '#4e535e', '#41454f', '#33363f'],
+      ['', '#6c727e', '#5e6470', '#4f5460']
+    ],
+    [
+      ['', '#8a8496', '#787286', '#666076'],
+      ['', '#aaa4b6', '#9a94a8', '#888298']
+    ],
+    [
+      ['', '#7a4e3e', '#6a4032', '#5a3428'],
+      ['', '#9a6c5a', '#8a5e4c', '#7a5040']
+    ],
+    [
+      ['', '#3e5652', '#344a48', '#2a3e40'],
+      ['', '#5c7672', '#506a66', '#445e5c']
+    ]
+  ];
+  let ROCK = ROCKS[0][0],
+    ROCK_W = ROCKS[0][1];
   let durinImg = null;
   function draw() {
     const c = cx,
@@ -1007,10 +1174,12 @@
     c.fillStyle = '#08070a';
     c.fillRect(0, 0, cw, ch);
     c.save();
-    c.translate(view.ox, view.oy);
+    const y0 = Y0();
+    c.translate(view.ox, view.oy - y0 * s);
+    [ROCK, ROCK_W] = ROCKS[ui.lz] || ROCKS[0];
     const T = S.tiles,
       gate = new Set(S.gate);
-    for (let y = 0; y < H; y++)
+    for (let y = y0; y < y0 + LH; y++)
       for (let x = 0; x < W; x++) {
         const t = T[M.idx(x, y)],
           X = x * s,
@@ -1050,7 +1219,25 @@
             c.fillStyle = '#5a4028';
             c.fillRect(X, Y, s + 0.5, s + 0.5);
           }
-          if (!t.w)
+          if (t.rb) {
+            // cave-in rubble: a heap of broken stone
+            c.fillStyle = '#3a3430';
+            c.fillRect(X, Y, s + 0.5, s + 0.5);
+            for (let k = 0; k < 6; k++) {
+              c.fillStyle = k % 2 ? ROCK[1] : ROCK[2];
+              const rx = X + (0.1 + hash(x, y, k) * 0.7) * s,
+                ry = Y + (0.1 + hash(x, y, k + 7) * 0.7) * s,
+                rs = s * (0.18 + hash(y, x, k) * 0.14);
+              c.beginPath();
+              c.moveTo(rx, ry + rs * 0.5);
+              c.lineTo(rx + rs * 0.4, ry);
+              c.lineTo(rx + rs, ry + rs * 0.3);
+              c.lineTo(rx + rs * 0.8, ry + rs);
+              c.lineTo(rx + rs * 0.1, ry + rs);
+              c.closePath();
+              c.fill();
+            }
+          } else if (!t.w)
             for (let k = 0; k < 3; k++) {
               c.fillStyle = 'rgba(0,0,0,.18)';
               c.fillRect(X + hash(x, y, k) * s * 0.85, Y + hash(x, y, k + 5) * s * 0.85, s * 0.1, s * 0.1);
@@ -1129,20 +1316,52 @@
             c.stroke();
           }
         }
+        if (t.sr && t.k === 'f') drawStair(c, t, X, Y, s, x, y);
+        if (t.cr && t.k === 'f') drawCrack(c, t, X, Y, s, x, y);
         drawMarks(c, t, X, Y, s);
         if (t.fu) drawFurn(c, t, X, Y, s);
         if (t.dr) drawDoor(c, X, Y, s, x, y, 1);
         if (t.g) drawCrop(c, t, X, Y, s, x, y);
       }
     // daylight at the gate
-    const gy = Math.floor(H / 2);
-    const dl = c.createLinearGradient(0, 0, s * 3, 0);
-    dl.addColorStop(0, 'rgba(255,240,190,.35)');
-    dl.addColorStop(1, 'rgba(255,240,190,0)');
-    c.fillStyle = dl;
-    c.fillRect(0, (gy - 1) * s, s * 3, s * 2);
+    if (ui.lz === 0) {
+      const gy = Math.floor(LH / 2);
+      const dl = c.createLinearGradient(0, 0, s * 3, 0);
+      dl.addColorStop(0, 'rgba(255,240,190,.35)');
+      dl.addColorStop(1, 'rgba(255,240,190,0)');
+      c.fillStyle = dl;
+      c.fillRect(0, (gy - 1) * s, s * 3, s * 2);
+    }
+    // the deep spot, once found and until the stair is marked there
+    if (ui.lz < M.LAYERS.length - 1 && M.deepKnown(S, ui.lz) && !M.stairOf(S, ui.lz)) {
+      const c0 = S.deep[ui.lz],
+        X = ((c0 % W) - 1) * s,
+        Y = (((c0 / W) | 0) - 1) * s,
+        pulse = 0.55 + 0.35 * Math.sin(performance.now() / 400);
+      c.save();
+      c.setLineDash([s * 0.25, s * 0.15]);
+      c.strokeStyle = `rgba(255,220,120,${pulse})`;
+      c.lineWidth = Math.max(1.5, s * 0.08);
+      c.strokeRect(X + 2, Y + 2, s * 3 - 4, s * 3 - 4);
+      c.setLineDash([]);
+      c.fillStyle = `rgba(255,220,120,${pulse})`;
+      c.beginPath();
+      c.moveTo(X + s * 1.5, Y + s * 2.05);
+      c.lineTo(X + s * 1.15, Y + s * 1.55);
+      c.lineTo(X + s * 1.85, Y + s * 1.55);
+      c.closePath();
+      c.fill();
+      if (s >= 14) {
+        c.font = `bold ${Math.max(9, Math.floor(s * 0.36))}px Georgia,serif`;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText('deep spot', X + s * 1.5, Y + s * 0.9);
+      }
+      c.restore();
+    }
     // rooms: a tint and a border, the name on top
     for (const r of S.rooms) {
+      if (M.layerOf(r.y0) !== ui.lz) continue;
       const R = M.ROOMS[r.type],
         X = r.x0 * s,
         Y = r.y0 * s,
@@ -1198,6 +1417,7 @@
     for (const it of S.items) {
       const x = it.i % W,
         y = (it.i / W) | 0;
+      if (!onView(y)) continue;
       drawItem(
         c,
         it.kind,
@@ -1231,8 +1451,8 @@
       }
     }
     // the crew and Durin
-    for (const d of S.dwarves) drawDwarf(c, d, s);
-    drawDurin(c, s);
+    for (const d of S.dwarves) if (onView(d.y)) drawDwarf(c, d, s);
+    if (onView(S.durin.y)) drawDurin(c, s);
     // the rectangle being dragged
     const g = ui.drag;
     if (g && g.mark) {
@@ -1266,6 +1486,59 @@
     c.restore();
   }
   // digging (gold hatching), smoothing (blue dashes) and pillars kept in the dark (a dashed ring)
+  // a stair: steps cut down (or up) through the stone, an arrow in the middle one
+  function drawStair(c, t, X, Y, s, x, y) {
+    c.fillStyle = t.sr === 'down' ? '#5a5048' : '#9a8c7a';
+    c.fillRect(X, Y, s + 0.5, s + 0.5);
+    c.strokeStyle = 'rgba(20,16,12,.55)';
+    c.lineWidth = Math.max(1, s * 0.05);
+    c.beginPath();
+    for (let k = 1; k < 4; k++) {
+      c.moveTo(X, Y + (s * k) / 4);
+      c.lineTo(X + s, Y + (s * k) / 4);
+    }
+    c.stroke();
+    const st = S.stairs.find(q => {
+      const lo = q.c + (t.sr === 'up' ? M.STRIDE * W : 0);
+      return M.idx(x, y) === lo;
+    });
+    if (!st) return;
+    c.fillStyle = '#ffe9b0';
+    c.beginPath();
+    if (t.sr === 'down') {
+      c.moveTo(X + s * 0.5, Y + s * 0.85);
+      c.lineTo(X + s * 0.2, Y + s * 0.35);
+      c.lineTo(X + s * 0.8, Y + s * 0.35);
+    } else {
+      c.moveTo(X + s * 0.5, Y + s * 0.15);
+      c.lineTo(X + s * 0.2, Y + s * 0.65);
+      c.lineTo(X + s * 0.8, Y + s * 0.65);
+    }
+    c.closePath();
+    c.fill();
+  }
+  // an unsound roof: hairline cracks on the floor, darker and redder the longer it's been unsound
+  function drawCrack(c, t, X, Y, s, x, y) {
+    const k = Math.min(1, t.cr / M.CAVE.grace);
+    c.save();
+    c.strokeStyle = `rgba(${120 + 110 * k},${60 - 30 * k},40,${0.35 + 0.5 * k})`;
+    c.lineWidth = Math.max(1, s * (0.03 + 0.04 * k));
+    c.beginPath();
+    let px = X + hash(x, y, 1) * s,
+      py = Y;
+    c.moveTo(px, py);
+    for (let j = 1; j <= 4; j++) {
+      px = X + (0.15 + hash(x, y, j + 2) * 0.7) * s;
+      py = Y + (s * j) / 4;
+      c.lineTo(px, py);
+    }
+    if (k > 0.5) {
+      c.moveTo(X + s * 0.2, Y + s * 0.5);
+      c.lineTo(X + s * 0.8, Y + s * (0.3 + hash(y, x, 3) * 0.4));
+    }
+    c.stroke();
+    c.restore();
+  }
   // a door: planks in a stone frame, turned to run across the passage it stands in
   function drawDoor(c, X, Y, s, x, y, alpha) {
     const across = M.isFloor(S, x - 1, y) || M.isFloor(S, x + 1, y); // the passage runs east–west, so the door runs north–south
@@ -1527,6 +1800,33 @@
         c.lineTo(X + s * 0.59, Y + s * 0.16);
         c.fill();
       }
+    } else if (t.fu === 'plaque') {
+      // a carved memorial stone, a candle burning before it
+      c.fillStyle = t.fb ? '#7c8494' : 'transparent';
+      c.strokeStyle = '#d8dce8';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(X + s * 0.2, Y + s * 0.85);
+      c.lineTo(X + s * 0.2, Y + s * 0.3);
+      c.quadraticCurveTo(X + s * 0.5, Y + s * 0.05, X + s * 0.8, Y + s * 0.3);
+      c.lineTo(X + s * 0.8, Y + s * 0.85);
+      c.closePath();
+      c.fill();
+      c.stroke();
+      if (t.fb) {
+        c.strokeStyle = 'rgba(30,30,40,.6)';
+        c.lineWidth = 1;
+        for (let k = 0; k < Math.min(4, S.dead.length || 1); k++) {
+          c.beginPath();
+          c.moveTo(X + s * 0.32, Y + s * (0.38 + k * 0.1));
+          c.lineTo(X + s * 0.68, Y + s * (0.38 + k * 0.1));
+          c.stroke();
+        }
+        c.fillStyle = `rgba(255,${190 + 40 * Math.sin(performance.now() / 200)},90,.95)`;
+        c.beginPath();
+        c.arc(X + s * 0.5, Y + s * 0.92, s * 0.05, 0, 7);
+        c.fill();
+      }
     } else if (t.fu === 'still') {
       c.fillStyle = t.fb ? '#b8743a' : 'transparent';
       c.strokeStyle = '#f0c890';
@@ -1594,7 +1894,14 @@
         barley: '#e0c050',
         meal: '#c87840',
         bronze: '#b07a3a',
-        pick: '#9aa0a8'
+        pick: '#9aa0a8',
+        iron: '#a0583c',
+        limestone: '#e0dcc8',
+        silver: '#e8eef4',
+        gems: '#4ad0a0',
+        galestone: '#a0e0ff',
+        gold: '#f0c838',
+        heartsilver: '#c8a0ff'
       }[kind] || '#fff';
     c.fillStyle = col;
     c.strokeStyle = 'rgba(0,0,0,.6)';
@@ -1756,7 +2063,10 @@
       c.setLineDash([3, 4]);
       c.beginPath();
       c.moveTo(X, Y);
-      for (const i of S.durin.path) c.lineTo(((i % W) + 0.5) * s, (((i / W) | 0) + 0.5) * s);
+      for (const i of S.durin.path) {
+        if (!onView((i / W) | 0)) break;
+        c.lineTo(((i % W) + 0.5) * s, (((i / W) | 0) + 0.5) * s);
+      }
       c.stroke();
       c.setLineDash([]);
     }
