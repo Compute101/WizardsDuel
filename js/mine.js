@@ -53,19 +53,19 @@
       'wall',
       '🧱',
       'Wall',
-      'Drag over dug floor for the mason to wall it back up (a stone block each). Not inside a room. Dig it out again to undo.'
+      'Drag over dug floor for the mason to wall it back up (a dressed block each). Not inside a room. Dig it out again to undo.'
     ],
     [
       'pillar',
       '🏛',
       'Pillar',
-      'Drag over rock to keep it as pillars, or over dug floor to have the mason build one (a stone block each).'
+      'Drag over rock to keep it as pillars, or over dug floor to have the mason build one (a dressed block each).'
     ],
     [
       'door',
       '🚪',
       'Door',
-      'Drag over dug floor for the mason to hang a door (a stone block each). Clear takes one out.'
+      'Drag over dug floor for the mason to hang a door (a dressed block each). Clear takes one out.'
     ]
   ];
   const ROOM_HELP = {
@@ -74,12 +74,15 @@
     dorm: 'A bed for every 3 tiles. Cheaper than bedrooms, never as good.',
     dining: 'A table for every 6 tiles. Eating anywhere else is a grudge after the first day and a half.',
     farm: 'Needs soil (the brown loam you dig out). The farmer grows deepcaps (food) and cave barley (for ale), turn about.',
-    brewery: 'One still. The brewer turns a barley into ' + 3 + ' ale.'
+    brewery: 'One still. The brewer turns a barley into ' + 3 + ' ale.',
+    workshop:
+      "One mason's bench, roughed out of rough stone. Here the mason cuts rough stone into dressed blocks, and every bed, table, still, wall, pillar and door takes a block: make this first."
   };
   const STOCK_ICON = [
     ['food', '🍄', 'Food'],
     ['ale', '🍺', 'Ale'],
-    ['stone', '🪨', 'Stone blocks'],
+    ['stone', '🪨', 'Rough stone (from digging)'],
+    ['block', '🧱', "Dressed blocks (cut at the mason's workshop; everything built takes one)"],
     ['copper', '🟠', 'Copper ore'],
     ['tin', '⚪', 'Tin ore'],
     ['coal', '⚫', 'Coal'],
@@ -339,6 +342,16 @@
     showToast();
   }
 
+  // why nothing's being built yet: no workshop, no bench, or no rough stone to cut
+  function blockNews() {
+    const shop = S.rooms.find(r => r.type === 'workshop');
+    if (!shop) return "No dressed blocks yet. Make a mason's workshop: the mason cuts them there.";
+    if (!S.tiles.some(t => t.fu === 'bench' && t.fb))
+      return "The mason will build once the workshop's bench is up (it takes a rough stone).";
+    if (!(S.stock.stone > 0)) return 'No rough stone to cut: the miners bring it in as they dig.';
+    return 'The mason is cutting blocks at the workshop.';
+  }
+
   // ── tools ──
   const isBuild = t => t === 'wall' || t === 'pillar' || t === 'door';
   // the tool bar button a tool belongs to
@@ -364,7 +377,8 @@
   // what the tool in hand does, in a line over the tool bar (it changes with the tool; no need to dismiss it)
   function renderHint() {
     let text = '';
-    if (ui.menu === 'build') text = 'What should the mason build? A stone block each.';
+    if (ui.menu === 'build')
+      text = 'What should the mason build? A dressed block each, cut at a mason\u2019s workshop.';
     else if (ui.menu === 'room') text = 'Which room? Then drag over dug floor.';
     else if (ui.tool.startsWith('room:')) {
       const k = ui.tool.slice(5);
@@ -525,7 +539,7 @@
             ' ' +
             R.furn +
             (fu.length - done > 1 ? 's' : '') +
-            ' to build (1 stone each)'
+            (R.furn === 'bench' ? ' to rough out (1 rough stone)' : ' to build (1 dressed block each)')
         );
       if (R.good && M.roomArea(S, r) < R.good)
         tips.push('it wants ' + R.good + ' tiles of floor for a second star');
@@ -555,7 +569,7 @@
                   : t.o
                     ? M.ORES[t.o].name[0].toUpperCase() + M.ORES[t.o].name.slice(1) + ' ore'
                     : ['', 'Soft', 'Firm', 'Hard'][t.h] + ' rock') + (t.w ? ', smoothed' : '');
-      return `${x}<b>${what}</b>${t.d ? '<p class="mn-note">Marked for digging.</p>' : ''}${t.m ? '<p class="mn-note">Marked for smoothing.</p>' : ''}${t.b ? '<p class="mn-note">The mason is to build a ' + t.b + ' here (a stone block).</p>' : ''}`;
+      return `${x}<b>${what}</b>${t.d ? '<p class="mn-note">Marked for digging.</p>' : ''}${t.m ? '<p class="mn-note">Marked for smoothing.</p>' : ''}${t.b ? '<p class="mn-note">The mason is to build a ' + t.b + ' here (a dressed block).</p>' : ''}`;
     }
     return '';
   }
@@ -643,10 +657,11 @@
       `<h3>⛏ The Stoneheart Delve</h3>
     <p>Durin has the Thane's leave to cut a new mine under Stonedeep. You're his planner: mark the digging, lay out the rooms, and keep the crew fed, watered and rested.</p>
     <ul>
-      <li><b>⛏ Dig</b>: drag over rock. Miners dig the nearest marked stone they can reach. Ore and stone blocks are hauled to a stockpile.</li>
-      <li><b>🧱 Build</b> opens a menu: <b>Wall</b> or <b>Door</b> on dug floor, or a <b>Pillar</b> (on rock, rock you keep; on dug floor, the mason builds one). A stone block each; built walls count as worked stone, and pillars will soon hold the roof up.</li>
+      <li><b>⛏ Dig</b>: drag over rock. Miners dig the nearest marked stone they can reach. Ore and rough stone are hauled to a stockpile.</li>
+      <li><b>🧱 Build</b> opens a menu: <b>Wall</b> or <b>Door</b> on dug floor, or a <b>Pillar</b> (on rock, rock you keep; on dug floor, the mason builds one). A dressed block each; built walls count as worked stone, and pillars will soon hold the roof up.</li>
       <li><b>Put a mistake right</b>: dug too much? Wall it back up. A built wall or pillar can be dug out again (you get the stone back); ✖ Clear takes out a door and any mark.</li>
-      <li><b>🏠 Room</b> opens a menu of rooms; pick one, then drag over dug floor. Bedrooms, a dining hall, a mushroom farm on soil, a brewery. The mason builds the furniture from stone blocks.</li>
+      <li><b>🏠 Room</b> opens a menu of rooms; pick one, then drag over dug floor. Bedrooms, a dining hall, a mushroom farm on soil, a brewery, a stockpile, and the <b>mason's workshop</b>.</li>
+      <li><b>The mason's workshop comes first</b>: its bench is roughed out of rough stone, and there the mason cuts rough stone into <b>dressed blocks</b> (🧱 in the stock). Every bed, table, still, wall, pillar and door takes a block, and he cuts only as many as your building needs.</li>
       <li><b>✨ Smooth</b>: the mason smooths walls and pillars. Finer rooms, and worked stone will keep elementals out.</li>
       <li><b>Durin</b>: tap him, then tap floor to send him there; he prospects the stone round him once a day.</li>
       <li><b>The Ledger</b>: hungry, dry or floor-sleeping dwarves hold grudges. Too many and they slow down, then stop.</li>
@@ -877,10 +892,14 @@
             ? 'Walls go on dug floor, outside rooms and clear of furniture and the gate.'
             : 'Doors go on dug floor, clear of furniture and the gate.'
         );
-      else if (r && r.n && /^(wall|door|pillar)$/.test(ui.tool) && S.stock.stone < 1)
-        say('No stone blocks in the stock yet: the mason builds once the miners have brought some in.');
+      else if (r && r.n && /^(wall|door|pillar)$/.test(ui.tool) && !(S.stock.block > 0)) say(blockNews());
       else if (r && r.room) {
-        say(M.ROOMS[r.room.type].name + ' marked out.');
+        const R = M.ROOMS[r.room.type];
+        say(
+          R.name +
+            ' marked out.' +
+            (R.furn && R.furn !== 'bench' && !(S.stock.block > 0) ? ' ' + blockNews() : '')
+        );
         ui.sel = { kind: 'room', id: r.room.id };
         ui.tool = 'look';
         renderTools();
@@ -1102,16 +1121,21 @@
       if (s >= 14) {
         c.font = `bold ${Math.max(9, Math.floor(s * 0.42))}px Georgia,serif`;
         c.textAlign = 'left';
-        c.textBaseline = 'top';
-        // the name and stars where they fit, else the stars alone, else nothing (tap the room to read it)
+        c.textBaseline = 'middle';
+        // the name and stars where they fit, else the stars alone, else nothing (tap the room to read it).
+        // Written on the wall just above the room, so it never covers the furniture in its top corner
+        // (inside the room only when it's against the top of the map).
         const st = '★'.repeat(M.roomStars(S, r));
         let lab = R.name + ' ' + st;
         if (c.measureText(lab).width > w - 6) lab = c.measureText(st).width <= w - 6 ? st : '';
         if (lab) {
-          c.fillStyle = 'rgba(0,0,0,.55)';
-          c.fillText(lab, X + 4, Y + 3);
+          const fh = Math.max(9, Math.floor(s * 0.42)),
+            ly = r.y0 > 0 ? Y - fh * 0.62 : Y + fh * 0.7,
+            lw = c.measureText(lab).width;
+          c.fillStyle = 'rgba(12,10,14,.62)';
+          c.fillRect(X + 1, ly - fh * 0.62, lw + 6, fh * 1.24);
           c.fillStyle = '#ffe9b0';
-          c.fillText(lab, X + 3, Y + 2);
+          c.fillText(lab, X + 4, ly);
         }
       }
       if (ui.sel && ui.sel.kind === 'room' && ui.sel.id === r.id) {
@@ -1337,6 +1361,21 @@
           c.fill();
         }
       }
+    } else if (t.fu === 'bench') {
+      // a mason's bench: a slab on trestles with a block on it, a mallet and chisel beside
+      c.fillStyle = t.fb ? '#8a7f74' : 'transparent';
+      c.strokeStyle = '#e0d4bc';
+      c.lineWidth = 1.5;
+      c.fillRect(X + s * 0.1, Y + s * 0.3, s * 0.8, s * 0.42);
+      c.strokeRect(X + s * 0.1, Y + s * 0.3, s * 0.8, s * 0.42);
+      if (t.fb) {
+        c.fillStyle = '#d8ccb6';
+        c.fillRect(X + s * 0.22, Y + s * 0.36, s * 0.26, s * 0.22);
+        c.fillStyle = '#6a4a2c';
+        c.fillRect(X + s * 0.58, Y + s * 0.4, s * 0.24, s * 0.08);
+        c.fillStyle = '#9aa0a8';
+        c.fillRect(X + s * 0.6, Y + s * 0.56, s * 0.2, s * 0.05);
+      }
     } else if (t.fu === 'still') {
       c.fillStyle = t.fb ? '#b8743a' : 'transparent';
       c.strokeStyle = '#f0c890';
@@ -1394,7 +1433,8 @@
   function drawItem(c, kind, x, y, r) {
     const col =
       {
-        stone: '#9a9088',
+        stone: '#8a8078',
+        block: '#d8ccb6',
         copper: '#d0783a',
         tin: '#b8c8d8',
         coal: '#222',
@@ -1411,6 +1451,18 @@
       c.fill();
       c.stroke();
     } else if (kind === 'stone') {
+      // rough stone: a lumpy, uncut rock
+      c.beginPath();
+      c.moveTo(x - r, y + r * 0.2);
+      c.lineTo(x - r * 0.5, y - r * 0.8);
+      c.lineTo(x + r * 0.6, y - r * 0.6);
+      c.lineTo(x + r, y + r * 0.3);
+      c.lineTo(x + r * 0.2, y + r * 0.8);
+      c.closePath();
+      c.fill();
+      c.stroke();
+    } else if (kind === 'block') {
+      // a dressed block: square-cut
       c.fillRect(x - r, y - r * 0.7, r * 2, r * 1.4);
       c.strokeRect(x - r, y - r * 0.7, r * 2, r * 1.4);
     } else {

@@ -23,6 +23,7 @@ for (let k = 0; k < 4; k++) {
 }
 M.designate(S, 'dig', 18, gy + 1, 26, gy + 6);
 const plan = [
+  [0.4, () => M.designate(S, 'room:workshop', 23, gy + 4, 26, gy + 6)],
   [0.6, () => M.designate(S, 'room:stockpile', 18, gy + 1, 22, gy + 6)],
   ...[0, 1, 2, 3].map(k => [0.9, () => M.designate(S, 'room:bedroom', 6 + k * 4, gy + 2, 8 + k * 4, gy + 3)]),
   [1.1, () => M.designate(S, 'room:dining', 6, gy - 7, 14, gy - 3)],
@@ -42,7 +43,8 @@ for (let s = 0; s < days * M.DAY; s += 1) {
       if (t.k === 'f' && t.o === 'soil' && !t.r) {
         const x = i % M.W,
           y = (i / M.W) | 0;
-        M.designate(S, 'room:farm', x, y, x, y);
+        // not where the plan's own rooms are meant to go (the workshop, stockpile and brewery corner)
+        if (!(x >= 18 && x <= 26 && y >= gy + 1 && y <= gy + 6)) M.designate(S, 'room:farm', x, y, x, y);
       }
     });
   }

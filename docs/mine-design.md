@@ -416,4 +416,22 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
     free bed (`bedWorth`: a bedroom 100, a dormitory 50, +10 a star; `BED_NEAR` 0.2 a tile of walk against it)
     and moves out of the one they have for a clearly better one (`BED_MOVE` 5), with a line in the log.
     Checked: six dwarves in two dormitories all moved into six new bedrooms within a night.
+  - *"We need more rooms, like a mason's workshop that allows you to do the actual building."* A new room,
+    the **Mason's workshop** (one bench, `ROOMS.workshop`). Digging gives **rough stone**; at the bench the
+    mason cuts it into **dressed blocks** (`cut`, `CUT_S` 3 s), and every bed, table, still, wall, pillar and
+    door takes a block (`matOf`); only the bench itself is roughed out of rough stone, so the first one can
+    be made. He cuts only what the building ordered needs, plus `BLOCK_SPARE` (3) ahead (`blocksWanted`).
+    Built walls and pillars dug out, doors cleared and rooms removed give their blocks back. The stock bar
+    shows 🪨 rough stone and 🧱 blocks; marking a room or a build with no blocks says what's missing (no
+    workshop, no bench yet, no rough stone; `blockNews`), and Durin's opening line says to make one early.
+    Room names now sit on the wall just above the room, so they don't cover its corner furniture.
+- **Rooms to come** (the user asked for more; candidates, nothing built):
+  - **Kitchen:** a hearth (coal) where a cook turns deepcaps into meals; a meal in the hall is a bigger lift
+    than raw mushrooms, so it settles grudges sooner.
+  - **Forge** (step 3): smelts ore into bars with coal, then makes picks (faster digging; picks wear out) and
+    the warriors' gear.
+  - **Barracks** (step 3): warriors live and train there; the alarm sends them out from it.
+  - **Infirmary** (step 2, with cave-ins): beds for the injured, who heal faster there.
+  - **Tavern hall:** dwarves drink together after work; ale drunk there is worth more to their mood.
+  - **Wall of Remembrance** and **the Great Hall:** as in "Rooms" above.
 - **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.

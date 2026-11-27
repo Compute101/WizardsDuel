@@ -49,12 +49,17 @@
     { name: 'Master', xp: 140, speed: 1.6 }
   ];
   const PROSPECT_R = 5; // Durin's prospecting reveals this radius, once a day
-  const START_STOCK = { food: 36, ale: 28, stone: 4, copper: 0, tin: 0, coal: 0, barley: 0 };
+  const START_STOCK = { food: 36, ale: 28, stone: 4, block: 0, copper: 0, tin: 0, coal: 0, barley: 0 };
+  // Rough stone (from digging) is cut into dressed blocks at a mason's workshop; everything built takes a
+  // block, except the workshop's own bench, which is roughed out of rough stone (or there'd be no first bench)
+  const CUT_S = 3; // seconds to cut a block (a novice)
+  const BLOCK_SPARE = 3; // the mason keeps this many blocks cut ahead of the building ordered
   const EYE_MIN_FLOOR = 30; // the Mason's Eye judges once there's this much worked floor
 
   const ROOMS = {
     stockpile: { name: 'Stockpile', col: '#c9a04a', furn: null },
     bedroom: { name: 'Bedroom', col: '#6f8fd0', furn: 'bed', count: () => 1, good: 4 },
+    workshop: { name: "Mason's workshop", col: '#a8a098', furn: 'bench', count: () => 1, good: 6 },
     dorm: {
       name: 'Dormitory',
       col: '#5a78b0',
@@ -288,6 +293,7 @@
     });
     S.durin = { x: 1, y: gy, path: [], act: 'At the gate' };
     logMsg(S, 'Durin: "Here we cut the Stoneheart Delve. Mark me some good straight passages, planner."');
+    logMsg(S, 'Durin: "And a mason\'s workshop early on: nothing gets built without dressed stone."');
     return S;
   }
   function newDwarf(S, name, sex, trade, x, y) {
@@ -443,7 +449,7 @@
     if (!r) return;
     for (const i of roomTiles(S, r)) {
       const t = S.tiles[i];
-      if (t.fb) S.stock.stone++;
+      if (t.fb) S.stock[matOf(t)] = have(S, matOf(t)) + 1;
       t.r = 0;
       t.fu = '';
       t.fb = false;
@@ -533,7 +539,7 @@
           if (t.dr) {
             // a built door comes out again, its stone back in the stock
             t.dr = false;
-            S.stock.stone++;
+            S.stock.block = have(S, 'block') + 1;
             n++;
           }
           if (t.d || t.p || t.m || t.b) {
@@ -664,12 +670,23 @@
     }
     const order = {
       miner: ['dig', 'haul'],
-      mason: ['build', 'construct', 'smooth', 'haul', 'dig'],
+      mason: ['build', 'construct', 'cut', 'smooth', 'haul', 'dig'],
       farmer: ['harvest', 'plant', 'haul', 'dig'],
       brewer: ['brew', 'haul', 'dig']
     }[d.trade];
     for (const kind of order) if (findWork(S, d, dm, kind, stocks, go)) return;
     idle(S, d, dm);
+  }
+  // what a piece is built from: the bench from rough stone, everything else from dressed blocks
+  const matOf = t => (t.fu === 'bench' ? 'stone' : 'block');
+  const have = (S, k) => S.stock[k] || 0;
+  // blocks still wanted: unbuilt furniture and building orders, and a few spare, less what's cut already
+  function blocksWanted(S) {
+    let want = BLOCK_SPARE;
+    for (const t of S.tiles) if ((t.fu && !t.fb && t.fu !== 'bench') || t.b) want++;
+    want -= have(S, 'block') + S.items.filter(it => it.kind === 'block').reduce((n, it) => n + it.n, 0);
+    for (const d of S.dwarves) if (d.carry && d.carry.kind === 'block') want--;
+    return want;
   }
   // how much a dwarf wants a bed: its room's kind, then the room's stars
   function bedWorth(S, i) {
@@ -725,11 +742,10 @@
       return true;
     }
     if (kind === 'build') {
-      if (S.stock.stone < 1) return false;
       let best = -1,
         bd = 1e9;
       T.forEach((t, i) => {
-        if (t.fu && !t.fb && !t.cl && dm.dist[i] >= 0 && dm.dist[i] < bd) {
+        if (t.fu && !t.fb && !t.cl && have(S, matOf(t)) >= 1 && dm.dist[i] >= 0 && dm.dist[i] < bd) {
           bd = dm.dist[i];
           best = i;
         }
@@ -742,7 +758,7 @@
       return true;
     }
     if (kind === 'construct') {
-      if (S.stock.stone < 1) return false;
+      if (have(S, 'block') < 1) return false;
       let best = -1,
         stand = -1,
         bd = 1e9;
@@ -761,6 +777,23 @@
       const st = nearest(dm, stocks);
       if (st < 0) return false;
       if (!go({ type: 'construct', tile: best, ph: 0, st, stand }, st)) return false;
+      T[best].cl = d.id;
+      return true;
+    }
+    if (kind === 'cut') {
+      if (have(S, 'stone') < 1 || blocksWanted(S) <= 0) return false;
+      let best = -1,
+        bd = 1e9;
+      T.forEach((t, i) => {
+        if (t.fu === 'bench' && t.fb && !t.cl && dm.dist[i] >= 0 && dm.dist[i] < bd) {
+          bd = dm.dist[i];
+          best = i;
+        }
+      });
+      if (best < 0) return false;
+      const st = nearest(dm, stocks);
+      if (st < 0) return false;
+      if (!go({ type: 'cut', tile: best, ph: 0, st }, st)) return false;
       T[best].cl = d.id;
       return true;
     }
@@ -837,6 +870,7 @@
     haul: 'Hauling',
     build: 'Building',
     construct: 'Building',
+    cut: 'Cutting stone blocks',
     plant: 'Planting deepcaps',
     harvest: 'Harvesting',
     brew: 'Brewing',
@@ -924,12 +958,12 @@
           return;
         }
         if (j.ph === 0) {
-          if (S.stock.stone < 1) {
+          if (have(S, 'block') < 1) {
             drop(S, d);
             return;
           }
-          S.stock.stone--;
-          d.carry = { kind: 'stone', n: 1 };
+          S.stock.block--;
+          d.carry = { kind: 'block', n: 1 };
           j.ph = 1;
           j.w = BUILD_S;
           // stand beside it, never on it (or the mason would wall himself in)
@@ -965,27 +999,33 @@
         return;
       }
       case 'build':
-      case 'brew': {
+      case 'brew':
+      case 'cut': {
         const t = T[j.tile];
-        const want = j.type === 'build' ? 'stone' : 'barley',
-          ok = j.type === 'build' ? t && t.fu && !t.fb : t && t.fu === 'still' && t.fb;
+        const want = j.type === 'build' ? matOf(t) : j.type === 'cut' ? 'stone' : 'barley',
+          ok =
+            j.type === 'build'
+              ? t && t.fu && !t.fb
+              : j.type === 'cut'
+                ? t && t.fu === 'bench' && t.fb
+                : t && t.fu === 'still' && t.fb;
         if (!ok) {
           if (d.carry) {
-            S.stock[d.carry.kind]++;
+            S.stock[d.carry.kind] = have(S, d.carry.kind) + 1;
             d.carry = null;
           }
           drop(S, d);
           return;
         }
         if (j.ph === 0) {
-          if (S.stock[want] < 1) {
+          if (have(S, want) < 1) {
             drop(S, d);
             return;
           }
           S.stock[want]--;
           d.carry = { kind: want, n: 1 };
           j.ph = 1;
-          j.w = j.type === 'build' ? BUILD_S : BREW_S;
+          j.w = j.type === 'build' ? BUILD_S : j.type === 'cut' ? CUT_S : BREW_S;
           goTo(j.tile);
           return;
         }
@@ -1001,7 +1041,8 @@
           const r = roomById(S, t.r);
           if (r && roomTiles(S, r).every(i => !T[i].fu || T[i].fb))
             logMsg(S, '🏠 ' + ROOMS[r.type].name + ' is furnished.');
-        } else addItem(S, j.tile, 'ale', BREW_ALE);
+        } else if (j.type === 'cut') addItem(S, j.tile, 'block', 1);
+        else addItem(S, j.tile, 'ale', BREW_ALE);
         return;
       }
       case 'plant':
@@ -1135,7 +1176,8 @@
     t.m = false;
     t.w = false;
     t.bt = false;
-    if (built) addItem(S, i, 'stone', 1);
+    if (built)
+      addItem(S, i, 'block', 1); // a built wall or pillar gives its dressed block back
     else if (t.o === 'cu' || t.o === 'sn' || t.o === 'c') {
       addItem(S, i, ORES[t.o].name, 1);
       t.wo = true;
