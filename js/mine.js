@@ -170,6 +170,7 @@
       <div class="mn-stock" id="mn-stock"></div>
       <div class="mn-top-btns">
         <span class="mn-speed" id="mn-speed"></span>
+        <button class="mn-btn" id="mn-music" type="button" title="Music on / off">\u266A\uFE0E</button>
         <button class="mn-btn" id="mn-help" type="button">?</button>
         <button class="mn-btn" id="mn-new" type="button" title="Start a new Delve">↺</button>
         <button class="mn-btn" id="mn-close" type="button">✕</button>
@@ -195,6 +196,15 @@
     <div class="mn-modal" id="mn-modal" hidden><div class="mn-card" id="mn-card"></div></div>`;
     document.body.appendChild(d);
     $('mn-close').onclick = close;
+    $('mn-music').onclick = () => {
+      const on = !musicOn();
+      try {
+        localStorage.setItem('wd-mine-music', on ? 'on' : 'off');
+      } catch (e) {}
+      if (on) Music.play();
+      else Music.stop();
+      renderMusic();
+    };
     $('mn-help').onclick = help;
     $('mn-new').onclick = () =>
       modal(
@@ -268,6 +278,158 @@
     });
     return d;
   }
+
+  // ── Mining music ───────────────────────────────────────────
+  // Six loops from tools/music/delve.py (audio/delve/): Hammer and Hold, Pick and Lantern, The Deep Seam
+  // Jig, Lamplight in the Deep, Ale at the Shift's End and Halls of the Stoneheart, upbeat and calm in turn. Each plays twice round (a gapless
+  // Web Audio loop), then crossfades into the next, in that order. ♪ turns it off (localStorage wd-mine-music).
+  // It starts from the tap that opened the Delve, so phones allow it; a blocked start retries on the next tap.
+  const DELVE_TUNES = ['hammer', 'work', 'jig', 'deep', 'ale', 'halls'],
+    DELVE_VOL = 0.6,
+    DELVE_TIMES = 2,
+    DELVE_FADE = 3;
+  const delveSrc = n => 'audio/delve/' + n + '.mp3?v=1';
+  const Music = (() => {
+    let ctx = null,
+      out = null,
+      cur = null,
+      el = null,
+      want = false,
+      pos = 0,
+      timer = 0,
+      token = 0,
+      blocked = false;
+    const bufs = {};
+    const load = n =>
+      bufs[n] ||
+      (bufs[n] = fetch(delveSrc(n))
+        .then(r => r.arrayBuffer())
+        .then(b => new Promise((ok, no) => ctx.decodeAudioData(b, ok, no))));
+    function fadeOut(v, sec) {
+      const t = ctx.currentTime;
+      v.g.gain.cancelScheduledValues(t);
+      v.g.gain.setValueAtTime(v.g.gain.value, t);
+      v.g.gain.linearRampToValueAtTime(0, t + sec);
+      setTimeout(
+        () => {
+          try {
+            v.src.stop();
+          } catch (e) {}
+        },
+        sec * 1000 + 100
+      );
+    }
+    function startTune(fade) {
+      const my = ++token,
+        n = DELVE_TUNES[pos % DELVE_TUNES.length];
+      load(n)
+        .then(buf => {
+          if (!want || my !== token) return;
+          const g = ctx.createGain(),
+            src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+          src.connect(g);
+          g.connect(out);
+          const t = ctx.currentTime;
+          g.gain.setValueAtTime(fade ? 0 : 1, t);
+          if (fade) g.gain.linearRampToValueAtTime(1, t + DELVE_FADE);
+          src.start();
+          if (cur) fadeOut(cur, DELVE_FADE);
+          cur = { src, g };
+          clearTimeout(timer);
+          timer = setTimeout(
+            () => {
+              if (!want || my !== token) return;
+              pos++;
+              startTune(true);
+            },
+            (buf.duration * DELVE_TIMES - DELVE_FADE) * 1000
+          );
+          load(DELVE_TUNES[(pos + 1) % DELVE_TUNES.length]).catch(() => {}); // the next one, ready in time
+        })
+        .catch(fallback);
+    }
+    function play() {
+      want = true;
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) throw 0;
+        if (!ctx) {
+          ctx = new AC();
+          out = ctx.createGain();
+          out.gain.value = 0;
+          out.connect(ctx.destination);
+        }
+        if (ctx.state === 'suspended') {
+          const p = ctx.resume();
+          if (p && p.then)
+            p.then(() => {
+              if (ctx.state !== 'running') blocked = true;
+            });
+        }
+        const t = ctx.currentTime;
+        out.gain.cancelScheduledValues(t);
+        out.gain.setValueAtTime(out.gain.value, t);
+        out.gain.linearRampToValueAtTime(DELVE_VOL, t + 1.5);
+        if (!cur) startTune(false);
+      } catch (e) {
+        fallback();
+      }
+    }
+    function fallback() {
+      if (!want) return;
+      if (!el) {
+        el = new Audio();
+        el.onended = () => {
+          if (want) {
+            pos++;
+            el.src = delveSrc(DELVE_TUNES[pos % DELVE_TUNES.length]);
+            const p = el.play();
+            if (p && p.catch) p.catch(() => {});
+          }
+        };
+      }
+      if (!el.src) el.src = delveSrc(DELVE_TUNES[pos % DELVE_TUNES.length]);
+      el.volume = DELVE_VOL;
+      const p = el.play();
+      if (p && p.catch) p.catch(() => (blocked = true));
+    }
+    function stop() {
+      want = false;
+      token++;
+      clearTimeout(timer);
+      if (el) el.pause();
+      if (ctx && cur) {
+        fadeOut(cur, 0.8);
+        cur = null;
+      }
+    }
+    ['pointerdown', 'keydown'].forEach(t =>
+      window.addEventListener(
+        t,
+        () => {
+          if (blocked && want) {
+            blocked = false;
+            play();
+          }
+        },
+        true
+      )
+    );
+    return { play, stop };
+  })();
+  const musicOn = () => {
+    try {
+      return localStorage.getItem('wd-mine-music') !== 'off';
+    } catch (e) {
+      return true;
+    }
+  };
+  function renderMusic() {
+    const b = $('mn-music');
+    if (b) b.style.opacity = musicOn() ? '1' : '0.45';
+  }
   const isOpen = () => {
     const d = $('mn-screen');
     return !!(d && d.classList.contains('active'));
@@ -280,6 +442,8 @@
       try {
         Explore.titleMusic();
       } catch (e) {}
+    renderMusic();
+    if (musicOn()) Music.play();
     start(false);
   }
   function close() {
@@ -287,6 +451,7 @@
     cancelAnimationFrame(raf);
     raf = 0;
     $('mn-screen').classList.remove('active');
+    Music.stop();
     if (window.Explore && Explore.titleMusic)
       try {
         Explore.titleMusic();
