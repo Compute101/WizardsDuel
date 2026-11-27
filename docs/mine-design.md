@@ -1,6 +1,6 @@
 # The Stoneheart Delve — design
 
-All plan, nothing built yet. The user's answers so far are under "Decided". A light Dwarf-Fortress-style mining game for **Durin**, played in Explore the
+Step 1 is built (see "As built (step 1)" at the end); the rest is plan. The user's answers so far are under "Decided". A light Dwarf-Fortress-style mining game for **Durin**, played in Explore the
 way the Moriquende is: its own screen, its own engine, your wizard's HP and gold carried in and out.
 
 ## The pitch in one line
@@ -348,3 +348,43 @@ Until then the map is drawn in canvas (as the forest was at first).
   proudest, its smiths sell in Hollowmere (Torvi).
 - **Coldforge?** (above Tinwell, over the Grey Sea; tin): cold, sea-facing and mercantile, its
   factors count the Ore Road's trade (Grimma).
+
+## As built (step 1)
+
+One layer, no enemies. ⛏ Stoneheart Delve in the title screen's Test menu (`Mine.open()`), saved on the
+device in `localStorage` `wd-mine-save`; not joined to Explore yet.
+
+- **Files:** `js/mine_engine.js` (`MineEngine`: pure, runs in Node, every number at the top), `js/mine.js`
+  (the screen, drawn on a canvas), `css/mine.css`, `tools/mine_sim.js` (`node tools/mine_sim.js [days] [seed]`
+  plays a scripted plan: a gallery, a pillared dining hall, bedrooms, a stockpile, a brewery, farms on
+  whatever loam gets dug, and prints the stock, rooms, the Mason's Eye and each dwarf).
+- **The layer:** 36 × 26 tiles from a seed: rock soft / firm / hard (dig 2.5 / 4 / 6 s, ore ×1.5) from a
+  noise field that hardens further in, copper and tin veins, coal blobs, two loam pockets (the first always
+  within reach of the gate), the gate tunnel on the west edge with the wagon's supplies (36 food, 28 ale,
+  4 stone). Fog: you see stone beside dug floor; ore glints faintly one tile further into the dark.
+- **Time:** real time, a day is 4 minutes at ×1, ⏸ ▶ ×2 ×4 (Space pauses).
+- **Tools:** ✋ Look (tap a dwarf, Durin, a room or a tile; drag pans), ⛏ Dig, 🏛 Pillar, ✨ Smooth, 🏠 Room
+  (stockpile, bedroom, dormitory, dining hall, mushroom farm, brewery), ✖ Clear; drag a rectangle; pinch,
+  wheel or + / − to zoom (a phone opens zoomed in on the gate). Keys D P S R C L.
+- **The crew:** six dwarves (three miners, a mason, a farmer, a brewer; names from their own list, none
+  shared with the hero creator's dwarf names). Each picks its own work: needs first (sleep below 25, food
+  and ale below 35), then its trade (miners dig; the mason builds furniture from stone blocks and smooths;
+  the farmer plants and harvests soil tiles, deepcaps and cave barley turn about; the brewer turns a barley
+  into 3 ale at a still), then hauling, then digging at 0.6 speed. Paths are a breadth-first search over
+  floor. Skill: Novice → Journeyman (40 xp, ×1.3) → Master (140, ×1.6).
+- **Rooms:** must be dug floor and pillars, no overlap, a farm needs soil. Furniture is placed on a 2-tile
+  grid (a bed per bedroom, one per 3 tiles in a dormitory, a table per 6 in a dining hall, a still per
+  brewery). Stars: 1, +1 furnished and big enough (`good`), +1 with 80% of its walls and pillars smoothed.
+- **The Ledger of Grudges:** hungry, dry, a floor meal or a floor bed (the last two only after a day and a
+  half) puts a grudge in; one a day of each kind. 3 open: grumbling (×0.6 speed); 5: downs tools. A grudge
+  fades after 3 days, or a meal in a 2★ hall (half the time) or a night in a 2★ bedroom strikes one out.
+- **Durin:** a piece; tap him, then tap floor to send him. 🔍 Prospect reveals 5 tiles round him once a day.
+- **The Mason's Eye** (score 0–100 once 30 floor tiles are dug): true lines (corners per passage tile),
+  order (passage in 3 × 3 open blobs), symmetry (each room mirrored either way), pillars in rhythm (a full
+  even lattice), worked stone (room walls smoothed); −3 for each dead end that found no ore (most 15). 👁
+  marks corners, blobs and dead ends on the map. Named patterns found so far: the Long Gallery, the
+  Thane's Cross, the Colonnade, the Ninefold Hall (rooms 2 × 2 and up with a wall between); the Cloister,
+  the Spiral Stair and the Vein-follower are names only.
+- **Last sim** (8 days, seed 7): every marked tile dug, 85 food and 91 ale in store, 3 / 3 dining hall,
+  2★ bedrooms, Mason's Eye 69–81, the Long Gallery and the Colonnade.
+- **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.
