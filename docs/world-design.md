@@ -132,7 +132,7 @@ far (Wrenford, the Moriquende, Hollowmere, Corvanthe) is one region, **the Vale 
 home **island**. Names with "?" are placeholders. A tappable sketch was published as an artifact
 ("The Known World Sketch"); its source is `docs/world-map.html` (open it in a browser; edit that file and
 republish it to change the map). **It stays a design map for now:** the game keeps its own world map of the
-Vale (`maps/world.json`); later this chart could become the top level (long roads, sea voyages and
+Vale (`maps/world.json`); the Remnant Library's wall charts are rendered from it (`tools/render_lore_maps.js`) and its Geography shelf has a book per region, so re-render the charts and check the books after changing it; later this chart could become the top level (long roads, sea voyages and
 airships between regions), each region with its own walking map at today's scale.
 
 **Decided:** the home island is **Albra** (the user's choice, November 2026). Home is an island, across **the Narrows** from the Mainland (a ferry from Ferryhythe?

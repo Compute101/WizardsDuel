@@ -203,6 +203,19 @@
       shelves: true,
       open: true
     },
+    // up the Remnant's stair (to:{stairs:'up'}, climb() in js/explore.js): the Geological Cabinet, the
+    // Geography and Geology shelves, the wall charts and the specimen cases (built by the cabinet branch below)
+    cabinet: {
+      name: 'The Geological Cabinet',
+      floor: 'w',
+      wall: 'panel',
+      back: [],
+      floor_: [],
+      big: true,
+      size: [13, 9],
+      open: true,
+      cabinet: true
+    },
     // the University Year (js/explore_year.js): the lecture theatre and examination hall; the Undercroft
     // a real lecture theatre (theatre: tiers of benches looking down on a stage; the stage is at the front,
     // the south, so the seated students face it as their sprites do): built by `theatre` below
@@ -372,6 +385,81 @@
     sewer: 'frontStone'
   };
 
+  // ── the Geological Cabinet's wall charts (up the Remnant Library's stair): pinned up and chained, so you
+  //    can look but not take ──
+  const CHART_SCALE = 0.34;
+  const CHARTS = [
+    {
+      id: 'albra',
+      title: 'A Chart of Albra',
+      text: 'The Isle, its Vale and its Fells, copied from the old survey. Somebody has pencilled notes all over it.'
+    },
+    {
+      id: 'mainland',
+      title: 'A Chart of the Mainland',
+      text: 'The Kingdoms over the Narrows, from a gnomish sky-chart, much folded. The pencilled notes carry on here.'
+    },
+    {
+      id: 'southlands',
+      title: 'A Chart of the Southlands',
+      text: 'Over the Middle Sea, as the sailors tell it. The coast is drawn carefully; the rest less so.'
+    },
+    {
+      id: 'world',
+      title: 'A Chart of the Known World',
+      text: 'A gnome sky-chart, Gimbal press. Albra is a small island near the top.'
+    },
+    {
+      id: 'greyhorn',
+      title: 'A Section of the Greyhorn',
+      text: "A surveyor's cross-section of the peak above Stonedeep, drawn from the bores. The bottom of it is mostly question marks."
+    }
+  ];
+  // the Cabinet's specimen cases (lore 'spec:<id>'): look, don't take
+  const CABINET_LORE = {
+    ores: [
+      'Ores of the Anvilfells',
+      'A glass case, each lump on a card in a careful hand. Copper and tin from Copperhythe and Tinwell; coal; iron, "from the second depth"; silver; a smoky gem; and one pale grey stone with a card that says only GALESTONE, which is cold to look at and stirs the dust inside the glass. The last card is blank. Someone has pencilled on it: "heartsilver?"'
+    ],
+    cores: [
+      'The Greyhorn Bores',
+      'An iron box of stone cores, each as long as your arm, laid in order of depth: grey granite, black basalt, quartz-shot stone that glitters, a red core scorched along one side. The deepest is shorter than the rest and wrapped in felt. It is warm. A note in the lid: "Do not leave the box open overnight. It hums."'
+    ],
+    soils: [
+      'Soils and Samples',
+      'Jars of earth from all over Albra, labelled by the road they came from. The jar from the Corvanthe Road glitters faintly, and the one from under Stonedeep has a hairline crack running round it, as if something inside had pushed.'
+    ],
+    fire: [
+      'Cinderglass',
+      'A specimen of Fire\'s spill from Cindergate, on a stone plinth. Its card: "Settles where a working burned. Keep away from paper." The card is singed.'
+    ],
+    air: [
+      'Galesilk',
+      "Air's spill from the Heights, under a bell jar so it won't drift off. It looks like spun glass and weighs almost nothing."
+    ],
+    lightning: [
+      'Stormglass',
+      "Lightning's spill from Spirewatch. Your hair stands up as you lean close. Its card has been replaced four times; the old ones are scorched."
+    ],
+    arcane: [
+      'Aether',
+      'The Arcane spill from the Collegium: a crystal that is never quite the colour you remember it being.'
+    ],
+    water: [
+      'Tideglass',
+      "Water's spill from the Drowned Quarter. It sweats on the plinth, and the dish under it fills and empties with no tide to drive it."
+    ],
+    earth: [
+      'Lodestone',
+      'Earth\'s spill from the Quarry Ward. Its card: "Settles deep. Seeps deeper. Since the Unweaving, found further under Albra every year; the holds\' delvers report it in seams that were dry stone a lifetime ago."'
+    ],
+    ice: ['Rimeheart', "Ice's spill from Frostmarket, frosting the case around it on the warmest day."],
+    dark: [
+      'Nightglass',
+      'The Dark spill from Gloamside. The candle beside it gives less light than a candle should.'
+    ]
+  };
+
   // ── lore books: short stories found in rooms. lib:true ones only in the Collegium library,
   //    lib:'wren' ones only in Wrenford's Remnant Library (three of them count toward Matriculation) ──
   const BOOKS = [
@@ -516,6 +604,176 @@
       lib: 'wren',
       title: 'A Letter from Magister Orrin',
       text: 'Found folded in a borrowed book, years after: "If they vote for it, I will stay with my students, because they will be frightened, and frightened students make mistakes. If I am wrong, I will buy everyone a drink at the Inkwell. If I am right, then whoever reads this: be careful. Be so careful it bores you. — O."'
+    },
+    // lib:'geo': the Remnant Library's Geography shelf, about the world beyond the Vale (read before you go)
+    {
+      id: 'G1',
+      lib: 'geo',
+      title: 'A Gazetteer of Albra, for Scholars in Exile',
+      text: 'Albra is an island, a fact its people forget until they want to leave it. The Hollow runs west to east through its heart: rising in the uplands past the Moriquende, gathering the Wren at Wrenford, passing Hollowmere, through what was Corvanthe and out to the Wolf Sea at Wolfmouth. North stand the Anvilfells; between them and us lies the Harrow, which is to say, orcs. West is the Wildwood and the West Road to Saltreach. South-east is Gilden, which is to say, money. South is Ferryhythe, which is not, strictly, Albra at all.'
+    },
+    {
+      id: 'G2',
+      lib: 'geo',
+      title: "The Ore Road: a Carter's Guide",
+      text: 'Copper from Copperhythe, tin from Tinwell, both down through Varg\'s Delve to Harrowgate, where it is weighed, taxed and weighed again. Do not cross the Harrow without a wagon-train; the orcs count carts and go for the last one. From Harrowgate south to Hollowmere, where the gleaners\' spill joins the ore in the same wagons, then to Chepstead market and down to Gilden. Pencilled beneath: "Cheapest beer, Chepstead. Honest scales, nowhere. Never sleep at Harrowgate with your boots off."'
+    },
+    {
+      id: 'G3',
+      lib: 'geo',
+      title: 'Gilden: the Golden Ledger',
+      text: 'A history of the great merchant houses, written by one of them, which explains its tone. Gilden lies where the Narrows meet the Wolf Sea; what the Mainland sells comes ashore there and what Albra sells goes out. Since the Unweaving, what Albra sells is chiefly Corvanthe, a crystal at a time. The gnome sky-ships moor at Gilden and fly no further north. The houses pay the Varg a yearly sea-toll and call it insurance. One chapter, on "the House of the Gilded Daughter", has been cut out with a razor.'
+    },
+    {
+      id: 'G4',
+      lib: 'geo',
+      title: 'Under the Anvil: the Three Holds',
+      text: 'Stonedeep above Copperhythe, the oldest and deepest, the delvers\' hold; Anvilmoot above Varg\'s Delve (the greatest, which named the range); Coldforge over the Grey Sea above Tinwell, where they count the Ore Road\'s trade. The author, a dwarf, says the holds go "down further than you are owed to know". Outsiders may trade at the gatehouses. Outsiders may not ask what is behind them. A postscript, in a newer hand: "Stonedeep\'s old workings have gone silent. The gatehouse will say only one word about it, and the word is stonewakes."'
+    },
+    {
+      id: 'G5',
+      lib: 'geo',
+      title: 'The Wolf Sea, its Coasts and its Wolves',
+      text: 'The Varg of Ulfvik fish, build boats and smoke herring; the Varg of the Reaver Isles do much the same, except that the herring is sometimes your ship. They are one people, living two ways, and a Varg will not thank you for confusing them. North beyond the Anvilfells lies the Grey Sea, where a few hard folk keep steadings on the Skerries. "A cold sea," says the author, "and not meant for travel beyond it." A second hand has added: "Then why is there a beyond?"'
+    },
+    {
+      id: 'G6',
+      lib: 'geo',
+      title: 'West of the Moriquende',
+      text: 'Past the elves\' wood the forest goes on, and nobody keeps its balance. Varg, goblins, orcs and elves who do not answer to Elfhome all live in the Wildwood, and the West Road follows a river down through it, by the ford at Thornwick, to Saltreach on the Sunset Ocean. Ships come into Saltreach from the west. The harbourmaster records their cargoes faithfully. He does not record where they come from, because, as he wrote in the margin of his own ledger, "they will not say."'
+    },
+    {
+      id: 'G7',
+      lib: 'geo',
+      title: 'The Pale of Ferryhythe (a pamphlet, much handled)',
+      text: 'For two hundred years the kings of Hallowmark have held Ferryhythe and a few miles round it, on Albra\'s own coast: the Pale. Inside it, magic is a crime. Everyone off the ferry is searched, and every staff is broken on the quay. No sky-ship may land. The pamphlet ends: "A wizard wishing to cross the Narrows is advised not to." Under that, in pencil: "Ask for Corporal Pruett. Bring silver. Do not bring the staff."'
+    },
+    {
+      id: 'G8',
+      lib: 'geo',
+      title: 'Hallowmark, for the Traveller Who Values His Neck',
+      text: 'Across the Narrows, up the river Hale from Halemouth to the capital at Hale and on to the lakes under the Deepgate pass, lies a kingdom that has made magic illegal, on the grounds that it is dangerous. The author, a wizard from Corvanthe, writes that he found this unreasonable. The next edition, printed after the Unweaving, has a new preface: "I find it less unreasonable now." Witch-finders watch every ferry. Hallowmark buys Albra\'s wool and copper; it would burn our quintessence, and us with it.'
+    },
+    {
+      id: 'G9',
+      lib: 'geo',
+      title: 'A Recruiting Bill of the Brazen Dominion',
+      text: 'A broadsheet, pasted into a scrapbook. "WIZARDS WANTED. The Dominion pays in SILVER and in RANK. Bounty on enlisting, pension on survival. Report to any sergeant from Varrow to Brassmouth." Beneath, smaller: "Gifted subjects of the Dominion are reminded that service is not optional." Someone in Corvanthe has written across it: "Hallowmark burns us. The Dominion buys us by the barrel. And they have been at war with each other for forty years. Think on what that means for anyone gifted at the border."'
+    },
+    {
+      id: 'G10',
+      lib: 'geo',
+      title: 'The Tuskholds: a Correction',
+      text: 'A letter to the editor of an atlas, in a careful, heavy hand. "Sir. Your map marks the land round the Salt Sea HERE BE ORCS. Here be farms. Here be herds, walls, markets, a moot at Grukmoot and a road to Dawnport on the Eastern Ocean. The orcs who trouble your Harrow are not us; we call them savages, as you would. We buy your spill when the Dominion\'s silver is late, and we pay on time. Kindly correct the next edition. Yours, a Factor of Redtusk."'
+    },
+    {
+      id: 'G11',
+      lib: 'geo',
+      title: 'The Gnomes of Gimbaldry and their Ships',
+      text: 'In the western foothills of the Greatspine, on terraced hills round the skyport of Gimbal, the gnomes build ships that sail on air. Their routes cross the whole known world: to Lumen, to Brassgate, over the mountains to the Ember Throne and far south to the Hrakka. Two rules they keep without exception: they never fly over Hallowmark, and they never fly further north than Gilden. The author asked a captain why. "Wrenford?" said the captain. "Have you seen what they did to the last city?"'
+    },
+    {
+      id: 'G12',
+      lib: 'geo',
+      title: 'Deepholds and the Deepgate',
+      text: 'The Greatspine runs across the Mainland like a wall, and only three passes cross it: the Deepgate in the west, Highwatch in the middle, Ashpass at the east end. Under it live dwarves who loathe the sun. They are not Anvilfells dwarves, and both kinds will tell you so at length. Once a month, after dark, the Deepgate holds its night market: lanterns, no torches, everything priced in whispers, and the strangest goods in the world for anyone who can bear the dark long enough to haggle.'
+    },
+    {
+      id: 'G13',
+      lib: 'geo',
+      title: 'A Tithe Receipt from the Gravemarches',
+      text: '"Received of the farm at Bonefield, for the Lord of Barrowcourt: one tenth of the harvest; one tenth of the herd; and, the tenant being lately deceased, the tenant. With thanks." The fields of the Gravemarches are worked by the dead, and the dead keep its roads, which are the safest in the world, provided you are polite to them. A gloss below: "The lords here are not cruel, exactly. They are thrifty. The Gravelord on our duelling rolls is said to be one of them. Whether they sent him, or sent him away, the rolls do not say."'
+    },
+    {
+      id: 'G14',
+      lib: 'geo',
+      title: 'Velumbra: Notes from a Twilight Wood',
+      text: 'Between the Gravemarches and the Hierarchy runs a forest where it is always evening, and under it, caverns that go down for days. The drow live below, purple-skinned and pale-haired, and come up into the dark wood at night. The author, a Moriquende elf, is very polite about them for three pages and then writes: "We do not speak of the quarrel. It is older than Corvanthe. Ask Sylvara, if you dare; she will change the subject, and the subject will stay changed."'
+    },
+    {
+      id: 'G15',
+      lib: 'geo',
+      title: "The Lumen Hierarchy: a Pilgrim's Psalter",
+      text: '"Blessed is the Weave, and blessed are they who touch it." In the Hierarchy, on the plain of the Holy River, magic is not a crime but a sacrament, and its priests are mages. The holy city of Lumen stands below Twinwater; the river ends at Seaward in a delta. The last page is a prayer added in a newer hand: "For the city of Corvanthe, which touched the Weave too deeply, and was taken up into it." Pilgrims, the librarian notes, have begun to walk to the Wound. Some of them arrive.'
+    },
+    {
+      id: 'G16',
+      lib: 'geo',
+      title: 'Regulations for Visiting Practitioners (the Concord)',
+      text: '"1. All workings within the Concord shall be licensed, metered and recorded. 2. No working shall be performed on a canal without a lock-keeper present. 3. Practitioners shall not interfere with the lightning lamps, the rune-mills, or the canal at Lockford, which runs uphill by design and is not to be corrected." The Concord is ruled by wizards who put magic to work: Brassgate, Millbrook, Sunquay, all orderly, all lit. The same book lists what quintessence fetches in Brassgate. Someone has circled the figure and written "!!!".'
+    },
+    {
+      id: 'G17',
+      lib: 'geo',
+      title: 'Wyrmreach and the Ember Throne',
+      text: 'In the volcanic south-east, a dragon is king. His throne sits on a living mountain; his nobles are half-dragon lizardfolk, every one of them a mage; his subjects are human and mostly content, because dragons are excellent at keeping other people\'s armies out. The road north climbs by Scalegate to Ashpass. The author was granted an audience. The chapter describing it is one sentence long: "He was much larger than I had prepared for." The duelling rolls name one of those nobles, a long way from home. They do not say why.'
+    },
+    {
+      id: 'G18',
+      lib: 'geo',
+      title: 'The Channel and the Free Ports',
+      text: 'Between the Middle Sea and the Inner Sea runs a channel so narrow a strong man could throw a stone across it, and on either bank stand the twin cities of Narrowgate and Eastgate. Every ship bound for Lumen or Brassgate passes between them, and pays. Who they pay is the question. The author says a trade league. An older book on the same shelf says a pirate king. A sailor\'s note tucked in both says: "Same thing. Smaller hats."'
+    },
+    {
+      id: 'G19',
+      lib: 'geo',
+      title: 'Over the Middle Sea',
+      text: 'South of the Mainland, past a warm sea of galleys and corsairs, lie the Southlands. Behind the Sunwall the coast is desert, crossed by a caravan road from oasis to oasis to Sunmouth, a delta city on a river that flows north. Further in, savannah, where the Hrakka hunt in laughing clans; further still, jungle, where the Sythrae, who are serpents and men at once, keep temple-cities older than writing. "Of the land beyond the jungle," the author concludes, "I can tell you nothing. Nobody I asked had been there, and nobody who had been there was available to ask."'
+    },
+    // lib:'stone': the Geological Cabinet's Geology shelf, the stone of the Anvilfells (read before the Delve)
+    {
+      id: 'S1',
+      lib: 'stone',
+      title: 'Stone and Spill: a Primer of Albran Geology',
+      text: 'Albra stands on granite, and the Anvilfells are the granite showing through. Under the granite lies basalt; under the basalt, the cabinet\'s keeper admits, "nobody has been, except dwarves, and dwarves do not publish." Since the Unweaving the spill of Corvanthe has seeped downward like water into chalk. The holds report it in seams that were plain stone a lifetime ago, and with it something they will not name in print.'
+    },
+    {
+      id: 'S2',
+      lib: 'stone',
+      title: 'The Greyhorn, Surveyed from Outside',
+      text: 'A peak above Stonedeep that the hold has never worked. From the bores the surveyor guesses five depths: the Topstone (granite; copper, tin, coal); the Ironroots (black basalt; iron, limestone, and running water somewhere); the Glimmerdark (quartz-shot; silver, gems, galestone, and hollow places that ring when struck); the Emberdeep (hot stone; gold, and veins of fire); and the Heartstone. Of the Heartstone he writes one line: "The borer came back warm, and humming."'
+    },
+    {
+      id: 'S3',
+      lib: 'stone',
+      title: 'On Stonewakes',
+      text: 'The earth elementals that sleep in the roots of mountains are waking; the dwarves call them stonewakes. They swim through raw rock as a fish swims through water, but they cannot pass worked stone: a smoothed wall, a built wall, a pillar stops them. "So the old delvers smoothed their halls," the author writes, "and we thought it vanity." You hear them before you see them, in the floor and in your teeth.'
+    },
+    {
+      id: 'S4',
+      lib: 'stone',
+      title: "Spans and Pillars: a Mason's Table",
+      text: 'How far a roof may run unpropped: granite, five paces; basalt, six; quartz-shot stone, four; hot stone, three. A note in the margin: "A dwarf will tell you granite holds six. A living dwarf will tell you five." The richest ore, the author warns, always runs exactly where the pillar ought to be.'
+    },
+    {
+      id: 'S5',
+      lib: 'stone',
+      title: "The Mason's Eye",
+      text: "Dwarves judge a mine as we judge a cathedral. They want true lines and right-angled turns; square rooms, not blobs; a hall mirrored about its axis; pillars in rhythm; walls smoothed or engraved; and no tunnel that leads nowhere, unless it found ore. The great patterns have names, which the author lists without explaining, as a dwarf would: the Thane's Cross, the Long Gallery, the Colonnade, the Cloister, the Ninefold Hall, the Spiral Stair, the Vein-follower."
+    },
+    {
+      id: 'S6',
+      lib: 'stone',
+      title: 'Deepcaps and Cave Barley',
+      text: 'Underground farming wants soil, which is rare, and water near it, which is rarer. Deepcaps feed a hold; cave barley gives it ale. A dwarf has four needs: food, ale, sleep in a bed, and a hall to eat in with the others. "Ale is not a luxury," the author notes. "Ask any dwarf. Then ask him again after a day without, from a safe distance."'
+    },
+    {
+      id: 'S7',
+      lib: 'stone',
+      title: 'The Ledger of Grudges (a translation, abridged)',
+      text: '"Olgrim Coalhand, against the Thane\'s steward: a meal missed, the third this month. Against the stone of the east gallery: a cave-in, his brother\'s leg. Against the stone again: the same. Struck out at the feast of the Long Gallery." The translator adds that a dwarf with three open grudges works slowly, and one with five puts down his pick altogether.'
+    },
+    {
+      id: 'S8',
+      lib: 'stone',
+      title: 'Galestone',
+      text: 'An ore that should not exist: stone touched by Air, found in the Glimmerdark. Runesmiths set it in steel, and a galestone-runed hammer strikes as the wind strikes. Air is Earth\'s opposite, and a stonewake struck by it comes apart. The author closes with a puzzle: the greatest earthshaper of Stonedeep, the one they call the Stoneheart, cannot touch Air at all. "Whoever goes down after the stonewakes with him," he writes, "had best bring someone who can."'
+    },
+    {
+      id: 'S9',
+      lib: 'stone',
+      title: 'Heartsilver, a Rumour',
+      text: 'Three pages of hearsay about the best metal in the world, found only at the bottom of the deepest mountains, under something that sleeps. No specimen has ever reached Wrenford. The case in this room that is meant for it has stood empty for forty years, with its card already written.'
     },
     {
       id: 'L6',
@@ -1031,6 +1289,36 @@
         }
       }
       yMin = 0; // books may lie anywhere, aisles included
+    } else if (D.cabinet) {
+      // stacks either side, the specimen cases down the middle, the eight spills on the floor at the front
+      for (const y of [Y0 + T * 2.4, Y0 + T * 4.3])
+        for (const [a, b] of [
+          [X0 + T * 0.3, DX - T * 1.7],
+          [DX + T * 1.7, X1 - T * 0.3]
+        ]) {
+          let x = a;
+          while (true) {
+            const k = r() < 0.15 ? 'bookLadder' : r() < 0.5 ? 'bookcase2' : 'bookcase',
+              w = sz(k).w;
+            if (x + w > b) break;
+            put(k, x + w / 2, y);
+            x += w - 2;
+          }
+        }
+      put('crystalDisplay', DX, Y0 + T * 2.4, { lore: 'spec:ores' });
+      put('strongbox', DX, Y0 + T * 4.3, { lore: 'spec:cores' });
+      put('jarShelf', X0 + T * 1.6, Y1 - T * 0.35, { lore: 'spec:soils' });
+      const els = ['fire', 'air', 'lightning', 'arcane', 'water', 'earth', 'ice', 'dark'];
+      els.forEach((el, i) => {
+        const left = i < 4,
+          j = i % 4,
+          a = left ? X0 + T * 3.6 : DX + T * 1.7,
+          b = left ? DX - T * 1.7 : X1 - T * 0.8;
+        const x = a + ((b - a) * (j + 0.5)) / 4;
+        if (rects['q_' + el])
+          put('q_' + el, x, Y0 + T * 6.2 + (j % 2) * T * 0.5, { scale: 0.22, lore: 'spec:' + el });
+      });
+      for (const [k, L] of Object.entries(CABINET_LORE)) lore['spec:' + k] = L;
     } else if (D.theatre) {
       theatreInfo = theatre();
     } else if (D.rows) {
@@ -1066,6 +1354,27 @@
         const p = spot(60, 30, 6);
         if (p) put('crockery', p[0], p[1]);
       }
+    // the Remnant's stair up to the Geological Cabinet, against the back wall on the right
+    let stairsUp = null;
+    if (type === 'remnant' && rects.lt_steps) {
+      const sx = X1 - T * 2.2;
+      objects.push(['lt_steps', Math.round(sx), Math.round(Y0 + T * 1.1), { scale: 0.5, decal: 1 }]);
+      boxes.push({ x: sx - T, y: Y0, w: 2 * T, h: T * 1.9 });
+      stairsUp = {
+        exit: {
+          x: sx - T * 0.75,
+          y: Y0 + 14,
+          w: T * 1.5,
+          h: T * 0.6,
+          dir: 'N',
+          label: 'Upstairs: the Geological Cabinet',
+          to: { stairs: 'up' }
+        },
+        spawn: [sx, Y0 + T * 1.5]
+      };
+    }
+    if (D.cabinet && rects.lt_steps)
+      objects.push(['lt_steps', Math.round(DX), Math.round(Y1 + T * 0.9), { scale: 0.5, decal: 1 }]); // the way down
     // the encounter's pieces
     const centre = spot(50, 60, 16) || [DX, Y1 - T * 1.5];
     const echoes = [];
@@ -1113,19 +1422,45 @@
     // lore books
     const books = [];
     const nBooks =
-      type === 'library' ? 6 : type === 'remnant' ? 7 : type === 'study' ? 2 : r() < 0.38 ? 1 : 0;
+      type === 'library'
+        ? 6
+        : type === 'remnant'
+          ? 7
+          : type === 'study'
+            ? 2
+            : D.cabinet
+              ? 0
+              : r() < 0.38
+                ? 1
+                : 0;
     const pool = BOOKS.filter(b =>
       type === 'library' ? b.lib === true : type === 'remnant' ? b.lib === 'wren' : !b.lib
     );
     for (let n = 0; n < nBooks; n++) {
-      const b = pool[(hash(spec.id + ':' + n) + n * 7) % pool.length];
-      if (books.includes(b.id)) continue;
+      const b = type === 'remnant' ? pool[n] : pool[(hash(spec.id + ':' + n) + n * 7) % pool.length];
+      if (!b || books.includes(b.id)) continue; // the Remnant has all seven (Mr Quill's prize is for reading every one)
       const k = pick(['bookOpen', 'bookClosed', 'scroll', 'letter', 'journal']),
         p = spot(50, 40, 8);
       if (!p) continue;
       put(k, p[0], p[1], { lore: 'book:' + b.id });
       books.push(b.id);
       lore['book:' + b.id] = [b.title, b.text];
+    }
+    // the Geological Cabinet's shelves (every lib:'geo' and lib:'stone' book) and its wall charts, which you
+    // can look at but not take (CHARTS; explore.js shows them, the pictures are tools/render_lore_maps.js's)
+    if (D.cabinet) {
+      for (const b of BOOKS.filter(b => b.lib === 'geo' || b.lib === 'stone')) {
+        const p = spot(50, 40, 8, 200);
+        if (!p) continue;
+        put(pick(['bookOpen', 'bookClosed', 'journal', 'scroll']), p[0], p[1], { lore: 'book:' + b.id });
+        books.push(b.id);
+        lore['book:' + b.id] = [b.title, b.text];
+      }
+      CHARTS.forEach((c, n) => {
+        const x = X0 + (C * T * (n + 0.5)) / CHARTS.length;
+        objects.push(['scrollPinned', Math.round(x), Y0 + 16, { scale: CHART_SCALE, lore: 'chart:' + c.id }]);
+        lore['chart:' + c.id] = [c.title, c.text];
+      });
     }
     // clutter, last, so it fits round everything else (the encounter, books, people) and never moves them
     const CL = CLUTTER[type];
@@ -1201,8 +1536,21 @@
       glows: [],
       echoes,
       walk: [],
-      spawns: { door: [DX, Y1 - 12] },
-      exits: [{ x: DX - T, y: Y1 + 8, w: 2 * T, h: T * 0.8, dir: 'S', label: 'Outside', to: 'out' }],
+      spawns: Object.assign({ door: [DX, Y1 - 12] }, stairsUp ? { stairs: stairsUp.spawn } : {}),
+      exits: [
+        D.cabinet
+          ? {
+              x: DX - T,
+              y: Y1 + 8,
+              w: 2 * T,
+              h: T * 0.8,
+              dir: 'S',
+              label: 'Downstairs: the Remnant Library',
+              to: { stairs: 'down' }
+            }
+          : { x: DX - T, y: Y1 + 8, w: 2 * T, h: T * 0.8, dir: 'S', label: 'Outside', to: 'out' },
+        ...(stairsUp ? [stairsUp.exit] : [])
+      ],
       interior: true,
       type,
       ev,
@@ -1214,5 +1562,5 @@
     }; // the theatre's furniture is drawn big, so its people are too
   }
 
-  window.ExploreRooms = { build, BOOKS, TYPES, RS, FS, ITEM_SCALE, hash };
+  window.ExploreRooms = { build, BOOKS, CHARTS, TYPES, RS, FS, ITEM_SCALE, hash };
 })();

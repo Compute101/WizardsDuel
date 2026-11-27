@@ -1365,7 +1365,8 @@
     undercroft2: 'wren_orrery',
     lectures: 'wren_schools',
     library: 'library',
-    remnant: 'library'
+    remnant: 'library',
+    cabinet: 'library'
   };
   const ARENA_MAPS = {
     hollowmere: 'hollowmere',
@@ -1701,6 +1702,20 @@
       };
       doors.push({ x: o.x, y: o.y + 14, spec, obj: o, label: f ? FIXED_LABEL[f] : 'Enter' });
     }
+  }
+  // a room's stair (js/explore_rooms.js: the Remnant Library's up to the Geological Cabinet): the floor
+  // above is a room of its own, built from a spec that keeps the one below, so the way down and a load find it
+  function climb(dir) {
+    if (dir === 'up')
+      roomSpec = Object.assign({}, roomSpec, {
+        id: roomSpec.id + '/up',
+        fixed: 'cabinet',
+        label: null,
+        below: roomSpec
+      });
+    else if (roomSpec && roomSpec.below) roomSpec = roomSpec.below;
+    else return;
+    enterMap(roomSpec.id, dir === 'up' ? 'door' : 'stairs');
   }
   function enterDoor(dr) {
     roomSpec = Object.assign({}, dr.spec, {
@@ -2273,12 +2288,125 @@
     });
   }
 
+  // ── the Remnant Library's wall charts: a parchment you can pan and zoom, pinned up, never taken
+  //    (pictures from tools/render_lore_maps.js in backgrounds/charts/, the list is ExploreRooms.CHARTS) ──
+  let chart = null;
+  function openChart(id) {
+    const C = (window.ExploreRooms.CHARTS || []).find(c => c.id === id);
+    if (!C) return;
+    closeChart();
+    hideSay();
+    const box = document.createElement('div');
+    box.id = 'ex-chart';
+    box.innerHTML =
+      '<div class="exc-top"><div class="exc-title"></div><button class="ex-btn exc-out" type="button" aria-label="Zoom out">−</button><button class="ex-btn exc-in" type="button" aria-label="Zoom in">+</button><button class="ex-btn exc-x" type="button" aria-label="Close">✕</button></div>' +
+      '<div class="exc-view"><img alt="" draggable="false"></div><div class="exc-note"></div>';
+    box.querySelector('.exc-title').textContent = C.title;
+    box.querySelector('.exc-note').textContent =
+      C.text + ' It is pinned and chained to the panelling: you can study it, but it stays here.';
+    const view = box.querySelector('.exc-view'),
+      img = box.querySelector('img');
+    const ch = { id, box, view, img, z: 1, ptrs: new Map(), pinch: null, drag: null };
+    chart = ch;
+    el.root.appendChild(box);
+    // zoom about a point of the view (vx, vy), keeping what's under it in place
+    const fit = () => {
+      const w = img.naturalWidth || 1,
+        h = img.naturalHeight || 1;
+      return Math.min(view.clientWidth / w, view.clientHeight / h);
+    };
+    const setZ = (z, vx, vy) => {
+      z = Math.max(1, Math.min(5, z));
+      if (vx == null) {
+        vx = view.clientWidth / 2;
+        vy = view.clientHeight / 2;
+      }
+      const k = z / ch.z,
+        px = view.scrollLeft + vx,
+        py = view.scrollTop + vy;
+      ch.z = z;
+      img.style.width = Math.round((img.naturalWidth || 1) * fit() * z) + 'px';
+      view.scrollLeft = px * k - vx;
+      view.scrollTop = py * k - vy;
+      box.classList.toggle('zoomed', z > 1);
+    };
+    ch.setZ = setZ;
+    img.onload = () => setZ(1);
+    img.onerror = () => {
+      box.querySelector('.exc-note').textContent = '(The chart has faded past reading.)';
+    };
+    img.src = 'backgrounds/charts/' + id + '.jpg';
+    box.querySelector('.exc-x').onclick = closeChart;
+    box.querySelector('.exc-in').onclick = () => setZ(ch.z * 1.5);
+    box.querySelector('.exc-out').onclick = () => setZ(ch.z / 1.5);
+    view.addEventListener(
+      'wheel',
+      e => {
+        e.preventDefault();
+        const r = view.getBoundingClientRect();
+        setZ(ch.z * (e.deltaY < 0 ? 1.2 : 1 / 1.2), e.clientX - r.left, e.clientY - r.top);
+      },
+      { passive: false }
+    );
+    view.addEventListener('dblclick', e => {
+      const r = view.getBoundingClientRect();
+      setZ(ch.z > 1.5 ? 1 : 2.5, e.clientX - r.left, e.clientY - r.top);
+    });
+    // a mouse drags the parchment about; two fingers pinch (one finger scrolls natively)
+    view.addEventListener('pointerdown', e => {
+      ch.ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+      if (e.pointerType === 'mouse') {
+        ch.drag = [e.clientX, e.clientY, view.scrollLeft, view.scrollTop];
+        view.setPointerCapture(e.pointerId);
+      }
+      if (ch.ptrs.size === 2) {
+        const [a, b] = [...ch.ptrs.values()];
+        ch.pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: ch.z };
+      }
+    });
+    view.addEventListener('pointermove', e => {
+      if (!ch.ptrs.has(e.pointerId)) return;
+      ch.ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+      if (ch.drag) {
+        view.scrollLeft = ch.drag[2] - (e.clientX - ch.drag[0]);
+        view.scrollTop = ch.drag[3] - (e.clientY - ch.drag[1]);
+      }
+      if (ch.pinch && ch.ptrs.size === 2) {
+        const [a, b] = [...ch.ptrs.values()],
+          r = view.getBoundingClientRect();
+        setZ(
+          (ch.pinch.z * Math.hypot(a[0] - b[0], a[1] - b[1])) / ch.pinch.d,
+          (a[0] + b[0]) / 2 - r.left,
+          (a[1] + b[1]) / 2 - r.top
+        );
+      }
+    });
+    const up = e => {
+      ch.ptrs.delete(e.pointerId);
+      if (ch.ptrs.size < 2) ch.pinch = null;
+      if (!ch.ptrs.size) ch.drag = null;
+    };
+    view.addEventListener('pointerup', up);
+    view.addEventListener('pointercancel', up);
+    view.style.touchAction = 'pan-x pan-y';
+  }
+  function closeChart() {
+    if (chart) {
+      chart.box.remove();
+      chart = null;
+    }
+  }
+
   // things in rooms: returns true if it handled the inspect
   function roomAct(o) {
     if (!MAP.interior) return false;
     const ev = MAP.ev || {},
       st = roomState(),
       key = wizKeys[wizIdx];
+    if (o.lore && o.lore.startsWith('chart:')) {
+      openChart(o.lore.slice(6));
+      return true;
+    }
     if (o.lore && o.lore.startsWith('book:')) {
       const id = o.lore.slice(5),
         L = MAP.lore[o.lore],
@@ -3101,6 +3229,7 @@
   })();
   // go to a map; at = a spawn name or [x, y]
   async function enterMap(id, at, instant) {
+    closeChart();
     if (busy) return;
     busy = true;
     keys.clear();
@@ -3264,6 +3393,10 @@
         toast(no);
         return;
       }
+    }
+    if (x.to && x.to.stairs) {
+      climb(x.to.stairs);
+      return;
     }
     if (x.to === 'out') {
       const o = roomSpec.outside;
@@ -4154,6 +4287,17 @@
       } else if (k === 'escape') {
         if (scene.skip) scene.skip();
         e.preventDefault();
+      }
+      return;
+    }
+    if (chart) {
+      if (k === 'escape' || k === 'e') {
+        closeChart();
+        e.preventDefault();
+      } else if (k === '+' || k === '=') {
+        chart.setZ(chart.z * 1.5);
+      } else if (k === '-') {
+        chart.setZ(chart.z / 1.5);
       }
       return;
     }
@@ -5841,6 +5985,7 @@
     }, 7000);
   }
   function close() {
+    closeChart();
     save();
     stopTheme();
     running = false;
@@ -6068,6 +6213,8 @@
     _doors: () => doors,
     _rects: () => rects,
     _enterDoor: d => enterDoor(d),
+    _chart: id => openChart(id),
+    _climb: d => climb(d),
     _state: () => ({ gold, potions, allies, rescues, spill, booksRead, vit }),
     _objs: () => objs,
     _npcs: () => npcs,

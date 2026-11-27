@@ -5211,3 +5211,68 @@ button:focus:not(:focus-visible) {
   border-color: #e8c860;
   color: #ffe9a8;
 }
+
+/* the Remnant Library's wall charts (openChart in js/explore.js): a parchment to pan and zoom */
+#explore-screen #ex-chart {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: rgba(14, 10, 6, 0.94);
+  padding: max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px))
+    max(10px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  gap: 8px;
+}
+#explore-screen #ex-chart .exc-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#explore-screen #ex-chart .exc-title {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  color: #f0dcb0;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#explore-screen #ex-chart .exc-top .ex-btn {
+  min-width: 40px;
+}
+#explore-screen #ex-chart .exc-view {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  border: 1px solid #6b5236;
+  border-radius: 4px;
+  background: #2a2219;
+  cursor: grab;
+  overscroll-behavior: contain;
+}
+#explore-screen #ex-chart .exc-view:active {
+  cursor: grabbing;
+}
+#explore-screen #ex-chart .exc-view img {
+  display: block;
+  margin: auto;
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+}
+#explore-screen #ex-chart.zoomed .exc-view img {
+  margin: 0;
+}
+#explore-screen #ex-chart .exc-note {
+  font-family: Georgia, 'Iowan Old Style', serif;
+  color: #d8c79e;
+  font-size: 14px;
+  line-height: 1.4;
+  font-style: italic;
+  max-width: 70ch;
+}
