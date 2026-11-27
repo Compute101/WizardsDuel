@@ -474,4 +474,7 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
     every room 2★ (the dining hall 3★), but the Great Hall, at 40 tiles short of its 60; seeds 1, 2 and 5
     run short of food (their loam is outside the script's farms), seed 2 so badly that the grudging crew
     built only one door.
+    *"Do workshops have that? They're generally quite open."* No longer: the mason's workshop, brewery, kitchen
+    and forge are `open` too, like the stockpile and farms. Rooms to live, eat, drink, heal and muster in still
+    need their doors.
 - **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.

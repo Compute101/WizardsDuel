@@ -122,7 +122,14 @@
   const ROOMS = {
     stockpile: { name: 'Stockpile', col: '#c9a04a', furn: null, open: true },
     bedroom: { name: 'Bedroom', col: '#6f8fd0', furn: 'bed', count: () => 1, good: 4 },
-    workshop: { name: "Mason's workshop", col: '#a8a098', furn: 'bench', count: () => 1, good: 6 },
+    workshop: {
+      name: "Mason's workshop",
+      col: '#a8a098',
+      furn: 'bench',
+      count: () => 1,
+      good: 6,
+      open: true
+    },
     dorm: {
       name: 'Dormitory',
       col: '#5a78b0',
@@ -138,9 +145,9 @@
       good: 12
     },
     farm: { name: 'Mushroom farm', col: '#6aa84f', furn: null, good: 6, open: true },
-    brewery: { name: 'Brewery', col: '#a0702a', furn: 'still', count: () => 1, good: 4 },
-    kitchen: { name: 'Kitchen', col: '#d0a060', furn: 'hearth', count: () => 1, good: 4 },
-    forge: { name: 'Forge', col: '#c05030', furn: 'anvil', count: () => 1, good: 6 },
+    brewery: { name: 'Brewery', col: '#a0702a', furn: 'still', count: () => 1, good: 4, open: true },
+    kitchen: { name: 'Kitchen', col: '#d0a060', furn: 'hearth', count: () => 1, good: 4, open: true },
+    forge: { name: 'Forge', col: '#c05030', furn: 'anvil', count: () => 1, good: 6, open: true },
     tavern: {
       name: 'Tavern hall',
       col: '#b05a7a',
@@ -574,7 +581,8 @@
     return t && t.r ? roomById(S, t.r) : null;
   }
   // the ways into a room with no door: floor outside it beside its floor, where neither tile is a built door
-  // (a door can hang on the room's edge or just outside it). Stockpiles and farms don't need doors.
+  // (a door can hang on the room's edge or just outside it). Rooms marked `open` don't need doors: the
+  // stockpile, the farm and the workshops (mason's workshop, brewery, kitchen, forge), which are open places of work.
   function roomOpenings(S, r) {
     if (ROOMS[r.type].open) return [];
     const T = S.tiles,
