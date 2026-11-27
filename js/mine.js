@@ -76,7 +76,19 @@
     farm: 'Needs soil (the brown loam you dig out). The farmer grows deepcaps (food) and cave barley (for ale), turn about.',
     brewery: 'One still. The brewer turns a barley into ' + 3 + ' ale.',
     workshop:
-      "One mason's bench, roughed out of rough stone. Here the mason cuts rough stone into dressed blocks, and every bed, table, still, wall, pillar and door takes a block: make this first."
+      "One mason's bench, roughed out of rough stone. Here the mason cuts rough stone into dressed blocks, and every bed, table, still, wall, pillar and door takes a block: make this first.",
+    kitchen:
+      'One hearth. The farmer or brewer cooks 2 deepcaps into 3 meals: the food goes further, and a hot meal at a table settles grudges.',
+    forge:
+      'One anvil. The smith smelts a copper, a tin and a coal into 2 bronze, and forges a bronze pick from 1 bronze. The old iron picks wear out, and a miner with none digs at half pace.',
+    tavern:
+      'A keg for every 8 tiles. The crew drink here before anywhere else, and a pint with friends strikes out a grudge now and then.',
+    infirmary:
+      'A cot for every 4 tiles. Hard rock and ore sometimes hurt a dwarf, who works at half pace until mended: a quarter of a day in a cot, a day and a half walking it off.',
+    barracks:
+      'A weapon rack for every 4 tiles. Nothing to guard against yet: the warriors who stand here come with the earth elementals.',
+    greathall:
+      'The pride of the Delve: one only, at least 40 tiles, a table for every 6. The crew eat here before anywhere else, and every meal in it strikes out a grudge.'
   };
   const STOCK_ICON = [
     ['food', '🍄', 'Food'],
@@ -86,7 +98,10 @@
     ['copper', '🟠', 'Copper ore'],
     ['tin', '⚪', 'Tin ore'],
     ['coal', '⚫', 'Coal'],
-    ['barley', '🌾', 'Cave barley']
+    ['barley', '🌾', 'Cave barley'],
+    ['meal', '🍲', 'Meals (cooked at the kitchen; eaten before raw deepcaps)'],
+    ['bronze', '🟫', 'Bronze (smelted at the forge)'],
+    ['pick', '⛏', 'Bronze picks in the stock (forged at the forge)']
   ];
 
   // ── Save ──
@@ -98,7 +113,7 @@
   function loadSave() {
     try {
       const s = JSON.parse(localStorage.getItem(SAVE) || 'null');
-      return s && s.v === 1 ? s : null;
+      return s && (s.v === 1 || s.v === 2) ? M.migrate(s) : null;
     } catch (e) {
       return null;
     }
@@ -516,7 +531,20 @@
           : g >= M.GRUMBLE
             ? '<span class="mn-warn">grumbling (works slowly)</span>'
             : 'content';
-      return `${x}<b>${d.name}</b> <small>${T.icon} ${M.levelOf(d).name} ${T.name.toLowerCase()}</small><p>${d.act}. Mood: ${mood}.</p>
+      const kit =
+        d.trade === 'miner'
+          ? d.pick
+            ? '<p class="mn-note">⛏ ' +
+              M.PICKS[d.pick.kind].name +
+              ', good for ' +
+              d.pick.uses +
+              ' more tiles.</p>'
+            : '<p class="mn-note mn-warn">⛏ No pick: digging at half pace. The forge makes bronze ones.</p>'
+          : '';
+      const hurt = d.hurt
+        ? '<p class="mn-note mn-warn">🩹 Hurt: working at half pace until mended (an infirmary cot heals quickest).</p>'
+        : '';
+      return `${x}<b>${d.name}</b> <small>${T.icon} ${M.levelOf(d).name} ${T.name.toLowerCase()}</small><p>${d.act}${d.act.endsWith('…') ? '' : '.'} Mood: ${mood}.</p>${kit}${hurt}
       <div class="mn-needs"><span>🍄 Food</span>${bar(d.needs.food, needCol(d.needs.food))}<span>🍺 Ale</span>${bar(d.needs.ale, needCol(d.needs.ale))}<span>💤 Sleep</span>${bar(d.needs.sleep, needCol(d.needs.sleep))}</div>
       ${g ? '<p class="mn-note">📕 ' + d.grudges.map(x => x.why).join('; ') + '</p>' : ''}`;
     }
@@ -660,8 +688,9 @@
       <li><b>⛏ Dig</b>: drag over rock. Miners dig the nearest marked stone they can reach. Ore and rough stone are hauled to a stockpile.</li>
       <li><b>🧱 Build</b> opens a menu: <b>Wall</b> or <b>Door</b> on dug floor, or a <b>Pillar</b> (on rock, rock you keep; on dug floor, the mason builds one). A dressed block each; built walls count as worked stone, and pillars will soon hold the roof up.</li>
       <li><b>Put a mistake right</b>: dug too much? Wall it back up. A built wall or pillar can be dug out again (you get the stone back); ✖ Clear takes out a door and any mark.</li>
-      <li><b>🏠 Room</b> opens a menu of rooms; pick one, then drag over dug floor. Bedrooms, a dining hall, a mushroom farm on soil, a brewery, a stockpile, and the <b>mason's workshop</b>.</li>
+      <li><b>🏠 Room</b> opens a menu of rooms; pick one, then drag over dug floor. Bedrooms, a dining hall, a mushroom farm on soil, a brewery, a stockpile, the <b>mason's workshop</b>, a kitchen, a forge, a tavern hall, an infirmary, a barracks and, once you've room for it, the Great Hall.</li>
       <li><b>The mason's workshop comes first</b>: its bench is roughed out of rough stone, and there the mason cuts rough stone into <b>dressed blocks</b> (🧱 in the stock). Every bed, table, still, wall, pillar and door takes a block, and he cuts only as many as your building needs.</li>
+      <li><b>The trades</b>: the farmer and brewer cook meals at a kitchen's hearth; the smith smelts copper, tin and coal into bronze at a forge's anvil and forges picks, for the old iron ones wear out. Hard rock sometimes hurts a dwarf: an infirmary mends them.</li>
       <li><b>✨ Smooth</b>: the mason smooths walls and pillars. Finer rooms, and worked stone will keep elementals out.</li>
       <li><b>Durin</b>: tap him, then tap floor to send him there; he prospects the stone round him once a day.</li>
       <li><b>The Ledger</b>: hungry, dry or floor-sleeping dwarves hold grudges. Too many and they slow down, then stop.</li>
@@ -1376,6 +1405,107 @@
         c.fillStyle = '#9aa0a8';
         c.fillRect(X + s * 0.6, Y + s * 0.56, s * 0.2, s * 0.05);
       }
+    } else if (t.fu === 'hearth') {
+      // a stone hearth with a pot over the fire
+      c.fillStyle = t.fb ? '#6a625a' : 'transparent';
+      c.strokeStyle = '#e0d4bc';
+      c.lineWidth = 1.5;
+      c.fillRect(X + s * 0.12, Y + s * 0.15, s * 0.76, s * 0.7);
+      c.strokeRect(X + s * 0.12, Y + s * 0.15, s * 0.76, s * 0.7);
+      if (t.fb) {
+        const f = 0.5 + 0.5 * Math.sin(performance.now() / 160 + X);
+        c.fillStyle = `rgba(255,${140 + f * 60},40,0.95)`;
+        c.beginPath();
+        c.moveTo(X + s * 0.3, Y + s * 0.78);
+        c.quadraticCurveTo(X + s * 0.5, Y + s * (0.42 - f * 0.06), X + s * 0.7, Y + s * 0.78);
+        c.fill();
+        c.fillStyle = '#2a2420';
+        c.beginPath();
+        c.arc(X + s * 0.5, Y + s * 0.42, s * 0.18, 0, 7);
+        c.fill();
+      }
+    } else if (t.fu === 'anvil') {
+      // an anvil on a block, a glowing bar of bronze on it
+      c.fillStyle = t.fb ? '#3a3e46' : 'transparent';
+      c.strokeStyle = '#c8ccd4';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(X + s * 0.12, Y + s * 0.32);
+      c.lineTo(X + s * 0.88, Y + s * 0.32);
+      c.lineTo(X + s * 0.7, Y + s * 0.5);
+      c.lineTo(X + s * 0.64, Y + s * 0.8);
+      c.lineTo(X + s * 0.36, Y + s * 0.8);
+      c.lineTo(X + s * 0.32, Y + s * 0.5);
+      c.closePath();
+      c.fill();
+      c.stroke();
+      if (t.fb) {
+        c.fillStyle = '#ff9a40';
+        c.fillRect(X + s * 0.38, Y + s * 0.26, s * 0.24, s * 0.06);
+      }
+    } else if (t.fu === 'keg') {
+      // a barrel on its side
+      c.fillStyle = t.fb ? '#8a5a2a' : 'transparent';
+      c.strokeStyle = '#f0c890';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.ellipse(X + s / 2, Y + s / 2, s * 0.36, s * 0.26, 0, 0, 7);
+      c.fill();
+      c.stroke();
+      if (t.fb) {
+        c.strokeStyle = '#3a2a1a';
+        c.beginPath();
+        c.moveTo(X + s * 0.32, Y + s * 0.27);
+        c.lineTo(X + s * 0.32, Y + s * 0.73);
+        c.moveTo(X + s * 0.68, Y + s * 0.27);
+        c.lineTo(X + s * 0.68, Y + s * 0.73);
+        c.stroke();
+        c.fillStyle = '#d8c090';
+        c.beginPath();
+        c.arc(X + s * 0.86, Y + s * 0.5, s * 0.05, 0, 7);
+        c.fill();
+      }
+    } else if (t.fu === 'cot') {
+      // a narrow cot with a white sheet and a red cross
+      c.fillStyle = t.fb ? '#8a7050' : 'transparent';
+      c.strokeStyle = '#e8e8e8';
+      c.lineWidth = 1.5;
+      c.fillRect(X + s * 0.26, Y + s * 0.1, s * 0.48, s * 0.8);
+      c.strokeRect(X + s * 0.26, Y + s * 0.1, s * 0.48, s * 0.8);
+      if (t.fb) {
+        c.fillStyle = '#eeeeea';
+        c.fillRect(X + s * 0.3, Y + s * 0.34, s * 0.4, s * 0.52);
+        c.fillStyle = '#d02828';
+        c.fillRect(X + s * 0.46, Y + s * 0.48, s * 0.08, s * 0.24);
+        c.fillRect(X + s * 0.38, Y + s * 0.56, s * 0.24, s * 0.08);
+      }
+    } else if (t.fu === 'rack') {
+      // a weapon rack: a frame with an axe and a spear
+      c.strokeStyle = '#d8c090';
+      c.lineWidth = 1.5;
+      c.fillStyle = t.fb ? '#5a3d24' : 'transparent';
+      c.fillRect(X + s * 0.14, Y + s * 0.7, s * 0.72, s * 0.12);
+      c.strokeRect(X + s * 0.14, Y + s * 0.7, s * 0.72, s * 0.12);
+      if (t.fb) {
+        c.strokeStyle = '#6a4a2c';
+        c.lineWidth = Math.max(1.5, s * 0.05);
+        c.beginPath();
+        c.moveTo(X + s * 0.35, Y + s * 0.72);
+        c.lineTo(X + s * 0.35, Y + s * 0.18);
+        c.moveTo(X + s * 0.65, Y + s * 0.72);
+        c.lineTo(X + s * 0.65, Y + s * 0.12);
+        c.stroke();
+        c.fillStyle = '#b8bcc4';
+        c.beginPath();
+        c.moveTo(X + s * 0.35, Y + s * 0.2);
+        c.quadraticCurveTo(X + s * 0.14, Y + s * 0.3, X + s * 0.35, Y + s * 0.42);
+        c.fill();
+        c.beginPath();
+        c.moveTo(X + s * 0.65, Y + s * 0.04);
+        c.lineTo(X + s * 0.71, Y + s * 0.16);
+        c.lineTo(X + s * 0.59, Y + s * 0.16);
+        c.fill();
+      }
     } else if (t.fu === 'still') {
       c.fillStyle = t.fb ? '#b8743a' : 'transparent';
       c.strokeStyle = '#f0c890';
@@ -1440,7 +1570,10 @@
         coal: '#222',
         food: '#d8b890',
         ale: '#8a5a2a',
-        barley: '#e0c050'
+        barley: '#e0c050',
+        meal: '#c87840',
+        bronze: '#b07a3a',
+        pick: '#9aa0a8'
       }[kind] || '#fff';
     c.fillStyle = col;
     c.strokeStyle = 'rgba(0,0,0,.6)';
@@ -1460,6 +1593,39 @@
       c.lineTo(x + r * 0.2, y + r * 0.8);
       c.closePath();
       c.fill();
+      c.stroke();
+    } else if (kind === 'meal') {
+      // a bowl of stew
+      c.fillStyle = '#6a4a2c';
+      c.beginPath();
+      c.arc(x, y - r * 0.1, r, 0, Math.PI);
+      c.fill();
+      c.stroke();
+      c.fillStyle = col;
+      c.beginPath();
+      c.ellipse(x, y - r * 0.1, r, r * 0.35, 0, 0, 7);
+      c.fill();
+    } else if (kind === 'bronze') {
+      // an ingot
+      c.beginPath();
+      c.moveTo(x - r, y + r * 0.5);
+      c.lineTo(x - r * 0.6, y - r * 0.5);
+      c.lineTo(x + r * 0.6, y - r * 0.5);
+      c.lineTo(x + r, y + r * 0.5);
+      c.closePath();
+      c.fill();
+      c.stroke();
+    } else if (kind === 'pick') {
+      c.strokeStyle = '#6a4a2c';
+      c.lineWidth = Math.max(1.5, r * 0.35);
+      c.beginPath();
+      c.moveTo(x - r * 0.7, y + r);
+      c.lineTo(x + r * 0.4, y - r * 0.5);
+      c.stroke();
+      c.strokeStyle = col;
+      c.beginPath();
+      c.moveTo(x - r * 0.4, y - r * 0.9);
+      c.quadraticCurveTo(x + r * 0.5, y - r * 0.8, x + r, y);
       c.stroke();
     } else if (kind === 'block') {
       // a dressed block: square-cut
@@ -1499,6 +1665,15 @@
     c.arc(X, Y - r * 0.45, r * 0.5, Math.PI, 0);
     c.fill(); // cap
     if (d.carry) drawItem(c, d.carry.kind, X + r * 0.8, Y - r * 0.6, s * 0.12);
+    if (d.hurt) {
+      // a bandage: a small red cross on the shoulder
+      const b = s * 0.09;
+      c.fillStyle = '#fff';
+      c.fillRect(X - r * 0.95 - b * 1.5, Y - b * 1.5, b * 3, b * 3);
+      c.fillStyle = '#d02828';
+      c.fillRect(X - r * 0.95 - b * 1.2, Y - b * 0.4, b * 2.4, b * 0.8);
+      c.fillRect(X - r * 0.95 - b * 0.4, Y - b * 1.2, b * 0.8, b * 2.4);
+    }
     if (d.grudges.length >= M.GRUMBLE) {
       c.fillStyle = d.grudges.length >= M.DOWN_TOOLS ? '#ff5040' : '#f0a030';
       c.font = `bold ${Math.floor(s * 0.45)}px sans-serif`;

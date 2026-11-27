@@ -49,11 +49,74 @@
     { name: 'Master', xp: 140, speed: 1.6 }
   ];
   const PROSPECT_R = 5; // Durin's prospecting reveals this radius, once a day
-  const START_STOCK = { food: 36, ale: 28, stone: 4, block: 0, copper: 0, tin: 0, coal: 0, barley: 0 };
+  const START_STOCK = {
+    food: 36,
+    ale: 28,
+    stone: 4,
+    block: 0,
+    copper: 0,
+    tin: 0,
+    coal: 0,
+    barley: 0,
+    meal: 0,
+    bronze: 0,
+    pick: 0
+  };
   // Rough stone (from digging) is cut into dressed blocks at a mason's workshop; everything built takes a
   // block, except the workshop's own bench, which is roughed out of rough stone (or there'd be no first bench)
   const CUT_S = 3; // seconds to cut a block (a novice)
   const BLOCK_SPARE = 3; // the mason keeps this many blocks cut ahead of the building ordered
+  // Crafts: a dwarf of the trade fetches what the recipe takes from the stock to the room's furniture, works it,
+  // and leaves what it makes there to be hauled. Each is made only while it's wanted.
+  const RECIPES = {
+    cut: {
+      at: 'bench',
+      takes: { stone: 1 },
+      makes: { block: 1 },
+      s: 3,
+      act: 'Cutting stone blocks',
+      want: S => blocksWanted(S) > 0
+    },
+    brew: { at: 'still', takes: { barley: 1 }, makes: { ale: 3 }, s: 6, act: 'Brewing', want: () => true },
+    // two deepcaps make three meals: a kitchen stretches the food as well as pleasing the crew
+    cook: {
+      at: 'hearth',
+      takes: { food: 2 },
+      makes: { meal: 3 },
+      s: 5,
+      act: 'Cooking',
+      want: S => stockOf(S, 'meal') < S.dwarves.length * 2
+    },
+    smelt: {
+      at: 'anvil',
+      takes: { copper: 1, tin: 1, coal: 1 },
+      makes: { bronze: 2 },
+      s: 7,
+      act: 'Smelting bronze',
+      want: S => stockOf(S, 'bronze') < 2
+    },
+    forge: {
+      at: 'anvil',
+      takes: { bronze: 1 },
+      makes: { pick: 1 },
+      s: 6,
+      act: 'Forging a pick',
+      want: S => stockOf(S, 'pick') < 2
+    }
+  };
+  // picks wear out; a miner without one digs at NO_PICK. The crew arrive with old iron picks.
+  const PICKS = {
+    old: { name: 'old iron pick', speed: 1, uses: 70 },
+    bronze: { name: 'bronze pick', speed: 1.4, uses: 90 }
+  };
+  const NO_PICK = 0.45;
+  // digging hard rock (hardness 3) or ore now and then hurts a dwarf: they work at HURT_SPEED until healed
+  const HURT_CHANCE = 0.04;
+  const HURT_SPEED = 0.5;
+  const HEAL_COT = DAY * 0.25; // abed in an infirmary cot
+  const HEAL_WALK = DAY * 1.5; // walking it off with no cot
+  const TAVERN_SETTLE = 0.4; // a drink at the tavern's keg strikes out a grudge this often
+  const GREAT_HALL_MIN = 40; // tiles of floor a Great Hall needs
   const EYE_MIN_FLOOR = 30; // the Mason's Eye judges once there's this much worked floor
 
   const ROOMS = {
@@ -75,13 +138,46 @@
       good: 12
     },
     farm: { name: 'Mushroom farm', col: '#6aa84f', furn: null, good: 6 },
-    brewery: { name: 'Brewery', col: '#a0702a', furn: 'still', count: () => 1, good: 4 }
+    brewery: { name: 'Brewery', col: '#a0702a', furn: 'still', count: () => 1, good: 4 },
+    kitchen: { name: 'Kitchen', col: '#d0a060', furn: 'hearth', count: () => 1, good: 4 },
+    forge: { name: 'Forge', col: '#c05030', furn: 'anvil', count: () => 1, good: 6 },
+    tavern: {
+      name: 'Tavern hall',
+      col: '#b05a7a',
+      furn: 'keg',
+      count: a => Math.max(1, Math.ceil(a / 8)),
+      good: 9
+    },
+    infirmary: {
+      name: 'Infirmary',
+      col: '#e0e0e0',
+      furn: 'cot',
+      count: a => Math.max(1, Math.ceil(a / 4)),
+      good: 8
+    },
+    barracks: {
+      name: 'Barracks',
+      col: '#8a8aa8',
+      furn: 'rack',
+      count: a => Math.max(1, Math.ceil(a / 4)),
+      good: 12
+    },
+    greathall: {
+      name: 'Great Hall',
+      col: '#e8c050',
+      furn: 'table',
+      count: a => Math.max(1, Math.ceil(a / 6)),
+      good: 60,
+      one: true,
+      min: GREAT_HALL_MIN
+    }
   };
   const TRADES = {
     miner: { name: 'Miner', col: '#c8c8c8', icon: '⛏' },
     mason: { name: 'Mason', col: '#d8b070', icon: '🧱' },
     farmer: { name: 'Farmer', col: '#7cc060', icon: '🍄' },
-    brewer: { name: 'Brewer', col: '#d0a040', icon: '🍺' }
+    brewer: { name: 'Brewer', col: '#d0a040', icon: '🍺' },
+    smith: { name: 'Smith', col: '#e07040', icon: '🔨' }
   };
   // no name shared with the hero creator's dwarf names (js/explore_hero.js DWARF_NAMES), the roster or townsfolk
   const NAMES = {
@@ -102,7 +198,7 @@
     'Ironcask',
     'Seamfinder'
   ];
-  const START_CREW = ['miner', 'miner', 'miner', 'mason', 'farmer', 'brewer'];
+  const START_CREW = ['miner', 'miner', 'miner', 'mason', 'farmer', 'brewer', 'smith'];
   const ORES = {
     cu: { name: 'copper', col: '#d0783a' },
     sn: { name: 'tin', col: '#a8b8c8' },
@@ -157,7 +253,7 @@
   function newGame(seed) {
     seed = (seed == null ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
     const S = {
-      v: 1,
+      v: 2,
       seed,
       rs: seed,
       layer: 1,
@@ -294,6 +390,10 @@
     S.durin = { x: 1, y: gy, path: [], act: 'At the gate' };
     logMsg(S, 'Durin: "Here we cut the Stoneheart Delve. Mark me some good straight passages, planner."');
     logMsg(S, 'Durin: "And a mason\'s workshop early on: nothing gets built without dressed stone."');
+    logMsg(
+      S,
+      'Durin: "Those old iron picks won\'t last. Find copper, tin and coal, and give the smith a forge."'
+    );
     return S;
   }
   function newDwarf(S, name, sex, trade, x, y) {
@@ -311,7 +411,9 @@
       xp: 0,
       bed: -1,
       act: 'Arriving',
-      lack: {}
+      lack: {},
+      pick: trade === 'miner' ? { kind: 'old', uses: PICKS.old.uses } : null,
+      hurt: 0
     };
   }
   function logMsg(S, msg) {
@@ -426,6 +528,14 @@
     if (!floor) return { ok: false, why: 'Dig it out first.' };
     if (type === 'farm' && !soil)
       return { ok: false, why: 'A farm needs soil: dig out a loam pocket (the brown stone) first.' };
+    if (ROOMS[type].one && S.rooms.some(x => x.type === type))
+      return { ok: false, why: 'A Delve has only one ' + ROOMS[type].name + '.' };
+    if (ROOMS[type].min && floor < ROOMS[type].min)
+      return {
+        ok: false,
+        why:
+          'A ' + ROOMS[type].name + ' needs ' + ROOMS[type].min + ' tiles of floor (that has ' + floor + ').'
+      };
     for (const i of ts) S.tiles[i].r = r.id;
     const R = ROOMS[type];
     if (R.furn) {
@@ -596,7 +706,12 @@
     return L;
   }
   function speedOf(d) {
-    return levelOf(d).speed * (openGrudges(d) >= GRUMBLE ? GRUMBLE_SPEED : 1);
+    return levelOf(d).speed * (openGrudges(d) >= GRUMBLE ? GRUMBLE_SPEED : 1) * (d.hurt ? HURT_SPEED : 1);
+  }
+  // how fast a dwarf digs, before skill: a miner by his pick, anyone else at 0.6
+  function digRate(d) {
+    if (d.trade !== 'miner') return 0.6;
+    return d.pick ? PICKS[d.pick.kind].speed : NO_PICK;
   }
   const openGrudges = d => d.grudges.length;
   function addGrudge(S, d, why) {
@@ -655,12 +770,23 @@
       return;
     }
     for (const need of ['food', 'ale']) {
-      const item = need === 'food' ? 'food' : 'ale';
       if (d.needs[need] < LOW[need]) {
-        if (S.stock[item] > 0) {
+        const there = need === 'food' ? stockOf(S, 'food') + stockOf(S, 'meal') : stockOf(S, 'ale');
+        if (there > 0) {
           const st = nearest(dm, stocks);
           if (st >= 0 && go({ type: need === 'food' ? 'eat' : 'drink', ph: 0, tile: st }, st)) return;
         } else d.lack[need] = true;
+      }
+    }
+    // hurt: to a free infirmary cot if there is one
+    if (d.hurt) {
+      const cot = nearest(
+        dm,
+        S.tiles.map((t, i) => (t.fu === 'cot' && t.fb && !t.cl ? i : -1)).filter(i => i >= 0)
+      );
+      if (cot >= 0 && go({ type: 'heal', tile: cot, ph: 1, w: HEAL_COT }, cot)) {
+        S.tiles[cot].cl = d.id;
+        return;
       }
     }
     if (openGrudges(d) >= DOWN_TOOLS) {
@@ -669,17 +795,19 @@
       return;
     }
     const order = {
-      miner: ['dig', 'haul'],
+      miner: ['getpick', 'dig', 'haul'],
       mason: ['build', 'construct', 'cut', 'smooth', 'haul', 'dig'],
-      farmer: ['harvest', 'plant', 'haul', 'dig'],
-      brewer: ['brew', 'haul', 'dig']
-    }[d.trade];
+      farmer: ['harvest', 'plant', 'cook', 'haul', 'dig'],
+      brewer: ['brew', 'cook', 'haul', 'dig'],
+      smith: ['forge', 'smelt', 'haul', 'dig']
+    }[d.trade] || ['haul'];
     for (const kind of order) if (findWork(S, d, dm, kind, stocks, go)) return;
     idle(S, d, dm);
   }
   // what a piece is built from: the bench from rough stone, everything else from dressed blocks
   const matOf = t => (t.fu === 'bench' ? 'stone' : 'block');
   const have = (S, k) => S.stock[k] || 0;
+  const stockOf = have;
   // blocks still wanted: unbuilt furniture and building orders, and a few spare, less what's cut already
   function blocksWanted(S) {
     let want = BLOCK_SPARE;
@@ -780,12 +908,14 @@
       T[best].cl = d.id;
       return true;
     }
-    if (kind === 'cut') {
-      if (have(S, 'stone') < 1 || blocksWanted(S) <= 0) return false;
+    if (RECIPES[kind]) {
+      const R = RECIPES[kind];
+      if (!R.want(S)) return false;
+      for (const k in R.takes) if (have(S, k) < R.takes[k]) return false;
       let best = -1,
         bd = 1e9;
       T.forEach((t, i) => {
-        if (t.fu === 'bench' && t.fb && !t.cl && dm.dist[i] >= 0 && dm.dist[i] < bd) {
+        if (t.fu === R.at && t.fb && !t.cl && dm.dist[i] >= 0 && dm.dist[i] < bd) {
           bd = dm.dist[i];
           best = i;
         }
@@ -793,9 +923,16 @@
       if (best < 0) return false;
       const st = nearest(dm, stocks);
       if (st < 0) return false;
-      if (!go({ type: 'cut', tile: best, ph: 0, st }, st)) return false;
+      if (!go({ type: 'craft', rec: kind, tile: best, ph: 0, st }, st)) return false;
       T[best].cl = d.id;
       return true;
+    }
+    if (kind === 'getpick') {
+      // a miner swaps a worn-out or old iron pick for a bronze one from the stock
+      if (have(S, 'pick') < 1 || (d.pick && d.pick.kind === 'bronze')) return false;
+      const st = nearest(dm, stocks);
+      if (st < 0) return false;
+      return go({ type: 'getpick', ph: 1, tile: -1 }, st);
     }
     if (kind === 'harvest' || kind === 'plant') {
       let best = -1,
@@ -814,23 +951,6 @@
       if (best < 0) return false;
       if (!go({ type: kind, tile: best, ph: 1, w: kind === 'harvest' ? HARVEST_S : PLANT_S }, best))
         return false;
-      T[best].cl = d.id;
-      return true;
-    }
-    if (kind === 'brew') {
-      if (S.stock.barley < 1) return false;
-      let best = -1,
-        bd = 1e9;
-      T.forEach((t, i) => {
-        if (t.fu === 'still' && t.fb && !t.cl && dm.dist[i] >= 0 && dm.dist[i] < bd) {
-          bd = dm.dist[i];
-          best = i;
-        }
-      });
-      if (best < 0) return false;
-      const st = nearest(dm, stocks);
-      if (st < 0) return false;
-      if (!go({ type: 'brew', tile: best, ph: 0, st }, st)) return false;
       T[best].cl = d.id;
       return true;
     }
@@ -876,13 +996,16 @@
     brew: 'Brewing',
     eat: 'Eating',
     drink: 'Drinking',
-    sleep: 'Sleeping'
+    sleep: 'Sleeping',
+    getpick: 'Fetching a bronze pick',
+    heal: 'Abed in the infirmary'
   };
+  const actOf = j => (j.type === 'craft' ? RECIPES[j.rec].act : ACT[j.type]);
   function work(S, d, dt) {
     const j = d.job,
       T = S.tiles;
     if (!walk(S, d, dt)) {
-      d.act = (ACT[j.type] || 'Walking') + '…';
+      d.act = (actOf(j) || 'Walking') + '…';
       return;
     }
     const here = idx(Math.round(d.x), Math.round(d.y)),
@@ -910,7 +1033,7 @@
           return;
         }
         d.act = ACT[j.type];
-        j.w -= dt * (j.type === 'dig' && d.trade !== 'miner' ? 0.6 : 1) * speedOf(d);
+        j.w -= dt * (j.type === 'dig' ? digRate(d) : 1) * speedOf(d);
         if (j.w > 0) return;
         t.cl = 0;
         d.job = null;
@@ -920,7 +1043,19 @@
           t.w = true;
           return;
         }
+        const hard = !t.bt && (t.h === 3 || (t.o && t.o !== 'soil'));
         dig(S, j.tile);
+        wearPick(S, d);
+        if (hard && !d.hurt && rnd(S) < HURT_CHANCE) {
+          d.hurt = S.t;
+          logMsg(
+            S,
+            '🩹 ' +
+              d.name.split(' ')[0] +
+              ' is hurt by a fall of hard stone' +
+              (S.tiles.some(x => x.fu === 'cot' && x.fb) ? '.' : ': an infirmary would mend them quicker.')
+          );
+        }
         return;
       }
       case 'haul': {
@@ -998,22 +1133,10 @@
         construct(S, j.tile, here);
         return;
       }
-      case 'build':
-      case 'brew':
-      case 'cut': {
+      case 'build': {
         const t = T[j.tile];
-        const want = j.type === 'build' ? matOf(t) : j.type === 'cut' ? 'stone' : 'barley',
-          ok =
-            j.type === 'build'
-              ? t && t.fu && !t.fb
-              : j.type === 'cut'
-                ? t && t.fu === 'bench' && t.fb
-                : t && t.fu === 'still' && t.fb;
-        if (!ok) {
-          if (d.carry) {
-            S.stock[d.carry.kind] = have(S, d.carry.kind) + 1;
-            d.carry = null;
-          }
+        const want = t ? matOf(t) : 'block';
+        if (!t || !t.fu || t.fb) {
           drop(S, d);
           return;
         }
@@ -1025,24 +1148,83 @@
           S.stock[want]--;
           d.carry = { kind: want, n: 1 };
           j.ph = 1;
-          j.w = j.type === 'build' ? BUILD_S : j.type === 'cut' ? CUT_S : BREW_S;
+          j.w = BUILD_S;
           goTo(j.tile);
           return;
         }
-        d.act = ACT[j.type];
+        d.act = ACT.build;
         j.w -= dt * speedOf(d);
         if (j.w > 0) return;
         d.carry = null;
         t.cl = 0;
         d.job = null;
         d.xp += 3;
-        if (j.type === 'build') {
-          t.fb = true;
-          const r = roomById(S, t.r);
-          if (r && roomTiles(S, r).every(i => !T[i].fu || T[i].fb))
-            logMsg(S, '🏠 ' + ROOMS[r.type].name + ' is furnished.');
-        } else if (j.type === 'cut') addItem(S, j.tile, 'block', 1);
-        else addItem(S, j.tile, 'ale', BREW_ALE);
+        t.fb = true;
+        const r = roomById(S, t.r);
+        if (r && roomTiles(S, r).every(i => !T[i].fu || T[i].fb))
+          logMsg(S, '🏠 ' + ROOMS[r.type].name + ' is furnished.');
+        return;
+      }
+      case 'craft': {
+        const t = T[j.tile],
+          R = RECIPES[j.rec];
+        if (!R || !t || t.fu !== R.at || !t.fb) {
+          drop(S, d);
+          return;
+        }
+        if (j.ph === 0) {
+          for (const k in R.takes)
+            if (have(S, k) < R.takes[k]) {
+              drop(S, d);
+              return;
+            }
+          for (const k in R.takes) S.stock[k] -= R.takes[k];
+          j.took = Object.assign({}, R.takes);
+          d.carry = { kind: Object.keys(R.takes)[0], n: 1 };
+          j.ph = 1;
+          j.w = R.s;
+          goTo(j.tile);
+          return;
+        }
+        d.act = R.act;
+        j.w -= dt * speedOf(d);
+        if (j.w > 0) return;
+        d.carry = null;
+        j.took = null;
+        t.cl = 0;
+        d.job = null;
+        d.xp += 3;
+        for (const k in R.makes) addItem(S, j.tile, k, R.makes[k]);
+        return;
+      }
+      case 'getpick': {
+        d.job = null;
+        if (have(S, 'pick') < 1) return;
+        S.stock.pick--;
+        const was = d.pick;
+        d.pick = { kind: 'bronze', uses: PICKS.bronze.uses };
+        logMsg(
+          S,
+          '⛏ ' +
+            d.name.split(' ')[0] +
+            (was ? ' trades the old iron pick for a bronze one.' : ' takes up a new bronze pick.')
+        );
+        return;
+      }
+      case 'heal': {
+        const t = T[j.tile];
+        if (!t || t.fu !== 'cot' || !t.fb || !d.hurt) {
+          drop(S, d);
+          return;
+        }
+        d.act = ACT.heal;
+        j.w -= dt;
+        d.needs.sleep = Math.min(100, d.needs.sleep + (dt / SLEEP_S) * 100);
+        if (j.w > 0) return;
+        t.cl = 0;
+        d.job = null;
+        d.hurt = 0;
+        logMsg(S, '🩹 ' + d.name.split(' ')[0] + ' is back on their feet, mended in the infirmary.');
         return;
       }
       case 'plant':
@@ -1067,10 +1249,12 @@
       }
       case 'eat':
       case 'drink': {
-        const item = j.type === 'eat' ? 'food' : 'ale',
-          need = j.type === 'eat' ? 'food' : 'ale';
+        const need = j.type === 'eat' ? 'food' : 'ale';
         if (j.ph === 0) {
-          if (S.stock[item] < 1) {
+          // a cooked meal before raw deepcaps
+          const item = j.type === 'eat' ? (have(S, 'meal') > 0 ? 'meal' : 'food') : 'ale';
+          j.item2 = item;
+          if (have(S, item) < 1) {
             d.lack[need] = true;
             d.job = null;
             return;
@@ -1078,13 +1262,20 @@
           S.stock[item]--;
           d.carry = { kind: item, n: 1 };
           j.ph = 1;
-          // to the dining hall if there is one with a table
+          // to a table (the Great Hall's first), or for a drink to the tavern's keg first
           const dm = distMap(S, d.x, d.y);
           let seat = -1,
             bd = 1e9;
           T.forEach((t, i) => {
-            if (t.fu === 'table' && t.fb && dm.dist[i] >= 0 && dm.dist[i] < bd) {
-              bd = dm.dist[i];
+            if (!t.fb || dm.dist[i] < 0) return;
+            let c;
+            if (t.fu === 'table') {
+              const r = roomById(S, t.r);
+              c = dm.dist[i] - (r && r.type === 'greathall' ? 30 : 0);
+            } else if (t.fu === 'keg' && j.type === 'drink') c = dm.dist[i] - 40;
+            else return;
+            if (c < bd) {
+              bd = c;
               seat = i;
             }
           });
@@ -1100,13 +1291,16 @@
         d.needs[need] = 100;
         d.lack[need] = false;
         d.job = null;
+        const r = roomAt(S, Math.round(d.x), Math.round(d.y));
         if (j.type === 'eat') {
-          const r = roomAt(S, Math.round(d.x), Math.round(d.y));
+          const meal = j.item2 === 'meal';
           if (!j.hall) {
             if (S.t > GRACE) addGrudge(S, d, 'Ate off the floor like a goblin');
-          } else if (r && roomStars(S, r) >= 2 && d.grudges.length && rnd(S) < 0.5)
-            settleGrudge(S, d, 'a good meal in a fine hall');
-        }
+          } else if (r && r.type === 'greathall') settleGrudge(S, d, 'a feast in the Great Hall');
+          else if (r && rnd(S) < (roomStars(S, r) >= 2 ? 0.5 : 0) + (meal ? 0.4 : 0))
+            settleGrudge(S, d, meal ? 'a hot meal at a good table' : 'a good meal in a fine hall');
+        } else if (r && r.type === 'tavern' && rnd(S) < TAVERN_SETTLE)
+          settleGrudge(S, d, 'a pint with friends in the tavern');
         return;
       }
       case 'sleep': {
@@ -1133,12 +1327,32 @@
       const it = S.items.find(x => x.id === j.item);
       if (it) it.cl = 0;
     }
+    if (j && j.took) {
+      for (const k in j.took) S.stock[k] = have(S, k) + j.took[k];
+      d.carry = null;
+    }
     if (d.carry) {
       S.stock[d.carry.kind] = (S.stock[d.carry.kind] || 0) + d.carry.n;
       d.carry = null;
     }
     d.job = null;
     d.path = [];
+  }
+  // a dug tile wears a miner's pick; a worn-out pick is thrown on the slag heap
+  function wearPick(S, d) {
+    if (d.trade !== 'miner' || !d.pick) return;
+    if (--d.pick.uses > 0) return;
+    logMsg(
+      S,
+      '⛏ ' +
+        d.name.split(' ')[0] +
+        "'s " +
+        PICKS[d.pick.kind].name +
+        (have(S, 'pick')
+          ? ' is worn out. A new one from the stock.'
+          : ' is worn out: a forge could make bronze ones.')
+    );
+    d.pick = null;
   }
   // a wall or pillar turns floor into worked stone; a door stays floor (anyone can walk through it)
   function construct(S, i, aside) {
@@ -1246,6 +1460,12 @@
       if (d.needs.food <= 0) addGrudge(S, d, 'Went hungry');
       if (d.needs.ale <= 0) addGrudge(S, d, 'Not a drop of ale in the hold');
       d.grudges = d.grudges.filter(g => S.t - g.t < GRUDGE_DAYS * DAY);
+      if (d.hurt && !(d.job && d.job.type === 'heal') && S.t - d.hurt >= HEAL_WALK) {
+        d.hurt = 0;
+        logMsg(S, '🩹 ' + d.name.split(' ')[0] + ' has walked off the hurt at last.');
+        if (S.t > GRACE && !S.tiles.some(t => t.fu === 'cot' && t.fb))
+          addGrudge(S, d, 'Nursed a wound with nobody to tend it');
+      }
       if (!d.job) {
         chooseJob(S, d);
         if (!d.job) continue;
@@ -1512,6 +1732,30 @@
     return { eye, fresh };
   }
 
+  // an older save: the new stock, picks and wounds, and the smith who came with the new rooms
+  function migrate(S) {
+    if (!S || S.v >= 2) return S;
+    for (const k in START_STOCK) if (S.stock[k] == null) S.stock[k] = k === 'pick' ? 0 : START_STOCK[k];
+    for (const d of S.dwarves) {
+      // jobs of the old kinds (brew, cut) are dropped, their stock given back
+      if (d.job && (d.job.type === 'brew' || d.job.type === 'cut' || d.job.type === 'build')) drop(S, d);
+      if (d.pick === undefined) d.pick = d.trade === 'miner' ? { kind: 'old', uses: PICKS.old.uses } : null;
+      if (d.hurt === undefined) d.hurt = 0;
+    }
+    if (!S.dwarves.some(d => d.trade === 'smith')) {
+      const used = new Set(S.dwarves.map(d => d.name));
+      let nm;
+      do {
+        nm = pick(S, NAMES.m) + ' ' + pick(S, SURNAMES);
+      } while (used.has(nm));
+      const g = S.gate[0];
+      S.dwarves.push(newDwarf(S, nm, 'm', 'smith', g % W, (g / W) | 0));
+      logMsg(S, '🔨 ' + nm + ', a smith, comes up the road to the gate. Give him a forge.');
+    }
+    S.v = 2;
+    return S;
+  }
+
   const API = {
     W,
     H,
@@ -1526,7 +1770,12 @@
     GRUMBLE,
     DOWN_TOOLS,
     PROSPECT_R,
+    RECIPES,
+    PICKS,
+    NO_PICK,
+    GREAT_HALL_MIN,
     newGame,
+    migrate,
     tick,
     designate,
     makeRoom,

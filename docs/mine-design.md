@@ -364,7 +364,7 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
   4 stone). Fog: you see stone beside dug floor; ore glints faintly one tile further into the dark.
 - **Time:** real time, a day is 4 minutes at ×1, ⏸ ▶ ×2 ×4 (Space pauses).
 - **Tools:** ✋ Look (tap a dwarf, Durin, a room or a tile; drag pans), ⛏ Dig, 🏛 Pillar, ✨ Smooth, 🏠 Room
-  (stockpile, bedroom, dormitory, dining hall, mushroom farm, brewery), ✖ Clear; drag a rectangle; pinch,
+  (stockpile, bedroom, dormitory, dining hall, mushroom farm, brewery; more below), ✖ Clear; drag a rectangle; pinch,
   wheel or + / − to zoom (a phone opens zoomed in on the gate). Keys D P S R C L.
 - **The crew:** six dwarves (three miners, a mason, a farmer, a brewer; names from their own list, none
   shared with the hero creator's dwarf names). Each picks its own work: needs first (sleep below 25, food
@@ -425,13 +425,42 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
     shows 🪨 rough stone and 🧱 blocks; marking a room or a build with no blocks says what's missing (no
     workshop, no bench yet, no rough stone; `blockNews`), and Durin's opening line says to make one early.
     Room names now sit on the wall just above the room, so they don't cover its corner furniture.
-- **Rooms to come** (the user asked for more; candidates, nothing built):
-  - **Kitchen:** a hearth (coal) where a cook turns deepcaps into meals; a meal in the hall is a bigger lift
-    than raw mushrooms, so it settles grudges sooner.
-  - **Forge** (step 3): smelts ore into bars with coal, then makes picks (faster digging; picks wear out) and
-    the warriors' gear.
-  - **Barracks** (step 3): warriors live and train there; the alarm sends them out from it.
-  - **Infirmary** (step 2, with cave-ins): beds for the injured, who heal faster there.
-  - **Tavern hall:** dwarves drink together after work; ale drunk there is worth more to their mood.
-  - **Wall of Remembrance** and **the Great Hall:** as in "Rooms" above.
+  - *"Yes, do all of them"* (the rooms proposed above). Six more rooms, each with work to do now
+    (`ROOMS` in `js/mine_engine.js`; their help is `ROOM_HELP` in `js/mine.js`), and a **smith**, a seventh
+    dwarf (an older save gets him at the gate, `migrate`). Crafts are one job now, `craft`, driven by
+    `RECIPES` (what it's made at, what it takes from the stock, what it makes, how long, and when it's
+    wanted): the dwarf takes the inputs, carries them to the furniture, works, and leaves the goods to be
+    hauled. Cutting and brewing moved onto it too. If the job's dropped, its inputs go back (`j.took`).
+    - **Kitchen** (one hearth): the farmer or brewer cooks 2 deepcaps into 3 meals 🍲 while there are fewer
+      than two a dwarf. Meals are eaten before raw deepcaps; a meal at any table strikes out a grudge 40% of
+      the time (on top of a 2★ hall's 50%).
+    - **Forge** (one anvil): the smith smelts a copper, a tin and a coal into 2 bronze 🟫 (while under 2)
+      and forges a bronze pick ⛏ from one (while under 2 in the stock). **Picks wear out:** the crew arrive
+      with old iron picks (speed 1, 70 tiles); a bronze pick digs at 1.4 for 90 tiles (`PICKS`); a miner with
+      none digs at 0.45 (`NO_PICK`) and fetches a bronze one from the stock as soon as there is one
+      (`getpick`, also swapping out an old iron pick). The log says when a pick wears out. 70 because at 45
+      every seed's old picks were gone on day 2, before anyone could have found three ores and built an anvil.
+    - **Tavern hall** (a keg every 8 tiles): the crew drink at a keg before anywhere else; a pint there
+      strikes out a grudge 40% of the time (`TAVERN_SETTLE`).
+    - **Infirmary** (a cot every 4 tiles): digging hard rock (hardness 3) or ore hurts a dwarf 4% of the time
+      (`HURT_CHANCE`): half pace (`HURT_SPEED`) until mended. A hurt dwarf goes to a free cot after eating and
+      drinking and is mended in a quarter of a day (`HEAL_COT`); with no cot they walk it off in a day and a
+      half (`HEAL_WALK`), and, after the first day and a half, with no cot built anywhere, hold a grudge for
+      it. Hurt dwarves wear a bandage on the map. The cave-ins of step 2 will hurt dwarves too.
+    - **Barracks** (a weapon rack every 4 tiles): nothing to guard against yet; it's where the warriors of
+      step 3 will stand.
+    - **The Great Hall:** one a Delve, at least 40 tiles (`GREAT_HALL_MIN`; `one` and `min` on a room type,
+      checked in `makeRoom`), a table every 6, 2★ only at 60 tiles. The crew eat there before anywhere else,
+      and every meal in it strikes out a grudge.
+    - **The Wall of Remembrance** waits for step 2: it needs dwarves who die.
+    - The stock bar adds 🍲 meals, 🟫 bronze and ⛏ picks; a dwarf's panel shows their pick and any hurt;
+      on a phone the room menu runs four across, the map's width.
+    - **Sim** (`tools/mine_sim.js` now also digs a kitchen, forge, tavern, infirmary, a Great Hall, barracks
+      and a dormitory for the seventh dwarf, and keeps its auto-farms off every planned room, which used to
+      steal seed 7's dining hall): 10 days, seed 7: every room made, 2★ but the Great Hall, picks forged,
+      every grudge but one struck out, Mason's Eye 81, three patterns. Across seeds 1–9 (7 days) the old picks
+      wear out around day 4 and bronze picks reach the miners on most seeds; where they don't, coal is short
+      (prospect for it). Wounds come mostly in the first days, while the hard rock is dug, so in the sim they
+      are walked off before an infirmary is furnished; a dwarf hurt later goes to a cot and is mended
+      (checked). Seed 3 runs out of food by day 8, as before: its loam lies where the script never farms.
 - **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.

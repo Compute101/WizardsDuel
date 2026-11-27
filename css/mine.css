@@ -489,9 +489,21 @@
   border: 1px solid rgba(0, 0, 0, 0.45);
 }
 @media (max-width: 760px) {
+  .mn-menu {
+    gap: 4px;
+    padding: 4px;
+    width: calc(100% - 16px);
+    box-sizing: border-box;
+  }
+  /* thirteen rooms: four across, so the menu leaves room for the hint above it */
   .mn-menu .mn-btn {
     min-width: 0;
-    flex: 1 1 28%;
-    font-size: 20px;
+    flex: 1 1 22%;
+    min-height: 44px;
+    font-size: 18px;
+    padding: 4px 3px;
+  }
+  .mn-menu .mn-btn small {
+    font-size: 11px;
   }
 }

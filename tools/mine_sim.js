@@ -22,14 +22,40 @@ for (let k = 0; k < 4; k++) {
   M.designate(S, 'dig', x + 1, gy + 1, x + 1, gy + 1);
 }
 M.designate(S, 'dig', 18, gy + 1, 26, gy + 6);
+// north of the gallery: kitchen, forge and tavern, the Great Hall and barracks behind them; an infirmary south-east
+M.designate(S, 'dig', 16, gy - 3, 18, gy - 2);
+M.designate(S, 'dig', 20, gy - 3, 23, gy - 2);
+M.designate(S, 'dig', 25, gy - 3, 29, gy - 2);
+M.designate(S, 'dig', 19, gy - 5, 19, gy - 2);
+M.designate(S, 'dig', 17, gy - 9, 26, gy - 6);
+M.designate(S, 'dig', 29, gy - 5, 29, gy - 4);
+M.designate(S, 'dig', 28, gy - 9, 30, gy - 6);
+M.designate(S, 'dig', 28, gy + 1, 30, gy + 3);
+// a dormitory behind the bedrooms for the rest of the crew
+M.designate(S, 'dig', 7, gy + 4, 7, gy + 4);
+M.designate(S, 'dig', 6, gy + 5, 14, gy + 6);
 const plan = [
   [0.4, () => M.designate(S, 'room:workshop', 23, gy + 4, 26, gy + 6)],
   [0.6, () => M.designate(S, 'room:stockpile', 18, gy + 1, 22, gy + 6)],
   ...[0, 1, 2, 3].map(k => [0.9, () => M.designate(S, 'room:bedroom', 6 + k * 4, gy + 2, 8 + k * 4, gy + 3)]),
+  [1.0, () => M.designate(S, 'room:dorm', 6, gy + 5, 14, gy + 6)],
   [1.1, () => M.designate(S, 'room:dining', 6, gy - 7, 14, gy - 3)],
   [1.2, () => M.designate(S, 'smooth', 5, gy - 8, 15, gy - 2)],
-  [1.3, () => M.designate(S, 'room:brewery', 23, gy + 1, 26, gy + 3)]
+  [1.3, () => M.designate(S, 'room:brewery', 23, gy + 1, 26, gy + 3)],
+  [1.4, () => M.designate(S, 'room:kitchen', 16, gy - 3, 18, gy - 2)],
+  [1.5, () => M.designate(S, 'room:forge', 20, gy - 3, 23, gy - 2)],
+  [1.6, () => M.designate(S, 'room:tavern', 25, gy - 3, 29, gy - 2)],
+  [1.7, () => M.designate(S, 'room:infirmary', 28, gy + 1, 30, gy + 3)],
+  [2.0, () => M.designate(S, 'room:greathall', 17, gy - 9, 26, gy - 6)],
+  [2.2, () => M.designate(S, 'room:barracks', 28, gy - 9, 30, gy - 6)]
 ];
+// every room the plan will make, read back from its calls, so the farms keep off them
+const planned = [];
+for (const p of plan) {
+  const m = /room:\w+', ([^)]*)\)/.exec(p[1].toString());
+  if (m) planned.push(m[1].split(',').map(v => eval(v.replace(/k/g, '0'))));
+}
+for (let k = 0; k < 4; k++) planned.push([6 + k * 4, gy + 2, 8 + k * 4, gy + 3]);
 let logged = 0;
 for (let s = 0; s < days * M.DAY; s += 1) {
   for (const p of plan)
@@ -43,8 +69,9 @@ for (let s = 0; s < days * M.DAY; s += 1) {
       if (t.k === 'f' && t.o === 'soil' && !t.r) {
         const x = i % M.W,
           y = (i / M.W) | 0;
-        // not where the plan's own rooms are meant to go (the workshop, stockpile and brewery corner)
-        if (!(x >= 18 && x <= 26 && y >= gy + 1 && y <= gy + 6)) M.designate(S, 'room:farm', x, y, x, y);
+        // not where the plan's own rooms are meant to go
+        if (!planned.some(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1))
+          M.designate(S, 'room:farm', x, y, x, y);
       }
     });
   }
@@ -78,7 +105,9 @@ for (const d of S.dwarves)
       .map(v => v | 0)
       .join('/'),
     '|',
-    d.act
+    d.act,
+    d.pick ? '| ' + d.pick.kind + ' pick ' + d.pick.uses : '',
+    d.hurt ? '| hurt' : ''
   );
 console.log('log tail:');
-S.log.slice(-8).forEach(l => console.log('  d' + (Math.floor(l.t / M.DAY) + 1), l.msg));
+S.log.slice(-14).forEach(l => console.log('  d' + (Math.floor(l.t / M.DAY) + 1), l.msg));
