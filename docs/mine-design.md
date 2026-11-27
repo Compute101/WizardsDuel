@@ -482,6 +482,12 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
     and there's a new room, the **Taproom** (`ROOMS.taproom`: kegs, `open`, so no door wanted, `good` 6), which
     is never as good: a pint there strikes out a grudge 20% of the time (`TAPROOM_SETTLE`) against the
     tavern's 40%, and the crew go to a tavern's keg before a taproom's.
+    *"The tavern needs a dwarf to serve, I guess, but the taproom doesn't."* A new trade, the **Tavern keeper**
+    (`TRADES.keeper`, 🍻): when the first tavern is furnished, one comes up from Stonedeep (`hireKeeper`; an
+    older save with a furnished tavern gets one, `migrate` v5). The keeper's work is to stand behind the bar
+    (`serve`: a floor tile of the tavern beside a keg, `SERVE_S` 30 s a stint), else haul. A tavern pours only
+    while its keeper is there (`served`), so it shuts while they eat or sleep and the crew drink at a taproom or
+    a table instead; a taproom's kegs serve themselves.
     The sim's Great Hall was only 40 tiles (10 × 4), the minimum, so it never earned a second star; there was
     room for 10 × 6 (rows 1–6), so it's 60 tiles now and reaches 2★ on seeds 7 and 9 in 10 days.
 

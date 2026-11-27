@@ -109,9 +109,9 @@
     forge:
       'One anvil. The smith smelts a copper, a tin and a coal into 2 bronze, and forges a bronze pick from 1 bronze. The old iron picks wear out, and a miner with none digs at half pace.',
     tavern:
-      'A keg for every 8 tiles. The crew drink here before anywhere else, and a pint with friends strikes out a grudge now and then. A proper hall: it wants a door on every way in.',
+      'A keg for every 8 tiles. The crew drink here before anywhere else, and a pint with friends strikes out a grudge now and then. A proper hall: it wants a door on every way in, and a tavern keeper behind the bar (one comes up from Stonedeep when your first tavern is furnished). Closed while the keeper eats or sleeps.',
     taproom:
-      'Kegs in an open room: no door needed, but not as good as a tavern. A pint here strikes out a grudge half as often, and the crew go to a tavern first.',
+      'Kegs in an open room that serve themselves: no door or keeper needed, but not as good as a tavern. A pint here strikes out a grudge half as often, and the crew go to a tavern first.',
     infirmary:
       'A cot for every 4 tiles. Hard rock and ore sometimes hurt a dwarf, who works at half pace until mended: a quarter of a day in a cot, a day and a half walking it off.',
     barracks:
@@ -721,7 +721,7 @@
         })
         .join('') +
       '</div>' +
-      `<p class="mn-note">Miners dig. The mason builds furniture and smooths walls. The farmer grows food and barley; the brewer makes ale. Everyone hauls, and digs when there's nothing else.</p>`
+      `<p class="mn-note">Miners dig. The mason builds furniture and smooths walls. The farmer grows food and barley; the brewer makes ale. The tavern keeper serves behind the bar. Everyone hauls, and digs when there's nothing else.</p>`
     );
   }
   function ledgerHtml() {

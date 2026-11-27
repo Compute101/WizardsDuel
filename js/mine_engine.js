@@ -221,6 +221,7 @@
   const HEAL_COT = DAY * 0.25; // abed in an infirmary cot
   const HEAL_WALK = DAY * 1.5; // walking it off with no cot
   const TAVERN_SETTLE = 0.4; // a drink at the tavern's keg strikes out a grudge this often
+  const SERVE_S = 30; // a keeper's stint behind the bar before looking round
   const TAPROOM_SETTLE = 0.2; // a taproom's, half as often
   const GREAT_HALL_MIN = 40; // tiles of floor a Great Hall needs
   const EYE_MIN_FLOOR = 30; // the Mason's Eye judges once there's this much worked floor
@@ -307,7 +308,10 @@
     mason: { name: 'Mason', col: '#d8b070', icon: '🧱' },
     farmer: { name: 'Farmer', col: '#7cc060', icon: '🍄' },
     brewer: { name: 'Brewer', col: '#d0a040', icon: '🍺' },
-    smith: { name: 'Smith', col: '#e07040', icon: '🔨' }
+    smith: { name: 'Smith', col: '#e07040', icon: '🔨' },
+    // comes up from Stonedeep when the first tavern is furnished (hireKeeper); a tavern only pours while
+    // its keeper is behind the bar. A taproom's kegs serve themselves.
+    keeper: { name: 'Tavern keeper', col: '#c05a7a', icon: '🍻' }
   };
   // no name shared with the hero creator's dwarf names (js/explore_hero.js DWARF_NAMES), the roster or townsfolk
   const NAMES = {
@@ -392,7 +396,7 @@
   function newGame(seed) {
     seed = (seed == null ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
     const S = {
-      v: 4,
+      v: 5,
       seed,
       rs: seed,
       layer: 1,
@@ -933,6 +937,31 @@
   }
 
   // ── stock and stockpiles ──
+  // a tavern is open while its keeper stands behind its bar
+  function served(S, r) {
+    return S.dwarves.some(
+      d =>
+        d.job && d.job.type === 'serve' && !d.path.length && roomAt(S, Math.round(d.x), Math.round(d.y)) === r
+    );
+  }
+  // the first tavern furnished brings a keeper up from Stonedeep
+  function hireKeeper(S) {
+    if (S.dwarves.some(d => d.trade === 'keeper') || S.keeperHired) return;
+    S.keeperHired = true;
+    const used = new Set(S.dwarves.map(d => d.name).concat(S.dead.map(d => d.name)));
+    const sex = rnd(S) < 0.5 ? 'm' : 'f';
+    let nm,
+      n = 0;
+    do {
+      nm = pick(S, NAMES[sex]) + ' ' + pick(S, SURNAMES);
+    } while (used.has(nm) && ++n < 50);
+    const g = S.gate[0];
+    S.dwarves.push(newDwarf(S, nm, sex, 'keeper', g % W, (g / W) | 0));
+    logMsg(
+      S,
+      '🍻 ' + nm + " comes up from Stonedeep to keep your tavern. It pours only while they're behind the bar."
+    );
+  }
   function stockTiles(S) {
     const out = S.gate.slice();
     for (const r of S.rooms)
@@ -1065,7 +1094,8 @@
       mason: ['build', 'construct', 'cut', 'smooth', 'haul', 'dig'],
       farmer: ['harvest', 'plant', 'cook', 'haul', 'dig'],
       brewer: ['brew', 'draw', 'melt', 'cook', 'haul', 'dig'],
-      smith: ['forge', 'smelt', 'haul', 'dig']
+      smith: ['forge', 'smelt', 'haul', 'dig'],
+      keeper: ['serve', 'haul']
     }[d.trade] || ['haul'];
     for (const kind of order) if (findWork(S, d, dm, kind, stocks, go)) return;
     idle(S, d, dm);
@@ -1211,6 +1241,31 @@
       T[best].cl = d.id;
       return true;
     }
+    if (kind === 'serve') {
+      // behind the bar: a floor tile of a tavern beside one of its kegs
+      let best = -1,
+        bd = 1e9;
+      for (const r of S.rooms) {
+        if (r.type !== 'tavern') continue;
+        for (const i of roomTiles(S, r)) {
+          const t = T[i];
+          if (t.k !== 'f' || t.fu || dm.dist[i] < 0 || dm.dist[i] >= bd) continue;
+          const x = i % W,
+            y = (i / W) | 0;
+          if (
+            !D8.some(
+              ([dx, dy]) =>
+                inB(x + dx, y + dy) && T[idx(x + dx, y + dy)].fu === 'keg' && T[idx(x + dx, y + dy)].fb
+            )
+          )
+            continue;
+          bd = dm.dist[i];
+          best = i;
+        }
+      }
+      if (best < 0) return false;
+      return go({ type: 'serve', tile: -1, at: best, ph: 1, w: SERVE_S }, best);
+    }
     if (kind === 'getpick') {
       // a miner swaps a worn-out or old iron pick for a bronze one from the stock
       if (have(S, 'pick') < 1 || (d.pick && d.pick.kind === 'bronze')) return false;
@@ -1294,6 +1349,7 @@
     sleep: 'Sleeping',
     getpick: 'Fetching a bronze pick',
     mourn: 'At the Wall of Remembrance',
+    serve: 'Serving behind the bar',
     heal: 'Abed in the infirmary'
   };
   const actOf = j => (j.type === 'craft' ? RECIPES[j.rec].act : ACT[j.type]);
@@ -1459,6 +1515,7 @@
         const r = roomById(S, t.r);
         if (r && roomTiles(S, r).every(i => !T[i].fu || T[i].fb))
           logMsg(S, '🏠 ' + ROOMS[r.type].name + ' is furnished.');
+        if (r && r.type === 'tavern') hireKeeper(S);
         return;
       }
       case 'craft': {
@@ -1505,6 +1562,12 @@
             d.name.split(' ')[0] +
             (was ? ' trades the old iron pick for a bronze one.' : ' takes up a new bronze pick.')
         );
+        return;
+      }
+      case 'serve': {
+        d.act = ACT.serve;
+        j.w -= dt;
+        if (j.w <= 0) d.job = null; // looks round for anything more pressing, then likely back to the bar
         return;
       }
       case 'mourn': {
@@ -1588,8 +1651,9 @@
               const r = roomById(S, t.r);
               c = dm.dist[i] - (r && r.type === 'greathall' ? 30 : 0);
             } else if (t.fu === 'keg' && j.type === 'drink') {
-              // a tavern's keg before a taproom's
+              // a tavern's keg before a taproom's, but a tavern pours only with its keeper behind the bar
               const r = roomById(S, t.r);
+              if (r && r.type === 'tavern' && !served(S, r)) return;
               c = dm.dist[i] - (r && r.type === 'tavern' ? 40 : 25);
             } else return;
             if (c < bd) {
@@ -2363,14 +2427,25 @@
 
   // an older save: the new stock, picks and wounds, and the smith who came with the new rooms
   function migrate(S) {
-    if (!S || S.v >= 4) return S;
+    if (!S || S.v >= 5) return S;
+    if (S.v < 4) migrate4(S);
+    // the tavern keeper: an older save with a furnished tavern gets one now
+    if (
+      S.rooms.some(
+        r => r.type === 'tavern' && roomTiles(S, r).some(i => S.tiles[i].fu === 'keg' && S.tiles[i].fb)
+      )
+    )
+      hireKeeper(S);
+    S.v = 5;
+    return S;
+  }
+  function migrate4(S) {
     if (S.v < 3) migrate3(S);
     // wells: damp spots on every layer (in stone not yet dug), and the wagon's water
     for (let z = 0; z < LAYERS.length; z++) damp(S, z);
     if (S.stock.water == null) S.stock.water = START_STOCK.water;
     S.v = 4;
     logMsg(S, '💧 Durin: "The brewer wants water. Look for damp stone and sink a well there."');
-    return S;
   }
   function migrate3(S) {
     if (S.v < 2) migrate2(S);
