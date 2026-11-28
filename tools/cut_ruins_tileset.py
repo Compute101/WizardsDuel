@@ -957,6 +957,60 @@ def sink(c, y, top):
     return Image.fromarray(a.astype(np.uint8), 'RGBA')
 
 
+# ── sheets 32–34, from the user: Gilden's second pass (docs/art-prompts.md, "Gilden, second pass"). 32 the
+#    harbour (lighters in the three houses' colours, piles, a bollard, the treadwheel crane, anchor, capstan,
+#    the Fish Market's stalls, nets, pots, fish crates and barrels, rope, house-marked crates, a gangplank,
+#    Fettle's hull on the slip, timber, tar); 33 the civic buildings (the Exchange, the Customs House, the
+#    Guildhall, the Harbour Light, the Sky Office, the Ore Gate, the Old Man of the Narrows, Vellacourt House shut
+#    up); 34 Gilden's own merchant houses (stepped-gable fronts, backs and gable ends in five colours, and a
+#    counting-house). Sizes in KIND_SCALE (js/explore_pieces.js) ──
+RECTS32 = {
+    k: _pad(v, 2)
+    for k, v in {
+        'lighterRed': (39, 23, 290, 145),
+        'lighterBlue': (366, 23, 286, 146),
+        'lighterViolet': (689, 23, 289, 145),
+        'pierPiles': (1062, 11, 129, 160),
+        'bollard': (1303, 54, 96, 90),
+        'dockCrane': (19, 172, 371, 289),
+        'gdAnchor': (631, 202, 220, 224),
+        'gdFishStall': (868, 180, 332, 259),
+        'gdEelStall': (1211, 180, 299, 259),
+        'capstan': (433, 271, 188, 156),
+        'netRack': (16, 464, 345, 190),
+        'lobsterPots': (374, 467, 203, 136),
+        'herringBarrels': (1032, 458, 212, 145),
+        'ropeCoils': (1295, 470, 213, 140),
+        'fishCrates': (599, 488, 397, 110),
+        'gangplank': (1011, 585, 330, 193),
+        'crateAnchor': (412, 617, 164, 123),
+        'crateForge': (591, 617, 171, 124),
+        'crateScale': (774, 618, 170, 122),
+        'slipHull': (33, 676, 693, 320),
+        'timberStack': (745, 778, 387, 200),
+        'tarBarrels': (1162, 750, 336, 216),
+    }.items()
+}
+RECTS33 = {
+    k: _pad(v, 2)
+    for k, v in {
+        'exchange': (36, 0, 578, 380),
+        'customsHouse': (639, 5, 414, 381),
+        'guildhall': (1080, 12, 440, 372),
+        'harbourLight': (9, 379, 321, 346),
+        'skyOffice': (330, 393, 236, 303),
+        'oreGate': (612, 385, 416, 297),
+        'seaGodStatue': (1119, 384, 334, 324),
+        'palaceShut': (210, 675, 1144, 334),
+    }.items()
+}
+_G34 = [(36, 270, 497, 725, 954), (28, 278, 528, 771, 1009), (38, 286, 533, 779, 1024)]
+RECTS34 = {'countingHouse': (1184, 8, 348, 416)}
+for _i in range(5):
+    RECTS34['gdHouse%d' % (_i + 1)] = (_G34[0][_i], 2, 200, 406)
+    RECTS34['gdBack%d' % (_i + 1)] = (_G34[1][_i], 409, 216, 268)
+    RECTS34['gdSide%d' % (_i + 1)] = (_G34[2][_i], 681, 204, 319)
+
 # a neighbour inside a crop, blanked before the crop is cleaned (sheet coords)
 ERASE = {'armillary': [(150, 0, 372, 325)]}
 
@@ -1145,6 +1199,36 @@ SHEETS = {
         clean=True,
         holes=3,
         shrink=0.5,
+    ),
+    '32': dict(
+        src='tileset32_source.png',
+        bg=(13, 15, 21),
+        rects=RECTS32,
+        ground=set(),
+        out='ruins32',
+        key='32',
+        clean=True,
+        holes=40,
+    ),
+    '33': dict(
+        src='tileset33_source.png',
+        bg=(13, 15, 21),
+        rects=RECTS33,
+        ground=set(),
+        out='ruins33',
+        key='33',
+        clean=True,
+        holes=40,
+    ),
+    '34': dict(
+        src='tileset34_source.png',
+        bg=(14, 16, 22),
+        rects=RECTS34,
+        ground=set(),
+        out='ruins34',
+        key='34',
+        clean=True,
+        holes=40,
     ),
     '3': dict(
         src='tileset3_source.png',
@@ -1466,7 +1550,9 @@ def cut(sh, write=True):
 
 def pack(crops, name):
     order = sorted(crops, key=lambda k: -crops[k].size[1])
-    W = 1024
+    W = max(
+        1024, max(c.size[0] for c in crops.values())
+    )  # wider only for a piece wider than 1024 (palaceShut)
     x = y = rh = 0
     pos = {}
     for k in order:

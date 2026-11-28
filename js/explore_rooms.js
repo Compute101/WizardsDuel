@@ -814,7 +814,8 @@
     if (b === 'chapel' || b === 'temple') return 'chapel';
     if (b === 'hall' || b === 'tower' || b === 'spireTower') return 'study';
     if (b === 'forge' || b === 'foundry') return 'forge';
-    if (b === 'townhouse' || b === 'palace') return 'rich';
+    if (b === 'townhouse' || b === 'palace' || b === 'countingHouse') return 'rich';
+    if (b === 'exchange' || b === 'customsHouse' || b === 'guildhall') return 'study';
     if (b === 'warehouse') return 'workshop';
     if (b === 'mausoleum' || b === 'tomb' || b === 'tombGrand') return 'crypt';
     const q = r();

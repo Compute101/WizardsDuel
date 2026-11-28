@@ -96,7 +96,11 @@ The fat Bulldogs, the seated students, the lecturers and the examiner are done (
 Every earlier sheet has arrived (the Undercroft, the lecture theatre, Elfhome; prompts in the archive). Wrenford's own
 sheet is still wanted: its piece list is in Part 2, 5b.
 
-#### Gilden, second pass (sheets 32–34)
+#### Gilden, second pass (sheets 32–34): arrived
+
+All three sheets have arrived and are in the game (see `docs/gilden-design.md`, "As built"). The table and prompt are
+kept as a record and as a model for the next city's set. Still borrowed in Gilden: the Salt Purse (Hollowmere's
+tavern), the Charterhouse and the Narrows Office (the townhouse), the Skyport's kites and the mole's figurehead.
 
 Gilden's first art is in (sheets 29–31: palaces, airship, warehouses, ships, stalls). Most of the rest of the city
 still borrows pieces from Corvanthe's ruined districts, so its harbour looks abandoned, and some pieces are far too

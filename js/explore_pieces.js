@@ -241,7 +241,45 @@
     shipFront: 0.8,
     shipBack: 0.8,
     shipStern: 0.8,
-    shipSide: 0.8
+    shipSide: 0.8,
+    // Gilden's second pass: the harbour (sheet 32) and the civic buildings (33); the merchant houses (34) are
+    // drawn at the first sheets' scale (PS), so they aren't listed
+    lighterRed: 0.45,
+    lighterBlue: 0.45,
+    lighterViolet: 0.45,
+    pierPiles: 0.42,
+    bollard: 0.28,
+    dockCrane: 0.42,
+    gdAnchor: 0.32,
+    gdFishStall: 0.47,
+    gdEelStall: 0.47,
+    capstan: 0.3,
+    netRack: 0.42,
+    lobsterPots: 0.32,
+    herringBarrels: 0.3,
+    ropeCoils: 0.28,
+    fishCrates: 0.3,
+    gangplank: 0.4,
+    crateAnchor: 0.26,
+    crateForge: 0.26,
+    crateScale: 0.26,
+    slipHull: 0.5,
+    timberStack: 0.38,
+    tarBarrels: 0.36,
+    exchange: 0.66,
+    customsHouse: 0.66,
+    guildhall: 0.62,
+    harbourLight: 0.8,
+    skyOffice: 0.62,
+    oreGate: 0.8,
+    seaGodStatue: 0.62,
+    palaceShut: 0.44,
+    // the merchant houses' gable ends are drawn smaller than their fronts, or they stack into towers along the lanes
+    gdSide1: 0.48,
+    gdSide2: 0.48,
+    gdSide3: 0.48,
+    gdSide4: 0.48,
+    gdSide5: 0.48
   };
   function scaleOf(kind, sc) {
     return sc || KIND_SCALE[kind] || KIND_SCALE[kind.split('_')[0]] || PS;
@@ -259,6 +297,39 @@
     galleon: [{ w: 1, h: 0.14 }],
     stall: [{ w: 0.86, h: 0.3 }],
     ship: [{ w: 0.8, h: 0.12 }], // afloat: the water round it blocks you anyway
+    // Gilden's second pass (sheets 32–34)
+    gdHouse: [{ w: 0.9, h: 0.3 }],
+    gdBack: [{ w: 0.9, h: 0.4 }],
+    gdSide: [{ w: 0.85, h: 0.4 }],
+    countingHouse: [{ w: 0.9, h: 0.3 }],
+    exchange: [{ w: 0.9, h: 0.3 }],
+    customsHouse: [{ w: 0.9, h: 0.3 }],
+    guildhall: [{ w: 0.9, h: 0.3 }],
+    harbourLight: [{ ox: 0.5, w: 0.8, h: 0.3 }],
+    skyOffice: [{ w: 0.8, h: 0.3 }],
+    oreGate: [
+      { ox: 0.17, w: 0.32, h: 0.22 },
+      { ox: 0.83, w: 0.32, h: 0.22 }
+    ],
+    seaGodStatue: [{ w: 0.8, h: 0.3 }],
+    palaceShut: [{ w: 0.9, h: 0.36 }],
+    lighter: [{ w: 0.85, h: 0.35 }],
+    pierPiles: [{ w: 0.8, h: 0.2 }],
+    bollard: [{ w: 0.6, h: 8 }],
+    dockCrane: [{ w: 0.8, h: 0.2 }],
+    gdAnchor: [{ w: 0.7, h: 0.3 }],
+    gdFishStall: [{ w: 0.86, h: 0.3 }],
+    gdEelStall: [{ w: 0.86, h: 0.3 }],
+    capstan: [{ w: 0.7, h: 0.3 }],
+    netRack: [{ w: 0.9, h: 12 }],
+    lobsterPots: [{ w: 0.85, h: 0.4 }],
+    herringBarrels: [{ w: 0.85, h: 0.4 }],
+    ropeCoils: [{ w: 0.85, h: 0.4 }],
+    fishCrates: [{ w: 0.9, h: 0.4 }],
+    gangplank: [{ w: 0.02, h: 1 }], // you walk on it
+    slipHull: [{ w: 0.9, h: 0.35 }],
+    timberStack: [{ w: 0.9, h: 0.4 }],
+    tarBarrels: [{ w: 0.85, h: 0.35 }],
     // Elfhome (sheets 27 and 28, tools/mapgen/elfhome.js)
     efHeartTree: [{ w: 0.42, h: 40 }],
     efTalan: [{ w: 0.28, h: 16 }],
@@ -664,6 +735,105 @@
       [0.33, 0.14, 'lamp'],
       [0.53, 0.18, 'lamp']
     ],
+    gdHouse1: [
+      [0.25, 0.47],
+      [0.5, 0.47],
+      [0.75, 0.47],
+      [0.25, 0.63],
+      [0.5, 0.63],
+      [0.75, 0.63],
+      [0.25, 0.83],
+      [0.5, 0.83],
+      [0.75, 0.83]
+    ],
+    gdHouse2: [
+      [0.25, 0.47],
+      [0.5, 0.47],
+      [0.75, 0.47],
+      [0.25, 0.63],
+      [0.5, 0.63],
+      [0.75, 0.63],
+      [0.25, 0.83],
+      [0.5, 0.83],
+      [0.75, 0.83]
+    ],
+    gdHouse3: [
+      [0.25, 0.47],
+      [0.5, 0.47],
+      [0.75, 0.47],
+      [0.25, 0.63],
+      [0.5, 0.63],
+      [0.75, 0.63],
+      [0.25, 0.83],
+      [0.5, 0.83],
+      [0.75, 0.83]
+    ],
+    gdHouse4: [
+      [0.25, 0.47],
+      [0.5, 0.47],
+      [0.75, 0.47],
+      [0.25, 0.63],
+      [0.5, 0.63],
+      [0.75, 0.63],
+      [0.25, 0.83],
+      [0.5, 0.83],
+      [0.75, 0.83]
+    ],
+    gdHouse5: [
+      [0.25, 0.47],
+      [0.5, 0.47],
+      [0.75, 0.47],
+      [0.25, 0.63],
+      [0.5, 0.63],
+      [0.75, 0.63],
+      [0.25, 0.83],
+      [0.5, 0.83],
+      [0.75, 0.83]
+    ],
+    countingHouse: [
+      [0.33, 0.78, 'lamp'],
+      [0.67, 0.78, 'lamp'],
+      [0.5, 0.3]
+    ],
+    exchange: [
+      [0.5, 0.75],
+      [0.4, 0.72],
+      [0.6, 0.72]
+    ],
+    customsHouse: [
+      [0.15, 0.62],
+      [0.28, 0.62],
+      [0.72, 0.62],
+      [0.85, 0.62],
+      [0.15, 0.86],
+      [0.28, 0.86],
+      [0.72, 0.86],
+      [0.85, 0.86],
+      [0.37, 0.8, 'lamp'],
+      [0.63, 0.8, 'lamp']
+    ],
+    guildhall: [
+      [0.25, 0.35],
+      [0.5, 0.35],
+      [0.75, 0.35],
+      [0.4, 0.82, 'lamp'],
+      [0.6, 0.82, 'lamp']
+    ],
+    harbourLight: [[0.43, 0.12, 'lamp']],
+    skyOffice: [[0.08, 0.42, 'lamp']],
+    oreGate: [
+      [0.27, 0.72, 'lamp'],
+      [0.73, 0.72, 'lamp']
+    ],
+    gdFishStall: [
+      [0.08, 0.4, 'lamp'],
+      [0.92, 0.4, 'lamp']
+    ],
+    gdEelStall: [
+      [0.08, 0.4, 'lamp'],
+      [0.92, 0.4, 'lamp']
+    ],
+    tarBarrels: [[0.2, 0.62, 'lamp']],
     shipSide: [
       [0.05, 0.25, 'lamp'],
       [0.1, 0.2, 'lamp'],

@@ -239,31 +239,29 @@ const LORE = {
 
 // the city's houses, all standing (it's rich): townhouses on the Hill and Counting-house Row, cottages in
 // five colours, and the docks in slate and green
+const GD = n => [1, 2, 3, 4, 5].map(i => n + i);
 const SETS = {
+  // Gilden's own stepped-gable merchant houses (the user's sheet 34) everywhere
   fronts: {
-    0: [
-      'house1',
-      'house1_slate',
-      'house1_sand',
-      'house1_moss',
-      'house2',
-      'house2_slate',
-      'house2_sand',
-      'house4_slate',
-      'townhouse'
-    ],
-    1: ['house1_slate', 'house2_moss', 'house4', 'house4_moss', 'house2_slate'],
+    0: GD('gdHouse'),
+    1: GD('gdHouse'),
     2: ['house1_dusk', 'house2_dusk']
   },
-  backs: {
-    0: ['backTerra1', 'backTerra2', 'backSlate', 'backPurple', 'backSlate'],
-    1: ['backSlate', 'backTerra2'],
-    2: ['backSlate']
-  },
-  sides: { 0: ['sideTerra', 'sideSlate', 'sidePurple'], 1: ['sideSlate', 'sideTerra'], 2: ['sideSlate'] },
+  backs: { 0: GD('gdBack'), 1: GD('gdBack'), 2: ['backSlate'] },
+  sides: { 0: GD('gdSide'), 1: GD('gdSide'), 2: ['sideSlate'] },
   yard: {
-    0: ['barrel', 'crate1', 'crate2', 'flowerbush', 'bush', 'fence', 'urn', 'lowwall', 'barrel2'],
-    1: ['barrel', 'crate1', 'crate3', 'sacks', 'barrel2', 'crate5', 'planks1', 'barrelsTrio', 'logs'],
+    0: ['barrel', 'crate1', 'crate2', 'flowerbush', 'bush', 'urn', 'lowwall', 'barrel2'],
+    1: [
+      'barrel',
+      'crate1',
+      'crateAnchor',
+      'crateForge',
+      'crateScale',
+      'ropeCoils',
+      'barrel2',
+      'sacks',
+      'barrelsTrio'
+    ],
     2: ['barrel', 'crate2']
   }
 };
@@ -435,9 +433,10 @@ module.exports = function gilden(rects) {
   const realPiece = id => (rects[PH.get(id).piece] ? PH.get(id).piece : null);
   // the great houses' palaces: a townhouse / the hall stand in (placeholder piece_palace)
   const palace = (kind0, tx, lore, sc0, banners, x0, x1) => {
-    const real = lore !== 'vellacourt' && realPiece('piece_palace'),
+    const shut = lore === 'vellacourt' && 'palaceShut' in rects, // the user's palace, shut up and stripped
+      real = shut || (lore !== 'vellacourt' && realPiece('piece_palace')),
       // the user's palace, in each house's stone (palace_sand, palace_rose: recolours in the cutter)
-      kind = real ? (PALACE_LOOK[lore] in rects ? PALACE_LOOK[lore] : 'palace') : kind0,
+      kind = shut ? 'palaceShut' : real ? (PALACE_LOOK[lore] in rects ? PALACE_LOOK[lore] : 'palace') : kind0,
       sc = real ? undefined : sc0;
     m.fill(x0, 3, x1, 11, 'G');
     m.fill(Math.floor(tx), 10, Math.floor(tx) + 1, 11, 'P'); // the drive
@@ -470,9 +469,9 @@ module.exports = function gilden(rects) {
   }
 
   // the Exchange and the Guildhall on Exchange Square
-  put('temple', 32, 18.9, 'exchange', { scale: 0.92 });
+  put('exchange', 32, 18.9, 'exchange');
   RES(28.4, 35.6, 13, 19);
-  put('hall', 24.4, 18.9, 'guildhall', { scale: 0.8 });
+  put('guildhall', 24.4, 18.9, 'guildhall');
   RES(21.8, 27, 13.5, 19);
   for (const [x, y] of [
     [26.6, 22.6],
@@ -492,11 +491,11 @@ module.exports = function gilden(rects) {
     ['benchPlain', 32.4, 23.6],
     ['catGinger', 32.6, 21.2]
   ])
-    put(k, x, y, 'exchangeSq', { scale: k === 'catGinger' ? 0.5 : 0.7 });
+    put(k, x, y, 'exchangeSq', k === 'catGinger' ? null : { scale: 0.7 });
   RES(26, 39, 19, 24);
 
   // the Caravanserai: the yard inside the Ore Gate, the Charterhouse facing it, wagons everywhere
-  put('stoneArch', 4.5, 1.2, 'oregate', { scale: 1.2 });
+  put('oreGate', 4.5, 2.4, 'oregate');
   put('townhouse', 8.6, 5.2, 'charterhouse', { scale: 0.85 });
   put('noticeBoard', 6.3, 6.6, 'charters');
   for (const [k, x, y, l] of [
@@ -519,7 +518,7 @@ module.exports = function gilden(rects) {
   // the user's airship comes with its own lattice mast and landing stage; till then a spire stands in, empty
   if (realPiece('piece_airship')) put('airship', 57.9, 8.7, 'airship');
   else put('spireTower', 58.4, 7.6, 'mast', { scale: 1.05 });
-  put('watchTower', 53.6, 9.4, 'skyOffice', { scale: 0.62 });
+  put('skyOffice', 53.8, 9.6, 'skyOffice');
   for (const [k, x, y] of [
     ['kite1', 56.2, 4.2],
     ['kite2', 60.6, 4.8],
@@ -538,20 +537,18 @@ module.exports = function gilden(rects) {
 
   // the Docks: the Customs House on Customs Square, the Harbourmaster's tower, the Narrows Office,
   // the Fish Market's awnings, the Old Man of the Narrows
-  put('hall', 34.6, QUAY - 0.1, 'customs', { scale: 0.86 });
+  put('customsHouse', 34.6, QUAY - 0.1, 'customs');
   RES(32.4, 36.8, 31.5, QUAY + 0.2);
-  put('seaGod', 37.6, 35.8, 'seaGod', { scale: 0.62 });
+  put('seaGodStatue', 37.9, 35.9, 'seaGod');
   for (const [k, x, y] of [
-    ['awningRed', 19.2, 33.2],
-    ['awningCream', 21, 32.8],
-    ['awningPurple', 23.4, 33.1],
-    ['awningRed', 24.4, 35.4],
-    ['lobsterPots1', 18.6, 35.2],
-    ['basketApples', 20.4, 35.4],
-    ['barrel3', 22.6, 35.6],
-    ['catTabby', 21.8, 34.4]
+    ['gdFishStall', 19.6, 33.4],
+    ['gdEelStall', 23.4, 33.4],
+    ['fishCrates', 19.4, 35.6],
+    ['herringBarrels', 24.4, 35.7],
+    ['lobsterPots', 22.0, 35.8],
+    ['catTabby', 21.6, 34.5]
   ])
-    put(k, x, y, 'fishmarket', { scale: /awning/.test(k) ? 0.85 : 0.75 });
+    put(k, x, y, 'fishmarket', null);
   RES(17.6, 25.6, 31.6, 36);
   // the waterfront: cranes, cargo and boats along the quay and its piers
   const cargo = [
@@ -563,32 +560,40 @@ module.exports = function gilden(rects) {
     'barrel2',
     'sacks',
     'barrelsTrio',
-    'crate6'
+    'crateAnchor',
+    'crateForge',
+    'crateScale',
+    'crateAnchor',
+    'crateForge',
+    'crateScale',
+    'herringBarrels',
+    'ropeCoils',
+    'fishCrates'
   ];
+  const LIGHTERS = ['lighterRed', 'lighterBlue', 'lighterViolet'];
   for (const [a, b] of PIERS) {
     const mx = (a + b + 1) / 2;
-    put('crane', a + 0.4, SEA + 0.6, 'crane');
-    put('postRing', b + 0.9, SEA + 1.2, 'pier', { scale: 0.8 });
+    put('dockCrane', a + 0.6, SEA + 0.4, 'crane');
+    put('bollard', b + 0.7, SEA + 1.2, 'pier');
     // no boats where the ships lie: the galleon off the third pier, the bow-on and stern-on ships between piers
     const byShip = x =>
       (GALLEON && x > 29 && x < 40.5) || (SHIPS && ((x > 18.6 && x < 25) || (x > 44 && x < 49.4)));
-    if (!byShip(b + 2.2))
-      put(P.pick(m.r, ['rowboat', 'rowboat', 'boat']), b + 2.2, SEA + 3.4, 'boats', { scale: 0.8 });
-    if (a > 10 && !byShip(a - 1.4)) put('rowboat', a - 1.4, SEA + 2.4, 'boats', { scale: 0.7 });
+    if (!byShip(b + 2.2)) put(P.pick(m.r, LIGHTERS), b + 2.2, SEA + 3.4, 'boats');
+    if (a > 10 && !byShip(a - 1.4)) put(P.pick(m.r, LIGHTERS), a - 1.4, SEA + 2.4, 'boats');
     put(P.pick(m.r, cargo), mx, SEA + 2.6, 'cargo');
-    put('pilesRope', mx + 0.3, SEA + 4.4, 'pier', { scale: 0.8 });
+    put('pierPiles', mx + 0.3, SEA + 4.6, 'pier');
   }
   // the chandler's stall on the quay by the Customs House (placed before the loose cargo so it has room)
   if ('stallLamps' in rects) drop('stallLamps', 46.4, QUAY + 2.2, 'stallLamps');
   for (let x = 1.5; x < COLS - 5; x += 1.6 + m.r() * 1.8) {
     if (x > 32 && x < 37.5) continue;
-    const k = P.pick(m.r, cargo.concat(['nets', 'netFrame1', 'cartLoaded', 'crane', 'moorings']));
-    const y = k === 'moorings' || k === 'crane' ? SEA - 0.05 : QUAY + 1 + m.r() * 1.4;
+    const k = P.pick(m.r, cargo.concat(['netRack', 'cartLoaded', 'capstan', 'bollard', 'gdAnchor']));
+    const y = k === 'bollard' ? SEA - 0.1 : QUAY + 1 + m.r() * 1.4;
     const lore = /crate|barrel|sacks/.test(k)
       ? 'cargo'
       : /net/.test(k)
         ? 'nets'
-        : k === 'crane'
+        : k === 'dockCrane'
           ? 'crane'
           : k === 'cartLoaded'
             ? 'wagons'
@@ -601,15 +606,11 @@ module.exports = function gilden(rects) {
   m.fill(0, 31, 8, QUAY - 1, 'D');
   RES(0, 9.2, 30.6, QUAY + 0.2);
   for (const [k, x, y, l, sc] of [
-    ['boat', 4.2, 35.6, 'shipyard', 1.1],
-    ['scaffold1', 2, 34.6, 'shipyard', 0.6],
-    ['scaffold2', 6.6, 34.4, 'shipyard', 0.6],
-    ['logs', 1.6, 36.6, 'shipyard'],
-    ['planksPile', 7.4, 36.4, 'shipyard'],
-    ['planks2', 5.6, 32.6, 'shipyard'],
-    ['barrel3', 1.2, 32.4, 'shipyard'],
-    ['netFrame2', 8, 32.8, 'nets', 0.8],
-    ['rowboatWreck', 3.6, 32.6, 'shipyard', 0.7]
+    ['slipHull', 4.2, 36.2, 'shipyard'],
+    ['timberStack', 2.0, 32.9, 'shipyard'],
+    ['tarBarrels', 6.6, 32.8, 'shipyard'],
+    ['ropeCoils', 8.2, 34.6, 'shipyard'],
+    ['planks2', 8.0, 36.6, 'shipyard']
   ])
     drop(k, x, y, l, sc ? { scale: sc } : null);
   if (GALLEON) put('galleon', 34.4, 46.6, 'galleon');
@@ -624,9 +625,9 @@ module.exports = function gilden(rects) {
     ])
       put(k, x, y, k);
   // the mole and the Harbour Light
-  put('watchTower', 58.2, 47.4, 'harbourLight', { scale: 0.7 });
+  put('harbourLight', 58.2, 47.6, 'harbourLight');
   put('figurehead', 56.8, 43.2, 'harbourLight', { scale: 0.6 });
-  for (const y of [41.4, 44.2]) put('postRing', 58.8, y, 'quay', { scale: 0.8 });
+  for (const y of [41.4, 44.2]) put('bollard', 58.8, y, 'quay');
   // lanterns along the quay
   for (let x = 3; x < COLS - 6; x += 7) drop('lanternPost', x + 0.3, QUAY + 0.25, 'lamp');
 
@@ -635,9 +636,9 @@ module.exports = function gilden(rects) {
   // warehouses facing the quay (placeholder piece_warehouse: ordinary houses line it till then)
   if (realPiece('piece_warehouse'))
     for (const x of [8, 26, 48]) city.landmark('warehouse', x, QUAY - 1, 'cargo');
+  for (const x of [14, 40]) city.landmark('countingHouse', x, 23, 'counting');
   const ship = city.landmark('townhouse', 46, 36, 'shipping');
   m.place('noticeBoard', ship.cx + 120, ship.base + 30, { lore: 'shipping', scale: 0.8 });
-  city.landmark('tower', 48, 30, 'pier');
   city.build({ sets: SETS, gap: 0.04, yards: 0.22 });
   for (const o of m.objs) if (/lanternPost/.test(o.kind) && !o.lore) o.lore = 'lamp';
   // lanterns along the main streets

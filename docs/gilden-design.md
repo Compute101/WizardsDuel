@@ -213,6 +213,17 @@ a gnome (a dwarf figure drawn small stands in for the Sky Office clerk), and The
   is 55 rows now, five more of open harbour: the Narrows Maid (bow-on) and the Saltwife (stern-on) moor
   between the piers, the Gull's Purse, a Brassmouth trader and the Fourth Coin ride at anchor beyond them
   (lore for each in `LORE`).
+- **Second pass** (sheets 32–34, `ruins32`–`ruins34`, the user's art for the prompts in `docs/art-prompts.md`,
+  "Gilden, second pass"): the harbour (lighters in the three houses' colours instead of the Sunken Harbour's mossy
+  boats, piles and bollards on the piers, treadwheel cranes at their roots, anchors, capstans, net racks,
+  house-marked crates, fish crates and herring barrels on the quay; the Fish Market's fish and eel stalls; Fettle's
+  hull on the slip with timber and tar), the civic buildings (the gilt-domed Exchange, the Guildhall, the Customs
+  House, the Ore Gate at the top of the Caravanserai, the Sky Office by the airship, the Old Man of the Narrows,
+  the Harbour Light on the mole, and Vellacourt House shut up and chained, `palaceShut`) and Gilden's own
+  stepped-gable merchant houses on every street (`SETS`: `gdHouse1`–`5` fronts, `gdBack`, `gdSide` drawn at 0.48
+  so they don't stack into towers along the lanes) with two counting-houses on Counting-house Row. Doors: the
+  houses, counting-houses (rich), the Exchange, Customs House and Guildhall (study). The purple stand-in tower by
+  the docks went. Atlases may now be wider than 1024 px when a piece is (`pack`; `palaceShut` is 1144).
 - **Market stalls** (sheet 30, `ruins30`: `stallCloth`, `stallLamps`, `stallBakery`, `stallTools`,
   `stallCharms`): cloth, charms and pies in Exchange Square, a chandler's on the quay by the Narrows Office, a
   tinker's in the Caravanserai. Hollowmere's plaza has the charms, pies (Bessie's) and tools (Torvi's).

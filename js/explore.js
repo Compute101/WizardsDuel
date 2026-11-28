@@ -1593,7 +1593,16 @@
     'spireTower',
     'foundry',
     'palace',
-    'warehouse'
+    'warehouse',
+    'gdHouse1',
+    'gdHouse2',
+    'gdHouse3',
+    'gdHouse4',
+    'gdHouse5',
+    'countingHouse',
+    'exchange',
+    'customsHouse',
+    'guildhall'
   ];
   const FIXED_LABEL = {
     safehouse: "Enter the Gleaners' Rest",
@@ -5886,7 +5895,10 @@
     'ruins28',
     'ruins29',
     'ruins30',
-    'ruins31'
+    'ruins31',
+    'ruins32',
+    'ruins33',
+    'ruins34'
   ];
   const CORE_ATLASES = ['ruins', 'ruins2', 'ruins3', 'ruins13'];
   const atlasLoading = {};
