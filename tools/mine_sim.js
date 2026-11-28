@@ -67,7 +67,8 @@ for (const p of plan) {
 }
 for (let k = 0; k < 4; k++) planned.push([3 + k * 4, gy + 2, 5 + k * 4, gy + 3]);
 const deepCut = {};
-const noWell = process.env.NOWELL === '1'; // NOWELL=1: never sink a well (meltwater only)
+const noWell = process.env.NOWELL === '1';
+const noArms = process.env.NOARMS === '1'; // NOARMS=1: never draft warriors // NOWELL=1: never sink a well (meltwater only)
 let logged = 0;
 for (let s = 0; s < days * M.DAY; s += 1) {
   for (const p of plan)
@@ -132,6 +133,9 @@ for (let s = 0; s < days * M.DAY; s += 1) {
     }
     if (!M.stairWhy(S, z) && !M.stairOf(S, z)) M.cutStair(S, z);
   }
+  // two miners take up arms on day 1 (the smith forges their hammers once there's bronze)
+  if (!noArms && s === Math.round(M.DAY) && !S.dwarves.some(d => d.drafted))
+    for (const d of S.dwarves.filter(d => d.trade === 'miner').slice(0, 2)) M.draft(S, d.id, true);
   // a door on every way into a room (the way a player would, before it can earn a second star)
   if (s % 30 === 15)
     for (const r of S.rooms)
@@ -169,7 +173,9 @@ console.log(
   'cave-ins',
   S.caveIns || 0,
   'dead',
-  S.dead.map(d => d.name).join(', ') || 'none'
+  S.dead.map(d => d.name + ' (' + d.how.split(' on ')[0] + ')').join(', ') || 'none',
+  'elementals slain',
+  S.foeKills || 0
 );
 console.log(
   'doors',

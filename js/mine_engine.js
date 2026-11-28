@@ -200,6 +200,30 @@
       act: 'Smelting bronze',
       want: S => stockOf(S, 'bronze') < 2
     },
+    hammer: {
+      at: 'anvil',
+      takes: { bronze: 2 },
+      makes: { hammer: 1 },
+      s: 8,
+      act: 'Forging a war-hammer',
+      want: S => gearWanted(S, 'w', 1)
+    },
+    ironhammer: {
+      at: 'anvil',
+      takes: { iron: 2, coal: 1 },
+      makes: { ironhammer: 1 },
+      s: 10,
+      act: 'Forging an iron war-hammer',
+      want: S => gearWanted(S, 'w', 2)
+    },
+    mail: {
+      at: 'anvil',
+      takes: { iron: 3, coal: 1 },
+      makes: { mail: 1 },
+      s: 12,
+      act: 'Forging iron mail',
+      want: S => gearWanted(S, 'a', 1)
+    },
     forge: {
       at: 'anvil',
       takes: { bronze: 1 },
@@ -221,6 +245,43 @@
   const HEAL_COT = DAY * 0.25; // abed in an infirmary cot
   const HEAL_WALK = DAY * 1.5; // walking it off with no cot
   const TAVERN_SETTLE = 0.4; // a drink at the tavern's keg strikes out a grudge this often
+  // earth elementals (step 3): kinds, where they sleep and wander, how fights go
+  const DWARF_HP = 40;
+  const FOES = {
+    wight: { name: 'shard-wight', hp: 30, atk: 3, speed: 1.6, col: '#a8acb4' },
+    stonewake: { name: 'stonewake', hp: 80, atk: 9, speed: 1.2, col: '#8a7a68' },
+    crystal: { name: 'crystal wight', hp: 55, atk: 7, speed: 1.5, col: '#c8a0ff' },
+    ember: { name: 'ember-wake', hp: 70, atk: 10, speed: 1.4, col: '#ff8a40' }
+  };
+  const CHAMBERS = [2, 2, 3, 3, 3]; // sleeping hollows on each layer
+  const CHAMBER_FOES = [
+    ['wight'],
+    ['wight', 'stonewake'],
+    ['crystal', 'stonewake'],
+    ['ember', 'stonewake'],
+    ['stonewake', 'ember']
+  ];
+  const WANDER_FOES = [
+    ['wight'],
+    ['wight', 'wight', 'stonewake'],
+    ['wight', 'crystal'],
+    ['ember', 'wight'],
+    ['stonewake', 'ember']
+  ];
+  const WANDER = { first: DAY * 2.5, every: DAY * 2, deeper: 0.25 }; // a wanderer every `every`, sooner the deeper
+  const TREMOR = { r: 3, again: DAY * 0.4, show: 25 }; // dig within r of a hollow and it trembles
+  const FOE_ROCK = 0.6; // an elemental swims through rock at this fraction of its speed
+  const FOE_SIGHT = 40; // how far (in tiles of its own path) an elemental looks for prey
+  const FOE_GIVE_UP = DAY * 0.5; // a wanderer with no way in sinks back after this
+  const FLEE_R = 5;
+  const WAR_R = 15; // a warrior goes after an elemental this close on their layer // a dwarf who isn't a warrior runs from an elemental this close
+  const FIGHT = { tick: 1.5, base: 1, pick: 2, warrior: 4, retreat: 0.4, levels: [0, 30, 90] }; // fists, a miner's pick; combat levels
+  const GEAR = {
+    hammer: { name: 'bronze war-hammer', hit: 8, slot: 'w', rank: 1 },
+    ironhammer: { name: 'iron war-hammer', hit: 12, slot: 'w', rank: 2 },
+    mail: { name: 'iron mail', take: 0.6, slot: 'a', rank: 1 }
+  };
+  const TRAIN_S = 20; // a warrior's stint at the barracks' racks
   const SERVE_S = 30; // a keeper's stint behind the bar before looking round
   // a taproom only slakes thirst. A pint at a tavern (with its keeper behind the bar) leaves a dwarf merry
   // for MERRY.s: working MERRY.speed faster, and shrugging off the next everyday grudge (not grief or a cave-in)
@@ -399,7 +460,7 @@
   function newGame(seed) {
     seed = (seed == null ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
     const S = {
-      v: 5,
+      v: 6,
       seed,
       rs: seed,
       layer: 1,
@@ -424,7 +485,13 @@
       got: {}, // ore carried to the stock, all told (the Thane's quota counts this)
       quotaDone: {},
       dead: [], // the fallen: {name, trade, day, how}
-      caveT: 0
+      caveT: 0,
+      foes: [], // earth elementals: {id, kind, x, y, hp, max, state 'sleep' | 'awake', chamber, wander, …}
+      chambers: [], // hidden hollows: {id, z, cells, woke, tremor}
+      tremors: [], // recent tremor markers for the map: {x, y, t}
+      wanderT: 0,
+      fightT: 0,
+      foeKills: 0
     };
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) S.tiles.push(newTile(y % STRIDE === LH));
     for (let z = 0; z < LAYERS.length; z++) genLayer(S, z);
@@ -438,6 +505,7 @@
         S.gate.push(idx(x, y));
       }
     for (let z = 0; z < LAYERS.length - 1; z++) placeDeep(S, z);
+    for (let z = 0; z < LAYERS.length; z++) placeChambers(S, z);
     for (const i of S.gate) reveal(S, i % W, (i / W) | 0);
     // the crew
     const used = {};
@@ -627,7 +695,11 @@
       act: 'Arriving',
       lack: {},
       pick: trade === 'miner' ? { kind: 'old', uses: PICKS.old.uses } : null,
-      hurt: 0
+      hurt: 0,
+      hp: DWARF_HP,
+      drafted: false, // a warrior: hunts awake elementals, trains at the barracks
+      gear: {}, // w: weapon, a: armour (GEAR keys)
+      fx: 0 // fighting experience
     };
   }
   function logMsg(S, msg) {
@@ -1038,6 +1110,43 @@
       return true;
     };
     const stocks = stockTiles(S);
+    // an elemental close by: a warrior goes for it, anyone else runs
+    const fighting = d.drafted && d.hp > DWARF_HP * FIGHT.retreat; // a badly hurt warrior falls back
+    const foe = fighting && S.t - (d.huntFail || -1e9) < 5 ? null : danger(S, d, fighting ? WAR_R : FLEE_R);
+    if (foe && !fighting) {
+      // the reachable floor tile furthest from it, within a short run
+      let best = -1,
+        bd = -1;
+      dm.dist.forEach((v, i) => {
+        if (v < 0 || v > 14) return;
+        const dd = Math.hypot((i % W) - foe.x, ((i / W) | 0) - foe.y);
+        if (dd > bd) {
+          bd = dd;
+          best = i;
+        }
+      });
+      if (best >= 0 && go({ type: 'flee', tile: -1, ph: 1, w: 3 }, best)) return;
+    }
+    if (foe && fighting) {
+      // to a floor tile beside it (it may be in the rock)
+      const fx = Math.round(foe.x),
+        fy = Math.round(foe.y);
+      let best = -1,
+        bd = 1e9;
+      for (const [dx, dy] of D8.concat([[0, 0]])) {
+        const a = fx + dx,
+          b = fy + dy;
+        if (!inB(a, b)) continue;
+        const i = idx(a, b),
+          v = dm.dist[i];
+        if (v >= 0 && v < bd) {
+          bd = v;
+          best = i;
+        }
+      }
+      if (best >= 0 && go({ type: 'hunt', tile: -1, foe: foe.id, ph: 1, w: 2 }, best)) return;
+      d.huntFail = S.t; // no way to it: back to work for a few seconds
+    }
     // needs first
     if (d.needs.sleep < LOW.sleep) {
       // the best free bed: a bedroom of their own over a dormitory, more stars over fewer, nearer as a
@@ -1109,16 +1218,27 @@
       mason: ['build', 'construct', 'cut', 'smooth', 'haul', 'dig'],
       farmer: ['harvest', 'plant', 'cook', 'haul', 'dig'],
       brewer: ['brew', 'draw', 'melt', 'cook', 'haul', 'dig'],
-      smith: ['forge', 'smelt', 'haul', 'dig'],
+      smith: ['ironhammer', 'hammer', 'mail', 'forge', 'smelt', 'haul', 'dig'],
       keeper: ['serve', 'haul']
     }[d.trade] || ['haul'];
-    for (const kind of order) if (findWork(S, d, dm, kind, stocks, go)) return;
+    // a warrior arms first, keeps to their trade, and trains when there's nothing else
+    const all = d.drafted ? ['arm'].concat(order, ['train']) : order;
+    for (const kind of all) if (findWork(S, d, dm, kind, stocks, go)) return;
     idle(S, d, dm);
   }
   // what a piece is built from: the bench from rough stone, everything else from dressed blocks
   const matOf = t => (t.fu === 'bench' ? 'stone' : 'block');
   const have = (S, k) => S.stock[k] || 0;
   const stockOf = have;
+  // gear's wanted while a warrior has worse than it in that slot, counting what's already made
+  function gearWanted(S, slot, rank) {
+    const kind = Object.keys(GEAR).find(k => GEAR[k].slot === slot && GEAR[k].rank === rank);
+    const short = S.dwarves.filter(
+      d => d.drafted && !((d.gear && d.gear[slot] && GEAR[d.gear[slot]].rank) >= rank)
+    ).length;
+    const lying = S.items.filter(it => it.kind === kind).reduce((n, it) => n + it.n, 0);
+    return have(S, kind) + lying < short;
+  }
   // water's wanted while the brewery could use it: under four buckets in store or lying about
   function waterWanted(S) {
     if (!S.tiles.some(t => t.fu === 'still' && t.fb)) return false;
@@ -1256,6 +1376,30 @@
       T[best].cl = d.id;
       return true;
     }
+    if (kind === 'arm') {
+      // a better weapon or armour waiting in the stock
+      const want = Object.keys(GEAR).find(
+        k => have(S, k) > 0 && GEAR[k].rank > ((d.gear[GEAR[k].slot] && GEAR[d.gear[GEAR[k].slot]].rank) || 0)
+      );
+      if (!want) return false;
+      const st = nearest(dm, stocks);
+      if (st < 0) return false;
+      return go({ type: 'arm', tile: -1, gear: want, ph: 1, w: 1 }, st);
+    }
+    if (kind === 'train') {
+      let best = -1,
+        bd = 1e9;
+      T.forEach((t, i) => {
+        if (t.fu === 'rack' && t.fb && !t.cl && dm.dist[i] >= 0 && dm.dist[i] < bd) {
+          bd = dm.dist[i];
+          best = i;
+        }
+      });
+      if (best < 0) return false;
+      if (!go({ type: 'train', tile: best, ph: 1, w: TRAIN_S }, best)) return false;
+      T[best].cl = d.id;
+      return true;
+    }
     if (kind === 'serve') {
       // behind the bar: a floor tile of a tavern beside one of its kegs
       let best = -1,
@@ -1365,6 +1509,10 @@
     getpick: 'Fetching a bronze pick',
     mourn: 'At the Wall of Remembrance',
     serve: 'Serving behind the bar',
+    flee: 'Running from an elemental!',
+    hunt: 'Going after an elemental',
+    arm: 'Taking up arms',
+    train: 'Training at the barracks',
     heal: 'Abed in the infirmary'
   };
   const actOf = j => (j.type === 'craft' ? RECIPES[j.rec].act : ACT[j.type]);
@@ -1579,6 +1727,39 @@
         );
         return;
       }
+      case 'flee':
+        d.act = ACT.flee;
+        j.w -= dt;
+        if (j.w <= 0) d.job = null;
+        return;
+      case 'hunt': {
+        const f = S.foes.find(x => x.id === j.foe && x.hp > 0);
+        d.act = f ? 'Fighting a ' + FOES[f.kind].name : 'Looking for the elemental';
+        j.w -= dt;
+        // look again every couple of seconds: it moves
+        if (!f || j.w <= 0) d.job = null;
+        return;
+      }
+      case 'arm': {
+        d.job = null;
+        if (have(S, j.gear) < 1) return;
+        const G = GEAR[j.gear],
+          old = d.gear[G.slot];
+        S.stock[j.gear]--;
+        if (old) S.stock[old] = have(S, old) + 1;
+        d.gear[G.slot] = j.gear;
+        logMsg(S, '⚔ ' + d.name.split(' ')[0] + ' takes up a ' + G.name + '.');
+        return;
+      }
+      case 'train': {
+        d.act = ACT.train;
+        j.w -= dt;
+        if (j.w > 0) return;
+        T[j.tile].cl = 0;
+        d.job = null;
+        d.fx = (d.fx || 0) + 4;
+        return;
+      }
       case 'serve': {
         d.act = ACT.serve;
         j.w -= dt;
@@ -1617,6 +1798,7 @@
         t.cl = 0;
         d.job = null;
         d.hurt = 0;
+        d.hp = DWARF_HP;
         logMsg(S, '🩹 ' + d.name.split(' ')[0] + ' is back on their feet, mended in the infirmary.');
         return;
       }
@@ -1808,6 +1990,7 @@
     } else if (t.o !== 'soil' && rnd(S) < STONE_CHANCE) addItem(S, i, 'stone', 1);
     reveal(S, x, y);
     if (t.sr === 'down') stairCheck(S);
+    chamberNews(S, x, y);
   }
 
   // ── stock, the Thane's quota and the stair down ──────────────────
@@ -2122,6 +2305,314 @@
     return { ok: true, ore };
   }
 
+  // ── earth elementals (step 3) ────────────────────────────────────
+  // They swim through raw stone (rock that isn't smoothed, built or a pillar) and walk the floor, but
+  // worked stone and doors stop them, so a smoothed, doored living quarter is safe. Some sleep in hidden
+  // hollows (chambers) that wake when a miner breaks in; digging near one sends tremors. Wanderers rise
+  // through the rock now and then, more the deeper the Delve. Warriors (drafted dwarves) hunt them;
+  // everyone else runs. Durin and binding come with step 4.
+  const foePass = t => (t.k === 'f' && !t.dr) || (t.k === 'r' && !t.w && !t.bt && !t.p);
+  function foeAt(S, i) {
+    return S.foes.find(f => f.hp > 0 && idx(Math.round(f.x), Math.round(f.y)) === i);
+  }
+  function newFoe(S, kind, x, y, sleep, chamber) {
+    const K = FOES[kind];
+    const f = {
+      id: S.nextId++,
+      kind,
+      x,
+      y,
+      hp: K.hp,
+      max: K.hp,
+      path: [],
+      state: sleep ? 'sleep' : 'awake',
+      chamber: chamber == null ? -1 : chamber,
+      wander: !sleep && chamber == null,
+      idleT: 0,
+      repath: 0,
+      victims: []
+    };
+    S.foes.push(f);
+    return f;
+  }
+  // a few hidden hollows on a layer, each with its sleepers, away from the gate and the deep spot
+  function placeChambers(S, z) {
+    const y0 = topOf(z),
+      deep = new Set(z < LAYERS.length - 1 ? deepTiles(S, z) : []);
+    for (let c = 0; c < CHAMBERS[z]; c++)
+      for (let tries = 0; tries < 200; tries++) {
+        const cx = ri(S, z ? 6 : 12, W - 4),
+          cy = ri(S, 3, LH - 4);
+        const cells = [];
+        let ok = true;
+        for (let dy = -2; dy <= 2 && ok; dy++)
+          for (let dx = -2; dx <= 2; dx++) {
+            const i = idx(cx + dx, y0 + cy + dy),
+              t = S.tiles[i];
+            // the hollow and a skin of rock round it must be untouched stone
+            if (t.k !== 'r' || t.s || t.r || t.p || t.bt || t.d || deep.has(i)) {
+              ok = false;
+              break;
+            }
+            if (
+              Math.abs(dx) <= 1 &&
+              Math.abs(dy) <= 1 &&
+              !(Math.abs(dx) + Math.abs(dy) === 2 && rnd(S) < 0.4)
+            )
+              cells.push(i);
+          }
+        if (!ok) continue;
+        for (const i of cells) Object.assign(S.tiles[i], { k: 'f', o: '', vd: true, d: false, m: false });
+        const ch = { id: S.chambers.length, z, cells, woke: false, tremor: -1e9 };
+        S.chambers.push(ch);
+        const kinds = CHAMBER_FOES[z];
+        const n = z === 0 ? 1 : ri(S, 1, 2);
+        for (let k = 0; k < n; k++) {
+          const i = cells[k % cells.length];
+          newFoe(S, pick(S, kinds), i % W, (i / W) | 0, true, ch.id);
+        }
+        break;
+      }
+  }
+  // a tile has just been dug: tremors from a hollow close by, or a breach that wakes it
+  function chamberNews(S, x, y) {
+    for (const ch of S.chambers) {
+      if (ch.woke || ch.z !== layerOf(y)) continue;
+      let near = 1e9;
+      for (const i of ch.cells) near = Math.min(near, Math.abs((i % W) - x) + Math.abs(((i / W) | 0) - y));
+      if (near <= 1) {
+        ch.woke = true;
+        for (const i of ch.cells) reveal(S, i % W, (i / W) | 0);
+        const woken = S.foes.filter(f => f.chamber === ch.id && f.hp > 0);
+        for (const f of woken) f.state = 'awake';
+        logMsg(
+          S,
+          '⚠ The miners broke into a hollow on ' +
+            LAYERS[ch.z].name +
+            '! ' +
+            (woken.length > 1
+              ? woken.length + ' ' + FOES[woken[0].kind].name + 's wake'
+              : 'A ' + FOES[woken[0].kind].name + ' wakes') +
+            '. Warriors to arms; everyone else, run.'
+        );
+      } else if (near <= TREMOR.r && S.t - ch.tremor > TREMOR.again) {
+        ch.tremor = S.t;
+        const c = ch.cells[(ch.cells.length / 2) | 0];
+        S.tremors.push({ x: c % W, y: (c / W) | 0, t: S.t, sleep: true });
+        logMsg(
+          S,
+          "〰 A tremor in the stone: something sleeps close by. Dig on and you'll wake it, or go round."
+        );
+      }
+    }
+  }
+  // a wanderer rises through the rock on one of the layers reached, near the workings
+  function wanderer(S) {
+    const z = ri(S, 0, S.depth),
+      y0 = topOf(z),
+      T = S.tiles;
+    const spots = [];
+    for (let y = y0; y < y0 + LH; y++)
+      for (let x = 1; x < W - 1; x++) {
+        const t = T[idx(x, y)];
+        if (t.k !== 'r' || !foePass(t)) continue;
+        // 3 to 7 tiles from dug floor
+        let best = 99;
+        for (let dy = -7; dy <= 7; dy++)
+          for (let dx = -7; dx <= 7; dx++) {
+            const a = x + dx,
+              b = y + dy;
+            if (inB(a, b) && layerOf(b) === z && T[idx(a, b)].k === 'f' && T[idx(a, b)].s && !T[idx(a, b)].vd)
+              best = Math.min(best, Math.max(Math.abs(dx), Math.abs(dy)));
+          }
+        if (best >= 3 && best <= 7) spots.push(idx(x, y));
+      }
+    if (!spots.length) return;
+    const i = pick(S, spots),
+      kind = pick(S, WANDER_FOES[z]);
+    newFoe(S, kind, i % W, (i / W) | 0, false);
+    S.tremors.push({ x: i % W, y: (i / W) | 0, t: S.t });
+    logMsg(S, '〰 A tremor on ' + LAYERS[z].name + ': a ' + FOES[kind].name + ' is rising through the rock.');
+  }
+  // a breadth-first search through what an elemental can cross, from (x, y)
+  function foeDist(S, x, y) {
+    const N = W * H,
+      dist = new Int32Array(N).fill(-1),
+      prev = new Int32Array(N).fill(-1),
+      q = new Int32Array(N);
+    const s0 = idx(Math.round(x), Math.round(y));
+    let h = 0,
+      tl = 0;
+    dist[s0] = 0;
+    q[tl++] = s0;
+    while (h < tl) {
+      const c = q[h++],
+        cx = c % W,
+        cy = (c / W) | 0;
+      if (dist[c] > FOE_SIGHT) continue;
+      for (const [dx, dy] of D4) {
+        const nx = cx + dx,
+          ny = cy + dy;
+        if (!inB(nx, ny)) continue;
+        const n = idx(nx, ny);
+        if (dist[n] < 0 && foePass(S.tiles[n])) {
+          dist[n] = dist[c] + 1;
+          prev[n] = c;
+          q[tl++] = n;
+        }
+      }
+    }
+    return { dist, prev };
+  }
+  function foesStep(S, dt) {
+    for (const f of S.foes) {
+      if (f.hp <= 0 || f.state !== 'awake') continue;
+      const K = FOES[f.kind];
+      f.repath -= dt;
+      if (f.repath <= 0) {
+        f.repath = 2;
+        // the nearest dwarf it can reach on its layer
+        const dm = foeDist(S, f.x, f.y);
+        let best = null,
+          bd = 1e9;
+        for (const d of S.dwarves) {
+          const i = idx(Math.round(d.x), Math.round(d.y)),
+            dd = dm.dist[i];
+          if (dd >= 0 && dd < bd) {
+            bd = dd;
+            best = i;
+          }
+        }
+        f.path = best >= 0 && best != null ? pathTo(dm, best) || [] : [];
+        if (best == null) {
+          f.idleT += 2;
+          if (f.wander && f.idleT > FOE_GIVE_UP) {
+            f.hp = 0;
+            f.gone = true;
+            logMsg(S, '〰 The ' + K.name + ' found no way in, and sinks back into the deep.');
+          }
+        } else f.idleT = 0;
+      }
+      // walk the path, slower through rock; stop beside its prey
+      let left = dt * K.speed;
+      while (f.path.length > 1 && left > 0) {
+        const n = f.path[0],
+          nx = n % W,
+          ny = (n / W) | 0;
+        if (!foePass(S.tiles[n])) {
+          f.path = [];
+          break;
+        }
+        const inRock = S.tiles[n].k === 'r',
+          dx = nx - f.x,
+          dy = ny - f.y,
+          dist = Math.hypot(dx, dy),
+          step = left * (inRock ? FOE_ROCK : 1);
+        if (dist <= step) {
+          f.x = nx;
+          f.y = ny;
+          left -= dist / (inRock ? FOE_ROCK : 1);
+          f.path.shift();
+        } else {
+          f.x += (dx / dist) * step;
+          f.y += (dy / dist) * step;
+          left = 0;
+        }
+      }
+    }
+  }
+  // how hard a dwarf hits: a warrior's hammer, a miner's pick, or bare fists; better with practice
+  function hitOf(d) {
+    let h = FIGHT.base;
+    if (d.gear && d.gear.w) h = GEAR[d.gear.w].hit;
+    else if (d.drafted) h = FIGHT.warrior;
+    else if (d.trade === 'miner' && d.pick) h = FIGHT.pick;
+    const lv = d.fx >= FIGHT.levels[2] ? 1.6 : d.fx >= FIGHT.levels[1] ? 1.3 : 1;
+    return h * lv;
+  }
+  function fights(S) {
+    for (const f of S.foes) {
+      if (f.hp <= 0 || f.state !== 'awake') continue;
+      const K = FOES[f.kind];
+      const close = S.dwarves.filter(d => Math.hypot(d.x - f.x, d.y - f.y) < 1.6);
+      if (!close.length) continue;
+      // it strikes a warrior first if one stands against it
+      const target = close.find(d => d.drafted) || close[0];
+      let dmg = K.atk * (target.gear && target.gear.a ? GEAR[target.gear.a].take : 1);
+      target.hp = (target.hp == null ? DWARF_HP : target.hp) - dmg;
+      target.hitT = S.t;
+      if (!target.hurt) target.hurt = S.t || 1;
+      if (target.hp <= 0) {
+        f.victims.push(target.name.split(' ')[0]);
+        killDwarf(S, target, 'slain by a ' + K.name + ' on ' + LAYERS[layerOf(Math.round(f.y))].name);
+      }
+      // and everyone beside it hits back
+      for (const d of close) {
+        if (!S.dwarves.includes(d)) continue;
+        f.hp -= hitOf(d);
+        if (d.drafted) d.fx = (d.fx || 0) + 1;
+      }
+      if (f.hp <= 0) foeDies(S, f, close);
+    }
+    S.foes = S.foes.filter(f => f.hp > 0 || f.state === 'sleep');
+  }
+  function foeDies(S, f, by) {
+    const K = FOES[f.kind],
+      i = idx(Math.round(f.x), Math.round(f.y));
+    S.foeKills = (S.foeKills || 0) + 1;
+    const at = S.tiles[i].k === 'f' ? i : by.length ? idx(Math.round(by[0].x), Math.round(by[0].y)) : i;
+    addItem(S, at, 'stone', 2);
+    const names = by.filter(d => S.dwarves.includes(d)).map(d => d.name.split(' ')[0]);
+    logMsg(
+      S,
+      '⚔ The ' +
+        K.name +
+        ' falls' +
+        (names.length ? ' to ' + names.join(' and ') : '') +
+        ', and crumbles to rubble.'
+    );
+    // the kin of those it killed are avenged
+    for (const v of f.victims)
+      for (const d of S.dwarves) {
+        const k = d.grudges.findIndex(g => g.why === 'Mourning ' + v);
+        if (k >= 0) {
+          d.grudges.splice(k, 1);
+          logMsg(S, '✔ ' + d.name.split(' ')[0] + ' struck out "Mourning ' + v + '": ' + v + ' is avenged.');
+        }
+      }
+  }
+  // an awake elemental near this dwarf, on the same layer, within r (straight-line), that has found a way
+  // to someone (one stuck behind worked stone is no danger, and nobody runs from it)
+  function danger(S, d, r) {
+    let best = null,
+      bd = r;
+    for (const f of S.foes) {
+      if (f.hp <= 0 || f.state !== 'awake' || !f.path.length) continue;
+      if (layerOf(Math.round(f.y)) !== layerOf(Math.round(d.y))) continue;
+      const dd = Math.hypot(f.x - d.x, f.y - d.y);
+      if (dd < bd) {
+        bd = dd;
+        best = f;
+      }
+    }
+    return best;
+  }
+  function draft(S, id, on) {
+    const d = S.dwarves.find(w => w.id === id);
+    if (!d) return;
+    d.drafted = !!on;
+    d.fx = d.fx || 0;
+    if (d.job && (d.job.type === 'hunt' || d.job.type === 'train')) drop(S, d);
+    logMsg(
+      S,
+      on
+        ? '⚔ ' +
+            d.name.split(' ')[0] +
+            " takes up arms: they'll go out against any elemental that wakes, and train at the barracks when idle."
+        : '⚔ ' + d.name.split(' ')[0] + ' stands down and goes back to their trade.'
+    );
+  }
+
   // ── a tick ───────────────────────────────────────────────────────
   function tick(S, dt) {
     let left = dt;
@@ -2145,6 +2636,19 @@
       S.caveT -= CAVE.check;
       roofCheck(S);
     }
+    // the elementals: wanderers rise now and then, the awake ones hunt, and blows are traded
+    S.wanderT += dt;
+    if (S.t > WANDER.first && S.wanderT >= WANDER.every / (1 + WANDER.deeper * S.depth)) {
+      S.wanderT = 0;
+      wanderer(S);
+    }
+    foesStep(S, dt);
+    S.fightT += dt;
+    if (S.fightT >= FIGHT.tick) {
+      S.fightT -= FIGHT.tick;
+      fights(S);
+    }
+    S.tremors = S.tremors.filter(m => S.t - m.t < TREMOR.show);
     for (const d of S.dwarves.slice()) {
       for (const k of ['food', 'ale', 'sleep'])
         if (!(d.job && d.job.type === 'sleep' && k === 'sleep'))
@@ -2157,6 +2661,21 @@
         logMsg(S, '🩹 ' + d.name.split(' ')[0] + ' has walked off the hurt at last.');
         if (S.t > GRACE && !S.tiles.some(t => t.fu === 'cot' && t.fb))
           addGrudge(S, d, 'Nursed a wound with nobody to tend it');
+      }
+      // wounds mend slowly away from a fight
+      if (d.hp < DWARF_HP && S.t - (d.hitT || 0) > 15) d.hp = Math.min(DWARF_HP, d.hp + dt / 8);
+      // an elemental closing in: anyone not already running or fighting drops what they're doing
+      const fighting = d.drafted && d.hp > DWARF_HP * FIGHT.retreat;
+      if (d.job && d.job.type === 'hunt' && !fighting) drop(S, d); // too hurt: fall back
+      if (
+        d.job &&
+        d.job.type !== 'flee' &&
+        d.job.type !== 'hunt' &&
+        !(fighting && S.t - (d.huntFail || -1e9) < 5) &&
+        danger(S, d, fighting ? WAR_R : FLEE_R)
+      ) {
+        const j = d.job.type;
+        if (!(d.drafted && (j === 'sleep' || j === 'eat' || j === 'drink' || j === 'heal'))) drop(S, d);
       }
       if (!d.job) {
         chooseJob(S, d);
@@ -2176,7 +2695,7 @@
     const floor = [],
       passage = [];
     T.forEach((t, i) => {
-      if (t.k !== 'f' || !onZ(i)) return;
+      if (t.k !== 'f' || !t.s || !onZ(i)) return;
       floor.push(i);
       if (!t.r && !gate.has(i) && !t.sr) passage.push(i);
     });
@@ -2184,7 +2703,7 @@
       if (!inB(x, y)) return false;
       const i = idx(x, y),
         t = T[i];
-      return t.k === 'f' && !t.r && !gate.has(i) && !t.sr;
+      return t.k === 'f' && t.s && !t.r && !gate.has(i) && !t.sr;
     };
     const marks = { jag: [], blob: [], dead: [] };
     // true lines: corners where a passage turns (a staircase tunnel is all corners)
@@ -2442,7 +2961,20 @@
 
   // an older save: the new stock, picks and wounds, and the smith who came with the new rooms
   function migrate(S) {
-    if (!S || S.v >= 5) return S;
+    if (!S || S.v >= 6) return S;
+    if (S.v < 5) migrate5(S);
+    // the elementals: hollows in stone not yet dug, fighting state on every dwarf
+    Object.assign(S, { foes: [], chambers: [], tremors: [], wanderT: 0, fightT: 0, foeKills: 0 });
+    for (const d of S.dwarves) Object.assign(d, { hp: DWARF_HP, drafted: false, gear: {}, fx: 0 });
+    for (let z = 0; z < LAYERS.length; z++) placeChambers(S, z);
+    S.v = 6;
+    logMsg(
+      S,
+      '⚠ Durin: "There\'s things asleep in this mountain. Raise a barracks, draft some warriors, and work the walls round where we sleep."'
+    );
+    return S;
+  }
+  function migrate5(S) {
     if (S.v < 4) migrate4(S);
     // the tavern keeper: an older save with a furnished tavern gets one now
     if (
@@ -2452,7 +2984,6 @@
     )
       hireKeeper(S);
     S.v = 5;
-    return S;
   }
   function migrate4(S) {
     if (S.v < 3) migrate3(S);
@@ -2540,6 +3071,12 @@
     stairWhy,
     cutStair,
     roofDist,
+    FOES,
+    GEAR,
+    DWARF_HP,
+    TREMOR,
+    draft,
+    hitOf,
     NO_PICK,
     GREAT_HALL_MIN,
     MERRY,

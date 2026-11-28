@@ -556,4 +556,45 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
   at 9 s a meltwater bucket the well made no difference, so it's 30 s. Older saves get damp patches in stone
   not yet dug, and the 6 buckets (`migrate`, v4). The Ironroots' stream (a free well along its bank, floods
   if broken into badly) is still to come.
-- **Next (step 3):** the elementals.
+
+## As built (step 3: earth elementals on the map, warriors, gear)
+
+The user asked to skip dead dwarves' replacements for now (they come with step 5's migrants) and move on.
+
+- **Kinds** (`FOES`): shard-wight (HP 30, hits 3), stonewake (80, 9), crystal wight (55, 7) and ember-wake
+  (70, 10). Each layer has its own sleepers (`CHAMBER_FOES`) and wanderers (`WANDER_FOES`): only shard-wights
+  on the Topstone.
+- **They swim through raw rock and walk the floor** (`foePass`: floor without a door, or rock that isn't
+  smoothed, built or a pillar), slower in rock (`FOE_ROCK`). Worked stone and doors stop them, so a worked,
+  doored living quarter is safe, and nobody panics at an elemental that can't reach anyone (`danger` only
+  counts one that has found a path).
+- **Hollows** (`S.chambers`, `placeChambers`, `CHAMBERS` 2 / 2 / 3 / 3 / 3 a layer): hidden 3 × 3-ish pockets
+  of floor (`t.vd`, unseen) with one or two sleepers, away from the gate and the deep spot. Digging within 3
+  tiles sends a **tremor** (purple rings on the map and a log line, `TREMOR`); breaking in wakes them
+  (`chamberNews`). The Mason's Eye ignores floor nobody has seen.
+- **Wanderers** (`wanderer`, `WANDER`): from day 2.5, about one every two days (sooner the deeper the
+  Delve), rising in raw rock 3–7 tiles from the workings on a layer you've reached (orange rings). One that
+  finds no way in for half a day sinks back.
+- **Fights on the map** (`fights`, every 1.5 s): an elemental beside dwarves strikes one (a warrior first);
+  everyone beside it hits back (`hitOf`: fists 1, a miner's pick 2, a warrior 4 unarmed, a bronze war-hammer 8,
+  iron 12; ×1.3 / ×1.6 for blooded / veteran warriors, `fx` 30 / 90). Dwarves have 40 HP (`DWARF_HP`), mend
+  slowly away from a fight, fully in an infirmary cot; a blow also leaves them hurt. A dwarf killed is gone
+  (the dead), and when the elemental that killed them falls, their mourners are avenged (the grudge struck
+  out). A fallen elemental leaves 2 rough stone.
+- **Warriors:** tap a dwarf and ⚔ Draft them (`draft`). A warrior keeps their trade but first arms
+  themselves from the stock (`arm`), goes after any elemental within 15 tiles on their layer (`hunt`,
+  `WAR_R`), falls back below 40% health (`FIGHT.retreat`), and trains at the barracks' racks when idle
+  (`train`, +4 fighting experience). Everyone else runs from an elemental within 5 tiles (`flee`).
+- **Gear** (`GEAR`, forged at the anvil while a warrior lacks it, `gearWanted`): bronze war-hammer (2 bronze),
+  iron war-hammer (2 iron, a coal), iron mail (3 iron, a coal: takes 40% less).
+- **Tuning** (10 days, the sim drafting two miners on day 1, `NOARMS=1` for none): with warriors, one death
+  in six seeds and seed 7 reaches layer 3; without, seed 7 stays on layer 1 and seed 1 loses two. First try
+  (dwarves 30 HP, wights hitting 4, civilians hitting as hard as warriors, wanderers every 1.4 days) killed
+  warriors faster than civilians and stalled the digging.
+- **On screen:** elementals as craggy lumps of stone with glowing eyes (shut while asleep), half sunk when in
+  the rock, a strength bar once hurt; tap one for its panel. Tremor rings. A dwarf's panel has a health bar,
+  their warrior line and the Draft / Stand down button; the crew list marks warriors ⚔ and low health ❤.
+  Stock shows hammers and mail once there are some.
+- **Not yet (step 4):** leading a fight yourself, Durin's binding, rune-stones. Durin is ignored by
+  elementals until then.
+- **Next (step 4):** lead it yourself, binding.

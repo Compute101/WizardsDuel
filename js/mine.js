@@ -115,7 +115,7 @@
     infirmary:
       'A cot for every 4 tiles. Hard rock and ore sometimes hurt a dwarf, who works at half pace until mended: a quarter of a day in a cot, a day and a half walking it off.',
     barracks:
-      'A weapon rack for every 4 tiles. Nothing to guard against yet: the warriors who stand here come with the earth elementals.',
+      'A weapon rack for every 4 tiles. Draft a dwarf as a warrior (tap them, ⚔ Draft) and they train here when idle, getting better with every bout, and go after any elemental that wakes on their layer. The smith forges their war-hammers and mail.',
     memorial:
       'A carved plaque. When a dwarf falls, the rest mourn: here they carve a word for the dead and are the easier for it. Needs no door.',
     greathall:
@@ -134,6 +134,9 @@
     ['meal', '🍲', 'Meals (cooked at the kitchen; eaten before raw deepcaps)'],
     ['bronze', '🟫', 'Bronze (smelted at the forge)'],
     ['pick', '⛏', 'Bronze picks in the stock (forged at the forge)'],
+    ['hammer', '🔨', 'Bronze war-hammers, for warriors (2 bronze at the forge)'],
+    ['ironhammer', '⚒', 'Iron war-hammers (2 iron and a coal)'],
+    ['mail', '🛡', 'Iron mail: a warrior takes 40% less from every blow (3 iron and a coal)'],
     ['iron', '🟤', 'Iron ore'],
     ['limestone', '⬜', 'Limestone'],
     ['silver', '🥈', 'Silver ore'],
@@ -561,6 +564,12 @@
           clampView();
         }
       };
+    const dr = $('mn-draft');
+    if (dr)
+      dr.onclick = () => {
+        M.draft(S, +dr.dataset.id, dr.dataset.on === '1');
+        renderSide(true);
+      };
     const pr = $('mn-prospect');
     if (pr)
       pr.onclick = () => {
@@ -623,9 +632,13 @@
         ? '<p class="mn-note">🍻 Merry from the tavern: working faster, and they\'ll shrug off the next everyday grudge.</p>'
         : '';
       const where = S.depth ? ' <small>(layer ' + (M.layerOf(Math.round(d.y)) + 1) + ')</small>' : '';
-      return `${x}<b>${d.name}</b> <small>${T.icon} ${M.levelOf(d).name} ${T.name.toLowerCase()}</small>${where}<p>${d.act}${d.act.endsWith('…') ? '' : '.'} Mood: ${mood}.</p>${cheer}${kit}${hurt}
-      <div class="mn-needs"><span>🍄 Food</span>${bar(d.needs.food, needCol(d.needs.food))}<span>🍺 Ale</span>${bar(d.needs.ale, needCol(d.needs.ale))}<span>💤 Sleep</span>${bar(d.needs.sleep, needCol(d.needs.sleep))}</div>
+      return `${x}<b>${d.name}</b> <small>${T.icon} ${M.levelOf(d).name} ${T.name.toLowerCase()}</small>${where}<p>${d.act}${d.act.endsWith('…') ? '' : '.'} Mood: ${mood}.</p>${cheer}${kit}${hurt}${warHtml(d)}
+      <div class="mn-needs"><span>❤ Health</span>${bar((d.hp / M.DWARF_HP) * 100, needCol((d.hp / M.DWARF_HP) * 100))}<span>🍄 Food</span>${bar(d.needs.food, needCol(d.needs.food))}<span>🍺 Ale</span>${bar(d.needs.ale, needCol(d.needs.ale))}<span>💤 Sleep</span>${bar(d.needs.sleep, needCol(d.needs.sleep))}</div>
       ${g ? '<p class="mn-note">📕 ' + d.grudges.map(x => x.why).join('; ') + '</p>' : ''}`;
+    }
+    if (s.kind === 'foe') {
+      const f = S.foes.find(q => q.id === s.id && q.hp > 0);
+      return f ? foeHtml(f, x) : '';
     }
     if (s.kind === 'room') {
       const r = S.rooms.find(x => x.id === s.id);
@@ -713,6 +726,23 @@
     }
     return '';
   }
+  // a dwarf's fighting: drafted or not, their gear, how hard they hit, and the button to change it
+  function warHtml(d) {
+    const g = d.gear || {},
+      gear = [g.w && M.GEAR[g.w].name, g.a && M.GEAR[g.a].name].filter(Boolean).join(' and ');
+    const lv = d.fx >= 90 ? 'a veteran' : d.fx >= 30 ? 'blooded' : 'green';
+    return d.drafted
+      ? `<p class="mn-note">⚔ A warrior (${lv}): ${gear || 'no gear yet'}, hits for ${Math.round(M.hitOf(d))}. They go after elementals on their layer, fall back when badly hurt, and train at the barracks when idle.</p>
+      <button class="mn-btn sm" id="mn-draft" data-id="${d.id}" data-on="0" type="button">Stand down</button>`
+      : `<button class="mn-btn sm" id="mn-draft" data-id="${d.id}" data-on="1" type="button">⚔ Draft as a warrior</button>`;
+  }
+  // an elemental's panel
+  function foeHtml(f, x) {
+    const K = M.FOES[f.kind];
+    return `${x}<b>A ${K.name}</b> <small>${f.state === 'sleep' ? 'asleep in its hollow' : 'awake'}</small>
+    <div class="mn-needs"><span>Strength</span>${bar((f.hp / f.max) * 100, '#c86a50')}</div>
+    <p class="mn-note">An earth elemental: it swims through raw rock and walks the floor, but can't pass smoothed or built stone, pillars or doors. It hits for ${K.atk}. ${f.wander ? 'It rose through the rock, and sinks back if it finds no way in.' : ''}</p>`;
+  }
   function crewHtml() {
     return (
       '<div class="mn-list">' +
@@ -720,7 +750,7 @@
         .map(d => {
           const T = M.TRADES[d.trade],
             g = d.grudges.length;
-          return `<button class="mn-item${ui.sel && ui.sel.id === d.id ? ' on' : ''}" data-dw="${d.id}" type="button">${T.icon} <b>${d.name}</b> <small>${M.levelOf(d).name} ${T.name.toLowerCase()}</small><br><small>${S.depth ? 'L' + (M.layerOf(Math.round(d.y)) + 1) + ' · ' : ''}${d.act}${M.merry(S, d) ? ' · 🍻' : ''}${g ? ' · 📕' + g : ''}</small></button>`;
+          return `<button class="mn-item${ui.sel && ui.sel.id === d.id ? ' on' : ''}" data-dw="${d.id}" type="button">${T.icon} <b>${d.name}</b> <small>${M.levelOf(d).name} ${T.name.toLowerCase()}</small><br><small>${S.depth ? 'L' + (M.layerOf(Math.round(d.y)) + 1) + ' · ' : ''}${d.drafted ? '⚔ ' : ''}${d.act}${M.merry(S, d) ? ' · 🍻' : ''}${d.hp < M.DWARF_HP * 0.6 ? ' · ❤' + Math.round(d.hp) : ''}${g ? ' · 📕' + g : ''}</small></button>`;
         })
         .join('') +
       '</div>' +
@@ -860,6 +890,7 @@
       <li><b>The mason's workshop comes first</b>: its bench is roughed out of rough stone, and there the mason cuts rough stone into <b>dressed blocks</b> (🧱 in the stock). Every bed, table, still, wall, pillar and door takes a block, and he cuts only as many as your building needs.</li>
       <li><b>The trades</b>: the farmer and brewer cook meals at a kitchen's hearth; the smith smelts copper, tin and coal into bronze at a forge's anvil and forges picks, for the old iron ones wear out. Hard rock sometimes hurts a dwarf: an infirmary mends them.</li>
       <li><b>Water</b>: the brewer needs a bucket of water for every brew. Until there's a well he fetches meltwater from outside the gate, which is slow. Damp stone shows as a blue shimmer in the dark: dig it out, then 🧱 Build ▴ → Well. A well never runs dry.</li>
+      <li><b>Earth elementals</b>: they swim through raw rock and walk the floor, but can't pass smoothed or built stone, pillars or doors, so a worked, doored living quarter is safe. Some sleep in hidden hollows: digging close sends a tremor (purple rings), and breaking in wakes them. Others rise through the rock now and then (orange rings), more the deeper you go. Tap a dwarf and ⚔ Draft them as a warrior: warriors go after elementals, fall back when badly hurt and train at the barracks; everyone else runs. The smith forges war-hammers (bronze, then iron) and iron mail for them.</li>
       <li><b>Mind the roof</b>: each stone spans only so far. Floor more than 3 tiles from rock, a wall or a pillar (on the Topstone) is unsound: red hairline cracks show, and after a while it comes down. Rubble is quick to dig out, but anyone under it may die, and the crew mourn. A Wall of Remembrance eases that.</li>
       <li><b>Going deeper</b>: the Thane sets each layer a quota of ore (the Quota tab). Meet it, find the layer's deep spot (Durin's prospecting, or digging nearby), and cut the stair down. Five layers, each harder stone. ▲ ▼ by the map, or [ and ], change the layer you see.</li>
       <li><b>✨ Smooth</b>: the mason smooths walls and pillars. Finer rooms, and worked stone will keep elementals out.</li>
@@ -867,7 +898,7 @@
       <li><b>The Ledger</b>: hungry, dry or floor-sleeping dwarves hold grudges. Too many and they slow down, then stop.</li>
       <li><b>The Mason's Eye</b>: Durin scores the look of the Delve, and names fine patterns when he sees them. The Delve-book (on the Mason's Eye tab) shows what each one is.</li>
     </ul>
-    <p class="mn-note">Space pauses. Keys: D dig, B build menu (W wall, P pillar, O door), S smooth, R room menu, C clear, L look. The earth elementals, and the Mountain's Heart below the fifth layer, come next.</p>
+    <p class="mn-note">Space pauses. Keys: D dig, B build menu (W wall, P pillar, O door), S smooth, R room menu, C clear, L look. Leading a fight yourself, Durin's binding of elementals, and the Mountain's Heart below the fifth layer come next.</p>
     <div class="mn-row"><button class="mn-btn" id="mn-ok" type="button">To work</button></div>`,
       () => {
         $('mn-ok').onclick = closeModal;
@@ -1153,6 +1184,14 @@
     }
     if (best) {
       ui.sel = { kind: 'dwarf', id: best.id };
+      renderSide(true);
+      return;
+    }
+    const foe = S.foes.find(
+      f => f.hp > 0 && f.state === 'awake' && onView(f.y) && Math.hypot(fx - f.x, fy - f.y) < 0.8
+    );
+    if (foe) {
+      ui.sel = { kind: 'foe', id: foe.id };
       renderSide(true);
       return;
     }
@@ -1492,6 +1531,14 @@
     }
     // the crew and Durin
     for (const d of S.dwarves) if (onView(d.y)) drawDwarf(c, d, s);
+    for (const f of S.foes)
+      if (
+        f.hp > 0 &&
+        onView(f.y) &&
+        (f.state === 'awake' || S.tiles[M.idx(Math.round(f.x), Math.round(f.y))].s)
+      )
+        drawFoe(c, f, s);
+    for (const m of S.tremors) if (onView(m.y)) drawTremor(c, m, s);
     if (onView(S.durin.y)) drawDurin(c, s);
     // the rectangle being dragged
     const g = ui.drag;
@@ -2125,6 +2172,94 @@
         c.setLineDash([]);
       }
     }
+  }
+  // an earth elemental: a craggy lump of the layer's stone with glowing eyes; half sunk when in the rock
+  function drawFoe(c, f, s) {
+    const K = M.FOES[f.kind],
+      X = (f.x + 0.5) * s,
+      Y = (f.y + 0.5) * s,
+      inRock = S.tiles[M.idx(Math.round(f.x), Math.round(f.y))].k === 'r',
+      r = s * (f.kind === 'stonewake' || f.kind === 'ember' ? 0.46 : 0.38),
+      now = performance.now();
+    c.save();
+    if (f.state === 'sleep') c.globalAlpha = 0.55;
+    c.fillStyle = 'rgba(0,0,0,.35)';
+    c.beginPath();
+    c.ellipse(X, Y + r * 0.7, r, r * 0.35, 0, 0, 7);
+    c.fill();
+    // the body: a ring of jagged points round the middle, gently heaving
+    c.fillStyle = K.col;
+    c.strokeStyle = 'rgba(20,14,10,.8)';
+    c.lineWidth = Math.max(1, s * 0.05);
+    c.beginPath();
+    for (let k = 0; k < 9; k++) {
+      const a = (k / 9) * Math.PI * 2,
+        rr = r * (0.75 + (0.25 * ((k * 37 + f.id) % 5)) / 4) * (1 + 0.04 * Math.sin(now / 300 + k));
+      const px = X + Math.cos(a) * rr,
+        py = Y + Math.sin(a) * rr * 0.9;
+      if (k) c.lineTo(px, py);
+      else c.moveTo(px, py);
+    }
+    c.closePath();
+    c.fill();
+    c.stroke();
+    // cracks of inner light
+    c.strokeStyle = f.kind === 'ember' ? '#ffd080' : f.kind === 'crystal' ? '#f0e0ff' : '#c8e0ff';
+    c.globalAlpha *= 0.6;
+    c.beginPath();
+    c.moveTo(X - r * 0.4, Y + r * 0.2);
+    c.lineTo(X - r * 0.1, Y - r * 0.1);
+    c.lineTo(X + r * 0.3, Y + r * 0.3);
+    c.stroke();
+    c.globalAlpha = f.state === 'sleep' ? 0.55 : 1;
+    // eyes: shut when asleep
+    c.fillStyle = f.kind === 'ember' ? '#ffcc40' : '#9fe8ff';
+    for (const ex of [-0.28, 0.28]) {
+      c.beginPath();
+      if (f.state === 'sleep') c.fillRect(X + ex * r - r * 0.12, Y - r * 0.25, r * 0.24, r * 0.05);
+      else c.arc(X + ex * r, Y - r * 0.22, r * 0.11, 0, 7);
+      c.fill();
+    }
+    // half sunk in the stone: rock drawn over its lower half
+    if (inRock) {
+      c.fillStyle = 'rgba(40,34,30,.7)';
+      c.fillRect(X - r * 1.1, Y + r * 0.1, r * 2.2, r * 1.1);
+    }
+    // its strength, once hurt
+    if (f.hp < f.max) {
+      c.globalAlpha = 1;
+      c.fillStyle = '#200';
+      c.fillRect(X - r, Y - r * 1.35, r * 2, Math.max(2, s * 0.08));
+      c.fillStyle = '#e05a3a';
+      c.fillRect(X - r, Y - r * 1.35, r * 2 * (f.hp / f.max), Math.max(2, s * 0.08));
+    }
+    if (ui.sel && ui.sel.kind === 'foe' && ui.sel.id === f.id) {
+      c.strokeStyle = '#ff8a6a';
+      c.lineWidth = 2;
+      c.beginPath();
+      c.arc(X, Y, r + 4, 0, 7);
+      c.stroke();
+    }
+    c.restore();
+  }
+  // a tremor: rings shaking out from where something stirs in the dark
+  function drawTremor(c, m, s) {
+    const age = (S.t - m.t) / M.TREMOR.show,
+      X = (m.x + 0.5) * s,
+      Y = (m.y + 0.5) * s,
+      j = Math.sin(performance.now() / 40) * s * 0.05;
+    c.save();
+    c.strokeStyle = m.sleep ? 'rgba(200,180,255,' : 'rgba(255,190,120,';
+    for (let k = 0; k < 3; k++) {
+      const ph = (performance.now() / 900 + k / 3) % 1;
+      c.strokeStyle =
+        (m.sleep ? 'rgba(200,180,255,' : 'rgba(255,190,120,') + (1 - ph) * (1 - age) * 0.8 + ')';
+      c.lineWidth = Math.max(1, s * 0.06);
+      c.beginPath();
+      c.arc(X + j, Y, s * (0.4 + ph * 1.6), 0, 7);
+      c.stroke();
+    }
+    c.restore();
   }
   function drawDurin(c, s) {
     const X = (S.durin.x + 0.5) * s,
