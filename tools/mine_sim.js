@@ -147,6 +147,11 @@ for (let s = 0; s < days * M.DAY; s += 1) {
     const f = S.foes.find(q => q.state === 'awake' && q.hp > 0 && !M.bindWhy(S, q));
     if (f) M.bind(S, f.id);
   }
+  // answer the letters: take every specialist and kin, and others while the crew is under 16 (NOAPPS=1: none)
+  if (process.env.NOAPPS !== '1' && S.apps && S.apps.length && s % 20 === 10)
+    for (const a of S.apps.slice())
+      if (a.kin || M.SPECIAL[a.trade] || S.dwarves.length + (S.coming || []).length < 16)
+        M.acceptApp(S, a.id);
   // a door on every way into a room (the way a player would, before it can earn a second star)
   if (s % 30 === 15)
     for (const r of S.rooms)
@@ -248,6 +253,10 @@ console.log(
   S.arrived || 0,
   'owed',
   (S.owed || []).length,
+  'trades',
+  Object.entries(S.dwarves.reduce((m, d) => ((m[d.trade] = (m[d.trade] || 0) + 1), m), {}))
+    .map(([k, n]) => k + ' ' + n)
+    .join(', '),
   'renown',
   ren.total,
   'tier',

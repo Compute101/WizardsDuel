@@ -672,25 +672,37 @@ The user asked to skip dead dwarves' replacements for now (they come with step 5
   result. Seeds 1 and 2 never make a rune: the scripted plan starves there (no food or ale, one block).
 - **Next (step 5):** migrants and replacements for the dead, renown, caravans, the Assay.
 
-## As built (step 5, part 1: newcomers and renown)
+## As built (step 5, part 1: applications and renown)
 
-*"Let's do newcomers."* (Earlier: *"So what happens if a dwarf dies, does a replacement arrive?"*)
+*"Let's do newcomers."* Then: *"I seemed to be able to do everything with just 6 dwarfs on level 1. What do you
+need the newcomers for?"* Four options were put to the user; they chose **trades only newcomers bring** and
+**you choose who comes**, with a rule: *"dwarfs should have to apply to live there, they shouldn't be able to
+just turn up unexpectedly."* (A first version had parties simply arrive every two days; it was replaced.)
 - **Renown** (`renown`, live, so it falls as well as rises): the best layer's Mason's Eye × 0.12, 3 a
   named pattern, 1 a room star past the first (16 at most), 6 a layer opened, 3 an elemental bound, 1 an
-  elemental slain (12 at most), −4 for each of the crew lost (`RENOWN_W`). Each of `RENOWN_TIERS` (12, 28,
-  48, 72) it passes draws one more newcomer a party.
-- **Parties from Stonedeep** (`newcomersStep`, `WAVE`): every two days from day 3. First the dead are
-  replaced, trade for trade (`S.owed`, filled by `killDwarf`; a day's mourning first, `WAVE.mourn`; two a
-  party at most, `repMax`; a soldier comes armed but green), then renown's newcomers in the trade the Delve
-  most needs (`neededTrade`: a farmer if food is short, a brewer if ale is, a mason if building's piling up,
-  else a miner). At most 20 dwarves (`WAVE.max`). Each brings 4 food and 3 ale (`WAVE.bring`), so a party
-  isn't a drain the day it comes. A log line a quarter day ahead says how many are coming.
-- **They wait** while an awake elemental is within 14 tiles of the gate, or one that has killed in the last
-  day is loose anywhere (`WAVE.safe`, `f.killT`): the first try fed each new party to the stonewake that
-  had killed the last (seed 5: 21 dead in 10 days).
-- **On screen:** the Quota tab has a Renown and newcomers section (the bar to the next tier, what counts,
-  who's coming next and when). `migrate` v9: the dead so far are owed, the next party in half a day.
-- **Sim** (10 days, 8 seeds): crews of 11–17 on six seeds (4–7 arrivals), renown 16–57; seeds 4 and 5
-  have early stonewakes two soldiers can't beat, and lose 7 and 9 (no player to lead the fight or draft
-  more; with two miners drafted too, `DRAFT=1`, seed 4 loses none).
+  elemental slain (12 at most), 1 for every six walls engraved (14 at most), −4 for each of the crew lost
+  (`RENOWN_W`). Each of `RENOWN_TIERS` (12, 28, 48, 72) it passes draws one more applicant a letter.
+- **Letters from Stonedeep** (`letterStep`, `LETTERS`): every two days from day 3. A letter brings kin of
+  the dead (a day after they fell, two a letter at most, the dead's surname and a line about them,
+  `KIN_LINES` / `KIN` by sex; `S.owed` from `killDwarf`), then one applicant a renown tier (the trade the
+  Delve most needs first, `neededTrade`, then a spread from `ORDINARY`), then one **specialist** whose
+  trade is open (`SPECIAL`, `specialWhy`). Each has a name, a trade and a line (`PITCH`). The Letters tab
+  (a red badge with the count) has ✓ Take them on and Turn away for each (`acceptApp` / `declineApp`).
+  Unanswered applicants find work elsewhere when the next letter comes (kin ask again). Taken on, they walk
+  up in a quarter day (`S.coming`, `LETTERS.road`), waiting at Stonedeep while an elemental is near the gate
+  or one that has killed is loose (`roadUnsafe`), and bring 4 food and 3 ale. At most 20 dwarves.
+- **Trades that only come by application** (`SPECIAL`): **soldiers** (renown 12, up to 4 in all, armed
+  but green); a **bonesetter** (renown 12 and an infirmary; `tend`: keeps to the infirmary, where the hurt
+  mend twice as fast, `tended`); a **runesmith** (renown 20 and the Glimmerdark open; works a new
+  **Runesmith's hall**, `ROOMS.runehall` with a rune anvil: silver runes moved to him from the mason, and
+  the **Air-runed war-hammer**, `RECIPES.airhammer`: 2 iron, a galestone and a silver, `GEAR.airhammer`
+  hit 18, rank 3); **engravers** (renown 28, up to 2; `engrave`: carve smoothed walls bordering a room,
+  `t.en`, `ENGRAVE_S` 25 s, drawn as a gold-lit Arcana glyph panel; `S.engraved` feeds renown). The Letters
+  tab lists each specialist and what it still needs.
+- `migrate` v10: no one's on the road, the next letter in half a day, the dead so far owed.
+- **Sim** (12 days, 8 seeds; the sim takes on every specialist and kin and others while the crew is under
+  16, `NOAPPS=1` none): crews of 16–19 on seven seeds (7–9 arrivals: 4 soldiers, a bonesetter, a runesmith
+  on the two seeds that reach the Glimmerdark, engravers where renown passed 28), renown 23–63. Seed 5's
+  early stonewakes still kill 13 (no player leading fights). Without applications seed 7 ends with 8
+  dwarves and two dead, against 17 and none.
 - **Next:** caravans and the Assay.

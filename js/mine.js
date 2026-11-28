@@ -112,6 +112,8 @@
       'A keg for every 8 tiles. The crew drink here before anywhere else, and a pint there leaves a dwarf merry for a day (working faster, shrugging off the next everyday grudge) and often strikes out a grudge too. A proper hall: it wants a door on every way in, and a tavern keeper behind the bar (one comes up from Stonedeep when your first tavern is furnished). Closed while the keeper eats or sleeps.',
     taproom:
       'Kegs in an open room that serve themselves: no door or keeper needed, but it only slakes thirst: no merriment, no grudges struck out. The crew go to an open tavern first.',
+    runehall:
+      "One rune anvil. A runesmith (they only come by application, once the Glimmerdark is open) inlays silver runes here for Durin's big bindings, and sets Air in war-hammers: 2 iron, a galestone and a silver make an Air-runed hammer that tears elementals apart.",
     infirmary:
       'A cot for every 4 tiles. Hard rock and ore sometimes hurt a dwarf, who works at half pace until mended: a quarter of a day in a cot, a day and a half walking it off.',
     barracks:
@@ -143,6 +145,11 @@
     ['hammer', '🔨', 'Bronze war-hammers, for warriors (2 bronze at the forge)'],
     ['ironhammer', '⚒', 'Iron war-hammers (2 iron and a coal)'],
     ['mail', '🛡', 'Iron mail: a warrior takes 40% less from every blow (3 iron and a coal)'],
+    [
+      'airhammer',
+      '🌀',
+      'Air-runed war-hammers: they strike as Air and tear elementals apart (the runesmith: 2 iron, a galestone, a silver)'
+    ],
     ['iron', '🟤', 'Iron ore'],
     ['limestone', '⬜', 'Limestone'],
     ['silver', '🥈', 'Silver ore'],
@@ -513,12 +520,21 @@
         ['crew', 'Crew'],
         ['ledger', 'Ledger'],
         ['quota', 'Quota'],
+        [
+          'letters',
+          'Letters' + (S.apps && S.apps.length ? '<span class="mn-badge">' + S.apps.length + '</span>' : '')
+        ],
         ['eye', "Mason's Eye"],
         ['log', 'Log']
       ];
-    const body = { crew: crewHtml, ledger: ledgerHtml, quota: quotaHtml, eye: eyeHtml, log: logHtml }[
-      ui.tab
-    ]();
+    const body = {
+      crew: crewHtml,
+      ledger: ledgerHtml,
+      quota: quotaHtml,
+      letters: lettersHtml,
+      eye: eyeHtml,
+      log: logHtml
+    }[ui.tab]();
     const key = sel + '|' + ui.tab + '|' + body;
     if (!force && key === sideLast) return;
     sideLast = key;
@@ -548,6 +564,18 @@
             ui.sel = { kind: 'dwarf', id: +b.dataset.dw };
             const d = S.dwarves.find(w => w.id === ui.sel.id);
             if (d) showLayer(M.layerOf(Math.round(d.y)));
+            renderSide(true);
+          })
+      );
+    $('mn-panel')
+      .querySelectorAll('[data-app]')
+      .forEach(
+        b =>
+          (b.onclick = () => {
+            if (b.dataset.yes === '1') {
+              const r = M.acceptApp(S, +b.dataset.app);
+              if (!r.ok) say(r.why);
+            } else M.declineApp(S, +b.dataset.app);
             renderSide(true);
           })
       );
@@ -878,24 +906,47 @@
       <p class="mn-note">Two soldiers come up from Stonedeep once the hold can feed them (by day ${Math.round(M.SOLDIERS.late / M.DAY) + 1} at the latest). The elementals start rising a day after they come.</p>
       <ul class="mn-ledger">${tick(R.farm, 'A farm sown')}${tick(R.well, 'A well sunk on damp stone')}${tick(R.brewery, 'A brewery with its still')}</ul>`;
     }
-    // renown, and who comes up from Stonedeep next
+    return `${thane}<p><b>Layer ${z + 1}: ${L.name}</b></p>
+    <p class="mn-note">The Thane's quota: ore carried to the stockpile. Meet it to cut the stair down.</p>
+    <div class="mn-needs">${bars}</div>${deep}${stair}
+    <p><b>The layers so far</b></p><ul class="mn-ledger">${layers}</ul>
+    <p class="mn-note">Cave-ins: a roof left open wider than its stone can span cracks (red hairlines), and after a while comes down, burying what's under it. Pillars, walls or rock left standing hold it.</p>`;
+  }
+  // applications: who asks to join, who's on the road, the next letter, and the renown that draws them
+  function lettersHtml() {
     const ren = M.renown(S),
-      wv = M.nextWave(S),
-      hrs = Math.max(0, Math.round((S.waveT == null ? M.WAVE.first : S.waveT) - S.t) / (M.DAY / 24));
-    const who = [
-      ...wv.rep.map(o => 'someone in ' + o.for + "'s place"),
-      ...(wv.fresh ? [wv.fresh + ' drawn by your renown'] : [])
-    ];
-    const waveLine = S.waveHeld
-      ? 'The newcomers are waiting at Stonedeep until the elemental is dealt with.'
-      : S.dwarves.length >= M.WAVE.max
-        ? 'The Delve has all the crew it can hold (' + M.WAVE.max + ').'
-        : who.length
-          ? `In about ${Math.round(hrs)} hours: ${who.join(' and ')}. Each brings a little food and ale.`
-          : `In about ${Math.round(hrs)} hours, but no one will come: the Delve hasn't the renown yet.`;
-    const renHtml = `<p><b>🎒 Renown and newcomers</b></p>
-    <div class="mn-needs"><span>Renown ${ren.total}</span>${bar(ren.next ? (ren.total / ren.next) * 100 : 100, '#e2b84c')}</div>
-    <p class="mn-note">${ren.tier ? 'Your renown draws ' + ren.tier + ' newcomer' + (ren.tier > 1 ? 's' : '') + ' a party' : 'Your renown draws no newcomers yet'}${ren.next ? ` (at ${ren.next}, ${ren.tier + 1})` : ''}. Parties come every two days, and the dead are replaced a day after they fall (two a party at most). ${waveLine}</p>
+      L = M.LETTERS,
+      full = S.dwarves.length + (S.coming || []).length >= L.max;
+    const hrs = Math.max(0, Math.round(((S.letterT == null ? L.first : S.letterT) - S.t) / (M.DAY / 24)));
+    const apps = (S.apps || [])
+      .map(a => {
+        const T = M.TRADES[a.trade],
+          special = !!M.SPECIAL[a.trade];
+        return `<div class="mn-app"><b>${T.icon} ${a.name}</b> <small>${T.name.toLowerCase()}${special ? ' · only by application' : ''}${a.kin ? ' · kin of ' + a.kin : ''}</small>
+        <p class="mn-note">"${a.line}"</p>
+        <div class="mn-row"><button class="mn-btn sm" data-app="${a.id}" data-yes="1" type="button"${full ? ' disabled' : ''}>✓ Take them on</button><button class="mn-btn sm" data-app="${a.id}" data-yes="0" type="button">Turn away</button></div></div>`;
+      })
+      .join('');
+    const road = (S.coming || [])
+      .map(
+        a =>
+          `<li>${M.TRADES[a.trade].icon} ${a.name} ${a.held ? "(waiting at Stonedeep: the road in isn't safe)" : '(on the road, here in about ' + Math.max(1, Math.round((a.at - S.t) / (M.DAY / 24))) + ' hours)'}</li>`
+      )
+      .join('');
+    const specials = Object.keys(M.SPECIAL)
+      .map(tr => {
+        const why = M.specialWhy(S, tr);
+        return `<li>${M.TRADES[tr].icon} ${M.TRADES[tr].name}: ${why ? '<small>needs ' + why + '</small>' : '<small>may apply</small>'}</li>`;
+      })
+      .join('');
+    return `<p><b>📜 Letters from Stonedeep</b> <small>${S.dwarves.length} / ${L.max} dwarves</small></p>
+    <p class="mn-note">No one comes to the Delve unasked: every two days a letter brings those who'd join, and you take them on or turn them away. Answer before the next letter, or they find work elsewhere. Each brings a little food and ale. Next letter in about ${hrs} hours.</p>
+    ${apps || '<p class="mn-note">No applications waiting.</p>'}
+    ${road ? `<p><b>On the road</b></p><ul class="mn-ledger">${road}</ul>` : ''}
+    <p><b>Renown ${ren.total}</b></p>
+    <div class="mn-needs"><span>Renown</span>${bar(ren.next ? (ren.total / ren.next) * 100 : 100, '#e2b84c')}</div>
+    <p class="mn-note">${ren.tier ? 'Your renown draws ' + ren.tier + ' applicant' + (ren.tier > 1 ? 's' : '') + ' a letter' : 'Your renown draws no applicants yet'}${ren.next ? ` (at ${ren.next}, ${ren.tier + 1})` : ''}, and kin of the dead ask to take their place. Some trades only come by application:</p>
+    <ul class="mn-ledger">${specials}</ul>
     <ul class="mn-ledger">${
       ren.parts
         .filter(([, n]) => n)
@@ -903,11 +954,6 @@
         .join('') ||
       '<li>Nothing yet: fine halls, named patterns, deeper layers and bound elementals all count.</li>'
     }</ul>`;
-    return `${thane}${renHtml}<p><b>Layer ${z + 1}: ${L.name}</b></p>
-    <p class="mn-note">The Thane's quota: ore carried to the stockpile. Meet it to cut the stair down.</p>
-    <div class="mn-needs">${bars}</div>${deep}${stair}
-    <p><b>The layers so far</b></p><ul class="mn-ledger">${layers}</ul>
-    <p class="mn-note">Cave-ins: a roof left open wider than its stone can span cracks (red hairlines), and after a while comes down, burying what's under it. Pillars, walls or rock left standing hold it.</p>`;
   }
   function eyeHtml() {
     const e = eye || M.masonEye(S);
@@ -1110,7 +1156,7 @@
       <li><b>The trades</b>: the farmer and brewer cook meals at a kitchen's hearth; the smith smelts copper, tin and coal into bronze at a forge's anvil and forges picks, for the old iron ones wear out. Hard rock sometimes hurts a dwarf: an infirmary mends them.</li>
       <li><b>Water</b>: the brewer needs a bucket of water for every brew. Until there's a well he fetches meltwater from outside the gate, which is slow. Damp stone shows as a blue shimmer in the dark: dig it out, then 🧱 Build ▴ → Well. A well never runs dry.</li>
       <li><b>Earth elementals</b>: they swim through raw rock and walk the floor, but can't pass smoothed or built stone, pillars or doors, so a worked, doored living quarter is safe. Some sleep in hidden hollows: digging close sends a tremor (purple rings), and breaking in wakes them. Others rise through the rock now and then (orange rings), more the deeper you go. Once you've sown a farm, sunk a well and set up a brewery (the Quota tab keeps the list), the Thane sends two soldiers from Stonedeep, and the elementals only start rising a day later: they train at the barracks and stand guard over the crew. Only soldiers and warriors fight; everyone else runs, behind worked stone or a door if one's near, or towards the soldiers. To have more, tap a dwarf and ⚔ Draft them as a warrior (they keep their trade, go after elementals, fall back when badly hurt and train when idle). The smith forges war-hammers (bronze, then iron) and iron mail for them.</li>
-      <li><b>Newcomers</b>: every two days from day 3 a party comes up from Stonedeep. The dead are replaced trade for trade (a day after they fall, two a party at most), and the Delve's <b>renown</b> draws more: the Mason's Eye, named patterns, fine rooms, layers opened, elementals bound and slain all raise it, and every death lowers it. Each newcomer brings a little food and ale. They won't come while an elemental prowls near the gate or one that has killed is loose. The Quota tab shows the renown and who's coming. At most 20 dwarves.</li>
+      <li><b>📜 Letters</b>: no one comes to the Delve unasked. Every two days from day 3 a letter from Stonedeep brings those who'd join: kin of the dead asking to take their place, and as many more as the Delve's <b>renown</b> draws (the Mason's Eye, named patterns, fine rooms, layers opened, elementals bound and slain, engraved walls; every death lowers it). Take each on or turn them away on the Letters tab, before the next letter. Some trades only come this way: <b>soldiers</b>, a <b>bonesetter</b> (with an infirmary: the hurt mend twice as fast), a <b>runesmith</b> (from the Glimmerdark: silver runes and Air-runed hammers at a Runesmith's hall) and <b>engravers</b> (they carve your rooms' smoothed walls). Those you take on walk up in a few hours with a little food and ale, but wait at Stonedeep while an elemental prowls near the gate or one that has killed is loose. At most 20 dwarves.</li>
       <li><b>Leading a fight yourself</b>: when a hollow wakes or an elemental breaks into the quarters, the Delve stops and asks. Lead it yourself and it's a duel on the battle screen: your wizard, with Durin and maybe a warrior beside you, against up to two of them. Air tears earth elementals apart. Wear one to half and Durin binds it there and then, if there's a rune. Your wizard's wounds mend over a day.</li>
       <li><b>Durin's binding</b>: select Durin and tap an awake elemental (or its 🪨 button). He goes to it and, once it's worn below half its strength (the gold notch on its bar), sets a rune-stone and chants. The warriors stop striking it and hold it for him; if it lands 10 or more on him while he chants, it tears free, enraged. It's quicker where the walls round it are worked, and in a raw tunnel it may slip away into the stone. A bound elemental serves for two days as a stone-servant, digging whatever you've marked, and every dwarf strikes out a grudge for pride. If Durin is struck down he's carried to Stonedeep and back in half a day.</li>
       <li><b>Mind the roof</b>: each stone spans only so far. Floor more than 3 tiles from rock, a wall or a pillar (on the Topstone) is unsound: red hairline cracks show, and after a while it comes down. Rubble is quick to dig out, but anyone under it may die, and the crew mourn. A Wall of Remembrance eases that.</li>
@@ -1551,6 +1597,22 @@
               c.closePath();
               c.fill();
             }
+          } else if (t.en) {
+            // an engraved wall: a carved Arcana glyph in a gold-lit relief
+            c.fillStyle = '#8a7c68';
+            c.fillRect(X, Y, s + 0.5, s + 0.5);
+            c.strokeStyle = 'rgba(30,24,18,.5)';
+            c.lineWidth = Math.max(1, s * 0.04);
+            c.strokeRect(X + s * 0.1, Y + s * 0.1, s * 0.8, s * 0.8);
+            c.fillStyle = 'rgba(240,210,140,.8)';
+            c.font = `${Math.max(8, s * 0.5)}px serif`;
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillText(
+              ENGRAVE_GLYPHS[Math.floor(hash(x, y, 3) * ENGRAVE_GLYPHS.length)],
+              X + s / 2,
+              Y + s * 0.55
+            );
           } else if (!t.w)
             for (let k = 0; k < 3; k++) {
               c.fillStyle = 'rgba(0,0,0,.18)';
@@ -2096,6 +2158,28 @@
         c.arc(X + s * 0.5, Y + s * 0.42, s * 0.18, 0, 7);
         c.fill();
       }
+    } else if (t.fu === 'runeanvil') {
+      // a rune anvil: a dark anvil with a pale-blue rune glowing on its face
+      c.fillStyle = t.fb ? '#2a3440' : 'transparent';
+      c.strokeStyle = '#a0d0f0';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(X + s * 0.14, Y + s * 0.34);
+      c.lineTo(X + s * 0.86, Y + s * 0.34);
+      c.lineTo(X + s * 0.68, Y + s * 0.52);
+      c.lineTo(X + s * 0.64, Y + s * 0.8);
+      c.lineTo(X + s * 0.36, Y + s * 0.8);
+      c.lineTo(X + s * 0.32, Y + s * 0.52);
+      c.closePath();
+      c.fill();
+      c.stroke();
+      if (t.fb) {
+        c.fillStyle = 'rgba(160,224,255,' + (0.6 + 0.3 * Math.sin(performance.now() / 500)) + ')';
+        c.font = `${Math.max(8, s * 0.3)}px serif`;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText('Φ', X + s * 0.5, Y + s * 0.56);
+      }
     } else if (t.fu === 'anvil') {
       // an anvil on a block, a glowing bar of bronze on it
       c.fillStyle = t.fb ? '#3a3e46' : 'transparent';
@@ -2512,6 +2596,8 @@
     }
     c.restore();
   }
+  // what an engraver carves: the Earth set and Dispel's, the Delve's own runes
+  const ENGRAVE_GLYPHS = ['Δ', '∇', 'Ψ', '⊕', '∞', 'θ', 'Ω'];
   // Durin's chant: Arcana glyphs going round him, filling in as the binding takes
   const BIND_GLYPHS = ['Δ', '∇', 'Ψ', '⊕', 'θ', 'Φ', 'Ω', '∞'];
   function drawDurin(c, s) {

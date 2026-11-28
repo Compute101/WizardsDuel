@@ -232,13 +232,22 @@
       act: 'Cutting a rune-stone',
       want: S => S.soldiersCame && stockOf(S, 'rune') < RUNES.keep
     },
+    // the runesmith's (a trade that only comes by application): silver runes, and Air in a hammer's head
     silverrune: {
-      at: 'bench',
+      at: 'runeanvil',
       takes: { block: 1, silver: 1 },
       makes: { silverrune: 1 },
       s: 8,
       act: 'Inlaying a silver rune',
       want: S => S.depth >= 2 && stockOf(S, 'silverrune') < RUNES.keepSilver
+    },
+    airhammer: {
+      at: 'runeanvil',
+      takes: { iron: 2, galestone: 1, silver: 1 },
+      makes: { airhammer: 1 },
+      s: 14,
+      act: 'Setting Air in a hammer',
+      want: S => gearWanted(S, 'w', 3)
     },
     forge: {
       at: 'anvil',
@@ -300,6 +309,8 @@
   const GEAR = {
     hammer: { name: 'bronze war-hammer', hit: 8, slot: 'w', rank: 1 },
     ironhammer: { name: 'iron war-hammer', hit: 12, slot: 'w', rank: 2 },
+    // strikes as Air, the earth elementals' opposite: half again on anything that rises from the stone
+    airhammer: { name: 'Air-runed war-hammer', hit: 18, slot: 'w', rank: 3 },
     mail: { name: 'iron mail', take: 0.6, slot: 'a', rank: 1 }
   };
   const maxHp = d => DWARF_HP + (WARRIOR_HP - DWARF_HP) * Math.min(1, (d.fx || 0) / FIGHT.levels[2]);
@@ -371,6 +382,14 @@
       count: a => Math.max(1, Math.ceil(a / 4)),
       good: 12
     },
+    runehall: {
+      name: "Runesmith's hall",
+      col: '#7ab0d8',
+      furn: 'runeanvil',
+      count: () => 1,
+      good: 6,
+      open: true
+    },
     memorial: {
       name: 'Wall of Remembrance',
       col: '#9aa8c0',
@@ -400,7 +419,11 @@
     keeper: { name: 'Tavern keeper', col: '#c05a7a', icon: '🍻' },
     // the Thane's two soldiers, sent up once the delve is under way and before the first elemental can
     // rise (SOLDIERS); their whole job is to train at the barracks and guard the crew, and they can't stand down
-    soldier: { name: 'Soldier', col: '#b04040', icon: '🛡' }
+    soldier: { name: 'Soldier', col: '#b04040', icon: '🛡' },
+    // trades that only come by application (SPECIAL)
+    bonesetter: { name: 'Bonesetter', col: '#e8dcc8', icon: '🩹' },
+    runesmith: { name: 'Runesmith', col: '#7ab0d8', icon: '💠' },
+    engraver: { name: 'Engraver', col: '#c8b0e0', icon: '🖋' }
   };
   // the soldiers' arrival, a scripted event: once the hold can feed them (a farm sown, a well sunk and a
   // brewery's still furnished: soldiersReady), or at SOLDIERS.late whatever, or at once if something wakes
@@ -411,16 +434,79 @@
   // replaced, trade for trade, on the first wave a day after they fell (WAVE.mourn); and the Delve's
   // renown (renown()) brings more on top, by RENOWN_TIERS, up to WAVE.max dwarves in all. Each newcomer
   // brings WAVE.bring of food and ale, so a wave doesn't empty the stores the day it comes.
-  const WAVE = {
-    safe: 14, // no party comes in while an awake elemental is this close to the gate
-    repMax: 2, // replacements a wave at most
+  const LETTERS = {
     first: DAY * 3,
     every: DAY * 2,
+    road: DAY * 0.25, // an accepted applicant's walk up from Stonedeep
+    safe: 14, // no one walks in while an awake elemental is this close to the gate
+    kinMax: 2, // kin of the dead in a letter at most
     mourn: DAY,
     max: 20,
-    warn: DAY * 0.25,
     bring: { food: 4, ale: 3 }
   };
+  const ORDINARY = ['miner', 'miner', 'mason', 'farmer', 'brewer', 'smith'];
+  // trades that only come by application, once the Delve can use them and has the renown
+  const SPECIAL = {
+    soldier: { renown: 12, max: 4 },
+    bonesetter: {
+      renown: 12,
+      max: 1,
+      needs: S => S.rooms.some(r => r.type === 'infirmary'),
+      lacks: 'an infirmary'
+    },
+    runesmith: { renown: 20, max: 1, needs: S => S.depth >= 2, lacks: 'the Glimmerdark opened' },
+    engraver: { renown: 28, max: 2 }
+  };
+  const PITCH = {
+    miner: [
+      'I can follow a vein by the sound of it.',
+      'Twenty years at the face, and both hands still.',
+      'Give me hard rock and a good pick.'
+    ],
+    mason: ['I cut true, and I cut fast.', 'Every block I lay is square.', 'I set the arches at Coldforge.'],
+    farmer: [
+      'Deepcaps grow fat for me.',
+      'I can feed a hold from a damp cellar.',
+      'I know my barley from my bracket.'
+    ],
+    brewer: [
+      'My ale is spoken of at Anvilmoot.',
+      "Barley, water and patience: that's all it takes.",
+      'No dwarf goes thirsty where I brew.'
+    ],
+    smith: [
+      'I can smelt anything that comes out of a hill.',
+      'My hammers ring true.',
+      'Bronze, iron, whatever you dig.'
+    ],
+    soldier: [
+      'I stood the Gate at Stonedeep three winters.',
+      "I've broken stonewakes before.",
+      'Point me at what wakes.'
+    ],
+    bonesetter: [
+      'I set bones and stitch cuts; your hurt will mend twice as fast.',
+      'I tended the miners at Coldforge.'
+    ],
+    runesmith: [
+      "I set runes in silver, and Air in a hammer's head.",
+      "Galestone sings for me. I can make your warriors' hammers tear stone."
+    ],
+    engraver: [
+      "Smooth walls are a waste of stone till they're carved.",
+      'I carve the old tales in the rock. The hold will talk of it.'
+    ]
+  };
+  // what kin of the dead say: {dead} is the fallen, {kin} how the applicant was related (by their sex)
+  const KIN_LINES = [
+    '{dead} was my {kin}. Let me finish their work.',
+    "I am {dead}'s {kin}. I would take up where they fell.",
+    '{dead} wrote to me of the Delve before the end. I want to see it.',
+    'My {kin} {dead} died down there. Someone of our blood should carry on.'
+  ];
+  const KIN = { m: ['brother', 'cousin', 'son', 'uncle'], f: ['sister', 'cousin', 'daughter', 'aunt'] };
+  const ENGRAVE_S = 25;
+  const TEND_S = 30;
   // renown at or above each figure brings one more newcomer a wave (0 at the bottom)
   const RENOWN_TIERS = [12, 28, 48, 72];
   const RENOWN_W = {
@@ -432,6 +518,8 @@
     bound: 3,
     slain: 1,
     slainCap: 12,
+    engrave: 1 / 6, // a point for every six walls carved
+    engraveCap: 14,
     dead: -4
   };
   // ── Durin's binding (step 4): Durin is the one who binds an elemental, once it's worn down below `at` of
@@ -538,7 +626,7 @@
   function newGame(seed) {
     seed = (seed == null ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
     const S = {
-      v: 9,
+      v: 10,
       seed,
       rs: seed,
       layer: 1,
@@ -1094,6 +1182,10 @@
   }
 
   // ── stock and stockpiles ──
+  // a bonesetter is in the infirmary: the hurt mend twice as fast there
+  function tended(S) {
+    return S.dwarves.some(d => d.trade === 'bonesetter' && d.job && d.job.type === 'tend' && !d.path.length);
+  }
   // a tavern is open while its keeper stands behind its bar
   function served(S, r) {
     return S.dwarves.some(
@@ -1135,6 +1227,11 @@
         S.foeKills + ' elemental' + (S.foeKills > 1 ? 's' : '') + ' slain',
         Math.min(R.slainCap, S.foeKills * R.slain)
       ]);
+    if (S.engraved)
+      parts.push([
+        S.engraved + ' wall' + (S.engraved > 1 ? 's' : '') + ' engraved',
+        Math.min(R.engraveCap, S.engraved * R.engrave)
+      ]);
     if (S.dead.length) parts.push([S.dead.length + ' of the crew lost', S.dead.length * R.dead]);
     const total = Math.max(0, Math.round(parts.reduce((n, p) => n + p[1], 0)));
     let tier = 0;
@@ -1145,14 +1242,6 @@
       tier,
       next: RENOWN_TIERS[tier] || null
     };
-  }
-  // what the next party will be: replacements (mourned a day) first, then renown's newcomers
-  function nextWave(S) {
-    const room = Math.max(0, WAVE.max - S.dwarves.length);
-    const owed = (S.owed || []).filter(o => S.t - o.t >= WAVE.mourn);
-    const rep = owed.slice(0, Math.min(room, WAVE.repMax));
-    const fresh = Math.min(room - rep.length, renown(S).tier);
-    return { rep, fresh, room };
   }
   // the trade the Delve most needs (for a newcomer who isn't replacing someone)
   function neededTrade(S) {
@@ -1166,78 +1255,162 @@
     if (marked > 20 || n('miner') < 3) return 'miner';
     return rnd(S) < 0.5 ? 'miner' : 'mason';
   }
-  function newcomersStep(S) {
-    if (S.waveT == null) S.waveT = WAVE.first;
-    if (!S.waveWarned && S.t >= S.waveT - WAVE.warn) {
-      S.waveWarned = true;
-      const w = nextWave(S);
-      if (w.rep.length + w.fresh)
+  // ── Applications: dwarves don't just turn up. A letter from Stonedeep every LETTERS.every brings
+  // applicants (kin of the dead asking to take their place, then one a renown tier, and once a trade is
+  // unlocked, a specialist); the planner accepts or turns each away. An accepted one takes LETTERS.road to
+  // walk up, waiting at Stonedeep while the road in isn't safe; unanswered ones withdraw at the next letter.
+  function roadUnsafe(S) {
+    const g0 = S.gate[0];
+    return S.foes.find(
+      f =>
+        f.state === 'awake' &&
+        f.hp > 0 &&
+        (Math.hypot(f.x - (g0 % W), f.y - ((g0 / W) | 0)) < LETTERS.safe || S.t - (f.killT || -1e9) < DAY)
+    );
+  }
+  const crewCount = (S, tr) =>
+    S.dwarves.filter(d => d.trade === tr).length +
+    (S.coming || []).filter(a => a.trade === tr).length +
+    (S.apps || []).filter(a => a.trade === tr).length;
+  // why a specialist trade can't apply yet ('' if it can)
+  function specialWhy(S, tr) {
+    const X = SPECIAL[tr];
+    if (renown(S).total < X.renown) return 'renown ' + X.renown;
+    if (X.needs && !X.needs(S)) return X.lacks;
+    if (crewCount(S, tr) >= X.max) return 'enough of them';
+    return '';
+  }
+  function applicant(S, trade, kin) {
+    const sex = rnd(S) < 0.5 ? 'm' : 'f';
+    let name = newName(S, sex);
+    // kin share the dead's surname
+    if (kin) name = name.split(' ')[0] + ' ' + kin.name.split(' ').slice(1).join(' ');
+    const lines = PITCH[trade] || ["I work hard and I don't complain."];
+    const line = kin
+      ? pick(S, KIN_LINES).replace('{dead}', kin.for).replace('{kin}', pick(S, KIN[sex]))
+      : lines[(rnd(S) * lines.length) | 0];
+    return { id: S.nextId++, name, sex, trade, line, kin: kin ? kin.for : null };
+  }
+  function letterStep(S) {
+    if (S.letterT == null) S.letterT = LETTERS.first;
+    // arrivals: accepted applicants walking up the road
+    if (S.coming && S.coming.length) {
+      const bad = roadUnsafe(S);
+      for (const a of S.coming.slice()) {
+        if (S.t < a.at) continue;
+        if (bad) {
+          if (!a.held)
+            logMsg(
+              S,
+              '🎒 ' +
+                a.name.split(' ')[0] +
+                ' waits at Stonedeep: a ' +
+                FOES[bad.kind].name +
+                (S.t - (bad.killT || -1e9) < DAY
+                  ? ' that has killed is loose in the Delve.'
+                  : ' prowls near the gate.')
+            );
+          a.held = true;
+          continue;
+        }
+        S.coming.splice(S.coming.indexOf(a), 1);
+        const g = S.gate[0],
+          d = newDwarf(S, a.name, a.sex, a.trade, g % W, (g / W) | 0);
+        if (a.trade === 'soldier')
+          Object.assign(d, { drafted: true, fx: 0, gear: Object.assign({}, SOLDIERS.gear) });
+        d.hp = maxHp(d);
+        S.dwarves.push(d);
+        for (const k in LETTERS.bring) addStock(S, k, LETTERS.bring[k]);
+        S.arrived = (S.arrived || 0) + 1;
         logMsg(
           S,
-          '🎒 Word from Stonedeep: ' +
-            (w.rep.length + w.fresh) +
-            ' newcomer' +
-            (w.rep.length + w.fresh > 1 ? 's are' : ' is') +
-            ' on the road up. Beds and food for them!'
+          '🎒 ' +
+            a.name +
+            ' arrives from Stonedeep, ' +
+            TRADES[a.trade].name.toLowerCase() +
+            (a.kin ? ', in ' + a.kin + "'s place" : '') +
+            ', with a little food and ale.'
         );
+      }
     }
-    if (S.t < S.waveT) return;
-    // the road in isn't safe while an elemental prowls near the gate: they wait at Stonedeep
-    const g0 = S.gate[0],
-      prowl = S.foes.find(
-        f =>
-          f.state === 'awake' &&
-          f.hp > 0 &&
-          (Math.hypot(f.x - (g0 % W), f.y - ((g0 / W) | 0)) < WAVE.safe || S.t - (f.killT || -1e9) < DAY)
+    if (S.t < S.letterT) return;
+    S.letterT = S.t + LETTERS.every;
+    // the last letter's applicants who weren't answered find work elsewhere
+    if (S.apps && S.apps.length) {
+      for (const a of S.apps) if (a.kin) (S.owed || []).forEach(o => o.for === a.kin && (o.asked = false));
+      logMsg(
+        S,
+        '📜 ' +
+          S.apps.length +
+          ' applicant' +
+          (S.apps.length > 1 ? 's' : '') +
+          ' heard nothing back, and found work elsewhere.'
       );
-    if (prowl) {
-      if (!S.waveHeld)
-        logMsg(
-          S,
-          '🎒 The newcomers wait at Stonedeep: a ' +
-            FOES[prowl.kind].name +
-            (S.t - (prowl.killT || -1e9) < DAY
-              ? ' that has killed is loose in the Delve'
-              : ' prowls near the gate') +
-            ". Deal with it and they'll come."
-        );
-      S.waveHeld = true;
-      S.waveT = S.t + 10;
+    }
+    S.apps = [];
+    const room = LETTERS.max - S.dwarves.length - (S.coming || []).length;
+    if (room <= 0) {
+      logMsg(S, '📜 A letter from Stonedeep: they know the Delve is full, and send no one.');
       return;
     }
-    S.waveHeld = false;
-    S.waveT = S.t + WAVE.every;
-    S.waveWarned = false;
-    const w = nextWave(S);
-    const g = S.gate[0],
-      came = [];
-    const arrive = (trade, why) => {
-      const sex = rnd(S) < 0.5 ? 'm' : 'f',
-        nm = newName(S, sex),
-        d = newDwarf(S, nm, sex, trade, g % W, (g / W) | 0);
-      if (trade === 'soldier')
-        Object.assign(d, { drafted: true, fx: 0, gear: Object.assign({}, SOLDIERS.gear) });
-      d.hp = maxHp(d);
-      S.dwarves.push(d);
-      for (const k in WAVE.bring) addStock(S, k, WAVE.bring[k]);
-      came.push(nm.split(' ')[0] + ' (' + TRADES[trade].name.toLowerCase() + (why ? ', ' + why : '') + ')');
-    };
-    for (const o of w.rep) {
-      S.owed.splice(S.owed.indexOf(o), 1);
-      // a keeper's replacement only if there's still a tavern to keep
-      arrive(o.trade, 'in ' + o.for + "'s place");
+    // kin of the dead, mourned a day
+    for (const o of S.owed || []) {
+      if (S.apps.length >= Math.min(room, LETTERS.kinMax)) break;
+      if (o.asked || S.t - o.t < LETTERS.mourn) continue;
+      o.asked = true;
+      const dead = S.dead.find(d => d.name.split(' ')[0] === o.for) || { name: o.for + ' Stonedeep' };
+      S.apps.push(applicant(S, o.trade, { for: o.for, name: dead.name }));
     }
-    for (let k = 0; k < w.fresh; k++) arrive(neededTrade(S));
-    S.arrived = (S.arrived || 0) + came.length;
-    if (came.length)
-      logMsg(S, '🎒 Newcomers from Stonedeep: ' + came.join(', ') + '. They bring a little food and ale.');
-    else if (S.dwarves.length >= WAVE.max)
-      logMsg(S, '🎒 Stonedeep sends no one: the Delve has all the crew it can hold.');
+    // ordinary applicants, one a renown tier: the trade most needed first, then a spread to choose from
+    const tier = renown(S).tier;
+    for (let k = 0; k < tier && S.apps.length < room; k++) {
+      let tr = k === 0 ? neededTrade(S) : pick(S, ORDINARY);
+      if (k > 0 && S.apps.some(a => a.trade === tr)) tr = pick(S, ORDINARY);
+      S.apps.push(applicant(S, tr));
+    }
+    // and one specialist, once their trade is open to the Delve
+    if (S.apps.length < room) {
+      const open = Object.keys(SPECIAL).filter(tr => !specialWhy(S, tr));
+      if (open.length) S.apps.push(applicant(S, pick(S, open)));
+    }
+    if (S.apps.length)
+      logMsg(
+        S,
+        '📜 A letter from Stonedeep: ' +
+          S.apps.length +
+          ' dwarf' +
+          (S.apps.length > 1 ? 's ask' : ' asks') +
+          ' to join the Delve. Read it on the Letters tab, and answer before the next one comes.'
+      );
     else
       logMsg(
         S,
-        "🎒 No one comes up from Stonedeep this time: the Delve hasn't the renown yet. Fine halls and named patterns would draw them."
+        "📜 A letter from Stonedeep: no one asks to join yet. The Delve hasn't the renown: fine halls, named patterns and deeper layers would draw them."
       );
+  }
+  function acceptApp(S, id) {
+    const a = (S.apps || []).find(x => x.id === id);
+    if (!a) return { ok: false, why: 'That applicant has gone.' };
+    if (S.dwarves.length + (S.coming || []).length >= LETTERS.max)
+      return { ok: false, why: 'The Delve is full: ' + LETTERS.max + ' dwarves.' };
+    S.apps.splice(S.apps.indexOf(a), 1);
+    if (a.kin) S.owed = (S.owed || []).filter(o => o.for !== a.kin);
+    (S.coming = S.coming || []).push(Object.assign(a, { at: S.t + LETTERS.road }));
+    logMsg(
+      S,
+      '📜 You take on ' +
+        a.name +
+        ', ' +
+        TRADES[a.trade].name.toLowerCase() +
+        '. They set out from Stonedeep.'
+    );
+    return { ok: true };
+  }
+  function declineApp(S, id) {
+    const a = (S.apps || []).find(x => x.id === id);
+    if (!a) return;
+    S.apps.splice(S.apps.indexOf(a), 1);
+    if (a.kin) S.owed = (S.owed || []).filter(o => o.for !== a.kin);
   }
   // what the Thane wants to see before sending soldiers; each is remembered once done
   function soldiersReady(S) {
@@ -1475,12 +1648,15 @@
     }
     const order = {
       miner: ['getpick', 'dig', 'haul'],
-      mason: ['rune', 'silverrune', 'build', 'construct', 'cut', 'smooth', 'haul', 'dig'],
+      mason: ['rune', 'build', 'construct', 'cut', 'smooth', 'haul', 'dig'],
       farmer: ['harvest', 'plant', 'cook', 'haul', 'dig'],
       brewer: ['brew', 'draw', 'melt', 'cook', 'haul', 'dig'],
       smith: ['ironhammer', 'hammer', 'mail', 'forge', 'smelt', 'haul', 'dig'],
       keeper: ['serve', 'haul'],
-      soldier: []
+      soldier: [],
+      bonesetter: ['tend', 'haul'],
+      runesmith: ['silverrune', 'airhammer', 'haul'],
+      engraver: ['engrave', 'smooth', 'haul']
     }[d.trade] || ['haul'];
     // a warrior arms first, keeps to their trade, and trains when there's nothing else; a soldier only
     // trains and guards, turn about
@@ -1692,6 +1868,45 @@
       if (best < 0) return false;
       return go({ type: 'guard', tile: -1, at: best, ph: 1, w: GUARD_S, who: o.id }, best);
     }
+    if (kind === 'tend') {
+      // the bonesetter keeps to the infirmary: any floor of one, not a cot
+      let best = -1,
+        bd = 1e9;
+      for (const r of S.rooms) {
+        if (r.type !== 'infirmary') continue;
+        for (const i of roomTiles(S, r))
+          if (T[i].k === 'f' && !T[i].fu && dm.dist[i] >= 0 && dm.dist[i] < bd) {
+            bd = dm.dist[i];
+            best = i;
+          }
+      }
+      if (best < 0) return false;
+      return go({ type: 'tend', tile: -1, at: best, ph: 1, w: TEND_S }, best);
+    }
+    if (kind === 'engrave') {
+      // a smoothed wall bordering a room's floor, not yet carved: stand on the floor beside it
+      let best = -1,
+        wall = -1,
+        bd = 1e9;
+      T.forEach((t, i) => {
+        if (t.k !== 'r' || !t.w || t.en || t.cl) return;
+        const x = i % W,
+          y = (i / W) | 0;
+        for (const [dx, dy] of D4) {
+          if (!inB(x + dx, y + dy)) continue;
+          const n = idx(x + dx, y + dy);
+          if (T[n].k === 'f' && T[n].r && dm.dist[n] >= 0 && dm.dist[n] < bd) {
+            bd = dm.dist[n];
+            best = n;
+            wall = i;
+          }
+        }
+      });
+      if (best < 0) return false;
+      if (!go({ type: 'engrave', tile: wall, at: best, ph: 1, w: ENGRAVE_S }, best)) return false;
+      T[wall].cl = d.id;
+      return true;
+    }
     if (kind === 'serve') {
       // behind the bar: a floor tile of a tavern beside one of its kegs
       let best = -1,
@@ -1801,6 +2016,8 @@
     getpick: 'Fetching a bronze pick',
     mourn: 'At the Wall of Remembrance',
     serve: 'Serving behind the bar',
+    tend: 'Tending the infirmary',
+    engrave: 'Engraving a wall',
     flee: 'Running from an elemental!',
     hunt: 'Going after an elemental',
     arm: 'Taking up arms',
@@ -2061,6 +2278,28 @@
         if (j.w <= 0 || !o || Math.hypot(o.x - d.x, o.y - d.y) > 6) d.job = null;
         return;
       }
+      case 'tend': {
+        d.act = ACT.tend;
+        j.w -= dt;
+        if (j.w <= 0) d.job = null;
+        return;
+      }
+      case 'engrave': {
+        const t = T[j.tile];
+        if (!t || t.k !== 'r' || !t.w || t.en) {
+          drop(S, d);
+          return;
+        }
+        d.act = ACT.engrave;
+        j.w -= dt * speedOf(S, d);
+        if (j.w > 0) return;
+        t.cl = 0;
+        t.en = true;
+        d.job = null;
+        d.xp += 3;
+        S.engraved = (S.engraved || 0) + 1;
+        return;
+      }
       case 'serve': {
         d.act = ACT.serve;
         j.w -= dt;
@@ -2093,7 +2332,7 @@
           return;
         }
         d.act = ACT.heal;
-        j.w -= dt;
+        j.w -= dt * (tended(S) ? 2 : 1);
         d.needs.sleep = Math.min(100, d.needs.sleep + (dt / SLEEP_S) * 100);
         if (j.w > 0) return;
         t.cl = 0;
@@ -2679,7 +2918,7 @@
         ? 'No rune-stone in the stock: the mason cuts them at the workshop bench (a dressed block each).'
         : 'A ' +
             FOES[f.kind].name +
-            ' needs a silver rune: the mason inlays them at the bench (a block and a silver).';
+            " needs a silver rune: a runesmith inlays them in a Runesmith's hall (a block and a silver). Runesmiths come by application, once the Glimmerdark is open.";
     return '';
   }
   function bind(S, id) {
@@ -3355,7 +3594,7 @@
           "The Thane would wait no longer: they'll train at the barracks and stand guard over the crew."
         );
     }
-    newcomersStep(S);
+    letterStep(S);
     S.wanderT += dt;
     if (
       S.soldiersCame &&
@@ -3684,12 +3923,16 @@
 
   // an older save: the new stock, picks and wounds, and the smith who came with the new rooms
   function migrate(S) {
-    if (!S || S.v >= 9) return S;
+    if (!S || S.v >= 10) return S;
+    if (S.v < 9)
+      S.owed = S.dead.map(d => ({ trade: d.trade, t: S.t - LETTERS.mourn, for: d.name.split(' ')[0] }));
     if (S.v < 8) migrate8(S);
-    // newcomers: the dead so far are owed replacements, and the next party comes soon
-    S.owed = S.dead.map(d => ({ trade: d.trade, t: S.t - WAVE.mourn, for: d.name.split(' ')[0] }));
-    S.waveT = Math.max(WAVE.first, S.t + DAY * 0.5);
-    S.v = 9;
+    // applications: the next letter soon, kin of the dead among the first
+    S.apps = [];
+    S.coming = [];
+    S.letterT = Math.max(LETTERS.first, S.t + DAY * 0.5);
+    delete S.waveT;
+    S.v = 10;
     return S;
   }
   function migrate8(S) {
@@ -3841,10 +4084,13 @@
     roomWalls,
     durinMove,
     LEAD,
-    WAVE,
+    LETTERS,
+    SPECIAL,
+    specialWhy,
     RENOWN_TIERS,
     renown,
-    nextWave,
+    acceptApp,
+    declineApp,
     leadSetup,
     resolvePending,
     bind,
