@@ -276,7 +276,8 @@
   const FOE_ROCK = 0.6; // an elemental swims through rock at this fraction of its speed
   const FOE_SIGHT = 40; // how far (in tiles of its own path) an elemental looks for prey
   const FOE_GIVE_UP = DAY * 0.5; // a wanderer with no way in sinks back after this
-  const FLEE_R = 5;
+  const FLEE_R = 7;
+  const FLEE_RUN = 24; // how far a fleeing dwarf will run, in steps
   const WAR_R = 15; // a warrior goes after an elemental this close on their layer // a dwarf who isn't a warrior runs from an elemental this close
   const FIGHT = { tick: 1.5, base: 1, pick: 2, warrior: 4, retreat: 0.4, levels: [0, 30, 90] }; // fists, a miner's pick; combat levels
   const GEAR = {
@@ -379,8 +380,15 @@
     smith: { name: 'Smith', col: '#e07040', icon: '🔨' },
     // comes up from Stonedeep when the first tavern is furnished (hireKeeper); a tavern only pours while
     // its keeper is behind the bar. A taproom's kegs serve themselves.
-    keeper: { name: 'Tavern keeper', col: '#c05a7a', icon: '🍻' }
+    keeper: { name: 'Tavern keeper', col: '#c05a7a', icon: '🍻' },
+    // the Thane's two soldiers, sent up once the delve is under way and before the first elemental can
+    // rise (SOLDIERS); their whole job is to train at the barracks and guard the crew, and they can't stand down
+    soldier: { name: 'Soldier', col: '#b04040', icon: '🛡' }
   };
+  // the soldiers' arrival: a scripted event at SOLDIERS.at, or sooner if the stone stirs first
+  // (a tremor or a waking in a hollow), always ahead of the first wanderer (WANDER.first)
+  const SOLDIERS = { at: DAY * 1.5, n: 2, fx: 30, gear: { w: 'hammer' } };
+  const GUARD_S = 20; // a soldier's watch beside the crew before looking round
   // no name shared with the hero creator's dwarf names (js/explore_hero.js DWARF_NAMES), the roster or townsfolk
   const NAMES = {
     m: ['Odric', 'Fennick', 'Varrin', 'Tobbe', 'Ambrin', 'Esko', 'Grell', 'Hobb', 'Dunmar', 'Ottar'],
@@ -464,7 +472,7 @@
   function newGame(seed) {
     seed = (seed == null ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
     const S = {
-      v: 6,
+      v: 7,
       seed,
       rs: seed,
       layer: 1,
@@ -1024,16 +1032,48 @@
     );
   }
   // the first tavern furnished brings a keeper up from Stonedeep
-  function hireKeeper(S) {
-    if (S.dwarves.some(d => d.trade === 'keeper') || S.keeperHired) return;
-    S.keeperHired = true;
+  // a newcomer's name, not one the hold already has (living or dead)
+  function newName(S, sex) {
     const used = new Set(S.dwarves.map(d => d.name).concat(S.dead.map(d => d.name)));
-    const sex = rnd(S) < 0.5 ? 'm' : 'f';
     let nm,
       n = 0;
     do {
       nm = pick(S, NAMES[sex]) + ' ' + pick(S, SURNAMES);
     } while (used.has(nm) && ++n < 50);
+    return nm;
+  }
+  // the scripted event: the Thane's soldiers come up from Stonedeep, armed and blooded
+  function soldiersArrive(S, why) {
+    if (S.soldiersCame) return;
+    S.soldiersCame = true;
+    const g = S.gate[0],
+      names = [];
+    for (let k = 0; k < SOLDIERS.n; k++) {
+      const sex = k % 2 ? 'f' : 'm',
+        nm = newName(S, sex),
+        d = newDwarf(S, nm, sex, 'soldier', g % W, (g / W) | 0);
+      Object.assign(d, { drafted: true, fx: SOLDIERS.fx, gear: Object.assign({}, SOLDIERS.gear) });
+      d.hp = maxHp(d);
+      S.dwarves.push(d);
+      names.push(nm);
+    }
+    logMsg(
+      S,
+      '🛡 ' +
+        names.join(' and ') +
+        " come up from Stonedeep with bronze war-hammers: the Thane's soldiers. " +
+        (why || "They'll train at the barracks and stand guard over the crew.")
+    );
+    logMsg(
+      S,
+      '⚔ Durin: "The Thane doesn\'t send soldiers for nothing. There\'s things in this stone that wake. Raise them a barracks and two more beds, and keep the rest of the crew behind worked walls when they come."'
+    );
+  }
+  function hireKeeper(S) {
+    if (S.dwarves.some(d => d.trade === 'keeper') || S.keeperHired) return;
+    S.keeperHired = true;
+    const sex = rnd(S) < 0.5 ? 'm' : 'f';
+    const nm = newName(S, sex);
     const g = S.gate[0];
     S.dwarves.push(newDwarf(S, nm, sex, 'keeper', g % W, (g / W) | 0));
     logMsg(
@@ -1118,14 +1158,22 @@
     const fighting = d.drafted && d.hp > maxHp(d) * FIGHT.retreat; // a badly hurt warrior falls back
     const foe = fighting && S.t - (d.huntFail || -1e9) < 5 ? null : danger(S, d, fighting ? WAR_R : FLEE_R);
     if (foe && !fighting) {
-      // the reachable floor tile furthest from it, within a short run
+      // somewhere it can't follow (behind worked stone or a door) if there's such a place within a run,
+      // else as far from it as the run allows, and towards the warriors
+      const fd = foeDist(S, foe.x, foe.y).dist;
+      const guards = S.dwarves.filter(w => w.drafted && w.hp > maxHp(w) * FIGHT.retreat);
       let best = -1,
-        bd = -1;
+        bd = -1e9;
       dm.dist.forEach((v, i) => {
-        if (v < 0 || v > 14) return;
-        const dd = Math.hypot((i % W) - foe.x, ((i / W) | 0) - foe.y);
-        if (dd > bd) {
-          bd = dd;
+        if (v < 0 || v > FLEE_RUN) return;
+        const x = i % W,
+          y = (i / W) | 0,
+          dd = Math.hypot(x - foe.x, y - foe.y);
+        if (dd < 2) return;
+        let c = fd[i] < 0 ? 1000 - v : dd + (fd[i] >= 0 ? fd[i] * 0.3 : 0) - v * 0.15;
+        if (fd[i] >= 0 && guards.some(w => Math.hypot(w.x - x, w.y - y) < 3)) c += 4;
+        if (c > bd) {
+          bd = c;
           best = i;
         }
       });
@@ -1223,10 +1271,17 @@
       farmer: ['harvest', 'plant', 'cook', 'haul', 'dig'],
       brewer: ['brew', 'draw', 'melt', 'cook', 'haul', 'dig'],
       smith: ['ironhammer', 'hammer', 'mail', 'forge', 'smelt', 'haul', 'dig'],
-      keeper: ['serve', 'haul']
+      keeper: ['serve', 'haul'],
+      soldier: []
     }[d.trade] || ['haul'];
-    // a warrior arms first, keeps to their trade, and trains when there's nothing else
-    const all = d.drafted ? ['arm'].concat(order, ['train']) : order;
+    // a warrior arms first, keeps to their trade, and trains when there's nothing else; a soldier only
+    // trains and guards, turn about
+    const all =
+      d.trade === 'soldier'
+        ? ['arm'].concat(rnd(S) < 0.5 ? ['train', 'guard'] : ['guard', 'train'])
+        : d.drafted
+          ? ['arm'].concat(order, ['train'])
+          : order;
     for (const kind of all) if (findWork(S, d, dm, kind, stocks, go)) return;
     idle(S, d, dm);
   }
@@ -1404,6 +1459,31 @@
       T[best].cl = d.id;
       return true;
     }
+    if (kind === 'guard') {
+      // stand watch near one of the crew, the ones furthest out first (they dig into the unknown)
+      const crew = S.dwarves.filter(o => o.trade !== 'soldier' && !(o.job && o.job.type === 'sleep'));
+      if (!crew.length) return false;
+      crew.sort((a, b) => layerOf(Math.round(b.y)) - layerOf(Math.round(a.y)));
+      const o = crew[rnd(S) < 0.6 ? 0 : (rnd(S) * crew.length) | 0];
+      const ox = Math.round(o.x),
+        oy = Math.round(o.y);
+      let best = -1,
+        bd = 1e9;
+      for (let dy = -3; dy <= 3; dy++)
+        for (let dx = -3; dx <= 3; dx++) {
+          if (!inB(ox + dx, oy + dy)) continue;
+          const i = idx(ox + dx, oy + dy),
+            dd = Math.hypot(dx, dy);
+          if (T[i].k !== 'f' || T[i].fu || dm.dist[i] < 0 || dd < 1.5) continue;
+          const c = Math.abs(dd - 2.5) + rnd(S);
+          if (c < bd) {
+            bd = c;
+            best = i;
+          }
+        }
+      if (best < 0) return false;
+      return go({ type: 'guard', tile: -1, at: best, ph: 1, w: GUARD_S, who: o.id }, best);
+    }
     if (kind === 'serve') {
       // behind the bar: a floor tile of a tavern beside one of its kegs
       let best = -1,
@@ -1517,6 +1597,7 @@
     hunt: 'Going after an elemental',
     arm: 'Taking up arms',
     train: 'Training at the barracks',
+    guard: 'Standing guard',
     heal: 'Abed in the infirmary'
   };
   const actOf = j => (j.type === 'craft' ? RECIPES[j.rec].act : ACT[j.type]);
@@ -1762,6 +1843,14 @@
         T[j.tile].cl = 0;
         d.job = null;
         d.fx = (d.fx || 0) + 4;
+        return;
+      }
+      case 'guard': {
+        const o = S.dwarves.find(w => w.id === j.who);
+        d.act = o ? 'Standing guard over ' + o.name.split(' ')[0] : ACT.guard;
+        j.w -= dt;
+        // the one they're guarding has moved on: follow
+        if (j.w <= 0 || !o || Math.hypot(o.x - d.x, o.y - d.y) > 6) d.job = null;
         return;
       }
       case 'serve': {
@@ -2389,6 +2478,7 @@
         for (const i of ch.cells) reveal(S, i % W, (i / W) | 0);
         const woken = S.foes.filter(f => f.chamber === ch.id && f.hp > 0);
         for (const f of woken) f.state = 'awake';
+        soldiersArrive(S, 'They heard the stone stir, and came at a run.');
         logMsg(
           S,
           '⚠ The miners broke into a hollow on ' +
@@ -2401,6 +2491,7 @@
         );
       } else if (near <= TREMOR.r && S.t - ch.tremor > TREMOR.again) {
         ch.tremor = S.t;
+        soldiersArrive(S, 'They felt the tremor at Stonedeep, and came ahead of time.');
         const c = ch.cells[(ch.cells.length / 2) | 0];
         S.tremors.push({ x: c % W, y: (c / W) | 0, t: S.t, sleep: true });
         logMsg(
@@ -2542,6 +2633,7 @@
       if (!close.length) continue;
       // it strikes a warrior first if one stands against it
       const target = close.find(d => d.drafted) || close[0];
+      const fighters = close.filter(d => d.drafted);
       let dmg = K.atk * (target.gear && target.gear.a ? GEAR[target.gear.a].take : 1);
       target.hp = (target.hp == null ? maxHp(target) : target.hp) - dmg;
       target.hitT = S.t;
@@ -2550,13 +2642,13 @@
         f.victims.push(target.name.split(' ')[0]);
         killDwarf(S, target, 'slain by a ' + K.name + ' on ' + LAYERS[layerOf(Math.round(f.y))].name);
       }
-      // and everyone beside it hits back
-      for (const d of close) {
+      // only warriors hit back: the rest of the crew are miners and brewers, and run
+      for (const d of fighters) {
         if (!S.dwarves.includes(d)) continue;
         f.hp -= hitOf(d);
-        if (d.drafted) d.fx = (d.fx || 0) + 1;
+        d.fx = (d.fx || 0) + 1;
       }
-      if (f.hp <= 0) foeDies(S, f, close);
+      if (f.hp <= 0) foeDies(S, f, fighters);
     }
     S.foes = S.foes.filter(f => f.hp > 0 || f.state === 'sleep');
   }
@@ -2603,7 +2695,7 @@
   }
   function draft(S, id, on) {
     const d = S.dwarves.find(w => w.id === id);
-    if (!d) return;
+    if (!d || d.trade === 'soldier') return;
     d.drafted = !!on;
     d.fx = d.fx || 0;
     if (d.job && (d.job.type === 'hunt' || d.job.type === 'train')) drop(S, d);
@@ -2641,6 +2733,7 @@
       roofCheck(S);
     }
     // the elementals: wanderers rise now and then, the awake ones hunt, and blows are traded
+    if (!S.soldiersCame && S.t >= SOLDIERS.at) soldiersArrive(S);
     S.wanderT += dt;
     if (S.t > WANDER.first && S.wanderT >= WANDER.every / (1 + WANDER.deeper * S.depth)) {
       S.wanderT = 0;
@@ -2965,7 +3058,14 @@
 
   // an older save: the new stock, picks and wounds, and the smith who came with the new rooms
   function migrate(S) {
-    if (!S || S.v >= 6) return S;
+    if (!S || S.v >= 7) return S;
+    if (S.v < 6) migrate6(S);
+    // the Thane's soldiers: a save already past their day gets them now
+    if (S.t >= SOLDIERS.at || S.foes.some(f => f.state === 'awake')) soldiersArrive(S);
+    S.v = 7;
+    return S;
+  }
+  function migrate6(S) {
     if (S.v < 5) migrate5(S);
     // the elementals: hollows in stone not yet dug, fighting state on every dwarf
     Object.assign(S, { foes: [], chambers: [], tremors: [], wanderT: 0, fightT: 0, foeKills: 0 });
@@ -2976,7 +3076,6 @@
       S,
       '⚠ Durin: "There\'s things asleep in this mountain. Raise a barracks, draft some warriors, and work the walls round where we sleep."'
     );
-    return S;
   }
   function migrate5(S) {
     if (S.v < 4) migrate4(S);
@@ -3079,6 +3178,8 @@
     GEAR,
     DWARF_HP,
     WARRIOR_HP,
+    SOLDIERS,
+    soldiersArrive,
     maxHp,
     TREMOR,
     draft,

@@ -576,7 +576,7 @@ The user asked to skip dead dwarves' replacements for now (they come with step 5
   Delve), rising in raw rock 3–7 tiles from the workings on a layer you've reached (orange rings). One that
   finds no way in for half a day sinks back.
 - **Fights on the map** (`fights`, every 1.5 s): an elemental beside dwarves strikes one (a warrior first);
-  everyone beside it hits back (`hitOf`: fists 1, a miner's pick 2, a warrior 4 unarmed, a bronze war-hammer 8,
+  the warriors beside it hit back (`hitOf`: fists 1, a miner's pick 2, a warrior 4 unarmed, a bronze war-hammer 8,
   iron 12; ×1.3 / ×1.6 for blooded / veteran warriors, `fx` 30 / 90). Dwarves have 30 HP (`DWARF_HP`); a
   warrior's training and fighting toughen them (`maxHp`: up to `WARRIOR_HP` 50 at the veteran's `fx` 90,
   kept if stood down). *"Make the soldiers tougher rather than all dwarves... they can raise their HP to 50
@@ -584,6 +584,19 @@ The user asked to skip dead dwarves' replacements for now (they come with step 5
   slowly away from a fight, fully in an infirmary cot; a blow also leaves them hurt. A dwarf killed is gone
   (the dead), and when the elemental that killed them falls, their mourners are avenged (the grudge struck
   out). A fallen elemental leaves 2 rough stone.
+- **Only soldiers fight; the Thane's soldiers come first.** *"Make civilians run away, only soldiers fight"*
+  and *"when you get up and running but before you encounter enemies, you are given two soldiers, whose job
+  it is to train and guard, like a scripted event."* Only drafted dwarves strike back in `fights`. A civilian
+  runs from an elemental within `FLEE_R` 7, up to `FLEE_RUN` 24 steps: to floor it can't reach (behind
+  worked stone or a door, from `foeDist`) if any, else away from it and towards a fit warrior. A new trade,
+  **Soldier** (`TRADES.soldier`, 🛡): `soldiersArrive` brings two from Stonedeep at `SOLDIERS.at` (day 1.5),
+  or at once if a hollow sends a tremor or wakes first, so always before the first wanderer (day 2.5), with
+  bronze war-hammers, blooded (`fx` 30, so 37 HP), and Durin asks for a barracks and two more beds. Their
+  only work is `train` and `guard` (stand two or three tiles from one of the crew, the deepest first, for
+  `GUARD_S` 20 s, following them if they move off); they can't be stood down. A save past day 1.5 gets them
+  (`migrate` v7). Sim (10 days, 8 seeds): with the soldiers, 0–4 dead (civilians, mostly to a stonewake),
+  depth 1–3; with none (`NOARMS=1`) a single shard-wight kills 5–7 of the crew and nobody leaves layer 1.
+  `DRAFT=1` drafts two miners as well.
 - **Warriors:** tap a dwarf and ⚔ Draft them (`draft`). A warrior keeps their trade but first arms
   themselves from the stock (`arm`), goes after any elemental within 15 tiles on their layer (`hunt`,
   `WAR_R`), falls back below 40% health (`FIGHT.retreat`), and trains at the barracks' racks when idle
