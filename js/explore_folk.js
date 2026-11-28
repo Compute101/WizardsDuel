@@ -406,8 +406,8 @@
       kind: 'local',
       title: 'A Varg Furrier from Ulfvik',
       name: 'Gunnulf',
-      sprite: 'sprites/forest/varg_alpha.png',
-      face: 'varg_alpha',
+      sprite: 'sprites/folk/hm_furs.png',
+      face: 'hm_furs',
       scale: 1.12,
       lines: [
         'A great grey wolfman sits on a handcart piled with pelts, ears turning at every voice in the square. "Furs from the Wolf coast. Bear, seal, white fox. Warm for the city at night." His lip lifts over a fang: a smile, probably. "Warmer than the Echoes are."',
@@ -419,9 +419,9 @@
       kind: 'local',
       title: 'A Varg Fishwife from Ulfvik',
       name: 'Hrafna',
-      sprite: 'sprites/forest/varg.png',
-      face: 'varg',
-      scale: 1.08,
+      sprite: 'sprites/folk/hm_fish.png',
+      face: 'hm_fish',
+      scale: 1.05,
       lines: [
         'A Varg with a salt-stiff apron and a voice that carries across the whole square: "Smoked herring! Wolf-coast cod! Eels from the Hollow mouth, caught this morning, two days ago!"',
         '"Gleaners going in want something that keeps. Smoked fish keeps. Gleaners do not." She wraps a fish in a leaf for someone and takes his coin. "That is the trade."',
