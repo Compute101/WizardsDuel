@@ -1,0 +1,327 @@
+/* ── Run the Narrows (js/sailing.js) ───────────────────────── */
+.sl {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: none;
+  flex-direction: column;
+  background: #0b1a24;
+  color: #efe4cc;
+  font-family: Georgia, 'Times New Roman', serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sl.active {
+  display: flex;
+}
+.sl-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 6px 10px;
+  background: linear-gradient(#14202a, #1c2a33);
+  border-bottom: 1px solid #6b5630;
+}
+.sl-title {
+  font-size: 17px;
+  color: #f0d890;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.sl-title span {
+  font-size: 13px;
+  color: #c8b890;
+  font-style: italic;
+  margin-left: 6px;
+}
+.sl-hull {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.sl-hull b {
+  display: block;
+  width: 90px;
+  height: 10px;
+  background: #2a2a2a;
+  border: 1px solid #6b5630;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.sl-hull i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transition: width 0.3s;
+}
+.sl-prog {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 180px;
+  height: 30px;
+  margin: 0 30px;
+}
+.sl-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8px;
+  height: 3px;
+  background: repeating-linear-gradient(90deg, #c9a050 0 6px, transparent 6px 11px);
+}
+.sl-mark {
+  position: absolute;
+  top: 14px;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #c8b890;
+  white-space: nowrap;
+  font-style: italic;
+}
+.sl-mark::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -9px;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: #c9a050;
+}
+.sl-me {
+  position: absolute;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: #3a78c8;
+  border: 2px solid #f3e1a8;
+}
+.sl-rd {
+  position: absolute;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: #e05a40;
+}
+.sl-top-btns {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.sl-btn {
+  font: inherit;
+  font-size: 15px;
+  color: #2a1d0c;
+  background: linear-gradient(#f3e1a8, #c9a050);
+  border: 1px solid #6b4e1e;
+  border-radius: 7px;
+  padding: 6px 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.sl-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.sl-btn.off {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+.sl-sm {
+  padding: 4px 10px;
+  font-size: 14px;
+}
+.sl-main {
+  background: linear-gradient(#ffe9a8, #e0a840);
+  font-weight: bold;
+}
+.sl-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.sl-stage canvas#sl-cv {
+  display: block;
+  touch-action: none;
+}
+.sl-wind {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  padding: 4px;
+  background: rgba(10, 20, 28, 0.6);
+  border: 1px solid rgba(201, 160, 80, 0.5);
+  border-radius: 10px;
+  text-align: center;
+  pointer-events: none;
+}
+#sl-pos {
+  font-size: 12px;
+  line-height: 1.25;
+}
+#sl-pos b {
+  display: block;
+  color: #f3e1a8;
+}
+#sl-pos.bad b {
+  color: #ff8a6a;
+}
+.sl-hint {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  max-width: 80%;
+  padding: 8px 14px;
+  background: rgba(10, 18, 26, 0.82);
+  border: 1px solid #c9a050;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.sl-hint.on {
+  opacity: 1;
+}
+.sl-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  background: linear-gradient(#1c2a33, #14202a);
+  border-top: 1px solid #6b5630;
+}
+.sl-sails {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sl-sails span {
+  min-width: 72px;
+  text-align: center;
+  font-size: 14px;
+  color: #f3e1a8;
+}
+.sl-rud {
+  display: flex;
+  gap: 8px;
+}
+.sl-rud .sl-btn {
+  font-size: 20px;
+  padding: 8px 22px;
+}
+.sl-spells {
+  display: flex;
+  gap: 6px;
+}
+.sl-spell {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 8px;
+  min-width: 64px;
+}
+.sl-spell span {
+  font-size: 20px;
+  line-height: 1;
+}
+.sl-spell em {
+  font-style: normal;
+  font-size: 10px;
+}
+.sl-spell i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  background: #3a78c8;
+}
+.sl-spell.sl-locked {
+  filter: grayscale(1);
+}
+.sl-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 16px;
+}
+.sl-modal[hidden] {
+  display: none;
+}
+.sl-card {
+  max-width: 560px;
+  max-height: 100%;
+  overflow: auto;
+  background: linear-gradient(#f4e8c8, #e3d2a8);
+  color: #2a1d0c;
+  border: 2px solid #8a6a2a;
+  border-radius: 10px;
+  padding: 16px 18px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+.sl-card h2 {
+  margin: 0 0 8px;
+  font-size: 21px;
+  color: #5a3a0c;
+}
+.sl-card p {
+  margin: 6px 0;
+  line-height: 1.4;
+  font-size: 15px;
+}
+.sl-help {
+  margin: 8px 0;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.sl-pay {
+  font-weight: bold;
+  color: #5a3a0c;
+}
+.sl-stat {
+  font-size: 13px !important;
+  color: #6a5a3a;
+}
+.sl-card-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+@media (max-width: 600px) {
+  .sl-title span,
+  .sl-spell em {
+    display: none;
+  }
+  .sl-prog {
+    order: 5;
+    flex-basis: 100%;
+    margin: 0 34px;
+  }
+  .sl-hull b {
+    width: 60px;
+  }
+  .sl-rud .sl-btn {
+    padding: 8px 18px;
+  }
+}

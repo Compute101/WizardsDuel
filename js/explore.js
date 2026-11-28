@@ -2054,6 +2054,11 @@
       hideSay();
       openForest(o);
     },
+    // Run the Narrows (js/sailing.js): o = {runs, onEnd(res) → an extra line for the result card}
+    sail: o => {
+      hideSay();
+      openSailing(o || {});
+    },
     allies: () => allies,
     addAlly: a => {
       if (!allies.some(x => x.key === a.key)) allies.push(Object.assign({ level: 0, hp: null }, a));
@@ -3730,6 +3735,54 @@
       });
     });
   }
+  // Run the Narrows (js/sailing.js, from Captain Crake in Gilden): Explore steps aside like the Moriquende;
+  // a boarding fight uses your HP, and the run takes six hours at sea
+  function openSailing(o) {
+    if (!window.Sailing || busy) return;
+    const key = wizKeys[wizIdx];
+    busy = true;
+    keys.clear();
+    target = null;
+    hideSay();
+    save();
+    fade(true).then(() => {
+      running = false;
+      el.root.classList.remove('active');
+      fade(false);
+      syncMusic();
+      if (typeof CHAR_DEFS !== 'undefined') CHAR_DEFS[key] = chars[key];
+      window.Sailing.open({
+        explore: {
+          wizKey: key,
+          element: key === 'hero' && hero ? hero.elem : null,
+          runs: o.runs || 0,
+          cats: key === 'hero' && magic && !magic.grad ? magic.cats || [] : null,
+          tired: () => tired(),
+          hp: () => hpOf(key),
+          setHp: v => {
+            vit[key] = Math.max(0, Math.min(maxHp(key), Math.round(v)));
+          },
+          onEnd: res => {
+            addTime(6 * 60);
+            return o.onEnd ? o.onEnd(res) : null;
+          },
+          onClose: () => {
+            el.root.classList.add('active');
+            running = true;
+            busy = false;
+            resize();
+            syncMusic();
+            renderHp();
+            renderSpill();
+            save();
+            grace = 1.5;
+            last = performance.now();
+            requestAnimationFrame(frame);
+          }
+        }
+      });
+    });
+  }
   function forestEnd(q, sc) {
     q.years = (q.years || 0) + 1;
     const was = q.best ? FOREST_RANK.indexOf(q.best) : -1,
@@ -4726,13 +4779,15 @@
     const wk = document.getElementById('wk-screen'); // the Winks Table plays its own tavern music
     const fr = document.getElementById('fr-screen'); // the Moriquende plays its own theme (js/forest.js)
     const mn = document.getElementById('mn-screen'); // the Delve plays its own mining music (js/mine.js)
+    const sl = document.getElementById('sl-screen'); // the Narrows plays Gilden's theme and the battle theme (js/sailing.js)
     if (
       t &&
       t.classList.contains('active') &&
       !running &&
       !(wk && wk.classList.contains('active')) &&
       !(fr && fr.classList.contains('active')) &&
-      !(mn && mn.classList.contains('active'))
+      !(mn && mn.classList.contains('active')) &&
+      !(sl && sl.classList.contains('active'))
     )
       playTheme();
     else if (!creating) stopTheme();

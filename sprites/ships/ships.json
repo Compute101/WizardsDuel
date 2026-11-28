@@ -1,0 +1,72 @@
+{
+ "merchant": {
+  "away": "ne",
+  "views": {
+   "side": {
+    "src": "sprites/ships/merchant_side.png",
+    "w": 703,
+    "h": 520,
+    "wl": 0.86
+   },
+   "bow": {
+    "src": "sprites/ships/merchant_bow.png",
+    "w": 344,
+    "h": 520,
+    "wl": 0.84
+   },
+   "stern": {
+    "src": "sprites/ships/merchant_stern.png",
+    "w": 365,
+    "h": 520,
+    "wl": 0.85
+   },
+   "quarter_near": {
+    "src": "sprites/ships/merchant_quarter_near.png",
+    "w": 423,
+    "h": 520,
+    "wl": 0.86
+   },
+   "quarter_away": {
+    "src": "sprites/ships/merchant_quarter_away.png",
+    "w": 552,
+    "h": 520,
+    "wl": 0.86
+   }
+  }
+ },
+ "varg": {
+  "away": "nw",
+  "views": {
+   "side": {
+    "src": "sprites/ships/varg_side.png",
+    "w": 768,
+    "h": 520,
+    "wl": 0.87
+   },
+   "bow": {
+    "src": "sprites/ships/varg_bow.png",
+    "w": 279,
+    "h": 520,
+    "wl": 0.85
+   },
+   "stern": {
+    "src": "sprites/ships/varg_stern.png",
+    "w": 307,
+    "h": 520,
+    "wl": 0.86
+   },
+   "quarter_near": {
+    "src": "sprites/ships/varg_quarter_near.png",
+    "w": 455,
+    "h": 520,
+    "wl": 0.87
+   },
+   "quarter_away": {
+    "src": "sprites/ships/varg_quarter_away.png",
+    "w": 400,
+    "h": 520,
+    "wl": 0.87
+   }
+  }
+ }
+}

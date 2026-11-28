@@ -162,6 +162,65 @@ of hers (her duel rival line: "Thief! Hand back what you pocketed.").
    gate unchained and a fourth palace back on the Hill (a big end-game for the city).
 4. A mix: 1 to find the truth, 3 to rebuild, 2 as a side thread when Ponder turns up.
 
+## Running the Narrows (the sailing minigame)
+
+**Captain Nan Crake** of the *Kittiwake* stands on the Long Quay by Fettle's Yard. Fettle built her ship, so
+she belongs to no house, and she won't pay the Varg sea-toll (a tenth of every hold that passes the Teeth,
+unless it flies Varenne's anchor: Varenne pays the Varg off each spring and bills everyone else). She runs it:
+you sail her ship west from Gilden down the Narrows, past the Varg picket at the Teeth, to a Halemouth
+lugger waiting off Gull Head, and you're on deck as her wizard. The user asked for it to be a playable
+minigame (November 2026), and gave two more sailing games for later (below).
+
+**How it plays** (`js/sailing.js`, `css/sailing.css`; ⛵ Run the Narrows in the title screen's Test menu
+too, which sails as Nerissa):
+- A top-down sea with the ships drawn upright, from the user's art (`sprites/ships/`, cut by
+  `python3 tools/cut_ships.py [--preview out.png]`: five views a ship, the merchantman and a Varg raider,
+  with background and sail holes cleared, quantised to 256 colours; mirroring gives eight headings,
+  `viewFor`; `ships.json` holds each view's size and waterline). A ship crossfades between views as it
+  turns, bobs and rolls, draws its hull below the waterline faint, leaves a wake and a shadow.
+- Steer with ◀ ▶ / A D / the arrows, or hold a finger on the sea; sails − / + or W / S (reefed / half /
+  full: faster, but turns wider; `SAILS`). Speed comes from the wind (`POLAR`: almost nothing within 40° of
+  it, in irons; best across it); the wind wanders about 75° either side of a north-easterly and gusts
+  (`windNow`). A rose shows it, with your point of sail and knots.
+- The course (`buildCourse`, a new seed each run): coasts from sums of sines, pinching to the Narrows proper
+  at the Teeth (a rock field), scattered rocks, islets, sandbars, eight drifting fog banks. A safe lane
+  wanders down the channel and no rock is put in it, so every run can be won. Rocks and the coast hole the
+  hull by impact speed (`ROCK_HIT`); shallow water (pale, off the coasts, round rocks, sandbars) slows you
+  and scrapes the hull at speed. Hull 0: foundered.
+- **The Varg** (`RAIDER`, `placeRaiders`, `raiderStep`): three raiders on the first run (two across the
+  Teeth, one off Gull Head), a fourth lurking behind an islet from the second run, a fifth from the third,
+  and stronger crews after that (Crake's `won` count). A raider patrols until it sees you (720 px, 240 in a
+  fog bank), then chases, leading its aim; it gives up after 5 s out of sight or 4200 px from its post.
+  The Varg **row**, so they never stall into the wind (a floor of 95 px/s in a chase), but a reach outruns
+  them. Alongside (125 px) for 2.2 s, they grapple and board: **Repel boarders** is a real battle
+  (`startExploreBattle`, the forest's `varg` / `varg_alpha` fighters, 2–3 by level; your Explore HP, wounds
+  kept) and a win sends that raider off for good; **Let her pay the toll** ends the run unpaid.
+- **Deck magic** (1 / 2 / 3, `SPELLS`, cooldowns): Fill the Sails (6 s, never in irons, ×1.35), Strike the
+  Rigging (a bolt in your element's colour at the nearest raider within 700: it crawls for 8 s and lets go
+  its hooks), Sea-Mist (a fog bank round you for 22 s). A made wizard needs Damage for the strike and
+  Protection for the mist; too tired, no magic.
+- **Pay** (`PAY`): 25 gold, +15 the first time, +10 for a hull at 75%+, +10 for never being boarded; every
+  run that gets through costs a point with Varenne (the toll is their bargain). Six hours pass. Foundering
+  costs a quarter of your HP. Saved in `quests.gilden.narrows` (`runs`, `won`, `lost`, `met`); the journal
+  says how many runs.
+- Music: Gilden's theme under sail, the battle theme while a raider chases.
+- Explore side: `folkApi.sail(o)` → `openSailing` in `js/explore.js` (steps aside like the Moriquende).
+- Tested (Playwright, page.route, no server): an autopilot that follows the safe lane wins every course in
+  about 95 s with the hull untouched; with the raiders in and no dodging or magic it's boarded in about 4
+  runs in 10. From Gilden: talk to Crake, sail, paid 60 on a clean first run, Varenne −1.
+
+**Stand-in art:** Crake is painted from a hero figure (`gd_crake`); boarding fights use the Drowned
+Quarter's painting until a ship's-deck backdrop (`arena_deck`, `backgrounds/deck.jpg`). The Varg bow and
+stern views show one mast where the side view has three; the user will judge whether that needs redoing.
+
+**Later sailing games (the user's ideas):**
+- **A Varg pirate game in the Reaver Isles:** you sail the raider, hunting merchantmen (the other side of
+  this one).
+- **A trade game at the freeports:** carry cargo between ports, buying low and selling high, with the same
+  sailing.
+- (A broadside sea battle, manoeuvring for the wind and casting through the spell wheel, was offered too.)
+- Ships sailing about Gilden's harbour on the map itself (the same art) is still to do.
+
 ## Build order
 
 1. **Built:** the map, the world map (Gilden, Chepstead, the Narrows), the houses and their people, standing,

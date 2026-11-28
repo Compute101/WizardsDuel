@@ -583,7 +583,8 @@ module.exports = function gilden(rects) {
     { role: 'gd_quarrender', x: 49.9 * T, y: 10.9 * T }, // Perpetua Quarrender
     { role: 'gd_harbour', x: 39.2 * T, y: (QUAY + 1.6) * T }, // the Harbourmaster, on the quay by the Customs House
     { role: 'gd_sky', x: 55.6 * T, y: 10.4 * T, scale: 0.6 }, // the gnome at the Sky Office
-    { role: 'gd_fishwife', x: 22.2 * T, y: 34.3 * T } // a fishwife who hears everything
+    { role: 'gd_fishwife', x: 22.2 * T, y: 34.3 * T }, // a fishwife who hears everything
+    { role: 'gd_crake', x: 9.4 * T, y: (QUAY + 1.7) * T } // Captain Crake of the Kittiwake, by Fettle's Yard: Run the Narrows
   ];
 
   // night light: the Harbour Light, the mast, the Exchange's dome
