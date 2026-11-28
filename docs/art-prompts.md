@@ -96,6 +96,67 @@ The fat Bulldogs, the seated students, the lecturers and the examiner are done (
 Every earlier sheet has arrived (the Undercroft, the lecture theatre, Elfhome; prompts in the archive). Wrenford's own
 sheet is still wanted: its piece list is in Part 2, 5b.
 
+#### Gilden, second pass (sheets 32–34)
+
+Gilden's first art is in (sheets 29–31: palaces, airship, warehouses, ships, stalls). Most of the rest of the city
+still borrows pieces from Corvanthe's ruined districts, so its harbour looks abandoned, and some pieces are far too
+big for it. What each stand-in is meant to be:
+
+| Stand-in now (piece, sheet) | Meant to be | Real piece |
+|---|---|---|
+| the mossy, slime-hung `rowboat` from the Sunken Harbour (sheet 19), 3½ tiles long | the houses' lighters and jolly-boats, painted in house colours (`LORE.boats`) | `lighterRed`, `lighterBlue`, `lighterViolet` |
+| `pilesRope` (drowned piles with a rope, sheet 19), as wide as a cottage | mooring piles at a pier's end | `pierPiles` |
+| `postRing` (a tiny ring post, sheet 2) | iron bollards on the quay and piers | `bollard` |
+| the small gallows-like `crane` (sheet 2) at each pier's root | a treadwheel dock crane (`LORE.crane`: two men walk inside the wheel) | `dockCrane` |
+| the torn, burnt `awningRed` / `awningCream` / `awningPurple` (Cindergate) | the Fish Market's stalls | `gdFishStall`, `gdEelStall` |
+| `lobsterPots1`, `netFrame1/2`, `nets` (mossy, from the Drowned Quarter) | clean nets drying on racks, lobster pots, fish crates | `netRack`, `lobsterPots`, `fishCrates`, `herringBarrels` |
+| `watchTower` (ruined and smoking) on the mole | the Harbour Light, a working lighthouse | `harbourLight` |
+| `hall` (purple banners, a book crest) | the Customs House, and the Guildhall | `customsHouse`, `guildhall` |
+| `temple` (a purple gothic church) | the Gilded Exchange, gilt-domed | `exchange` |
+| `seaGod` (mossy, half drowned) | the Old Man of the Narrows, a kept-up statue with coins in his basin | `seaGodStatue` |
+| `watchTower` on Beacon Hill | the Sky Office | `skyOffice` |
+| `stoneArch` | the Ore Gate, a city gate with towers | `oreGate` |
+| `house3_dusk` (a broken cottage) | Vellacourt House, a palace shut up and stripped | `palaceShut` |
+| `boat`, `scaffold1/2`, `rowboatWreck` | Fettle's Yard: a hull on the slipway | `slipHull`, `timberStack`, `tarBarrels` |
+| Hollowmere's cottages on every street | Gilden's own merchant houses (tall, narrow, stepped gables) | `gdHouse*`, `gdBack*`, `gdSide*`, `countingHouse` |
+
+**Prompt for sheets 32–34.** Attach `sprites/ruins/tileset29_source.png` and `tileset30_source.png` (Gilden's palace,
+warehouse and stalls) so the new pieces come out in the same style and at the same scale. Replace `[PIECES]` with
+one sheet's list:
+
+> Top-down 3/4 view pixel-art game assets in exactly the same style, palette and scale as the attached sheets (the
+> palace is about 760 px wide, the warehouse about 750 px, a market stall about 460 px). A rich, well-kept merchant
+> port: clean paint, gilt and brass, no moss, no ruin, no snow. Loose separate pieces on a flat #101217 background,
+> 16 px gaps between pieces, no labels, no grid lines, no dividers, no text, no shadows touching other pieces.
+> The pieces: [PIECES]
+
+- **Sheet 32, the harbour** (`tileset32_source.png`): three small rowing boats (lighters) afloat, each about 240 px
+  long, hulls painted red, blue and violet with a house mark on the bow, oars shipped, no moss; a pair of tarred
+  mooring piles bound with rope, about 120 px wide; a single iron bollard, about 50 px tall; a wooden treadwheel
+  dock crane with a jib and a hook, about 300 px tall; a capstan; a big iron anchor laid on the stones; two fish
+  stalls with blue-and-white awnings, one with herring, cod and a big crab on ice, one with eels in buckets; nets
+  drying on a wooden rack; a stack of lobster pots; three fish crates; herring barrels; coils of rope; crates
+  stencilled with house marks (an anchor, a flame over a hammer, a winged scale); a gangplank; a ship's hull half
+  planked on a slipway; a stack of timber; tar barrels by a small fire.
+- **Sheet 33, the civic buildings** (`tileset33_source.png`): the Gilded Exchange, a domed marble hall with a gilt
+  dome, columns and four niches with statues, one niche empty, about 760 px wide; the Customs House, a broad grey
+  stone building with a clock and the city's arms over the door; the Guildhall, half-timbered on a stone ground
+  floor with guild banners; the Harbour Light, a tall white-and-red lighthouse on rocks with a lit lamp room; the
+  Sky Office, a small brass-and-glass gnome booth with a ticket window and a propeller weathervane; the Ore Gate, a
+  city gate with two round towers and a portcullis, about 500 px wide; the Old Man of the Narrows, a bearded
+  sea-god statue with a trident over a basin of coins, clean stone; Vellacourt House, the same palace as the
+  attached one but shut up: shutters closed, banners torn down, the gate chained, weeds on the steps, the gilt
+  scraped off.
+- **Sheet 34, Gilden's houses** (`tileset34_source.png`): tall narrow merchant houses with stepped gables facing
+  the street (Hanseatic, like Lübeck or Bruges), three to four storeys, a hoist beam in each gable, in five colour
+  ways (red brick, cream render, slate grey, ochre, pale blue), each about 220 px wide; the same houses seen from
+  behind; their gable ends from the side; a counting-house with iron shutters and a brass plate by the door.
+
+When they arrive: cut them with `python3 tools/cut_ruins_tileset.py` (new `RECTS32`–`RECTS34`, `KIND_SCALE` like
+sheet 29's), then swap them in `tools/mapgen/gilden.js` where the table says. The main ones are registered as
+`piece` placeholders in `js/placeholders.js` (`piece_gd_*`), so `node tools/placeholders.js` lists what's still
+missing.
+
 ### Battle backdrops
 
 **Format:** a painting, 1672×941 or 1920×1080 JPEG, saved as `backgrounds/<name>.jpg`.

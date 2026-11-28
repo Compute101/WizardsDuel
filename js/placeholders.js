@@ -124,6 +124,178 @@
       file: 'sprites/ruins/tileset29_source.png (cut as piece `warehouse`)',
       standIn: 'ordinary houses along the quay',
       usedBy: 'tools/mapgen/gilden.js'
+    },
+    // Gilden, second pass (docs/art-prompts.md, "Gilden, second pass")
+    {
+      id: 'piece_gd_lighterRed',
+      kind: 'piece',
+      piece: 'lighterRed',
+      what: 'a lighter (rowing boat) in House Ashcombe red',
+      file: 'sprites/ruins/tileset32_source.png (cut as piece `lighterRed`)',
+      standIn: 'the mossy Sunken Harbour rowboat',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_lighterBlue',
+      kind: 'piece',
+      piece: 'lighterBlue',
+      what: 'a lighter in House Varenne blue',
+      file: 'sprites/ruins/tileset32_source.png (cut as piece `lighterBlue`)',
+      standIn: 'the mossy Sunken Harbour rowboat',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_lighterViolet',
+      kind: 'piece',
+      piece: 'lighterViolet',
+      what: 'a lighter in House Quarrender violet',
+      file: 'sprites/ruins/tileset32_source.png (cut as piece `lighterViolet`)',
+      standIn: 'the mossy Sunken Harbour rowboat',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_pierPiles',
+      kind: 'piece',
+      piece: 'pierPiles',
+      what: 'mooring piles at a pier end',
+      file: 'sprites/ruins/tileset32_source.png (cut as piece `pierPiles`)',
+      standIn: 'pilesRope (drowned piles)',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_bollard',
+      kind: 'piece',
+      piece: 'bollard',
+      what: 'an iron bollard',
+      file: 'sprites/ruins/tileset32_source.png (cut as piece `bollard`)',
+      standIn: 'postRing',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_dockCrane',
+      kind: 'piece',
+      piece: 'dockCrane',
+      what: 'a treadwheel dock crane',
+      file: 'sprites/ruins/tileset32_source.png (cut as piece `dockCrane`)',
+      standIn: 'the small sheet-2 crane',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_fishStall',
+      kind: 'piece',
+      piece: 'gdFishStall',
+      what: 'the Fish Market stall',
+      file: 'sprites/ruins/tileset32_source.png (cut as piece `gdFishStall`)',
+      standIn: 'torn burnt awnings from Cindergate',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_netRack',
+      kind: 'piece',
+      piece: 'netRack',
+      what: 'nets drying on a rack',
+      file: 'sprites/ruins/tileset32_source.png (cut as piece `netRack`)',
+      standIn: 'mossy nets from the Drowned Quarter',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_slipHull',
+      kind: 'piece',
+      piece: 'slipHull',
+      what: "a hull on the slipway at Fettle's Yard",
+      file: 'sprites/ruins/tileset32_source.png (cut as piece `slipHull`)',
+      standIn: 'a boat and scaffolds',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_exchange',
+      kind: 'piece',
+      piece: 'exchange',
+      what: 'the Gilded Exchange',
+      file: 'sprites/ruins/tileset33_source.png (cut as piece `exchange`)',
+      standIn: 'the gothic temple',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_customsHouse',
+      kind: 'piece',
+      piece: 'customsHouse',
+      what: 'the Customs House',
+      file: 'sprites/ruins/tileset33_source.png (cut as piece `customsHouse`)',
+      standIn: 'the hall',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_guildhall',
+      kind: 'piece',
+      piece: 'guildhall',
+      what: 'the Guildhall',
+      file: 'sprites/ruins/tileset33_source.png (cut as piece `guildhall`)',
+      standIn: 'the hall',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_harbourLight',
+      kind: 'piece',
+      piece: 'harbourLight',
+      what: 'the Harbour Light (lighthouse)',
+      file: 'sprites/ruins/tileset33_source.png (cut as piece `harbourLight`)',
+      standIn: 'a ruined watchTower',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_skyOffice',
+      kind: 'piece',
+      piece: 'skyOffice',
+      what: 'the Sky Office',
+      file: 'sprites/ruins/tileset33_source.png (cut as piece `skyOffice`)',
+      standIn: 'a watchTower',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_oreGate',
+      kind: 'piece',
+      piece: 'oreGate',
+      what: 'the Ore Gate',
+      file: 'sprites/ruins/tileset33_source.png (cut as piece `oreGate`)',
+      standIn: 'a stone arch',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_seaGodStatue',
+      kind: 'piece',
+      piece: 'seaGodStatue',
+      what: 'the Old Man of the Narrows',
+      file: 'sprites/ruins/tileset33_source.png (cut as piece `seaGodStatue`)',
+      standIn: 'the mossy drowned seaGod',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_palaceShut',
+      kind: 'piece',
+      piece: 'palaceShut',
+      what: 'Vellacourt House, shut up',
+      file: 'sprites/ruins/tileset33_source.png (cut as piece `palaceShut`)',
+      standIn: 'house3_dusk',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_gdHouse1',
+      kind: 'piece',
+      piece: 'gdHouse1',
+      what: 'a Gilden merchant house (stepped gable)',
+      file: 'sprites/ruins/tileset34_source.png (cut as piece `gdHouse1`)',
+      standIn: "Hollowmere's cottages",
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd_countingHouse',
+      kind: 'piece',
+      piece: 'countingHouse',
+      what: 'a counting-house',
+      file: 'sprites/ruins/tileset34_source.png (cut as piece `countingHouse`)',
+      standIn: "Hollowmere's cottages",
+      usedBy: 'tools/mapgen/gilden.js'
     }
   ];
   const BY = Object.fromEntries(LIST.map(e => [e.id, e]));
