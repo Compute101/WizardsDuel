@@ -96,6 +96,35 @@
     "moriquende"
    ],
    "blurb": "The last inn on the West Road before the elf-wood, a day out of Wrenford. A lantern burns in its window all night, for travellers and, the landlady says, for whatever else is out there."
+  },
+  {
+   "id": "chepstead",
+   "name": "Chepstead",
+   "kind": "inn",
+   "x": 1205,
+   "y": 680,
+   "seenFrom": [
+    "hollowmere",
+    "gilden"
+   ],
+   "blurb": "A big market town where the Ore Road and the spill road meet, a day out of Gilden: ore carts, gleaners' strongboxes and the money that changes hands over them. The Wheatsheaf keeps beds for carters and their escorts, and a yard full of other people's wagons.",
+   "labelDx": 44,
+   "labelDy": -6
+  },
+  {
+   "id": "gilden",
+   "name": "Gilden",
+   "kind": "port",
+   "x": 1370,
+   "y": 868,
+   "map": "gilden",
+   "spawn": "north",
+   "seenFrom": [
+    "chepstead"
+   ],
+   "blurb": "Albra's richest city, where the Narrows meet the Wolf Sea: a great harbour, four merchant houses at each other's throats, the Charterhouse that hires escorts for their caravans, and the Skyport, the only place on Albra where a gnome airship will moor.",
+   "labelDx": -58,
+   "labelDy": -6
   }
  ],
  "roads": [
@@ -122,6 +151,14 @@
   [
    "lantern",
    "moriquende"
+  ],
+  [
+   "hollowmere",
+   "chepstead"
+  ],
+  [
+   "chepstead",
+   "gilden"
   ]
  ],
  "river": [
@@ -248,6 +285,14 @@
     "rx": 150,
     "ry": 90,
     "gap": 11
+   },
+   {
+    "t": "grass",
+    "x": 1250,
+    "y": 610,
+    "rx": 110,
+    "ry": 40,
+    "n": 14
    }
   ],
   "rivers": [
@@ -306,8 +351,24 @@
     1010
    ],
    [
-    1520,
+    1225,
     1010
+   ],
+   [
+    1270,
+    962
+   ],
+   [
+    1330,
+    930
+   ],
+   [
+    1392,
+    906
+   ],
+   [
+    1460,
+    880
    ],
    [
     1498,
@@ -438,17 +499,19 @@
     "y": 548
    },
    {
-    "text": "the Ore Road runs south\nto Gilden on the Narrows",
-    "style": "note",
-    "x": 1130,
-    "y": 895
-   },
-   {
     "text": "marshes",
     "style": "note",
     "size": 12,
     "x": 965,
     "y": 706
+   },
+   {
+    "text": "the Narrows",
+    "style": "sea",
+    "x": 1335,
+    "y": 948,
+    "rot": -16,
+    "size": 15
    }
   ],
   "ranges": [
@@ -518,12 +581,12 @@
    ]
   },
   "compass": [
-   1415,
-   885,
-   36
+   1556,
+   150,
+   32
   ],
   "scale": {
-   "x": 1060,
+   "x": 700,
    "y": 945,
    "league": 25,
    "n": 10,

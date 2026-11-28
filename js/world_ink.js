@@ -795,7 +795,7 @@ const WorldInk = (() => {
       for (const [x, y] of densify(rg.spine, 50)) out.push({ x, y: y + 20, r: 230 });
     return out;
   }
-  const fogCv = { mask: null, comp: null, key: '' };
+  const fogCv = { mask: null, comp: null, key: null }; // null, not '': a first look with nothing inked yet has the key ''
   function drawFog(g, world, holes, key) {
     const W = world.w || 1000,
       H = world.h || 700;

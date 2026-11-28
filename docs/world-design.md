@@ -185,6 +185,10 @@ the Anvilfells, each with a mountain path up from a mining town: **Stonedeep?** 
 **Anvilmoot?** (the greatest, which named the range; above Varg's Delve) and **Coldforge?** (over the Grey
 Sea, above Tinwell). Outsiders get as far as their gatehouses.
 
+**Gilden is built** (step 1, November 2026): the city with its docks, the three great houses and Thessaly's
+fallen one, standing with each, caravan charters on the Ore Road with house-paid ambushes, and the passage
+offices; Chepstead is a wayside inn on the world map. Design, numbers and open questions: `docs/gilden-design.md`.
+
 **Gilden's trade** (the user's call): Albra's great export is **quintessence**, gleaned from Corvanthe; it comes
 down **the Ore Road** with the Anvilfells' copper and tin (Copperhythe → Varg's Delve → **Harrowgate?**, now a
 big walled ore market → Hollowmere → **Chepstead?**, a big market town where the ore road and the spill road
@@ -215,7 +219,7 @@ Deep, since a lot is planned to happen there. Like Europe, a different shape. No
 | Country | Who | The idea |
 |---|---|---|
 | **Hallowmark?** (just across the Narrows; capital Hale?) | humans | **magic is illegal** as too dangerous; witch-finders watch the ferries, so your first step onto the Mainland is as a criminal |
-| **The Brazen Dominion?** (east of it; Varrow?) | humans, soldiers, battle-mages | **warlike; hires and drafts wizards** into its armies; at war with Hallowmark |
+| **The Brazen Dominion?** (east of it; Varrow?) | humans, soldiers, battle-mages | **warlike; hires and drafts wizards** into its armies; at war with Hallowmark. **Frederick the Black and Malachar the Relentless** work for it (the user's call, November 2026) |
 | **The Tuskholds?** (the north-east arm, across the Wolf Sea; Grukmoot?) | **orcs who have settled down** | farms, herds, walled towns; they call the Harrow's orcs savages |
 | **Gimbaldry?** (western foothills; the skyport Gimbal?) | **gnomes** | **magical airships** that fly all over the world (routes on the sketch) |
 | **The Greatspine? and the Deepholds?** (the great central range; the Deepgate) | **deep dwarves** | live deep under the mountains, **loathe daylight**, come up only to trade |

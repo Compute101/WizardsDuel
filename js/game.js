@@ -8050,7 +8050,7 @@ function sigAtTier(sp, tier) {
   else if (e && e.soak) {
     e.raise = Math.max(1, (e.raise || 1) + tier - 2);
   } else if (e) {
-    ['perRound', 'retaliate', 'dmg', 'n', 'bonus', 'burn', 'extra', 'steal'].forEach(k => {
+    ['perRound', 'retaliate', 'dmg', 'n', 'bonus', 'burn', 'extra', 'steal', 'fire'].forEach(k => {
       if (e[k]) e[k] = n(e[k]);
     });
     if (e.ramp) e.ramp = e.ramp.map(n);
@@ -8059,6 +8059,11 @@ function sigAtTier(sp, tier) {
     if (['absorbNext', 'warding', 'bewitch'].includes(e.type)) e.rounds = Math.max(1, e.rounds + tier - 2);
     if (e.type === 'absorbNext' && !e.keep) e.charges = tier; // Foresight: blocks 1 / 2 / 3 strikes by ring
     if (e.extend && tier === 3) e.extend++; // Ward: the outer ring holds the ward one round longer
+  }
+  for (const x of el.also || []) {
+    // a curse's extra effects (Drown's silence) scale by ring too
+    if (x.dmg) x.dmg = n(x.dmg);
+    if (x.pct) x.pct = pct(x.pct, 0.7);
   }
   const a = el.action;
   if (a) {
@@ -9109,7 +9114,12 @@ function executeAction(who, action, cb) {
     combatTimeout(cb, 1100);
     return;
   }
-  lunge(who, 0.24, () =>
+  // Forge-fists (`forgefist` buff, a forge mage's): every Attack also lands `fire` magic fire damage, after the blow
+  // (so a Guard that blocks the blow blocks the fire too, and a ward stops the fire but not the blow)
+  const forge = effectsOf(gs[who], 'forgefist')[0];
+  lunge(who, 0.24, () => {
+    const hpBefore = gs[tgt].hp,
+      guarded = isGuarding(tgt);
     elemStrike(who, [tgt], {
       elem: 'earth',
       tier: 2,
@@ -9122,8 +9132,12 @@ function executeAction(who, action, cb) {
         spawnParts(c.tx, c.ty, '#e8e8f0', 12);
         spawnParts(c.tx, c.ty, '#c8a070', 6);
       }
-    })
-  );
+    });
+    if (forge && !guarded && !isVanished(tgt) && !gs[tgt].out && hpBefore > 0) {
+      spawnParts(seatX(tgt), wizMidY(tgt), '#ff8a3a', 14);
+      elemIncoming(tgt, forge.fire, 'fire', '🔥', '#ff8a3a', false, null, true, 0, 'magic');
+    }
+  });
   combatTimeout(cb, 1000);
 }
 function executeWheel(who, action, cb) {
@@ -9371,6 +9385,16 @@ function executeSignature(who, sp, action, cb) {
         if (addEffect(tgt, eff, who)) {
           if (fx.hit) fx.hit(ctx);
           else spawnParts(tx, wizMidY(tx), e.col, 16);
+          // `also`: more effects that land with this curse (Drown: water damage and a silence), each its own id
+          for (const x of el.also || [])
+            addEffect(
+              tgt,
+              Object.assign({ name: sigName(sp), icon: sigIcon(sp), tier: el.tier, elem: el.elem }, x, {
+                id: sp.id + '-' + x.type,
+                kind: 'curse'
+              }),
+              who
+            );
         }
       }
       if (el.drainNow) {
@@ -9921,13 +9945,7 @@ function elemIncoming(tgt, dmg, elem, icon, col, quiet, wear, strike, blast, kin
   // A ward of the other kind lets it straight through
   if (dmg > 0 && hasWard(ts) && !hasWardOfKind(ts, kind) && !(wear && wear.passNoted)) {
     if (wear) wear.passNoted = true;
-    addFloat(
-      tx,
-      bH * 0.2,
-      (kind === 'physical' ? '⚔ Physical' : '✨ Magic') + ' — passes the ward',
-      col,
-      11
-    );
+    addFloat(tx, bH * 0.2, (kind === 'physical' ? '⚔ Physical' : '✨ Magic') + ' — passes the ward', col, 11);
   }
   // Layers: what breaks a ward carries on into the next one of the same kind, on that ward's own rules
   while (dmg > 0) {
@@ -10842,17 +10860,25 @@ const AI_ACTIONS = {
   skinCast: 0.6,
   skinWeight: 0.5
 };
+// a brawler (`aiBrawler`: Gilden's forge mage): Attacks this often, more with forge-fists lit; skins up this often
+const AI_BRAWLER = { attack: 0.55, attackForged: 0.85, skin: 0.75, damageW: 0.6, protectW: 0.4 };
 function aiPhysAction(who, cat, tgt, smart) {
   const me = gs[who],
     opp = gs[tgt],
     last = opp.lastPick || {},
     act = c => ({ type: 'el', cat: c, act: ACTIONS[c].id, target: tgt, ok: true });
   const foeBroke = opp.mana < elemCost(tgt, 'damage', 1); // can only fight physically this round
+  const brawler = !!seatCfg(who).aiBrawler; // a warrior wizard: Attacks most rounds, skins up, wards the magic
   if (cat === 'damage') {
     // Vanished: an Attack would reveal me; a Vanished foe: it would only miss
     if (effectsOf(me, 'absorbNext').some(e => e.keep) || effectsOf(opp, 'absorbNext').some(e => e.keep))
       return null;
     if (me.mana < elemCost(who, 'damage', 1)) return act('damage'); // nothing else to throw
+    if (brawler) {
+      let b = effectsOf(me, 'forgefist').length ? AI_BRAWLER.attackForged : AI_BRAWLER.attack;
+      if (last.act === 'guard') b *= 0.5;
+      return _rng() < b ? act('damage') : null;
+    }
     let p = AI_ACTIONS.attackBase;
     if (hasWard(opp) && !skinOn(opp)) p += AI_ACTIONS.attackOpen; // a ward doesn't stop blows
     if (skinOn(opp)) p *= 0.5;
@@ -10864,6 +10890,18 @@ function aiPhysAction(who, cat, tgt, smart) {
   if (cat === 'protect') {
     const sk = skinOf(who),
       on = skinOn(me);
+    // a brawler keeps his skin up whatever's coming, and lights his fists before anything else
+    if (brawler && canSkin(who) && (!on || on.hp < sk.soak * 0.4) && _rng() < AI_BRAWLER.skin)
+      return {
+        type: 'el',
+        cat: 'protect',
+        skin: true,
+        elem: 'earth',
+        tier: 1,
+        target: tgt,
+        ok: _rng() < 0.9
+      };
+    if (brawler) return null; // the wheel: his forge-fists buff, or a ward
     if (
       canSkin(who) &&
       (!on || on.hp < sk.soak * 0.3) &&
@@ -11131,6 +11169,11 @@ function elemAIChooseCore(who) {
     if (guardSp && guardLow(who)) w.protect += 1.2;
     if (me.hp < me.maxHp * 0.35) w.protect += 0.3;
     w.dispel = myCurses ? 0.5 : hexes ? 0.25 * hexes : 0;
+  }
+  if (seatCfg(who).aiBrawler) {
+    w.damage += AI_BRAWLER.damageW;
+    w.protect += AI_BRAWLER.protectW;
+    if (!effectsOf(me, 'forgefist').length) w.protect += 0.5;
   }
   const free = hasFreeSpell(who);
   if (free) w.damage += 1.2; // a free spell: make it a big strike

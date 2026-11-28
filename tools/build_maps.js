@@ -30,6 +30,7 @@ const GENERATORS = {
   gloamside: rects => require('./mapgen/sector')(rects, 'gloamside'),
   wrenford: require('./mapgen/wrenford'),
   elfhome: require('./mapgen/elfhome'),
+  gilden: require('./mapgen/gilden'),
   // the inner districts, between each sector's north barrier and the Wound
   ...Object.fromEntries(
     Object.entries(require('./mapgen/inner').INNER_IDS).map(([outer, id]) => [
