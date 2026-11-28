@@ -296,6 +296,133 @@
       file: 'sprites/ruins/tileset34_source.png (cut as piece `countingHouse`)',
       standIn: "Hollowmere's cottages",
       usedBy: 'tools/mapgen/gilden.js'
+    },
+    // Gilden, third pass (docs/art-prompts.md, "Gilden, third pass")
+    {
+      id: 'piece_gd3_saltPurse',
+      kind: 'piece',
+      piece: 'saltPurse',
+      what: 'the Salt Purse tavern',
+      file: 'sprites/ruins/tileset35_source.png (cut as piece `saltPurse`)',
+      standIn: 'tavern (the Drowned Crow)',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_charterhouse',
+      kind: 'piece',
+      piece: 'charterhouse',
+      what: 'the Charterhouse',
+      file: 'sprites/ruins/tileset35_source.png (cut as piece `charterhouse`)',
+      standIn: 'townhouse',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_narrowsOffice',
+      kind: 'piece',
+      piece: 'narrowsOffice',
+      what: 'the Narrows Office',
+      file: 'sprites/ruins/tileset35_source.png (cut as piece `narrowsOffice`)',
+      standIn: 'townhouse',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_bannerAshcombe',
+      kind: 'piece',
+      piece: 'bannerAshcombe',
+      what: 'House Ashcombe banner',
+      file: 'sprites/ruins/tileset36_source.png (cut as piece `bannerAshcombe`)',
+      standIn: 'bannerAnvil',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_bannerVarenne',
+      kind: 'piece',
+      piece: 'bannerVarenne',
+      what: 'House Varenne banner',
+      file: 'sprites/ruins/tileset36_source.png (cut as piece `bannerVarenne`)',
+      standIn: 'bannerFrame',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_bannerQuarrender',
+      kind: 'piece',
+      piece: 'bannerQuarrender',
+      what: 'House Quarrender banner',
+      file: 'sprites/ruins/tileset36_source.png (cut as piece `bannerQuarrender`)',
+      standIn: 'bannerP',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_bannerVellacourt',
+      kind: 'piece',
+      piece: 'bannerVellacourt',
+      what: 'Vellacourt\u2019s bare banner pole',
+      file: 'sprites/ruins/tileset36_source.png (cut as piece `bannerVellacourt`)',
+      standIn: 'post',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_railing',
+      kind: 'piece',
+      piece: 'railing',
+      what: 'palace garden railing',
+      file: 'sprites/ruins/tileset36_source.png (cut as piece `railing`)',
+      standIn: 'lowwall',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_windKite',
+      kind: 'piece',
+      piece: 'windKite',
+      what: 'a gnome wind kite',
+      file: 'sprites/ruins/tileset36_source.png (cut as piece `windKite`)',
+      standIn: 'kite1-3',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_windGauge',
+      kind: 'piece',
+      piece: 'windGauge',
+      what: 'the Skyport wind gauge',
+      file: 'sprites/ruins/tileset36_source.png (cut as piece `windGauge`)',
+      standIn: 'rodTall',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_moleFigurehead',
+      kind: 'piece',
+      piece: 'moleFigurehead',
+      what: 'the figurehead on the mole',
+      file: 'sprites/ruins/tileset36_source.png (cut as piece `moleFigurehead`)',
+      standIn: 'figurehead',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_quintBox',
+      kind: 'piece',
+      piece: 'quintBox',
+      what: 'the quintessence strongbox',
+      file: 'sprites/ruins/tileset36_source.png (cut as piece `quintBox`)',
+      standIn: 'chestOld and swordRack',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_charterBoard',
+      kind: 'piece',
+      piece: 'charterBoard',
+      what: 'the Charter Board',
+      file: 'sprites/ruins/tileset36_source.png (cut as piece `charterBoard`)',
+      standIn: 'noticeBoard',
+      usedBy: 'tools/mapgen/gilden.js'
+    },
+    {
+      id: 'piece_gd3_oreWagon',
+      kind: 'piece',
+      piece: 'oreWagon',
+      what: 'a copper ore wagon',
+      file: 'sprites/ruins/tileset36_source.png (cut as piece `oreWagon`)',
+      standIn: 'oreCart',
+      usedBy: 'tools/mapgen/gilden.js'
     }
   ];
   const BY = Object.fromEntries(LIST.map(e => [e.id, e]));

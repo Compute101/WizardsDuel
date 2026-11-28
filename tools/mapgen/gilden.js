@@ -478,7 +478,7 @@ module.exports = function gilden(rects) {
     [37.6, 22.2]
   ])
     put('lanternPost', x, y, 'lamp');
-  put('well', 36.6, 20.6, 'well', { scale: 0.7 });
+  put('well', 36.6, 20.6, 'well', { scale: 0.26 });
   // market stalls round the square (the user's sheet 30): cloth and charms for the factors' wives, pies for
   // everyone
   for (const [k, x, y, l] of [
@@ -491,7 +491,7 @@ module.exports = function gilden(rects) {
     ['benchPlain', 32.4, 23.6],
     ['catGinger', 32.6, 21.2]
   ])
-    put(k, x, y, 'exchangeSq', k === 'catGinger' ? null : { scale: 0.7 });
+    put(k, x, y, 'exchangeSq');
   RES(26, 39, 19, 24);
 
   // the Caravanserai: the yard inside the Ore Gate, the Charterhouse facing it, wagons everywhere
@@ -525,7 +525,7 @@ module.exports = function gilden(rects) {
     ['kite3', 57.4, 3],
     ['rodTall', 60.8, 9.1]
   ])
-    put(k, x, y, 'kites', { scale: 0.8 });
+    put(k, x, y, 'kites', { scale: 0.3 });
   for (const [k, x, y] of [
     ['crate4', 56, 9.3],
     ['crateStand', 56.8, 9.4],
@@ -600,7 +600,7 @@ module.exports = function gilden(rects) {
             : 'quay';
     drop(k, x, y, lore);
   }
-  put('chestOld', 30.2, QUAY + 2.2, 'quint', { scale: 0.7 });
+  put('chestOld', 30.2, QUAY + 2.2, 'quint');
   put('halberdStand' in rects ? 'halberdStand' : 'swordRack', 29.2, QUAY + 2.3, 'quint', { scale: 0.5 });
   // the shipyard at the west end of the quay: a hull on the slip, timber, tar and rope
   m.fill(0, 31, 8, QUAY - 1, 'D');
@@ -638,7 +638,7 @@ module.exports = function gilden(rects) {
     for (const x of [8, 26, 48]) city.landmark('warehouse', x, QUAY - 1, 'cargo');
   for (const x of [14, 40]) city.landmark('countingHouse', x, 23, 'counting');
   const ship = city.landmark('townhouse', 46, 36, 'shipping');
-  m.place('noticeBoard', ship.cx + 120, ship.base + 30, { lore: 'shipping', scale: 0.8 });
+  m.place('noticeBoard', ship.cx + 120, ship.base + 30, { lore: 'shipping' });
   city.build({ sets: SETS, gap: 0.04, yards: 0.22 });
   for (const o of m.objs) if (/lanternPost/.test(o.kind) && !o.lore) o.lore = 'lamp';
   // lanterns along the main streets
