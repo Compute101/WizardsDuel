@@ -70,6 +70,7 @@ const deepCut = {};
 const noWell = process.env.NOWELL === '1';
 const noArms = process.env.NOARMS === '1'; // NOARMS=1: the Thane's soldiers never come; DRAFT=1: two miners are drafted too // NOWELL=1: never sink a well (meltwater only)
 if (noArms) S.soldiersCame = true;
+let readyDay = null;
 let logged = 0;
 for (let s = 0; s < days * M.DAY; s += 1) {
   for (const p of plan)
@@ -159,6 +160,11 @@ for (let s = 0; s < days * M.DAY; s += 1) {
     });
   }
   M.tick(S, 1);
+  // when the hold could feed soldiers (they may have come sooner, if a hollow woke)
+  if (s % 30 === 0 && readyDay == null) {
+    const R = M.soldiersReady(S);
+    if (R.farm && R.well && R.brewery) readyDay = M.dayOf(S);
+  }
 }
 const eye = M.notePatterns(S).eye;
 const dug = S.tiles.filter(t => t.k === 'f').length,
@@ -219,5 +225,11 @@ for (const d of S.dwarves)
     d.pick ? '| ' + d.pick.kind + ' pick ' + d.pick.uses : '',
     d.hurt ? '| hurt' : ''
   );
+console.log(
+  'soldiers',
+  S.soldiersCame ? 'came day ' + (S.soldiersT / M.DAY + 1).toFixed(1) : 'not yet',
+  '· farm, well and brewery ready',
+  readyDay ? 'day ' + readyDay : 'never'
+);
 console.log('log tail:');
 S.log.slice(-14).forEach(l => console.log('  d' + (Math.floor(l.t / M.DAY) + 1), l.msg));

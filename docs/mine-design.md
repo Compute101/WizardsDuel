@@ -597,6 +597,15 @@ The user asked to skip dead dwarves' replacements for now (they come with step 5
   (`migrate` v7). Sim (10 days, 8 seeds): with the soldiers, 0–4 dead (civilians, mostly to a stonewake),
   depth 1–3; with none (`NOARMS=1`) a single shard-wight kills 5–7 of the crew and nobody leaves layer 1.
   `DRAFT=1` drafts two miners as well.
+- **Soldiers wait until the hold can feed them.** *"If they arrive before the farm, well and brewery are
+  established they'll be a drain; they should only arrive after you have those up."* `soldiersReady` ticks
+  off a farm sown (a planted soil tile in a farm), a well sunk and a brewery's still furnished (each
+  remembered once done, `S.ready`); the soldiers come when all three are, or at `SOLDIERS.late` (day 7) if
+  you never manage it, or at once if something wakes in a hollow (an emergency; a tremor alone no longer
+  calls them). Wanderers rise only `WANDER.first` (a day) after the soldiers come (`S.soldiersT`), so the
+  soldiers always come first. The Quota tab lists the three until they arrive; Durin says so at the start.
+  `migrate` v8. In the sim's scripted plan a hollow wakes on days 1.2–2.8 and brings them early, since it digs
+  without minding tremors; the plan only has all three by day 8 on one seed of six.
 - **Warriors:** tap a dwarf and ⚔ Draft them (`draft`). A warrior keeps their trade but first arms
   themselves from the stock (`arm`), goes after any elemental within 15 tiles on their layer (`hunt`,
   `WAR_R`), falls back below 40% health (`FIGHT.retreat`), and trains at the barracks' racks when idle

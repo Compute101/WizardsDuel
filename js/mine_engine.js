@@ -271,7 +271,8 @@
     ['ember', 'wight'],
     ['stonewake', 'ember']
   ];
-  const WANDER = { first: DAY * 2.5, every: DAY * 2, deeper: 0.25 }; // a wanderer every `every`, sooner the deeper
+  // the first wanderer `first` after the soldiers come, then one every `every`, sooner the deeper
+  const WANDER = { first: DAY, every: DAY * 2, deeper: 0.25 };
   const TREMOR = { r: 3, again: DAY * 0.4, show: 25 }; // dig within r of a hollow and it trembles
   const FOE_ROCK = 0.6; // an elemental swims through rock at this fraction of its speed
   const FOE_SIGHT = 40; // how far (in tiles of its own path) an elemental looks for prey
@@ -385,9 +386,10 @@
     // rise (SOLDIERS); their whole job is to train at the barracks and guard the crew, and they can't stand down
     soldier: { name: 'Soldier', col: '#b04040', icon: '🛡' }
   };
-  // the soldiers' arrival: a scripted event at SOLDIERS.at, or sooner if the stone stirs first
-  // (a tremor or a waking in a hollow), always ahead of the first wanderer (WANDER.first)
-  const SOLDIERS = { at: DAY * 1.5, n: 2, fx: 30, gear: { w: 'hammer' } };
+  // the soldiers' arrival, a scripted event: once the hold can feed them (a farm sown, a well sunk and a
+  // brewery's still furnished: soldiersReady), or at SOLDIERS.late whatever, or at once if something wakes
+  // in a hollow. Wanderers only rise WANDER.first after they've come, so the soldiers always come first.
+  const SOLDIERS = { late: DAY * 6, n: 2, fx: 30, gear: { w: 'hammer' } };
   const GUARD_S = 20; // a soldier's watch beside the crew before looking round
   // no name shared with the hero creator's dwarf names (js/explore_hero.js DWARF_NAMES), the roster or townsfolk
   const NAMES = {
@@ -472,7 +474,7 @@
   function newGame(seed) {
     seed = (seed == null ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
     const S = {
-      v: 7,
+      v: 8,
       seed,
       rs: seed,
       layer: 1,
@@ -533,6 +535,10 @@
     S.durin = { x: 1, y: gy, path: [], act: 'At the gate' };
     logMsg(S, 'Durin: "Here we cut the Stoneheart Delve. Mark me some good straight passages, planner."');
     logMsg(S, 'Durin: "And a mason\'s workshop early on: nothing gets built without dressed stone."');
+    logMsg(
+      S,
+      'Durin: "Sow a farm, sink a well and set up a brewery, and the Thane will send us soldiers. There\'s things in this mountain that wake."'
+    );
     logMsg(
       S,
       'Durin: "The water barrels won\'t last either: find damp stone (a blue shimmer) and sink a well."'
@@ -1043,9 +1049,21 @@
     return nm;
   }
   // the scripted event: the Thane's soldiers come up from Stonedeep, armed and blooded
+  // what the Thane wants to see before sending soldiers; each is remembered once done
+  function soldiersReady(S) {
+    const R = (S.ready = S.ready || {});
+    if (!R.farm)
+      R.farm = S.tiles.some(
+        t => t.r && t.o === 'soil' && t.g >= 1 && (roomById(S, t.r) || {}).type === 'farm'
+      );
+    if (!R.well) R.well = S.tiles.some(t => t.wl);
+    if (!R.brewery) R.brewery = S.tiles.some(t => t.fu === 'still' && t.fb);
+    return R;
+  }
   function soldiersArrive(S, why) {
     if (S.soldiersCame) return;
     S.soldiersCame = true;
+    S.soldiersT = S.t;
     const g = S.gate[0],
       names = [];
     for (let k = 0; k < SOLDIERS.n; k++) {
@@ -2491,7 +2509,6 @@
         );
       } else if (near <= TREMOR.r && S.t - ch.tremor > TREMOR.again) {
         ch.tremor = S.t;
-        soldiersArrive(S, 'They felt the tremor at Stonedeep, and came ahead of time.');
         const c = ch.cells[(ch.cells.length / 2) | 0];
         S.tremors.push({ x: c % W, y: (c / W) | 0, t: S.t, sleep: true });
         logMsg(
@@ -2733,9 +2750,25 @@
       roofCheck(S);
     }
     // the elementals: wanderers rise now and then, the awake ones hunt, and blows are traded
-    if (!S.soldiersCame && S.t >= SOLDIERS.at) soldiersArrive(S);
+    if (!S.soldiersCame && Math.floor(S.t / 5) !== Math.floor((S.t - dt) / 5)) {
+      const R = soldiersReady(S);
+      if (R.farm && R.well && R.brewery)
+        soldiersArrive(
+          S,
+          "The hold can feed them now: they'll train at the barracks and stand guard over the crew."
+        );
+      else if (S.t >= SOLDIERS.late)
+        soldiersArrive(
+          S,
+          "The Thane would wait no longer: they'll train at the barracks and stand guard over the crew."
+        );
+    }
     S.wanderT += dt;
-    if (S.t > WANDER.first && S.wanderT >= WANDER.every / (1 + WANDER.deeper * S.depth)) {
+    if (
+      S.soldiersCame &&
+      S.t - S.soldiersT > WANDER.first &&
+      S.wanderT >= WANDER.every / (1 + WANDER.deeper * S.depth)
+    ) {
       S.wanderT = 0;
       wanderer(S);
     }
@@ -3058,12 +3091,18 @@
 
   // an older save: the new stock, picks and wounds, and the smith who came with the new rooms
   function migrate(S) {
-    if (!S || S.v >= 7) return S;
-    if (S.v < 6) migrate6(S);
-    // the Thane's soldiers: a save already past their day gets them now
-    if (S.t >= SOLDIERS.at || S.foes.some(f => f.state === 'awake')) soldiersArrive(S);
-    S.v = 7;
+    if (!S || S.v >= 8) return S;
+    if (S.v < 7) migrate7(S);
+    // soldiers now wait for a farm, a well and a brewery; ones already here keep the wanderers coming
+    if (S.soldiersCame && S.soldiersT == null) S.soldiersT = 0;
+    S.v = 8;
     return S;
+  }
+  function migrate7(S) {
+    if (S.v < 6) migrate6(S);
+    // the Thane's soldiers: a save with something already awake gets them now
+    if (S.foes.some(f => f.state === 'awake')) soldiersArrive(S);
+    S.v = 7;
   }
   function migrate6(S) {
     if (S.v < 5) migrate5(S);
@@ -3180,6 +3219,7 @@
     WARRIOR_HP,
     SOLDIERS,
     soldiersArrive,
+    soldiersReady,
     maxHp,
     TREMOR,
     draft,

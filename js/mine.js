@@ -824,7 +824,15 @@
           `<li><b>${k + 1}. ${l.name}</b> <small>${l.stone}; the roof holds ${l.roof} tiles from rock or a pillar (an open span of ${l.roof * 2})</small></li>`
       )
       .join('');
-    return `<p><b>Layer ${z + 1}: ${L.name}</b></p>
+    let thane = '';
+    if (!S.soldiersCame) {
+      const R = M.soldiersReady(S),
+        tick = (ok, s) => `<li>${ok ? '✓' : '○'} ${s}</li>`;
+      thane = `<p><b>🛡 The Thane's soldiers</b></p>
+      <p class="mn-note">Two soldiers come up from Stonedeep once the hold can feed them (by day ${Math.round(M.SOLDIERS.late / M.DAY) + 1} at the latest). The elementals start rising a day after they come.</p>
+      <ul class="mn-ledger">${tick(R.farm, 'A farm sown')}${tick(R.well, 'A well sunk on damp stone')}${tick(R.brewery, 'A brewery with its still')}</ul>`;
+    }
+    return `${thane}<p><b>Layer ${z + 1}: ${L.name}</b></p>
     <p class="mn-note">The Thane's quota: ore carried to the stockpile. Meet it to cut the stair down.</p>
     <div class="mn-needs">${bars}</div>${deep}${stair}
     <p><b>The layers so far</b></p><ul class="mn-ledger">${layers}</ul>
@@ -892,7 +900,7 @@
       <li><b>The mason's workshop comes first</b>: its bench is roughed out of rough stone, and there the mason cuts rough stone into <b>dressed blocks</b> (🧱 in the stock). Every bed, table, still, wall, pillar and door takes a block, and he cuts only as many as your building needs.</li>
       <li><b>The trades</b>: the farmer and brewer cook meals at a kitchen's hearth; the smith smelts copper, tin and coal into bronze at a forge's anvil and forges picks, for the old iron ones wear out. Hard rock sometimes hurts a dwarf: an infirmary mends them.</li>
       <li><b>Water</b>: the brewer needs a bucket of water for every brew. Until there's a well he fetches meltwater from outside the gate, which is slow. Damp stone shows as a blue shimmer in the dark: dig it out, then 🧱 Build ▴ → Well. A well never runs dry.</li>
-      <li><b>Earth elementals</b>: they swim through raw rock and walk the floor, but can't pass smoothed or built stone, pillars or doors, so a worked, doored living quarter is safe. Some sleep in hidden hollows: digging close sends a tremor (purple rings), and breaking in wakes them. Others rise through the rock now and then (orange rings), more the deeper you go. Before the first can rise, the Thane sends two soldiers from Stonedeep: they train at the barracks and stand guard over the crew. Only soldiers and warriors fight; everyone else runs, behind worked stone or a door if one's near, or towards the soldiers. To have more, tap a dwarf and ⚔ Draft them as a warrior (they keep their trade, go after elementals, fall back when badly hurt and train when idle). The smith forges war-hammers (bronze, then iron) and iron mail for them.</li>
+      <li><b>Earth elementals</b>: they swim through raw rock and walk the floor, but can't pass smoothed or built stone, pillars or doors, so a worked, doored living quarter is safe. Some sleep in hidden hollows: digging close sends a tremor (purple rings), and breaking in wakes them. Others rise through the rock now and then (orange rings), more the deeper you go. Once you've sown a farm, sunk a well and set up a brewery (the Quota tab keeps the list), the Thane sends two soldiers from Stonedeep, and the elementals only start rising a day later: they train at the barracks and stand guard over the crew. Only soldiers and warriors fight; everyone else runs, behind worked stone or a door if one's near, or towards the soldiers. To have more, tap a dwarf and ⚔ Draft them as a warrior (they keep their trade, go after elementals, fall back when badly hurt and train when idle). The smith forges war-hammers (bronze, then iron) and iron mail for them.</li>
       <li><b>Mind the roof</b>: each stone spans only so far. Floor more than 3 tiles from rock, a wall or a pillar (on the Topstone) is unsound: red hairline cracks show, and after a while it comes down. Rubble is quick to dig out, but anyone under it may die, and the crew mourn. A Wall of Remembrance eases that.</li>
       <li><b>Going deeper</b>: the Thane sets each layer a quota of ore (the Quota tab). Meet it, find the layer's deep spot (Durin's prospecting, or digging nearby), and cut the stair down. Five layers, each harder stone. ▲ ▼ by the map, or [ and ], change the layer you see.</li>
       <li><b>✨ Smooth</b>: the mason smooths walls and pillars. Finer rooms, and worked stone will keep elementals out.</li>
