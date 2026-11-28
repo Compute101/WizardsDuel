@@ -671,3 +671,26 @@ The user asked to skip dead dwarves' replacements for now (they come with step 5
   8 seeds (up to 3 a run); seed 7 lost no one with binding and two without, seed 4 one bound and the same
   result. Seeds 1 and 2 never make a rune: the scripted plan starves there (no food or ale, one block).
 - **Next (step 5):** migrants and replacements for the dead, renown, caravans, the Assay.
+
+## As built (step 5, part 1: newcomers and renown)
+
+*"Let's do newcomers."* (Earlier: *"So what happens if a dwarf dies, does a replacement arrive?"*)
+- **Renown** (`renown`, live, so it falls as well as rises): the best layer's Mason's Eye × 0.12, 3 a
+  named pattern, 1 a room star past the first (16 at most), 6 a layer opened, 3 an elemental bound, 1 an
+  elemental slain (12 at most), −4 for each of the crew lost (`RENOWN_W`). Each of `RENOWN_TIERS` (12, 28,
+  48, 72) it passes draws one more newcomer a party.
+- **Parties from Stonedeep** (`newcomersStep`, `WAVE`): every two days from day 3. First the dead are
+  replaced, trade for trade (`S.owed`, filled by `killDwarf`; a day's mourning first, `WAVE.mourn`; two a
+  party at most, `repMax`; a soldier comes armed but green), then renown's newcomers in the trade the Delve
+  most needs (`neededTrade`: a farmer if food is short, a brewer if ale is, a mason if building's piling up,
+  else a miner). At most 20 dwarves (`WAVE.max`). Each brings 4 food and 3 ale (`WAVE.bring`), so a party
+  isn't a drain the day it comes. A log line a quarter day ahead says how many are coming.
+- **They wait** while an awake elemental is within 14 tiles of the gate, or one that has killed in the last
+  day is loose anywhere (`WAVE.safe`, `f.killT`): the first try fed each new party to the stonewake that
+  had killed the last (seed 5: 21 dead in 10 days).
+- **On screen:** the Quota tab has a Renown and newcomers section (the bar to the next tier, what counts,
+  who's coming next and when). `migrate` v9: the dead so far are owed, the next party in half a day.
+- **Sim** (10 days, 8 seeds): crews of 11–17 on six seeds (4–7 arrivals), renown 16–57; seeds 4 and 5
+  have early stonewakes two soldiers can't beat, and lose 7 and 9 (no player to lead the fight or draft
+  more; with two miners drafted too, `DRAFT=1`, seed 4 loses none).
+- **Next:** caravans and the Assay.

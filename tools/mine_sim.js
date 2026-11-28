@@ -240,5 +240,19 @@ console.log(
   '· farm, well and brewery ready',
   readyDay ? 'day ' + readyDay : 'never'
 );
+const ren = M.renown(S);
+console.log(
+  'crew',
+  S.dwarves.length,
+  'arrived',
+  S.arrived || 0,
+  'owed',
+  (S.owed || []).length,
+  'renown',
+  ren.total,
+  'tier',
+  ren.tier,
+  ren.parts.map(p => p[0] + ' ' + p[1]).join('; ')
+);
 console.log('log tail:');
 S.log.slice(-14).forEach(l => console.log('  d' + (Math.floor(l.t / M.DAY) + 1), l.msg));

@@ -878,7 +878,32 @@
       <p class="mn-note">Two soldiers come up from Stonedeep once the hold can feed them (by day ${Math.round(M.SOLDIERS.late / M.DAY) + 1} at the latest). The elementals start rising a day after they come.</p>
       <ul class="mn-ledger">${tick(R.farm, 'A farm sown')}${tick(R.well, 'A well sunk on damp stone')}${tick(R.brewery, 'A brewery with its still')}</ul>`;
     }
-    return `${thane}<p><b>Layer ${z + 1}: ${L.name}</b></p>
+    // renown, and who comes up from Stonedeep next
+    const ren = M.renown(S),
+      wv = M.nextWave(S),
+      hrs = Math.max(0, Math.round((S.waveT == null ? M.WAVE.first : S.waveT) - S.t) / (M.DAY / 24));
+    const who = [
+      ...wv.rep.map(o => 'someone in ' + o.for + "'s place"),
+      ...(wv.fresh ? [wv.fresh + ' drawn by your renown'] : [])
+    ];
+    const waveLine = S.waveHeld
+      ? 'The newcomers are waiting at Stonedeep until the elemental is dealt with.'
+      : S.dwarves.length >= M.WAVE.max
+        ? 'The Delve has all the crew it can hold (' + M.WAVE.max + ').'
+        : who.length
+          ? `In about ${Math.round(hrs)} hours: ${who.join(' and ')}. Each brings a little food and ale.`
+          : `In about ${Math.round(hrs)} hours, but no one will come: the Delve hasn't the renown yet.`;
+    const renHtml = `<p><b>🎒 Renown and newcomers</b></p>
+    <div class="mn-needs"><span>Renown ${ren.total}</span>${bar(ren.next ? (ren.total / ren.next) * 100 : 100, '#e2b84c')}</div>
+    <p class="mn-note">${ren.tier ? 'Your renown draws ' + ren.tier + ' newcomer' + (ren.tier > 1 ? 's' : '') + ' a party' : 'Your renown draws no newcomers yet'}${ren.next ? ` (at ${ren.next}, ${ren.tier + 1})` : ''}. Parties come every two days, and the dead are replaced a day after they fall (two a party at most). ${waveLine}</p>
+    <ul class="mn-ledger">${
+      ren.parts
+        .filter(([, n]) => n)
+        .map(([w, n]) => `<li>${n >= 0 ? '+' : ''}${n} ${w}</li>`)
+        .join('') ||
+      '<li>Nothing yet: fine halls, named patterns, deeper layers and bound elementals all count.</li>'
+    }</ul>`;
+    return `${thane}${renHtml}<p><b>Layer ${z + 1}: ${L.name}</b></p>
     <p class="mn-note">The Thane's quota: ore carried to the stockpile. Meet it to cut the stair down.</p>
     <div class="mn-needs">${bars}</div>${deep}${stair}
     <p><b>The layers so far</b></p><ul class="mn-ledger">${layers}</ul>
@@ -1085,6 +1110,7 @@
       <li><b>The trades</b>: the farmer and brewer cook meals at a kitchen's hearth; the smith smelts copper, tin and coal into bronze at a forge's anvil and forges picks, for the old iron ones wear out. Hard rock sometimes hurts a dwarf: an infirmary mends them.</li>
       <li><b>Water</b>: the brewer needs a bucket of water for every brew. Until there's a well he fetches meltwater from outside the gate, which is slow. Damp stone shows as a blue shimmer in the dark: dig it out, then 🧱 Build ▴ → Well. A well never runs dry.</li>
       <li><b>Earth elementals</b>: they swim through raw rock and walk the floor, but can't pass smoothed or built stone, pillars or doors, so a worked, doored living quarter is safe. Some sleep in hidden hollows: digging close sends a tremor (purple rings), and breaking in wakes them. Others rise through the rock now and then (orange rings), more the deeper you go. Once you've sown a farm, sunk a well and set up a brewery (the Quota tab keeps the list), the Thane sends two soldiers from Stonedeep, and the elementals only start rising a day later: they train at the barracks and stand guard over the crew. Only soldiers and warriors fight; everyone else runs, behind worked stone or a door if one's near, or towards the soldiers. To have more, tap a dwarf and ⚔ Draft them as a warrior (they keep their trade, go after elementals, fall back when badly hurt and train when idle). The smith forges war-hammers (bronze, then iron) and iron mail for them.</li>
+      <li><b>Newcomers</b>: every two days from day 3 a party comes up from Stonedeep. The dead are replaced trade for trade (a day after they fall, two a party at most), and the Delve's <b>renown</b> draws more: the Mason's Eye, named patterns, fine rooms, layers opened, elementals bound and slain all raise it, and every death lowers it. Each newcomer brings a little food and ale. They won't come while an elemental prowls near the gate or one that has killed is loose. The Quota tab shows the renown and who's coming. At most 20 dwarves.</li>
       <li><b>Leading a fight yourself</b>: when a hollow wakes or an elemental breaks into the quarters, the Delve stops and asks. Lead it yourself and it's a duel on the battle screen: your wizard, with Durin and maybe a warrior beside you, against up to two of them. Air tears earth elementals apart. Wear one to half and Durin binds it there and then, if there's a rune. Your wizard's wounds mend over a day.</li>
       <li><b>Durin's binding</b>: select Durin and tap an awake elemental (or its 🪨 button). He goes to it and, once it's worn below half its strength (the gold notch on its bar), sets a rune-stone and chants. The warriors stop striking it and hold it for him; if it lands 10 or more on him while he chants, it tears free, enraged. It's quicker where the walls round it are worked, and in a raw tunnel it may slip away into the stone. A bound elemental serves for two days as a stone-servant, digging whatever you've marked, and every dwarf strikes out a grudge for pride. If Durin is struck down he's carried to Stonedeep and back in half a day.</li>
       <li><b>Mind the roof</b>: each stone spans only so far. Floor more than 3 tiles from rock, a wall or a pillar (on the Topstone) is unsound: red hairline cracks show, and after a while it comes down. Rubble is quick to dig out, but anyone under it may die, and the crew mourn. A Wall of Remembrance eases that.</li>

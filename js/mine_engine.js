@@ -407,6 +407,33 @@
   // in a hollow. Wanderers only rise WANDER.first after they've come, so the soldiers always come first.
   const SOLDIERS = { late: DAY * 6, n: 2, fx: 30, gear: { w: 'hammer' } };
   const GUARD_S = 20; // a soldier's watch beside the crew before looking round
+  // ── Newcomers (step 5): every WAVE.every from WAVE.first a party comes up from Stonedeep. The dead are
+  // replaced, trade for trade, on the first wave a day after they fell (WAVE.mourn); and the Delve's
+  // renown (renown()) brings more on top, by RENOWN_TIERS, up to WAVE.max dwarves in all. Each newcomer
+  // brings WAVE.bring of food and ale, so a wave doesn't empty the stores the day it comes.
+  const WAVE = {
+    safe: 14, // no party comes in while an awake elemental is this close to the gate
+    repMax: 2, // replacements a wave at most
+    first: DAY * 3,
+    every: DAY * 2,
+    mourn: DAY,
+    max: 20,
+    warn: DAY * 0.25,
+    bring: { food: 4, ale: 3 }
+  };
+  // renown at or above each figure brings one more newcomer a wave (0 at the bottom)
+  const RENOWN_TIERS = [12, 28, 48, 72];
+  const RENOWN_W = {
+    eye: 0.12,
+    pattern: 3,
+    star: 1,
+    starCap: 16,
+    layer: 6,
+    bound: 3,
+    slain: 1,
+    slainCap: 12,
+    dead: -4
+  };
   // ── Durin's binding (step 4): Durin is the one who binds an elemental, once it's worn down below `at` of
   // its strength. He chants for BIND.s[kind] seconds (×`worked` with no raw rock beside it, where it can't
   // slip away; in a raw tunnel it may slip into the stone, `slip` a second). It costs a rune-stone (a silver
@@ -511,7 +538,7 @@
   function newGame(seed) {
     seed = (seed == null ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
     const S = {
-      v: 8,
+      v: 9,
       seed,
       rs: seed,
       layer: 1,
@@ -1086,6 +1113,132 @@
     return nm;
   }
   // the scripted event: the Thane's soldiers come up from Stonedeep, armed and blooded
+  // ── Renown: what the hold says of the Delve. Live, from the work itself, so it can fall as well as rise.
+  function renown(S) {
+    const R = RENOWN_W,
+      parts = [];
+    let eye = 0;
+    for (let z = 0; z <= S.depth; z++) eye = Math.max(eye, masonEye(S, z).score || 0);
+    parts.push(["The Mason's Eye (best layer " + Math.round(eye) + ')', eye * R.eye]);
+    const pats = Object.keys(S.found || {}).length;
+    if (pats) parts.push([pats + ' named pattern' + (pats > 1 ? 's' : ''), pats * R.pattern]);
+    const stars = Math.min(
+      R.starCap,
+      S.rooms.reduce((n, r) => n + Math.max(0, roomStars(S, r) - 1), 0)
+    );
+    if (stars) parts.push(['Fine rooms (stars past the first)', stars * R.star]);
+    if (S.depth) parts.push([S.depth + ' layer' + (S.depth > 1 ? 's' : '') + ' opened', S.depth * R.layer]);
+    if (S.bound)
+      parts.push([S.bound + ' elemental' + (S.bound > 1 ? 's' : '') + ' bound', S.bound * R.bound]);
+    if (S.foeKills)
+      parts.push([
+        S.foeKills + ' elemental' + (S.foeKills > 1 ? 's' : '') + ' slain',
+        Math.min(R.slainCap, S.foeKills * R.slain)
+      ]);
+    if (S.dead.length) parts.push([S.dead.length + ' of the crew lost', S.dead.length * R.dead]);
+    const total = Math.max(0, Math.round(parts.reduce((n, p) => n + p[1], 0)));
+    let tier = 0;
+    while (tier < RENOWN_TIERS.length && total >= RENOWN_TIERS[tier]) tier++;
+    return {
+      total,
+      parts: parts.map(([why, n]) => [why, Math.round(n)]),
+      tier,
+      next: RENOWN_TIERS[tier] || null
+    };
+  }
+  // what the next party will be: replacements (mourned a day) first, then renown's newcomers
+  function nextWave(S) {
+    const room = Math.max(0, WAVE.max - S.dwarves.length);
+    const owed = (S.owed || []).filter(o => S.t - o.t >= WAVE.mourn);
+    const rep = owed.slice(0, Math.min(room, WAVE.repMax));
+    const fresh = Math.min(room - rep.length, renown(S).tier);
+    return { rep, fresh, room };
+  }
+  // the trade the Delve most needs (for a newcomer who isn't replacing someone)
+  function neededTrade(S) {
+    const n = tr => S.dwarves.filter(d => d.trade === tr).length,
+      crew = S.dwarves.length;
+    if (have(S, 'food') + have(S, 'meal') < crew * 3 && n('farmer') < 3) return 'farmer';
+    if (have(S, 'ale') < crew * 2 && n('brewer') < 2) return 'brewer';
+    const builds = S.tiles.filter(t => t.b || (t.fu && !t.fb)).length;
+    if (builds > 12 && n('mason') < 3) return 'mason';
+    const marked = S.tiles.filter(t => t.d).length;
+    if (marked > 20 || n('miner') < 3) return 'miner';
+    return rnd(S) < 0.5 ? 'miner' : 'mason';
+  }
+  function newcomersStep(S) {
+    if (S.waveT == null) S.waveT = WAVE.first;
+    if (!S.waveWarned && S.t >= S.waveT - WAVE.warn) {
+      S.waveWarned = true;
+      const w = nextWave(S);
+      if (w.rep.length + w.fresh)
+        logMsg(
+          S,
+          '🎒 Word from Stonedeep: ' +
+            (w.rep.length + w.fresh) +
+            ' newcomer' +
+            (w.rep.length + w.fresh > 1 ? 's are' : ' is') +
+            ' on the road up. Beds and food for them!'
+        );
+    }
+    if (S.t < S.waveT) return;
+    // the road in isn't safe while an elemental prowls near the gate: they wait at Stonedeep
+    const g0 = S.gate[0],
+      prowl = S.foes.find(
+        f =>
+          f.state === 'awake' &&
+          f.hp > 0 &&
+          (Math.hypot(f.x - (g0 % W), f.y - ((g0 / W) | 0)) < WAVE.safe || S.t - (f.killT || -1e9) < DAY)
+      );
+    if (prowl) {
+      if (!S.waveHeld)
+        logMsg(
+          S,
+          '🎒 The newcomers wait at Stonedeep: a ' +
+            FOES[prowl.kind].name +
+            (S.t - (prowl.killT || -1e9) < DAY
+              ? ' that has killed is loose in the Delve'
+              : ' prowls near the gate') +
+            ". Deal with it and they'll come."
+        );
+      S.waveHeld = true;
+      S.waveT = S.t + 10;
+      return;
+    }
+    S.waveHeld = false;
+    S.waveT = S.t + WAVE.every;
+    S.waveWarned = false;
+    const w = nextWave(S);
+    const g = S.gate[0],
+      came = [];
+    const arrive = (trade, why) => {
+      const sex = rnd(S) < 0.5 ? 'm' : 'f',
+        nm = newName(S, sex),
+        d = newDwarf(S, nm, sex, trade, g % W, (g / W) | 0);
+      if (trade === 'soldier')
+        Object.assign(d, { drafted: true, fx: 0, gear: Object.assign({}, SOLDIERS.gear) });
+      d.hp = maxHp(d);
+      S.dwarves.push(d);
+      for (const k in WAVE.bring) addStock(S, k, WAVE.bring[k]);
+      came.push(nm.split(' ')[0] + ' (' + TRADES[trade].name.toLowerCase() + (why ? ', ' + why : '') + ')');
+    };
+    for (const o of w.rep) {
+      S.owed.splice(S.owed.indexOf(o), 1);
+      // a keeper's replacement only if there's still a tavern to keep
+      arrive(o.trade, 'in ' + o.for + "'s place");
+    }
+    for (let k = 0; k < w.fresh; k++) arrive(neededTrade(S));
+    S.arrived = (S.arrived || 0) + came.length;
+    if (came.length)
+      logMsg(S, '🎒 Newcomers from Stonedeep: ' + came.join(', ') + '. They bring a little food and ale.');
+    else if (S.dwarves.length >= WAVE.max)
+      logMsg(S, '🎒 Stonedeep sends no one: the Delve has all the crew it can hold.');
+    else
+      logMsg(
+        S,
+        "🎒 No one comes up from Stonedeep this time: the Delve hasn't the renown yet. Fine halls and named patterns would draw them."
+      );
+  }
   // what the Thane wants to see before sending soldiers; each is remembered once done
   function soldiersReady(S) {
     const R = (S.ready = S.ready || {});
@@ -2403,6 +2556,8 @@
     drop(S, d);
     S.dwarves = S.dwarves.filter(w => w !== d);
     S.dead.push({ name: d.name, trade: d.trade, day: dayOf(S), how, warrior: !!d.drafted });
+    // the Thane sends someone to take their place, once they've been mourned
+    (S.owed = S.owed || []).push({ trade: d.trade, t: S.t, for: d.name.split(' ')[0] });
     const first = d.name.split(' ')[0];
     logMsg(S, '🕯 ' + d.name + ' was ' + how + '.');
     for (const o of S.dwarves) addGrudge(S, o, 'Mourning ' + first);
@@ -3085,6 +3240,7 @@
       if (!target.hurt) target.hurt = S.t || 1;
       if (target.hp <= 0) {
         f.victims.push(target.name.split(' ')[0]);
+        f.killT = S.t;
         killDwarf(S, target, 'slain by a ' + K.name + ' on ' + LAYERS[layerOf(Math.round(f.y))].name);
       }
       // only warriors hit back: the rest of the crew are miners and brewers, and run. Once it's worn down and
@@ -3199,6 +3355,7 @@
           "The Thane would wait no longer: they'll train at the barracks and stand guard over the crew."
         );
     }
+    newcomersStep(S);
     S.wanderT += dt;
     if (
       S.soldiersCame &&
@@ -3527,12 +3684,19 @@
 
   // an older save: the new stock, picks and wounds, and the smith who came with the new rooms
   function migrate(S) {
-    if (!S || S.v >= 8) return S;
+    if (!S || S.v >= 9) return S;
+    if (S.v < 8) migrate8(S);
+    // newcomers: the dead so far are owed replacements, and the next party comes soon
+    S.owed = S.dead.map(d => ({ trade: d.trade, t: S.t - WAVE.mourn, for: d.name.split(' ')[0] }));
+    S.waveT = Math.max(WAVE.first, S.t + DAY * 0.5);
+    S.v = 9;
+    return S;
+  }
+  function migrate8(S) {
     if (S.v < 7) migrate7(S);
     // soldiers now wait for a farm, a well and a brewery; ones already here keep the wanderers coming
     if (S.soldiersCame && S.soldiersT == null) S.soldiersT = 0;
     S.v = 8;
-    return S;
   }
   function migrate7(S) {
     if (S.v < 6) migrate6(S);
@@ -3677,6 +3841,10 @@
     roomWalls,
     durinMove,
     LEAD,
+    WAVE,
+    RENOWN_TIERS,
+    renown,
+    nextWave,
     leadSetup,
     resolvePending,
     bind,
