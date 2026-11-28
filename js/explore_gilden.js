@@ -488,6 +488,25 @@
         topper: 'hoop'
       }
     },
+    // an independent captain, no house's: Run the Narrows (js/sailing.js)
+    gd_crake: {
+      name: 'Captain Nan Crake',
+      title: 'Master of the Kittiwake',
+      look: {
+        name: 'Nan',
+        sex: 'f',
+        age: 'middle',
+        fig: 'mid_woman_2',
+        robe: 'Midnight',
+        trim: 'Copper',
+        hair: 'Black',
+        skin: 'Tan',
+        eyes: 'Grey',
+        elem: 'water',
+        staff: 'Driftwood',
+        topper: ''
+      }
+    },
     gd_fishwife: {
       name: 'Mag Thrush',
       title: 'A Fishwife',
@@ -556,7 +575,9 @@
   // Every stand-in here is listed in js/placeholders.js under its role's id; when the real file is at the
   // path it names, it's used instead of the painted look (and the face crop likewise).
   async function prep(api) {
-    await PH().probe(Object.keys(PEOPLE).concat(HKEYS.map(hireKey), Object.keys(MAGI), ['arena_gilden']));
+    await PH().probe(
+      Object.keys(PEOPLE).concat(HKEYS.map(hireKey), Object.keys(MAGI), ['arena_gilden', 'arena_deck'])
+    );
     const jobs = Object.entries(PEOPLE)
       .filter(([, P]) => P.look && !P._sprite)
       .map(async ([role, P]) => {
@@ -664,6 +685,8 @@
         return skyTalk(n, api);
       case 'gd_fishwife':
         return fishwifeTalk(n, api);
+      case 'gd_crake':
+        return crakeTalk(n, api);
     }
     say('"' + me + '." A nod.');
   }
@@ -1173,6 +1196,63 @@
     );
   }
 
+  // ── Captain Crake: Run the Narrows (js/sailing.js; docs/gilden-design.md, "Running the Narrows") ──
+  // She flies no house's flag and won't pay the Varg sea-toll (Varenne pays it for its own ships and bills
+  // everyone else). Every run that gets through costs you a point with Varenne: the toll is their business.
+  function narrows(api) {
+    const s = g(api);
+    return s.narrows || (s.narrows = { runs: 0, won: 0, lost: 0 });
+  }
+  function crakeTalk(n, api) {
+    const q = narrows(api),
+      first = !q.met;
+    q.met = true;
+    api.save();
+    const go = () =>
+      api.sail({
+        runs: q.won,
+        onEnd: res => {
+          q.runs++;
+          if (res.how === 'won') {
+            q.won++;
+            api.addGold(res.pay);
+            const v = shift(api, 'varenne', -1);
+            api.save();
+            return (
+              'Word gets round the quay: Varenne is not pleased (Varenne ' + (v > 0 ? '+' : '') + v + ').'
+            );
+          }
+          if (res.how !== 'turned') q.lost++;
+          api.save();
+          return null;
+        }
+      });
+    const intro = first
+      ? 'A lean woman in a tarred coat, mending a sheet with a sailmaker\'s palm, one eye on the harbour mouth. "Crake. Nan Crake, master of the Kittiwake." She nods out at the harbour, where a trim blue ship rides at anchor. "Fettle built her, so she\'s nobody\'s but mine. No anchor on my flag, no flame, no scale."\n\n"Here\'s my trouble. The Varg keep a picket at the Teeth, down the Narrows, and take a tenth of every hold that passes. Unless it flies Varenne\'s anchor: Varenne pays them off each spring and sends the bill to the rest of us." She bites off the thread. "I don\'t pay. I run. A Halemouth lugger waits off Gull Head, no names asked. I want a wizard on my deck. Interested?"'
+      : q.won
+        ? '"' +
+          api.wizName() +
+          '! The Kittiwake\'s loaded again." Crake grins. "' +
+          q.won +
+          ' run' +
+          (q.won === 1 ? '' : 's') +
+          ' past the Teeth, and the Varg have started to know her sails. They\'ll be keener this time."'
+        : '"Still here? The lugger waits for nobody, but she\'ll wait one more tide." Crake jerks her head at the Kittiwake.';
+    api.dialog(title(n, api), intro, [
+      { label: '⛵ Run the Narrows with her', fn: go },
+      {
+        label: '📜 The sea-toll?',
+        fn: () =>
+          api.dialog(
+            title(n, api),
+            '"The Varg have taken toll in the Narrows since before Gilden had a wall. Varenne cut a deal: a chest of gold each spring, and their anchor sails free. Everyone else pays a tenth, or loses the lot." She shrugs. "So Varenne\'s ships are cheapest, and Varenne owns most of the ships. Funny, that. Every hull that runs the picket and gets through is a hole in their bargain. They hate it. I like it."\n\n"Pay: the lugger\'s fee, more for a sound hull and for not being boarded. Your magic helps: wind in the sails, a bolt through a raider\'s rigging, a bit of fog."',
+            [{ label: "⛵ Let's go", fn: go }, { label: 'Not now' }]
+          )
+      },
+      { label: 'Not now' }
+    ]);
+  }
+
   // ── Thessaly: the last of the Vellacourts. Her quest is open (docs/gilden-design.md, "Thessaly"). ──
   function thessalyTalk(n, api) {
     const s = g(api),
@@ -1288,6 +1368,18 @@
           '.'
       );
     if (s.metThess) out.push('Thessaly Vellacourt wants work done once the houses trust you.');
+    if (s.narrows && s.narrows.runs)
+      out.push(
+        'The Narrows: ' +
+          s.narrows.won +
+          ' run' +
+          (s.narrows.won === 1 ? '' : 's') +
+          ' past the Teeth with Captain Crake' +
+          (s.narrows.lost ? ', ' + s.narrows.lost + ' failed' : '') +
+          '.'
+      );
+    else if (s.narrows && s.narrows.met)
+      out.push('Captain Crake of the Kittiwake wants a wizard to help her run the Varg picket.');
     return out.join(' ');
   }
 

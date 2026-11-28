@@ -24,6 +24,7 @@
       ['gd_quarrender', 'Perpetua Quarrender, head of House Quarrender'],
       ['gd_harbour', 'Captain Morwen Hask, Harbourmaster of Gilden'],
       ['gd_fishwife', 'Mag Thrush, a fishwife on the quay'],
+      ['gd_crake', 'Captain Nan Crake of the Kittiwake, an independent sea-captain'],
       ['gd_sky', 'Tibbet Quillaby, the gnome at the Sky Office (drawn at scale 0.6 on the map)']
     ].map(([id, what]) => ({
       id,
@@ -88,6 +89,15 @@
       standIn: 'painted from the hero figures (`hire` in HOUSES, js/explore_gilden.js)',
       usedBy: 'prep() in js/explore_gilden.js'
     })),
+    {
+      id: 'arena_deck',
+      kind: 'arena',
+      name: 'deck',
+      what: "a ship's deck at sea, for boarding fights in Run the Narrows (1672×941 JPEG)",
+      file: 'backgrounds/deck.jpg',
+      standIn: "the Drowned Quarter's painting",
+      usedBy: 'fight() in js/sailing.js'
+    },
     {
       id: 'arena_gilden',
       kind: 'arena',
