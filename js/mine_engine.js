@@ -224,6 +224,22 @@
       act: 'Forging iron mail',
       want: S => gearWanted(S, 'a', 1)
     },
+    rune: {
+      at: 'bench',
+      takes: { block: 1 },
+      makes: { rune: 1 },
+      s: 6,
+      act: 'Cutting a rune-stone',
+      want: S => S.soldiersCame && stockOf(S, 'rune') < RUNES.keep
+    },
+    silverrune: {
+      at: 'bench',
+      takes: { block: 1, silver: 1 },
+      makes: { silverrune: 1 },
+      s: 8,
+      act: 'Inlaying a silver rune',
+      want: S => S.depth >= 2 && stockOf(S, 'silverrune') < RUNES.keepSilver
+    },
     forge: {
       at: 'anvil',
       takes: { bronze: 1 },
@@ -391,6 +407,27 @@
   // in a hollow. Wanderers only rise WANDER.first after they've come, so the soldiers always come first.
   const SOLDIERS = { late: DAY * 6, n: 2, fx: 30, gear: { w: 'hammer' } };
   const GUARD_S = 20; // a soldier's watch beside the crew before looking round
+  // ── Durin's binding (step 4): Durin is the one who binds an elemental, once it's worn down below `at` of
+  // its strength. He chants for BIND.s[kind] seconds (×`worked` with no raw rock beside it, where it can't
+  // slip away; in a raw tunnel it may slip into the stone, `slip` a second). It costs a rune-stone (a silver
+  // rune for the big ones from the Glimmerdark down, `silver`), taken as he starts. Struck for `breakAt` or
+  // more while he chants, the binding breaks and the elemental is enraged (`rage`: hits ×`rageMul`). A bound
+  // elemental serves as a stone-servant for SERVANT.s, digging marked rock, then sinks back at peace.
+  const BIND = {
+    at: 0.5,
+    s: { wight: 6, stonewake: 12, crystal: 10, ember: 14 },
+    worked: 0.6,
+    slip: 0.04,
+    silver: { crystal: true, ember: true },
+    breakAt: 10,
+    standOff: 3.5, // how close he comes before it's worn down
+    rage: DAY * 0.25,
+    rageMul: 1.5
+  };
+  const SERVANT = { s: DAY * 2, dig: 3, speed: 2 }; // a stone-servant digs a marked tile every `dig` seconds
+  // Durin fights with his runes when he isn't binding; downed, he's carried to Stonedeep for `rest`
+  const DURIN = { hp: 60, hit: 6, rest: DAY * 0.5 };
+  const RUNES = { keep: 2, keepSilver: 1 };
   // no name shared with the hero creator's dwarf names (js/explore_hero.js DWARF_NAMES), the roster or townsfolk
   const NAMES = {
     m: ['Odric', 'Fennick', 'Varrin', 'Tobbe', 'Ambrin', 'Esko', 'Grell', 'Hobb', 'Dunmar', 'Ottar'],
@@ -532,7 +569,7 @@
       used[nm] = 1;
       S.dwarves.push(newDwarf(S, nm, sex, trade, 1 + (n % 3), gy - 1 + (n % 2)));
     });
-    S.durin = { x: 1, y: gy, path: [], act: 'At the gate' };
+    S.durin = { x: 1, y: gy, path: [], act: 'At the gate', hp: DURIN.hp, bind: null, down: 0 };
     logMsg(S, 'Durin: "Here we cut the Stoneheart Delve. Mark me some good straight passages, planner."');
     logMsg(S, 'Durin: "And a mason\'s workshop early on: nothing gets built without dressed stone."');
     logMsg(
@@ -1285,7 +1322,7 @@
     }
     const order = {
       miner: ['getpick', 'dig', 'haul'],
-      mason: ['build', 'construct', 'cut', 'smooth', 'haul', 'dig'],
+      mason: ['rune', 'silverrune', 'build', 'construct', 'cut', 'smooth', 'haul', 'dig'],
       farmer: ['harvest', 'plant', 'cook', 'haul', 'dig'],
       brewer: ['brew', 'draw', 'melt', 'cook', 'haul', 'dig'],
       smith: ['ironhammer', 'hammer', 'mail', 'forge', 'smelt', 'haul', 'dig'],
@@ -2372,8 +2409,375 @@
     if (!S.dwarves.length) logMsg(S, '🕯 The Delve is silent. Not one of the crew is left.');
   }
 
+  // ── Leading a big fight yourself (step 4) ──
+  // A hollow waking or an elemental in the quarters pauses the Delve (S.pending) when the screen can run a
+  // duel (S.canLead, set by js/mine.js) and the planner hasn't said "don't ask" (S.handFights false). The
+  // duel's seats: your wizard, Durin, maybe a warrior, and up to LEAD.foes of the elementals (the rest
+  // hang back in the rock and fight on on the map).
+  const LEAD = {
+    foes: 2,
+    key: { wight: 'mine_wight', stonewake: 'mine_stonewake', crystal: 'mine_crystal', ember: 'mine_ember' },
+    woundAfter: 0.25, // a lost duel leaves your wizard at a quarter
+    mend: DAY // your wizard mends to full over a day
+  };
+  function askLead(S, foes, why) {
+    if (!S.canLead || S.handFights === false || S.pending) return;
+    const ids = foes.filter(f => f.hp > 0 && f.state === 'awake').map(f => f.id);
+    if (ids.length) S.pending = { foes: ids, why, t: S.t };
+  }
+  // what the duel would be: the elementals as fighters, Durin and a warrior beside you
+  function leadSetup(S) {
+    const P = S.pending;
+    if (!P) return null;
+    const all = P.foes.map(id => S.foes.find(f => f.id === id)).filter(f => f && f.hp > 0);
+    const foes = all
+      .slice()
+      .sort((a, b) => b.hp - a.hp)
+      .slice(0, LEAD.foes);
+    const D = S.durin,
+      allies = [];
+    if (!D.down) allies.push({ who: 'durin', key: 'durin', wizard: true, hpFrac: D.hp / DURIN.hp });
+    // a warrior too, if there's a seat (4 in all) and one's fit to fight on that layer
+    if (1 + allies.length + foes.length < 4) {
+      const z = layerOf(Math.round(foes[0] ? foes[0].y : 0));
+      const w = S.dwarves
+        .filter(d => d.drafted && d.hp > maxHp(d) * FIGHT.retreat && layerOf(Math.round(d.y)) === z)
+        .sort((a, b) => b.hp - a.hp)[0];
+      if (w)
+        allies.push({
+          who: w.id,
+          key: 'mine_warrior',
+          name: w.name.split(' ')[0],
+          hpFrac: w.hp / maxHp(w),
+          dwarf: w
+        });
+    }
+    return { foes, allies, left: all.length - foes.length };
+  }
+  // the battle engine's result back on the map. res null: let it play out on the map as before
+  function resolvePending(S, res) {
+    const P = S.pending;
+    S.pending = null;
+    if (!P || !res) return;
+    const set = res.set;
+    set.foes.forEach((f, i) => {
+      if (!S.foes.includes(f) || f.hp <= 0) return;
+      if ((res.bound || []).includes(i)) return boundNow(S, f);
+      const left = res.foeHp[i] == null ? 1 : res.foeHp[i];
+      f.hp = Math.round(f.max * left);
+      if (f.hp <= 0)
+        foeDies(
+          S,
+          f,
+          set.allies.filter(a => a.dwarf).map(a => a.dwarf)
+        );
+    });
+    S.foes = S.foes.filter(f => f.hp > 0 || f.state === 'sleep' || f.state === 'servant');
+    // the runes Durin set in the duel come out of the stock
+    for (const k of ['rune', 'silverrune'])
+      if (res.runesUsed && res.runesUsed[k]) S.stock[k] = Math.max(0, (S.stock[k] || 0) - res.runesUsed[k]);
+    // allies' wounds: Durin and the warrior keep what the duel left them
+    set.allies.forEach((a, i) => {
+      const frac = res.allyHp && res.allyHp[i] != null ? res.allyHp[i] : null;
+      if (frac == null) return;
+      if (a.who === 'durin') {
+        if (frac <= 0) hitDurin(S, { kind: 'wight' }, S.durin.hp + 1);
+        else S.durin.hp = Math.max(1, Math.round(DURIN.hp * frac));
+      } else if (a.dwarf && S.dwarves.includes(a.dwarf)) {
+        if (frac <= 0)
+          ((a.dwarf.hp = Math.max(1, Math.round(maxHp(a.dwarf) * 0.1))),
+            (a.dwarf.hurt = a.dwarf.hurt || S.t || 1));
+        else a.dwarf.hp = Math.max(1, Math.round(maxHp(a.dwarf) * frac));
+        a.dwarf.fx = (a.dwarf.fx || 0) + 5;
+      }
+    });
+    S.led = (S.led || 0) + 1;
+    if (res.won) {
+      S.ledWon = (S.ledWon || 0) + 1;
+      logMsg(
+        S,
+        '⚔ You lead the fight yourself, and the Delve holds.' +
+          (res.bound && res.bound.length ? ' Durin binds ' + res.bound.length + ' of them.' : '')
+      );
+      for (const d of S.dwarves) settleGrudge(S, d, 'saw the planner fight for the Delve');
+    } else
+      logMsg(
+        S,
+        "⚔ The fight goes against you; your wizard is carried back to the gate. What's left of the elementals is still loose."
+      );
+  }
+  const heldBy = (S, f) => !!(S.durin.bind && S.durin.bind.foe === f.id && S.durin.bind.ph === 'chant');
+  // worn down, and Durin's set on binding it: the warriors hold it rather than finish it
+  const spared = (S, f) => !!(S.durin.bind && S.durin.bind.foe === f.id && f.hp <= f.max * BIND.at);
+  const runeFor = f => (BIND.silver[f.kind] ? 'silverrune' : 'rune');
+  // why Durin can't bind this one now (or '' if he can set out to)
+  function bindWhy(S, f) {
+    if (!f || f.hp <= 0) return 'There is nothing there to bind.';
+    if (f.state === 'servant') return 'It is already bound, and serving the hold.';
+    if (f.state !== 'awake') return 'It sleeps in its hollow. Wake it, wear it down, then bind it.';
+    if (S.durin.down) return 'Durin is mending at Stonedeep.';
+    if (layerOf(Math.round(f.y)) !== layerOf(Math.round(S.durin.y)) && !S.links.length)
+      return "Durin can't reach that layer yet.";
+    const r = runeFor(f);
+    if (!have(S, r))
+      return r === 'rune'
+        ? 'No rune-stone in the stock: the mason cuts them at the workshop bench (a dressed block each).'
+        : 'A ' +
+            FOES[f.kind].name +
+            ' needs a silver rune: the mason inlays them at the bench (a block and a silver).';
+    return '';
+  }
+  function bind(S, id) {
+    const f = S.foes.find(x => x.id === id && x.hp > 0);
+    const why = bindWhy(S, f);
+    if (why) return { ok: false, why };
+    S.durin.bind = { foe: f.id, ph: 'go', t: 0, took: 0, need: 0, repath: 0 };
+    S.durin.act = 'Going to bind the ' + FOES[f.kind].name;
+    return { ok: true };
+  }
+  function stopBind(S, msg) {
+    const B = S.durin.bind;
+    if (!B) return;
+    S.durin.bind = null;
+    S.durin.path = [];
+    S.durin.act = 'Watching the work';
+    if (msg) logMsg(S, msg);
+  }
+  // no raw rock beside it: it can't slip away, and the binding goes quicker
+  function boxedIn(S, f) {
+    const x = Math.round(f.x),
+      y = Math.round(f.y);
+    return !D8.concat([[0, 0]]).some(([dx, dy]) => {
+      if (!inB(x + dx, y + dy)) return false;
+      const t = S.tiles[idx(x + dx, y + dy)];
+      return t.k === 'r' && !t.w;
+    });
+  }
+  function hitDurin(S, f, dmg) {
+    const D = S.durin;
+    D.hp -= dmg;
+    D.hitT = S.t;
+    if (D.bind && D.bind.ph === 'chant') {
+      D.bind.took += dmg;
+      if (D.bind.took >= BIND.breakAt) {
+        f.rage = S.t + BIND.rage;
+        stopBind(
+          S,
+          '💥 The ' + FOES[f.kind].name + " tears free of Durin's chant, enraged! Hold it off him next time."
+        );
+      }
+    }
+    if (D.hp <= 0) {
+      stopBind(S);
+      const g = S.gate[0];
+      Object.assign(D, { hp: 0, down: S.t + DURIN.rest, path: [], x: g % W, y: (g / W) | 0 });
+      D.act = 'Carried up to Stonedeep to mend';
+      logMsg(
+        S,
+        "🩸 Durin is struck down! The crew carry him up to Stonedeep to mend. No bindings till he's back."
+      );
+      for (const d of S.dwarves) addGrudge(S, d, 'Saw Durin struck down');
+    }
+  }
+  function durinStep(S, dt) {
+    const D = S.durin;
+    if (D.hp == null) Object.assign(D, { hp: DURIN.hp, bind: null, down: 0 });
+    if (D.down) {
+      if (S.t < D.down) return;
+      D.down = 0;
+      D.hp = DURIN.hp;
+      D.act = 'Back from Stonedeep';
+      logMsg(S, '🪨 Durin is back on his feet: "Right. Where were we?"');
+    }
+    if (D.hp < DURIN.hp && S.t - (D.hitT || 0) > 15) D.hp = Math.min(DURIN.hp, D.hp + dt / 6);
+    const B = D.bind;
+    if (B) {
+      const f = S.foes.find(x => x.id === B.foe && x.hp > 0 && x.state === 'awake');
+      if (!f) return stopBind(S);
+      const K = FOES[f.kind],
+        near = Math.hypot(D.x - f.x, D.y - f.y) < 1.6;
+      if (B.ph === 'go' || B.ph === 'wait') {
+        // he keeps a few tiles off until the warriors have worn it down, then closes in
+        const worn = f.hp <= f.max * BIND.at,
+          dist = Math.hypot(D.x - f.x, D.y - f.y);
+        if (!worn && dist < BIND.standOff) {
+          B.ph = 'wait';
+          D.path = [];
+          D.act = 'Waiting for the ' + K.name + ' to be worn down';
+          return;
+        }
+        if (!near) {
+          B.ph = 'go';
+          B.repath -= dt;
+          if (B.repath <= 0 || !D.path.length) {
+            B.repath = 2;
+            // a floor tile beside it
+            const dm = distMap(S, D.x, D.y),
+              fx = Math.round(f.x),
+              fy = Math.round(f.y);
+            let best = -1,
+              bd = 1e9;
+            for (const [dx, dy] of D8.concat([[0, 0]])) {
+              if (!inB(fx + dx, fy + dy)) continue;
+              const i = idx(fx + dx, fy + dy);
+              if (dm.dist[i] >= 0 && dm.dist[i] < bd) {
+                bd = dm.dist[i];
+                best = i;
+              }
+            }
+            if (best < 0) return stopBind(S, '🪨 Durin: "I can\'t get at the ' + K.name + ' from here."');
+            D.path = pathTo(dm, best) || [];
+          }
+          D.act = 'Going to bind the ' + K.name;
+          walk(S, D, dt);
+        } else {
+          D.path = [];
+          if (f.hp > f.max * BIND.at) {
+            B.ph = 'wait';
+            D.act = 'Waiting for the ' + K.name + ' to be worn down';
+          } else {
+            // the chant begins: the rune is set in the stone now
+            const r = runeFor(f);
+            if (!have(S, r))
+              return stopBind(
+                S,
+                '🪨 Durin: "No ' +
+                  (r === 'rune' ? 'rune-stone' : 'silver rune') +
+                  ' left! I can\'t bind without one."'
+              );
+            S.stock[r]--;
+            B.ph = 'chant';
+            B.t = 0;
+            B.took = 0;
+            B.need = BIND.s[f.kind] * (boxedIn(S, f) ? BIND.worked : 1);
+            D.act = 'Binding the ' + K.name;
+            logMsg(
+              S,
+              '🪨 Durin sets a ' +
+                (r === 'rune' ? 'rune-stone' : 'silver rune') +
+                ' and begins to chant over the ' +
+                K.name +
+                '.'
+            );
+          }
+        }
+      }
+      if (B.ph === 'chant') {
+        B.t += dt;
+        // in a raw tunnel it may slip away into the stone
+        if (!boxedIn(S, f) && rnd(S) < BIND.slip * dt) {
+          const x = Math.round(f.x),
+            y = Math.round(f.y);
+          const out = D8.map(([dx, dy]) => [x + dx, y + dy]).filter(
+            ([a, b]) => inB(a, b) && S.tiles[idx(a, b)].k === 'r' && !S.tiles[idx(a, b)].w
+          );
+          if (out.length) {
+            const [a, b] = out[(rnd(S) * out.length) | 0];
+            f.x = a;
+            f.y = b;
+            f.path = [];
+            f.repath = 0;
+            return stopBind(
+              S,
+              '〰 The ' +
+                K.name +
+                " slips into the raw stone and Durin's chant breaks. (Bind them where the walls are worked.)"
+            );
+          }
+        }
+        if (B.t >= B.need) boundNow(S, f);
+      }
+      return;
+    }
+    walk(S, D, dt);
+    if (!D.path.length && D.act === 'Walking') D.act = 'Watching the work';
+  }
+  function boundNow(S, f) {
+    const K = FOES[f.kind];
+    S.durin.bind = null;
+    S.durin.act = 'Watching the work';
+    f.state = 'servant';
+    f.until = S.t + SERVANT.s;
+    f.path = [];
+    f.task = -1;
+    f.digT = 0;
+    S.bound = (S.bound || 0) + 1;
+    logMsg(
+      S,
+      '✨ Durin binds the ' +
+        K.name +
+        '! It serves the hold as a stone-servant for ' +
+        Math.round(SERVANT.s / DAY) +
+        ' days, digging what you mark.'
+    );
+    for (const d of S.dwarves) settleGrudge(S, d, "proud of Durin's binding");
+    // the kin of those it killed take the binding as justice done
+    for (const v of f.victims)
+      for (const d of S.dwarves) {
+        const k = d.grudges.findIndex(g => g.why === 'Mourning ' + v);
+        if (k >= 0) d.grudges.splice(k, 1);
+      }
+  }
+  // stone-servants: they swim through the rock to marked tiles and dig them out, then go back at peace
+  function servantsStep(S, dt) {
+    for (const f of S.foes) {
+      if (f.state !== 'servant') continue;
+      if (S.t >= f.until) {
+        f.hp = 0;
+        f.gone = true;
+        logMsg(S, '🌙 The bound ' + FOES[f.kind].name + ' sinks back into the mountain, at peace.');
+        continue;
+      }
+      let t = f.task >= 0 ? S.tiles[f.task] : null;
+      if (!t || t.k !== 'r' || !t.d || (t.cl && t.cl !== -f.id)) {
+        if (t && t.cl === -f.id) t.cl = 0;
+        // the nearest marked rock on its layer, beside dug floor first
+        const z = layerOf(Math.round(f.y));
+        let best = -1,
+          bd = 1e9;
+        for (let y = topOf(z); y < topOf(z) + LH; y++)
+          for (let x = 0; x < W; x++) {
+            const i = idx(x, y),
+              tt = S.tiles[i];
+            if (tt.k !== 'r' || !tt.d || tt.cl) continue;
+            const open = D4.some(([dx, dy]) => inB(x + dx, y + dy) && S.tiles[idx(x + dx, y + dy)].k === 'f');
+            const c = Math.hypot(x - f.x, y - f.y) + (open ? 0 : 30);
+            if (c < bd) {
+              bd = c;
+              best = i;
+            }
+          }
+        f.task = best;
+        f.digT = 0;
+        if (best < 0) continue;
+        t = S.tiles[best];
+        t.cl = -f.id;
+      }
+      const tx = f.task % W,
+        ty = (f.task / W) | 0,
+        dx = tx - f.x,
+        dy = ty - f.y,
+        dist = Math.hypot(dx, dy);
+      if (dist > 0.05) {
+        const st = Math.min(dist, dt * SERVANT.speed);
+        f.x += (dx / dist) * st;
+        f.y += (dy / dist) * st;
+        continue;
+      }
+      f.digT += dt;
+      if (f.digT >= SERVANT.dig) {
+        t.cl = 0;
+        dig(S, f.task);
+        f.task = -1;
+      }
+    }
+    S.foes = S.foes.filter(f => !(f.state === 'servant' && f.hp <= 0));
+  }
+
   // ── Durin (a piece you move; he prospects once a day) ──
   function durinMove(S, x, y) {
+    if (S.durin.down) return false;
+    if (S.durin.bind) stopBind(S);
     const dm = distMap(S, S.durin.x, S.durin.y),
       p = pathTo(dm, idx(x, y));
     if (!p) return false;
@@ -2507,6 +2911,7 @@
               : 'A ' + FOES[woken[0].kind].name + ' wakes') +
             '. Warriors to arms; everyone else, run.'
         );
+        askLead(S, woken, 'hollow');
       } else if (near <= TREMOR.r && S.t - ch.tremor > TREMOR.again) {
         ch.tremor = S.t;
         const c = ch.cells[(ch.cells.length / 2) | 0];
@@ -2579,6 +2984,7 @@
   function foesStep(S, dt) {
     for (const f of S.foes) {
       if (f.hp <= 0 || f.state !== 'awake') continue;
+      if (heldBy(S, f)) continue; // held fast by Durin's chant
       const K = FOES[f.kind];
       f.repath -= dt;
       if (f.repath <= 0) {
@@ -2587,7 +2993,7 @@
         const dm = foeDist(S, f.x, f.y);
         let best = null,
           bd = 1e9;
-        for (const d of S.dwarves) {
+        for (const d of S.dwarves.concat(S.durin.down ? [] : [S.durin])) {
           const i = idx(Math.round(d.x), Math.round(d.y)),
             dd = dm.dist[i];
           if (dd >= 0 && dd < bd) {
@@ -2604,6 +3010,16 @@
             logMsg(S, '〰 The ' + K.name + ' found no way in, and sinks back into the deep.');
           }
         } else f.idleT = 0;
+      }
+      // into the quarters: a room that wants doors (living space, not a workshop) is a breach
+      if (!f.breached) {
+        const t = S.tiles[idx(Math.round(f.x), Math.round(f.y))],
+          r = t.r && roomById(S, t.r);
+        if (r && !ROOMS[r.type].open) {
+          f.breached = true;
+          logMsg(S, '⚠ A ' + K.name + ' has broken into the ' + ROOMS[r.type].name.toLowerCase() + '!');
+          askLead(S, [f], 'breach');
+        }
       }
       // walk the path, slower through rock; stop beside its prey
       let left = dt * K.speed;
@@ -2647,11 +3063,23 @@
       if (f.hp <= 0 || f.state !== 'awake') continue;
       const K = FOES[f.kind];
       const close = S.dwarves.filter(d => Math.hypot(d.x - f.x, d.y - f.y) < 1.6);
-      if (!close.length) continue;
+      const D = S.durin,
+        durinNear = !D.down && Math.hypot(D.x - f.x, D.y - f.y) < 1.6;
+      if (!close.length && !durinNear) continue;
+      const rage = f.rage > S.t ? BIND.rageMul : 1;
+      const fighters = close.filter(d => d.drafted);
+      // the one Durin's binding: it strikes at him unless a warrior stands over it, holding it
+      const held = heldBy(S, f);
+      if (durinNear && (held ? !fighters.length : !close.length)) {
+        hitDurin(S, f, K.atk * rage);
+        if (!D.down && !D.bind) f.hp -= DURIN.hit; // Durin answers with his runes when he isn't chanting
+        if (f.hp <= 0) foeDies(S, f, fighters);
+        continue;
+      }
+      if (!D.bind && durinNear) f.hp -= DURIN.hit;
       // it strikes a warrior first if one stands against it
       const target = close.find(d => d.drafted) || close[0];
-      const fighters = close.filter(d => d.drafted);
-      let dmg = K.atk * (target.gear && target.gear.a ? GEAR[target.gear.a].take : 1);
+      let dmg = K.atk * rage * (target.gear && target.gear.a ? GEAR[target.gear.a].take : 1);
       target.hp = (target.hp == null ? maxHp(target) : target.hp) - dmg;
       target.hitT = S.t;
       if (!target.hurt) target.hurt = S.t || 1;
@@ -2659,17 +3087,24 @@
         f.victims.push(target.name.split(' ')[0]);
         killDwarf(S, target, 'slain by a ' + K.name + ' on ' + LAYERS[layerOf(Math.round(f.y))].name);
       }
-      // only warriors hit back: the rest of the crew are miners and brewers, and run
-      for (const d of fighters) {
-        if (!S.dwarves.includes(d)) continue;
-        f.hp -= hitOf(d);
-        d.fx = (d.fx || 0) + 1;
-      }
+      // only warriors hit back: the rest of the crew are miners and brewers, and run. Once it's worn down and
+      // Durin's coming to bind it, the warriors only hold it (pin it, take its blows) until he's done.
+      if (!spared(S, f))
+        for (const d of fighters) {
+          if (!S.dwarves.includes(d)) continue;
+          f.hp -= hitOf(d);
+          d.fx = (d.fx || 0) + 1;
+        }
       if (f.hp <= 0) foeDies(S, f, fighters);
     }
     S.foes = S.foes.filter(f => f.hp > 0 || f.state === 'sleep');
   }
   function foeDies(S, f, by) {
+    if (S.durin.bind && S.durin.bind.foe === f.id) {
+      S.durin.bind = null;
+      S.durin.act = 'Watching the work';
+      logMsg(S, '🪨 Durin: "Ach! Struck down before I could bind it. The chance is gone."');
+    }
     const K = FOES[f.kind],
       i = idx(Math.round(f.x), Math.round(f.y));
     S.foeKills = (S.foeKills || 0) + 1;
@@ -2728,6 +3163,7 @@
 
   // ── a tick ───────────────────────────────────────────────────────
   function tick(S, dt) {
+    if (S.pending) return; // a big fight waits on the planner: lead it, or let it play out
     let left = dt;
     while (left > 1e-6) {
       const s = Math.min(STEP, left);
@@ -2742,8 +3178,8 @@
         t.gt += dt;
         if (t.gt >= GROW_S) t.g = 2;
       }
-    walk(S, S.durin, dt);
-    if (!S.durin.path.length && S.durin.act === 'Walking') S.durin.act = 'Watching the work';
+    durinStep(S, dt);
+    servantsStep(S, dt);
     S.caveT = (S.caveT || 0) + dt;
     if (S.caveT >= CAVE.check) {
       S.caveT -= CAVE.check;
@@ -3240,6 +3676,17 @@
     roomArea,
     roomWalls,
     durinMove,
+    LEAD,
+    leadSetup,
+    resolvePending,
+    bind,
+    bindWhy,
+    stopBind,
+    BIND,
+    SERVANT,
+    DURIN,
+    RUNES,
+    runeFor,
     prospect,
     canProspect,
     masonEye,

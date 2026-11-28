@@ -7492,7 +7492,10 @@ function startEncounter(wizKey) {
 let exploreFight = null;
 // allies: [{key, level, hp, name}] fighters on your side (rescued gleaners), seated while there's room
 // (4 seats in all); a foe with wizard:true is a roster wizard leading a rival party. text: {win, lose}.
-function startExploreBattle({ wizKey, foes, onEnd, hp, allies, text, arena, fists }) {
+// bind (the Stoneheart Delve): {by, runes:{rune, silverrune}, silver:[foe keys needing a silver rune]}:
+// while the `by` wizard (Durin) stands on your side, an Echo foe worn to half its HP or less is bound
+// instead of fought on (one a round, a rune each; exploreBind), and onEnd's info lists `bound`.
+function startExploreBattle({ wizKey, foes, onEnd, hp, allies, text, arena, fists, bind }) {
   survival = null;
   encounterPending = false;
   const seats = exploreSeats({ wizKey, foes, hp, allies, fists }),
@@ -7503,7 +7506,8 @@ function startExploreBattle({ wizKey, foes, onEnd, hp, allies, text, arena, fist
     low: Infinity,
     allies: allyList.length,
     text: text || {},
-    arena: arena || null
+    arena: arena || null,
+    bind: bind ? Object.assign({}, bind, { runes: Object.assign({}, bind.runes), used: {}, bound: [] }) : null
   };
   arenaFor(p2Key); // start loading the backdrop now (Explore preloads it on entering the map)
   multiMode = true;
@@ -7522,6 +7526,7 @@ function exploreSeats({ wizKey, foes, hp, allies, fists, human = true }) {
     const cfg = fighterCfg(f.key, f.level || 0);
     if (f.name) cfg.name = f.name.toUpperCase();
     if (f.hpMul && f.hpMul !== 1) cfg.hp = Math.round(cfg.hp * f.hpMul);
+    if (f.spriteHeight) cfg.spriteHeight = f.spriteHeight; // a dwarf warrior stands at a dwarf's height
     // fat Bulldogs (by request): about half the University's Bulldogs are fat in battle too. A halberdier
     // Bulldog gets the fat halberdier's own sprite and face; any other kind is stretched a little (1.3x at most)
     if (/^bulldog /i.test(f.name || '') && Math.random() < 0.5) {
@@ -9921,13 +9926,7 @@ function elemIncoming(tgt, dmg, elem, icon, col, quiet, wear, strike, blast, kin
   // A ward of the other kind lets it straight through
   if (dmg > 0 && hasWard(ts) && !hasWardOfKind(ts, kind) && !(wear && wear.passNoted)) {
     if (wear) wear.passNoted = true;
-    addFloat(
-      tx,
-      bH * 0.2,
-      (kind === 'physical' ? '⚔ Physical' : '✨ Magic') + ' — passes the ward',
-      col,
-      11
-    );
+    addFloat(tx, bH * 0.2, (kind === 'physical' ? '⚔ Physical' : '✨ Magic') + ' — passes the ward', col, 11);
   }
   // Layers: what breaks a ward carries on into the next one of the same kind, on that ward's own rules
   while (dmg > 0) {
@@ -11471,8 +11470,45 @@ function timeUp() {
 // 3–4 seats: whoever lands a knock-out claims a bounty, so allies race each other for the kill
 const ELEM_KO_BOUNTY = { hp: 12, mana: 5 };
 // 3–4 seats: knock out every seat at 0 HP; the duel ends when one team (or nobody) is left
+// Durin's binding in a Delve fight: once a round, an Echo foe at half its HP or less, while he stands
+function exploreBind() {
+  const B = exploreFight && exploreFight.bind;
+  if (!B || gs.bindRound === gs.round) return;
+  const me = seatTeam('p1');
+  const by = PLAYERS.find(
+    w => gs[w] && !gs[w].out && gs[w].hp > 0 && seatTeam(w) === me && seatKey(w) === B.by
+  );
+  if (!by) return;
+  const foes = PLAYERS.filter(w => gs[w] && seatTeam(w) !== me);
+  for (let i = 0; i < foes.length; i++) {
+    const w = foes[i],
+      st = gs[w];
+    if (st.out || st.hp <= 0 || st.hp > st.maxHp / 2 || seatCfg(w).trait !== 'echo') continue;
+    const rune = (B.silver || []).includes(seatKey(w)) ? 'silverrune' : 'rune';
+    if (!(B.runes[rune] > 0)) continue;
+    B.runes[rune]--;
+    B.used[rune] = (B.used[rune] || 0) + 1;
+    B.bound.push(i);
+    gs.bindRound = gs.round;
+    st.hp = 0;
+    st.bound = true;
+    addFloat(seatX(w), bH * 0.22, '✨ Bound by ' + seatCfg(by).name + '!', '#ffe28a', 15);
+    if (!simMode)
+      vfxRing(seatX(w), wizFeetY(), ['#ffe28a', '#fff2b0', '#e2b84c'], 26, {
+        r: 0.1,
+        ry: 0.03,
+        spd: 0.5,
+        lift: -0.4,
+        out: false,
+        noGrav: true,
+        dec: 0.012
+      });
+    return;
+  }
+}
 function eliminateSeats() {
   dmgSource = null;
+  exploreBind();
   const down = activeSeats().filter(w => gs[w].hp <= 0);
   down.forEach((w, i) => {
     const st = gs[w];
@@ -11496,6 +11532,7 @@ function eliminateSeats() {
       ks = k && gs[k];
     if (!ks || ks.out || ks.hp <= 0 || (!ELEM_KO_BOUNTY.hp && !ELEM_KO_BOUNTY.mana)) return;
     if (seatCfg(w).fighter || seatCfg(k).fighter) return; // encounters: no bounty either way
+    if (gs[w].bound) return;
     const hp0 = ks.hp,
       mana0 = ks.mana;
     ks.hp = Math.min(ks.maxHp, ks.hp + ELEM_KO_BOUNTY.hp);
@@ -11564,7 +11601,11 @@ function showMultiEnd(team) {
       foeLeft: foeSeats.reduce((t, w) => t + (gs[w].out ? 0 : Math.max(0, gs[w].hp)), 0) / foeMax,
       hpEnd: Math.max(0, gs.p1.hp),
       maxHp: gs.p1.maxHp,
-      rounds: gs.round
+      rounds: gs.round,
+      // each foe seat's HP left (as a share of its max), and the ones Durin bound (by foe index)
+      foeHp: foeSeats.map(w => (gs[w].out ? 0 : Math.max(0, gs[w].hp) / gs[w].maxHp)),
+      bound: exploreFight.bind ? exploreFight.bind.bound.slice() : [],
+      runesUsed: exploreFight.bind ? Object.assign({}, exploreFight.bind.used) : {}
     };
     setTimeout(() => {
       battleRunning = false;

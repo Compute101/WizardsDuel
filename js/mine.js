@@ -103,7 +103,7 @@
     brewery:
       'One still. The brewer turns a barley and a bucket of water into 3 ale. Water comes from a well on damp stone, or, slowly, as meltwater from outside the gate.',
     workshop:
-      "One mason's bench, roughed out of rough stone. Here the mason cuts rough stone into dressed blocks, and every bed, table, still, wall, pillar and door takes a block: make this first.",
+      "One mason's bench, roughed out of rough stone. Here the mason cuts rough stone into dressed blocks, and every bed, table, still, wall, pillar and door takes a block: make this first. Once the soldiers have come, the mason also cuts rune-stones here for Durin's bindings (silver runes from the Glimmerdark down).",
     kitchen:
       'One hearth. The farmer or brewer cooks 2 deepcaps into 3 meals: the food goes further, and a hot meal at a table settles grudges.',
     forge:
@@ -126,6 +126,12 @@
     ['ale', '🍺', 'Ale'],
     ['stone', '🪨', 'Rough stone (from digging)'],
     ['block', '🧱', "Dressed blocks (cut at the mason's workshop; everything built takes one)"],
+    ['rune', 'Ψ', "Rune-stones, for Durin's bindings (cut by the mason from a dressed block)"],
+    [
+      'silverrune',
+      '✸',
+      'Silver runes: the big elementals from the Glimmerdark down need one to bind (a block and a silver)'
+    ],
     ['copper', '🟠', 'Copper ore'],
     ['tin', '⚪', 'Tin ore'],
     ['coal', '⚫', 'Coal'],
@@ -322,6 +328,8 @@
     const real = Math.min(0.25, (now - last) / 1000);
     last = now;
     if (!isOpen()) return;
+    S.canLead = typeof window.startExploreBattle === 'function' && typeof CHAR_DEFS !== 'undefined';
+    if (S.pending && $('mn-modal').hidden && !leading) leadPrompt();
     if (speed && $('mn-modal').hidden) M.tick(S, real * speed);
     if (now - eyeAt > 1500) {
       eyeAt = now;
@@ -570,6 +578,19 @@
         M.draft(S, +dr.dataset.id, dr.dataset.on === '1');
         renderSide(true);
       };
+    const ub = $('mn-unbind');
+    if (ub)
+      ub.onclick = () => {
+        M.stopBind(S, '🪨 Durin lets the binding go.');
+        renderSide(true);
+      };
+    const bd = $('mn-bind');
+    if (bd)
+      bd.onclick = () => {
+        const r = M.bind(S, +bd.dataset.id);
+        if (!r.ok) say(r.why);
+        renderSide(true);
+      };
     const pr = $('mn-prospect');
     if (pr)
       pr.onclick = () => {
@@ -600,9 +621,19 @@
     const x = '<button class="mn-btn sm mn-x" id="mn-selx" type="button">✕</button>';
     if (s.kind === 'durin') {
       const can = M.canProspect(S);
-      return `${x}<b>Durin Stoneheart</b> <small>master of the Delve</small><p>${S.durin.act}.</p>
-      <p class="mn-note">Tap dug floor to send him there. Prospecting reveals the stone ${M.PROSPECT_R} tiles round him, once a day.</p>
-      <button class="mn-btn" id="mn-prospect" type="button"${can ? '' : ' disabled'}>🔍 Prospect${can ? '' : ' (tomorrow)'}</button>`;
+      const D = S.durin,
+        B = D.bind;
+      const chant =
+        B && B.ph === 'chant'
+          ? `<div class="mn-needs"><span>🪨 Binding</span>${bar((B.t / B.need) * 100, '#e2b84c')}</div>`
+          : '';
+      const stopB = B
+        ? '<button class="mn-btn sm" id="mn-unbind" type="button">Call off the binding</button>'
+        : '';
+      return `${x}<b>Durin Stoneheart</b> <small>master of the Delve</small><p>${D.act}.</p>
+      <div class="mn-needs"><span>❤ Health</span>${bar((D.hp / M.DURIN.hp) * 100, needCol((D.hp / M.DURIN.hp) * 100))}</div>${chant}
+      <p class="mn-note">Tap dug floor to send him there, or tap an awake elemental to have him <b>bind</b> it (rune-stones: ${S.stock.rune || 0}${S.depth >= 2 || S.stock.silverrune ? ', silver runes: ' + (S.stock.silverrune || 0) : ''}). Prospecting reveals the stone ${M.PROSPECT_R} tiles round him, once a day.</p>
+      ${D.down ? '' : `<button class="mn-btn" id="mn-prospect" type="button"${can ? '' : ' disabled'}>🔍 Prospect${can ? '' : ' (tomorrow)'}</button>`}${stopB}`;
     }
     if (s.kind === 'dwarf') {
       const d = S.dwarves.find(w => w.id === s.id);
@@ -741,9 +772,24 @@
   // an elemental's panel
   function foeHtml(f, x) {
     const K = M.FOES[f.kind];
-    return `${x}<b>A ${K.name}</b> <small>${f.state === 'sleep' ? 'asleep in its hollow' : 'awake'}</small>
+    if (f.state === 'servant')
+      return `${x}<b>A bound ${K.name}</b> <small>a stone-servant</small>
+      <p class="mn-note">✨ Bound by Durin, it serves the hold: it swims through the rock and digs out whatever you've marked, then sinks back into the mountain at peace in ${Math.max(1, Math.round((f.until - S.t) / (M.DAY / 24)))} hours.</p>`;
+    const B = S.durin.bind,
+      mine = B && B.foe === f.id;
+    const why = M.bindWhy(S, f),
+      half = f.hp <= f.max * M.BIND.at;
+    const rune = M.runeFor(f) === 'rune' ? 'a rune-stone' : 'a silver rune';
+    const bindLine =
+      f.state !== 'awake'
+        ? ''
+        : mine
+          ? `<p class="mn-note">🪨 Durin is ${B.ph === 'chant' ? 'binding it' : B.ph === 'wait' ? 'waiting for it to be worn down below half' : 'on his way to bind it'}. ${half ? 'The warriors hold it for him rather than finish it.' : ''}</p>`
+          : `<p class="mn-note">Durin can bind it once it's worn below half its strength (the line on its bar), for ${rune}. The warriors then hold it for him; keep its blows off him while he chants.</p>
+      <button class="mn-btn sm" id="mn-bind" data-id="${f.id}" type="button"${why ? ' disabled' : ''}>🪨 Have Durin bind it</button>${why ? `<p class="mn-note">${why}</p>` : ''}`;
+    return `${x}<b>A ${K.name}</b> <small>${f.state === 'sleep' ? 'asleep in its hollow' : f.rage > S.t ? 'enraged!' : 'awake'}</small>
     <div class="mn-needs"><span>Strength</span>${bar((f.hp / f.max) * 100, '#c86a50')}</div>
-    <p class="mn-note">An earth elemental: it swims through raw rock and walks the floor, but can't pass smoothed or built stone, pillars or doors. It hits for ${K.atk}. ${f.wander ? 'It rose through the rock, and sinks back if it finds no way in.' : ''}</p>`;
+    <p class="mn-note">An earth elemental: it swims through raw rock and walks the floor, but can't pass smoothed or built stone, pillars or doors. It hits for ${K.atk}${f.rage > S.t ? ' (half again while enraged)' : ''}. ${f.wander ? 'It rose through the rock, and sinks back if it finds no way in.' : ''}</p>${bindLine}`;
   }
   function crewHtml() {
     return (
@@ -878,6 +924,144 @@
       '</ul>'
     );
   }
+  // ── Leading a big fight yourself: a duel in the battle engine (as the Moriquende does) ──
+  let leading = false;
+  const LEAD_WIZ_KEY = 'wd-mine-wiz';
+  // your wizard for the Delve's duels (no Explore hero here yet: picked from the roster, remembered)
+  function leadWizard() {
+    let k = null;
+    try {
+      k = localStorage.getItem(LEAD_WIZ_KEY);
+    } catch (e) {}
+    return k && CHAR_DEFS[k] ? k : CHAR_DEFS.eldrin ? 'eldrin' : Object.keys(CHAR_DEFS)[0];
+  }
+  // your wizard's HP carries between the Delve's fights and mends over a day
+  function wizHp(key) {
+    const max = CHAR_DEFS[key].hp;
+    const w = S.wiz && S.wiz.key === key ? S.wiz : { key, hp: max, at: S.t };
+    return Math.min(max, Math.round(w.hp + (max * (S.t - w.at)) / M.LEAD.mend));
+  }
+  function leadPrompt() {
+    const set = M.leadSetup(S);
+    if (!set || !set.foes.length) {
+      M.resolvePending(S, null);
+      return;
+    }
+    const names = set.foes.map(f => 'a ' + M.FOES[f.kind].name).join(' and ');
+    const withYou = set.allies.map(a => (a.wizard ? 'Durin' : a.name + ' (a warrior)')).join(' and ');
+    const wk = leadWizard(),
+      roster = Object.keys(CHAR_DEFS).filter(
+        k => !CHAR_DEFS[k].fighter && k !== 'hero' && CHAR_DEFS[k].sprite
+      );
+    const why =
+      S.pending.why === 'breach' ? 'An elemental has broken into the quarters!' : 'A hollow has woken!';
+    modal(`<h3>⚔ ${why}</h3>
+    <p>${names[0].toUpperCase() + names.slice(1)}${set.left ? `, and ${set.left} more hanging back in the rock` : ''}. ${withYou ? 'With you: ' + withYou + '.' : "Durin is away; you'd be alone."}</p>
+    <p class="mn-note">Lead it yourself and you fight it as a duel, on your wizard's own magic. Air tears these elementals apart (the ember-wake fears Water). ${set.allies.some(a => a.wizard) ? "Wear one to half and Durin binds it, if there's a rune in the stock (" + (S.stock.rune || 0) + ' rune-stones' + (S.stock.silverrune ? ', ' + S.stock.silverrune + ' silver' : '') + ').' : ''} Or let it play out on the map.</p>
+    <label class="mn-note">Your wizard: <select id="mn-lead-wiz">${roster
+      .map(
+        k =>
+          `<option value="${k}"${k === wk ? ' selected' : ''}>${CHAR_DEFS[k].name} (${wizHp(k)} / ${CHAR_DEFS[k].hp} HP)</option>`
+      )
+      .join('')}</select></label>
+    <div class="mn-row"><button class="mn-btn" id="mn-lead-go" type="button">⚔ Lead it yourself</button><button class="mn-btn" id="mn-lead-no" type="button">Let it play out</button></div>
+    <label class="mn-note"><input type="checkbox" id="mn-lead-off"> Don't ask again (let every fight play out)</label>`);
+    const off = () => {
+      if ($('mn-lead-off').checked) S.handFights = false;
+    };
+    $('mn-lead-no').onclick = () => {
+      off();
+      closeModal();
+      M.resolvePending(S, null);
+    };
+    $('mn-lead-go').onclick = () => {
+      off();
+      const k = $('mn-lead-wiz').value;
+      try {
+        localStorage.setItem(LEAD_WIZ_KEY, k);
+      } catch (e) {}
+      closeModal();
+      leadFight(set, k);
+    };
+  }
+  function leadFight(set, wk) {
+    leading = true;
+    const D = FIGHTER_DEFS,
+      me = wizHp(wk);
+    // playing Durin yourself: he's your seat, and binds from there
+    const allies = set.allies.filter(a => !(a.wizard && wk === 'durin'));
+    const foes = set.foes.map(f => {
+      const key = M.LEAD.key[f.kind];
+      return { key, hp: Math.max(1, Math.round(D[key].hp * (f.hp / f.max))) };
+    });
+    const seatAllies = allies.map(a =>
+      a.wizard
+        ? { key: 'durin', wizard: true, hp: Math.max(1, Math.round(CHAR_DEFS.durin.hp * a.hpFrac)) }
+        : {
+            key: 'mine_warrior',
+            name: a.name,
+            spriteHeight: 0.72,
+            hp: Math.max(1, Math.round(D.mine_warrior.hp * a.hpFrac))
+          }
+    );
+    save();
+    $('mn-screen').classList.remove('active');
+    cancelAnimationFrame(raf);
+    raf = 0;
+    window.startExploreBattle({
+      wizKey: wk,
+      foes,
+      allies: seatAllies,
+      hp: Math.max(1, me),
+      arena: 'quarry',
+      bind: {
+        by: 'durin',
+        runes: { rune: S.stock.rune || 0, silverrune: S.stock.silverrune || 0 },
+        silver: ['mine_crystal', 'mine_ember']
+      },
+      text: {
+        winTitle: 'The Delve Holds',
+        win: 'The elementals are broken or bound. The crew come creeping back to work.',
+        loseTitle: 'Driven Back',
+        lose:
+          CHAR_DEFS[wk].name + ' is carried back to the gate. The elementals are still loose in the Delve.'
+      },
+      onEnd: (won, low, allyHp, info) => {
+        leading = false;
+        const max = CHAR_DEFS[wk].hp;
+        S.wiz = { key: wk, hp: won ? Math.max(1, info.hpEnd) : Math.round(max * M.LEAD.woundAfter), at: S.t };
+        // allyHp is in the order the seats were given; Durin's seat is left out if you played him
+        const fr = [];
+        let k = 0;
+        set.allies.forEach(a => {
+          if (a.wizard && wk === 'durin') {
+            fr.push(Math.max(0, info.hpEnd) / max);
+            return;
+          }
+          const h = allyHp[k++];
+          fr.push(h == null ? null : h / (a.wizard ? CHAR_DEFS.durin.hp : D.mine_warrior.hp));
+        });
+        M.resolvePending(S, {
+          won,
+          set,
+          foeHp: info.foeHp || [],
+          bound: info.bound || [],
+          runesUsed: info.runesUsed || {},
+          allyHp: fr
+        });
+        save();
+        $('mn-screen').classList.add('active');
+        fitCanvas(true);
+        last = performance.now();
+        if (!raf) raf = requestAnimationFrame(loop);
+        if (window.Explore && Explore.titleMusic)
+          try {
+            Explore.titleMusic();
+          } catch (e) {}
+        renderSide(true);
+      }
+    });
+  }
   // ── modal and help ──
   function modal(html, after) {
     $('mn-card').innerHTML = html;
@@ -901,6 +1085,8 @@
       <li><b>The trades</b>: the farmer and brewer cook meals at a kitchen's hearth; the smith smelts copper, tin and coal into bronze at a forge's anvil and forges picks, for the old iron ones wear out. Hard rock sometimes hurts a dwarf: an infirmary mends them.</li>
       <li><b>Water</b>: the brewer needs a bucket of water for every brew. Until there's a well he fetches meltwater from outside the gate, which is slow. Damp stone shows as a blue shimmer in the dark: dig it out, then 🧱 Build ▴ → Well. A well never runs dry.</li>
       <li><b>Earth elementals</b>: they swim through raw rock and walk the floor, but can't pass smoothed or built stone, pillars or doors, so a worked, doored living quarter is safe. Some sleep in hidden hollows: digging close sends a tremor (purple rings), and breaking in wakes them. Others rise through the rock now and then (orange rings), more the deeper you go. Once you've sown a farm, sunk a well and set up a brewery (the Quota tab keeps the list), the Thane sends two soldiers from Stonedeep, and the elementals only start rising a day later: they train at the barracks and stand guard over the crew. Only soldiers and warriors fight; everyone else runs, behind worked stone or a door if one's near, or towards the soldiers. To have more, tap a dwarf and ⚔ Draft them as a warrior (they keep their trade, go after elementals, fall back when badly hurt and train when idle). The smith forges war-hammers (bronze, then iron) and iron mail for them.</li>
+      <li><b>Leading a fight yourself</b>: when a hollow wakes or an elemental breaks into the quarters, the Delve stops and asks. Lead it yourself and it's a duel on the battle screen: your wizard, with Durin and maybe a warrior beside you, against up to two of them. Air tears earth elementals apart. Wear one to half and Durin binds it there and then, if there's a rune. Your wizard's wounds mend over a day.</li>
+      <li><b>Durin's binding</b>: select Durin and tap an awake elemental (or its 🪨 button). He goes to it and, once it's worn below half its strength (the gold notch on its bar), sets a rune-stone and chants. The warriors stop striking it and hold it for him; if it lands 10 or more on him while he chants, it tears free, enraged. It's quicker where the walls round it are worked, and in a raw tunnel it may slip away into the stone. A bound elemental serves for two days as a stone-servant, digging whatever you've marked, and every dwarf strikes out a grudge for pride. If Durin is struck down he's carried to Stonedeep and back in half a day.</li>
       <li><b>Mind the roof</b>: each stone spans only so far. Floor more than 3 tiles from rock, a wall or a pillar (on the Topstone) is unsound: red hairline cracks show, and after a while it comes down. Rubble is quick to dig out, but anyone under it may die, and the crew mourn. A Wall of Remembrance eases that.</li>
       <li><b>Going deeper</b>: the Thane sets each layer a quota of ore (the Quota tab). Meet it, find the layer's deep spot (Durin's prospecting, or digging nearby), and cut the stair down. Five layers, each harder stone. ▲ ▼ by the map, or [ and ], change the layer you see.</li>
       <li><b>✨ Smooth</b>: the mason smooths walls and pillars. Finer rooms, and worked stone will keep elementals out.</li>
@@ -1167,7 +1353,18 @@
     if (!M.inB(x, y)) return;
     const fx = (px - view.ox) / ts() - 0.5,
       fy = (py - view.oy) / ts() - 0.5 + Y0();
-    // Durin selected: a tap on floor sends him
+    // Durin selected: a tap on an awake elemental sets him to bind it; a tap on floor sends him
+    if (ui.sel && ui.sel.kind === 'durin') {
+      const f = S.foes.find(
+        q => q.hp > 0 && q.state === 'awake' && onView(q.y) && Math.hypot(fx - q.x, fy - q.y) < 0.8
+      );
+      if (f) {
+        const r = M.bind(S, f.id);
+        say(r.ok ? 'Durin goes to bind the ' + M.FOES[f.kind].name + '.' : r.why);
+        renderSide(true);
+        return;
+      }
+    }
     if (
       ui.sel &&
       ui.sel.kind === 'durin' &&
@@ -1198,7 +1395,11 @@
       return;
     }
     const foe = S.foes.find(
-      f => f.hp > 0 && f.state === 'awake' && onView(f.y) && Math.hypot(fx - f.x, fy - f.y) < 0.8
+      f =>
+        f.hp > 0 &&
+        (f.state === 'awake' || f.state === 'servant') &&
+        onView(f.y) &&
+        Math.hypot(fx - f.x, fy - f.y) < 0.8
     );
     if (foe) {
       ui.sel = { kind: 'foe', id: foe.id };
@@ -1545,7 +1746,7 @@
       if (
         f.hp > 0 &&
         onView(f.y) &&
-        (f.state === 'awake' || S.tiles[M.idx(Math.round(f.x), Math.round(f.y))].s)
+        (f.state !== 'sleep' || S.tiles[M.idx(Math.round(f.x), Math.round(f.y))].s)
       )
         drawFoe(c, f, s);
     for (const m of S.tremors) if (onView(m.y)) drawTremor(c, m, s);
@@ -2197,6 +2398,18 @@
     c.beginPath();
     c.ellipse(X, Y + r * 0.7, r, r * 0.35, 0, 0, 7);
     c.fill();
+    const servant = f.state === 'servant',
+      bindB = S.durin.bind && S.durin.bind.foe === f.id ? S.durin.bind : null;
+    // a bound one glows soft gold; one being chanted over is ringed with runes
+    if (servant || (bindB && bindB.ph === 'chant')) {
+      const g = c.createRadialGradient(X, Y, r * 0.3, X, Y, r * 1.6);
+      g.addColorStop(0, servant ? 'rgba(255,220,130,.45)' : 'rgba(255,230,150,.6)');
+      g.addColorStop(1, 'rgba(255,220,130,0)');
+      c.fillStyle = g;
+      c.beginPath();
+      c.arc(X, Y, r * 1.6, 0, 7);
+      c.fill();
+    }
     // the body: a ring of jagged points round the middle, gently heaving
     c.fillStyle = K.col;
     c.strokeStyle = 'rgba(20,14,10,.8)';
@@ -2222,8 +2435,8 @@
     c.lineTo(X + r * 0.3, Y + r * 0.3);
     c.stroke();
     c.globalAlpha = f.state === 'sleep' ? 0.55 : 1;
-    // eyes: shut when asleep
-    c.fillStyle = f.kind === 'ember' ? '#ffcc40' : '#9fe8ff';
+    // eyes: shut when asleep; gold and calm once bound, red when enraged
+    c.fillStyle = servant ? '#ffe28a' : f.rage > S.t ? '#ff4030' : f.kind === 'ember' ? '#ffcc40' : '#9fe8ff';
     for (const ex of [-0.28, 0.28]) {
       c.beginPath();
       if (f.state === 'sleep') c.fillRect(X + ex * r - r * 0.12, Y - r * 0.25, r * 0.24, r * 0.05);
@@ -2235,13 +2448,15 @@
       c.fillStyle = 'rgba(40,34,30,.7)';
       c.fillRect(X - r * 1.1, Y + r * 0.1, r * 2.2, r * 1.1);
     }
-    // its strength, once hurt
-    if (f.hp < f.max) {
+    // its strength, once hurt (with a notch at half, where Durin can bind it)
+    if (f.hp < f.max && !servant) {
       c.globalAlpha = 1;
       c.fillStyle = '#200';
       c.fillRect(X - r, Y - r * 1.35, r * 2, Math.max(2, s * 0.08));
       c.fillStyle = '#e05a3a';
       c.fillRect(X - r, Y - r * 1.35, r * 2 * (f.hp / f.max), Math.max(2, s * 0.08));
+      c.fillStyle = '#ffe28a';
+      c.fillRect(X - r + r * 2 * M.BIND.at - 0.5, Y - r * 1.35 - 2, 1.5, Math.max(2, s * 0.08) + 4);
     }
     if (ui.sel && ui.sel.kind === 'foe' && ui.sel.id === f.id) {
       c.strokeStyle = '#ff8a6a';
@@ -2271,10 +2486,29 @@
     }
     c.restore();
   }
+  // Durin's chant: Arcana glyphs going round him, filling in as the binding takes
+  const BIND_GLYPHS = ['Δ', '∇', 'Ψ', '⊕', 'θ', 'Φ', 'Ω', '∞'];
   function drawDurin(c, s) {
     const X = (S.durin.x + 0.5) * s,
       Y = (S.durin.y + 0.5) * s,
-      r = s * 0.42;
+      r = s * 0.42,
+      D = S.durin;
+    if (D.down) return; // carried up to Stonedeep
+    if (D.bind && D.bind.ph === 'chant') {
+      const k = D.bind.t / D.bind.need,
+        n = BIND_GLYPHS.length,
+        rot = (performance.now() % 6000) / 6000;
+      c.save();
+      c.font = `${Math.max(9, s * 0.34)}px serif`;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      for (let i = 0; i < n; i++) {
+        const a = (i / n + rot) * Math.PI * 2;
+        c.fillStyle = i / n < k ? '#ffe28a' : 'rgba(255,226,138,.25)';
+        c.fillText(BIND_GLYPHS[i], X + Math.cos(a) * r * 1.9, Y + Math.sin(a) * r * 1.9);
+      }
+      c.restore();
+    }
     c.fillStyle = 'rgba(0,0,0,.4)';
     c.beginPath();
     c.ellipse(X, Y + r * 0.8, r, r * 0.4, 0, 0, 7);
@@ -2298,6 +2532,12 @@
     c.beginPath();
     c.arc(X, Y, r, 0, 7);
     c.stroke();
+    if (D.hp < M.DURIN.hp) {
+      c.fillStyle = '#200';
+      c.fillRect(X - r, Y - r * 1.4, r * 2, Math.max(2, s * 0.08));
+      c.fillStyle = '#7cc060';
+      c.fillRect(X - r, Y - r * 1.4, r * 2 * (D.hp / M.DURIN.hp), Math.max(2, s * 0.08));
+    }
     if (S.durin.path.length) {
       c.strokeStyle = 'rgba(226,184,76,.5)';
       c.setLineDash([3, 4]);

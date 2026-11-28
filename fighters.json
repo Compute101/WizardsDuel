@@ -734,5 +734,128 @@
     ],
     "desc": "Elfhome’s wardens, longbows in hand. At Range: their shots slip past a Guard, and a Grapple at them fails.",
     "arena": "forest"
+  },
+  "mine_wight": {
+    "name": "SHARD-WIGHT",
+    "title": "A splinter of the mountain, awake",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "earth",
+    "echoTier": "weak",
+    "explore": true,
+    "sprite": "sprites/echoes/earth_weak.png",
+    "face": "portraits/small/echo_earth_weak.jpg",
+    "spriteHeight": 0.95,
+    "col": "#a8acb4",
+    "hp": 26,
+    "phys": {
+      "atk": 4
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(the stone around it groans)",
+      "(its eyes burn in the dark)"
+    ],
+    "desc": "An earth elemental of the Stoneheart Delve. Its blow is an earth strike (a ward stops it); earth barely scratches it and Air, its opposite, tears it apart. Worn to half, Durin can bind it.",
+    "arena": "quarry"
+  },
+  "mine_stonewake": {
+    "name": "STONEWAKE",
+    "title": "The mountain's old anger, walking",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "earth",
+    "echoTier": "strong",
+    "explore": true,
+    "sprite": "sprites/echoes/earth_strong.png",
+    "face": "portraits/small/echo_earth_strong.jpg",
+    "spriteHeight": 1.3,
+    "col": "#8a7a68",
+    "hp": 58,
+    "phys": {
+      "atk": 8
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(the stone around it groans)",
+      "(its eyes burn in the dark)"
+    ],
+    "desc": "An earth elemental of the Stoneheart Delve. Its blow is an earth strike (a ward stops it); earth barely scratches it and Air, its opposite, tears it apart. Worn to half, Durin can bind it.",
+    "arena": "quarry"
+  },
+  "mine_crystal": {
+    "name": "CRYSTAL WIGHT",
+    "title": "Quartz and cold light from the Glimmerdark",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "earth",
+    "echoTier": "strong",
+    "explore": true,
+    "sprite": "sprites/echoes/earth_strong.png",
+    "face": "portraits/small/echo_earth_strong.jpg",
+    "spriteHeight": 1.15,
+    "col": "#c8a0ff",
+    "hp": 46,
+    "phys": {
+      "atk": 7
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(the stone around it groans)",
+      "(its eyes burn in the dark)"
+    ],
+    "desc": "An earth elemental of the Stoneheart Delve. Its blow is an earth strike (a ward stops it); earth barely scratches it and Air, its opposite, tears it apart. Worn to half, Durin can bind it.",
+    "arena": "quarry"
+  },
+  "mine_ember": {
+    "name": "EMBER-WAKE",
+    "title": "Hot stone from the Emberdeep, still glowing",
+    "fighter": true,
+    "trait": "echo",
+    "echo": "fire",
+    "echoTier": "strong",
+    "explore": true,
+    "sprite": "sprites/echoes/fire_strong.png",
+    "face": "portraits/small/echo_fire_strong.jpg",
+    "spriteHeight": 1.25,
+    "col": "#ff8a40",
+    "hp": 54,
+    "phys": {
+      "atk": 9
+    },
+    "spells": [],
+    "taunts": [
+      "…",
+      "(the stone around it groans)",
+      "(its eyes burn in the dark)"
+    ],
+    "desc": "A fire-stray of the Emberdeep: its blow is a fire strike (a ward stops it); fire barely scratches it and Water tears it apart. Worn to half, Durin can bind it.",
+    "arena": "quarry"
+  },
+  "mine_warrior": {
+    "name": "DWARF WARRIOR",
+    "title": "Hammer of the Delve",
+    "fighter": true,
+    "trait": "shieldwall",
+    "explore": true,
+    "sprite": "sprites/soldier.png",
+    "face": "portraits/small/soldier.jpg",
+    "spriteHeight": 0.72,
+    "col": "#b04040",
+    "hp": 40,
+    "phys": {
+      "atk": 6
+    },
+    "spells": [],
+    "taunts": [
+      "For the Delve!",
+      "Back into the rock with you!",
+      "Hold it there, lads!"
+    ],
+    "desc": "A soldier of the Delve with a war-hammer. Shield Wall: while guarding, his shield also halves a spell aimed at him.",
+    "arena": "quarry"
   }
 }

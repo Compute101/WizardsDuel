@@ -149,6 +149,28 @@ then tell Claude, who sets the face crop by hand (`FACES` in the tool) and strik
 The elves you talk to in Elfhome need no art: they're painted from the elf hero figures
 (`PEOPLE` in `js/explore_elfhome.js`), and Sylvara is her own sprite.
 
+## 1c. The Stoneheart Delve's battle figures
+
+The duels you lead in Durin's mine (`docs/mine-design.md`, "As built (step 4)") use stand-ins: the
+Echoes' Earth art for the elementals, the Echoes' Fire art for the ember-wake, the soldier shrunk to a
+dwarf's height for the warrior, and the Quarry Ward's painting (an open quarry in daylight, not a mine)
+for the backdrop. Same format and shared prompt as 1b above (black background, facing right, the figure
+filling the height; the game sets the sizes in `fighters.json`).
+
+| File | Stands in now | Used by | [DESCRIPTION] |
+|---|---|---|---|
+| `mine_wight.png` | `sprites/echoes/earth_weak.png` | `fighters.json` `mine_wight` (sprite, face) | a shard-wight, a small earth elemental: a hunched figure of split grey granite slabs held together by nothing, jagged shards for fingers, two cold blue lights for eyes in a crack of a face, loose grit trickling from its joints. Lurching forward, claws out |
+| `mine_stonewake.png` | `sprites/echoes/earth_strong.png` | `fighters.json` `mine_stonewake` | a stonewake, a great earth elemental, twice a dwarf's height: a hulking body of dark basalt boulders, moss and old tool marks on its shoulders, a seam of glowing pale-blue ore running down its chest like a vein, a slab of a head with deep-set glowing eyes, huge fists of rock. Stepping forward, one fist raised |
+| `mine_crystal.png` | `sprites/echoes/earth_strong.png` | `fighters.json` `mine_crystal` | a crystal wight of the Glimmerdark: a tall, thin figure grown out of violet and white quartz, clusters of crystal points along its back and arms, light caught and glinting inside it, a face of faceted stone with a cold white glow. Arms spread, crystal claws |
+| `mine_ember.png` | `sprites/echoes/fire_strong.png` | `fighters.json` `mine_ember` | an ember-wake of the Emberdeep: a bulky elemental of black cooling lava, its cracks glowing orange and yellow, smoke curling off its shoulders, molten drips at its fingers, eyes like coals. Hunched, heavy, a fist glowing hot |
+| `mine_warrior.png` | `sprites/soldier.png` at 0.72 height | `fighters.json` `mine_warrior` | a dwarf warrior of the Anvilfells: short, very broad, a braided red-brown beard tucked into his belt, a round iron helm with a nose guard, a bronze scale hauberk over a padded jerkin, heavy boots; a big bronze war-hammer held in both hands and a round shield with an anvil emblem on his back. Planted square, ready to swing |
+
+**Backdrop:** `backgrounds/mine.jpg` (1672 × 941, like the other arena paintings): *the underground
+working of a dwarven mine by lantern light: a wide hewn gallery with square stone pillars and smoothed
+walls carved with runes, rails and an ore cart, a rough tunnel mouth into raw rock at one side, glints of
+ore in the walls, a floor wide enough for a fight in the foreground. Painted, moody, no people.* Then set
+`arena:'mine'` in `leadFight` in `js/mine.js` and in the five `mine_*` entries in `fighters.json`.
+
 ## 2. Places (tilesets)
 
 **Format:** loose pieces on a flat #101217 background, no labels or dividers, 16 px gaps, the same

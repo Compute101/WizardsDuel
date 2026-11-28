@@ -142,6 +142,11 @@ for (let s = 0; s < days * M.DAY; s += 1) {
     !S.dwarves.some(d => d.drafted && d.trade !== 'soldier')
   )
     for (const d of S.dwarves.filter(d => d.trade === 'miner').slice(0, 2)) M.draft(S, d.id, true);
+  // Durin binds whatever's awake and within his reach, when he can (NOBIND=1: never)
+  if (process.env.NOBIND !== '1' && s % 10 === 5 && !S.durin.bind && !S.durin.down) {
+    const f = S.foes.find(q => q.state === 'awake' && q.hp > 0 && !M.bindWhy(S, q));
+    if (f) M.bind(S, f.id);
+  }
   // a door on every way into a room (the way a player would, before it can earn a second star)
   if (s % 30 === 15)
     for (const r of S.rooms)
@@ -181,6 +186,10 @@ console.log(
     .join(', '),
   'well',
   S.tiles.some(t => t.wl),
+  'bound',
+  S.bound || 0,
+  'runes',
+  (S.stock.rune || 0) + '/' + (S.stock.silverrune || 0),
   'cave-ins',
   S.caveIns || 0,
   'dead',

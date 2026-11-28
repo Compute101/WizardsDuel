@@ -620,6 +620,54 @@ The user asked to skip dead dwarves' replacements for now (they come with step 5
   the rock, a strength bar once hurt; tap one for its panel. Tremor rings. A dwarf's panel has a health bar,
   their warrior line and the Draft / Stand down button; the crew list marks warriors ⚔ and low health ❤.
   Stock shows hammers and mail once there are some.
-- **Not yet (step 4):** leading a fight yourself, Durin's binding, rune-stones. Durin is ignored by
-  elementals until then.
-- **Next (step 4):** lead it yourself, binding.
+- **Step 4** (binding, leading fights) is built: see the next section.
+
+## As built (step 4: Durin's binding, leading a fight yourself)
+
+- **Rune-stones:** the mason cuts them at the workshop bench (`RECIPES.rune`: a dressed block, 6 s) once
+  the soldiers have come, keeping `RUNES.keep` (2) in stock; from the Glimmerdark down he inlays **silver
+  runes** too (`silverrune`: a block and a silver, keeps 1), which the crystal wight and ember-wake need
+  (`BIND.silver`). Runes come first on his list (at first they came after building and cutting blocks,
+  which never ran out, so the sim made none). Stock icons Ψ and ✸ (Arcana glyphs, no emoji risk).
+- **Durin** now has health (`DURIN.hp` 60, mends like the crew) and fights: elementals hunt him like a
+  dwarf, and when he isn't chanting he answers with his runes (`DURIN.hit` 6). Struck down, he's carried
+  up to Stonedeep and back in half a day (`DURIN.rest`, `D.down`), every dwarf takes a grudge for it, and no
+  bindings happen meanwhile.
+- **Binding** (`bind`, `bindWhy`, `durinStep`): select Durin and tap an awake elemental, or its 🪨 Have
+  Durin bind it button. He goes towards it but keeps `BIND.standOff` (3.5 tiles) off until it's worn below
+  half (`BIND.at`, a gold notch on its strength bar), then closes in, sets the rune and chants:
+  `BIND.s` seconds by kind (wight 6, crystal 10, stonewake 12, ember 14), ×0.6 where no raw rock touches it
+  (`boxedIn`); in a raw tunnel it may slip into the stone (`BIND.slip` 4% a second), breaking the chant.
+  While Durin's set on it and it's worn down, **the warriors hold it rather than strike** (`spared`): the
+  first test had two soldiers kill a wight in two blows, long before Durin got there. While he chants it
+  can't move (`heldBy`), and it strikes at him unless a warrior stands over it; 10 or more on him
+  (`BIND.breakAt`) tears it free, **enraged** for a quarter day (×1.5, red eyes). Killed by accident, the
+  chance is gone. The rune is spent when the chant starts. A glyph ring fills round Durin as he chants;
+  Call off the binding on his panel.
+- **Stone-servants** (`boundNow`, `servantsStep`, `SERVANT`): a bound elemental glows gold and serves for
+  two days, swimming through the rock to the nearest marked tile (beside dug floor first) and digging it
+  out every 3 s (2 s dug 24 tiles in two minutes: too much), then sinks back at peace. Every dwarf strikes
+  out a grudge for pride, and its victims' kin count it as justice. `S.bound` counts them.
+- **Leading a fight yourself** (`askLead`, `leadSetup`, `resolvePending`; `leadPrompt` / `leadFight` in
+  `js/mine.js`): when a hollow wakes, or an elemental walks into a room that wants doors (living space, not
+  a workshop; once per elemental, `f.breached`), the Delve stops (`S.pending`; `tick` does nothing) and
+  asks: ⚔ Lead it yourself, Let it play out, or Don't ask again (`S.handFights`). Only on screen
+  (`S.canLead`), so the sim never pauses. The duel goes through `startExploreBattle` like the forest's:
+  your wizard (picked in the prompt from the roster, remembered in `localStorage` `wd-mine-wiz`; its HP
+  carries in `S.wiz` and mends over a day, `LEAD.mend`), Durin as an ally wizard seat (left out if you play
+  him, and he binds from your seat), a warrior if there's a seat, against the two strongest elementals
+  (`LEAD.foes`; the rest stay on the map). New fighters (`fighters.json`, `explore:true`, `trait:'echo'`
+  so Air tears them apart): `mine_wight` 26 / 4, `mine_stonewake` 58 / 8, `mine_crystal` 46 / 7,
+  `mine_ember` 54 / 9 (a Fire echo), and `mine_warrior` 40 / 6 (Shield Wall, a dwarf's height). Their HP in
+  the duel is their share left on the map. **Durin binds in the duel too** (`bind` option of
+  `startExploreBattle`, `exploreBind` in `js/game.js` at the top of `eliminateSeats`): while he stands on
+  your side, an Echo foe at half its HP or less is bound, one a round, a rune each (silver for
+  `mine_crystal` / `mine_ember`), "✨ Bound by Durin!"; the result's `info.bound`, `foeHp` and
+  `runesUsed` come back, and `resolvePending` binds those on the map, sets the rest's strength, spends the
+  runes and gives Durin and the warrior the wounds they took. A win settles a grudge for everyone; a loss
+  leaves your wizard at a quarter and the elementals loose. Backdrop: the Quarry Ward's painting for now
+  (`docs/art-prompts.md` 1c has the stand-ins and a mine backdrop prompt).
+- **Sim** (10 days; Durin binds whatever's awake and within reach, `NOBIND=1` for none): binding on 6 of
+  8 seeds (up to 3 a run); seed 7 lost no one with binding and two without, seed 4 one bound and the same
+  result. Seeds 1 and 2 never make a rune: the scripted plan starves there (no food or ale, one block).
+- **Next (step 5):** migrants and replacements for the dead, renown, caravans, the Assay.
