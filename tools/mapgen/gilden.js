@@ -225,6 +225,7 @@ module.exports = function gilden(rects) {
   m.lore = LORE;
   m.safe = true;
   m.flow = 'N'; // swell rolling in to the quay
+  m.music = 'audio/gilden_theme.mp3'; // tools/music/gilden.py: B♭ major, a 97.9 s loop
   m.greet = [
     'Mind the cart!',
     'Fish! Fresh fish!',

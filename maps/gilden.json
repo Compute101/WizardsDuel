@@ -771,6 +771,7 @@
   }
  ],
  "safe": 1,
+ "music": "audio/gilden_theme.mp3",
  "greet": [
   "Mind the cart!",
   "Fish! Fresh fish!",

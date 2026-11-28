@@ -312,7 +312,7 @@ Targets get written here once the first numbers are in.
 5. **Grudges, renown, caravans, the Assay.**
 6. **The story:** Torvi's letter, the hold on the world map (gatehouse map), Durin, the Heart, the
    endings; one HP pool and gold with Explore (`quests.mine`).
-7. Art, music (a dwarf variation of the Corvanthe theme? low brass and anvils), sound.
+7. Art, sound. (Music is done: see "Music" under As built.)
 
 Files (planned): `js/mine_engine.js`, `js/mine.js`, `css/mine.css`, `tools/mine_sim.js`; a gatehouse map
 `tools/mapgen/hammerhall.js` later.
@@ -372,7 +372,7 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
   4 stone). Fog: you see stone beside dug floor; ore glints faintly one tile further into the dark.
 - **Time:** real time, a day is 4 minutes at ×1, ⏸ ▶ ×2 ×4 (Space pauses).
 - **Tools:** ✋ Look (tap a dwarf, Durin, a room or a tile; drag pans), ⛏ Dig, 🏛 Pillar, ✨ Smooth, 🏠 Room
-  (stockpile, bedroom, dormitory, dining hall, mushroom farm, brewery), ✖ Clear; drag a rectangle; pinch,
+  (stockpile, bedroom, dormitory, dining hall, mushroom farm, brewery; more below), ✖ Clear; drag a rectangle; pinch,
   wheel or + / − to zoom (a phone opens zoomed in on the gate). Keys D P S R C L.
 - **The crew:** six dwarves (three miners, a mason, a farmer, a brewer; names from their own list, none
   shared with the hero creator's dwarf names). Each picks its own work: needs first (sleep below 25, food
@@ -395,4 +395,183 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
   the Spiral Stair and the Vein-follower are names only.
 - **Last sim** (8 days, seed 7): every marked tile dug, 85 food and 91 ale in store, 3 / 3 dining hall,
   2★ bedrooms, Mason's Eye 69–81, the Long Gallery and the Colonnade.
-- **Next (step 2):** cave-ins and pillars, the quota and the stair, the other four layers.
+- **Music** (ahead of step 7, the user asked for it): six loops, the first three from `python3 tools/music/delve.py
+  [work|deep|halls] [--check] [--x3]` (FluidR3 like the other music) into `audio/delve/<name>.mid / .mp3`:
+  **Pick and Lantern** (`work`, D minor, 96 bpm, 80 s: picks on 1 and 3 over a tuba ostinato, bassoons,
+  then the men's chorus sings the Corvanthe theme over trombones, horn calls answered by bassoons, and the
+  theme tutti with the anvil), **Lamplight in the Deep** (`deep`, A minor, 66 bpm, 116 s, the quiet one: a
+  low drone, kalimba and celesta drips, a far-off pick, cor anglais over the men humming, a glint of
+  C major on clarinet and harp, the cello's tune), **Halls of the Stoneheart** (`halls`, C minor, 80 bpm,
+  96 s, the grand one: the Corvanthe theme down a tone on trombones and tubas over the forge rhythm 3+3+2,
+  an E♭ major horn tune, the choir over tremolo strings and a timpani roll, the theme tutti). `Music` in
+  `js/mine.js` plays each twice round (a gapless Web Audio loop), then crossfades into the next, in that
+  order, while the Delve is open; ♪ in the top bar turns it off (`localStorage` `wd-mine-music`), and the
+  title theme makes way (`titleMusic` in `js/explore.js` checks `#mn-screen`). Each builds from a quiet
+  start to a loud end, so the loop point drops back down by about 7 dB. Not heard yet: listen before
+  trusting it.
+  Three more, original (the user asked for tunes without the Corvanthe theme, upbeat, with dwarves
+  singing as they mine): **Hammer and Hold** (`hammer`, G major, 116 bpm, 66 s: picks on 2 and 4 like a
+  backbeat, tuba oom-pah, the horn's tune, a sung verse with trombone answers, a two-part chorus, a trumpet
+  descant), **The Deep Seam Jig** (`jig`, A minor, 12/8 at 112, 69 s: flute and bassoon, tambourine
+  triplets, "Hey!" shouts, a C major turn on the horn, then the dwarves sing the tune), **Ale at the
+  Shift's End** (`ale`, B♭ major, 100 bpm, 77 s: stamp, clap and tankard clink, one dwarf starts and all
+  join in two parts, a quiet tale in G minor on bassoon, the last round tutti). The playlist alternates
+  upbeat and calm: Hammer and Hold, Pick and Lantern, the Jig, Lamplight, Ale, Halls.
+- **After the user's first play (November 2026):**
+  - *"I can't build walls, doors or pillars, so I can't correct mistakes."* The mason now builds on dug floor,
+    a stone block each: 🧱 **Wall** (not inside a room; worked stone, drawn as masonry), 🚪 **Door** (stays
+    walkable; later it'll stop elementals) and 🏛 **Pillar**, which now works on both rock (keep it) and dug
+    floor (build one). He stands beside the tile, never on it; anything lying there goes to the stock and
+    anyone standing there steps aside. To undo: dig a built wall or pillar out (the stone comes back), and
+    ✖ Clear takes out a door or any mark. Engine: `BUILDS`, `t.b` (ordered), `construct`, `t.bt` (built),
+    `t.dr` (a door); the mason's work order is furniture, then building, then smoothing.
+  - *"Most of the patterns Durin wants, I don't know what they are."* The Mason's Eye tab has
+    📖 **The Delve-book**: every named pattern, what makes it, and a little plan of one (`BOOK` in
+    `js/mine.js`). The user suggested a lore book; this is it, Durin's own. The Cloister (a pillared court
+    with a room on each side) and the Vein-follower (a straight passage along a vein of ore) are now
+    spotted too; the Spiral Stair waits for the stair.
+  - *"The helper message doesn't go away."* A tool's instructions are now a steady line over the tool bar
+    that changes with the tool (`#mn-hint`), not a toast. Toasts (the log's news) are shorter (2.2 s + 25 ms a
+    character, 6 s at most), at most three wait, the same message never queues twice, and a tap dismisses
+    one.
+  - *"The UI won't work for mobile, so you need a build menu where you can select the subtype."* The tool
+    bar is down to six buttons: Look, Dig, 🧱 **Build ▴**, Smooth, 🏠 **Room ▴**, Clear. Build and Room each open
+    a menu of big buttons over the tool bar (Wall / Pillar / Door; the six rooms with their colours), and the
+    button then shows what it's set to ("🧱 Wall", "🏠 Dining"). Tapping it again closes the menu without
+    changing the tool; only the open menu's button is lit. The room list left the side panel. Keys: B and R
+    open the menus, W / P / O pick a build straight away (`BUILD_MENU`, `ui.menu`, `pickFromMenu`,
+    `#mn-menu`).
+  - *"I made some dormitories, then some nice bedrooms, but the dwarves don't use the bedrooms."* A dwarf
+    used to keep the first bed they got for good, and took the nearest one. Now at bedtime each takes the best
+    free bed (`bedWorth`: a bedroom 100, a dormitory 50, +10 a star; `BED_NEAR` 0.2 a tile of walk against it)
+    and moves out of the one they have for a clearly better one (`BED_MOVE` 5), with a line in the log.
+    Checked: six dwarves in two dormitories all moved into six new bedrooms within a night.
+  - *"We need more rooms, like a mason's workshop that allows you to do the actual building."* A new room,
+    the **Mason's workshop** (one bench, `ROOMS.workshop`). Digging gives **rough stone**; at the bench the
+    mason cuts it into **dressed blocks** (`cut`, `CUT_S` 3 s), and every bed, table, still, wall, pillar and
+    door takes a block (`matOf`); only the bench itself is roughed out of rough stone, so the first one can
+    be made. He cuts only what the building ordered needs, plus `BLOCK_SPARE` (3) ahead (`blocksWanted`).
+    Built walls and pillars dug out, doors cleared and rooms removed give their blocks back. The stock bar
+    shows 🪨 rough stone and 🧱 blocks; marking a room or a build with no blocks says what's missing (no
+    workshop, no bench yet, no rough stone; `blockNews`), and Durin's opening line says to make one early.
+    Room names now sit on the wall just above the room, so they don't cover its corner furniture.
+  - *"Yes, do all of them"* (the rooms proposed above). Six more rooms, each with work to do now
+    (`ROOMS` in `js/mine_engine.js`; their help is `ROOM_HELP` in `js/mine.js`), and a **smith**, a seventh
+    dwarf (an older save gets him at the gate, `migrate`). Crafts are one job now, `craft`, driven by
+    `RECIPES` (what it's made at, what it takes from the stock, what it makes, how long, and when it's
+    wanted): the dwarf takes the inputs, carries them to the furniture, works, and leaves the goods to be
+    hauled. Cutting and brewing moved onto it too. If the job's dropped, its inputs go back (`j.took`).
+    - **Kitchen** (one hearth): the farmer or brewer cooks 2 deepcaps into 3 meals 🍲 while there are fewer
+      than two a dwarf. Meals are eaten before raw deepcaps; a meal at any table strikes out a grudge 40% of
+      the time (on top of a 2★ hall's 50%).
+    - **Forge** (one anvil): the smith smelts a copper, a tin and a coal into 2 bronze 🟫 (while under 2)
+      and forges a bronze pick ⛏ from one (while under 2 in the stock). **Picks wear out:** the crew arrive
+      with old iron picks (speed 1, 70 tiles); a bronze pick digs at 1.4 for 90 tiles (`PICKS`); a miner with
+      none digs at 0.45 (`NO_PICK`) and fetches a bronze one from the stock as soon as there is one
+      (`getpick`, also swapping out an old iron pick). The log says when a pick wears out. 70 because at 45
+      every seed's old picks were gone on day 2, before anyone could have found three ores and built an anvil.
+    - **Tavern hall** (a keg every 8 tiles): the crew drink at a keg before anywhere else; a pint there
+      strikes out a grudge 40% of the time (`TAVERN_SETTLE`).
+    - **Infirmary** (a cot every 4 tiles): digging hard rock (hardness 3) or ore hurts a dwarf 4% of the time
+      (`HURT_CHANCE`): half pace (`HURT_SPEED`) until mended. A hurt dwarf goes to a free cot after eating and
+      drinking and is mended in a quarter of a day (`HEAL_COT`); with no cot they walk it off in a day and a
+      half (`HEAL_WALK`), and, after the first day and a half, with no cot built anywhere, hold a grudge for
+      it. Hurt dwarves wear a bandage on the map. The cave-ins of step 2 will hurt dwarves too.
+    - **Barracks** (a weapon rack every 4 tiles): nothing to guard against yet; it's where the warriors of
+      step 3 will stand.
+    - **The Great Hall:** one a Delve, at least 40 tiles (`GREAT_HALL_MIN`; `one` and `min` on a room type,
+      checked in `makeRoom`), a table every 6, 2★ only at 60 tiles. The crew eat there before anywhere else,
+      and every meal in it strikes out a grudge.
+    - **The Wall of Remembrance** waits for step 2: it needs dwarves who die.
+    - The stock bar adds 🍲 meals, 🟫 bronze and ⛏ picks; a dwarf's panel shows their pick and any hurt;
+      on a phone the room menu runs four across, the map's width.
+    - **Sim** (`tools/mine_sim.js` now also digs a kitchen, forge, tavern, infirmary, a Great Hall, barracks
+      and a dormitory for the seventh dwarf, and keeps its auto-farms off every planned room, which used to
+      steal seed 7's dining hall): 10 days, seed 7: every room made, 2★ but the Great Hall, picks forged,
+      every grudge but one struck out, Mason's Eye 81, three patterns. Across seeds 1–9 (7 days) the old picks
+      wear out around day 4 and bronze picks reach the miners on most seeds; where they don't, coal is short
+      (prospect for it). Wounds come mostly in the first days, while the hard rock is dug, so in the sim they
+      are walked off before an infirmary is furnished; a dwarf hurt later goes to a cot and is mended
+      (checked). Seed 3 runs out of food by day 8, as before: its loam lies where the script never farms.
+  - *"If rooms don't have a door they shouldn't be considered good."* A room's second star now also needs
+    a door on every way in (`roomOpenings`: floor outside the room beside its floor, where neither tile is a
+    built door; a door can hang on the room's edge or just outside it). Anything else must be walled up or
+    left undug. Stockpiles and farms (`open` on the room type) need no door. Tapping a room marks its open
+    ways in red on the map and its panel counts them. Since bed choice and grudge-settling go by stars, an
+    open-sided bedroom or hall is now worth less to the crew too. The sim was relaid out the way a player
+    would build: every room set back from the gallery behind a one-tile doorway, where it orders a door
+    (14 doors; with the old layout, rooms open along whole sides of the gallery wanted 54). 10 days, seed 7:
+    every room 2★ (the dining hall 3★), but the Great Hall, at 40 tiles short of its 60; seeds 1, 2 and 5
+    run short of food (their loam is outside the script's farms), seed 2 so badly that the grudging crew
+    built only one door.
+    *"Do workshops have that? They're generally quite open."* No longer: the mason's workshop, brewery, kitchen
+    and forge are `open` too, like the stockpile and farms. Rooms to live, eat, drink, heal and muster in still
+    need their doors.
+    *"No, taverns should have doors too. Although I guess you could have a taproom, but they won't be as
+    good!"* (I'd first misread it as "no taverns should have doors".) The tavern hall needs its doors again,
+    and there's a new room, the **Taproom** (`ROOMS.taproom`: kegs, `open`, so no door wanted, `good` 6), which
+    is never as good: a pint there strikes out a grudge 20% of the time (`TAPROOM_SETTLE`) against the
+    tavern's 40%, and the crew go to a tavern's keg before a taproom's.
+    The sim's Great Hall was only 40 tiles (10 × 4), the minimum, so it never earned a second star; there was
+    room for 10 × 6 (rows 1–6), so it's 60 tiles now and reaches 2★ on seeds 7 and 9 in 10 days.
+
+## As built (step 2: the layers, the quota and the stair, cave-ins)
+
+- **Five layers in one grid:** each layer is 36 × 26 (`LH`), stacked in one tall grid with a row of bedrock
+  between layers (`STRIDE` 27; bedrock is tile kind `x`, never dug, never shown), so a tile's x and y mean
+  the same everywhere and a layer is a band of rows (`layerOf`, `topOf`). All five are made from the seed at
+  the start (`genLayer`, from `LAYERS[z].gen`); you see one at a time (▲ ▼ by the map, or [ ]; the layer's
+  name over the map). Older saves get layers 2–5 appended below (`migrate`, v3), so nothing on the first
+  layer moves.
+- **`LAYERS`:** the Topstone (granite, roof 3, copper, tin, coal, loam; quota copper 8, tin 6), the
+  Ironroots (basalt, roof 4, harder, iron, coal, limestone, a little loam; iron 10), the Glimmerdark
+  (quartz-shot, roof 2, silver, gems, galestone; silver 6, gems 3), the Emberdeep (hot stone, roof 2, gold,
+  coal; gold 6) and the Heartstone (living rock, roof 3, heartsilver, a little gold; heartsilver 3). Deeper
+  is harder rock (`hard`). Each has its own stone colours on the map (`ROCKS` in `js/mine.js`).
+- **The quota:** ore carried into the stock counts, all told (`S.got`, `addStock`), so the smith using
+  copper doesn't set you back. The Quota tab shows the deepest layer's bars.
+- **The deep spot and the stair:** each layer but the last has a 3 × 3 deep spot of undug rock
+  (`placeDeep`, `S.deep`). It's found when Durin prospects within 7 tiles of it, or anyone digs beside it
+  (`deepKnown`), and then shows on the map as a pulsing dashed square. With the quota met, 🪜 Cut the stair
+  down (Quota tab; `cutStair`, `stairWhy` says what's missing) marks the nine tiles; once the miners have
+  dug them all (`stairCheck`), the landing below is carved out, the two middles are linked (`S.links`) and
+  the next layer opens (`S.depth`). Paths and hauls run through stairs (`distMap`, a stair is
+  `STAIR_STEPS` 6 tiles of walking), so the crew still go up to eat, drink and sleep, and long hauls start
+  to tell. Stair tiles take no rooms, building or marks.
+- **Cave-ins:** the roof holds `roof` tiles (king's moves) from anything that isn't floor: rock, a pillar, a
+  wall, the stair, bedrock (`roofDist`). Floor further than that is unsound. Every 10 s (`CAVE.check`) the
+  roof is looked over: unsound floor shows red hairline cracks that darken as its timer runs (`t.cr`), and
+  a span unsound for half a day (`CAVE.grace`) comes down 8% of each look (`CAVE.chance`), never before
+  three quarters of the first day. It becomes rubble (`t.rb`: quick to dig, all rough stone; dig it out and
+  the span is open again), burying what lay there (items, furniture, a door, a crop); anyone under it dies
+  30% of the time (`CAVE.kill`), else is hurt and thrown clear; everyone holds a grudge ("The roof came
+  down"). A 9 × 9 hall comes down at its middle in about a day; five pillars hold it. The long, narrow
+  halls of the sim never do (a hall six wide on the Topstone is sound however long).
+- **The fallen and the Wall of Remembrance:** a dwarf who dies is gone for good (`killDwarf`, `S.dead`,
+  listed under 🕯 The fallen in the Ledger); every other dwarf mourns ("Mourning X", a grudge). The **Wall
+  of Remembrance** (`ROOMS.memorial`, one carved plaque, open) is where a mourner goes to carve a word for
+  the dead (`mourn`, 5 s), striking that grudge out. No new dwarves come yet (renown and migrants are
+  step 5).
+- **The Mason's Eye** judges the layer on screen (`masonEye(S, z)`); named patterns count on any layer.
+- **Not built (later steps):** water (the Ironroots' stream, floods, channels) and magma, shoring with timber,
+  the Thane's Assay of each layer, the Mountain's Heart.
+- **Sim** (`tools/mine_sim.js` now follows any ore it can see, cuts a passage to the deep spot, and cuts the
+  stair when it can): 14 days, seed 7 reaches layer 3 with silver met; seeds 1–9 reach layers 1–3. It
+  stalls at iron on layer 2 on most seeds: it only digs to the deep spot and follows ore it already sees, so
+  it rarely finds a vein (a player would explore). No cave-ins in its halls.
+- **Water and wells** (the user asked where the brewer's water comes from, and didn't want Dwarf Fortress's
+  well that freezes in winter and kills everyone of thirst): brewing now takes a barley **and a bucket of
+  water** (`RECIPES.brew`). Water never fails: the Delve has no winter, and the crew drink ale, not water, so
+  a dry spell only slows the brewery. Sources: the wagon's 6 buckets (`START_STOCK.water`); **meltwater**
+  fetched from outside the gate (`RECIPES.melt`, 30 s a bucket, only while there's no well); and a **well**
+  (`RECIPES.draw`, 2 buckets in 3 s), which the mason sinks on dug **damp** floor (🧱 Build ▴ → 💧 Well,
+  `BUILDS.well` with `damp`, a dressed block; ✖ Clear takes it out; a cave-in buries it). Each layer has
+  `DAMP` (4) small damp patches (`t.dm`, `damp`): blue flecks on the map, a faint blue shimmer one tile into
+  the dark (stone-sense), and Durin's prospecting shows them. Water is drawn only while the brewery has fewer
+  than 4 buckets (`waterWanted`). A recipe with nothing to carry goes straight to its tile (`atTile`). New
+  named pattern: **the Wellhead Court** (a room odd-sized both ways, 3 × 3 or more, a well on its middle
+  tile). Sim (10 days): seed 7 makes 143 ale with a well and 77 without (barley piles up waiting for water);
+  at 9 s a meltwater bucket the well made no difference, so it's 30 s. Older saves get damp patches in stone
+  not yet dug, and the 6 buckets (`migrate`, v4). The Ironroots' stream (a free well along its bank, floods
+  if broken into badly) is still to come.
+- **Next (step 3):** the elementals.
