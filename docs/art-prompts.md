@@ -98,21 +98,22 @@ sheet is still wanted: its piece list is in Part 2, 5b.
 
 #### Gilden, third pass (sheets 35–36)
 
-What's still borrowed in Gilden after the second pass, and what each is meant to be:
+No Corvanthe art in Gilden (the user's rule; `tools/mapgen/gilden.js` refuses to build with any): only the first town
+sheets (1–5) and Gilden's own (29–34). What's still missing, and what stands in now:
 
 | Stand-in now (piece, from) | Meant to be | Real piece |
 |---|---|---|
 | `tavern` (Hollowmere's Drowned Crow) | the Salt Purse, the dockers' tavern on the Ropewalk | `saltPurse` |
-| `townhouse` (Spirewatch's, mossy) | the Charterhouse in the Caravanserai | `charterhouse` |
-| `townhouse` (Spirewatch's, mossy) | the Narrows Office, House Varenne's shipping office on the quay | `narrowsOffice` |
-| `bannerAnvil` (Cindergate's, burnt), `bannerFrame` (torn purple), `bannerP` | the three houses' banners at their palace gates | `bannerAshcombe`, `bannerVarenne`, `bannerQuarrender` |
-| `post` (a gallows-like post) | Vellacourt's bare banner pole | `bannerVellacourt` |
+| a counting-house (`countingHouse`) | the Charterhouse in the Caravanserai | `charterhouse` |
+| a blue merchant house (`gdHouse5`) | the Narrows Office, House Varenne's shipping office on the quay | `narrowsOffice` |
+| nothing (Corvanthe's banners were taken out) | the three houses' banners at their palace gates | `bannerAshcombe`, `bannerVarenne`, `bannerQuarrender` |
+| nothing | Vellacourt's bare banner pole | `bannerVellacourt` |
 | `lowwall` (grey rubble) | the palaces' garden railings | `railing`, `railGate` |
-| `kite1`–`3`, `rodTall` (the Drift's stone kites, the Conductory's lightning rod) | the gnomes' wind kites and wind gauge on the Skyport | `windKite`, `windGauge` |
-| `figurehead` (mossy, drowned) | something kept up on the mole by the Harbour Light | `moleFigurehead` |
-| `chestOld` and `swordRack` (a forge rack, glowing) | the quintessence strongbox going south under guard | `quintBox` |
-| `noticeBoard` (mossy) | the Charter Board, and the Narrows Office's sailings slate | `charterBoard`, `sailingsSlate` |
-| `oreCart` (the Crucible's, coal) | copper ore come down the Ore Road | `oreWagon` |
+| nothing (the Drift's kites were taken out) | the gnomes' wind kites and wind gauge on the Skyport | `windKite`, `windGauge` |
+| nothing | something kept up on the mole by the Harbour Light | `moleFigurehead` |
+| a house-marked crate (`crateScale`) | the quintessence strongbox going south under guard | `quintBox` |
+| nothing (the Master stands by the Charterhouse) | the Charter Board, and the Narrows Office's sailings slate | `charterBoard`, `sailingsSlate` |
+| the plain cart (`cart`, sheet 2) | copper ore come down the Ore Road | `oreWagon` |
 
 **Prompt.** Attach `sprites/ruins/tileset33_source.png` and `tileset32_source.png` for the style. Replace `[PIECES]`:
 

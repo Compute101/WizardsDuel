@@ -7,10 +7,10 @@
 // place on Albra where a gnome airship may moor. Design: docs/gilden-design.md. People: js/explore_gilden.js.
 // A safe town (no Echoes, rooms hold no fights); the houses' feuds are fought on the roads (charters).
 'use strict';
+const fs = require('fs');
+const path = require('path');
 const { MapBuilder, T, P } = require('./builder');
 const { City } = require('./city');
-// stand-in art (js/placeholders.js): a piece named there is used once it's been cut into an atlas
-const PH = require('../../js/placeholders.js');
 
 const COLS = 64,
   ROWS = 55; // five rows of open harbour south of the piers, where the ships ride at anchor
@@ -250,7 +250,7 @@ const SETS = {
   backs: { 0: GD('gdBack'), 1: GD('gdBack'), 2: ['backSlate'] },
   sides: { 0: GD('gdSide'), 1: GD('gdSide'), 2: ['sideSlate'] },
   yard: {
-    0: ['barrel', 'crate1', 'crate2', 'flowerbush', 'bush', 'urn', 'lowwall', 'barrel2'],
+    0: ['barrel', 'crate1', 'crate2', 'flowerbush', 'bush', 'lowwall', 'barrel2'],
     1: [
       'barrel',
       'crate1',
@@ -260,7 +260,7 @@ const SETS = {
       'ropeCoils',
       'barrel2',
       'sacks',
-      'barrelsTrio'
+      'barrel3'
     ],
     2: ['barrel', 'crate2']
   }
@@ -430,22 +430,13 @@ module.exports = function gilden(rects) {
 
   // ── landmarks ──
   // the Hill: four palaces north of Hill Street, each in its gardens
-  const realPiece = id => (rects[PH.get(id).piece] ? PH.get(id).piece : null);
-  // the great houses' palaces: a townhouse / the hall stand in (placeholder piece_palace)
-  const palace = (kind0, tx, lore, sc0, banners, x0, x1) => {
-    const shut = lore === 'vellacourt' && 'palaceShut' in rects, // the user's palace, shut up and stripped
-      real = shut || (lore !== 'vellacourt' && realPiece('piece_palace')),
-      // the user's palace, in each house's stone (palace_sand, palace_rose: recolours in the cutter)
-      kind = shut ? 'palaceShut' : real ? (PALACE_LOOK[lore] in rects ? PALACE_LOOK[lore] : 'palace') : kind0,
-      sc = real ? undefined : sc0;
+  // the great houses' palaces, the user's art in each house's stone (palace_sand, palace_rose: recolours in the
+  // cutter); Vellacourt's shut up and stripped. Their banners are painted on the palaces.
+  const palace = (tx, lore, x0, x1) => {
+    const kind = lore === 'vellacourt' ? 'palaceShut' : PALACE_LOOK[lore];
     m.fill(x0, 3, x1, 11, 'G');
     m.fill(Math.floor(tx), 10, Math.floor(tx) + 1, 11, 'P'); // the drive
-    put(kind, tx, 9.6, lore, sc ? { scale: sc } : null);
-    for (const [x, y] of [
-      [x0 + 0.8, 11.9],
-      [x1 + 0.2, 11.9]
-    ])
-      put(banners, x, y, 'bravo');
+    put(kind, tx, 9.6, lore);
     for (let x = x0 + 0.5; x < x1 + 0.6; x += 1)
       if (Math.abs(x - tx) > 1.4 && Math.abs(x - (tx + 1)) > 1.4) put('lowwall', x, 11.95);
     for (const [x, y] of [
@@ -453,20 +444,14 @@ module.exports = function gilden(rects) {
       [x1 - 0.4, 6.8],
       [x0 + 1.8, 8.6]
     ])
-      m.tryPlace(P.pick(m.r, ['flowerbush', 'bush', 'urn', 'tree']), x * T, y * T, 4);
+      m.tryPlace(P.pick(m.r, ['flowerbush', 'bush', 'tree']), x * T, y * T, 4);
     RES(x0, x1 + 1, 2, 12);
   };
   const PALACE_LOOK = { ashcombe: 'palace_sand', varenne: 'palace', quarrender: 'palace_rose' };
-  palace('hall', 18, 'ashcombe', 1.0, 'bannerAnvil', 14, 22);
-  palace('house3_dusk', 27.5, 'vellacourt', 1.45, 'post', 24, 30);
-  palace('townhouse', 38, 'varenne', 1.15, 'bannerFrame', 34, 42);
-  palace('townhouse', 48.4, 'quarrender', 1.1, 'bannerP', 45, 51);
-  if (!realPiece('piece_palace')) {
-    // stand-in flourishes that the palaces themselves now cover
-    put('tower', 51.2, 8.6, 'quarrender', { scale: 0.55 });
-    put('frozenFountain', 40.6, 7.6, 'garden', { scale: 0.42 }); // Varenne's fountain (a frosted stand-in)
-    put('scholarStatue', 15.4, 7.4, 'garden', { scale: 0.5 });
-  }
+  palace(18, 'ashcombe', 14, 22);
+  palace(27.5, 'vellacourt', 24, 30);
+  palace(38, 'varenne', 34, 42);
+  palace(48.4, 'quarrender', 45, 51);
 
   // the Exchange and the Guildhall on Exchange Square
   put('exchange', 32, 18.9, 'exchange');
@@ -477,8 +462,7 @@ module.exports = function gilden(rects) {
     [26.6, 22.6],
     [37.6, 22.2]
   ])
-    put('lanternPost', x, y, 'lamp');
-  put('well', 36.6, 20.6, 'well');
+    put('lamppost', x, y, 'lamp');
   // market stalls round the square (the user's sheet 30): cloth and charms for the factors' wives, pies for
   // everyone
   for (const [k, x, y, l] of [
@@ -487,49 +471,34 @@ module.exports = function gilden(rects) {
     ['stallBakery', 35.4, 23.95, 'stallBakery']
   ])
     if (k in rects) put(k, x, y, l);
-  for (const [k, x, y] of [
-    ['benchPlain', 32.4, 23.6],
-    ['catGinger', 32.6, 21.2]
-  ])
-    put(k, x, y, 'exchangeSq');
   RES(26, 39, 19, 24);
 
   // the Caravanserai: the yard inside the Ore Gate, the Charterhouse facing it, wagons everywhere
   put('oreGate', 4.5, 2.4, 'oregate');
-  put('townhouse', 8.6, 5.2, 'charterhouse', { scale: 0.85 });
-  put('noticeBoard', 6.3, 6.6, 'charters');
+  put('countingHouse', 8.6, 5.2, 'charterhouse'); // the Charterhouse (its own art wanted: piece_gd3_charterhouse)
   for (const [k, x, y, l] of [
-    ['wagonCovered', 2.2, 8.4, 'wagons'],
-    ['wagonCovered', 9.6, 8.6, 'wagons'],
-    'stallTools' in rects ? ['stallTools', 1.9, 5.0, 'stallTools'] : ['wagon', 2.4, 5.2, 'wagons'],
-    ['cartLoaded', 6.2, 9.4, 'wagons'],
-    ['oreCart', 10.2, 10.2, 'ore'],
-    ['oreCart', 1.9, 10.4, 'ore'],
-    ['sacksGrain', 4.6, 9.8],
-    ['barrelsTrio', 8, 9.9],
-    ['handcartGreens', 5.2, 3.4],
-    ['stonePallet', 10.4, 3.2, 'ore'],
-    ['lanternPost', 1.2, 6.6, 'lamp']
+    ['wagon', 2.2, 8.4, 'wagons'],
+    ['wagon', 9.6, 8.6, 'wagons'],
+    ['stallTools', 1.9, 5.0, 'stallTools'],
+    ['cart', 6.2, 9.4, 'wagons'],
+    ['cart', 10.2, 10.2, 'ore'],
+    ['cart', 1.9, 10.4, 'ore'],
+    ['sacks', 4.6, 9.8],
+    ['barrel2', 8, 9.9],
+    ['crateForge', 10.4, 3.2, 'cargo'],
+    ['lamppost', 1.2, 6.6, 'lamp']
   ])
     put(k, x, y, l);
   RES(0, 12, 0, 11);
 
   // the Skyport on Beacon Hill: the mast, the Sky Office, kites, the porters' cargo
-  // the user's airship comes with its own lattice mast and landing stage; till then a spire stands in, empty
-  if (realPiece('piece_airship')) put('airship', 57.9, 8.7, 'airship');
-  else put('spireTower', 58.4, 7.6, 'mast', { scale: 1.05 });
+  // the user's airship comes with its own lattice mast and landing stage
+  put('airship', 57.9, 8.7, 'airship');
   put('skyOffice', 53.8, 9.6, 'skyOffice');
-  for (const [k, x, y] of [
-    ['kite1', 56.2, 4.2],
-    ['kite2', 60.6, 4.8],
-    ['kite3', 57.4, 3],
-    ['rodTall', 60.8, 9.1]
-  ])
-    put(k, x, y, 'kites', { scale: 0.3 });
   for (const [k, x, y] of [
     ['crate4', 56, 9.3],
     ['crateStand', 56.8, 9.4],
-    ['sacksPurple', 59.6, 9.6],
+    ['sacks', 59.6, 9.6],
     ['barrel2', 55.6, 9.8]
   ])
     put(k, x, y, 'skyport');
@@ -545,8 +514,7 @@ module.exports = function gilden(rects) {
     ['gdEelStall', 23.4, 33.4],
     ['fishCrates', 19.4, 35.6],
     ['herringBarrels', 24.4, 35.7],
-    ['lobsterPots', 22.0, 35.8],
-    ['catTabby', 21.6, 34.5]
+    ['lobsterPots', 22.0, 35.8]
   ])
     put(k, x, y, 'fishmarket', null);
   RES(17.6, 25.6, 31.6, 36);
@@ -559,7 +527,7 @@ module.exports = function gilden(rects) {
     'barrel',
     'barrel2',
     'sacks',
-    'barrelsTrio',
+    'barrel3',
     'crateAnchor',
     'crateForge',
     'crateScale',
@@ -587,7 +555,7 @@ module.exports = function gilden(rects) {
   if ('stallLamps' in rects) drop('stallLamps', 46.4, QUAY + 2.2, 'stallLamps');
   for (let x = 1.5; x < COLS - 5; x += 1.6 + m.r() * 1.8) {
     if (x > 32 && x < 37.5) continue;
-    const k = P.pick(m.r, cargo.concat(['netRack', 'cartLoaded', 'capstan', 'bollard', 'gdAnchor']));
+    const k = P.pick(m.r, cargo.concat(['netRack', 'cart', 'capstan', 'bollard', 'gdAnchor']));
     const y = k === 'bollard' ? SEA - 0.1 : QUAY + 1 + m.r() * 1.4;
     const lore = /crate|barrel|sacks/.test(k)
       ? 'cargo'
@@ -595,13 +563,12 @@ module.exports = function gilden(rects) {
         ? 'nets'
         : k === 'dockCrane'
           ? 'crane'
-          : k === 'cartLoaded'
+          : k === 'cart'
             ? 'wagons'
             : 'quay';
     drop(k, x, y, lore);
   }
-  put('chestOld', 30.2, QUAY + 2.2, 'quint');
-  put('halberdStand' in rects ? 'halberdStand' : 'swordRack', 29.2, QUAY + 2.3, 'quint', { scale: 0.5 });
+  put('crateScale', 30.2, QUAY + 2.2, 'quint'); // the strongbox (its own art wanted: piece_gd3_quintBox)
   // the shipyard at the west end of the quay: a hull on the slip, timber, tar and rope
   m.fill(0, 31, 8, QUAY - 1, 'D');
   RES(0, 9.2, 30.6, QUAY + 0.2);
@@ -626,27 +593,24 @@ module.exports = function gilden(rects) {
       put(k, x, y, k);
   // the mole and the Harbour Light
   put('harbourLight', 58.2, 47.6, 'harbourLight');
-  put('figurehead', 56.8, 43.2, 'harbourLight', { scale: 0.6 });
   for (const y of [41.4, 44.2]) put('bollard', 58.8, y, 'quay');
   // lanterns along the quay
-  for (let x = 3; x < COLS - 6; x += 7) drop('lanternPost', x + 0.3, QUAY + 0.25, 'lamp');
+  for (let x = 3; x < COLS - 6; x += 7) drop('lamppost', x + 0.3, QUAY + 0.25, 'lamp');
 
   // the docks' landmarks and the town's houses: terraces along every street, warehouses on the quay
   city.landmark('tavern', 13, 29, 'saltpurse');
-  // warehouses facing the quay (placeholder piece_warehouse: ordinary houses line it till then)
-  if (realPiece('piece_warehouse'))
-    for (const x of [8, 26, 48]) city.landmark('warehouse', x, QUAY - 1, 'cargo');
+  // warehouses facing the quay
+  for (const x of [8, 26, 48]) city.landmark('warehouse', x, QUAY - 1, 'cargo');
   for (const x of [14, 40]) city.landmark('countingHouse', x, 23, 'counting');
-  const ship = city.landmark('townhouse', 46, 36, 'shipping');
-  m.place('noticeBoard', ship.cx + 120, ship.base + 30, { lore: 'shipping' });
+  city.landmark('gdHouse5', 46, 36, 'shipping'); // the Narrows Office (its own art wanted: piece_gd3_narrowsOffice)
   city.build({ sets: SETS, gap: 0.04, yards: 0.22 });
-  for (const o of m.objs) if (/lanternPost/.test(o.kind) && !o.lore) o.lore = 'lamp';
+  for (const o of m.objs) if (o.kind === 'lamppost' && !o.lore) o.lore = 'lamp';
   // lanterns along the main streets
   for (let x = 6; x < COLS - 6; x += 7) {
-    if (m.at(x, 23) !== 'R' && m.at(x, 24) === 'R') m.tryPlace('lanternPost', x * T + 20, 24 * T - 2, 4);
-    if (m.at(x, 29) !== 'R' && m.at(x, 30) === 'R') m.tryPlace('lanternPost', x * T + 20, 30 * T - 2, 4);
+    if (m.at(x, 23) !== 'R' && m.at(x, 24) === 'R') m.tryPlace('lamppost', x * T + 20, 24 * T - 2, 4);
+    if (m.at(x, 29) !== 'R' && m.at(x, 30) === 'R') m.tryPlace('lamppost', x * T + 20, 30 * T - 2, 4);
   }
-  for (const o of m.objs) if (o.kind === 'lanternPost' && !o.lore) o.lore = 'lamp';
+  for (const o of m.objs) if (o.kind === 'lamppost' && !o.lore) o.lore = 'lamp';
   // the grass that's left: trees in the gardens and along the cliff behind the Skyport
   m.scatter(90, [
     ['tree', 4],
@@ -692,6 +656,16 @@ module.exports = function gilden(rects) {
     { x: 3 * T, y: 0, w: 3 * T, h: 44, label: 'The Ore Road (Chepstead, Hollowmere)', to: 'world' },
     { x: 0, y: 30 * T, w: 44, h: 2 * T, label: 'The Coast Road (Ferryhythe)', to: 'world' }
   ];
-  put('milestone' in rects ? 'milestone' : 'post', 1.4, 29.6, 'coast');
+  put('post', 1.4, 29.6, 'coast');
+  // no Corvanthe art in Gilden (the user's rule): only the first town sheets (1–5) and Gilden's own (29–34)
+  const sheetOf = {};
+  for (const f of fs.readdirSync(path.join(__dirname, '../../sprites/ruins')))
+    if (/^ruins\d*\.json$/.test(f)) {
+      const n = +(f.match(/\d+/) || [1])[0];
+      for (const k in JSON.parse(fs.readFileSync(path.join(__dirname, '../../sprites/ruins', f), 'utf8')))
+        sheetOf[k] = n;
+    }
+  const corv = [...new Set(m.objs.map(o => o.kind).filter(k => !(sheetOf[k] <= 5 || sheetOf[k] >= 29)))];
+  if (corv.length) throw new Error('gilden: Corvanthe art in Gilden: ' + corv.join(', '));
   return m;
 };

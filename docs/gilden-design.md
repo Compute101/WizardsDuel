@@ -213,6 +213,11 @@ a gnome (a dwarf figure drawn small stands in for the Sky Office clerk), and The
   is 55 rows now, five more of open harbour: the Narrows Maid (bow-on) and the Saltwife (stern-on) moor
   between the piers, the Gull's Purse, a Brassmouth trader and the Fourth Coin ride at anchor beyond them
   (lore for each in `LORE`).
+- **No Corvanthe art** (the user's rule): Gilden uses only the first town sheets (1–5) and its own (29–34); the
+  generator throws if a piece from another sheet is placed. The Corvanthe props went (banners on posts, the Drift's
+  kites and wind rod, the drowned figurehead, the well, bench and cats, urns, notice boards); lamp posts, wagons,
+  carts and sacks come from sheets 1–2; the Charterhouse is a counting-house and the Narrows Office a blue merchant
+  house until their own art (third pass, `docs/art-prompts.md`).
 - **Second pass** (sheets 32–34, `ruins32`–`ruins34`, the user's art for the prompts in `docs/art-prompts.md`,
   "Gilden, second pass"): the harbour (lighters in the three houses' colours instead of the Sunken Harbour's mossy
   boats, piles and bollards on the piers, treadwheel cranes at their roots, anchors, capstans, net racks,
