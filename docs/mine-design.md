@@ -488,6 +488,12 @@ device in `localStorage` `wd-mine-save`; not joined to Explore yet.
     (`serve`: a floor tile of the tavern beside a keg, `SERVE_S` 30 s a stint), else haul. A tavern pours only
     while its keeper is there (`served`), so it shuts while they eat or sleep and the crew drink at a taproom or
     a table instead; a taproom's kegs serve themselves.
+    *"Are taverns all that good? I'd hope they improve mood and wellbeing, but the taproom just meets their
+    needs."* They weren't, much (40% against 20% to strike a grudge). Now a **taproom only slakes thirst**
+    (no grudges struck out), and a pint at an open **tavern** leaves the dwarf **merry** for a day (`d.merry`,
+    `MERRY`): 15% faster at everything, and the next everyday grudge is shrugged off (and the merriment with
+    it; grief and cave-ins still go in the Ledger, `DEEP_GRUDGES`), as well as the 40% chance to strike one
+    out. 🍻 shows in the crew list and the dwarf's panel.
     The sim's Great Hall was only 40 tiles (10 × 4), the minimum, so it never earned a second star; there was
     room for 10 × 6 (rows 1–6), so it's 60 tiles now and reaches 2★ on seeds 7 and 9 in 10 days.
 

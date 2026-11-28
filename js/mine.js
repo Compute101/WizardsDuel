@@ -109,9 +109,9 @@
     forge:
       'One anvil. The smith smelts a copper, a tin and a coal into 2 bronze, and forges a bronze pick from 1 bronze. The old iron picks wear out, and a miner with none digs at half pace.',
     tavern:
-      'A keg for every 8 tiles. The crew drink here before anywhere else, and a pint with friends strikes out a grudge now and then. A proper hall: it wants a door on every way in, and a tavern keeper behind the bar (one comes up from Stonedeep when your first tavern is furnished). Closed while the keeper eats or sleeps.',
+      'A keg for every 8 tiles. The crew drink here before anywhere else, and a pint there leaves a dwarf merry for a day (working faster, shrugging off the next everyday grudge) and often strikes out a grudge too. A proper hall: it wants a door on every way in, and a tavern keeper behind the bar (one comes up from Stonedeep when your first tavern is furnished). Closed while the keeper eats or sleeps.',
     taproom:
-      'Kegs in an open room that serve themselves: no door or keeper needed, but not as good as a tavern. A pint here strikes out a grudge half as often, and the crew go to a tavern first.',
+      'Kegs in an open room that serve themselves: no door or keeper needed, but it only slakes thirst: no merriment, no grudges struck out. The crew go to an open tavern first.',
     infirmary:
       'A cot for every 4 tiles. Hard rock and ore sometimes hurt a dwarf, who works at half pace until mended: a quarter of a day in a cot, a day and a half walking it off.',
     barracks:
@@ -619,8 +619,11 @@
       const hurt = d.hurt
         ? '<p class="mn-note mn-warn">🩹 Hurt: working at half pace until mended (an infirmary cot heals quickest).</p>'
         : '';
+      const cheer = M.merry(S, d)
+        ? '<p class="mn-note">🍻 Merry from the tavern: working faster, and they\'ll shrug off the next everyday grudge.</p>'
+        : '';
       const where = S.depth ? ' <small>(layer ' + (M.layerOf(Math.round(d.y)) + 1) + ')</small>' : '';
-      return `${x}<b>${d.name}</b> <small>${T.icon} ${M.levelOf(d).name} ${T.name.toLowerCase()}</small>${where}<p>${d.act}${d.act.endsWith('…') ? '' : '.'} Mood: ${mood}.</p>${kit}${hurt}
+      return `${x}<b>${d.name}</b> <small>${T.icon} ${M.levelOf(d).name} ${T.name.toLowerCase()}</small>${where}<p>${d.act}${d.act.endsWith('…') ? '' : '.'} Mood: ${mood}.</p>${cheer}${kit}${hurt}
       <div class="mn-needs"><span>🍄 Food</span>${bar(d.needs.food, needCol(d.needs.food))}<span>🍺 Ale</span>${bar(d.needs.ale, needCol(d.needs.ale))}<span>💤 Sleep</span>${bar(d.needs.sleep, needCol(d.needs.sleep))}</div>
       ${g ? '<p class="mn-note">📕 ' + d.grudges.map(x => x.why).join('; ') + '</p>' : ''}`;
     }
@@ -717,7 +720,7 @@
         .map(d => {
           const T = M.TRADES[d.trade],
             g = d.grudges.length;
-          return `<button class="mn-item${ui.sel && ui.sel.id === d.id ? ' on' : ''}" data-dw="${d.id}" type="button">${T.icon} <b>${d.name}</b> <small>${M.levelOf(d).name} ${T.name.toLowerCase()}</small><br><small>${S.depth ? 'L' + (M.layerOf(Math.round(d.y)) + 1) + ' · ' : ''}${d.act}${g ? ' · 📕' + g : ''}</small></button>`;
+          return `<button class="mn-item${ui.sel && ui.sel.id === d.id ? ' on' : ''}" data-dw="${d.id}" type="button">${T.icon} <b>${d.name}</b> <small>${M.levelOf(d).name} ${T.name.toLowerCase()}</small><br><small>${S.depth ? 'L' + (M.layerOf(Math.round(d.y)) + 1) + ' · ' : ''}${d.act}${M.merry(S, d) ? ' · 🍻' : ''}${g ? ' · 📕' + g : ''}</small></button>`;
         })
         .join('') +
       '</div>' +

@@ -222,7 +222,10 @@
   const HEAL_WALK = DAY * 1.5; // walking it off with no cot
   const TAVERN_SETTLE = 0.4; // a drink at the tavern's keg strikes out a grudge this often
   const SERVE_S = 30; // a keeper's stint behind the bar before looking round
-  const TAPROOM_SETTLE = 0.2; // a taproom's, half as often
+  // a taproom only slakes thirst. A pint at a tavern (with its keeper behind the bar) leaves a dwarf merry
+  // for MERRY.s: working MERRY.speed faster, and shrugging off the next everyday grudge (not grief or a cave-in)
+  const MERRY = { s: DAY, speed: 1.15 };
+  const DEEP_GRUDGES = /^(Mourning |The roof came down)/; // too heavy to shrug off
   const GREAT_HALL_MIN = 40; // tiles of floor a Great Hall needs
   const EYE_MIN_FLOOR = 30; // the Mason's Eye judges once there's this much worked floor
 
@@ -990,8 +993,13 @@
     for (const l of LEVELS) if (d.xp >= l.xp) L = l;
     return L;
   }
-  function speedOf(d) {
-    return levelOf(d).speed * (openGrudges(d) >= GRUMBLE ? GRUMBLE_SPEED : 1) * (d.hurt ? HURT_SPEED : 1);
+  function speedOf(S, d) {
+    return (
+      levelOf(d).speed *
+      (openGrudges(d) >= GRUMBLE ? GRUMBLE_SPEED : 1) *
+      (d.hurt ? HURT_SPEED : 1) *
+      (merry(S, d) ? MERRY.speed : 1)
+    );
   }
   // how fast a dwarf digs, before skill: a miner by his pick, anyone else at 0.6
   function digRate(d) {
@@ -999,8 +1007,15 @@
     return d.pick ? PICKS[d.pick.kind].speed : NO_PICK;
   }
   const openGrudges = d => d.grudges.length;
+  const merry = (S, d) => !!(S && d.merry && d.merry > S.t);
   function addGrudge(S, d, why) {
     if (d.grudges.some(g => g.why === why && S.t - g.t < DAY)) return;
+    if (merry(S, d) && !DEEP_GRUDGES.test(why)) {
+      // a merry dwarf laughs it off, and the merriment with it
+      d.merry = 0;
+      logMsg(S, '🍻 ' + d.name.split(' ')[0] + ' shrugs off "' + why + '": still merry from the tavern.');
+      return;
+    }
     d.grudges.push({ why, t: S.t });
     logMsg(S, '📕 ' + d.name.split(' ')[0] + ': "' + why + '." (in the Ledger)');
   }
@@ -1385,7 +1400,7 @@
           return;
         }
         d.act = ACT[j.type];
-        j.w -= dt * (j.type === 'dig' ? digRate(d) : 1) * speedOf(d);
+        j.w -= dt * (j.type === 'dig' ? digRate(d) : 1) * speedOf(S, d);
         if (j.w > 0) return;
         t.cl = 0;
         d.job = null;
@@ -1476,7 +1491,7 @@
           return;
         }
         d.act = ACT.construct;
-        j.w -= dt * speedOf(d);
+        j.w -= dt * speedOf(S, d);
         if (j.w > 0) return;
         d.carry = null;
         t.cl = 0;
@@ -1505,7 +1520,7 @@
           return;
         }
         d.act = ACT.build;
-        j.w -= dt * speedOf(d);
+        j.w -= dt * speedOf(S, d);
         if (j.w > 0) return;
         d.carry = null;
         t.cl = 0;
@@ -1540,7 +1555,7 @@
           return;
         }
         d.act = R.act;
-        j.w -= dt * speedOf(d);
+        j.w -= dt * speedOf(S, d);
         if (j.w > 0) return;
         d.carry = null;
         j.took = null;
@@ -1609,7 +1624,7 @@
       case 'harvest': {
         const t = T[j.tile];
         d.act = ACT[j.type];
-        j.w -= dt * speedOf(d);
+        j.w -= dt * speedOf(S, d);
         if (j.w > 0) return;
         t.cl = 0;
         d.job = null;
@@ -1681,11 +1696,11 @@
           } else if (r && r.type === 'greathall') settleGrudge(S, d, 'a feast in the Great Hall');
           else if (r && rnd(S) < (roomStars(S, r) >= 2 ? 0.5 : 0) + (meal ? 0.4 : 0))
             settleGrudge(S, d, meal ? 'a hot meal at a good table' : 'a good meal in a fine hall');
-        } else if (
-          r &&
-          rnd(S) < (r.type === 'tavern' ? TAVERN_SETTLE : r.type === 'taproom' ? TAPROOM_SETTLE : 0)
-        )
-          settleGrudge(S, d, 'a pint with friends in the tavern');
+        } else if (r && r.type === 'tavern') {
+          // a taproom only slakes thirst; a tavern lifts the spirits
+          d.merry = S.t + MERRY.s;
+          if (rnd(S) < TAVERN_SETTLE) settleGrudge(S, d, 'a pint with friends in the tavern');
+        }
         return;
       }
       case 'sleep': {
@@ -2527,6 +2542,8 @@
     roofDist,
     NO_PICK,
     GREAT_HALL_MIN,
+    MERRY,
+    merry,
     newGame,
     migrate,
     tick,
