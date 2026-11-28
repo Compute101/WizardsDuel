@@ -20,7 +20,8 @@ Also wanted for Gilden's hired mages' battle sprites: `sprites/gilden/gd_hire_<a
 
 Prompts that have worked: attach the reference images named, generate **one figure at a time**, and
 ask for a **flat pure green (#00FF00) background**, which the cutting tools key out. Keep green off
-the figures themselves.
+the figures themselves. Each section below opens with its **shared prompt**: section 1 for people,
+section 2 for tilesets and battle backdrops.
 
 ---
 
@@ -48,7 +49,6 @@ as style references; replace `[DESCRIPTION]`):
 | `hm_factor.png`, `hm_carter.png`, `hm_pies.png` (and face crops) | Hollowmere's boom-town folk: Master Orme, factor of House Ashcombe of Gilden; Dunnock the ore carter; Bessie Hesketh the pie-seller | the strollers' `sprites/folk/peasant_man_3.png` / `peasant_man_2.png` / `peasant_woman_2.png`, faces `portraits/small/peasant_man.jpg` / `peasant_woman.jpg` | `FOLK.hm_*` in `js/explore_folk.js` (`sprite`, `face`) | one at a time, same painted style as the townsfolk, full figure facing the viewer: a sharp merchant's factor in a good but mud-spattered coat, ledger under his arm, a strongbox at his feet; a burly carter dusted with copper ore, a whip over his shoulder; a broad cheerful pie-seller with a tray of pies on a strap round her neck |
 | `hm_furs.png`, `hm_fish.png` (and face crops) | Ulfvik's Varg traders at Hollowmere's market: Gunnulf the furrier, Hrafna the fishwife | the forest's war-Varg (`sprites/forest/varg_alpha.png` / `varg.png`, axes and all), faces `portraits/small/varg_alpha.jpg` / `varg.jpg` | `FOLK.hm_furs` / `hm_fish` in `js/explore_folk.js` (`sprite`, `face`, `scale`) | settled coastal Varg, not warriors, in the townsfolk's painted style, full figure facing the viewer: a big grey wolfman in a fur-trimmed coat with a bundle of pelts over his shoulder; a Varg woman (wolf head, lighter build) in a salt-stained apron holding a string of smoked fish |
 | `hm_smith.png`, `hm_tin.png` | the Anvilfells' dwarves at the market: Torvi Anvilson, an Anvilmoot smith; Grimma, a Coldforge factor | painted from the dwarf hero figures (`look`, so they carry wizards' staves) | `FOLK.hm_smith` / `hm_tin` | stocky dwarves as tall as Durin, no staves: a smith in a leather apron with a hammer and tongs; an old dwarf woman with a ledger and a counting-stick, sitting on a strongbox |
-| market stalls (a sheet: four or five stalls with awnings, no snow) | the stalls of Hollowmere's market | carts, crates, sacks and barrels from sheet 14 stand in (`tools/mapgen/hollowmere.js`, the boom-town block) | add the pieces to the cutter, then place them in the plaza | market stalls seen from above at a slight angle, in the same pixel-art style and scale as the earlier sheets (attach them): striped canvas awnings on wooden frames, one with bolts of cloth, one with lamps and rope, one with pies and loaves, one with tools and crowbars, one with charms and bottles; flat #101217 background, 16 px gaps, no labels |
 | `bedel.png` | Mr Hobday, the Bedel of the Schools (keeps the lecture list) | `sprites/hero/old_man_3.png` as painted | `PEOPLE.lecturer` in `js/explore_year.js` | an elderly university bedel (usher), a long black gown with silver lace, a black velvet cap, holding a tall silver-topped mace of office and a rolled lecture list, white side-whiskers, dignified and fussy |
 | `wil.png` | Wil Ashby, tutorial partner (if you play a woman) | a look painted from the hero creator (`young_man_2`, russet robe) | `ensureChars` in `js/explore_year.js` | a wiry young man about 19, tousled brown hair, freckles, a student's short black commoner's gown thrown over a patched gleaner's leather jerkin and boots, a satchel, a knife at his belt, a cocky grin, fists half-raised |
 | `nell.png` | Nell Ashby, tutorial partner (if you play a man) | a look painted from the hero creator (`young_woman_2`, russet robe) | as above | a wiry young woman about 19, cropped brown hair, freckles, a student's short black commoner's gown thrown over a patched gleaner's leather jerkin and boots, a satchel, a knife at her belt, a cocky grin, fists half-raised |
@@ -67,9 +67,6 @@ as style references; replace `[DESCRIPTION]`):
 | `sprites/gilden/gd_sky.png` + `portraits/small/gd_sky.jpg` (placeholder `gd_sky`) | Tibbet Quillaby, the gnome at Gilden's Sky Office | a dwarf hero figure (`dwarf_young_man_1`) painted violet and drawn at 0.6 (`scale` on the map NPC) | `PEOPLE.gd_sky` in `js/explore_gilden.js`; the NPC in `tools/mapgen/gilden.js` | a gnome of Gimbaldry, about half a man's height, big nose, brass goggles pushed up on his forehead, a pencil behind each ear, a neat violet clerk's coat with brass buttons, holding a ticket punch and a bundle of airship tickets |
 | `sprites/gd_magus_<house>.png` + `portraits/small/gd_magus_<house>.jpg` (placeholders `gd_magus_quarrender`, `gd_magus_varenne`, `gd_magus_ashcombe`) | Gilden's house wizards (battle sprites, facing right, feet on the bottom edge, like the roster's stills) | the gnome: a dwarf hero figure painted teal and drawn small; the sea-witch: the forest's Varg; the forge mage: the forest's big orc | `MAGI` in `js/explore_gilden.js` | one at a time, the roster's painted style, full figure facing right: a small gnome air mage of Gimbaldry, about half a man's height, big nose, brass flight goggles, a teal flight-coat with brass buttons, wind swirling round a short brass-capped staff, tiny propeller charms; a grey-furred Varg (wolf-headed) sea-witch and pirate, a salt-stained sea-coat hung with fish-bones and silver toll-coins, a wet rope at her belt, a driftwood staff dripping seawater; a huge green-grey orc forge mage, a warrior wizard, scorched leather apron over mail, massive arms, fists glowing orange-hot like iron from the forge, a short heavy hammer-staff on his back |
 | `sprites/gilden/gd_guard1.png` / `gd_guard2.png` + faces (placeholders `gd_guard1`, `gd_guard2`) | Thessaly's two hired bodyguards in Gilden (a Varg and a woman) | the halberdier (`sprites/halberdier.png`) | `PEOPLE.gd_guard1` / `gd_guard2` in `js/explore_gilden.js` (`fighter`) | sellswords in gold sashes: a big grey Varg (wolfman) in a breastplate with a halberd grounded; a hard-faced woman in a battered breastplate, a halberd over her shoulder |
-| `backgrounds/gilden.jpg` (1672×941; placeholder `arena_gilden`) | Gilden's battle backdrop (the bravos in town) | Hollowmere's painting (`ARENA_MAPS.gilden` in `js/explore.js`) | `ARENA_MAPS.gilden` | a rich harbour city's quay at dusk: marble warehouses and counting-houses, cranes, a forest of masts, a gilt dome on the hill behind and a gnome airship moored at a lattice mast; cobbles in the foreground for the fighters to stand on, the same painted style as the other arena backdrops |
-| `sprites/ruins/tileset29_source.png`, pieces `airship`, `palace`, `warehouse` (placeholders `piece_airship`, `piece_palace`, `piece_warehouse`) | Gilden's Skyport and Hill | the Mooring Mast stands empty (`spireTower`); the palaces are a townhouse, the hall and a damaged house; warehouses are ordinary houses | `tools/mapgen/gilden.js` | same pixel-art style and scale as the earlier sheets (attach them): a gnome airship moored nose-first at a lattice mast (a gas-bag with brass ribs, a wooden gondola, propellers); a grand merchant palace with a gilt dome and a balcony; a tall dockside warehouse with a hoist beam and loading doors; a merchant ship's stern at a quay; flat #101217 background, 16 px gaps, no labels |
-
 
 The Bulldogs use the halberdier (`sprites/halberdier.png`), which fits; Clemency's Echo in the finale
 uses the weak Water Echo (`sprites/echoes/water_weak.png`), which also fits, though a girl-shaped one
@@ -79,10 +76,45 @@ The fat Bulldogs, the seated students, the lecturers and the examiner are done (
 
 ---
 
-## 2. Places (tilesets)
+## 2. Places (tilesets and backdrops)
 
-Every sheet asked for so far has arrived (the Undercroft, the lecture theatre, Elfhome); their prompts are in the
-archive. New sheets: see the tileset house rules in Part 2, and "Wrenford's own tileset" (5b).
+### Tilesets
+
+**Format:** loose pieces on one sheet, cut by `tools/cut_ruins_tileset.py`. Save as
+`sprites/ruins/tileset<N>_source.png` (the next free number), then ask Claude to cut it and place the pieces.
+
+**Shared tileset prompt** (attach two of the earlier sheets as style references, e.g.
+`sprites/ruins/tileset_source.png` and `tileset4_source.png`; replace `[PIECES]`):
+
+> Top-down 3/4 view pixel-art game assets in exactly the same style, palette and scale as the attached
+> sheets (a ground tile is about 100 px, a cottage about 220 × 265 px). Loose separate pieces on a flat
+> #101217 background, 16 px gaps between pieces, no labels, no grid lines, no dividers, no text, no
+> shadows touching other pieces. The pieces: [PIECES]
+
+| Sheet / pieces | What | Stands in now | Used by | [PIECES] |
+|---|---|---|---|---|
+| market stalls (a sheet of their own) | the stalls of Hollowmere's market | carts, crates, sacks and barrels from sheet 14 stand in (`tools/mapgen/hollowmere.js`, the boom-town block) | add the pieces to the cutter, then place them in the plaza | four or five market stalls seen from above at a slight angle, no snow: striped canvas awnings on wooden frames, one with bolts of cloth, one with lamps and rope, one with pies and loaves, one with tools and crowbars, one with charms and bottles |
+| `sprites/ruins/tileset29_source.png`, pieces `airship`, `palace`, `warehouse` (placeholders `piece_airship`, `piece_palace`, `piece_warehouse`) | Gilden's Skyport and Hill | the Mooring Mast stands empty (`spireTower`); the palaces are a townhouse, the hall and a damaged house; warehouses are ordinary houses | `tools/mapgen/gilden.js` | a gnome airship moored nose-first at a lattice mast (a gas-bag with brass ribs, a wooden gondola, propellers); a grand merchant palace with a gilt dome and a balcony; a tall dockside warehouse with a hoist beam and loading doors; a merchant ship's stern at a quay |
+
+Every earlier sheet has arrived (the Undercroft, the lecture theatre, Elfhome; prompts in the archive). Wrenford's own
+sheet is still wanted: its piece list is in Part 2, 5b.
+
+### Battle backdrops
+
+**Format:** a painting, 1672×941 or 1920×1080 JPEG, saved as `backgrounds/<name>.jpg`.
+
+**Shared backdrop prompt** (attach `backgrounds/ruins.jpg` as the style reference; replace `[SETTING]`):
+
+> Painterly dark-fantasy battle backdrop in the same style, palette and lighting as the attached image.
+> Wide 16:9. A flat, open floor across the bottom third where two duelling wizards will stand at the left
+> and right. No people, no creatures, no text. Moody, slightly dim, the most detail in the middle
+> distance, a calm clear area in the centre for spell effects. Setting: [SETTING]
+
+| File | What | Stands in now | Used by | [SETTING] |
+|---|---|---|---|---|
+| `backgrounds/gilden.jpg` (1672×941; placeholder `arena_gilden`) | Gilden's battle backdrop (the bravos in town) | Hollowmere's painting (`ARENA_MAPS.gilden` in `js/explore.js`) | `ARENA_MAPS.gilden` | a rich harbour city's quay at dusk: marble warehouses and counting-houses, cranes, a forest of masts, a gilt dome on the hill behind and a gnome airship moored at a lattice mast; cobbles in the foreground for the fighters to stand on |
+
+Also wanted: `wound` (Part 2, 5a) and the duel wizards' own grounds (Part 2, section 1, item 6).
 
 ---
 
@@ -114,7 +146,7 @@ What's done is in `docs/art-prompts-archive.md`. **Still to do:**
 
 ### House rules (paste into every prompt)
 
-- **Tilesets** (`tools/cut_ruins_tileset.py`): "Top-down 3/4 view pixel-art game assets, same scale as the attached sheets (a ground tile is about 100 px, a cottage about 220 × 265 px). Loose separate pieces on a flat #101217 background, 16 px gaps between pieces, no labels, no grid lines, no text, no shadows touching other pieces."
+- **Tilesets** (`tools/cut_ruins_tileset.py`; the full shared prompt is in Part 1, section 2): "Top-down 3/4 view pixel-art game assets, same scale as the attached sheets (a ground tile is about 100 px, a cottage about 220 × 265 px). Loose separate pieces on a flat #101217 background, 16 px gaps between pieces, no labels, no grid lines, no text, no shadows touching other pieces."
 - **Hero base figures** (`tools/cut_hero_figures.py`, drop them in `sprites/hero/source/<slot>_<n>.png`): "Full-body pixel-art fantasy wizard, standing, facing right, 3/4 view, feet at the bottom, on a flat pure green (#00FF00) background. **Purple robe and hat, gold trim, silver-grey hair, blue magic glow** in one hand, a wooden staff in the other. Same style and proportions as the attached figure." The recolouring needs those exact colours: purple becomes the robe colour, blue the element, silver the hair and gold the trim.
 - **Fighters / creatures** (`tools/cut_fighters.py`): "Full-body pixel-art, facing right, feet at the bottom edge, on a flat black background, no glow touching the edge, about 768 px tall."
 
