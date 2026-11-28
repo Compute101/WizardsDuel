@@ -96,22 +96,6 @@ The fat Bulldogs, the seated students, the lecturers and the examiner are done (
 Every earlier sheet has arrived (the Undercroft, the lecture theatre, Elfhome; prompts in the archive). Wrenford's own
 sheet is still wanted: its piece list is in Part 2, 5b.
 
-#### Size: draw a wizard for scale
-
-Image generators don't keep sizes between sheets: the first stalls came back as big as cottages next to a wizard and
-had to be drawn at 0.21 of their size (`KIND_SCALE`), where an awning stands a head above a wizard. So every new
-sheet now asks for **a standing wizard at a fixed height in the picture**, and gets cut at the scale that makes that
-wizard the map's 62 px (`WIZ_H` in `js/explore.js`); the wizard isn't cut. Attach the matching reference so the
-generator sees it:
-
-- **Buildings sheets:** `docs/art/scale_buildings.png` (a wizard **100 px** tall beside a Gilden house and the
-  Customs House at their sheet sizes). Cut at 0.62.
-- **Props sheets:** `docs/art/scale_props.png` (a wizard **300 px** tall beside a market stall and a crate). Cut at
-  0.21.
-
-Real proportions: a door about 1.3 wizards tall, a storey about 1.6, a market counter at chest height, a barrel at
-the hip, a crate at the knee.
-
 #### Gilden, third pass (sheets 35–36)
 
 What's still borrowed in Gilden after the second pass, and what each is meant to be:
@@ -130,39 +114,37 @@ What's still borrowed in Gilden after the second pass, and what each is meant to
 | `noticeBoard` (mossy) | the Charter Board, and the Narrows Office's sailings slate | `charterBoard`, `sailingsSlate` |
 | `oreCart` (the Crucible's, coal) | copper ore come down the Ore Road | `oreWagon` |
 
-**Prompt.** Attach the reference image named for the sheet, plus `sprites/ruins/tileset33_source.png` and
-`tileset32_source.png` for the style. Replace `[WIZARD]` and `[PIECES]`:
+**Prompt.** Attach `sprites/ruins/tileset33_source.png` and `tileset32_source.png` for the style. Replace `[PIECES]`:
 
 > Top-down 3/4 view pixel-art game assets in exactly the same style and palette as the attached sheets. A rich,
-> well-kept merchant port: clean paint, gilt and brass, no moss, no ruin, no snow. **Scale:** the first attached
-> image shows a wizard [WIZARD] px tall; draw that same wizard standing at the right-hand edge of the sheet at
-> exactly that height, and draw every piece in true proportion to him (a door about 1.3 times his height, a storey
-> about 1.6, a market counter at his chest, a barrel at his hip). Loose separate pieces on a flat #101217
+> well-kept merchant port: clean paint, gilt and brass, no moss, no ruin, no snow. Keep every piece in true
+> proportion to the attached sheets' buildings and props. Loose separate pieces on a flat #101217
 > background, 16 px gaps between pieces, no labels, no grid lines, no dividers, no text, no shadows touching other
 > pieces. The pieces: [PIECES]
 
-- **Sheet 35, buildings** (`tileset35_source.png`, attach `docs/art/scale_buildings.png`, `[WIZARD]` = 100): the
+- **Sheet 35, buildings** (`tileset35_source.png`): the
   Salt Purse, a low two-storey dockside tavern, wider than a merchant house, tarred timber over a stone ground
   floor, small leaded windows, a hanging sign of a leather purse spilling salt, a coil of rope and a bench by the
   door; the Charterhouse, a solid three-storey stone hall with a wide arched cart gate, iron-studded doors, a
   balcony where the Master reads out the charters, a carved caravan wagon over the gate and the three houses'
   small shields under it; the Narrows Office, a narrow two-storey shipping office painted deep blue with a silver
   anchor sign and a bow window full of ship models.
-- **Sheet 36, props** (`tileset36_source.png`, attach `docs/art/scale_props.png`, `[WIZARD]` = 300): three silk
-  banners on tall gilt-topped poles, about 1.6 times the wizard's height, one red with a gold flame over a hammer,
+- **Sheet 36, props** (`tileset36_source.png`): three silk
+  banners on tall gilt-topped poles, about twice a door's height, one red with a gold flame over a hammer,
   one deep blue with a silver anchor, one violet with a gold winged scale; a fourth pole, bare, with a scrap of
   torn gold cloth and a coin mark half scraped off; a stretch of black wrought-iron railing with gilt spear-head
-  finials on a low stone plinth, about chest high, between two stone gate piers topped with urns, and a matching
+  finials on a low stone plinth, about chest high to a person, between two stone gate piers topped with urns, and a matching
   double gate; two gnome wind kites in brass and coloured silk flying from tether posts with winches, the kite
-  well above the wizard's head; a brass wind gauge on a pole with spinning cups and a little propeller; a ship's
+  high above the post; a brass wind gauge on a pole with spinning cups and a little propeller; a ship's
   figurehead (a crowned sea-queen) restored, painted and gilded, mounted on a clean stone plinth with a brass
   plaque; an iron-bound strongbox sealed with three red wax seals on a handcart, about knee high, with a glowing
   violet light through its keyhole, and a halberd stand beside it; the Charter Board, a big notice board under its
-  own small slate roof, covered in charters with red and blue seals, about the wizard's height; a slate on an easel
-  listing sailings in chalk; a heavy wagon of green-streaked copper ore with iron-tyred wheels, about the
-  wizard's height.
+  own small slate roof, covered in charters with red and blue seals, about a man's height; a slate on an easel
+  listing sailings in chalk; a heavy wagon of green-streaked copper ore with iron-tyred wheels, about a man's
+  height.
 
-When they arrive: cut at 0.62 (sheet 35) and 0.21 (sheet 36) in `KIND_SCALE`, leave out the wizard, and swap them in
+When they arrive: set each piece's `KIND_SCALE` by checking it beside a wizard in a map render (see `CLAUDE.md`,
+"Placeholder art"), and swap them in
 `tools/mapgen/gilden.js`. Each is a `piece` placeholder in `js/placeholders.js` (`piece_gd3_*`).
 
 #### Gilden, second pass (sheets 32–34): arrived
