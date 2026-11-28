@@ -235,7 +235,13 @@
     stallLamps: 0.34,
     stallBakery: 0.34,
     stallTools: 0.34,
-    stallCharms: 0.34
+    stallCharms: 0.34,
+    // one ship at rest from five sides (sheet 31), hulls cut at the waterline
+    shipBow: 0.8,
+    shipFront: 0.8,
+    shipBack: 0.8,
+    shipStern: 0.8,
+    shipSide: 0.8
   };
   function scaleOf(kind, sc) {
     return sc || KIND_SCALE[kind] || KIND_SCALE[kind.split('_')[0]] || PS;
@@ -252,6 +258,7 @@
     airship: [{ ox: 0.79, w: 0.2, h: 0.2 }],
     galleon: [{ w: 1, h: 0.14 }],
     stall: [{ w: 0.86, h: 0.3 }],
+    ship: [{ w: 0.8, h: 0.12 }], // afloat: the water round it blocks you anyway
     // Elfhome (sheets 27 and 28, tools/mapgen/elfhome.js)
     efHeartTree: [{ w: 0.42, h: 40 }],
     efTalan: [{ w: 0.28, h: 16 }],
@@ -656,6 +663,37 @@
       [0.37, 0.47],
       [0.33, 0.14, 'lamp'],
       [0.53, 0.18, 'lamp']
+    ],
+    shipSide: [
+      [0.05, 0.25, 'lamp'],
+      [0.1, 0.2, 'lamp'],
+      [0.22, 0.24, 'lamp'],
+      [0.12, 0.6],
+      [0.3, 0.6]
+    ],
+    shipBow: [
+      [0.81, 0.4, 'lamp'],
+      [0.95, 0.43, 'lamp'],
+      [0.4, 0.6, 'lamp'],
+      [0.88, 0.66],
+      [0.78, 0.68]
+    ],
+    shipFront: [
+      [0.17, 0.56, 'lamp'],
+      [0.83, 0.56, 'lamp']
+    ],
+    shipBack: [
+      [0.22, 0.42, 'lamp'],
+      [0.78, 0.42, 'lamp'],
+      [0.5, 0.65],
+      [0.3, 0.65],
+      [0.7, 0.65]
+    ],
+    shipStern: [
+      [0.15, 0.38, 'lamp'],
+      [0.4, 0.37, 'lamp'],
+      [0.2, 0.6],
+      [0.48, 0.6]
     ],
     stallLamps: [
       [0.24, 0.42, 'lamp'],

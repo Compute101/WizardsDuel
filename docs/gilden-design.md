@@ -206,6 +206,13 @@ a gnome (a dwarf figure drawn small stands in for the Sky Office clerk), and The
   replaces the empty `spireTower`); three **warehouses** on the quay; and House Varenne's galleon, the
   **Silver Anchor** (`galleon`), at a new deep-water stage of flagstones off the third pier (rows 46–47; no
   rowboats there). Palaces and warehouses have doors (rich houses and workshops inside, `typeFor`).
+- **Ships at rest** (sheet 31, `ruins31`: one ship drawn from five sides, `shipBow`, `shipFront`, `shipBack`,
+  `shipStern`, `shipSide`; the user's five pictures are in `sprites/ruins/ships_source/`, laid out on one sheet
+  by `python3 tools/cut_ruins_tileset.py --ships`; each hull is cut at its waterline (`WATERLINE`, darkened
+  where it meets the water) and the background specks in the rigging knocked out (`DECK`, `unspeck`)). The map
+  is 55 rows now, five more of open harbour: the Narrows Maid (bow-on) and the Saltwife (stern-on) moor
+  between the piers, the Gull's Purse, a Brassmouth trader and the Fourth Coin ride at anchor beyond them
+  (lore for each in `LORE`).
 - **Market stalls** (sheet 30, `ruins30`: `stallCloth`, `stallLamps`, `stallBakery`, `stallTools`,
   `stallCharms`): cloth, charms and pies in Exchange Square, a chandler's on the quay by the Narrows Office, a
   tinker's in the Caravanserai. Hollowmere's plaza has the charms, pies (Bessie's) and tools (Torvi's).

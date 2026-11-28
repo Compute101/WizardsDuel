@@ -5885,7 +5885,8 @@
     'ruins27',
     'ruins28',
     'ruins29',
-    'ruins30'
+    'ruins30',
+    'ruins31'
   ];
   const CORE_ATLASES = ['ruins', 'ruins2', 'ruins3', 'ruins13'];
   const atlasLoading = {};

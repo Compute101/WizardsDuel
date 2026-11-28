@@ -13,7 +13,7 @@ const { City } = require('./city');
 const PH = require('../../js/placeholders.js');
 
 const COLS = 64,
-  ROWS = 50;
+  ROWS = 55; // five rows of open harbour south of the piers, where the ships ride at anchor
 const QUAY = 37; // the Long Quay's top row; the harbour is below row 39
 const SEA = 40;
 const PIERS = [
@@ -183,6 +183,26 @@ const LORE = {
     'The gnomes fly them from the mast to read the wind before a ship comes in. Children chase their shadows across the paving.'
   ],
   // ways out
+  shipSide: [
+    "The Gull's Purse",
+    'An Ashcombe merchantman riding at anchor, low in the water with Anvilfells copper for the Mainland. The crew are ashore; the purser is not, and is counting the cargo for the third time.'
+  ],
+  shipFront: [
+    'The Narrows Maid',
+    "Varenne's packet to Halemouth, moored bow out so she can slip the moment the tide turns. Every passenger is searched for charms before boarding: Hallowmark's witch-finders wait at the other end, and Varenne would rather lose a fare than a ship."
+  ],
+  shipBack: [
+    'The Saltwife',
+    'Back from Ulfvik with furs, whale oil and a Varg pilot who sleeps on deck and will not come ashore. Her stern lanterns are lit day and night: a promise, the sailors say, to whoever is watching from the sea.'
+  ],
+  shipBow: [
+    'A Brassmouth Trader',
+    "Flying the Varenne pennant, but her crew speak with the Dominion's flat vowels and her hold was loaded under guard. Whatever she carries south, the Customs House was paid well not to weigh it."
+  ],
+  shipStern: [
+    'The Fourth Coin',
+    'A fine ship with her name freshly painted over. The harbour boys say she was a Vellacourt ship once, and that the house mark still shows under the gilt when the light is low.'
+  ],
   galleon: [
     'The Silver Anchor',
     "House Varenne's flagship, moored at the deep-water stage where nothing else in the harbour is allowed to tie up. Gilt on the stern, cannon behind the gunports, and a captain who has never once paid the Varg's sea-toll out of his own pocket."
@@ -297,7 +317,8 @@ module.exports = function gilden(rects) {
   for (const [a, b] of PIERS) m.fill(a, SEA, b, SEA + 5 + ((a * 7) % 3), 'K');
   // the deep-water stage: a stone walk out from the third pier, where House Varenne's galleon moors (the
   // user's sheet 29; the stage's bollards are drawn with the ship)
-  const GALLEON = 'galleon' in rects;
+  const GALLEON = 'galleon' in rects,
+    SHIPS = 'shipSide' in rects;
   if (GALLEON) {
     m.fill(29, 46, 39, 47, 'P');
     RES(28.5, 40, 41, 48.5); // no terrace on the stage
@@ -548,8 +569,9 @@ module.exports = function gilden(rects) {
     const mx = (a + b + 1) / 2;
     put('crane', a + 0.4, SEA + 0.6, 'crane');
     put('postRing', b + 0.9, SEA + 1.2, 'pier', { scale: 0.8 });
-    // no boats where the galleon lies, between the third and fourth piers
-    const byShip = x => GALLEON && x > 29 && x < 40.5;
+    // no boats where the ships lie: the galleon off the third pier, the bow-on and stern-on ships between piers
+    const byShip = x =>
+      (GALLEON && x > 29 && x < 40.5) || (SHIPS && ((x > 18.6 && x < 25) || (x > 44 && x < 49.4)));
     if (!byShip(b + 2.2))
       put(P.pick(m.r, ['rowboat', 'rowboat', 'boat']), b + 2.2, SEA + 3.4, 'boats', { scale: 0.8 });
     if (a > 10 && !byShip(a - 1.4)) put('rowboat', a - 1.4, SEA + 2.4, 'boats', { scale: 0.7 });
@@ -591,6 +613,16 @@ module.exports = function gilden(rects) {
   ])
     drop(k, x, y, l, sc ? { scale: sc } : null);
   if (GALLEON) put('galleon', 34.4, 46.6, 'galleon');
+  // ships at rest (the user's sheet 31): two moored between the piers, three riding at anchor in the outer harbour
+  if (SHIPS)
+    for (const [k, x, y] of [
+      ['shipFront', 21.5, 46.2],
+      ['shipBack', 46.6, 46.2],
+      ['shipSide', 11.4, 52.6],
+      ['shipBow', 24.6, 53.4],
+      ['shipStern', 47.2, 53.2]
+    ])
+      put(k, x, y, k);
   // the mole and the Harbour Light
   put('watchTower', 58.2, 47.4, 'harbourLight', { scale: 0.7 });
   put('figurehead', 56.8, 43.2, 'harbourLight', { scale: 0.6 });

@@ -908,6 +908,55 @@ RECTS30 = {
     }.items()
 }
 
+# ── sheet 31, from the user: one ship at rest from five sides, each drawn on its own picture
+#    (sprites/ruins/ships_source/<piece>.png), laid out on one sheet by `python3 tools/cut_ruins_tileset.py
+#    --ships` (SHIP_LAYOUT). shipBow: three-quarter bow, facing left; shipFront: bow-on; shipBack: stern-on;
+#    shipStern: three-quarter stern, the stern to the left; shipSide: side-on, the stern to the left. Each hull
+#    is cut off at its waterline (WATERLINE, sheet y) so the ship floats on the map's water. ──
+SHIP_LAYOUT = [
+    ('shipBow', 0, 0, (194, 17, 1118, 1155), 960),
+    ('shipFront', 1312, 0, (332, 17, 979, 1151), 1000),
+    ('shipBack', 2624, 0, (292, 17, 1019, 1149), 1010),
+    ('shipStern', 0, 1199, (318, 18, 1276, 968), 880),
+    ('shipSide', 1536, 1199, (160, 17, 1419, 949), 860),
+]
+# above each deck (sheet y) the ratlines hold specks of the dark background; those are bluish-black, the ship's
+# own outlines are brown, so dark pixels with no warmth are knocked out there (`unspeck`)
+DECK = {'shipBow': 560, 'shipFront': 560, 'shipBack': 470, 'shipStern': 1199 + 400, 'shipSide': 1199 + 590}
+RECTS31 = {n: _pad((x + a, y + b, c - a + 1, d - b + 1), 4) for n, x, y, (a, b, c, d), _ in SHIP_LAYOUT}
+WATERLINE = {n: y + w for n, x, y, _, w in SHIP_LAYOUT}
+
+
+def compose_ships():
+    sheet = Image.new('RGB', (3936, 2223), (14, 16, 22))
+    for n, x, y, _, _ in SHIP_LAYOUT:
+        sheet.paste(Image.open(os.path.join(DIR, 'ships_source', n + '.png')).convert('RGB'), (x, y))
+    sheet.save(os.path.join(DIR, 'tileset31_source.png'))
+    print('tileset31_source.png composed')
+
+
+def unspeck(c, deck, top):
+    a = np.array(c).astype(int)
+    rows = max(0, min(a.shape[0], deck - top))
+    r, g, b = a[:rows, :, 0], a[:rows, :, 1], a[:rows, :, 2]
+    dark = (np.maximum(np.maximum(r, g), b) < 70) & (r <= b + 6)
+    a[:rows, :, 3] = np.where(dark, 0, a[:rows, :, 3])
+    return Image.fromarray(a.astype(np.uint8), 'RGBA')
+
+
+def sink(c, y, top):
+    """cut a hull off at its waterline (sheet y; the crop's top is at sheet y `top`) and darken the last
+    rows above it, wet where it meets the water"""
+    a = np.array(c).astype(float)
+    cut = max(0, min(a.shape[0], y - top))
+    a[cut:, :, 3] = 0
+    wet = 18
+    for i in range(max(0, cut - wet), cut):
+        k = 1 - 0.45 * (i - (cut - wet)) / wet
+        a[i, :, :3] *= k
+    return Image.fromarray(a.astype(np.uint8), 'RGBA')
+
+
 # a neighbour inside a crop, blanked before the crop is cleaned (sheet coords)
 ERASE = {'armillary': [(150, 0, 372, 325)]}
 
@@ -1085,6 +1134,17 @@ SHEETS = {
         key='30',
         clean=True,
         holes=40,
+    ),
+    '31': dict(
+        src='tileset31_source.png',
+        bg=(14, 16, 22),
+        rects=RECTS31,
+        ground=set(),
+        out='ruins31',
+        key='31',
+        clean=True,
+        holes=3,
+        shrink=0.5,
     ),
     '3': dict(
         src='tileset3_source.png',
@@ -1328,6 +1388,8 @@ def transparent_sheet(path, bg, holes=0):
 
 
 def main():
+    if '--ships' in sys.argv:
+        return compose_ships()
     which = sys.argv[sys.argv.index('--sheet') + 1] if '--sheet' in sys.argv else None
     base = {}
     for key, sh in SHEETS.items():
@@ -1357,6 +1419,10 @@ def cut(sh, write=True):
             lum = a[..., :3].mean(2)
             a[..., 3] = np.clip((lum - lo) / (hi - lo), 0, 1) * a[..., 3]
             c = Image.fromarray(a.astype(np.uint8), 'RGBA')
+        if k in WATERLINE:
+            c = sink(c, WATERLINE[k], y)
+        if k in DECK:
+            c = unspeck(c, DECK[k], y)
         if sh.get('clean'):
             c = drop_edge_scraps(c, 1.0 if sh['clean'] == 'strict' else 0.15)
         if k not in sh['ground']:
