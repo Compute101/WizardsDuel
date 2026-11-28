@@ -52,6 +52,32 @@
       standIn: 'the halberdier (sprites/halberdier.png)',
       usedBy: 'PEOPLE.gd_guard2 in js/explore_gilden.js'
     },
+    // the house wizards (MAGI in js/explore_gilden.js): battle sprite (facing right) and a face
+    ...[
+      [
+        'gd_magus_quarrender',
+        'Nimble Cogglesworth, the Windwright: a gnome air mage, House Quarrender',
+        'a dwarf hero figure painted teal, drawn small'
+      ],
+      [
+        'gd_magus_varenne',
+        'Vigdis Tidegrim, the Sea-Witch: a Varg pirate witch, House Varenne',
+        "the forest's Varg (sprites/forest/varg.png)"
+      ],
+      [
+        'gd_magus_ashcombe',
+        'Grozdak Emberfist, the Forge-Mage: an orc warrior wizard, House Ashcombe',
+        "the forest's big orc (sprites/forest/orc_bigun.png)"
+      ]
+    ].map(([id, what, standIn]) => ({
+      id,
+      kind: 'person',
+      what,
+      file: 'sprites/' + id + '.png',
+      face: 'portraits/small/' + id + '.jpg',
+      standIn,
+      usedBy: 'MAGI / prep() in js/explore_gilden.js'
+    })),
     // the houses' hired mages: battle sprites (facing right, feet on the bottom edge, like the roster's stills)
     ...['ashcombe', 'varenne', 'quarrender'].map(h => ({
       id: 'gd_hire_' + h,

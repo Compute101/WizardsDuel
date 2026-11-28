@@ -36,7 +36,7 @@
       name: 'House Ashcombe',
       short: 'Ashcombe',
       head: 'gd_ashcombe',
-      magus: null, // its house wizard: still to come (MAGI)
+      magus: 'gd_magus_ashcombe',
       mark: 'a flame over a hammer',
       trade: 'copper, tin and quintessence down the Ore Road',
       rival: 'varenne',
@@ -60,7 +60,7 @@
       name: 'House Varenne',
       short: 'Varenne',
       head: 'gd_varenne',
-      magus: null, // its house wizard: still to come (MAGI)
+      magus: 'gd_magus_varenne',
       mark: 'a silver anchor',
       trade: 'the fleet, the sea-toll and the southern run',
       rival: 'quarrender',
@@ -84,7 +84,7 @@
       name: 'House Quarrender',
       short: 'Quarrender',
       head: 'gd_quarrender',
-      magus: null, // its house wizard (a gnome): still to come (MAGI)
+      magus: 'gd_magus_quarrender',
       mark: 'a winged scale',
       trade: 'banking, and the gnome airships',
       rival: 'ashcombe',
@@ -189,7 +189,183 @@
   // ({name, title, col, hp, phys, forbidden, look (a stand-in painted from a hero figure), spells}) under the key
   // in its house's `magus`; prep registers it, and a PEOPLE entry {magus, house, title} puts them on the Hill.
   // Until then a house with no magus sends only its hired mage, and no house wizard rides with you.
-  const MAGI = {};
+  // The user's designs (November 2026); the names are Claude's placeholders, the user may rename them.
+  // HP set against the roster with simMatch (160 games each against ten roster wizards, Normal AI; Malachar, a
+  // balanced roster wizard, wins 43% against the same field): Cogglesworth 66 (43%), Grozdak 80 (43%), Vigdis 72
+  // (about 35% wins, 17% stalemates: Drown's silence and her ward drag games out). Not roster wizards, so not
+  // held to the roster's ±8%.
+  // Stand-in art: the gnome is painted from a dwarf hero figure drawn small, the sea-witch is the forest's Varg,
+  // the forge mage the forest's big orc (placeholders gd_magus_<house> in js/placeholders.js).
+  const MAGI = {
+    // Quarrender: a gnome air mage. Gnome airships fly by Air magic and must carry an air mage at all times;
+    // Quarrender lends theirs to the house. Gale is his own: a curse that does Air damage every round.
+    gd_magus_quarrender: {
+      name: 'NIMBLE COGGLESWORTH',
+      title: 'The Windwright',
+      col: '#bfe8f0',
+      hp: 66,
+      phys: { atk: 3 },
+      forbidden: ['earth'],
+      spriteHeight: 0.6,
+      look: {
+        name: 'Nimble',
+        sex: 'm',
+        age: 'middle',
+        race: 'dwarf',
+        fig: 'dwarf_mid_man_2',
+        robe: 'Teal',
+        trim: 'Sky',
+        hair: 'White',
+        skin: 'Fair',
+        eyes: 'Blue',
+        elem: 'air',
+        staff: 'Ash',
+        topper: 'hoop'
+      },
+      spells: [
+        {
+          id: 'gale',
+          name: 'Gale',
+          icon: '🌬️',
+          el: {
+            cat: 'dispel',
+            kind: 'curse',
+            elem: 'air',
+            cost: 4,
+            tier: 2,
+            effect: { type: 'dot', dmg: 4, rounds: 4 },
+            desc: 'A gale that never drops: 4 air a round × 4'
+          }
+        },
+        {
+          id: 'downdraught',
+          name: 'Downdraught',
+          icon: '💨',
+          el: {
+            cat: 'damage',
+            kind: 'strike',
+            elem: 'air',
+            cost: 5,
+            power: 15,
+            tier: 2,
+            desc: '15 air: the wind that brings an airship down, brought down on you'
+          }
+        },
+        {
+          id: 'envelope',
+          name: 'The Envelope',
+          icon: '🎈',
+          el: {
+            cat: 'protect',
+            kind: 'ward',
+            elem: 'air',
+            cost: 6,
+            power: 30,
+            tier: 2,
+            desc: "Air ward of 30, held like an airship's gas-bag"
+          }
+        }
+      ]
+    },
+    // Varenne: a Varg sea-witch, a pirate who came over to the house that pays her people's sea-toll.
+    // Drown is her own: a curse that does Water damage and silences.
+    gd_magus_varenne: {
+      name: 'VIGDIS TIDEGRIM',
+      title: 'The Sea-Witch',
+      col: '#2f8a9a',
+      hp: 72,
+      phys: { atk: 5 },
+      forbidden: ['fire'],
+      sprite: 'sprites/forest/varg.png',
+      face: 'portraits/small/varg.jpg',
+      spriteHeight: 1.05,
+      spells: [
+        {
+          id: 'drown',
+          name: 'Drown',
+          icon: '🌊',
+          el: {
+            cat: 'dispel',
+            kind: 'curse',
+            elem: 'water',
+            cost: 5,
+            tier: 2,
+            effect: { type: 'dot', dmg: 4, rounds: 3 },
+            also: [{ type: 'silence', pct: 0.5, rounds: 2 }],
+            desc: "Lungs full of sea: 4 water a round × 3, and half the foe's spells fail × 2"
+          }
+        },
+        {
+          id: 'roguewave',
+          name: 'Rogue Wave',
+          icon: '🌊',
+          el: {
+            cat: 'damage',
+            kind: 'strike',
+            elem: 'water',
+            cost: 5,
+            power: 16,
+            tier: 2,
+            desc: '16 water: the wave that takes ships off the Wolf Sea'
+          }
+        },
+        {
+          id: 'seafog',
+          name: 'Sea-Fog',
+          icon: '🌫️',
+          el: {
+            cat: 'protect',
+            kind: 'ward',
+            elem: 'water',
+            cost: 6,
+            power: 30,
+            tier: 2,
+            desc: 'Water ward of 30, a reaver fog to hide in'
+          }
+        }
+      ]
+    },
+    // Ashcombe: an orc forge mage, a warrior wizard. He weathers your magic and blows (Ironskin, the usual
+    // wards) and beats you hand to hand: his Forge-Fists put fire in every Attack (aiBrawler, js/game.js).
+    gd_magus_ashcombe: {
+      name: 'GROZDAK EMBERFIST',
+      title: 'The Forge-Mage',
+      col: '#e0662a',
+      hp: 80,
+      phys: { atk: 6 },
+      forbidden: ['water'],
+      aiBrawler: true,
+      sprite: 'sprites/forest/orc_bigun.png',
+      face: 'portraits/small/orc_bigun.jpg',
+      spriteHeight: 1.05,
+      skin: {
+        id: 'forgedhide',
+        name: 'Forged Hide',
+        icon: '🛡️',
+        cost: 2,
+        soak: 25,
+        col: '#7a5a48',
+        alpha: 0.5,
+        shine: 0.45
+      },
+      spells: [
+        {
+          id: 'forgefists',
+          name: 'Forge-Fists',
+          icon: '🔥',
+          el: {
+            cat: 'protect',
+            kind: 'buff',
+            elem: 'fire',
+            cost: 3,
+            tier: 2,
+            effect: { type: 'forgefist', fire: 6, rounds: null },
+            desc: 'His fists glow from the forge: every Attack also burns for 6 fire (magic: a ward stops it), until dispelled'
+          }
+        }
+      ]
+    }
+  };
 
   // ── people ──
   const PEOPLE = {
@@ -268,6 +444,9 @@
         topper: 'crescent'
       }
     },
+    gd_ashmagus: { magus: 'gd_magus_ashcombe', house: 'ashcombe', title: 'House Wizard to Ashcombe' },
+    gd_varmagus: { magus: 'gd_magus_varenne', house: 'varenne', title: 'House Wizard to Varenne' },
+    gd_quarmagus: { magus: 'gd_magus_quarrender', house: 'quarrender', title: 'House Wizard to Quarrender' },
     thessaly: { roster: 'thessaly', title: 'The Last of the Vellacourts' },
     gd_guard1: { fighter: 'halberdier', name: 'Brask', title: "Thessaly's Bodyguard" },
     gd_guard2: { fighter: 'halberdier', name: 'Oddny', title: "Thessaly's Bodyguard" },
@@ -432,9 +611,13 @@
             try {
               const real = PH().real(key),
                 realFace = PH().realFace(key);
-              const d = await api.heroDef(M.look);
+              const d = M.look ? await api.heroDef(M.look) : {};
               if (!d) return;
               const { look, ...rest } = M;
+              if (!M.look) {
+                d.sprite = M.sprite;
+                d.face = M.face;
+              }
               api.registerChar(
                 key,
                 Object.assign({}, d, rest, {
@@ -526,7 +709,20 @@
     const H = HOUSES[h],
       v = stand(api, h);
     const say = (x, ch) => api.dialog(title(n, api), x, ch || []);
-    const line = {}[h];
+    const line = {
+      ashcombe: [
+        'A huge orc in a scorched leather apron, arms like ingots, knuckles scarred white. He\'s cracking walnuts with his fist. "Grozdak. Forge-mage. Ashcombe pays me to keep the wagons rolling." He opens his hand: the shells are glowing. "Bandits come, I don\'t throw fire at them. I walk up and hit them. Fire\'s in the hand. Saves mana."',
+        'Grozdak doesn\'t get up. He just looks at you and closes his fist, slowly, until it glows. "Dame says your name a lot. I hope I meet you on the road."'
+      ],
+      varenne: [
+        'A grey-furred Varg woman in a sea-coat hung with fish-bones and silver toll-coins, a wet rope at her belt. "Vigdis. I raided these waters till Varenne made me a better offer: I collect my own people\'s sea-toll now, and I keep a share." She grins, all teeth. "The ones who don\'t pay, I drown. Slow. They can\'t even scream a spell."',
+        'Vigdis Tidegrim smells the air as you pass. "Gaspard\'s list has you on it, little wizard. I\'ve drowned men from that list. They go quiet at the end."'
+      ],
+      quarrender: [
+        'A small gnome in a teal flight-coat and brass goggles, standing on a crate so he can look you in the eye. "Cogglesworth! Windwright, of Gimbaldry. No airship flies without an air mage aboard, holding up the wind under her, every hour of every crossing. I\'ve done the Varrow run ninety times." He tugs a goggle strap. "Quarrender rents me between ships. Mostly to make the other houses nervous."',
+        "Cogglesworth peers at you over his goggles. \"Perpetua's cross with you. When I'm cross, the wind stops and starts and stops and starts on a person, until they can't stand up. It's called a gale. It's very unpleasant.\""
+      ]
+    }[h];
     if (line) say(line[v <= -3 ? 1 : 0]);
   }
 

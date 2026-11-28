@@ -713,6 +713,22 @@
    "y": 697.6
   },
   {
+   "role": "gd_ashmagus",
+   "x": 1350.4,
+   "y": 672
+  },
+  {
+   "role": "gd_varmagus",
+   "x": 2624,
+   "y": 672
+  },
+  {
+   "role": "gd_quarmagus",
+   "x": 3014.4,
+   "y": 684.8,
+   "scale": 0.6
+  },
+  {
    "role": "thessaly",
    "x": 1817.6,
    "y": 838.4
