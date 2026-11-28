@@ -173,7 +173,12 @@ console.log(
   'cave-ins',
   S.caveIns || 0,
   'dead',
-  S.dead.map(d => d.name + ' (' + d.how.split(' on ')[0] + ')').join(', ') || 'none',
+  S.dead
+    .map(
+      d =>
+        d.name + (d.warrior ? ' ⚔' : '') + ' ' + d.trade + ' d' + d.day + ' (' + d.how.split(' on ')[0] + ')'
+    )
+    .join(', ') || 'none',
   'elementals slain',
   S.foeKills || 0
 );

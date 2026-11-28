@@ -577,7 +577,10 @@ The user asked to skip dead dwarves' replacements for now (they come with step 5
   finds no way in for half a day sinks back.
 - **Fights on the map** (`fights`, every 1.5 s): an elemental beside dwarves strikes one (a warrior first);
   everyone beside it hits back (`hitOf`: fists 1, a miner's pick 2, a warrior 4 unarmed, a bronze war-hammer 8,
-  iron 12; ×1.3 / ×1.6 for blooded / veteran warriors, `fx` 30 / 90). Dwarves have 40 HP (`DWARF_HP`), mend
+  iron 12; ×1.3 / ×1.6 for blooded / veteran warriors, `fx` 30 / 90). Dwarves have 30 HP (`DWARF_HP`); a
+  warrior's training and fighting toughen them (`maxHp`: up to `WARRIOR_HP` 50 at the veteran's `fx` 90,
+  kept if stood down). *"Make the soldiers tougher rather than all dwarves... they can raise their HP to 50
+  through training."* (40 for everyone was tried first.) They mend
   slowly away from a fight, fully in an infirmary cot; a blow also leaves them hurt. A dwarf killed is gone
   (the dead), and when the elemental that killed them falls, their mourners are avenged (the grudge struck
   out). A fallen elemental leaves 2 rough stone.

@@ -246,7 +246,10 @@
   const HEAL_WALK = DAY * 1.5; // walking it off with no cot
   const TAVERN_SETTLE = 0.4; // a drink at the tavern's keg strikes out a grudge this often
   // earth elementals (step 3): kinds, where they sleep and wander, how fights go
-  const DWARF_HP = 40;
+  // every dwarf starts at DWARF_HP; a warrior's training and fighting (d.fx) builds it up to WARRIOR_HP
+  // by the veteran level (FIGHT.levels[2]), and they keep it if stood down
+  const DWARF_HP = 30;
+  const WARRIOR_HP = 50;
   const FOES = {
     wight: { name: 'shard-wight', hp: 30, atk: 3, speed: 1.6, col: '#a8acb4' },
     stonewake: { name: 'stonewake', hp: 80, atk: 9, speed: 1.2, col: '#8a7a68' },
@@ -281,6 +284,7 @@
     ironhammer: { name: 'iron war-hammer', hit: 12, slot: 'w', rank: 2 },
     mail: { name: 'iron mail', take: 0.6, slot: 'a', rank: 1 }
   };
+  const maxHp = d => DWARF_HP + (WARRIOR_HP - DWARF_HP) * Math.min(1, (d.fx || 0) / FIGHT.levels[2]);
   const TRAIN_S = 20; // a warrior's stint at the barracks' racks
   const SERVE_S = 30; // a keeper's stint behind the bar before looking round
   // a taproom only slakes thirst. A pint at a tavern (with its keeper behind the bar) leaves a dwarf merry
@@ -1111,7 +1115,7 @@
     };
     const stocks = stockTiles(S);
     // an elemental close by: a warrior goes for it, anyone else runs
-    const fighting = d.drafted && d.hp > DWARF_HP * FIGHT.retreat; // a badly hurt warrior falls back
+    const fighting = d.drafted && d.hp > maxHp(d) * FIGHT.retreat; // a badly hurt warrior falls back
     const foe = fighting && S.t - (d.huntFail || -1e9) < 5 ? null : danger(S, d, fighting ? WAR_R : FLEE_R);
     if (foe && !fighting) {
       // the reachable floor tile furthest from it, within a short run
@@ -1798,7 +1802,7 @@
         t.cl = 0;
         d.job = null;
         d.hurt = 0;
-        d.hp = DWARF_HP;
+        d.hp = maxHp(d);
         logMsg(S, '🩹 ' + d.name.split(' ')[0] + ' is back on their feet, mended in the infirmary.');
         return;
       }
@@ -2254,7 +2258,7 @@
   function killDwarf(S, d, how) {
     drop(S, d);
     S.dwarves = S.dwarves.filter(w => w !== d);
-    S.dead.push({ name: d.name, trade: d.trade, day: dayOf(S), how });
+    S.dead.push({ name: d.name, trade: d.trade, day: dayOf(S), how, warrior: !!d.drafted });
     const first = d.name.split(' ')[0];
     logMsg(S, '🕯 ' + d.name + ' was ' + how + '.');
     for (const o of S.dwarves) addGrudge(S, o, 'Mourning ' + first);
@@ -2539,7 +2543,7 @@
       // it strikes a warrior first if one stands against it
       const target = close.find(d => d.drafted) || close[0];
       let dmg = K.atk * (target.gear && target.gear.a ? GEAR[target.gear.a].take : 1);
-      target.hp = (target.hp == null ? DWARF_HP : target.hp) - dmg;
+      target.hp = (target.hp == null ? maxHp(target) : target.hp) - dmg;
       target.hitT = S.t;
       if (!target.hurt) target.hurt = S.t || 1;
       if (target.hp <= 0) {
@@ -2663,9 +2667,9 @@
           addGrudge(S, d, 'Nursed a wound with nobody to tend it');
       }
       // wounds mend slowly away from a fight
-      if (d.hp < DWARF_HP && S.t - (d.hitT || 0) > 15) d.hp = Math.min(DWARF_HP, d.hp + dt / 8);
+      if (d.hp < maxHp(d) && S.t - (d.hitT || 0) > 15) d.hp = Math.min(maxHp(d), d.hp + dt / 8);
       // an elemental closing in: anyone not already running or fighting drops what they're doing
-      const fighting = d.drafted && d.hp > DWARF_HP * FIGHT.retreat;
+      const fighting = d.drafted && d.hp > maxHp(d) * FIGHT.retreat;
       if (d.job && d.job.type === 'hunt' && !fighting) drop(S, d); // too hurt: fall back
       if (
         d.job &&
@@ -3074,6 +3078,8 @@
     FOES,
     GEAR,
     DWARF_HP,
+    WARRIOR_HP,
+    maxHp,
     TREMOR,
     draft,
     hitOf,

@@ -633,7 +633,7 @@
         : '';
       const where = S.depth ? ' <small>(layer ' + (M.layerOf(Math.round(d.y)) + 1) + ')</small>' : '';
       return `${x}<b>${d.name}</b> <small>${T.icon} ${M.levelOf(d).name} ${T.name.toLowerCase()}</small>${where}<p>${d.act}${d.act.endsWith('…') ? '' : '.'} Mood: ${mood}.</p>${cheer}${kit}${hurt}${warHtml(d)}
-      <div class="mn-needs"><span>❤ Health</span>${bar((d.hp / M.DWARF_HP) * 100, needCol((d.hp / M.DWARF_HP) * 100))}<span>🍄 Food</span>${bar(d.needs.food, needCol(d.needs.food))}<span>🍺 Ale</span>${bar(d.needs.ale, needCol(d.needs.ale))}<span>💤 Sleep</span>${bar(d.needs.sleep, needCol(d.needs.sleep))}</div>
+      <div class="mn-needs"><span>❤ Health</span>${bar((d.hp / M.maxHp(d)) * 100, needCol((d.hp / M.maxHp(d)) * 100))}<span>🍄 Food</span>${bar(d.needs.food, needCol(d.needs.food))}<span>🍺 Ale</span>${bar(d.needs.ale, needCol(d.needs.ale))}<span>💤 Sleep</span>${bar(d.needs.sleep, needCol(d.needs.sleep))}</div>
       ${g ? '<p class="mn-note">📕 ' + d.grudges.map(x => x.why).join('; ') + '</p>' : ''}`;
     }
     if (s.kind === 'foe') {
@@ -732,7 +732,7 @@
       gear = [g.w && M.GEAR[g.w].name, g.a && M.GEAR[g.a].name].filter(Boolean).join(' and ');
     const lv = d.fx >= 90 ? 'a veteran' : d.fx >= 30 ? 'blooded' : 'green';
     return d.drafted
-      ? `<p class="mn-note">⚔ A warrior (${lv}): ${gear || 'no gear yet'}, hits for ${Math.round(M.hitOf(d))}. They go after elementals on their layer, fall back when badly hurt, and train at the barracks when idle.</p>
+      ? `<p class="mn-note">⚔ A warrior (${lv}): ${gear || 'no gear yet'}, hits for ${Math.round(M.hitOf(d))}, health ${Math.round(M.maxHp(d))} of ${M.WARRIOR_HP}. Training and fighting toughen them. They go after elementals on their layer, fall back when badly hurt, and train at the barracks when idle.</p>
       <button class="mn-btn sm" id="mn-draft" data-id="${d.id}" data-on="0" type="button">Stand down</button>`
       : `<button class="mn-btn sm" id="mn-draft" data-id="${d.id}" data-on="1" type="button">⚔ Draft as a warrior</button>`;
   }
@@ -750,7 +750,7 @@
         .map(d => {
           const T = M.TRADES[d.trade],
             g = d.grudges.length;
-          return `<button class="mn-item${ui.sel && ui.sel.id === d.id ? ' on' : ''}" data-dw="${d.id}" type="button">${T.icon} <b>${d.name}</b> <small>${M.levelOf(d).name} ${T.name.toLowerCase()}</small><br><small>${S.depth ? 'L' + (M.layerOf(Math.round(d.y)) + 1) + ' · ' : ''}${d.drafted ? '⚔ ' : ''}${d.act}${M.merry(S, d) ? ' · 🍻' : ''}${d.hp < M.DWARF_HP * 0.6 ? ' · ❤' + Math.round(d.hp) : ''}${g ? ' · 📕' + g : ''}</small></button>`;
+          return `<button class="mn-item${ui.sel && ui.sel.id === d.id ? ' on' : ''}" data-dw="${d.id}" type="button">${T.icon} <b>${d.name}</b> <small>${M.levelOf(d).name} ${T.name.toLowerCase()}</small><br><small>${S.depth ? 'L' + (M.layerOf(Math.round(d.y)) + 1) + ' · ' : ''}${d.drafted ? '⚔ ' : ''}${d.act}${M.merry(S, d) ? ' · 🍻' : ''}${d.hp < M.maxHp(d) * 0.6 ? ' · ❤' + Math.round(d.hp) : ''}${g ? ' · 📕' + g : ''}</small></button>`;
         })
         .join('') +
       '</div>' +
