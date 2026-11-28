@@ -225,7 +225,17 @@
     bannerAnvil: 0.38,
     bannerHammers: 0.38,
     bannerFlame: 0.38,
-    bannerAshen: 0.38
+    bannerAshen: 0.38,
+    // Gilden's great buildings (sheet 29) and the market stalls (30), from the user
+    palace: 0.66,
+    airship: 0.62,
+    warehouse: 0.46,
+    galleon: 0.72,
+    stallCloth: 0.34,
+    stallLamps: 0.34,
+    stallBakery: 0.34,
+    stallTools: 0.34,
+    stallCharms: 0.34
   };
   function scaleOf(kind, sc) {
     return sc || KIND_SCALE[kind] || KIND_SCALE[kind.split('_')[0]] || PS;
@@ -236,6 +246,12 @@
   // (h < 1 is a fraction of the drawn height). Looked up by exact name, else the
   // longest matching prefix (footOf).
   const FOOT = {
+    // Gilden (sheet 29) and the market stalls (30)
+    palace: [{ w: 0.9, h: 0.36 }],
+    warehouse: [{ ox: 0.47, w: 0.86, h: 0.36 }],
+    airship: [{ ox: 0.79, w: 0.2, h: 0.2 }],
+    galleon: [{ w: 1, h: 0.14 }],
+    stall: [{ w: 0.86, h: 0.3 }],
     // Elfhome (sheets 27 and 28, tools/mapgen/elfhome.js)
     efHeartTree: [{ w: 0.42, h: 40 }],
     efTalan: [{ w: 0.28, h: 16 }],
@@ -613,6 +629,40 @@
       [0.4, 0.69]
     ],
     efLantern: [[0.74, 0.47, 'lamp']],
+    // Gilden (fractions of the piece's size)
+    palace: [
+      [0.5, 0.54],
+      [0.36, 0.42],
+      [0.64, 0.42],
+      [0.08, 0.56],
+      [0.92, 0.56],
+      [0.2, 0.56],
+      [0.8, 0.56],
+      [0.5, 0.2]
+    ],
+    warehouse: [
+      [0.14, 0.27],
+      [0.39, 0.27],
+      [0.37, 0.6],
+      [0.08, 0.86],
+      [0.8, 0.32, 'lamp']
+    ],
+    airship: [
+      [0.5, 0.65],
+      [0.9, 0.3, 'lamp']
+    ],
+    galleon: [
+      [0.26, 0.47],
+      [0.37, 0.47],
+      [0.33, 0.14, 'lamp'],
+      [0.53, 0.18, 'lamp']
+    ],
+    stallLamps: [
+      [0.24, 0.42, 'lamp'],
+      [0.4, 0.42],
+      [0.55, 0.4],
+      [0.19, 0.62]
+    ],
     efLanternCrook: [[0.76, 0.42, 'lamp']],
     efLanternBlue: [[0.5, 0.26, 'lamp']],
     house1: [[165, 208]],

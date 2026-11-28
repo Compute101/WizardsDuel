@@ -197,8 +197,18 @@ a gnome (a dwarf figure drawn small stands in for the Sky Office clerk), and The
   A run in progress survives a reload: arriving in Gilden with `run` set offers "On the road" again.
 - `battle()` in `js/explore.js` takes an `arena` (charters fight on `road`).
 - A map NPC may carry `scale` (the gnome clerk: 0.6), read by `drawNpc` after `FOLK[role].scale`.
-- `REST.gilden.saltpurse` (sleep to full at the Salt Purse); `ARENA_MAPS.gilden` is `hollowmere` until
-  Gilden's own painting; the loading screen shows `tabletop` or `duel`.
+- `REST.gilden.saltpurse` (sleep to full at the Salt Purse); fights in Gilden use the user's painting of the
+  Long Quay at dusk (`backgrounds/gilden.jpg`, `ARENA_MAPS.gilden`); the loading screen shows `tabletop` or `duel`.
+- **The user's art for the city** (sheet 29, `tileset29_source.png` → `ruins29`; sizes in `KIND_SCALE`, footprints
+  and night lights in `js/explore_pieces.js`): the merchant **palace** for Ashcombe (`palace_sand`), Varenne
+  (`palace`, white marble) and Quarrender (`palace_rose`; recolours in the cutter's `RECOLOUR`), while
+  Vellacourt keeps its fallen stand-in; the **airship** moored at its own lattice mast on the Skyport (it
+  replaces the empty `spireTower`); three **warehouses** on the quay; and House Varenne's galleon, the
+  **Silver Anchor** (`galleon`), at a new deep-water stage of flagstones off the third pier (rows 46–47; no
+  rowboats there). Palaces and warehouses have doors (rich houses and workshops inside, `typeFor`).
+- **Market stalls** (sheet 30, `ruins30`: `stallCloth`, `stallLamps`, `stallBakery`, `stallTools`,
+  `stallCharms`): cloth, charms and pies in Exchange Square, a chandler's on the quay by the Narrows Office, a
+  tinker's in the Caravanserai. Hollowmere's plaza has the charms, pies (Bessie's) and tools (Torvi's).
 - Tests: Playwright, serving the repo's files through `page.route` (no web server), `Explore.open({random:true})`,
   `Explore.enterMap('gilden','north')`, `Explore._talk({role})`, and a forced battle result
   (`showMultiEnd('A')`, then `#btn-continue`): a quiet Chepstead run paid 46 gold and moved standing

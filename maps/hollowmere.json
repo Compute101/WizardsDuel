@@ -90,15 +90,15 @@
   ["barrel",1178,1334],
   ["crate2",1218,1336],
   ["crate1",1618,872],
-  ["cratesProduce",1145.6,915.2,{"lore":"market"}],
-  ["sacksGrain",1241.6,902.4],
+  ["stallCharms",1235.2,918.4,{"lore":"stallCharms"}],
+  ["stallBakery",1248,1228.8,{"lore":"stallBakery"}],
+  ["stallTools",1632,1148.8,{"lore":"stallTools"}],
+  ["sacksGrain",1126.4,960],
+  ["cratesProduce",1363.2,1228.8,{"lore":"market"}],
   ["cartLoaded",1574.4,921.6],
-  ["basketApples",1305.6,1260.8],
-  ["handcartSacks",1120,1152],
-  ["anvilBlock",1574.4,1132.8,{"scale":0.26}],
-  ["barrelsTrio",1529.6,1273.6],
+  ["barrelsTrio",1491.2,1280],
   ["noticeBoard",1619.2,870.4,{"lore":"notices"}],
-  ["oreCart",1657.6,1203.2],
+  ["oreCart",1580.8,1331.2],
   ["lamppost",270,1020,{"lore":"lamppost"}],
   ["lamppost",990,1020,{"lore":"lamppost"}],
   ["lamppost",2226,1020,{"lore":"lamppost"}],
@@ -954,6 +954,18 @@
   "notices": [
    "The Market Board",
    "Carters wanted for Gilden, two days, good pay. Gleaners wanted, Cindergate, ask at the Crow. House Ashcombe buys quintessence. LOST: one crew, four men, went in by the Wardgate a week since. Under it, in a different hand: not lost."
+  ],
+  "stallCharms": [
+   "A Charm Stall",
+   "Wards against Echoes, a skull 'from the Necropolis', a little brass orrery and bottles of something purple. The charm-seller has never been past the Wardgate and swears by every one of them."
+  ],
+  "stallBakery": [
+   "Bessie's Pie Stall",
+   "Mutton pies, apple pies, loaves and a basket of long breads. Bessie Hesketh bakes before dawn and sells out by noon: gleaners going in buy two, gleaners coming out buy four."
+  ],
+  "stallTools": [
+   "Torvi's Tool Stall",
+   "Hammers, tongs, pry bars and a box of nails sold by weight, all Anvilfells iron. Gleaners buy crowbars here for the doors in Corvanthe; the smith asks no questions about which doors."
   ],
   "market": [
    "Hollowmere Market",

@@ -101,6 +101,18 @@ const LORE = {
     'The Market Board',
     'Carters wanted for Gilden, two days, good pay. Gleaners wanted, Cindergate, ask at the Crow. House Ashcombe buys quintessence. LOST: one crew, four men, went in by the Wardgate a week since. Under it, in a different hand: not lost.'
   ],
+  stallCharms: [
+    'A Charm Stall',
+    "Wards against Echoes, a skull 'from the Necropolis', a little brass orrery and bottles of something purple. The charm-seller has never been past the Wardgate and swears by every one of them."
+  ],
+  stallBakery: [
+    "Bessie's Pie Stall",
+    'Mutton pies, apple pies, loaves and a basket of long breads. Bessie Hesketh bakes before dawn and sells out by noon: gleaners going in buy two, gleaners coming out buy four.'
+  ],
+  stallTools: [
+    "Torvi's Tool Stall",
+    'Hammers, tongs, pry bars and a box of nails sold by weight, all Anvilfells iron. Gleaners buy crowbars here for the doors in Corvanthe; the smith asks no questions about which doors.'
+  ],
   market: [
     'Hollowmere Market',
     'Crates and carts where the stalls used to stand, and everything for sale: rope, lamps, salt pork, crowbars, charms of very doubtful use. Prices are what the gleaners will pay, which is a great deal.'
@@ -193,18 +205,19 @@ module.exports = function hollowmere(rects) {
   place('barrel', 17 * T + 90, 21 * T - 10);
   place('crate2', 17 * T + 130, 21 * T - 8);
   place('crate1', 27 * T - 110, 13 * T + 40);
-  // the boom town: the plaza is a market again, crates and carts where the stalls stood, and the ore carts on their way
-  // from the Anvilfells to Gilden stop here (no stall art yet: docs/art-prompts.md)
+  // the boom town: the plaza is a market again, with the user's stalls (sheet 30) behind the people who keep them
+  // (Bessie's pies, Torvi's tools, the charm-seller), and the ore carts on their way from the Anvilfells to
+  // Gilden stop here
   for (const [k, x, y, o] of [
-    ['cratesProduce', 17.9 * T, 14.3 * T, { lore: 'market' }],
-    ['sacksGrain', 19.4 * T, 14.1 * T],
+    ['stallCharms', 19.3 * T, 14.35 * T, { lore: 'stallCharms' }],
+    ['stallBakery', 19.5 * T, 19.2 * T, { lore: 'stallBakery' }],
+    ['stallTools', 25.5 * T, 17.95 * T, { lore: 'stallTools' }],
+    ['sacksGrain', 17.6 * T, 15.0 * T],
+    ['cratesProduce', 21.3 * T, 19.2 * T, { lore: 'market' }],
     ['cartLoaded', 24.6 * T, 14.4 * T],
-    ['basketApples', 20.4 * T, 19.7 * T],
-    ['handcartSacks', 17.5 * T, 18.0 * T],
-    ['anvilBlock', 24.6 * T, 17.7 * T, { scale: 0.26 }],
-    ['barrelsTrio', 23.9 * T, 19.9 * T],
+    ['barrelsTrio', 23.3 * T, 20.0 * T],
     ['noticeBoard', 25.3 * T, 13.6 * T, { lore: 'notices' }],
-    ['oreCart', 25.9 * T, 18.8 * T]
+    ['oreCart', 24.7 * T, 20.8 * T]
   ])
     place(k, x, y, o);
   // its people: townsfolk walk the west bank's streets by day, never the east (map.stroll), and a few stand to talk

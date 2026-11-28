@@ -1376,7 +1376,7 @@
   };
   const ARENA_MAPS = {
     hollowmere: 'hollowmere',
-    gilden: 'hollowmere', // a stand-in until backgrounds/gilden.jpg arrives (placeholder arena_gilden, js/placeholders.js)
+    gilden: 'gilden', // the user's painting of the Long Quay at dusk
     corvanthe_road: 'road',
     elfhome: 'forest',
     spirewatch: 'spirewatch',
@@ -1591,7 +1591,9 @@
     'tomb',
     'tombGrand',
     'spireTower',
-    'foundry'
+    'foundry',
+    'palace',
+    'warehouse'
   ];
   const FIXED_LABEL = {
     safehouse: "Enter the Gleaners' Rest",
@@ -5881,7 +5883,9 @@
     'ruins25',
     'ruins26',
     'ruins27',
-    'ruins28'
+    'ruins28',
+    'ruins29',
+    'ruins30'
   ];
   const CORE_ATLASES = ['ruins', 'ruins2', 'ruins3', 'ruins13'];
   const atlasLoading = {};

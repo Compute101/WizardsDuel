@@ -92,8 +92,6 @@ The fat Bulldogs, the seated students, the lecturers and the examiner are done (
 
 | Sheet / pieces | What | Stands in now | Used by | [PIECES] |
 |---|---|---|---|---|
-| market stalls (a sheet of their own) | the stalls of Hollowmere's market | carts, crates, sacks and barrels from sheet 14 stand in (`tools/mapgen/hollowmere.js`, the boom-town block) | add the pieces to the cutter, then place them in the plaza | four or five market stalls seen from above at a slight angle, no snow: striped canvas awnings on wooden frames, one with bolts of cloth, one with lamps and rope, one with pies and loaves, one with tools and crowbars, one with charms and bottles |
-| `sprites/ruins/tileset29_source.png`, pieces `airship`, `palace`, `warehouse` (placeholders `piece_airship`, `piece_palace`, `piece_warehouse`) | Gilden's Skyport and Hill | the Mooring Mast stands empty (`spireTower`); the palaces are a townhouse, the hall and a damaged house; warehouses are ordinary houses | `tools/mapgen/gilden.js` | a gnome airship moored nose-first at a lattice mast (a gas-bag with brass ribs, a wooden gondola, propellers); a grand merchant palace with a gilt dome and a balcony; a tall dockside warehouse with a hoist beam and loading doors; a merchant ship's stern at a quay |
 
 Every earlier sheet has arrived (the Undercroft, the lecture theatre, Elfhome; prompts in the archive). Wrenford's own
 sheet is still wanted: its piece list is in Part 2, 5b.
@@ -111,7 +109,6 @@ sheet is still wanted: its piece list is in Part 2, 5b.
 
 | File | What | Stands in now | Used by | [SETTING] |
 |---|---|---|---|---|
-| `backgrounds/gilden.jpg` (1672×941; placeholder `arena_gilden`) | Gilden's battle backdrop (the bravos in town) | Hollowmere's painting (`ARENA_MAPS.gilden` in `js/explore.js`) | `ARENA_MAPS.gilden` | a rich harbour city's quay at dusk: marble warehouses and counting-houses, cranes, a forest of masts, a gilt dome on the hill behind and a gnome airship moored at a lattice mast; cobbles in the foreground for the fighters to stand on |
 
 Also wanted: `wound` (Part 2, 5a) and the duel wizards' own grounds (Part 2, section 1, item 6).
 

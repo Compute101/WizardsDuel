@@ -884,6 +884,30 @@ for _r, (_y0, _y1) in enumerate([(631, 748), (757, 872), (880, 999)]):
     for _c, (_x0, _x1) in enumerate([(866, 982), (991, 1106), (1115, 1231)]):
         RECTS28['tr_elfpath_%d%d' % (_r, _c)] = (_x0 + 1, _y0 + 1, _x1 - _x0 - 2, _y1 - _y0 - 2)
 
+# ── sheets 29 and 30, from the user: Gilden's great buildings (29: the gnome airship at its mooring mast,
+#    a merchant palace, a dockside warehouse with its hoist, a galleon moored at a stone stage) and five
+#    market stalls (30: cloth, lamps and rope, pies and bread, tools, charms) for Hollowmere's and Gilden's
+#    markets. Drawn at about twice the first sheets' scale (KIND_SCALE in js/explore_pieces.js) ──
+RECTS29 = {
+    k: _pad(v, 4)
+    for k, v in {
+        'airship': (66, 8, 631, 504),
+        'palace': (763, 7, 759, 507),
+        'warehouse': (20, 534, 746, 463),
+        'galleon': (796, 534, 719, 464),
+    }.items()
+}
+RECTS30 = {
+    k: _pad(v, 4)
+    for k, v in {
+        'stallCloth': (33, 22, 461, 432),
+        'stallLamps': (529, 22, 453, 436),
+        'stallBakery': (1025, 22, 483, 432),
+        'stallTools': (146, 502, 521, 460),
+        'stallCharms': (786, 501, 589, 450),
+    }.items()
+}
+
 # a neighbour inside a crop, blanked before the crop is cleaned (sheet coords)
 ERASE = {'armillary': [(150, 0, 372, 325)]}
 
@@ -1042,6 +1066,26 @@ SHEETS = {
         square=TR,
         holes=40,
     ),
+    '29': dict(
+        src='tileset29_source.png',
+        bg=(16, 17, 22),
+        rects=RECTS29,
+        ground=set(),
+        out='ruins29',
+        key='29',
+        clean=True,
+        holes=40,
+    ),
+    '30': dict(
+        src='tileset30_source.png',
+        bg=(14, 15, 20),
+        rects=RECTS30,
+        ground=set(),
+        out='ruins30',
+        key='30',
+        clean=True,
+        holes=40,
+    ),
     '3': dict(
         src='tileset3_source.png',
         bg=(13, 16, 21),
@@ -1062,6 +1106,7 @@ STYLES = {
     'slate': dict(roof=(215, 0.35, 0.85)),  # blue-grey slate
     'moss': dict(roof=(95, 0.55, 0.75)),  # green-glazed tiles
     'sand': dict(stone=((1.16, 0.98, 0.72), 1.0)),  # terracotta on sandstone
+    'rose': dict(stone=((1.1, 0.9, 0.92), 1.0)),  # rose-pink stone (Gilden's Quarrender House)
     'dusk': dict(roof=(275, 0.55, 0.75), stone=((0.85, 0.85, 1.0), 0.72)),  # college purple, dark stone
     'char': dict(roof=(20, 0.12, 0.55), stone=((0.95, 0.95, 1.0), 0.85)),  # burnt, weathered
     'ash': dict(
@@ -1074,6 +1119,9 @@ STYLES = {
 HOUSE_STYLES = ['slate', 'moss', 'sand', 'dusk', 'char']
 _TR = ['%d%d' % (r, c) for r in range(3) for c in range(3)] + ['alt00', 'alt02', 'alt20', 'alt22']
 RECOLOUR = {
+    '29': {
+        'palace': ['sand', 'rose']
+    },  # Gilden's palaces: Ashcombe sandstone, Quarrender rose, Varenne marble
     '1': dict(
         {h: HOUSE_STYLES + ['burnt'] for h in ['house1', 'house2', 'house3', 'house4', 'house5', 'house6']},
         **{g: ['ash'] for g in ['grass', 'grass2', 'dirtGrass', 'flagCracked', 'flagMoss']}
