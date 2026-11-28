@@ -478,7 +478,7 @@ module.exports = function gilden(rects) {
     [37.6, 22.2]
   ])
     put('lanternPost', x, y, 'lamp');
-  put('well', 36.6, 20.6, 'well', { scale: 0.26 });
+  put('well', 36.6, 20.6, 'well');
   // market stalls round the square (the user's sheet 30): cloth and charms for the factors' wives, pies for
   // everyone
   for (const [k, x, y, l] of [

@@ -111,7 +111,7 @@
   ["guildhall",1561.6,1209.6,{"lore":"guildhall"}],
   ["lanternPost",1702.4,1446.4,{"lore":"lamp"}],
   ["lanternPost",2406.4,1420.8,{"lore":"lamp"}],
-  ["well",2342.4,1318.4,{"lore":"well","scale":0.26}],
+  ["well",2342.4,1318.4,{"lore":"well"}],
   ["stallCloth",1856,1376,{"lore":"stallCloth"}],
   ["stallCharms",1856,1532.8,{"lore":"stallCharms"}],
   ["stallBakery",2265.6,1532.8,{"lore":"stallBakery"}],

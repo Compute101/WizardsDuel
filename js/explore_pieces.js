@@ -33,7 +33,7 @@
     wagonCovered: 0.42,
     washLine1: 0.36,
     washLine2: 0.36,
-    well: 0.36,
+    well: 0.26, // rim at a wizard's waist, roof just over his head
     benchBack: 0.32,
     benchPlain: 0.32,
     noticeBoard: 0.34,
@@ -220,7 +220,7 @@
     oreCartHot: 0.36,
     crucibleHoist: 0.44,
     stallBurnt: 0.44,
-    lavaWell: 0.44,
+    lavaWell: 0.28,
     lavaSpring: 0.45,
     bannerAnvil: 0.38,
     bannerHammers: 0.38,
